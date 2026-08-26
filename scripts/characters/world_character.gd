@@ -71,3 +71,9 @@ func set_action(action: String, direction: int) -> void:
 		equipment.play(animation)
 	if shadow.animation != animation or not shadow.is_playing():
 		shadow.play(animation)
+
+
+func set_animation_speed_scale(value: float) -> void:
+	body.speed_scale = value
+	equipment.speed_scale = value
+	shadow.speed_scale = value

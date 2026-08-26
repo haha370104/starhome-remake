@@ -19,6 +19,7 @@ menu. This controls the editor preview container only; runtime pixels remain
 - `scripts/navigation/diamond_navigation.gd`: native 35×280 diamond collision,
   eight-way A*, line-of-sight checks, and path string-pulling.
 - `scripts/characters/`: layered body, equipment, shadow, and name rendering.
+- `scripts/npcs/`: configurable patrol base plus shop and quest behavior subclasses.
 - `scripts/ui/hall_hud.gd`: viewport-anchored top menu, minimap, shortcut bar,
   weapon slots, and interaction popup.
 - `scripts/world/y_sorted_prop.gd`: scene props sorted against actors by their
@@ -27,3 +28,7 @@ menu. This controls the editor preview container only; runtime pixels remain
 See `assets/README.md` for the business-oriented asset layout and binary asset
 version-control policy. See `使用说明.md` for reverse-engineering and gameplay
 implementation details.
+
+Hall NPC instances and their triangle patrol routes live in
+`data/npcs/yian_harbor_hall_floor_1.json`; see `data/npcs/README.md` for the
+extension contract.

@@ -1,6 +1,9 @@
 class_name HallHud
 extends CanvasLayer
 
+signal popup_closed
+signal npc_action_requested(action_id: String)
+
 const UI_ROOT := "res://assets/ui/hud/"
 const ITEM_ROOT := "res://assets/items/weapons/"
 const UI_CELL := Vector2(31.0, 29.0)
@@ -19,6 +22,9 @@ var map_size := Vector2.ONE
 var root_control: Control
 var hint_label: Label
 var popup: PanelContainer
+var popup_title: Label
+var popup_body: Label
+var popup_actions: VBoxContainer
 var minimap_player_dot: ColorRect
 
 
@@ -38,7 +44,7 @@ func configure(world_map_size: Vector2, minimap_texture: Texture2D) -> void:
 
 	hint_label = Label.new()
 	hint_label.name = "HintLabel"
-	hint_label.text = "右键移动 · 左键点击管理员"
+	hint_label.text = "右键移动 · 左键点击 NPC"
 	hint_label.position = Vector2(12, 4)
 	hint_label.add_theme_font_size_override("font_size", 17)
 	hint_label.add_theme_color_override("font_color", Color(0.68, 0.95, 1.0))
@@ -57,12 +63,34 @@ func update_player_dot(world_position: Vector2) -> void:
 	)
 
 
-func show_admin_popup() -> void:
+func show_npc_popup(interaction: Dictionary) -> void:
+	popup_title.text = String(interaction.get("title", "NPC"))
+	popup_body.text = String(interaction.get("body", ""))
+	for child in popup_actions.get_children():
+		child.free()
+	for action_value in interaction.get("actions", []):
+		var action_id := String(action_value)
+		var action_label := String(action_value)
+		if action_value is Dictionary:
+			action_id = String(action_value.get("id", "action"))
+			action_label = String(action_value.get("label", action_id))
+		var action_button := Button.new()
+		action_button.text = action_label
+		action_button.custom_minimum_size = Vector2(0, 36)
+		action_button.pressed.connect(_emit_npc_action.bind(action_id))
+		popup_actions.add_child(action_button)
 	popup.visible = true
 
 
 func hide_popup() -> void:
+	if not popup.visible:
+		return
 	popup.visible = false
+	popup_closed.emit()
+
+
+func _emit_npc_action(action_id: String) -> void:
+	npc_action_requested.emit(action_id)
 
 
 func _build_top_menu() -> void:
@@ -237,7 +265,7 @@ func _weapon_slot(icon_texture: Texture2D, label_text: String, count_text: Strin
 
 func _build_popup() -> void:
 	popup = PanelContainer.new()
-	popup.name = "AdminPopup"
+	popup.name = "NpcPopup"
 	popup.set_anchors_preset(Control.PRESET_CENTER)
 	popup.offset_left = -155
 	popup.offset_right = 155
@@ -258,22 +286,21 @@ func _build_popup() -> void:
 	var column := VBoxContainer.new()
 	column.add_theme_constant_override("separation", 10)
 	margin.add_child(column)
-	var title := Label.new()
-	title.text = "管理员"
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 23)
-	title.add_theme_color_override("font_color", Color("65eaff"))
-	column.add_child(title)
-	var body := Label.new()
-	body.text = "欢迎来到易安港基地大厅一层。\n请选择需要办理的业务。"
-	body.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	body.add_theme_font_size_override("font_size", 16)
-	column.add_child(body)
-	for action in ["买东西", "卖东西"]:
-		var action_button := Button.new()
-		action_button.text = action + "（功能待接入）"
-		action_button.custom_minimum_size = Vector2(0, 36)
-		column.add_child(action_button)
+	popup_title = Label.new()
+	popup_title.name = "Title"
+	popup_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	popup_title.add_theme_font_size_override("font_size", 23)
+	popup_title.add_theme_color_override("font_color", Color("65eaff"))
+	column.add_child(popup_title)
+	popup_body = Label.new()
+	popup_body.name = "Body"
+	popup_body.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	popup_body.add_theme_font_size_override("font_size", 16)
+	column.add_child(popup_body)
+	popup_actions = VBoxContainer.new()
+	popup_actions.name = "Actions"
+	popup_actions.add_theme_constant_override("separation", 6)
+	column.add_child(popup_actions)
 	var close_button := Button.new()
 	close_button.text = "关闭"
 	close_button.pressed.connect(hide_popup)

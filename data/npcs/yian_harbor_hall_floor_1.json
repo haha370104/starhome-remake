@@ -1,0 +1,162 @@
+{
+  "schema_version": 1,
+  "map": "易安港基地大厅一层",
+  "npcs": [
+    {
+      "id": "matrix_chip_exchange",
+      "name": "兑换矩阵校验晶片",
+      "kind": "shop",
+      "appearance": "npc_blue",
+      "spawn": [570, 1040],
+      "patrol": {
+        "speed": 78,
+        "initial_delay": [0.5, 2.0],
+        "points": [
+          {"position": [570, 1040], "dwell": [1.8, 3.5]},
+          {"position": [618, 1016], "dwell": [1.0, 2.4]},
+          {"position": [618, 1064], "dwell": [1.4, 3.0]}
+        ]
+      },
+      "interaction": {"body": "可以在这里兑换矩阵校验晶片。", "actions": ["查看兑换"]}
+    },
+    {
+      "id": "energy_stone_exchange",
+      "name": "能量石兑换员",
+      "kind": "shop",
+      "appearance": "npc_red",
+      "spawn": [400, 1210],
+      "patrol": {
+        "speed": 74,
+        "initial_delay": [1.0, 3.0],
+        "points": [
+          {"position": [400, 1210], "dwell": [2.2, 4.0]},
+          {"position": [448, 1186], "dwell": [1.2, 2.8]},
+          {"position": [448, 1234], "dwell": [1.5, 3.2]}
+        ]
+      },
+      "interaction": {"body": "这里办理能量石兑换。", "actions": ["查看兑换"]}
+    },
+    {
+      "id": "migration_gift_emissary",
+      "name": "迁移礼包大使",
+      "kind": "quest",
+      "appearance": "npc_red",
+      "spawn": [965, 920],
+      "patrol": {
+        "speed": 82,
+        "initial_delay": [0.2, 2.6],
+        "points": [
+          {"position": [965, 920], "dwell": [1.5, 3.0]},
+          {"position": [917, 896], "dwell": [1.0, 2.0]},
+          {"position": [917, 944], "dwell": [1.8, 3.6]}
+        ]
+      },
+      "interaction": {"body": "迁移礼包的领取手续还在准备中。", "actions": ["询问礼包"]}
+    },
+    {
+      "id": "interstellar_postman",
+      "name": "星际邮递员",
+      "kind": "quest",
+      "appearance": "npc_red",
+      "spawn": [1115, 1040],
+      "patrol": {
+        "speed": 86,
+        "initial_delay": [1.5, 3.5],
+        "points": [
+          {"position": [1115, 1040], "dwell": [1.0, 2.5]},
+          {"position": [1163, 1016], "dwell": [1.8, 3.3]},
+          {"position": [1163, 1064], "dwell": [1.2, 2.8]}
+        ]
+      },
+      "interaction": {"body": "星际邮件与递送任务可以在这里查询。", "actions": ["查看邮件", "查看任务"]}
+    },
+    {
+      "id": "returning_elite_specialist",
+      "name": "龙腾精英回归专员",
+      "kind": "quest",
+      "appearance": "npc_red",
+      "spawn": [1290, 1060],
+      "patrol": {
+        "speed": 76,
+        "initial_delay": [0.8, 2.8],
+        "points": [
+          {"position": [1290, 1060], "dwell": [2.0, 4.2]},
+          {"position": [1338, 1036], "dwell": [1.0, 2.4]},
+          {"position": [1338, 1084], "dwell": [1.6, 3.2]}
+        ]
+      },
+      "interaction": {"body": "回归资格和奖励可以向我咨询。", "actions": ["查看回归任务"]}
+    },
+    {
+      "id": "veteran_weis",
+      "name": "精英老兵·维斯",
+      "kind": "quest",
+      "appearance": "npc_red",
+      "spawn": [1440, 925],
+      "patrol": {
+        "speed": 72,
+        "initial_delay": [1.2, 3.8],
+        "points": [
+          {"position": [1440, 925], "dwell": [2.4, 4.5]},
+          {"position": [1488, 901], "dwell": [1.0, 2.0]},
+          {"position": [1488, 949], "dwell": [1.5, 3.0]}
+        ]
+      },
+      "interaction": {"body": "老兵维斯正在观察大厅的情况。", "actions": ["交谈"]}
+    },
+    {
+      "id": "elite_badge_exchange",
+      "name": "兑换超群校徽晶片",
+      "kind": "shop",
+      "appearance": "npc_blue",
+      "spawn": [690, 1135],
+      "patrol": {
+        "speed": 80,
+        "initial_delay": [0.3, 2.2],
+        "points": [
+          {"position": [690, 1135], "dwell": [1.6, 3.3]},
+          {"position": [738, 1111], "dwell": [1.2, 2.5]},
+          {"position": [738, 1159], "dwell": [1.5, 3.0]}
+        ]
+      },
+      "interaction": {"body": "可以在这里兑换超群校徽晶片。", "actions": ["查看兑换"]}
+    },
+    {
+      "id": "nostalgia_commander",
+      "name": "怀旧战斗指挥官",
+      "kind": "quest",
+      "appearance": "npc_red",
+      "spawn": [1045, 835],
+      "patrol": {
+        "speed": 84,
+        "initial_delay": [0.7, 2.7],
+        "points": [
+          {"position": [1045, 835], "dwell": [1.5, 3.0]},
+          {"position": [997, 811], "dwell": [1.0, 2.2]},
+          {"position": [997, 859], "dwell": [1.8, 3.4]}
+        ]
+      },
+      "interaction": {"body": "战斗训练任务将在这里发布。", "actions": ["查看任务"]}
+    },
+    {
+      "id": "hall_administrator",
+      "name": "管理员",
+      "kind": "shop",
+      "appearance": "npc_red",
+      "spawn": [845, 1190],
+      "patrol": {
+        "speed": 70,
+        "initial_delay": [1.8, 4.0],
+        "points": [
+          {"position": [845, 1190], "dwell": [2.5, 5.0]},
+          {"position": [893, 1166], "dwell": [1.5, 3.0]},
+          {"position": [893, 1214], "dwell": [2.0, 4.0]}
+        ]
+      },
+      "interaction": {
+        "body": "欢迎来到易安港基地大厅一层。请选择需要办理的业务。",
+        "actions": ["买东西", "卖东西"]
+      }
+    }
+  ]
+}

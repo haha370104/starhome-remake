@@ -6,6 +6,7 @@ const MAP_SIZE := Vector2(1800.0, 1920.0)
 const GAMEPLAY_SPEED_SCALE := 1.4
 const PLAYER_SPEED := 145.0 * GAMEPLAY_SPEED_SCALE
 const CHARACTER_CATALOG_PATH := "res://assets/characters/character_atlases.json"
+const NPC_CONFIG_PATH := "res://data/npcs/yian_harbor_hall_floor_1.json"
 const MAP_MANIFEST_PATH := "res://assets/maps/yian_harbor/hall_floor_1/map_manifest.json"
 const MAP_TEXTURE_PATH := "res://assets/maps/yian_harbor/hall_floor_1/roomsvr1_base.png"
 const MINIMAP_TEXTURE_PATH := "res://assets/maps/yian_harbor/hall_floor_1/roomsvr1_minimap.jpg"
@@ -15,8 +16,12 @@ const CharacterFactoryScript := preload("res://scripts/characters/character_fact
 const WorldCharacterScript := preload("res://scripts/characters/world_character.gd")
 const YSortedPropScript := preload("res://scripts/world/y_sorted_prop.gd")
 const HallHudScript := preload("res://scripts/ui/hall_hud.gd")
+const NpcBaseScript := preload("res://scripts/npcs/npc_base.gd")
+const ShopNpcScript := preload("res://scripts/npcs/shop_npc.gd")
+const QuestNpcScript := preload("res://scripts/npcs/quest_npc.gd")
 
 var character_catalog: Dictionary
+var npc_catalog: Dictionary
 var map_manifest: Dictionary
 var navigation: RefCounted = DiamondNavigationScript.new()
 # Public aliases retained for diagnostics and the map validation suite.
@@ -28,7 +33,8 @@ var current_direction := 6
 
 var sortable_world: Node2D
 var player: Node2D
-var admin: Node2D
+var npc_instances: Array[Node2D] = []
+var active_npc: Node2D
 var camera: Camera2D
 var destination_marker: Polygon2D
 var hud: CanvasLayer
@@ -39,6 +45,7 @@ var minimap_player_dot: ColorRect
 
 func _ready() -> void:
 	character_catalog = JSON.parse_string(FileAccess.get_file_as_string(CHARACTER_CATALOG_PATH))
+	npc_catalog = JSON.parse_string(FileAccess.get_file_as_string(NPC_CONFIG_PATH))
 	map_manifest = JSON.parse_string(FileAccess.get_file_as_string(MAP_MANIFEST_PATH))
 	_load_navigation()
 	_build_world()
@@ -80,8 +87,9 @@ func _unhandled_input(event: InputEvent) -> void:
 		_move_to(world_position)
 		get_viewport().set_input_as_handled()
 	elif mouse_event.button_index == MOUSE_BUTTON_LEFT:
-		if world_position.distance_to(admin.position) <= 55.0:
-			_show_admin_popup()
+		var npc := _nearest_npc(world_position, 55.0)
+		if npc:
+			_show_npc_popup(npc)
 		else:
 			hud.hide_popup()
 		get_viewport().set_input_as_handled()
@@ -184,16 +192,7 @@ func _build_world() -> void:
 	sortable_world.y_sort_enabled = true
 	add_child(sortable_world)
 	_build_scene_props()
-
-	_add_npc("兑换矩阵校验晶片", Vector2(570, 1040), false)
-	_add_npc("能量石兑换员", Vector2(400, 1210), true)
-	_add_npc("迁移礼包大使", Vector2(965, 920), true)
-	_add_npc("星际邮递员", Vector2(1115, 1040), true)
-	_add_npc("龙腾精英回归专员", Vector2(1290, 1060), true)
-	_add_npc("精英老兵·维斯", Vector2(1440, 925), true)
-	_add_npc("兑换超群校徽晶片", Vector2(690, 1135), false)
-	_add_npc("怀旧战斗指挥官", Vector2(1045, 835), true)
-	admin = _add_npc("管理员", Vector2(845, 1190), true)
+	_build_npcs()
 
 	player = WorldCharacterScript.new()
 	player.name = "Player"
@@ -234,19 +233,28 @@ func _build_scene_props() -> void:
 		sortable_world.add_child(prop)
 
 
-func _add_npc(display_name: String, position_value: Vector2, red: bool) -> Node2D:
-	var npc: Node2D = WorldCharacterScript.new()
-	npc.name = display_name
-	var key := "npc_red" if red else "npc_blue"
-	npc.configure(
-		CharacterFactoryScript.build_character_set(character_catalog, key),
-		display_name,
-		Color.WHITE,
-		Vector2(-64, -88),
-	)
-	npc.position = position_value
-	sortable_world.add_child(npc)
-	return npc
+func _build_npcs() -> void:
+	for definition_value in npc_catalog.get("npcs", []):
+		var definition: Dictionary = definition_value
+		var npc := _create_npc_for_kind(String(definition.get("kind", "ambient")))
+		var appearance := String(definition.get("appearance", "npc_red"))
+		npc.configure_npc(
+			CharacterFactoryScript.build_character_set(character_catalog, appearance),
+			definition,
+			navigation,
+		)
+		sortable_world.add_child(npc)
+		npc_instances.append(npc)
+
+
+func _create_npc_for_kind(kind: String) -> Node2D:
+	match kind:
+		"shop":
+			return ShopNpcScript.new()
+		"quest":
+			return QuestNpcScript.new()
+		_:
+			return NpcBaseScript.new()
 
 
 func _build_hud() -> void:
@@ -256,11 +264,39 @@ func _build_hud() -> void:
 	hint_label = hud.hint_label
 	popup = hud.popup
 	minimap_player_dot = hud.minimap_player_dot
+	hud.popup_closed.connect(_on_npc_popup_closed)
+	hud.npc_action_requested.connect(_on_npc_action_requested)
 
 
-func _show_admin_popup() -> void:
-	_stop_moving("正在与管理员交互")
-	hud.show_admin_popup()
+func _nearest_npc(world_position: Vector2, maximum_distance: float) -> Node2D:
+	var result: Node2D
+	var closest_distance := maximum_distance
+	for npc in npc_instances:
+		var distance := npc.position.distance_to(world_position)
+		if distance <= closest_distance:
+			closest_distance = distance
+			result = npc
+	return result
+
+
+func _show_npc_popup(npc: Node2D) -> void:
+	_stop_moving("正在与%s交互" % String(npc.get_interaction_data()["title"]))
+	if active_npc and active_npc != npc:
+		active_npc.set_interaction_active(false)
+	active_npc = npc
+	active_npc.set_interaction_active(true)
+	hud.show_npc_popup(active_npc.get_interaction_data())
+
+
+func _on_npc_popup_closed() -> void:
+	if active_npc:
+		active_npc.set_interaction_active(false)
+		active_npc = null
+
+
+func _on_npc_action_requested(action_id: String) -> void:
+	if active_npc:
+		hint_label.text = active_npc.handle_action(action_id)
 
 
 func _update_minimap_dot() -> void:
