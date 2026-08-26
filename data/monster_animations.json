@@ -1,10 +1,10 @@
 {
   "format_version": 1,
-  "source": "免费版 npcclt1/npcclt1.fcc.cab",
+  "historical_source": "免费版 npcclt1/npcclt1.fcc.cab",
   "preview_fps": 10,
   "notes": [
     "preview_fps 是导出预览值，不代表原游戏精确速度",
-    "current_free 指免费版当前启用的 pic2 彩色素材；legacy_indexed 是旧 ALE + ACT 换色方案",
+    "explicit_variant 表示已烘焙颜色的独立动画；indexed_palette 表示索引色底图配合调色板",
     "所有资源路径均为 Godot res:// 路径"
   ],
   "monsters": {
@@ -13,48 +13,48 @@
       "directions": 8,
       "sound": "aomuchong.gsm",
       "shared_effects": {
-        "death": "res://assets/monsters/ale/pic/npc/CHN_2005_06_28_19_35_18_81/CHN_2005_06_28_18_48_34_914/sprite_frames.tres",
-        "projectile_1_2": "res://assets/monsters/ale/pic/npc/CHN_2005_06_28_19_35_18_81/CHN_2005_06_28_18_48_59_918/sprite_frames.tres",
-        "projectile_3": "res://assets/monsters/ale/pic/npc/CHN_2005_06_28_19_35_18_81/CHN_2005_06_28_18_49_05_919/sprite_frames.tres"
+        "death": "res://assets/monsters/om_adult/shared/effects/death/animation_frames.tres",
+        "projectile_1_2": "res://assets/monsters/om_adult/shared/effects/projectile_standard/animation_frames.tres",
+        "projectile_3": "res://assets/monsters/om_adult/shared/effects/projectile_bloody/animation_frames.tres"
       },
       "variants": {
         "奥姆虫": {
           "class": "Npc成虫1",
-          "mode": "current_free",
-          "move": "res://assets/monsters/ale/pic2/npc/chengchong/chc01a/sprite_frames.tres",
-          "stand": "res://assets/monsters/ale/pic2/npc/chengchong/chc01b/sprite_frames.tres",
-          "attack": "res://assets/monsters/ale/pic2/npc/chengchong/chc01c/sprite_frames.tres",
-          "move_shadow": "res://assets/monsters/ale/pic2/npc/chengchong/chc01ayiny/sprite_frames.tres",
-          "stand_shadow": "res://assets/monsters/ale/pic2/npc/chengchong/chc01byiny/sprite_frames.tres",
-          "attack_shadow": "res://assets/monsters/ale/pic2/npc/chengchong/chc01cyiny/sprite_frames.tres"
+          "mode": "explicit_variant",
+          "move": "res://assets/monsters/om_adult/variants/standard/move/animation_frames.tres",
+          "stand": "res://assets/monsters/om_adult/variants/standard/idle/animation_frames.tres",
+          "attack": "res://assets/monsters/om_adult/variants/standard/attack/animation_frames.tres",
+          "move_shadow": "res://assets/monsters/om_adult/shared/shadows/move/animation_frames.tres",
+          "stand_shadow": "res://assets/monsters/om_adult/shared/shadows/idle/animation_frames.tres",
+          "attack_shadow": "res://assets/monsters/om_adult/shared/shadows/attack/animation_frames.tres"
         },
         "毒性奥姆虫": {
           "class": "Npc成虫2",
-          "mode": "current_free",
-          "move": "res://assets/monsters/ale/pic2/npc/chengchong/chc02a/sprite_frames.tres",
-          "stand": "res://assets/monsters/ale/pic2/npc/chengchong/chc02b/sprite_frames.tres",
-          "attack": "res://assets/monsters/ale/pic2/npc/chengchong/chc02c/sprite_frames.tres",
-          "move_shadow": "res://assets/monsters/ale/pic2/npc/chengchong/chc01ayiny/sprite_frames.tres",
-          "stand_shadow": "res://assets/monsters/ale/pic2/npc/chengchong/chc01byiny/sprite_frames.tres",
-          "attack_shadow": "res://assets/monsters/ale/pic2/npc/chengchong/chc01cyiny/sprite_frames.tres"
+          "mode": "explicit_variant",
+          "move": "res://assets/monsters/om_adult/variants/toxic/move/animation_frames.tres",
+          "stand": "res://assets/monsters/om_adult/variants/toxic/idle/animation_frames.tres",
+          "attack": "res://assets/monsters/om_adult/variants/toxic/attack/animation_frames.tres",
+          "move_shadow": "res://assets/monsters/om_adult/shared/shadows/move/animation_frames.tres",
+          "stand_shadow": "res://assets/monsters/om_adult/shared/shadows/idle/animation_frames.tres",
+          "attack_shadow": "res://assets/monsters/om_adult/shared/shadows/attack/animation_frames.tres"
         },
         "血腥的奥姆虫": {
           "class": "Npc成虫3",
-          "mode": "legacy_indexed",
-          "palette": "res://assets/monsters/palettes/pic/npc/CHN_2005_06_28_19_35_18_81/3.png"
+          "mode": "indexed_palette",
+          "palette": "res://assets/monsters/om_adult/palettes/bloody.png"
         }
       },
-      "legacy_common": {
-        "move": "res://assets/monsters/ale/pic/npc/CHN_2005_06_28_19_35_18_81/CHN_2005_06_28_18_49_17_921/sprite_frames.tres",
-        "stand": "res://assets/monsters/ale/pic/npc/CHN_2005_06_28_19_35_18_81/CHN_2005_06_28_18_49_29_923/sprite_frames.tres",
-        "attack": "res://assets/monsters/ale/pic/npc/CHN_2005_06_28_19_35_18_81/CHN_2005_06_28_18_48_40_915/sprite_frames.tres",
-        "move_shadow": "res://assets/monsters/ale/pic/npc/CHN_2005_06_28_19_35_18_81/CHN_2005_06_28_18_49_23_922/sprite_frames.tres",
-        "stand_shadow": "res://assets/monsters/ale/pic/npc/CHN_2005_06_28_19_35_18_81/CHN_2005_06_28_18_49_35_924/sprite_frames.tres",
-        "attack_shadow": "res://assets/monsters/ale/pic/npc/CHN_2005_06_28_19_35_18_81/CHN_2005_06_28_18_48_46_916/sprite_frames.tres",
+      "indexed_base": {
+        "move": "res://assets/monsters/om_adult/indexed_base/move/animation_frames.tres",
+        "stand": "res://assets/monsters/om_adult/indexed_base/idle/animation_frames.tres",
+        "attack": "res://assets/monsters/om_adult/indexed_base/attack/animation_frames.tres",
+        "move_shadow": "res://assets/monsters/om_adult/indexed_base/shadows/move/animation_frames.tres",
+        "stand_shadow": "res://assets/monsters/om_adult/indexed_base/shadows/idle/animation_frames.tres",
+        "attack_shadow": "res://assets/monsters/om_adult/indexed_base/shadows/attack/animation_frames.tres",
         "palettes": {
-          "奥姆虫": "res://assets/monsters/palettes/pic/npc/CHN_2005_06_28_19_35_18_81/1.png",
-          "毒性奥姆虫": "res://assets/monsters/palettes/pic/npc/CHN_2005_06_28_19_35_18_81/2.png",
-          "血腥的奥姆虫": "res://assets/monsters/palettes/pic/npc/CHN_2005_06_28_19_35_18_81/3.png"
+          "奥姆虫": "res://assets/monsters/om_adult/palettes/standard.png",
+          "毒性奥姆虫": "res://assets/monsters/om_adult/palettes/toxic.png",
+          "血腥的奥姆虫": "res://assets/monsters/om_adult/palettes/bloody.png"
         }
       }
     },
@@ -63,40 +63,40 @@
       "directions": 8,
       "sound": "aomuyouchong.gsm",
       "shared_effects": {
-        "shadow": "res://assets/monsters/ale/pic2/npc/youchong/ycyiny/sprite_frames.tres",
-        "death": "res://assets/monsters/ale/pic/npc/CHN_2005_06_28_19_34_22_72/CHN_2005_06_28_18_39_07_820/sprite_frames.tres",
-        "projectile": "res://assets/monsters/ale/pic/npc/CHN_2005_06_28_19_34_22_72/CHN_2005_06_28_18_39_19_822/sprite_frames.tres"
+        "shadow": "res://assets/monsters/om_larva/shared/shadow/animation_frames.tres",
+        "death": "res://assets/monsters/om_larva/shared/effects/death/animation_frames.tres",
+        "projectile": "res://assets/monsters/om_larva/shared/effects/projectile/animation_frames.tres"
       },
       "variants": {
         "奥姆幼虫": {
           "class": "Npc幼虫1",
-          "mode": "current_free",
-          "move": "res://assets/monsters/ale/pic2/npc/youchong/yc01a/sprite_frames.tres",
-          "stand": "res://assets/monsters/ale/pic2/npc/youchong/yc01b/sprite_frames.tres",
-          "attack": "res://assets/monsters/ale/pic2/npc/youchong/yc01c/sprite_frames.tres"
+          "mode": "explicit_variant",
+          "move": "res://assets/monsters/om_larva/variants/standard/move/animation_frames.tres",
+          "stand": "res://assets/monsters/om_larva/variants/standard/idle/animation_frames.tres",
+          "attack": "res://assets/monsters/om_larva/variants/standard/attack/animation_frames.tres"
         },
         "毒性奥姆幼虫": {
           "class": "Npc幼虫2",
-          "mode": "current_free",
-          "move": "res://assets/monsters/ale/pic2/npc/youchong/yc02a/sprite_frames.tres",
-          "stand": "res://assets/monsters/ale/pic2/npc/youchong/yc02b/sprite_frames.tres",
-          "attack": "res://assets/monsters/ale/pic2/npc/youchong/yc02c/sprite_frames.tres"
+          "mode": "explicit_variant",
+          "move": "res://assets/monsters/om_larva/variants/toxic/move/animation_frames.tres",
+          "stand": "res://assets/monsters/om_larva/variants/toxic/idle/animation_frames.tres",
+          "attack": "res://assets/monsters/om_larva/variants/toxic/attack/animation_frames.tres"
         },
         "血腥的奥姆幼虫": {
           "class": "Npc幼虫3",
-          "mode": "legacy_indexed",
-          "palette": "res://assets/monsters/palettes/pic/npc/CHN_2005_06_28_19_34_22_72/3.png"
+          "mode": "indexed_palette",
+          "palette": "res://assets/monsters/om_larva/palettes/bloody.png"
         }
       },
-      "legacy_common": {
-        "move": "res://assets/monsters/ale/pic/npc/CHN_2005_06_28_19_34_22_72/CHN_2005_06_28_18_39_30_824/sprite_frames.tres",
-        "stand": "res://assets/monsters/ale/pic/npc/CHN_2005_06_28_19_34_22_72/CHN_2005_06_28_18_39_47_827/sprite_frames.tres",
-        "attack": "res://assets/monsters/ale/pic/npc/CHN_2005_06_28_19_34_22_72/CHN_2005_06_28_18_39_13_821/sprite_frames.tres",
-        "shadow": "res://assets/monsters/ale/pic/npc/CHN_2005_06_28_19_34_22_72/CHN_2005_06_28_18_39_36_825/sprite_frames.tres",
+      "indexed_base": {
+        "move": "res://assets/monsters/om_larva/indexed_base/move/animation_frames.tres",
+        "stand": "res://assets/monsters/om_larva/indexed_base/idle/animation_frames.tres",
+        "attack": "res://assets/monsters/om_larva/indexed_base/attack/animation_frames.tres",
+        "shadow": "res://assets/monsters/om_larva/indexed_base/shadows/primary/animation_frames.tres",
         "palettes": {
-          "奥姆幼虫": "res://assets/monsters/palettes/pic/npc/CHN_2005_06_28_19_34_22_72/1.png",
-          "毒性奥姆幼虫": "res://assets/monsters/palettes/pic/npc/CHN_2005_06_28_19_34_22_72/2.png",
-          "血腥的奥姆幼虫": "res://assets/monsters/palettes/pic/npc/CHN_2005_06_28_19_34_22_72/3.png"
+          "奥姆幼虫": "res://assets/monsters/om_larva/palettes/standard.png",
+          "毒性奥姆幼虫": "res://assets/monsters/om_larva/palettes/toxic.png",
+          "血腥的奥姆幼虫": "res://assets/monsters/om_larva/palettes/bloody.png"
         }
       }
     },
@@ -104,44 +104,44 @@
       "classes": ["NpcLightBall1", "NpcLightBall2", "NpcLightBall3"],
       "sound": "ganguangzhi.gsm",
       "shared_effects": {
-        "shadow": "res://assets/monsters/ale/pic2/npc/guangqiu/gqyiny/sprite_frames.tres",
-        "death": "res://assets/monsters/ale/pic/npc/CHN_2005_06_28_19_35_12_80/CHN_2005_06_28_18_47_46_906/sprite_frames.tres",
-        "projectile": "res://assets/monsters/ale/pic/npc/CHN_2005_06_28_19_35_12_80/CHN_2005_06_28_18_47_52_907/sprite_frames.tres"
+        "shadow": "res://assets/monsters/photosensitive_orb/shared/shadow/animation_frames.tres",
+        "death": "res://assets/monsters/photosensitive_orb/shared/effects/death/animation_frames.tres",
+        "projectile": "res://assets/monsters/photosensitive_orb/shared/effects/projectile/animation_frames.tres"
       },
       "variants": {
-        "感光质": {"class": "NpcLightBall1", "move_attack": "res://assets/monsters/ale/pic2/npc/guangqiu/gq01a/sprite_frames.tres", "stand": "res://assets/monsters/ale/pic2/npc/guangqiu/gq01b/sprite_frames.tres"},
-        "低温感光质": {"class": "NpcLightBall2", "move_attack": "res://assets/monsters/ale/pic2/npc/guangqiu/gq02a/sprite_frames.tres", "stand": "res://assets/monsters/ale/pic2/npc/guangqiu/gq02b/sprite_frames.tres"},
-        "恶性感光质": {"class": "NpcLightBall3", "move_attack": "res://assets/monsters/ale/pic2/npc/guangqiu/gq03a/sprite_frames.tres", "stand": "res://assets/monsters/ale/pic2/npc/guangqiu/gq03b/sprite_frames.tres"}
+        "感光质": {"class": "NpcLightBall1", "move_attack": "res://assets/monsters/photosensitive_orb/variants/standard/move_attack/animation_frames.tres", "stand": "res://assets/monsters/photosensitive_orb/variants/standard/idle/animation_frames.tres"},
+        "低温感光质": {"class": "NpcLightBall2", "move_attack": "res://assets/monsters/photosensitive_orb/variants/cold/move_attack/animation_frames.tres", "stand": "res://assets/monsters/photosensitive_orb/variants/cold/idle/animation_frames.tres"},
+        "恶性感光质": {"class": "NpcLightBall3", "move_attack": "res://assets/monsters/photosensitive_orb/variants/malignant/move_attack/animation_frames.tres", "stand": "res://assets/monsters/photosensitive_orb/variants/malignant/idle/animation_frames.tres"}
       },
-      "unmapped_extra": [
-        "res://assets/monsters/ale/pic2/npc/guangqiu/gq04a/sprite_frames.tres",
-        "res://assets/monsters/ale/pic2/npc/guangqiu/gq04b/sprite_frames.tres"
+      "unidentified_variant": [
+        "res://assets/monsters/photosensitive_orb/variants/unidentified/move_attack/animation_frames.tres",
+        "res://assets/monsters/photosensitive_orb/variants/unidentified/idle/animation_frames.tres"
       ],
-      "legacy_palettes": {
-        "感光质": "res://assets/monsters/palettes/pic/npc/CHN_2005_06_28_19_35_12_80/1.png",
-        "低温感光质": "res://assets/monsters/palettes/pic/npc/CHN_2005_06_28_19_35_12_80/2.png",
-        "恶性感光质": "res://assets/monsters/palettes/pic/npc/CHN_2005_06_28_19_35_12_80/3.png"
+      "indexed_palettes": {
+        "感光质": "res://assets/monsters/photosensitive_orb/palettes/standard.png",
+        "低温感光质": "res://assets/monsters/photosensitive_orb/palettes/cold.png",
+        "恶性感光质": "res://assets/monsters/photosensitive_orb/palettes/malignant.png"
       }
     },
     "毒胶": {
       "classes": ["NpcSlm1", "NpcSlm2", "NpcSlm3"],
       "sound": "dujiao.gsm",
       "shared_effects": {
-        "death": "res://assets/monsters/ale/pic/npc/slm/CHN_2005_06_28_18_49_41_925/sprite_frames.tres",
-        "projectile": "res://assets/monsters/ale/pic/npc/slm/CHN_2005_06_28_18_49_47_926/sprite_frames.tres"
+        "death": "res://assets/monsters/toxic_gel/shared/effects/death/animation_frames.tres",
+        "projectile": "res://assets/monsters/toxic_gel/shared/effects/projectile/animation_frames.tres"
       },
       "variants": {
-        "毒胶": {"class": "NpcSlm1", "move": "res://assets/monsters/ale/pic2/npc/dujiao/dujiao01a/sprite_frames.tres", "stand": "res://assets/monsters/ale/pic2/npc/dujiao/dujiao01b/sprite_frames.tres"},
-        "低温毒胶": {"class": "NpcSlm2", "move": "res://assets/monsters/ale/pic2/npc/dujiao/dujiao02a/sprite_frames.tres", "stand": "res://assets/monsters/ale/pic2/npc/dujiao/dujiao02b/sprite_frames.tres"},
-        "恶性毒胶": {"class": "NpcSlm3", "move": "res://assets/monsters/ale/pic2/npc/dujiao/dujiao03a/sprite_frames.tres", "stand": "res://assets/monsters/ale/pic2/npc/dujiao/dujiao03b/sprite_frames.tres"}
+        "毒胶": {"class": "NpcSlm1", "move": "res://assets/monsters/toxic_gel/variants/standard/move/animation_frames.tres", "stand": "res://assets/monsters/toxic_gel/variants/standard/idle/animation_frames.tres"},
+        "低温毒胶": {"class": "NpcSlm2", "move": "res://assets/monsters/toxic_gel/variants/cold/move/animation_frames.tres", "stand": "res://assets/monsters/toxic_gel/variants/cold/idle/animation_frames.tres"},
+        "恶性毒胶": {"class": "NpcSlm3", "move": "res://assets/monsters/toxic_gel/variants/malignant/move/animation_frames.tres", "stand": "res://assets/monsters/toxic_gel/variants/malignant/idle/animation_frames.tres"}
       },
-      "legacy_common": {
-        "move": "res://assets/monsters/ale/pic/npc/slm/CHN_2005_06_28_18_50_00_928/sprite_frames.tres",
-        "stand": "res://assets/monsters/ale/pic/npc/slm/CHN_2005_06_28_18_50_06_929/sprite_frames.tres",
+      "indexed_base": {
+        "move": "res://assets/monsters/toxic_gel/indexed_base/move/animation_frames.tres",
+        "stand": "res://assets/monsters/toxic_gel/indexed_base/idle/animation_frames.tres",
         "palettes": {
-          "毒胶": "res://assets/monsters/palettes/pic/npc/slm/1.png",
-          "低温毒胶": "res://assets/monsters/palettes/pic/npc/slm/2.png",
-          "恶性毒胶": "res://assets/monsters/palettes/pic/npc/slm/3.png"
+          "毒胶": "res://assets/monsters/toxic_gel/palettes/standard.png",
+          "低温毒胶": "res://assets/monsters/toxic_gel/palettes/cold.png",
+          "恶性毒胶": "res://assets/monsters/toxic_gel/palettes/malignant.png"
         }
       }
     }

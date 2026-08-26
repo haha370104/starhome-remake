@@ -41,3 +41,9 @@ resource set. The free version (`starhome_lz_fr`) and battle version
 production assets unless the user explicitly requests an exception.
 
 See `PROJECT_CONTEXT.md` for the persistent project-wide source paths and rules.
+Imported files must also be renamed into the remake's business vocabulary;
+original `pic`/`pic2`, timestamp, hash, and client class-name paths are not
+allowed under `assets/`.
+
+Run `tools/check_asset_conventions.ps1` after importing assets to reject legacy
+path segments and runtime references before committing.

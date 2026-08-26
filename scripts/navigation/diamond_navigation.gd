@@ -13,7 +13,7 @@ var graph := AStar2D.new()
 func load_from(path: String) -> bool:
 	data = FileAccess.get_file_as_bytes(path)
 	if data.size() != WIDTH * HEIGHT:
-		push_error("roomsvr1 navigation data has an unexpected size")
+		push_error("Main hall navigation grid has an unexpected size")
 		return false
 	_build_graph()
 	return true

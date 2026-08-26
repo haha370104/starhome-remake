@@ -9,13 +9,13 @@ const ITEM_ROOT := "res://assets/items/weapons/"
 const UI_CELL := Vector2(31.0, 29.0)
 
 const TOP_BUTTONS := [
-	"btn_guard", "btn_help", "btn_creatnpc", "btn_backhome", "btn_repaireself",
-	"btn_systemmsg", "yshxcountbtn", "btn_joinvr", "btn_looktem", "btn_ng",
-	"btn_topmenuanni", "FBBtn", "explore", "mercenarymissionwnd", "PivotControlWnd",
+	"defense", "help", "companions", "return_home", "repair",
+	"system_messages", "navigation_marker", "virtual_reality", "missions", "currency",
+	"anniversary", "item_storage", "exploration", "mercenary_missions", "maintenance",
 ]
 const BOTTOM_BUTTONS := [
-	"humanwnd", "humanequip", "humanbag", "playertask",
-	"playerfriend", "spacemap", "skysource", "system",
+	"character", "equipment", "inventory", "quests",
+	"friends", "galaxy_map", "star_source", "settings",
 ]
 
 var map_size := Vector2.ONE
@@ -107,7 +107,7 @@ func _build_top_menu() -> void:
 	grid.mouse_filter = Control.MOUSE_FILTER_STOP
 	root_control.add_child(grid)
 	for resource_name in TOP_BUTTONS:
-		grid.add_child(_state_button("top_%s" % resource_name, "顶部菜单（功能待接入）"))
+		grid.add_child(_state_button("top_menu/%s" % resource_name, "顶部菜单（功能待接入）"))
 	for index in range(20 - TOP_BUTTONS.size()):
 		var spacer := Panel.new()
 		spacer.custom_minimum_size = UI_CELL
@@ -179,7 +179,7 @@ func _build_bottom_bar() -> void:
 
 	var shortcut := TextureRect.new()
 	shortcut.name = "ShortcutBar"
-	shortcut.texture = load(UI_ROOT + "shortcutbar.png")
+	shortcut.texture = load(UI_ROOT + "action_bar/background.png")
 	shortcut.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	shortcut.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	shortcut.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
@@ -214,14 +214,14 @@ func _build_bottom_bar() -> void:
 	menus.add_theme_constant_override("separation", 0)
 	root_control.add_child(menus)
 	for resource_name in BOTTOM_BUTTONS:
-		menus.add_child(_state_button("menu_btn_%s" % resource_name, "底部菜单（功能待接入）"))
+		menus.add_child(_state_button("bottom_menu/%s" % resource_name, "底部菜单（功能待接入）"))
 
 
-func _state_button(prefix: String, tooltip: String) -> TextureButton:
+func _state_button(asset_directory: String, tooltip: String) -> TextureButton:
 	var button := TextureButton.new()
-	button.texture_normal = load(UI_ROOT + "%s_normal.png" % prefix)
-	button.texture_hover = load(UI_ROOT + "%s_hover.png" % prefix)
-	button.texture_pressed = load(UI_ROOT + "%s_pressed.png" % prefix)
+	button.texture_normal = load(UI_ROOT + asset_directory + "/normal.png")
+	button.texture_hover = load(UI_ROOT + asset_directory + "/hover.png")
+	button.texture_pressed = load(UI_ROOT + asset_directory + "/pressed.png")
 	button.ignore_texture_size = true
 	button.custom_minimum_size = UI_CELL
 	button.stretch_mode = TextureButton.STRETCH_KEEP_ASPECT_CENTERED
