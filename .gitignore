@@ -1,0 +1,7 @@
+.godot/
+*.tmp
+*.log
+
+# Locally generated runtime captures.
+hall_preview_*.png
+hall_runtime_preview.png
