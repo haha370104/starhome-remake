@@ -1,6 +1,8 @@
 class_name CharacterFactory
 extends RefCounted
 
+const MOVE_ANIMATION_FPS := 14.0
+
 
 static func build_character_set(catalog: Dictionary, key: String) -> Dictionary:
 	var body_group: Dictionary = catalog["shared_body"]
@@ -25,7 +27,10 @@ static func _build_frames(group: Dictionary) -> SpriteFrames:
 			var animation_name := StringName("%s_%d" % [action, direction])
 			frames.add_animation(animation_name)
 			frames.set_animation_loop(animation_name, action == "move")
-			frames.set_animation_speed(animation_name, 10.0 if action == "move" else 1.0)
+			frames.set_animation_speed(
+				animation_name,
+				MOVE_ANIMATION_FPS if action == "move" else 1.0,
+			)
 			var metadata: Dictionary = group[action]
 			var texture := load(String(metadata["texture"])) as Texture2D
 			var count := 8 if action == "move" else 1

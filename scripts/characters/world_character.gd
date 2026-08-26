@@ -25,7 +25,10 @@ func configure(
 	shadow.name = "Shadow"
 	shadow.sprite_frames = character_set["shadow_frames"]
 	shadow.centered = false
-	shadow.z_index = -1
+	# All visual layers deliberately share the character's canvas Z. Their
+	# insertion order composes one character, while the parent remains the sole
+	# unit participating in the world's Y sort.
+	shadow.z_index = 0
 	add_child(shadow)
 
 	body.name = "Body"
@@ -36,7 +39,7 @@ func configure(
 	equipment.name = "Equipment"
 	equipment.sprite_frames = character_set["equipment_frames"]
 	equipment.centered = false
-	equipment.z_index = 1
+	equipment.z_index = 0
 	add_child(equipment)
 
 	name_label.name = "NameLabel"
@@ -50,7 +53,7 @@ func configure(
 	name_label.add_theme_constant_override("shadow_offset_x", 1)
 	name_label.add_theme_constant_override("shadow_offset_y", 2)
 	name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	name_label.z_index = 2
+	name_label.z_index = 0
 	add_child(name_label)
 	set_action("stand", 6)
 

@@ -1,9 +1,10 @@
 extends Node2D
 
 const MAP_SIZE := Vector2(1800.0, 1920.0)
-# Eight walk frames at 10 FPS make a 0.8 second gait cycle. 145 px/s gives
-# roughly 116 pixels per cycle at the current map scale and avoids foot sliding.
-const PLAYER_SPEED := 145.0
+# Movement and walk animation are both 1.4x the original prototype timing, so
+# each gait cycle still covers the same map distance without foot sliding.
+const GAMEPLAY_SPEED_SCALE := 1.4
+const PLAYER_SPEED := 145.0 * GAMEPLAY_SPEED_SCALE
 const CHARACTER_CATALOG_PATH := "res://assets/characters/character_atlases.json"
 const MAP_MANIFEST_PATH := "res://assets/maps/yian_harbor/hall_floor_1/map_manifest.json"
 const MAP_TEXTURE_PATH := "res://assets/maps/yian_harbor/hall_floor_1/roomsvr1_base.png"
@@ -94,18 +95,30 @@ func _load_navigation() -> void:
 
 func _move_to(world_position: Vector2) -> void:
 	var target_text := "%d, %d" % [roundi(world_position.x), roundi(world_position.y)]
+	var resolved_position := world_position
+	var used_nearest_walkable := false
 	if not navigation.is_walkable(world_position):
-		hint_label.text = "目标 %s 不可到达" % target_text
-		return
-	path_points = navigation.find_path(player.position, world_position)
+		resolved_position = navigation.closest_reachable_position(player.position, world_position)
+		used_nearest_walkable = true
+		if not resolved_position.is_finite():
+			hint_label.text = "目标 %s 不可到达，附近也没有可达点" % target_text
+			return
+	path_points = navigation.find_path(player.position, resolved_position)
 	if path_points.is_empty():
 		hint_label.text = "无法找到前往 %s 的路径" % target_text
 		return
 	path_index = 1 if path_points.size() > 1 else 0
 	_begin_current_path_segment()
-	destination_marker.position = world_position
+	destination_marker.position = resolved_position
 	destination_marker.visible = true
-	hint_label.text = "正在前往 %s" % target_text
+	if used_nearest_walkable:
+		hint_label.text = "目标 %s 不可到达，正在前往附近 %d, %d" % [
+			target_text,
+			roundi(resolved_position.x),
+			roundi(resolved_position.y),
+		]
+	else:
+		hint_label.text = "正在前往 %s" % target_text
 	hud.hide_popup()
 
 

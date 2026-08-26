@@ -9,6 +9,10 @@ Open `project.godot` with Godot 4.7.2, or run the project from the command line.
 The window is freely resizable: HUD pixels stay fixed while a larger viewport
 reveals more of the map.
 
+When using Godot's embedded game view, select `Stretch to Fit` from its size
+menu. This controls the editor preview container only; runtime pixels remain
+1:1, the HUD keeps its designed size, and larger windows reveal more map area.
+
 ## Runtime architecture
 
 - `scripts/main_hall.gd`: scene orchestration and player interaction only.

@@ -40,6 +40,37 @@ func find_path(from_position: Vector2, to_position: Vector2) -> PackedVector2Arr
 	return simplify_path(raw_path)
 
 
+func closest_reachable_position(from_position: Vector2, requested_position: Vector2) -> Vector2:
+	var from_id := cell_id(world_to_cell(from_position))
+	if not graph.has_point(from_id):
+		return Vector2.INF
+	var closest_id := graph.get_closest_point(requested_position)
+	if closest_id < 0:
+		return Vector2.INF
+	# The hall is normally one connected navigation component. Keep a complete
+	# fallback for future maps that contain disconnected walkable islands.
+	if not graph.get_id_path(from_id, closest_id).is_empty():
+		return graph.get_point_position(closest_id)
+	var best_position := Vector2.INF
+	var best_distance_squared := INF
+	var pending: Array[int] = [from_id]
+	var visited := {from_id: true}
+	var cursor := 0
+	while cursor < pending.size():
+		var point_id := pending[cursor]
+		cursor += 1
+		var candidate := graph.get_point_position(point_id)
+		var distance_squared := candidate.distance_squared_to(requested_position)
+		if distance_squared < best_distance_squared:
+			best_position = candidate
+			best_distance_squared = distance_squared
+		for connected_id in graph.get_point_connections(point_id):
+			if not visited.has(connected_id):
+				visited[connected_id] = true
+				pending.append(connected_id)
+	return best_position
+
+
 func simplify_path(raw_path: PackedVector2Array) -> PackedVector2Array:
 	if raw_path.size() <= 2:
 		return raw_path
