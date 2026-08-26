@@ -62,7 +62,7 @@ def extract(script_path: Path, output_dir: Path, unpacker: Path, engine_dll: Pat
         raise ValueError(f"{script_path} does not contain bktile.indexdata PKH data")
 
     declared_packed_size = int(match.group(1))
-    packed = bytes.fromhex(match.group(2).decode("ascii"))
+    packed = bytes.fromhex(re.sub(rb"\s+", b"", match.group(2)).decode("ascii"))
     if len(packed) != declared_packed_size:
         raise ValueError(
             f"PKH declares {declared_packed_size} bytes, but contains {len(packed)}"

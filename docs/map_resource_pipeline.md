@@ -24,7 +24,7 @@
 
 解包后的地图 FCC 是核心入口，常见字段包括：
 
-- `size=W*H`：地图画布像素尺寸。
+- `size=W*H` 或 `size=W x H`：地图画布像素尺寸。两个写法都存在于荣耀版 FCC。
 - `loadtle=...; tilesize=GW,GH`：地图图块资源，以及引擎网格的宽和高。
 - `oversrc=...ale`：底图/覆盖图所用的 ALE 帧资源。
 - `overdata=$HEX{...}`：底图帧的摆放记录。
@@ -36,6 +36,25 @@ FCC 字符串通常应先尝试 GBK/GB18030 解码。解析结构时应以 ASCII
 字段为准，避免地图中文名乱码影响提取。
 
 ### 2.2 底图：ALE 帧加摆放记录
+
+地图的固定视觉层应按以下顺序重建：
+
+1. `addkind` 引用的 JPG 每行切成 4 张 48×24 菱形图块；接近黑色的像素是旧引擎色键透明。
+2. `link` 用 `maskimg` 的 14 行 × 4 列蒙版生成两种地面之间的 56 张过渡图块。
+3. `indexdata` 每项前两个字节选择上述 TLE 图块，按旧引擎坐标放入画布。
+4. `overdata` 引用的 ALE 帧覆盖在图块层之上。
+5. `AddImg`/`AddImgEx` 物件最后按锚点叠加；正式运行时仍应保持为独立 Y-sort 节点。
+
+由 `nengine.dll` 的 `enginebktile.cpp` 路径及实际指令确认的图块左上角公式为：
+
+```text
+x = cell_x * 48 + (cell_y 为奇数时取 24，否则取 0) - 24
+y = cell_y * 12
+```
+
+这套流程已用商店、基地大厅、H09 野外区和秘境地图与原版 `smap` 小地图交叉检查。
+只有 `overdata` 而没有图块层时，地面会变成黑色，因此不能把 `overdata` 误认为完整底图。
+图块索引 `60000`（`0xEA60`）是旧引擎明确跳过的“空图块”哨兵，不代表 TLE 越界或资源缺失。
 
 已验证的 `overdata` 记录每项为 5 字节：
 
@@ -163,10 +182,16 @@ Godot 的 `DiamondNavigation` 对菱形边邻居建图，再在不穿墙角的�
 同名地图在不同 NFT 分支可能是版本变体，不能仅按文件名覆盖。选择正式地图时需要
 比较 FCC 哈希、地图尺寸、引用资源和场景内容，再为 remake 赋予唯一业务名。
 
+地图显示名直接来自 FCC 的 `m_sMapName`，内部代码来自 `m_sNameForCheck`，字符串按
+GB18030 解码。形如 `A02`、`H09` 的值是合法野外编号，不是乱码或缺失名称。地图系统
+界面通常把它们显示为 `A02区`、`H09区`；批量目录同时保存原始名称、内部代码和这个
+系统标签。当前荣耀包实际出现 A02–J09 的 76 个编号，包内没有 H10，但解析器接受同样
+格式的 H10。
+
 ## 6. 可复现提取
 
-项目提供 `tools/map_pipeline/extract_navigation.py`。以下命令只生成分析产物，不会
-写入 `assets/`：
+项目提供 `tools/map_pipeline/extract_navigation.py` 和
+`tools/map_pipeline/extract_all_maps.py`。以下命令只生成分析产物，不会写入 `assets/`：
 
 ```powershell
 python tools/map_pipeline/extract_navigation.py `
@@ -186,6 +211,33 @@ python tools/map_pipeline/extract_navigation.py `
 导入正式工程前必须给地图、物件和贴图改成业务语义名称，并在 manifest 的
 `source_*` 字段中保留原逻辑路径。原客户端的 NFT、`pic/pic2`、时间戳或哈希目录
 不能直接进入运行时 `assets/`。
+
+全量荣耀版地图的可复现命令为：
+
+```powershell
+python tools/map_pipeline/extract_all_maps.py `
+  "..\starhome_lz_ry_full_parsed\ftc_resources\expanded" `
+  "..\starhome_lz_ry_full_parsed\ale_sprites" `
+  "..\starhome_lz_ry_full" `
+  "..\starhome_lz_ry_maps_parsed" `
+  --unpacker "..\..\work\pkh_unpack.exe" `
+  --engine-dll "D:\Program Files\FancyBoxII Games\newsystem_ry\fkernel.dll"
+```
+
+批量工具按 FCC SHA-256 去掉六个 NFT 分支间的完全相同副本，但在目录中保留全部来源。
+每个地图目录主要包含：
+
+- `composite.png`、`thumbnail.jpg`：高分辨率重建图及目录缩略图；
+- `tile_layer.png`、`background.png`：图块层和叠加固定 ALE 后的背景；
+- `scene_objects.json`：独立场景物件、锚点、ALE 原点和解析状态；
+- `navigation_grid.bin/json`、`navigation_metadata.json`：通行网格及统计；
+- `minimap.jpg`：原版专用小地图（原包存在时）；
+- `map_metadata.json`：名称、分支、来源脚本、各层状态和缺失项。
+
+根目录的 `map_names.csv` 使用 UTF-8 BOM，适合直接用 Excel 查看；`map_catalog.json`
+保留 828 条来源；`unique_maps.json` 记录 497 份唯一产物；`index.html` 可按名称、代码和
+分支搜索。`partial` 不等于地图失败：当前多数 partial 仅表示原全量包缺少一个或多个
+AddImg ALE；地图图块、碰撞和小地图仍可能全部成功，应查看 `issues` 与分层状态。
 
 ## 7. 新地图接入检查表
 
