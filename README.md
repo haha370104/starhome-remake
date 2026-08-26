@@ -29,6 +29,11 @@ See `assets/README.md` for the business-oriented asset layout and binary asset
 version-control policy. See `使用说明.md` for reverse-engineering and gameplay
 implementation details.
 
+The offline FCC/ALE/PKH map reconstruction pipeline, including the exact
+navigation record format and Godot coordinate transform, is documented in
+`docs/map_resource_pipeline.md`. `tools/map_pipeline/extract_navigation.py`
+reproduces the collision extraction with an explicitly selected client DLL.
+
 Hall NPC instances and their triangle patrol routes live in
 `data/npcs/yian_harbor_hall_floor_1.json`; see `data/npcs/README.md` for the
 extension contract.
