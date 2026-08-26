@@ -32,3 +32,12 @@ implementation details.
 Hall NPC instances and their triangle patrol routes live in
 `data/npcs/yian_harbor_hall_floor_1.json`; see `data/npcs/README.md` for the
 extension contract.
+
+## Canonical source version
+
+All assets added from now on must come from the 荣耀版 (`starhome_lz_ry`)
+resource set. The free version (`starhome_lz_fr`) and battle version
+(`starhome_jznp`) are research references only and must not be mixed into new
+production assets unless the user explicitly requests an exception.
+
+See `PROJECT_CONTEXT.md` for the persistent project-wide source paths and rules.
