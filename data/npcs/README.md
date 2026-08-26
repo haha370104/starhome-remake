@@ -7,7 +7,9 @@ An NPC entry contains:
 
 - `id`, `name`, `appearance`, and `kind` (`shop`, `quest`, or `ambient`).
 - `spawn`: its initial world-space foot position.
-- `patrol.speed` and `patrol.initial_delay`.
+- `patrol.speed`, `patrol.animation_speed_scale`, and `patrol.initial_delay`.
+  The current hall NPCs use 203 px/s and animation scale 1.0 (14 FPS), matching
+  the player's current presentation through independent NPC configuration.
 - Three ordered `patrol.points`; each point has a world-space `position` and a
   random `dwell` range in seconds. The base class loops these points.
 - `interaction.body` and `interaction.actions` for the popup.

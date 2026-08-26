@@ -1,10 +1,6 @@
 extends Node2D
 
 const MAP_SIZE := Vector2(1800.0, 1920.0)
-# Movement and walk animation are both 1.4x the original prototype timing, so
-# each gait cycle still covers the same map distance without foot sliding.
-const GAMEPLAY_SPEED_SCALE := 1.4
-const PLAYER_SPEED := 145.0 * GAMEPLAY_SPEED_SCALE
 const CHARACTER_CATALOG_PATH := "res://assets/characters/character_atlases.json"
 const NPC_CONFIG_PATH := "res://data/npcs/yian_harbor_hall_floor_1.json"
 const MAP_MANIFEST_PATH := "res://assets/maps/yian_harbor/hall_floor_1/map_manifest.json"
@@ -19,6 +15,12 @@ const HallHudScript := preload("res://scripts/ui/hall_hud.gd")
 const NpcBaseScript := preload("res://scripts/npcs/npc_base.gd")
 const ShopNpcScript := preload("res://scripts/npcs/shop_npc.gd")
 const QuestNpcScript := preload("res://scripts/npcs/quest_npc.gd")
+
+# Player tuning is intentionally local to the player. NPC patrol motion has its
+# own configuration and must not inherit these values when player progression,
+# equipment or accessibility settings change them later.
+@export_range(1.0, 600.0, 1.0) var player_movement_speed := 203.0
+@export_range(0.1, 4.0, 0.05) var player_animation_speed_scale := 1.0
 
 var character_catalog: Dictionary
 var npc_catalog: Dictionary
@@ -60,7 +62,7 @@ func _process(delta: float) -> void:
 	var waypoint := path_points[path_index]
 	var delta_to_target := waypoint - player.position
 	var distance := delta_to_target.length()
-	if distance <= PLAYER_SPEED * delta:
+	if distance <= player_movement_speed * delta:
 		player.position = waypoint
 		path_index += 1
 		if path_index >= path_points.size():
@@ -69,7 +71,7 @@ func _process(delta: float) -> void:
 		else:
 			_begin_current_path_segment()
 	else:
-		var motion := delta_to_target.normalized() * PLAYER_SPEED * delta
+		var motion := delta_to_target.normalized() * player_movement_speed * delta
 		var next_position := player.position + motion
 		if not _is_walkable(next_position):
 			_stop_moving("路径被阻挡")
@@ -202,6 +204,7 @@ func _build_world() -> void:
 		Color(0.35, 1.0, 0.92),
 		Vector2(-66, -158),
 	)
+	player.set_animation_speed_scale(player_animation_speed_scale)
 	player.position = Vector2(730, 1330)
 	sortable_world.add_child(player)
 

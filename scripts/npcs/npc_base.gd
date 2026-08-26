@@ -3,7 +3,8 @@ extends "res://scripts/characters/world_character.gd"
 
 enum PatrolState { WAITING, MOVING }
 
-const PLAYER_REFERENCE_SPEED := 203.0
+const DEFAULT_MOVEMENT_SPEED := 203.0
+const DEFAULT_ANIMATION_SPEED_SCALE := 1.0
 
 var npc_id := ""
 var npc_definition: Dictionary
@@ -13,7 +14,7 @@ var patrol_state := PatrolState.WAITING
 var patrol_index := 0
 var path_points := PackedVector2Array()
 var path_index := 0
-var movement_speed := 80.0
+var movement_speed := DEFAULT_MOVEMENT_SPEED
 var wait_remaining := 0.0
 var interaction_active := false
 var random := RandomNumberGenerator.new()
@@ -38,8 +39,10 @@ func configure_npc(
 		name_offset,
 	)
 	var patrol: Dictionary = definition.get("patrol", {})
-	movement_speed = float(patrol.get("speed", 80.0))
-	set_animation_speed_scale(movement_speed / PLAYER_REFERENCE_SPEED)
+	movement_speed = float(patrol.get("speed", DEFAULT_MOVEMENT_SPEED))
+	set_animation_speed_scale(
+		float(patrol.get("animation_speed_scale", DEFAULT_ANIMATION_SPEED_SCALE))
+	)
 	for raw_point in patrol.get("points", []):
 		var point: Dictionary = raw_point.duplicate(true)
 		var requested := _vector_from(point["position"])

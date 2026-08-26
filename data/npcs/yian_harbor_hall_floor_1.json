@@ -9,7 +9,8 @@
       "appearance": "npc_blue",
       "spawn": [570, 1040],
       "patrol": {
-        "speed": 78,
+        "speed": 203,
+        "animation_speed_scale": 1.0,
         "initial_delay": [0.5, 2.0],
         "points": [
           {"position": [570, 1040], "dwell": [1.8, 3.5]},
@@ -26,7 +27,8 @@
       "appearance": "npc_red",
       "spawn": [400, 1210],
       "patrol": {
-        "speed": 74,
+        "speed": 203,
+        "animation_speed_scale": 1.0,
         "initial_delay": [1.0, 3.0],
         "points": [
           {"position": [400, 1210], "dwell": [2.2, 4.0]},
@@ -43,7 +45,8 @@
       "appearance": "npc_red",
       "spawn": [965, 920],
       "patrol": {
-        "speed": 82,
+        "speed": 203,
+        "animation_speed_scale": 1.0,
         "initial_delay": [0.2, 2.6],
         "points": [
           {"position": [965, 920], "dwell": [1.5, 3.0]},
@@ -60,7 +63,8 @@
       "appearance": "npc_red",
       "spawn": [1115, 1040],
       "patrol": {
-        "speed": 86,
+        "speed": 203,
+        "animation_speed_scale": 1.0,
         "initial_delay": [1.5, 3.5],
         "points": [
           {"position": [1115, 1040], "dwell": [1.0, 2.5]},
@@ -77,7 +81,8 @@
       "appearance": "npc_red",
       "spawn": [1290, 1060],
       "patrol": {
-        "speed": 76,
+        "speed": 203,
+        "animation_speed_scale": 1.0,
         "initial_delay": [0.8, 2.8],
         "points": [
           {"position": [1290, 1060], "dwell": [2.0, 4.2]},
@@ -94,7 +99,8 @@
       "appearance": "npc_red",
       "spawn": [1440, 925],
       "patrol": {
-        "speed": 72,
+        "speed": 203,
+        "animation_speed_scale": 1.0,
         "initial_delay": [1.2, 3.8],
         "points": [
           {"position": [1440, 925], "dwell": [2.4, 4.5]},
@@ -111,7 +117,8 @@
       "appearance": "npc_blue",
       "spawn": [690, 1135],
       "patrol": {
-        "speed": 80,
+        "speed": 203,
+        "animation_speed_scale": 1.0,
         "initial_delay": [0.3, 2.2],
         "points": [
           {"position": [690, 1135], "dwell": [1.6, 3.3]},
@@ -128,7 +135,8 @@
       "appearance": "npc_red",
       "spawn": [1045, 835],
       "patrol": {
-        "speed": 84,
+        "speed": 203,
+        "animation_speed_scale": 1.0,
         "initial_delay": [0.7, 2.7],
         "points": [
           {"position": [1045, 835], "dwell": [1.5, 3.0]},
@@ -145,7 +153,8 @@
       "appearance": "npc_red",
       "spawn": [845, 1190],
       "patrol": {
-        "speed": 70,
+        "speed": 203,
+        "animation_speed_scale": 1.0,
         "initial_delay": [1.8, 4.0],
         "points": [
           {"position": [845, 1190], "dwell": [2.5, 5.0]},
