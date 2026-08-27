@@ -20,6 +20,11 @@ var interaction_active := false
 var random := RandomNumberGenerator.new()
 
 
+## Configures the instance from validated runtime inputs.
+## [param character_set] Input value consumed by the operation.
+## [param definition] Configuration data that controls the operation.
+## [param navigation_service] Input value consumed by the operation.
+## Design: Uses the configurable NPC template model; patrol mechanics stay in the base type while subclasses extend interactions.
 func configure_npc(
 	character_set: Dictionary,
 	definition: Dictionary,
@@ -29,7 +34,13 @@ func configure_npc(
 	npc_id = String(definition.get("id", "npc"))
 	navigation = navigation_service
 	name = npc_id
-	var spawn := _vector_from(definition["spawn"])
+	var requested_spawn := _vector_from(definition["spawn"])
+	var spawn := requested_spawn
+	if not navigation.is_walkable(spawn):
+		spawn = navigation.closest_walkable_position(spawn)
+	if not spawn.is_finite():
+		push_error("NPC %s has no walkable spawn point" % npc_id)
+		spawn = requested_spawn
 	position = spawn
 	var name_offset := _vector_from(definition.get("name_offset", [-64, -88]))
 	configure(
@@ -60,6 +71,9 @@ func configure_npc(
 	set_action("stand", current_direction)
 
 
+## Advances frame-based presentation state.
+## [param delta] Elapsed time in seconds for this update.
+## Design: Uses the configurable NPC template model; patrol mechanics stay in the base type while subclasses extend interactions.
 func _process(delta: float) -> void:
 	if interaction_active or patrol_points.size() < 2:
 		return
@@ -71,6 +85,9 @@ func _process(delta: float) -> void:
 		_advance_movement(delta)
 
 
+## Updates the managed state with the supplied value.
+## [param active] Whether the corresponding behavior is enabled.
+## Design: Uses the configurable NPC template model; patrol mechanics stay in the base type while subclasses extend interactions.
 func set_interaction_active(active: bool) -> void:
 	interaction_active = active
 	if active:
@@ -79,6 +96,9 @@ func set_interaction_active(active: bool) -> void:
 		_begin_path_segment()
 
 
+## Retrieves the requested value from the managed state.
+## Returns Structured result data produced by the operation.
+## Design: Uses the configurable NPC template model; patrol mechanics stay in the base type while subclasses extend interactions.
 func get_interaction_data() -> Dictionary:
 	var interaction: Dictionary = npc_definition.get("interaction", {})
 	var actions: Array = interaction.get("actions", [])
@@ -93,14 +113,23 @@ func get_interaction_data() -> Dictionary:
 	}
 
 
+## Provides the default interaction actions exposed by this NPC type.
+## Returns the resulting collection.
+## Design: Uses the configurable NPC template model; patrol mechanics stay in the base type while subclasses extend interactions.
 func default_actions() -> Array:
 	return [{"id": "talk", "label": "交谈"}]
 
 
+## Processes the requested protocol or gameplay operation.
+## [param action_id] Stable identifier of the target value.
+## Returns the resolved string value.
+## Design: Uses the configurable NPC template model; patrol mechanics stay in the base type while subclasses extend interactions.
 func handle_action(action_id: String) -> String:
 	return "%s 的“%s”功能尚未接入" % [String(npc_definition.get("name", npc_id)), action_id]
 
 
+## Performs the `start_next_leg` operation.
+## Design: Uses the configurable NPC template model; patrol mechanics stay in the base type while subclasses extend interactions.
 func _start_next_leg() -> void:
 	patrol_index = (patrol_index + 1) % patrol_points.size()
 	var target := _patrol_position(patrol_index)
@@ -114,6 +143,9 @@ func _start_next_leg() -> void:
 	_begin_path_segment()
 
 
+## Advances the managed state using the supplied update.
+## [param delta] Elapsed time in seconds for this update.
+## Design: Uses the configurable NPC template model; patrol mechanics stay in the base type while subclasses extend interactions.
 func _advance_movement(delta: float) -> void:
 	if path_index >= path_points.size():
 		_arrive_at_patrol_point()
@@ -132,6 +164,8 @@ func _advance_movement(delta: float) -> void:
 		position += motion.normalized() * step
 
 
+## Performs the `begin_path_segment` operation.
+## Design: Uses the configurable NPC template model; patrol mechanics stay in the base type while subclasses extend interactions.
 func _begin_path_segment() -> void:
 	if path_index >= path_points.size():
 		return
@@ -142,6 +176,8 @@ func _begin_path_segment() -> void:
 	set_action("move", current_direction)
 
 
+## Performs the `arrive_at_patrol_point` operation.
+## Design: Uses the configurable NPC template model; patrol mechanics stay in the base type while subclasses extend interactions.
 func _arrive_at_patrol_point() -> void:
 	patrol_state = PatrolState.WAITING
 	path_points = PackedVector2Array()
@@ -150,15 +186,28 @@ func _arrive_at_patrol_point() -> void:
 	wait_remaining = _random_seconds(patrol_points[patrol_index].get("dwell", [1.5, 3.5]), 2.0)
 
 
+## Performs the `patrol_position` operation.
+## [param index] Sequence, tick, or index value used by the operation.
+## Returns the resolved coordinate.
+## Design: Uses the configurable NPC template model; patrol mechanics stay in the base type while subclasses extend interactions.
 func _patrol_position(index: int) -> Vector2:
 	return patrol_points[index]["resolved_position"]
 
 
+## Performs the `random_seconds` operation.
+## [param value] New value requested by the caller.
+## [param fallback] Input value consumed by the operation.
+## Returns the result produced by the operation.
+## Design: Uses the configurable NPC template model; patrol mechanics stay in the base type while subclasses extend interactions.
 func _random_seconds(value: Variant, fallback: float) -> float:
 	if value is Array and value.size() >= 2:
 		return random.randf_range(float(value[0]), float(value[1]))
 	return float(value) if value is float or value is int else fallback
 
 
+## Performs the `vector_from` operation.
+## [param value] New value requested by the caller.
+## Returns the resolved coordinate.
+## Design: Uses the configurable NPC template model; patrol mechanics stay in the base type while subclasses extend interactions.
 func _vector_from(value: Variant) -> Vector2:
 	return Vector2(float(value[0]), float(value[1]))
