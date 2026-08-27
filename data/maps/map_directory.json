@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "directory_id": "glory_runtime_maps",
+  "definitions": {
+    "yian_harbor_hall_floor_1": "res://data/maps/yian_harbor_hall_floor_1.json",
+    "yian_harbor_city": "res://data/maps/yian_harbor_city.json",
+    "d04_field_zone": "res://data/maps/d04_field_zone.json",
+    "g08_field_zone": "res://data/maps/g08_field_zone.json"
+  },
+  "source_audit": {
+    "source_release": "starhome_lz_ry",
+    "source_map_code": "runtime_directory",
+    "source_output": "data/maps/world_graph_seed.json"
+  }
+}

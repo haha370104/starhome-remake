@@ -1,0 +1,115 @@
+{
+  "schema_version": 1,
+  "map_id": "g08_field_zone",
+  "display_name": "G08区",
+  "category": "field",
+  "legacy": {
+    "codes": ["g08"]
+  },
+  "world": {
+    "size": [4824, 4800],
+    "navigation": {
+      "grid_size": [101, 800],
+      "cell_size": [48, 12],
+      "data_path": "res://assets/maps/exploration/g08_field_zone/navigation_grid.bin"
+    }
+  },
+  "assets": {
+    "ids": {
+      "floor": "maps/exploration/g08_field_zone/floor",
+      "minimap": "maps/exploration/g08_field_zone/minimap",
+      "scene_manifest": "maps/exploration/g08_field_zone/scene_manifest"
+    },
+    "resources": {
+      "floor": "",
+      "minimap": "",
+      "scene_manifest": ""
+    }
+  },
+  "spawn_points": {
+    "default_id": "field_center",
+    "points": [
+      {
+        "spawn_id": "field_center",
+        "entry_number": 0,
+        "position": [2412, 2400],
+        "enabled": true,
+        "evidence_level": "navigation_derived",
+        "source_audit": {
+          "source_release": "starhome_lz_ry",
+          "source_map_code": "g08",
+          "source_output": "maps/g08/variant_01_nft_bl/navigation_grid.bin",
+          "derivation": "nearest walkable cell to map center; all observed inbound legacy calls use entry 0"
+        }
+      }
+    ]
+  },
+  "navigation_overrides": [],
+  "transitions": [
+    {
+      "transition_id": "exit_to_f07_field",
+      "kind": "standard",
+      "enabled": true,
+      "label": "通往F07区",
+      "source_anchor": [96, 72],
+      "approach_point": [156, 84],
+      "destination": {"legacy_code": "f07", "entry_number": 0, "external": true},
+      "source_audit": {"source_release": "starhome_lz_ry", "source_map_code": "g08", "source_output": "maps/g08/variant_01_nft_bl/transitions.json", "source_line": 509}
+    },
+    {
+      "transition_id": "exit_to_g07_field",
+      "kind": "standard",
+      "enabled": true,
+      "label": "通往G07区",
+      "source_anchor": [2280, 84],
+      "approach_point": [2315, 90],
+      "destination": {"legacy_code": "g07", "entry_number": 0, "external": true},
+      "source_audit": {"source_release": "starhome_lz_ry", "source_map_code": "g08", "source_output": "maps/g08/variant_01_nft_bl/transitions.json", "source_line": 510}
+    },
+    {
+      "transition_id": "exit_to_h07_field",
+      "kind": "standard",
+      "enabled": true,
+      "label": "通往H07区",
+      "source_anchor": [4632, 84],
+      "approach_point": [4653, 91],
+      "destination": {"legacy_code": "h07", "entry_number": 0, "external": true},
+      "source_audit": {"source_release": "starhome_lz_ry", "source_map_code": "g08", "source_output": "maps/g08/variant_01_nft_bl/transitions.json", "source_line": 511}
+    },
+    {
+      "transition_id": "exit_to_h08_field",
+      "kind": "standard",
+      "enabled": true,
+      "label": "通往H08区",
+      "source_anchor": [4656, 2448],
+      "approach_point": [4662, 2441],
+      "destination": {"legacy_code": "h08", "entry_number": 0, "external": true},
+      "source_audit": {"source_release": "starhome_lz_ry", "source_map_code": "g08", "source_output": "maps/g08/variant_01_nft_bl/transitions.json", "source_line": 512}
+    },
+    {
+      "transition_id": "exit_to_f08_field",
+      "kind": "standard",
+      "enabled": true,
+      "label": "通往F08区",
+      "source_anchor": [96, 2736],
+      "approach_point": [174, 2728],
+      "destination": {"legacy_code": "f08", "entry_number": 0, "external": true},
+      "source_audit": {"source_release": "starhome_lz_ry", "source_map_code": "g08", "source_output": "maps/g08/variant_01_nft_bl/transitions.json", "source_line": 513}
+    }
+  ],
+  "source_audit": {
+    "source_release": "starhome_lz_ry",
+    "source_map_code": "g08",
+    "source_map_name": "G08区域",
+    "source_output": "maps/g08/variant_01_nft_bl",
+    "source_branches": ["NFT_BL", "NFT_BT"],
+    "source_script_sha256": "223023b3b01d99925349731ba7376e09bad312774334011caef9fa85ccf08bb1",
+    "navigation_sha256": "df15d24a1bb74f63385d10d51e2419e3ffa5669810b52dc6b1d1913dc21537dc",
+    "navigation_passable": 72738,
+    "navigation_blocked": 8062,
+    "scene_objects_resolved": 658,
+    "scene_objects_missing": 95,
+    "presentation_state": "blocked_by_missing_business_asset_import",
+    "promoted_transition_count": 5
+  }
+}

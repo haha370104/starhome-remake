@@ -1,0 +1,72 @@
+{
+  "schema_version": 1,
+  "catalog_id": "glory_world_stage_2_seed",
+  "runtime_directory_path": "res://data/maps/map_directory.json",
+  "definition_paths": [
+    "res://data/maps/yian_harbor_hall_floor_1.json",
+    "res://data/maps/yian_harbor_city.json",
+    "res://data/maps/d04_field_zone.json",
+    "res://data/maps/g08_field_zone.json"
+  ],
+  "vertical_slice": {
+    "route_map_ids": [
+      "yian_harbor_hall_floor_1",
+      "yian_harbor_city",
+      "d04_field_zone"
+    ],
+    "route_transition_ids": [
+      "exit_to_city",
+      "exit_to_d04_northwest_gate"
+    ],
+    "navigation_state": "runtime_ready",
+    "presentation_state": "hall_city_and_d04_runtime_ready",
+    "topology_evidence": "RoomSvr1 has no direct field edge; City1Svr is the mandatory intermediate map"
+  },
+  "graph_samples": [
+    {
+      "map_id": "g08_field_zone",
+      "purpose": "five_exit_reference_fixture",
+      "expected_enabled_transitions": 5,
+      "expected_destination_legacy_codes": ["f07", "f08", "g07", "h07", "h08"]
+    }
+  ],
+  "known_gaps": [
+    {
+      "gap_id": "ordinary_transport_server_landing_points",
+      "scope": ["yian_harbor_hall_floor_1", "yian_harbor_city", "d04_field_zone", "g08_field_zone"],
+      "state": "reconstructed_default",
+      "detail": "Ordinary Transport metadata provides only destination entry numbers. Configured landings are walkable reciprocal-exit or map-center derivations and retain their evidence_level."
+    },
+    {
+      "gap_id": "city_presentation_assets",
+      "scope": ["yian_harbor_city"],
+      "state": "glory_semantic_import_complete",
+      "detail": "Glory-only semantic presentation imports 787 scene objects, rejects 2 Free-version fallback objects, and leaves 29 additional source misses blank."
+    },
+    {
+      "gap_id": "d04_presentation_assets",
+      "scope": ["d04_field_zone"],
+      "state": "glory_semantic_import_complete_with_missing_dependencies",
+      "detail": "Glory-only semantic presentation imports 35 of 61 scene objects and leaves 26 missing placements blank; navigation and all 12 transitions are ready."
+    },
+    {
+      "gap_id": "g08_presentation_assets",
+      "scope": ["g08_field_zone"],
+      "state": "accepted_partial_reference",
+      "detail": "Glory NFT_BL/BT extraction resolves 658 of 753 scene objects and misses 95; the user accepted visible omissions for later in-game review."
+    },
+    {
+      "gap_id": "city_deferred_exits",
+      "scope": ["yian_harbor_city"],
+      "state": "deferred_not_deleted",
+      "detail": "The source has 31 enabled transitions. This seed promotes the hall edge plus four D04 gates; the remaining 26 stay in the global parsed graph for later business naming."
+    }
+  ],
+  "source_audit": {
+    "source_release": "starhome_lz_ry",
+    "source_map_code": "world_graph",
+    "source_output": "starhome_lz_ry_maps_parsed/map_transition_graph.json",
+    "source_transition_edges": 1027,
+    "unique_enabled_transitions": 523
+  }
+}

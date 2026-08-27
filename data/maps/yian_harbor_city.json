@@ -1,0 +1,234 @@
+{
+  "schema_version": 1,
+  "map_id": "yian_harbor_city",
+  "display_name": "易安港城区",
+  "category": "city_exterior",
+  "legacy": {
+    "codes": ["city1svr"]
+  },
+  "world": {
+    "size": [3384, 3360],
+    "navigation": {
+      "grid_size": [71, 560],
+      "cell_size": [48, 12],
+      "data_path": "res://assets/maps/yian_harbor/city/navigation_grid.bin"
+    }
+  },
+  "assets": {
+    "ids": {
+      "floor": "maps/yian_harbor/city/floor",
+      "minimap": "maps/yian_harbor/city/minimap",
+      "scene_manifest": "maps/yian_harbor/city/scene_manifest"
+    },
+    "resources": {
+      "floor": "res://assets/maps/yian_harbor/city/floor.png",
+      "minimap": "res://assets/maps/yian_harbor/city/minimap.jpg",
+      "scene_manifest": "res://assets/maps/yian_harbor/city/map_manifest.json"
+    }
+  },
+  "spawn_points": {
+    "default_id": "city_center",
+    "points": [
+      {
+        "spawn_id": "city_center",
+        "entry_number": null,
+        "position": [1399, 954],
+        "enabled": true,
+        "evidence_level": "navigation_derived",
+        "source_audit": {
+          "source_release": "starhome_lz_ry",
+          "source_map_code": "City1Svr",
+          "source_output": "maps/city1svr/variant_01_nft_bl/navigation_grid.bin",
+          "derivation": "walkable reciprocal base-hall exit approach selected as safe default"
+        }
+      },
+      {
+        "spawn_id": "arrival_from_base_hall",
+        "entry_number": 0,
+        "position": [1399, 954],
+        "enabled": true,
+        "evidence_level": "navigation_derived",
+        "source_audit": {
+          "source_release": "starhome_lz_ry",
+          "source_map_code": "City1Svr",
+          "source_output": "maps/city1svr/variant_01_nft_bl/transitions.json",
+          "derivation": "walkable reciprocal RoomSvr1 exit approach; original server landing coordinate unavailable"
+        }
+      },
+      {
+        "spawn_id": "arrival_from_d04_northwest_gate",
+        "entry_number": 1,
+        "position": [78, 170],
+        "enabled": true,
+        "evidence_level": "navigation_derived",
+        "source_audit": {
+          "source_release": "starhome_lz_ry",
+          "source_map_code": "City1Svr",
+          "source_output": "maps/city1svr/variant_01_nft_bl/transitions.json",
+          "derivation": "walkable reciprocal D04 entry-1 exit approach"
+        }
+      },
+      {
+        "spawn_id": "arrival_from_d04_southwest_gate",
+        "entry_number": 2,
+        "position": [127, 3172],
+        "enabled": true,
+        "evidence_level": "navigation_derived",
+        "source_audit": {
+          "source_release": "starhome_lz_ry",
+          "source_map_code": "City1Svr",
+          "source_output": "maps/city1svr/variant_01_nft_bl/transitions.json",
+          "derivation": "walkable reciprocal D04 entry-2 exit approach"
+        }
+      },
+      {
+        "spawn_id": "arrival_from_d04_southeast_gate",
+        "entry_number": 3,
+        "position": [3073, 3177],
+        "enabled": true,
+        "evidence_level": "navigation_derived",
+        "source_audit": {
+          "source_release": "starhome_lz_ry",
+          "source_map_code": "City1Svr",
+          "source_output": "maps/city1svr/variant_01_nft_bl/transitions.json",
+          "derivation": "walkable reciprocal D04 entry-3 exit approach"
+        }
+      },
+      {
+        "spawn_id": "arrival_from_d04_northeast_gate",
+        "entry_number": 4,
+        "position": [3290, 178],
+        "enabled": true,
+        "evidence_level": "navigation_derived",
+        "source_audit": {
+          "source_release": "starhome_lz_ry",
+          "source_map_code": "City1Svr",
+          "source_output": "maps/city1svr/variant_01_nft_bl/transitions.json",
+          "derivation": "walkable reciprocal D04 entry-4 exit approach"
+        }
+      }
+    ]
+  },
+  "navigation_overrides": [],
+  "transitions": [
+    {
+      "transition_id": "enter_base_hall_floor_1",
+      "kind": "multi_choice",
+      "enabled": true,
+      "label": "进入基地大厅",
+      "source_anchor": [1368, 948],
+      "approach_point": [1399, 954],
+      "destination": {
+        "map_id": "yian_harbor_hall_floor_1",
+        "legacy_code": "roomsvr1",
+        "entry_number": 0,
+        "external": false
+      },
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_map_code": "City1Svr",
+        "source_output": "maps/city1svr/variant_01_nft_bl/transitions.json",
+        "source_line": 381,
+        "choice_index": 0
+      }
+    },
+    {
+      "transition_id": "exit_to_d04_northwest_gate",
+      "kind": "standard",
+      "enabled": true,
+      "label": "通往D04区",
+      "source_anchor": [24, 156],
+      "approach_point": [78, 170],
+      "destination": {
+        "map_id": "d04_field_zone",
+        "legacy_code": "d04",
+        "entry_number": 1,
+        "external": false
+      },
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_map_code": "City1Svr",
+        "source_output": "maps/city1svr/variant_01_nft_bl/transitions.json",
+        "source_line": 378
+      }
+    },
+    {
+      "transition_id": "exit_to_d04_southwest_gate",
+      "kind": "standard",
+      "enabled": true,
+      "label": "通往D04区",
+      "source_anchor": [72, 3180],
+      "approach_point": [127, 3172],
+      "destination": {
+        "map_id": "d04_field_zone",
+        "legacy_code": "d04",
+        "entry_number": 2,
+        "external": false
+      },
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_map_code": "City1Svr",
+        "source_output": "maps/city1svr/variant_01_nft_bl/transitions.json",
+        "source_line": 398
+      }
+    },
+    {
+      "transition_id": "exit_to_d04_southeast_gate",
+      "kind": "standard",
+      "enabled": true,
+      "label": "通往D04区",
+      "source_anchor": [3048, 3180],
+      "approach_point": [3073, 3177],
+      "destination": {
+        "map_id": "d04_field_zone",
+        "legacy_code": "d04",
+        "entry_number": 3,
+        "external": false
+      },
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_map_code": "City1Svr",
+        "source_output": "maps/city1svr/variant_01_nft_bl/transitions.json",
+        "source_line": 399
+      }
+    },
+    {
+      "transition_id": "exit_to_d04_northeast_gate",
+      "kind": "standard",
+      "enabled": true,
+      "label": "通往D04区",
+      "source_anchor": [3264, 168],
+      "approach_point": [3290, 178],
+      "destination": {
+        "map_id": "d04_field_zone",
+        "legacy_code": "d04",
+        "entry_number": 4,
+        "external": false
+      },
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_map_code": "City1Svr",
+        "source_output": "maps/city1svr/variant_01_nft_bl/transitions.json",
+        "source_line": 379
+      }
+    }
+  ],
+  "source_audit": {
+    "source_release": "starhome_lz_ry",
+    "source_map_code": "City1Svr",
+    "source_map_name": "龙之城",
+    "source_output": "maps/city1svr/variant_01_nft_bl",
+    "source_branches": ["NFT_BL", "NFT_BT"],
+    "source_script_sha256": "6651e41fc072da7d20d3abe8837aacdb48f9402c3b6cf2c435928b3963768c71",
+    "navigation_sha256": "46bfb65fc3a6c5faef835ec35602139bec96d3a29469bfe313136ca25a5a3fde",
+    "navigation_passable": 32958,
+    "navigation_blocked": 6802,
+    "scene_objects_resolved": 787,
+    "scene_objects_missing": 31,
+    "rejected_cross_version_fallbacks": 2,
+    "presentation_state": "glory_semantic_import_complete",
+    "promoted_transition_count": 5,
+    "deferred_enabled_transition_count": 26,
+    "semantic_name_note": "remake follows the established 易安港 context; the selected Glory FCC stores 龙之城"
+  }
+}
