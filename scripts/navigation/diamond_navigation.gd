@@ -1,25 +1,73 @@
 class_name DiamondNavigation
 extends RefCounted
 
-const WIDTH := 35
-const HEIGHT := 280
-const CELL_SIZE := Vector2(48.0, 12.0)
+const DEFAULT_GRID_SIZE := Vector2i(35, 280)
+const DEFAULT_CELL_SIZE := Vector2(48.0, 12.0)
 const LINE_OF_SIGHT_SAMPLE_STEP := 3.0
 
 var data := PackedByteArray()
 var graph := AStar2D.new()
+var grid_size := DEFAULT_GRID_SIZE
+var cell_size := DEFAULT_CELL_SIZE
 
 
-func load_from(path: String) -> bool:
+## Configures the instance from validated runtime inputs.
+## [param requested_grid_size] New value requested by the caller.
+## [param requested_cell_size] Navigation-grid cell used by the operation.
+## Returns Whether the operation completed or the queried condition is satisfied.
+## Design: Encapsulates the navigation strategy behind world/grid conversion and reachability operations.
+func configure(requested_grid_size: Vector2i, requested_cell_size := DEFAULT_CELL_SIZE) -> bool:
+	if requested_grid_size.x <= 0 or requested_grid_size.y <= 0:
+		push_error("Navigation grid dimensions must be positive")
+		return false
+	if requested_cell_size.x <= 0.0 or requested_cell_size.y <= 0.0:
+		push_error("Navigation cell dimensions must be positive")
+		return false
+	grid_size = requested_grid_size
+	cell_size = requested_cell_size
+	return true
+
+
+## Loads and validates the requested resource data.
+## [param path] Resource or movement path consumed by the operation.
+## [param requested_grid_size] New value requested by the caller.
+## [param requested_cell_size] Navigation-grid cell used by the operation.
+## Returns Whether the operation completed or the queried condition is satisfied.
+## Design: Encapsulates the navigation strategy behind world/grid conversion and reachability operations.
+func load_from(
+	path: String,
+	requested_grid_size := Vector2i.ZERO,
+	requested_cell_size := Vector2.ZERO,
+) -> bool:
+	if requested_grid_size != Vector2i.ZERO:
+		var effective_cell_size := (
+			requested_cell_size if requested_cell_size != Vector2.ZERO else DEFAULT_CELL_SIZE
+		)
+		if not configure(requested_grid_size, effective_cell_size):
+			return false
 	data = FileAccess.get_file_as_bytes(path)
-	if data.size() != WIDTH * HEIGHT:
-		push_error("Main hall navigation grid has an unexpected size")
+	if data.size() != grid_size.x * grid_size.y:
+		push_error(
+			"Navigation grid has %d cells; expected %d × %d" % [
+				data.size(), grid_size.x, grid_size.y,
+			]
+		)
 		return false
 	_build_graph()
 	return true
 
 
-func find_path(from_position: Vector2, to_position: Vector2) -> PackedVector2Array:
+## Resolves the best matching value for the supplied query.
+## [param from_position] World-space position used by the operation.
+## [param to_position] World-space position used by the operation.
+## [param should_simplify] Whether line-of-sight simplification may remove graph waypoints.
+## Returns the resolved movement path.
+## Design: Dynamic-obstacle callers disable graph points and set [param should_simplify] false so simplification cannot cut back through those temporary obstacles.
+func find_path(
+	from_position: Vector2,
+	to_position: Vector2,
+	should_simplify := true,
+) -> PackedVector2Array:
 	if not is_walkable(to_position):
 		return PackedVector2Array()
 	var from_id := cell_id(world_to_cell(from_position))
@@ -37,9 +85,14 @@ func find_path(from_position: Vector2, to_position: Vector2) -> PackedVector2Arr
 		raw_path.append(to_position)
 	else:
 		raw_path[-1] = to_position
-	return simplify_path(raw_path)
+	return simplify_path(raw_path) if should_simplify else raw_path
 
 
+## Resolves the best matching value for the supplied query.
+## [param from_position] World-space position used by the operation.
+## [param requested_position] World-space position used by the operation.
+## Returns the resolved coordinate.
+## Design: Encapsulates the navigation strategy behind world/grid conversion and reachability operations.
 func closest_reachable_position(from_position: Vector2, requested_position: Vector2) -> Vector2:
 	var from_id := cell_id(world_to_cell(from_position))
 	if not graph.has_point(from_id):
@@ -71,6 +124,21 @@ func closest_reachable_position(from_position: Vector2, requested_position: Vect
 	return best_position
 
 
+## Resolves the best matching value for the supplied query.
+## [param requested_position] World-space position used by the operation.
+## Returns the resolved coordinate.
+## Design: Encapsulates the navigation strategy behind world/grid conversion and reachability operations.
+func closest_walkable_position(requested_position: Vector2) -> Vector2:
+	var closest_id := graph.get_closest_point(requested_position)
+	if closest_id < 0:
+		return Vector2.INF
+	return graph.get_point_position(closest_id)
+
+
+## Performs the `simplify_path` operation.
+## [param raw_path] Resource or movement path consumed by the operation.
+## Returns the resolved movement path.
+## Design: Encapsulates the navigation strategy behind world/grid conversion and reachability operations.
 func simplify_path(raw_path: PackedVector2Array) -> PackedVector2Array:
 	if raw_path.size() <= 2:
 		return raw_path
@@ -87,6 +155,11 @@ func simplify_path(raw_path: PackedVector2Array) -> PackedVector2Array:
 	return simplified
 
 
+## Performs the `segment_is_walkable` operation.
+## [param from_position] World-space position used by the operation.
+## [param to_position] World-space position used by the operation.
+## Returns Whether the operation completed or the queried condition is satisfied.
+## Design: Encapsulates the navigation strategy behind world/grid conversion and reachability operations.
 func segment_is_walkable(from_position: Vector2, to_position: Vector2) -> bool:
 	var distance := from_position.distance_to(to_position)
 	var sample_count := maxi(1, ceili(distance / LINE_OF_SIGHT_SAMPLE_STEP))
@@ -97,50 +170,74 @@ func segment_is_walkable(from_position: Vector2, to_position: Vector2) -> bool:
 	return true
 
 
+## Converts coordinates between world and navigation-grid space.
+## [param world_position] World-space position used by the operation.
+## Returns the resolved coordinate.
+## Design: Encapsulates the navigation strategy behind world/grid conversion and reachability operations.
 func world_to_cell(world_position: Vector2) -> Vector2i:
 	# Exact coordinate transform used by nEngineBkTile (enginebktile.cpp).
-	var doubled_y := world_position.y * 2.0 + 24.0
-	var positive_diagonal := floori((doubled_y + world_position.x) / 48.0)
-	var negative_diagonal := floori((doubled_y - world_position.x) / 48.0)
+	var projected_y := (
+		world_position.y * cell_size.x / (2.0 * cell_size.y) + cell_size.x * 0.5
+	)
+	var positive_diagonal := floori((projected_y + world_position.x) / cell_size.x)
+	var negative_diagonal := floori((projected_y - world_position.x) / cell_size.x)
 	return Vector2i(
 		floori(float(positive_diagonal - negative_diagonal) / 2.0),
 		positive_diagonal + negative_diagonal,
 	)
 
 
+## Converts coordinates between world and navigation-grid space.
+## [param cell] Navigation-grid cell used by the operation.
+## Returns the resolved coordinate.
+## Design: Encapsulates the navigation strategy behind world/grid conversion and reachability operations.
 func cell_to_world(cell: Vector2i) -> Vector2:
 	return Vector2(
-		cell.x * CELL_SIZE.x + (CELL_SIZE.x * 0.5 if cell.y % 2 else 0.0),
-		cell.y * CELL_SIZE.y,
+		cell.x * cell_size.x + (cell_size.x * 0.5 if cell.y % 2 else 0.0),
+		cell.y * cell_size.y,
 	)
 
 
+## Performs the `cell_id` operation.
+## [param cell] Navigation-grid cell used by the operation.
+## Returns the computed integer value.
+## Design: Encapsulates the navigation strategy behind world/grid conversion and reachability operations.
 func cell_id(cell: Vector2i) -> int:
-	return cell.y * WIDTH + cell.x
+	return cell.y * grid_size.x + cell.x
 
 
+## Reports whether the requested condition is satisfied.
+## [param cell] Navigation-grid cell used by the operation.
+## Returns Whether the operation completed or the queried condition is satisfied.
+## Design: Encapsulates the navigation strategy behind world/grid conversion and reachability operations.
 func raw_cell_walkable(cell: Vector2i) -> bool:
-	if cell.x < 0 or cell.x >= WIDTH or cell.y < 0 or cell.y >= HEIGHT:
+	if cell.x < 0 or cell.x >= grid_size.x or cell.y < 0 or cell.y >= grid_size.y:
 		return false
 	var index := cell_id(cell)
 	return index < data.size() and data[index] != 0
 
 
+## Reports whether the requested condition is satisfied.
+## [param world_position] World-space position used by the operation.
+## Returns Whether the operation completed or the queried condition is satisfied.
+## Design: Encapsulates the navigation strategy behind world/grid conversion and reachability operations.
 func is_walkable(world_position: Vector2) -> bool:
 	return raw_cell_walkable(world_to_cell(world_position))
 
 
+## Builds the requested runtime object from configuration data.
+## Design: Encapsulates the navigation strategy behind world/grid conversion and reachability operations.
 func _build_graph() -> void:
 	graph = AStar2D.new()
-	for y in range(HEIGHT):
-		for x in range(WIDTH):
+	for y in range(grid_size.y):
+		for x in range(grid_size.x):
 			var cell := Vector2i(x, y)
 			if raw_cell_walkable(cell):
 				graph.add_point(cell_id(cell), cell_to_world(cell))
 
 	# Four edge-neighbours of each navigation diamond.
-	for y in range(HEIGHT - 1):
-		for x in range(WIDTH):
+	for y in range(grid_size.y - 1):
+		for x in range(grid_size.x):
 			var cell := Vector2i(x, y)
 			if not raw_cell_walkable(cell):
 				continue
@@ -152,8 +249,8 @@ func _build_graph() -> void:
 
 	# Four corner-neighbours complete eight-direction movement. Both cells
 	# flanking a corner must be walkable, which prevents cutting through walls.
-	for y in range(HEIGHT):
-		for x in range(WIDTH):
+	for y in range(grid_size.y):
+		for x in range(grid_size.x):
 			var cell := Vector2i(x, y)
 			if not raw_cell_walkable(cell):
 				continue
@@ -176,6 +273,10 @@ func _build_graph() -> void:
 				_connect(cell, south)
 
 
+## Performs the `connect` operation.
+## [param from_cell] Navigation-grid cell used by the operation.
+## [param to_cell] Navigation-grid cell used by the operation.
+## Design: Encapsulates the navigation strategy behind world/grid conversion and reachability operations.
 func _connect(from_cell: Vector2i, to_cell: Vector2i) -> void:
 	var from_id := cell_id(from_cell)
 	var to_id := cell_id(to_cell)
