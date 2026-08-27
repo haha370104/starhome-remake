@@ -1,0 +1,34 @@
+{
+  "schema_version": 1,
+  "content_version": "stage3_v1",
+  "encounter_id": "d04_intro_encounter",
+  "map_id": "d04_field_zone",
+  "enabled": true,
+  "spawn_groups": [
+    {"group_id": "northwest_om_adults", "monster_id": "om_adult", "anchor": [1200, 1200], "spawn_radius": 144, "population": 4},
+    {"group_id": "northeast_om_larvae", "monster_id": "om_larva", "anchor": [3600, 1200], "spawn_radius": 144, "population": 4},
+    {"group_id": "southwest_photosensitive_orbs", "monster_id": "photosensitive_orb", "anchor": [1200, 3400], "spawn_radius": 144, "population": 4},
+    {"group_id": "southeast_toxic_gels", "monster_id": "toxic_gel", "anchor": [3600, 3600], "spawn_radius": 144, "population": 4}
+  ],
+  "evidence": {
+    "map_id": {"status": "reconstructed_default", "reason": "D04 is the first runnable Glory field map in the RoomSvr1 to City1Svr to D04 vertical slice; no authoritative D04 monster spawn table was recovered."},
+    "spawn_groups": {"status": "reconstructed_default", "reason": "Anchors were selected from open D04 navigation areas and validated against the Glory navigation grid. Species, counts, radii, and quadrant allocation are remake defaults."},
+    "authoritative_spawn_data": {"status": "unknown", "reason": "The client package does not expose active server spawn records for these four standard monsters on D04."}
+  },
+  "source_audit": {
+    "source_release": "starhome_lz_ry",
+    "map_definition": "res://data/maps/d04_field_zone.json",
+    "navigation": "res://assets/maps/exploration/d04_field_zone/navigation_grid.bin",
+    "navigation_sha256": "6596d9afc3b99553649f5d980de0365dc51a36eacb50a2e07fc0075fa612f65b",
+    "authoritative_d04_spawn_records_found": false,
+    "inactive_client_marker_example": {
+      "source": "../starhome_lz_ry_full_parsed/ftc_resources/expanded/NFT_BL/map/e07/e07.fcc.cab",
+      "sha256": "ae3539b0e9fd6a8c2cbc61c54250a07c44cb6892fcd5ec4efc5ccd68df103200",
+      "lines": [663, 671, 676],
+      "species": "photosensitive_orb",
+      "positions": [[2496, 2400], [792, 2532], [3960, 2652]],
+      "active": false,
+      "reason_not_imported": "All three client markers are commented out, belong to E07 rather than D04, and cannot establish an active retired-server spawn rule."
+    }
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "content_version": "stage3_v1",
+  "evidence_status_legend": {
+    "client_confirmed": "The value or behavior is present in the distributed Glory client package. This does not prove that the retired server used the value unchanged.",
+    "reconstructed_default": "A configurable remake value selected to make the first vertical slice playable. It is not claimed to be an original server constant.",
+    "unknown": "No sufficiently reliable value has been recovered. Runtime code must not silently invent one."
+  },
+  "definitions": {
+    "starter_loadout": "res://data/gameplay/stage3/starter_loadout_v1.json",
+    "monsters": "res://data/gameplay/stage3/monsters_v1.json",
+    "d04_encounters": "res://data/gameplay/stage3/d04_encounters_v1.json"
+  },
+  "runtime_ids": {
+    "vehicle": ["recruit_tank"],
+    "equipment": ["beginner_engine", "recruit_energy_cannon"],
+    "monster": ["om_adult", "om_larva", "photosensitive_orb", "toxic_gel"],
+    "encounter": ["d04_intro_encounter"]
+  },
+  "source_audit": {
+    "source_release": "starhome_lz_ry",
+    "equipment_catalog": "../starhome_lz_ry_full_parsed/catalogs_utf8/equipment_catalog.csv",
+    "equipment_catalog_sha256": "0f0223a3fd6331c15d8b5826ec9277218dcc823f1d3825c60dd261b6a564b89d",
+    "monster_catalog": "../starhome_lz_ry_full_parsed/catalogs_utf8/npc_catalog.csv",
+    "monster_catalog_sha256": "fa52d501fe582576410bb10f3c0aa26218d049cfb60d2544f209ad03eae26023"
+  }
+}

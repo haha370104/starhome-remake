@@ -1,0 +1,206 @@
+{
+  "schema_version": 1,
+  "content_version": "stage3_v1",
+  "loadout_id": "starter_combat_vehicle",
+  "vehicle_id": "recruit_tank",
+  "equipped_item_ids": ["beginner_engine", "recruit_energy_cannon"],
+  "definitions": [
+    {
+      "id": "recruit_tank",
+      "kind": "vehicle_chassis",
+      "display_name": "新兵战车",
+      "description": "基地发送给新兵的初级战车，适合新手使用。",
+      "stats": {
+        "required_skill_level": 10,
+        "purchase_value": 1000,
+        "sell_value": 500,
+        "weight": 100,
+        "max_health": 70,
+        "max_health_limit": 100,
+        "armor": 10,
+        "working_energy_capacity": 100,
+        "reserve_energy_capacity": 10000,
+        "output_power": 21,
+        "output_power_limit": 30,
+        "max_durability": 1020,
+        "repair_strength": 5,
+        "repair_energy_cost": 5,
+        "repair_skill_level": 10
+      },
+      "unknowns": {
+        "server_damage_reduction_formula": null,
+        "server_energy_conversion_formula": null
+      },
+      "presentation": {
+        "asset_ids": {
+          "inventory_icon": "equipment/vehicles/recruit_tank/inventory_icon",
+          "detail_view": "equipment/vehicles/recruit_tank/detail_view",
+          "world_animation": "equipment/vehicles/recruit_tank/world_animation"
+        },
+        "resources": {
+          "combat_visual_manifest": "res://assets/equipment_world/combat_visual_manifest.json",
+          "combat_actor_id": "starter_combat_vehicle",
+          "layer_id": "chassis",
+          "world_animation": "res://assets/equipment_world/starter_combat_vehicle/chassis/locomotion/animation_frames.tres"
+        }
+      },
+      "evidence": {
+        "stats.required_skill_level": {"status": "client_confirmed", "source_field": "m_nSkillLevel"},
+        "stats.purchase_value": {"status": "client_confirmed", "source_field": "m_nWorth"},
+        "stats.sell_value": {"status": "client_confirmed", "source_field": "m_nSell"},
+        "stats.weight": {"status": "client_confirmed", "source_field": "m_nweight"},
+        "stats.max_health": {"status": "client_confirmed", "source_field": "m_nhealth"},
+        "stats.max_health_limit": {"status": "client_confirmed", "source_field": "m_nhealthUL"},
+        "stats.armor": {"status": "client_confirmed", "source_field": "m_narmor"},
+        "stats.working_energy_capacity": {"status": "client_confirmed", "source_field": "m_nenergy"},
+        "stats.reserve_energy_capacity": {"status": "client_confirmed", "source_field": "m_nmaxenergy"},
+        "stats.output_power": {"status": "client_confirmed", "source_field": "m_noutpower"},
+        "stats.output_power_limit": {"status": "client_confirmed", "source_field": "m_noutpowerUL"},
+        "stats.max_durability": {"status": "client_confirmed", "source_field": "m_nMax_Hardiness"},
+        "stats.repair_strength": {"status": "client_confirmed", "source_field": "m_nOneRepairAttack"},
+        "stats.repair_energy_cost": {"status": "client_confirmed", "source_field": "m_nOneRepairEnergy"},
+        "stats.repair_skill_level": {"status": "client_confirmed", "source_field": "m_nRepairLevel"},
+        "unknowns.server_damage_reduction_formula": {"status": "unknown", "reason": "The client exposes armor but not the retired server formula."},
+        "unknowns.server_energy_conversion_formula": {"status": "unknown", "reason": "The relationship between reserve energy, working energy, and output power remains server-side evidence work."},
+        "presentation.resources": {"status": "client_confirmed", "source": "Glory-only semantic equipment import and source manifest"}
+      },
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "catalog": "../starhome_lz_ry_full_parsed/catalogs_utf8/equipment_catalog.csv",
+        "row_selector": {"class_name": "tank1"},
+        "row_sha256": "5776087ff7d1213a78b82920d7ffd07a7d3e47d4ad1e84fe198a6dc1bdf09406",
+        "source_file": "cltobj/equipcltclass.fcc",
+        "source_line": 3,
+        "source_assets": [
+          {"path": "pic3/equip/bag/tank1.ale", "sha256": "ecc7bec2da74ed605492b8c0a1c9ba4c8402500832d8b2b8022aa1611d943a6f"},
+          {"path": "pic3/equip/dlg/tank1.ale", "sha256": "b633a11a12e66cb8426a3388ddb2a0cb94dd690a372d54eedcf18a921ea875df"},
+          {"path": "pic3/equip/body/tank1.ale", "sha256": "07495004c3d9c62bad4554c6b0c0cf5630975052550335b675b7c1e117c8482d"}
+        ]
+      }
+    },
+    {
+      "id": "beginner_engine",
+      "kind": "vehicle_engine",
+      "display_name": "初级引擎",
+      "description": "战车或机甲的推动力来源，通过消耗能量产生推动力。",
+      "stats": {
+        "required_skill_level": 10,
+        "purchase_value": 500,
+        "sell_value": 250,
+        "weight": 20,
+        "drive": 20,
+        "drive_limit": 28,
+        "working_energy_cost": 2,
+        "max_durability": 900
+      },
+      "unknowns": {
+        "server_energy_drain_interval_seconds": null
+      },
+      "presentation": {
+        "asset_ids": {
+          "inventory_icon": "equipment/engines/beginner_engine/inventory_icon",
+          "detail_view": "equipment/engines/beginner_engine/detail_view",
+          "world_animation": "equipment/engines/beginner_engine/world_animation"
+        },
+        "resources": {
+          "combat_visual_manifest": "res://assets/equipment_world/combat_visual_manifest.json",
+          "combat_actor_id": "starter_combat_vehicle",
+          "installed_component_id": "beginner_engine",
+          "component_animation": "res://assets/equipment_world/starter_combat_vehicle/engine/component/animation_frames.tres",
+          "world_visible": false
+        }
+      },
+      "evidence": {
+        "stats.required_skill_level": {"status": "client_confirmed", "source_field": "m_nSkillLevel"},
+        "stats.purchase_value": {"status": "client_confirmed", "source_field": "m_nWorth"},
+        "stats.sell_value": {"status": "client_confirmed", "source_field": "m_nSell"},
+        "stats.weight": {"status": "client_confirmed", "source_field": "m_nweight"},
+        "stats.drive": {"status": "client_confirmed", "source_field": "m_ndrive"},
+        "stats.drive_limit": {"status": "client_confirmed", "source_field": "m_ndriveUL"},
+        "stats.working_energy_cost": {"status": "client_confirmed", "source_field": "m_nenergy"},
+        "stats.max_durability": {"status": "client_confirmed", "source_field": "m_nMax_Hardiness"},
+        "unknowns.server_energy_drain_interval_seconds": {"status": "unknown", "reason": "The client row contains a raw action-time field, but its server consumption cadence is not proven."},
+        "presentation.resources": {"status": "client_confirmed", "source": "Glory-only semantic equipment import and source manifest"}
+      },
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "catalog": "../starhome_lz_ry_full_parsed/catalogs_utf8/equipment_catalog.csv",
+        "row_selector": {"class_name": "engine1"},
+        "row_sha256": "b581252b07422902543fca33eb69a6c5d2fcea2cd83b328b83f43e8e16b164f2",
+        "source_file": "cltobj/equipcltclass.fcc",
+        "source_line": 3078,
+        "source_assets": [
+          {"path": "pic3/equip/bag/engine1.ale", "sha256": "1a803c0134a7c16a658e8ca8c0bcc1f4a7aec12784f83f088eff557ee372d734"},
+          {"path": "pic3/equip/dlg/engine1.ale", "sha256": "bf50e7585cfbd31edc2605b58dae530650820ae4da722a07e01a2ab59dfd5e77"},
+          {"path": "pic3/equip/body/engine1.ale", "sha256": "4e6c6c941039037ff0cf979cce8368e0aa0980bb69ca07df47220b1df58c04a0"}
+        ]
+      }
+    },
+    {
+      "id": "recruit_energy_cannon",
+      "kind": "energy_cannon",
+      "display_name": "新兵能量炮",
+      "description": "新兵必备的攻击武器之一，但是火力较小。",
+      "stats": {
+        "required_skill_level": 10,
+        "purchase_value": 500,
+        "sell_value": 250,
+        "weight": 20,
+        "base_attack": 7,
+        "attack_limit": 10,
+        "working_energy_per_shot": 10,
+        "range": 250,
+        "range_limit": 400,
+        "max_durability": 900,
+        "attack_interval_seconds": 0.8
+      },
+      "unknowns": {
+        "server_damage_formula": null,
+        "server_projectile_speed": null
+      },
+      "presentation": {
+        "asset_ids": {
+          "inventory_icon": "equipment/weapons/recruit_energy_cannon/inventory_icon",
+          "detail_view": "equipment/weapons/recruit_energy_cannon/detail_view",
+          "world_animation": "equipment/weapons/recruit_energy_cannon/world_animation",
+          "projectile": "equipment/weapons/recruit_energy_cannon/projectile"
+        },
+        "resources": {
+          "combat_visual_manifest": "res://assets/equipment_world/combat_visual_manifest.json",
+          "combat_actor_id": "starter_combat_vehicle",
+          "layer_id": "primary_weapon",
+          "world_animation": "res://assets/equipment_world/starter_combat_vehicle/weapon/aiming/animation_frames.tres"
+        }
+      },
+      "evidence": {
+        "stats.required_skill_level": {"status": "client_confirmed", "source_field": "m_nSkillLevel"},
+        "stats.purchase_value": {"status": "client_confirmed", "source_field": "m_nWorth"},
+        "stats.sell_value": {"status": "client_confirmed", "source_field": "m_nSell"},
+        "stats.weight": {"status": "client_confirmed", "source_field": "m_nweight"},
+        "stats.base_attack": {"status": "client_confirmed", "source_field": "m_nattack"},
+        "stats.attack_limit": {"status": "client_confirmed", "source_field": "m_nattackUL"},
+        "stats.working_energy_per_shot": {"status": "client_confirmed", "source_field": "m_nenergy"},
+        "stats.range": {"status": "client_confirmed", "source_field": "m_ndistance"},
+        "stats.range_limit": {"status": "client_confirmed", "source_field": "m_ndistanceUL"},
+        "stats.max_durability": {"status": "client_confirmed", "source_field": "m_nMax_Hardiness"},
+        "stats.attack_interval_seconds": {"status": "reconstructed_default", "reason": "The gameplay reconstruction document selects 0.8 seconds when the retired server cooldown is unavailable."},
+        "unknowns.server_damage_formula": {"status": "unknown", "reason": "The retired server damage formula has not been recovered."},
+        "unknowns.server_projectile_speed": {"status": "unknown", "reason": "The visual projectile class is known, but the authoritative server trajectory constant is not."},
+        "presentation.resources": {"status": "client_confirmed", "source": "Glory-only semantic equipment import and source manifest"}
+      },
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "catalog": "../starhome_lz_ry_full_parsed/catalogs_utf8/equipment_catalog.csv",
+        "row_selector": {"class_name": "gun1"},
+        "row_sha256": "ca1d6e68c984fe798cb7719abdc4881df5a7e3d57a666e0779b69090bdd9e250",
+        "source_file": "cltobj/equipcltclass.fcc",
+        "source_line": 1564,
+        "source_assets": [
+          {"path": "pic3/equip/bag/gun1.ale", "sha256": "068ee126aa5207b9db66d2d07ab052e87ae6bb5b1ebfef4ebf3332fe9c0e2f3e"},
+          {"path": "pic3/equip/dlg/gun1.ale", "sha256": "6a3fd210d6b91b140cf7eb478b00011f29786641f433041708a62a1adcb56b77"},
+          {"path": "pic3/equip/body/gun1.ale", "sha256": "32f2ba04942891eae7cc67f0ce6c04c1f2282918b4e20210c801848adef9e563"}
+        ]
+      }
+    }
+  ]
+}

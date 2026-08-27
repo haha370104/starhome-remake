@@ -1,0 +1,185 @@
+{
+  "schema_version": 1,
+  "content_version": "stage3_v1",
+  "definitions": [
+    {
+      "id": "om_adult",
+      "kind": "monster",
+      "display_name": "奥姆虫",
+      "stats": {"max_health": 60, "base_attack": 6, "defense": null, "move_speed": null},
+      "combat": {
+        "attack_archetype": "ranged_projectile",
+        "aggro_radius": 400,
+        "leash_distance": 600,
+        "attack_interval_seconds": 1.5,
+        "respawn_seconds": 30
+      },
+      "drops": null,
+      "rewards": null,
+      "presentation": {
+        "idle": "res://assets/monsters/om_adult/variants/standard/idle/animation_frames.tres",
+        "move": "res://assets/monsters/om_adult/variants/standard/move/animation_frames.tres",
+        "attack": "res://assets/monsters/om_adult/variants/standard/attack/animation_frames.tres",
+        "death": "res://assets/monsters/om_adult/shared/effects/death/animation_frames.tres",
+        "projectile": "res://assets/monsters/om_adult/shared/effects/projectile_standard/animation_frames.tres"
+      },
+      "evidence": {
+        "stats.max_health": {"status": "client_confirmed", "source_field": "attr_00", "semantic_confidence": "high_inference", "note": "The value is present in the Glory NPC table; health semantics are inferred from ordering and progression across rows."},
+        "stats.base_attack": {"status": "client_confirmed", "source_field": "attr_01", "semantic_confidence": "high_inference", "note": "The value is present in the Glory NPC table; attack semantics are inferred from ordering and progression across rows."},
+        "stats.defense": {"status": "unknown", "reason": "No recovered field name is strong enough to promote a defense value."},
+        "stats.move_speed": {"status": "unknown", "reason": "Runtime speed was delivered during instance creation and cannot be safely mapped from the anonymous row alone."},
+        "combat.attack_archetype": {"status": "client_confirmed", "source": "Glory client monster class and projectile behavior"},
+        "combat.aggro_radius": {"status": "reconstructed_default", "reason": "First vertical-slice remote-monster default."},
+        "combat.leash_distance": {"status": "reconstructed_default", "reason": "First vertical-slice server AI default."},
+        "combat.attack_interval_seconds": {"status": "reconstructed_default", "reason": "First vertical-slice normal-monster default."},
+        "combat.respawn_seconds": {"status": "reconstructed_default", "reason": "First vertical-slice normal-monster default."},
+        "drops": {"status": "unknown", "reason": "A client-side candidate expression exists, but its probability grammar and retired server authority are unverified; it is intentionally excluded from runtime data."},
+        "rewards": {"status": "unknown", "reason": "No authoritative reward settlement data was recovered."},
+        "presentation": {"status": "client_confirmed", "source": "Glory-only imported monster animation resources"}
+      },
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "catalog": "../starhome_lz_ry_full_parsed/catalogs_utf8/npc_catalog.csv",
+        "row_selector": {"index": "4", "npc_name": "奥姆虫"},
+        "row_sha256": "cb165aeb32c21fd68bf02a5eca6504d89483f102acd72447fedaccb508fe4672",
+        "raw_attribute_prefix": [60, 6, 1, 90, 5, 1000, 200],
+        "untrusted_drop_candidate": "低级生物硅*1*3*1#低级生物硅*1*3*1#低级四足甲的壳*1*1*1",
+        "runtime_drop_imported": false
+      }
+    },
+    {
+      "id": "om_larva",
+      "kind": "monster",
+      "display_name": "奥姆幼虫",
+      "stats": {"max_health": 42, "base_attack": 0, "defense": null, "move_speed": null},
+      "combat": {
+        "attack_archetype": "ranged_projectile",
+        "aggro_radius": 400,
+        "leash_distance": 600,
+        "attack_interval_seconds": 1.5,
+        "respawn_seconds": 30
+      },
+      "drops": null,
+      "rewards": null,
+      "presentation": {
+        "idle": "res://assets/monsters/om_larva/variants/standard/idle/animation_frames.tres",
+        "move": "res://assets/monsters/om_larva/variants/standard/move/animation_frames.tres",
+        "attack": "res://assets/monsters/om_larva/variants/standard/attack/animation_frames.tres",
+        "death": "res://assets/monsters/om_larva/shared/effects/death/animation_frames.tres",
+        "projectile": "res://assets/monsters/om_larva/shared/effects/projectile/animation_frames.tres"
+      },
+      "evidence": {
+        "stats.max_health": {"status": "client_confirmed", "source_field": "attr_00", "semantic_confidence": "high_inference", "note": "The value is present in the Glory NPC table; health semantics are inferred from ordering and progression across rows."},
+        "stats.base_attack": {"status": "client_confirmed", "source_field": "attr_01", "semantic_confidence": "high_inference", "note": "The source row is zero. This supports non-damaging behavior but does not independently prove every retired-server attack rule."},
+        "stats.defense": {"status": "unknown", "reason": "No recovered field name is strong enough to promote a defense value."},
+        "stats.move_speed": {"status": "unknown", "reason": "Runtime speed was delivered during instance creation and cannot be safely mapped from the anonymous row alone."},
+        "combat.attack_archetype": {"status": "client_confirmed", "source": "Glory client monster class and projectile behavior"},
+        "combat.aggro_radius": {"status": "reconstructed_default", "reason": "First vertical-slice remote-monster default."},
+        "combat.leash_distance": {"status": "reconstructed_default", "reason": "First vertical-slice server AI default."},
+        "combat.attack_interval_seconds": {"status": "reconstructed_default", "reason": "First vertical-slice normal-monster default."},
+        "combat.respawn_seconds": {"status": "reconstructed_default", "reason": "First vertical-slice normal-monster default."},
+        "drops": {"status": "unknown", "reason": "A client-side candidate expression exists, but its probability grammar and retired server authority are unverified; it is intentionally excluded from runtime data."},
+        "rewards": {"status": "unknown", "reason": "No authoritative reward settlement data was recovered."},
+        "presentation": {"status": "client_confirmed", "source": "Glory-only imported monster animation resources"}
+      },
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "catalog": "../starhome_lz_ry_full_parsed/catalogs_utf8/npc_catalog.csv",
+        "row_selector": {"index": "3", "npc_name": "奥姆幼虫"},
+        "row_sha256": "666f95abfce2c1ebda7aacac58a17f633ac6b26efd44b7e97f1984629ea8d6d9",
+        "raw_attribute_prefix": [42, 0, 2, 100, 2, 1000, 200],
+        "untrusted_drop_candidate": "低级生物硅*1*3*1#低级生物硅*1*3*1",
+        "runtime_drop_imported": false
+      }
+    },
+    {
+      "id": "photosensitive_orb",
+      "kind": "monster",
+      "display_name": "感光质",
+      "stats": {"max_health": 36, "base_attack": 3, "defense": null, "move_speed": null},
+      "combat": {
+        "attack_archetype": "contact_melee",
+        "aggro_radius": 300,
+        "leash_distance": 600,
+        "attack_interval_seconds": 1.5,
+        "respawn_seconds": 30
+      },
+      "drops": null,
+      "rewards": null,
+      "presentation": {
+        "idle": "res://assets/monsters/photosensitive_orb/variants/standard/idle/animation_frames.tres",
+        "move_attack": "res://assets/monsters/photosensitive_orb/variants/standard/move_attack/animation_frames.tres",
+        "death": "res://assets/monsters/photosensitive_orb/shared/effects/death/animation_frames.tres"
+      },
+      "evidence": {
+        "stats.max_health": {"status": "client_confirmed", "source_field": "attr_00", "semantic_confidence": "high_inference", "note": "The value is present in the Glory NPC table; health semantics are inferred from ordering and progression across rows."},
+        "stats.base_attack": {"status": "client_confirmed", "source_field": "attr_01", "semantic_confidence": "high_inference", "note": "The value is present in the Glory NPC table; attack semantics are inferred from ordering and progression across rows."},
+        "stats.defense": {"status": "unknown", "reason": "No recovered field name is strong enough to promote a defense value."},
+        "stats.move_speed": {"status": "unknown", "reason": "Runtime speed was delivered during instance creation and cannot be safely mapped from the anonymous row alone."},
+        "combat.attack_archetype": {"status": "client_confirmed", "source": "Glory client close-contact monster base class"},
+        "combat.aggro_radius": {"status": "reconstructed_default", "reason": "First vertical-slice melee-monster default."},
+        "combat.leash_distance": {"status": "reconstructed_default", "reason": "First vertical-slice server AI default."},
+        "combat.attack_interval_seconds": {"status": "reconstructed_default", "reason": "First vertical-slice normal-monster default."},
+        "combat.respawn_seconds": {"status": "reconstructed_default", "reason": "First vertical-slice normal-monster default."},
+        "drops": {"status": "unknown", "reason": "A client-side candidate expression exists, but its probability grammar and retired server authority are unverified; it is intentionally excluded from runtime data."},
+        "rewards": {"status": "unknown", "reason": "No authoritative reward settlement data was recovered."},
+        "presentation": {"status": "client_confirmed", "source": "Glory-only imported monster animation resources"}
+      },
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "catalog": "../starhome_lz_ry_full_parsed/catalogs_utf8/npc_catalog.csv",
+        "row_selector": {"index": "2", "npc_name": "感光质"},
+        "row_sha256": "219e4696c07616213ee19d736425f425fd3170c407692599208db8592c699afb",
+        "raw_attribute_prefix": [36, 3, 1, 120, 0, 1000, 50, 20],
+        "untrusted_drop_candidate": "低级能量包*1*3*1#低级能量催化剂*1*3*2",
+        "runtime_drop_imported": false
+      }
+    },
+    {
+      "id": "toxic_gel",
+      "kind": "monster",
+      "display_name": "毒胶",
+      "stats": {"max_health": 30, "base_attack": 0, "defense": null, "move_speed": null},
+      "combat": {
+        "attack_archetype": "corrosive_projectile",
+        "aggro_radius": 400,
+        "leash_distance": 600,
+        "attack_interval_seconds": 1.5,
+        "respawn_seconds": 30,
+        "persistent_damage": null
+      },
+      "drops": null,
+      "rewards": null,
+      "presentation": {
+        "idle": "res://assets/monsters/toxic_gel/variants/standard/idle/animation_frames.tres",
+        "move": "res://assets/monsters/toxic_gel/variants/standard/move/animation_frames.tres",
+        "death": "res://assets/monsters/toxic_gel/shared/effects/death/animation_frames.tres",
+        "projectile": "res://assets/monsters/toxic_gel/shared/effects/projectile/animation_frames.tres"
+      },
+      "evidence": {
+        "stats.max_health": {"status": "client_confirmed", "source_field": "attr_00", "semantic_confidence": "high_inference", "note": "The value is present in the Glory NPC table; health semantics are inferred from ordering and progression across rows."},
+        "stats.base_attack": {"status": "client_confirmed", "source_field": "attr_01", "semantic_confidence": "high_inference", "note": "The source row is zero; corrosive or persistent damage remains a separate unknown server effect."},
+        "stats.defense": {"status": "unknown", "reason": "No recovered field name is strong enough to promote a defense value."},
+        "stats.move_speed": {"status": "unknown", "reason": "Runtime speed was delivered during instance creation and cannot be safely mapped from the anonymous row alone."},
+        "combat.attack_archetype": {"status": "client_confirmed", "source": "Glory client corrosive projectile class"},
+        "combat.aggro_radius": {"status": "reconstructed_default", "reason": "First vertical-slice remote-monster default."},
+        "combat.leash_distance": {"status": "reconstructed_default", "reason": "First vertical-slice server AI default."},
+        "combat.attack_interval_seconds": {"status": "reconstructed_default", "reason": "First vertical-slice normal-monster default."},
+        "combat.respawn_seconds": {"status": "reconstructed_default", "reason": "First vertical-slice normal-monster default."},
+        "combat.persistent_damage": {"status": "unknown", "reason": "The client confirms corrosive presentation, but damage amount, tick interval, and duration were server-controlled."},
+        "drops": {"status": "unknown", "reason": "A client-side candidate expression exists, but its probability grammar and retired server authority are unverified; it is intentionally excluded from runtime data."},
+        "rewards": {"status": "unknown", "reason": "No authoritative reward settlement data was recovered."},
+        "presentation": {"status": "client_confirmed", "source": "Glory-only imported monster animation resources"}
+      },
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "catalog": "../starhome_lz_ry_full_parsed/catalogs_utf8/npc_catalog.csv",
+        "row_selector": {"index": "1", "npc_name": "毒胶"},
+        "row_sha256": "81e8945985a246f0ca89c5aa1253f6dc672ef0342d17d189fb42eb86e63eb058",
+        "raw_attribute_prefix": [30, 0, 2, 65, 0, 1000, 100],
+        "untrusted_drop_candidate": "低级类胶*1*3*1#低级类胶*1*3*1",
+        "runtime_drop_imported": false
+      }
+    }
+  ]
+}
