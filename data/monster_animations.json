@@ -1,11 +1,14 @@
 {
   "format_version": 1,
-  "historical_source": "免费版 npcclt1/npcclt1.fcc.cab",
+  "source_version": "starhome_lz_ry",
+  "source_catalog": "starhome_lz_ry_full_parsed/ftc_resources/expanded/loadfile/npcinfo_xc/npcinfo_xc.tab.cab",
+  "source_class_mapping": "starhome_lz_ry_full_parsed/ftc_resources/expanded/npcclt1/npcclt1.fcc.cab",
   "preview_fps": 10,
   "notes": [
     "preview_fps 是导出预览值，不代表原游戏精确速度",
     "explicit_variant 表示已烘焙颜色的独立动画；indexed_palette 表示索引色底图配合调色板",
-    "所有资源路径均为 Godot res:// 路径"
+    "所有资源路径均为 Godot res:// 路径",
+    "正式动画由荣耀版 pic3 ALE 与荣耀版 ACT 调色板确定性生成；逐项溯源见 assets/monsters/source_manifest.json"
   ],
   "monsters": {
     "奥姆虫": {
@@ -113,10 +116,6 @@
         "低温感光质": {"class": "NpcLightBall2", "move_attack": "res://assets/monsters/photosensitive_orb/variants/cold/move_attack/animation_frames.tres", "stand": "res://assets/monsters/photosensitive_orb/variants/cold/idle/animation_frames.tres"},
         "恶性感光质": {"class": "NpcLightBall3", "move_attack": "res://assets/monsters/photosensitive_orb/variants/malignant/move_attack/animation_frames.tres", "stand": "res://assets/monsters/photosensitive_orb/variants/malignant/idle/animation_frames.tres"}
       },
-      "unidentified_variant": [
-        "res://assets/monsters/photosensitive_orb/variants/unidentified/move_attack/animation_frames.tres",
-        "res://assets/monsters/photosensitive_orb/variants/unidentified/idle/animation_frames.tres"
-      ],
       "indexed_palettes": {
         "感光质": "res://assets/monsters/photosensitive_orb/palettes/standard.png",
         "低温感光质": "res://assets/monsters/photosensitive_orb/palettes/cold.png",
