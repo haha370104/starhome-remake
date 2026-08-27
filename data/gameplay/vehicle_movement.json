@@ -1,0 +1,7 @@
+{
+  "schema_version": 1,
+  "base_speed_multiplier": 1500,
+  "base_speed_cap": 240,
+  "speed_unit": "map_pixels_per_second",
+  "cap_applies_before_temporary_bonuses": true
+}

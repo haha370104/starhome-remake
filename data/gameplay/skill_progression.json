@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "maximum_level": 700,
+  "maximum_formula_level": 700,
+  "coefficient_bands": {
+    "energy_cannon": [{"from_level": 0, "coefficient": 150}, {"from_level": 50, "coefficient": 200}, {"from_level": 100, "coefficient": 250}, {"from_level": 150, "coefficient": 300}, {"from_level": 200, "coefficient": 450}, {"from_level": 250, "coefficient": 550}, {"from_level": 300, "coefficient": 650}, {"from_level": 350, "coefficient": 800}, {"from_level": 400, "coefficient": 900}, {"from_level": 500, "coefficient": 1000}],
+    "missile": [{"from_level": 0, "coefficient": 40}, {"from_level": 50, "coefficient": 50}, {"from_level": 100, "coefficient": 60}, {"from_level": 150, "coefficient": 70}, {"from_level": 200, "coefficient": 80}, {"from_level": 250, "coefficient": 90}, {"from_level": 300, "coefficient": 100}, {"from_level": 350, "coefficient": 110}, {"from_level": 400, "coefficient": 120}, {"from_level": 500, "coefficient": 130}],
+    "rocket_launcher": [{"from_level": 0, "coefficient": 10}, {"from_level": 50, "coefficient": 20}, {"from_level": 100, "coefficient": 30}, {"from_level": 150, "coefficient": 40}, {"from_level": 200, "coefficient": 50}, {"from_level": 250, "coefficient": 60}, {"from_level": 300, "coefficient": 80}, {"from_level": 350, "coefficient": 100}, {"from_level": 400, "coefficient": 120}, {"from_level": 500, "coefficient": 140}],
+    "driving": [{"from_level": 0, "coefficient": 200}, {"from_level": 50, "coefficient": 300}, {"from_level": 100, "coefficient": 400}, {"from_level": 150, "coefficient": 550}, {"from_level": 200, "coefficient": 750}, {"from_level": 250, "coefficient": 1050}, {"from_level": 300, "coefficient": 1400}, {"from_level": 350, "coefficient": 1800}, {"from_level": 400, "coefficient": 2200}, {"from_level": 500, "coefficient": 2600}],
+    "mining": [{"from_level": 0, "coefficient": 4}],
+    "repair": [{"from_level": 0, "coefficient": 10}, {"from_level": 100, "coefficient": 15}, {"from_level": 150, "coefficient": 20}, {"from_level": 200, "coefficient": 30}, {"from_level": 250, "coefficient": 40}, {"from_level": 300, "coefficient": 50}, {"from_level": 350, "coefficient": 60}, {"from_level": 400, "coefficient": 70}, {"from_level": 500, "coefficient": 80}],
+    "stealth": [{"from_level": 0, "coefficient": 70}, {"from_level": 100, "coefficient": 80}, {"from_level": 200, "coefficient": 100}, {"from_level": 300, "coefficient": 120}],
+    "radar": [{"from_level": 0, "coefficient": 70}, {"from_level": 100, "coefficient": 80}, {"from_level": 200, "coefficient": 100}, {"from_level": 300, "coefficient": 120}],
+    "cooking": [{"from_level": 0, "coefficient": 10}, {"from_level": 100, "coefficient": 20}, {"from_level": 200, "coefficient": 30}, {"from_level": 300, "coefficient": 50}],
+    "tailoring": [{"from_level": 0, "coefficient": 10}, {"from_level": 100, "coefficient": 15}, {"from_level": 200, "coefficient": 25}, {"from_level": 300, "coefficient": 35}],
+    "refining": [{"from_level": 0, "coefficient": 10}, {"from_level": 50, "coefficient": 15}, {"from_level": 100, "coefficient": 20}, {"from_level": 150, "coefficient": 25}, {"from_level": 200, "coefficient": 30}, {"from_level": 250, "coefficient": 35}, {"from_level": 300, "coefficient": 40}, {"from_level": 350, "coefficient": 45}, {"from_level": 400, "coefficient": 50}],
+    "manufacturing": [{"from_level": 0, "coefficient": 10}, {"from_level": 50, "coefficient": 15}, {"from_level": 100, "coefficient": 20}, {"from_level": 200, "coefficient": 25}, {"from_level": 300, "coefficient": 30}],
+    "processing": [{"from_level": 0, "coefficient": 10}, {"from_level": 50, "coefficient": 15}, {"from_level": 100, "coefficient": 20}, {"from_level": 200, "coefficient": 25}, {"from_level": 300, "coefficient": 30}],
+    "airship": [{"from_level": 0, "coefficient": 100}, {"from_level": 100, "coefficient": 110}, {"from_level": 200, "coefficient": 120}, {"from_level": 300, "coefficient": 130}]
+  }
+}
