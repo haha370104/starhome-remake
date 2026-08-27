@@ -55,6 +55,7 @@ $testScripts = @(
 	"res://tests/server/combat/authoritative_combat_module_test.gd",
 	"res://tests/server/combat/combat_definition_catalog_test.gd",
 	"res://tests/integration/map_transition_scene_smoke_test.gd",
+	"res://tests/integration/active_world_transition_view_smoke_test.gd",
 	"res://tests/integration/client_state_seam_characterization_test.gd",
 	"res://tests/ui/runtime/hud_runtime_smoke_test.gd",
     "res://tests/maps/map_runtime_smoke_test.gd",
@@ -116,6 +117,12 @@ Write-Output "Auditing Stage-2 Glory map presentations"
 & python (Join-Path $PSScriptRoot "audit_map_presentation_assets.py")
 if ($LASTEXITCODE -ne 0) {
     throw "Stage-2 map presentation audit failed"
+}
+
+Write-Output "Auditing Glory hall exit transition"
+& python (Join-Path $PSScriptRoot "audit_hall_exit_transition.py")
+if ($LASTEXITCODE -ne 0) {
+    throw "Hall exit transition audit failed"
 }
 
 Write-Output "Auditing Stage-3 Glory combat content"

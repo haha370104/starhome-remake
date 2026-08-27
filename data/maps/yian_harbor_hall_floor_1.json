@@ -18,12 +18,14 @@
     "ids": {
       "floor": "maps/yian_harbor/hall_floor_1/floor",
       "minimap": "maps/yian_harbor/hall_floor_1/minimap",
-      "scene_manifest": "maps/yian_harbor/hall_floor_1/scene_manifest"
+      "scene_manifest": "maps/yian_harbor/hall_floor_1/scene_manifest",
+      "exit_to_city_animation": "maps/yian_harbor/hall_floor_1/transitions/exit_to_city"
     },
     "resources": {
       "floor": "res://assets/maps/yian_harbor/hall_floor_1/floor.png",
       "minimap": "res://assets/maps/yian_harbor/hall_floor_1/minimap.jpg",
-      "scene_manifest": "res://assets/maps/yian_harbor/hall_floor_1/map_manifest.json"
+      "scene_manifest": "res://assets/maps/yian_harbor/hall_floor_1/map_manifest.json",
+      "exit_to_city_animation": "res://assets/maps/yian_harbor/hall_floor_1/transitions/exit_to_city/animation_frames.tres"
     }
   },
   "spawn_points": {
@@ -65,6 +67,22 @@
       "label": "通往城市",
       "source_anchor": [408, 348],
       "approach_point": [480, 370],
+      "presentation": {
+        "asset_id": "maps/yian_harbor/hall_floor_1/transitions/exit_to_city",
+        "kind": "animated_sprite",
+        "resource": "res://assets/maps/yian_harbor/hall_floor_1/transitions/exit_to_city/animation_frames.tres",
+        "animation": "active",
+        "anchor": [408, 348],
+        "offset": [0, 0],
+        "centered": false,
+        "interaction_rect": [0, 0, 78, 41],
+        "interaction_space": "asset_local_fixed_bounds",
+        "sort_baseline": 348,
+        "frame_count": 9,
+        "frame_duration_ms": 100,
+        "loop": true,
+        "activation": "enabled_transition"
+      },
       "destination": {
         "map_id": "yian_harbor_city",
         "legacy_code": "city1svr",
