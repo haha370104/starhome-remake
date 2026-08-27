@@ -1,0 +1,1075 @@
+{
+  "schema_version": 1,
+  "asset_release": "free_hud",
+  "source_release": "starhome_lz_fr",
+  "design_size": [
+    1024,
+    768
+  ],
+  "top_menu": {
+    "background": {
+      "available": true,
+      "path": "res://assets/ui/free_hud/top_menu/background.png",
+      "size": [
+        327,
+        54
+      ],
+      "origin": [
+        0,
+        0
+      ]
+    },
+    "expanded_size": [
+      330,
+      54
+    ],
+    "collapsed_size": [
+      12,
+      26
+    ],
+    "collapse_button": {
+      "available": true,
+      "states": {
+        "normal": "res://assets/ui/free_hud/top_menu/collapse/normal.png",
+        "hover": "res://assets/ui/free_hud/top_menu/collapse/hover.png",
+        "pressed": "res://assets/ui/free_hud/top_menu/collapse/pressed.png"
+      },
+      "state_sizes": {
+        "normal": [
+          14,
+          54
+        ],
+        "hover": [
+          14,
+          54
+        ],
+        "pressed": [
+          14,
+          54
+        ]
+      },
+      "state_origins": {
+        "normal": [
+          0,
+          0
+        ],
+        "hover": [
+          0,
+          0
+        ],
+        "pressed": [
+          0,
+          0
+        ]
+      },
+      "position": [
+        1,
+        1
+      ]
+    },
+    "expand_button": {
+      "available": true,
+      "states": {
+        "normal": "res://assets/ui/free_hud/top_menu/expand/normal.png",
+        "hover": "res://assets/ui/free_hud/top_menu/expand/hover.png",
+        "pressed": "res://assets/ui/free_hud/top_menu/expand/pressed.png"
+      },
+      "state_sizes": {
+        "normal": [
+          14,
+          26
+        ],
+        "hover": [
+          14,
+          26
+        ],
+        "pressed": [
+          14,
+          26
+        ]
+      },
+      "state_origins": {
+        "normal": [
+          0,
+          0
+        ],
+        "hover": [
+          0,
+          0
+        ],
+        "pressed": [
+          0,
+          0
+        ]
+      },
+      "position": [
+        1,
+        1
+      ]
+    },
+    "buttons": {
+      "system_messages": {
+        "available": true,
+        "states": {
+          "normal": "res://assets/ui/free_hud/top_menu/buttons/system_messages/normal.png",
+          "hover": "res://assets/ui/free_hud/top_menu/buttons/system_messages/hover.png",
+          "pressed": "res://assets/ui/free_hud/top_menu/buttons/system_messages/pressed.png"
+        },
+        "state_sizes": {
+          "normal": [
+            31,
+            27
+          ],
+          "hover": [
+            31,
+            27
+          ],
+          "pressed": [
+            31,
+            27
+          ]
+        },
+        "state_origins": {
+          "normal": [
+            0,
+            0
+          ],
+          "hover": [
+            0,
+            0
+          ],
+          "pressed": [
+            0,
+            0
+          ]
+        },
+        "position": [
+          18,
+          0
+        ]
+      },
+      "help": {
+        "available": true,
+        "states": {
+          "normal": "res://assets/ui/free_hud/top_menu/buttons/help/normal.png",
+          "hover": "res://assets/ui/free_hud/top_menu/buttons/help/hover.png",
+          "pressed": "res://assets/ui/free_hud/top_menu/buttons/help/pressed.png"
+        },
+        "state_sizes": {
+          "normal": [
+            31,
+            27
+          ],
+          "hover": [
+            31,
+            27
+          ],
+          "pressed": [
+            31,
+            27
+          ]
+        },
+        "state_origins": {
+          "normal": [
+            0,
+            0
+          ],
+          "hover": [
+            0,
+            0
+          ],
+          "pressed": [
+            0,
+            0
+          ]
+        },
+        "position": [
+          56,
+          0
+        ]
+      },
+      "party": {
+        "available": true,
+        "states": {
+          "normal": "res://assets/ui/free_hud/top_menu/buttons/party/normal.png",
+          "hover": "res://assets/ui/free_hud/top_menu/buttons/party/hover.png",
+          "pressed": "res://assets/ui/free_hud/top_menu/buttons/party/pressed.png"
+        },
+        "state_sizes": {
+          "normal": [
+            29,
+            27
+          ],
+          "hover": [
+            29,
+            27
+          ],
+          "pressed": [
+            29,
+            27
+          ]
+        },
+        "state_origins": {
+          "normal": [
+            0,
+            0
+          ],
+          "hover": [
+            0,
+            0
+          ],
+          "pressed": [
+            0,
+            0
+          ]
+        },
+        "position": [
+          94,
+          0
+        ]
+      },
+      "return_base": {
+        "available": true,
+        "states": {
+          "normal": "res://assets/ui/free_hud/top_menu/buttons/return_base/normal.png",
+          "hover": "res://assets/ui/free_hud/top_menu/buttons/return_base/hover.png",
+          "pressed": "res://assets/ui/free_hud/top_menu/buttons/return_base/pressed.png"
+        },
+        "state_sizes": {
+          "normal": [
+            29,
+            27
+          ],
+          "hover": [
+            29,
+            27
+          ],
+          "pressed": [
+            29,
+            27
+          ]
+        },
+        "state_origins": {
+          "normal": [
+            0,
+            0
+          ],
+          "hover": [
+            0,
+            0
+          ],
+          "pressed": [
+            0,
+            0
+          ]
+        },
+        "position": [
+          133,
+          0
+        ]
+      },
+      "self_repair": {
+        "available": true,
+        "states": {
+          "normal": "res://assets/ui/free_hud/top_menu/buttons/self_repair/normal.png",
+          "hover": "res://assets/ui/free_hud/top_menu/buttons/self_repair/hover.png",
+          "pressed": "res://assets/ui/free_hud/top_menu/buttons/self_repair/pressed.png"
+        },
+        "state_sizes": {
+          "normal": [
+            29,
+            27
+          ],
+          "hover": [
+            29,
+            27
+          ],
+          "pressed": [
+            29,
+            27
+          ]
+        },
+        "state_origins": {
+          "normal": [
+            0,
+            0
+          ],
+          "hover": [
+            0,
+            0
+          ],
+          "pressed": [
+            0,
+            0
+          ]
+        },
+        "position": [
+          172,
+          0
+        ]
+      }
+    }
+  },
+  "bottom_main": {
+    "background": {
+      "available": true,
+      "path": "res://assets/ui/free_hud/bottom_main/background.png",
+      "size": [
+        1024,
+        29
+      ],
+      "origin": [
+        0,
+        0
+      ],
+      "edge_colors": {
+        "left": "#5386B6FF",
+        "right": "#4D739AFF"
+      },
+      "edge_color_method": "mean_rgba_of_vertical_edge"
+    },
+    "design_width": 1024,
+    "visible_height": 29,
+    "reserve_energy": {
+      "available": true,
+      "position": [
+        125,
+        3
+      ],
+      "crop_width": 323,
+      "crop_height": 3,
+      "frames": {
+        "steady": "res://assets/ui/free_hud/bottom_main/reserve_energy/steady.png",
+        "flash": "res://assets/ui/free_hud/bottom_main/reserve_energy/flash.png"
+      },
+      "frame_sizes": {
+        "steady": [
+          323,
+          3
+        ],
+        "flash": [
+          323,
+          3
+        ]
+      },
+      "frame_origins": {
+        "steady": [
+          1,
+          0
+        ],
+        "flash": [
+          1,
+          0
+        ]
+      }
+    },
+    "weapons": {
+      "energy_cannon": {
+        "available": true,
+        "states": {
+          "normal": "res://assets/ui/free_hud/bottom_main/weapon_modes/energy_cannon/normal.png",
+          "selected": "res://assets/ui/free_hud/bottom_main/weapon_modes/energy_cannon/selected.png"
+        },
+        "state_sizes": {
+          "normal": [
+            29,
+            22
+          ],
+          "selected": [
+            29,
+            22
+          ]
+        },
+        "state_origins": {
+          "normal": [
+            0,
+            0
+          ],
+          "selected": [
+            0,
+            0
+          ]
+        },
+        "position": [
+          178,
+          8
+        ]
+      },
+      "missile": {
+        "available": true,
+        "states": {
+          "normal": "res://assets/ui/free_hud/bottom_main/weapon_modes/missile/normal.png",
+          "selected": "res://assets/ui/free_hud/bottom_main/weapon_modes/missile/selected.png"
+        },
+        "state_sizes": {
+          "normal": [
+            29,
+            22
+          ],
+          "selected": [
+            29,
+            22
+          ]
+        },
+        "state_origins": {
+          "normal": [
+            0,
+            0
+          ],
+          "selected": [
+            0,
+            0
+          ]
+        },
+        "position": [
+          206,
+          8
+        ]
+      },
+      "third_action": {
+        "available": false,
+        "position": [
+          234,
+          8
+        ]
+      }
+    },
+    "menu_buttons": {
+      "character": {
+        "available": true,
+        "states": {
+          "normal": "res://assets/ui/free_hud/bottom_main/menu_buttons/character/normal.png",
+          "hover": "res://assets/ui/free_hud/bottom_main/menu_buttons/character/hover.png",
+          "pressed": "res://assets/ui/free_hud/bottom_main/menu_buttons/character/pressed.png"
+        },
+        "state_sizes": {
+          "normal": [
+            30,
+            29
+          ],
+          "hover": [
+            30,
+            29
+          ],
+          "pressed": [
+            30,
+            29
+          ]
+        },
+        "state_origins": {
+          "normal": [
+            0,
+            0
+          ],
+          "hover": [
+            0,
+            0
+          ],
+          "pressed": [
+            0,
+            0
+          ]
+        },
+        "position": [
+          519,
+          0
+        ]
+      },
+      "inventory": {
+        "available": true,
+        "states": {
+          "normal": "res://assets/ui/free_hud/bottom_main/menu_buttons/inventory/normal.png",
+          "hover": "res://assets/ui/free_hud/bottom_main/menu_buttons/inventory/hover.png",
+          "pressed": "res://assets/ui/free_hud/bottom_main/menu_buttons/inventory/pressed.png"
+        },
+        "state_sizes": {
+          "normal": [
+            29,
+            29
+          ],
+          "hover": [
+            29,
+            29
+          ],
+          "pressed": [
+            29,
+            29
+          ]
+        },
+        "state_origins": {
+          "normal": [
+            0,
+            0
+          ],
+          "hover": [
+            0,
+            0
+          ],
+          "pressed": [
+            0,
+            0
+          ]
+        },
+        "position": [
+          557,
+          0
+        ]
+      },
+      "vehicle_equipment": {
+        "available": true,
+        "states": {
+          "normal": "res://assets/ui/free_hud/bottom_main/menu_buttons/vehicle_equipment/normal.png",
+          "hover": "res://assets/ui/free_hud/bottom_main/menu_buttons/vehicle_equipment/hover.png",
+          "pressed": "res://assets/ui/free_hud/bottom_main/menu_buttons/vehicle_equipment/pressed.png"
+        },
+        "state_sizes": {
+          "normal": [
+            29,
+            29
+          ],
+          "hover": [
+            29,
+            29
+          ],
+          "pressed": [
+            29,
+            29
+          ]
+        },
+        "state_origins": {
+          "normal": [
+            0,
+            0
+          ],
+          "hover": [
+            0,
+            0
+          ],
+          "pressed": [
+            0,
+            0
+          ]
+        },
+        "position": [
+          598,
+          0
+        ]
+      },
+      "friends": {
+        "available": true,
+        "states": {
+          "normal": "res://assets/ui/free_hud/bottom_main/menu_buttons/friends/normal.png",
+          "hover": "res://assets/ui/free_hud/bottom_main/menu_buttons/friends/hover.png",
+          "pressed": "res://assets/ui/free_hud/bottom_main/menu_buttons/friends/pressed.png"
+        },
+        "state_sizes": {
+          "normal": [
+            31,
+            29
+          ],
+          "hover": [
+            31,
+            29
+          ],
+          "pressed": [
+            31,
+            29
+          ]
+        },
+        "state_origins": {
+          "normal": [
+            0,
+            0
+          ],
+          "hover": [
+            0,
+            0
+          ],
+          "pressed": [
+            0,
+            0
+          ]
+        },
+        "position": [
+          711,
+          0
+        ]
+      },
+      "scene_players": {
+        "available": true,
+        "states": {
+          "normal": "res://assets/ui/free_hud/bottom_main/menu_buttons/scene_players/normal.png",
+          "hover": "res://assets/ui/free_hud/bottom_main/menu_buttons/scene_players/hover.png",
+          "pressed": "res://assets/ui/free_hud/bottom_main/menu_buttons/scene_players/pressed.png"
+        },
+        "state_sizes": {
+          "normal": [
+            29,
+            29
+          ],
+          "hover": [
+            29,
+            29
+          ],
+          "pressed": [
+            29,
+            29
+          ]
+        },
+        "state_origins": {
+          "normal": [
+            0,
+            0
+          ],
+          "hover": [
+            0,
+            0
+          ],
+          "pressed": [
+            0,
+            0
+          ]
+        },
+        "position": [
+          753,
+          0
+        ]
+      },
+      "missions": {
+        "available": true,
+        "states": {
+          "normal": "res://assets/ui/free_hud/bottom_main/menu_buttons/missions/normal.png",
+          "hover": "res://assets/ui/free_hud/bottom_main/menu_buttons/missions/hover.png",
+          "pressed": "res://assets/ui/free_hud/bottom_main/menu_buttons/missions/pressed.png"
+        },
+        "state_sizes": {
+          "normal": [
+            29,
+            29
+          ],
+          "hover": [
+            29,
+            29
+          ],
+          "pressed": [
+            29,
+            29
+          ]
+        },
+        "state_origins": {
+          "normal": [
+            0,
+            0
+          ],
+          "hover": [
+            0,
+            0
+          ],
+          "pressed": [
+            0,
+            0
+          ]
+        },
+        "position": [
+          790,
+          0
+        ]
+      },
+      "star_map": {
+        "available": true,
+        "states": {
+          "normal": "res://assets/ui/free_hud/bottom_main/menu_buttons/star_map/normal.png",
+          "hover": "res://assets/ui/free_hud/bottom_main/menu_buttons/star_map/hover.png",
+          "pressed": "res://assets/ui/free_hud/bottom_main/menu_buttons/star_map/pressed.png"
+        },
+        "state_sizes": {
+          "normal": [
+            29,
+            29
+          ],
+          "hover": [
+            29,
+            29
+          ],
+          "pressed": [
+            29,
+            29
+          ]
+        },
+        "state_origins": {
+          "normal": [
+            0,
+            0
+          ],
+          "hover": [
+            0,
+            0
+          ],
+          "pressed": [
+            0,
+            0
+          ]
+        },
+        "position": [
+          827,
+          0
+        ]
+      },
+      "system": {
+        "available": true,
+        "states": {
+          "normal": "res://assets/ui/free_hud/bottom_main/menu_buttons/system/normal.png",
+          "hover": "res://assets/ui/free_hud/bottom_main/menu_buttons/system/hover.png",
+          "pressed": "res://assets/ui/free_hud/bottom_main/menu_buttons/system/pressed.png"
+        },
+        "state_sizes": {
+          "normal": [
+            29,
+            29
+          ],
+          "hover": [
+            29,
+            29
+          ],
+          "pressed": [
+            29,
+            29
+          ]
+        },
+        "state_origins": {
+          "normal": [
+            0,
+            0
+          ],
+          "hover": [
+            0,
+            0
+          ],
+          "pressed": [
+            0,
+            0
+          ]
+        },
+        "position": [
+          903,
+          0
+        ]
+      }
+    },
+    "shortcut_visibility_button_position": [
+      475,
+      2
+    ]
+  },
+  "general_shortcut": {
+    "background": {
+      "available": true,
+      "path": "res://assets/ui/free_hud/general_shortcut/background.png",
+      "size": [
+        415,
+        40
+      ],
+      "origin": [
+        0,
+        0
+      ]
+    },
+    "size": [
+      415,
+      40
+    ],
+    "default_anchor": "bottom_center_above_main_bar",
+    "item_page_count": 2,
+    "initial_item_page_count": 1,
+    "skill_page_count": 2,
+    "initial_skill_page_count": 1,
+    "page_up": {
+      "available": true,
+      "path": "res://assets/ui/free_hud/general_shortcut/page_up/normal.png",
+      "size": [
+        10,
+        9
+      ],
+      "origin": [
+        0,
+        0
+      ],
+      "position": [
+        15,
+        4
+      ]
+    },
+    "page_down": {
+      "available": true,
+      "path": "res://assets/ui/free_hud/general_shortcut/page_down/normal.png",
+      "size": [
+        10,
+        9
+      ],
+      "origin": [
+        0,
+        0
+      ],
+      "position": [
+        15,
+        20
+      ]
+    },
+    "skill_page_up_position": [
+      391,
+      4
+    ],
+    "skill_page_down_position": [
+      391,
+      20
+    ],
+    "collapse_button": {
+      "available": true,
+      "states": {
+        "normal": "res://assets/ui/free_hud/general_shortcut/collapse/normal.png",
+        "hover": "res://assets/ui/free_hud/general_shortcut/collapse/hover.png",
+        "pressed": "res://assets/ui/free_hud/general_shortcut/collapse/pressed.png"
+      },
+      "state_sizes": {
+        "normal": [
+          31,
+          27
+        ],
+        "hover": [
+          31,
+          27
+        ],
+        "pressed": [
+          31,
+          27
+        ]
+      },
+      "state_origins": {
+        "normal": [
+          1,
+          1
+        ],
+        "hover": [
+          1,
+          1
+        ],
+        "pressed": [
+          1,
+          1
+        ]
+      }
+    },
+    "expand_button": {
+      "available": true,
+      "states": {
+        "normal": "res://assets/ui/free_hud/general_shortcut/expand/normal.png",
+        "hover": "res://assets/ui/free_hud/general_shortcut/expand/hover.png",
+        "pressed": "res://assets/ui/free_hud/general_shortcut/expand/pressed.png"
+      },
+      "state_sizes": {
+        "normal": [
+          31,
+          27
+        ],
+        "hover": [
+          31,
+          27
+        ],
+        "pressed": [
+          31,
+          27
+        ]
+      },
+      "state_origins": {
+        "normal": [
+          0,
+          0
+        ],
+        "hover": [
+          0,
+          0
+        ],
+        "pressed": [
+          0,
+          0
+        ]
+      }
+    }
+  },
+  "minimap_chrome": {
+    "control_background": {
+      "available": true,
+      "path": "res://assets/ui/free_hud/minimap_chrome/control_background.png",
+      "size": [
+        121,
+        23
+      ],
+      "origin": [
+        0,
+        0
+      ],
+      "position": [
+        1,
+        122
+      ]
+    },
+    "small_size": [
+      125,
+      165
+    ],
+    "collapsed_size": [
+      125,
+      41
+    ],
+    "small_viewport": {
+      "position": [
+        1,
+        1
+      ],
+      "size": [
+        120,
+        120
+      ]
+    },
+    "control_area": {
+      "position": [
+        1,
+        122
+      ],
+      "size": [
+        124,
+        41
+      ]
+    },
+    "coordinate_position": [
+      10,
+      4
+    ],
+    "map_name_position": [
+      0,
+      24
+    ],
+    "toggle_size": {
+      "position": [
+        90,
+        5
+      ],
+      "to_large": {
+        "available": true,
+        "states": {
+          "normal": "res://assets/ui/free_hud/minimap_chrome/toggle_size/to_large/normal.png",
+          "pressed": "res://assets/ui/free_hud/minimap_chrome/toggle_size/to_large/pressed.png"
+        },
+        "state_sizes": {
+          "normal": [
+            10,
+            11
+          ],
+          "pressed": [
+            10,
+            11
+          ]
+        },
+        "state_origins": {
+          "normal": [
+            0,
+            0
+          ],
+          "pressed": [
+            1,
+            1
+          ]
+        }
+      },
+      "to_small": {
+        "available": true,
+        "states": {
+          "normal": "res://assets/ui/free_hud/minimap_chrome/toggle_size/to_small/normal.png",
+          "pressed": "res://assets/ui/free_hud/minimap_chrome/toggle_size/to_small/pressed.png"
+        },
+        "state_sizes": {
+          "normal": [
+            10,
+            11
+          ],
+          "pressed": [
+            10,
+            11
+          ]
+        },
+        "state_origins": {
+          "normal": [
+            0,
+            0
+          ],
+          "pressed": [
+            1,
+            1
+          ]
+        }
+      }
+    },
+    "toggle_visibility": {
+      "position": [
+        105,
+        5
+      ],
+      "collapse": {
+        "available": true,
+        "states": {
+          "normal": "res://assets/ui/free_hud/minimap_chrome/toggle_visibility/collapse/normal.png",
+          "pressed": "res://assets/ui/free_hud/minimap_chrome/toggle_visibility/collapse/pressed.png"
+        },
+        "state_sizes": {
+          "normal": [
+            10,
+            11
+          ],
+          "pressed": [
+            10,
+            11
+          ]
+        },
+        "state_origins": {
+          "normal": [
+            0,
+            0
+          ],
+          "pressed": [
+            1,
+            1
+          ]
+        }
+      },
+      "expand": {
+        "available": true,
+        "states": {
+          "normal": "res://assets/ui/free_hud/minimap_chrome/toggle_visibility/expand/normal.png",
+          "pressed": "res://assets/ui/free_hud/minimap_chrome/toggle_visibility/expand/pressed.png"
+        },
+        "state_sizes": {
+          "normal": [
+            10,
+            11
+          ],
+          "pressed": [
+            10,
+            11
+          ]
+        },
+        "state_origins": {
+          "normal": [
+            0,
+            0
+          ],
+          "pressed": [
+            1,
+            1
+          ]
+        }
+      }
+    },
+    "map_content_source": "current_glory_map"
+  },
+  "unavailable": []
+}
