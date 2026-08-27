@@ -53,11 +53,12 @@ spawn, atomic map ownership transfer, and post-transfer snapshot isolation.
 ## Runtime architecture
 
 - `scripts/main_hall.gd`: the current migration baseline. It still owns scene
-  construction, local path state, input, NPC interaction, HUD wiring, and part
-  of the multiplayer presentation flow; it is not yet an orchestration-only
-  entry point.
-- Target client ownership: `LocalPlayerController` is the sole writer of local
-  movement/prediction state; `ActiveWorldController` atomically swaps map,
+  construction, input routing, NPC interaction, HUD wiring, and part of the
+  multiplayer/map presentation flow; it is not yet an orchestration-only entry
+  point.
+- Current client ownership: `LocalPlayerController` is the sole writer of local
+  target, route, direction, prediction sequence, and character position. The
+  next extraction is `ActiveWorldController`, which will atomically swap map,
   navigation, entities, camera, and HUD map state; `HallHud` exposes semantic
   methods instead of internal Controls.
 - `scripts/navigation/diamond_navigation.gd`: map-configured diamond collision,
