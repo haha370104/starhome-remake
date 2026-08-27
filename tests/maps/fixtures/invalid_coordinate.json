@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "map_id": "broken_coordinate_map",
+  "display_name": "坏坐标地图",
+  "category": "test",
+  "legacy": {"codes": ["broken_coord"]},
+  "world": {"size": [100, 100], "navigation": {"grid_size": [2, 8], "cell_size": [48, 12], "data_path": ""}},
+  "assets": {"ids": {"floor": "maps/tests/broken/floor"}, "resources": {"floor": ""}},
+  "transitions": [{
+    "transition_id": "outside_world",
+    "kind": "standard",
+    "source_anchor": [101, -1],
+    "approach_point": [10, 10],
+    "destination": {"legacy_code": "elsewhere"},
+    "source_audit": {"source_release": "glory", "source_map_code": "broken_coord", "source_output": "tests"}
+  }],
+  "source_audit": {"source_release": "glory", "source_map_code": "broken_coord", "source_output": "tests"}
+}

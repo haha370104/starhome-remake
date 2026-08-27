@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "map_id": "f08_field_zone",
+  "display_name": "F08区域",
+  "category": "field",
+  "legacy": {"codes": ["f08"]},
+  "world": {
+    "size": [4824, 4800],
+    "navigation": {"grid_size": [101, 800], "cell_size": [48, 12], "data_path": ""}
+  },
+  "assets": {"ids": {"floor": "maps/field/f08/floor"}, "resources": {"floor": ""}},
+  "transitions": [],
+  "source_audit": {"source_release": "glory", "source_map_code": "f08", "source_output": "maps/f08/variant_01_nft_bl"}
+}
