@@ -289,11 +289,55 @@ func _load_transition(raw: Dictionary, index: int, world_size: Vector2) -> MapTr
 			_add_error(prefix + ".destination.landing_point", "目标落点不能是负坐标")
 		transition.has_destination_landing_point = true
 
+	var presentation_value: Variant = raw.get("presentation", {})
+	if not presentation_value is Dictionary:
+		_add_error(prefix + ".presentation", "presentation 必须是 object")
+	else:
+		var presentation: Dictionary = presentation_value
+		if not presentation.is_empty():
+			_validate_transition_presentation(presentation, prefix + ".presentation", world_size)
+			transition.presentation = presentation.duplicate(true)
+
 	var raw_source_audit: Variant = raw.get("source_audit", {})
 	_validate_source_audit(raw_source_audit, prefix + ".source_audit")
 	if raw_source_audit is Dictionary:
 		transition.source_audit = raw_source_audit.duplicate(true)
 	return transition
+
+
+## 校验 [param presentation] 的业务动画资源、锚点与播放元数据。
+## [param prefix] 用于生成精确字段错误；[param world_size] 限制锚点在地图范围内。
+func _validate_transition_presentation(
+	presentation: Dictionary,
+	prefix: String,
+	world_size: Vector2,
+) -> void:
+	if not _is_business_asset_id(String(presentation.get("asset_id", ""))):
+		_add_error(prefix + ".asset_id", "asset_id 必须是业务语义路径")
+	if String(presentation.get("kind", "")) != "animated_sprite":
+		_add_error(prefix + ".kind", "当前仅支持 animated_sprite")
+	var resource_path := String(presentation.get("resource", ""))
+	if not resource_path.begins_with("res://"):
+		_add_error(prefix + ".resource", "动画资源必须使用 res://")
+	if String(presentation.get("animation", "")).is_empty():
+		_add_error(prefix + ".animation", "animation 不能为空")
+	_read_map_point(presentation.get("anchor", []), prefix + ".anchor", world_size)
+	_read_vector2(presentation.get("offset", [0, 0]), prefix + ".offset", false)
+	if int(presentation.get("frame_count", 0)) <= 0:
+		_add_error(prefix + ".frame_count", "frame_count 必须大于 0")
+	if int(presentation.get("frame_duration_ms", 0)) <= 0:
+		_add_error(prefix + ".frame_duration_ms", "frame_duration_ms 必须大于 0")
+	if String(presentation.get("activation", "")) != "enabled_transition":
+		_add_error(prefix + ".activation", "activation 必须为 enabled_transition")
+	var interaction_value: Variant = presentation.get("interaction_rect", [])
+	if not interaction_value is Array or (interaction_value as Array).size() != 4:
+		_add_error(prefix + ".interaction_rect", "interaction_rect 必须是四元素固定矩形")
+	else:
+		var interaction: Array = interaction_value
+		if float(interaction[2]) <= 0.0 or float(interaction[3]) <= 0.0:
+			_add_error(prefix + ".interaction_rect", "interaction_rect 宽高必须大于 0")
+	if String(presentation.get("interaction_space", "")) != "asset_local_fixed_bounds":
+		_add_error(prefix + ".interaction_space", "interaction_space 必须为 asset_local_fixed_bounds")
 
 
 ## Performs the `read_map_point` operation.

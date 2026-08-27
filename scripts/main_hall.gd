@@ -5,15 +5,9 @@ const NPC_CONFIG_PATH := "res://data/npcs/yian_harbor_hall_floor_1.json"
 const MAP_DEFINITION_PATH := "res://data/maps/yian_harbor_hall_floor_1.json"
 const MAP_DIRECTORY_PATH := "res://data/maps/map_directory.json"
 const DiamondNavigationScript := preload("res://scripts/navigation/diamond_navigation.gd")
-const MapDefinitionLoaderScript := preload("res://scripts/maps/map_definition_loader.gd")
 const CharacterFactoryScript := preload("res://scripts/characters/character_factory.gd")
 const WorldCharacterScript := preload("res://scripts/characters/world_character.gd")
-const YSortedPropScript := preload("res://scripts/world/y_sorted_prop.gd")
-const SemanticSceneLayerScript := preload("res://scripts/world/semantic_scene_layer.gd")
 const HallHudScript := preload("res://scripts/ui/hall_hud.gd")
-const NpcBaseScript := preload("res://scripts/npcs/npc_base.gd")
-const ShopNpcScript := preload("res://scripts/npcs/shop_npc.gd")
-const QuestNpcScript := preload("res://scripts/npcs/quest_npc.gd")
 const HallMultiplayerPresenterScript := preload(
 	"res://scripts/client/presentation/hall_multiplayer_presenter.gd"
 )
@@ -22,6 +16,9 @@ const ClientMapPreloaderScript := preload(
 )
 const LocalPlayerControllerScript := preload(
 	"res://scripts/client/gameplay/local_player_controller.gd"
+)
+const ActiveWorldControllerScript := preload(
+	"res://scripts/client/world/active_world_controller.gd"
 )
 
 # Player tuning is intentionally local to the player. NPC patrol motion has its
@@ -41,13 +38,28 @@ const LocalPlayerControllerScript := preload(
 
 var character_catalog: Dictionary
 var npc_catalog: Dictionary
-var map_manifest: Dictionary
-var map_definition: RefCounted
-var map_size := Vector2.ZERO
-var navigation: RefCounted = DiamondNavigationScript.new()
-# Public aliases retained for diagnostics and the map validation suite.
-var nav_data := PackedByteArray()
-var nav_grid: AStar2D
+var active_world_controller: Node
+
+# Public aliases delegate to ActiveWorldController so map diagnostics keep a
+# stable surface without creating a second owner for activity state.
+var map_manifest: Dictionary:
+	get:
+		return active_world_controller.map_manifest if active_world_controller else {}
+var map_definition: RefCounted:
+	get:
+		return active_world_controller.definition if active_world_controller else null
+var map_size: Vector2:
+	get:
+		return active_world_controller.map_size if active_world_controller else Vector2.ZERO
+var navigation: RefCounted:
+	get:
+		return active_world_controller.navigation if active_world_controller else null
+var nav_data: PackedByteArray:
+	get:
+		return navigation.data if navigation else PackedByteArray()
+var nav_grid: AStar2D:
+	get:
+		return navigation.graph if navigation else null
 var local_player_controller: Node
 
 # Diagnostic compatibility properties expose the controller's one true state
@@ -73,9 +85,13 @@ var current_direction: int:
 
 var sortable_world: Node2D
 var map_background: Sprite2D
-var map_scene_nodes: Array[Node2D] = []
+var map_scene_nodes: Array[Node2D]:
+	get:
+		return active_world_controller.scene_nodes if active_world_controller else []
 var player: Node2D
-var npc_instances: Array[Node2D] = []
+var npc_instances: Array[Node2D]:
+	get:
+		return active_world_controller.npc_instances if active_world_controller else []
 var active_npc: Node2D
 var camera: Camera2D
 var destination_marker: Polygon2D
@@ -95,6 +111,7 @@ var pending_map_transition: Dictionary = {}
 var pending_map_bundle: Dictionary = {}
 var pending_authoritative_join: Dictionary = {}
 var map_commit_failure_locked := false
+var selected_transition_id: StringName = &""
 
 
 ## Initializes node dependencies after the node enters the scene tree.
@@ -102,11 +119,34 @@ func _ready() -> void:
 	_apply_multiplayer_command_line(OS.get_cmdline_user_args())
 	character_catalog = JSON.parse_string(FileAccess.get_file_as_string(CHARACTER_CATALOG_PATH))
 	npc_catalog = JSON.parse_string(FileAccess.get_file_as_string(NPC_CONFIG_PATH))
-	if not _load_map_definition():
+	active_world_controller = ActiveWorldControllerScript.new()
+	active_world_controller.name = "ActiveWorldController"
+	active_world_controller.active_world_will_replace.connect(_on_active_world_will_replace)
+	add_child(active_world_controller)
+	var initial_bundle: Dictionary = active_world_controller.prepare_initial_bundle(MAP_DEFINITION_PATH)
+	if initial_bundle.is_empty():
+		push_error("Unable to prepare initial map bundle")
 		return
-	_load_navigation()
 	_build_world()
-	_build_hud()
+	_build_hud(initial_bundle)
+	var configure_error: Error = active_world_controller.configure(
+		self,
+		sortable_world,
+		map_background,
+		local_player_controller,
+		camera,
+		hud,
+		character_catalog,
+		npc_catalog,
+	)
+	if configure_error != OK:
+		push_error("Unable to configure active world: %s" % error_string(configure_error))
+		return
+	var initial_definition: MapDefinition = initial_bundle["definition"]
+	var initial_spawn: MapSpawnPoint = initial_definition.spawn_by_id(initial_definition.default_spawn_id)
+	if initial_spawn == null or not active_world_controller.commit_bundle(initial_bundle, initial_spawn.position):
+		push_error("Unable to commit initial map bundle")
+		return
 	_build_multiplayer_presentation()
 	_set_player_action("stand")
 	_sync_player_nodes()
@@ -130,26 +170,6 @@ func _apply_multiplayer_command_line(arguments: PackedStringArray) -> void:
 				multiplayer_server_port = requested_port
 
 
-## Loads and validates the requested resource data.
-## Returns Whether the operation completed or the queried condition is satisfied.
-func _load_map_definition() -> bool:
-	var loader: RefCounted = MapDefinitionLoaderScript.new()
-	map_definition = loader.load_file(MAP_DEFINITION_PATH)
-	if map_definition == null:
-		push_error("Map definition is invalid: %s" % "; ".join(loader.errors))
-		return false
-	map_size = map_definition.world_size
-	var manifest_path := String(map_definition.resource_paths.get("scene_manifest", ""))
-	if manifest_path.is_empty():
-		push_error("Map definition does not provide a scene_manifest resource")
-		return false
-	map_manifest = JSON.parse_string(FileAccess.get_file_as_string(manifest_path))
-	if not map_manifest is Dictionary:
-		push_error("Map scene manifest is invalid: %s" % manifest_path)
-		return false
-	return true
-
-
 ## Advances frame-based presentation state.
 ## [param delta] Elapsed time in seconds for this update.
 func _process(delta: float) -> void:
@@ -168,7 +188,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	var mouse_event := event as InputEventMouseButton
 	var world_position := get_global_mouse_position()
 	if mouse_event.button_index == MOUSE_BUTTON_RIGHT:
-		_move_to(world_position)
+		_handle_world_right_click(world_position)
 		get_viewport().set_input_as_handled()
 	elif mouse_event.button_index == MOUSE_BUTTON_LEFT:
 		var npc := _nearest_npc(world_position, 55.0)
@@ -179,23 +199,24 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 
 
-## Loads and validates the requested resource data.
-func _load_navigation() -> void:
-	navigation.load_from(
-		map_definition.navigation_data_path,
-		map_definition.navigation_grid_size,
-		map_definition.navigation_cell_size,
-	)
-	nav_data = navigation.data
-	nav_grid = navigation.graph
+## 处理世界坐标 [param world_position] 的右键请求；传送视图命中时改走其可行走 approach point。
+## Design: 图标锚点仅用于渲染/命中，绝不能替代地图定义中的接近点。
+func _handle_world_right_click(world_position: Vector2) -> void:
+	var transition_view: Node2D = active_world_controller.transition_view_at(world_position)
+	if transition_view != null:
+		_move_to(transition_view.approach_point, transition_view.transition_id)
+	else:
+		_move_to(world_position)
 
 
 ## Performs the `move_to` operation.
-## [param world_position] World-space position used by the operation.
-func _move_to(world_position: Vector2) -> void:
+## [param world_position] 玩家真正要到达的可行走坐标。
+## [param transition_id] 非空时表示该目标来自传送视图，抵达后只提交此业务出口。
+func _move_to(world_position: Vector2, transition_id: StringName = &"") -> void:
 	if _world_input_locked():
 		_stop_moving("地图切换中，暂时不能移动")
 		return
+	selected_transition_id = &""
 	var target_text := "%d, %d" % [roundi(world_position.x), roundi(world_position.y)]
 	var result: Dictionary = local_player_controller.request_move(world_position)
 	if not bool(result.get("ok", false)):
@@ -205,6 +226,7 @@ func _move_to(world_position: Vector2) -> void:
 			hint_label.text = "无法找到前往 %s 的路径" % target_text
 		return
 	var resolved_position: Vector2 = result["resolved_position"]
+	selected_transition_id = transition_id
 	if bool(result["used_nearest_walkable"]):
 		hint_label.text = "目标 %s 不可到达，正在前往附近 %d, %d" % [
 			target_text,
@@ -227,6 +249,7 @@ func _begin_current_path_segment() -> void:
 func _stop_moving(message: String) -> void:
 	if local_player_controller:
 		local_player_controller.cancel_route()
+	selected_transition_id = &""
 	if hint_label:
 		hint_label.text = message
 
@@ -257,7 +280,6 @@ func _sync_player_nodes() -> void:
 func _build_world() -> void:
 	map_background = Sprite2D.new()
 	map_background.name = "MapBase"
-	map_background.texture = load(String(map_definition.resource_paths["floor"]))
 	map_background.centered = false
 	map_background.position = Vector2.ZERO
 	map_background.z_index = -100
@@ -277,8 +299,6 @@ func _build_world() -> void:
 	sortable_world.name = "YSortedWorld"
 	sortable_world.y_sort_enabled = true
 	add_child(sortable_world)
-	_build_scene_props()
-	_build_npcs()
 
 	player = WorldCharacterScript.new()
 	player.name = "Player"
@@ -296,10 +316,10 @@ func _build_world() -> void:
 	add_child(local_player_controller)
 	var controller_error: Error = local_player_controller.configure(
 		player,
-		navigation,
+		DiamondNavigationScript.new(),
 		destination_marker,
 		player_movement_speed,
-		Vector2(730, 1330),
+		Vector2.ZERO,
 	)
 	if controller_error != OK:
 		push_error("Unable to configure local player controller: %s" % error_string(controller_error))
@@ -310,8 +330,8 @@ func _build_world() -> void:
 	camera.zoom = Vector2(0.82, 0.82)
 	camera.limit_left = 0
 	camera.limit_top = 0
-	camera.limit_right = int(map_size.x)
-	camera.limit_bottom = int(map_size.y)
+	camera.limit_right = 0
+	camera.limit_bottom = 0
 	camera.position_smoothing_enabled = true
 	camera.position_smoothing_speed = 7.5
 	add_child(camera)
@@ -321,82 +341,15 @@ func _build_world() -> void:
 	local_player_controller.route_stopped.connect(_on_local_player_route_stopped)
 
 
-## Builds the requested runtime object from configuration data.
-func _build_scene_props() -> void:
-	var composition: Dictionary = map_manifest["composition"]
-	if String(composition.get("render_strategy", "")) == "semantic_owner_layers":
-		_build_semantic_scene_layers(composition)
-		return
-	var props: Array = map_manifest["composition"]["props"]
-	for index in range(props.size()):
-		var definition: Dictionary = props[index]
-		var prop: Node2D = YSortedPropScript.new()
-		prop.name = "SceneProp_%d" % (index + 1)
-		var anchor := Vector2(definition["anchor"][0], definition["anchor"][1])
-		prop.configure(
-			load(String(definition["texture"])),
-			anchor,
-			Vector2(definition["offset"][0], definition["offset"][1]),
-			float(definition.get("sort_baseline", anchor.y)),
-		)
-		sortable_world.add_child(prop)
-		map_scene_nodes.append(prop)
-
-
-## Builds the requested runtime object from configuration data.
-## [param composition] World-space position used by the operation.
-func _build_semantic_scene_layers(composition: Dictionary) -> void:
-	for index in range(composition["semantic_layers"].size()):
-		var definition: Dictionary = composition["semantic_layers"][index]
-		var offset: Array = definition["pixel_offset"]
-		var atlas_values: Array = definition["atlas_region"]
-		var layer: Node2D = SemanticSceneLayerScript.new()
-		layer.name = "SemanticSceneLayer_%d" % (index + 1)
-		layer.configure(
-			load(String(definition["texture"])) as Texture2D,
-			Rect2(float(atlas_values[0]), float(atlas_values[1]), float(atlas_values[2]), float(atlas_values[3])),
-			Vector2(float(offset[0]), float(offset[1])),
-			float(definition["sort_baseline"]),
-		)
-		sortable_world.add_child(layer)
-		map_scene_nodes.append(layer)
-
-
-## Builds the requested runtime object from configuration data.
-func _build_npcs() -> void:
-	for definition_value in npc_catalog.get("npcs", []):
-		var definition: Dictionary = definition_value
-		var npc := _create_npc_for_kind(String(definition.get("kind", "ambient")))
-		var appearance := String(definition.get("appearance", "npc_red"))
-		npc.configure_npc(
-			CharacterFactoryScript.build_character_set(character_catalog, appearance),
-			definition,
-			navigation,
-		)
-		sortable_world.add_child(npc)
-		npc_instances.append(npc)
-
-
-## Builds the requested runtime object from configuration data.
-## [param kind] Stable identifier of the target value.
-## Returns the result produced by the operation.
-func _create_npc_for_kind(kind: String) -> Node2D:
-	match kind:
-		"shop":
-			return ShopNpcScript.new()
-		"quest":
-			return QuestNpcScript.new()
-		_:
-			return NpcBaseScript.new()
-
-
-## Builds the requested runtime object from configuration data.
-func _build_hud() -> void:
+## 以已验证 [param initial_bundle] 创建固定 HUD 外壳；后续地图内容由活动世界控制器更新。
+func _build_hud(initial_bundle: Dictionary) -> void:
+	var initial_definition: MapDefinition = initial_bundle["definition"]
+	var initial_resources: Dictionary = initial_bundle["resources"]
 	hud = HallHudScript.new()
 	hud.configure(
-		map_size,
-		load(String(map_definition.resource_paths["minimap"])),
-		String(map_definition.display_name),
+		initial_definition.world_size,
+		initial_resources["minimap"],
+		String(initial_definition.display_name),
 	)
 	add_child(hud)
 	hint_label = hud.hint_label
@@ -472,8 +425,17 @@ func _on_local_player_route_finished() -> void:
 
 ## 将控制器停止路线的 [param message] 显示到大厅状态栏。
 func _on_local_player_route_stopped(message: String) -> void:
+	selected_transition_id = &""
 	if hint_label:
 		hint_label.text = message
+
+
+## 在活动世界原子替换前结束旧 NPC 交互，并清除仅属于旧地图的传送选择。
+func _on_active_world_will_replace() -> void:
+	if active_npc and is_instance_valid(active_npc):
+		active_npc.set_interaction_active(false)
+	active_npc = null
+	selected_transition_id = &""
 
 
 ## 在玩家停步后查找触发半径内最近的内部出口，并先预载其目标地图。
@@ -483,13 +445,22 @@ func _try_begin_nearby_map_transition() -> void:
 		return
 	var selected_transition: MapTransition
 	var selected_distance := map_transition_trigger_radius
-	for transition: MapTransition in map_definition.enabled_transitions():
-		if transition.external_target or transition.destination_map_id.is_empty():
-			continue
-		var distance := player.position.distance_to(transition.approach_point)
-		if distance <= selected_distance:
-			selected_transition = transition
-			selected_distance = distance
+	if not selected_transition_id.is_empty():
+		var requested_transition: MapTransition = map_definition.transition_by_id(selected_transition_id)
+		if requested_transition != null:
+			var requested_distance := player.position.distance_to(requested_transition.approach_point)
+			if requested_distance <= selected_distance:
+				selected_transition = requested_transition
+				selected_distance = requested_distance
+	else:
+		for transition: MapTransition in map_definition.enabled_transitions():
+			if transition.external_target or transition.destination_map_id.is_empty():
+				continue
+			var distance := player.position.distance_to(transition.approach_point)
+			if distance <= selected_distance:
+				selected_transition = transition
+				selected_distance = distance
+	selected_transition_id = &""
 	if selected_transition == null:
 		return
 	pending_map_transition = {
@@ -633,60 +604,15 @@ func _commit_map_bundle(
 	spawn_position: Vector2,
 	map_instance_id: String,
 ) -> bool:
-	var definition: MapDefinition = bundle.get("definition")
-	var manifest: Dictionary = bundle.get("map_manifest", {})
-	var resources: Dictionary = bundle.get("resources", {})
-	var floor_texture: Texture2D = resources.get("floor") as Texture2D
-	var minimap_texture: Texture2D = resources.get("minimap") as Texture2D
-	if definition == null or manifest.is_empty() or floor_texture == null or minimap_texture == null:
+	if not active_world_controller.commit_bundle(bundle, spawn_position):
 		return false
-	var staged_navigation := DiamondNavigationScript.new()
-	if not staged_navigation.load_from(
-		definition.navigation_data_path,
-		definition.navigation_grid_size,
-		definition.navigation_cell_size,
-	):
-		return false
-	if not staged_navigation.is_walkable(spawn_position):
-		return false
-
-	_clear_map_specific_nodes()
-	map_definition = definition
-	map_manifest = manifest
-	map_size = definition.world_size
-	navigation = staged_navigation
-	nav_data = navigation.data
-	nav_grid = navigation.graph
-	map_background.texture = floor_texture
-	_build_scene_props()
-	if definition.map_id == &"yian_harbor_hall_floor_1":
-		_build_npcs()
 	multiplayer_map_instance_id = map_instance_id
-	local_player_controller.commit_map_position(navigation, spawn_position)
-	camera.limit_right = int(map_size.x)
-	camera.limit_bottom = int(map_size.y)
-	camera.position = spawn_position
-	hud.set_map(map_size, minimap_texture, definition.display_name)
 	_set_player_action("stand")
-	hint_label.text = "已进入%s" % definition.display_name
+	hint_label.text = "已进入%s" % map_definition.display_name
 	map_commit_failure_locked = false
 	pending_map_transition.clear()
 	pending_map_bundle.clear()
 	return true
-
-
-## 清除旧地图的场景图层与 NPC，但保留玩家、远端玩家、摄像机和 HUD。
-func _clear_map_specific_nodes() -> void:
-	hud.hide_popup()
-	active_npc = null
-	for npc in npc_instances:
-		if is_instance_valid(npc):
-			npc.free()
-	npc_instances.clear()
-	for scene_node in map_scene_nodes:
-		if is_instance_valid(scene_node):
-			scene_node.free()
-	map_scene_nodes.clear()
 
 
 ## 报告不可恢复的客户端地图提交 [param message] 并停止网络会话，避免在错误地图上发输入。

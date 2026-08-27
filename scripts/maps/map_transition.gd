@@ -20,6 +20,7 @@ var destination_entry_number := 0
 var destination_landing_point := Vector2.ZERO
 var has_destination_landing_point := false
 var external_target := false
+var presentation: Dictionary = {}
 var source_audit: Dictionary = {}
 
 
