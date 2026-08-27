@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "protocol_version": 1,
+  "public_content_version": 1,
+  "limits": {
+    "sequence_min": 0,
+    "sequence_max": 2147483647,
+    "world_coordinate_absolute_max": 10000000.0,
+    "speed_max": 10000.0,
+    "identifier_length_max": 128
+  },
+  "message_types": [
+    "move_intent",
+    "map_transition_intent",
+    "use_ability_intent",
+    "entity_snapshot",
+    "map_joined",
+    "position_correction"
+  ]
+}
