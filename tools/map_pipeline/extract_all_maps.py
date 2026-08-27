@@ -228,7 +228,7 @@ def parse_map(script: Path, expanded_root: Path) -> MapRecord | None:
     if not INDEX_RE.search(content):
         return None
     relative = script.relative_to(expanded_root)
-    if len(relative.parts) < 4 or not relative.parts[0].upper().startswith("NFT_"):
+    if len(relative.parts) < 4 or not relative.parts[0].upper().startswith(("NFT_", "JZ_")):
         return None
     if relative.parts[1].lower() != "map":
         return None
@@ -275,26 +275,37 @@ def parse_map(script: Path, expanded_root: Path) -> MapRecord | None:
 
 
 class AleRepository:
-    def __init__(self, root: Path) -> None:
+    def __init__(self, root: Path, fallback_roots: list[Path] | None = None) -> None:
         self.root = root
-        self.by_logical_path: dict[str, Path] = {}
-        self.by_basename: dict[str, list[Path]] = defaultdict(list)
+        self.roots = [root, *(fallback_roots or [])]
+        self.by_logical_path: dict[str, tuple[Path, int]] = {}
+        self.by_basename: dict[str, list[tuple[Path, str, int]]] = defaultdict(list)
+        self.folder_metadata: dict[Path, tuple[str, int]] = {}
         self.manifests: dict[Path, dict[str, Any]] = {}
         self.pages: dict[tuple[Path, int], Image.Image] = {}
-        for manifest_path in root.rglob("frames.json"):
-            folder = manifest_path.parent
-            logical = folder.relative_to(root).as_posix().lower()
-            self.by_logical_path[logical] = folder
-            self.by_basename[folder.name.lower()].append(folder)
+        for root_index, repository_root in enumerate(self.roots):
+            for manifest_path in repository_root.rglob("frames.json"):
+                folder = manifest_path.parent
+                logical = folder.relative_to(repository_root).as_posix().lower()
+                self.by_logical_path.setdefault(logical, (folder, root_index))
+                self.by_basename[folder.name.lower()].append(
+                    (folder, logical, root_index)
+                )
+                self.folder_metadata[folder] = (logical, root_index)
 
     def resolve(self, source: str) -> tuple[Path | None, str]:
         logical = normalize_ale_reference(source)
         direct = self.by_logical_path.get(logical.lower())
         if direct:
-            return direct, "logical_path"
+            folder, root_index = direct
+            resolution = "logical_path" if root_index == 0 else "fallback_logical_path"
+            return folder, resolution
         basename_matches = self.by_basename.get(Path(logical).name.lower(), [])
-        if len(basename_matches) == 1:
-            return basename_matches[0], "unique_basename"
+        distinct_logical_paths = {match[1] for match in basename_matches}
+        if len(distinct_logical_paths) == 1:
+            folder, _, root_index = min(basename_matches, key=lambda match: match[2])
+            resolution = "unique_basename" if root_index == 0 else "fallback_unique_basename"
+            return folder, resolution
         return None, "missing" if not basename_matches else "ambiguous_basename"
 
     def frame(self, folder: Path, index: int = 0) -> tuple[Image.Image, dict[str, Any]]:
@@ -328,7 +339,10 @@ class AleRepository:
         return image, frame
 
     def logical_path(self, folder: Path) -> str:
-        return folder.relative_to(self.root).as_posix()
+        logical, root_index = self.folder_metadata[folder]
+        if root_index == 0:
+            return logical
+        return f"@{self.roots[root_index].parent.name}/{logical}"
 
     def close(self) -> None:
         for page in self.pages.values():
@@ -906,7 +920,18 @@ def write_catalogs(
         "grid_width",
         "grid_height",
     ]
-    with (output_root / "map_names.csv").open("w", encoding="utf-8-sig", newline="") as stream:
+    csv_path = output_root / "map_names.csv"
+    try:
+        stream = csv_path.open("w", encoding="utf-8-sig", newline="")
+    except PermissionError:
+        csv_path = output_root / "map_names.updated.csv"
+        stream = csv_path.open("w", encoding="utf-8-sig", newline="")
+        print(
+            f"map_names.csv is locked; wrote {csv_path.name} instead",
+            file=sys.stderr,
+            flush=True,
+        )
+    with stream:
         writer = csv.DictWriter(stream, fieldnames=columns)
         writer.writeheader()
         for record in sorted(records, key=lambda item: (item.map_name.lower(), item.branch, item.map_code.lower())):
@@ -970,14 +995,46 @@ def main() -> int:
     parser.add_argument("--catalog-only", action="store_true")
     parser.add_argument("--limit", type=int, help="render only the first N unique maps")
     parser.add_argument(
+        "--branch-pattern",
+        default="NFT_*",
+        help="top-level edition branch glob; defaults to Glory-edition NFT_*",
+    )
+    parser.add_argument(
+        "--map-code",
+        action="append",
+        default=[],
+        help="render only this map/check/directory code; may be repeated",
+    )
+    parser.add_argument(
+        "--fallback-ale-root",
+        action="append",
+        default=[],
+        type=Path,
+        help="parsed ALE sprite root used only when the primary Glory-edition root has no match",
+    )
+    parser.add_argument(
         "--retry-structural-partials",
         action="store_true",
         help="rerender only maps whose navigation/tile/background structure failed previously",
     )
+    parser.add_argument(
+        "--retry-unresolved-scene-objects",
+        action="store_true",
+        help="rerender maps whose previous AddImg/AddImgEx placements were unresolved",
+    )
     args = parser.parse_args()
 
-    scripts = sorted(args.expanded_root.glob("NFT_*/map/**/*.cab"))
+    scripts = sorted(args.expanded_root.glob(f"{args.branch_pattern}/map/**/*.cab"))
     records = [record for script in scripts if (record := parse_map(script, args.expanded_root))]
+    if args.map_code:
+        requested_codes = {code.lower() for code in args.map_code}
+        records = [
+            record
+            for record in records
+            if record.map_code.lower() in requested_codes
+            or record.check_name.lower() in requested_codes
+            or record.script.parent.name.lower() in requested_codes
+        ]
     layout = output_layout(records)
     groups: dict[str, list[MapRecord]] = defaultdict(list)
     for record in records:
@@ -997,17 +1054,25 @@ def main() -> int:
     )
     args.output_root.mkdir(parents=True, exist_ok=True)
     if args.catalog_only:
-        write_catalogs(args.output_root, records, [])
+        existing_results_path = args.output_root / "unique_maps.json"
+        existing_results = (
+            json.loads(existing_results_path.read_text(encoding="utf-8"))
+            if existing_results_path.is_file()
+            else []
+        )
+        write_catalogs(args.output_root, records, existing_results)
         return 0
 
-    ale_repository = AleRepository(args.ale_root)
+    ale_repository = AleRepository(args.ale_root, args.fallback_ale_root)
     minimap_repository = MinimapRepository(args.raw_root)
     raw_image_repository = RawImageRepository(args.raw_root)
     unique_results: list[dict[str, Any]] = []
     ordered_groups = sorted(groups.items(), key=lambda item: layout[item[0]].as_posix())
     previous_results: dict[str, dict[str, Any]] = {}
     previous_path = args.output_root / "unique_maps.json"
-    if args.retry_structural_partials and previous_path.is_file():
+    if (
+        args.retry_structural_partials or args.retry_unresolved_scene_objects
+    ) and previous_path.is_file():
         previous_results = {
             row["script_sha256"]: row
             for row in json.loads(previous_path.read_text(encoding="utf-8"))
@@ -1016,11 +1081,20 @@ def main() -> int:
             item
             for item in ordered_groups
             if item[0] not in previous_results
-            or previous_results[item[0]].get("navigation", {}).get("status") != "ok"
-            or previous_results[item[0]].get("tile_layer", {}).get("status") != "ok"
-            or previous_results[item[0]].get("background", {}).get("status") == "error"
-            or previous_results[item[0]].get("background", {}).get("status") == "missing"
-            or previous_results[item[0]].get("minimap", {}).get("status") != "ok"
+            or (
+                args.retry_structural_partials
+                and (
+                    previous_results[item[0]].get("navigation", {}).get("status") != "ok"
+                    or previous_results[item[0]].get("tile_layer", {}).get("status") != "ok"
+                    or previous_results[item[0]].get("background", {}).get("status")
+                    in {"error", "missing"}
+                    or previous_results[item[0]].get("minimap", {}).get("status") != "ok"
+                )
+            )
+            or (
+                args.retry_unresolved_scene_objects
+                and previous_results[item[0]].get("scene_objects", {}).get("missing", 0) > 0
+            )
         ]
     if args.limit is not None:
         ordered_groups = ordered_groups[: args.limit]
