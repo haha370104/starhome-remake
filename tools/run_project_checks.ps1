@@ -23,6 +23,12 @@ if ($LASTEXITCODE -ne 0) {
     throw "Staged change size check failed"
 }
 
+Write-Output "Checking large-asset Git LFS policy"
+& python (Join-Path $PSScriptRoot "check_asset_size_policy.py")
+if ($LASTEXITCODE -ne 0) {
+    throw "Large-asset Git LFS policy failed"
+}
+
 function Assert-NoRuntimeLoadErrors([string]$LogFile) {
     $fatalPatterns = "SCRIPT ERROR:|Parse Error:|No loader found for resource:|Failed to load script|Invalid call\. Nonexistent"
     if (Select-String -LiteralPath $LogFile -Pattern $fatalPatterns -Quiet) {
