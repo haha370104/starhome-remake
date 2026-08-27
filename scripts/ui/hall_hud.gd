@@ -3,22 +3,15 @@ extends CanvasLayer
 
 signal popup_closed
 signal npc_action_requested(action_id: String)
+signal hud_action_requested(action_id: String)
 
-const UI_ROOT := "res://assets/ui/hud/"
-const ITEM_ROOT := "res://assets/items/weapons/"
-const UI_CELL := Vector2(31.0, 29.0)
+const HUD_MANIFEST_PATH := "res://data/ui/free_hud_assets.json"
+const HudStateScript := preload("res://scripts/ui/hud_state.gd")
+const TopMenuScript := preload("res://scripts/ui/free_top_menu.gd")
+const BottomMainBarScript := preload("res://scripts/ui/free_bottom_main_bar.gd")
+const ShortcutBarScript := preload("res://scripts/ui/free_shortcut_bar.gd")
+const MinimapDockScript := preload("res://scripts/ui/free_minimap_dock.gd")
 
-const TOP_BUTTONS := [
-	"defense", "help", "companions", "return_home", "repair",
-	"system_messages", "navigation_marker", "virtual_reality", "missions", "currency",
-	"anniversary", "item_storage", "exploration", "mercenary_missions", "maintenance",
-]
-const BOTTOM_BUTTONS := [
-	"character", "equipment", "inventory", "quests",
-	"friends", "galaxy_map", "star_source", "settings",
-]
-
-var map_size := Vector2.ONE
 var root_control: Control
 var hint_label: Label
 var popup: PanelContainer
@@ -26,43 +19,89 @@ var popup_title: Label
 var popup_body: Label
 var popup_actions: VBoxContainer
 var minimap_player_dot: ColorRect
+var top_menu: Control
+var minimap_dock: Control
+var shortcut_bar: Control
+var bottom_main_bar: Control
+var state: HudState
+var asset_manifest: Dictionary = {}
 
 
-func configure(world_map_size: Vector2, minimap_texture: Texture2D) -> void:
-	map_size = world_map_size
+## 以 [param world_map_size]、[param minimap_texture] 和 [param map_name] 组装大厅 HUD。
+## Design: 本节点只负责组合免费版 HUD 组件与转发业务信号，共享状态集中在 `HudState`。
+func configure(world_map_size: Vector2, minimap_texture: Texture2D, map_name := "") -> void:
 	layer = 50
 	name = "HallHud"
+	state = HudStateScript.new()
+	asset_manifest = _load_manifest()
+
 	root_control = Control.new()
-	root_control.name = "HUDRoot"
+	root_control.name = "HudRoot"
 	root_control.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	root_control.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(root_control)
-	_build_top_menu()
-	_build_minimap(minimap_texture)
-	_build_bottom_bar()
-	_build_popup()
+	state.hud_visibility_changed.connect(func(value: bool) -> void: root_control.visible = value)
 
-	hint_label = Label.new()
-	hint_label.name = "HintLabel"
-	hint_label.text = "右键移动 · 左键点击 NPC"
-	hint_label.position = Vector2(12, 4)
-	hint_label.add_theme_font_size_override("font_size", 17)
-	hint_label.add_theme_color_override("font_color", Color(0.68, 0.95, 1.0))
-	hint_label.add_theme_color_override("font_shadow_color", Color.BLACK)
-	hint_label.add_theme_constant_override("shadow_offset_x", 2)
-	hint_label.add_theme_constant_override("shadow_offset_y", 2)
-	hint_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	root_control.add_child(hint_label)
+	top_menu = TopMenuScript.new()
+	top_menu.configure(asset_manifest.get("top_menu", {}), state)
+	top_menu.action_requested.connect(_emit_hud_action)
+	root_control.add_child(top_menu)
 
-
-func update_player_dot(world_position: Vector2) -> void:
-	if not minimap_player_dot:
-		return
-	minimap_player_dot.position = (
-		Vector2(4, 4) + world_position / map_size * Vector2(148, 148) - Vector2(3, 3)
+	minimap_dock = MinimapDockScript.new()
+	minimap_dock.configure(
+		world_map_size,
+		minimap_texture,
+		map_name,
+		asset_manifest.get("minimap_chrome", {}),
+		state,
 	)
+	minimap_dock.layout_width_changed.connect(top_menu.set_minimap_width)
+	root_control.add_child(minimap_dock)
+	minimap_player_dot = minimap_dock.player_dot
+	top_menu.set_minimap_width(minimap_dock.size.x)
+
+	bottom_main_bar = BottomMainBarScript.new()
+	bottom_main_bar.configure(
+		asset_manifest.get("bottom_main", {}),
+		asset_manifest.get("general_shortcut", {}),
+		state,
+	)
+	bottom_main_bar.action_requested.connect(_emit_hud_action)
+	root_control.add_child(bottom_main_bar)
+
+	shortcut_bar = ShortcutBarScript.new()
+	shortcut_bar.configure(
+		asset_manifest.get("general_shortcut", {}),
+		state,
+	)
+	root_control.add_child(shortcut_bar)
+
+	_build_popup()
+	_build_hint_label()
 
 
+## 将玩家世界坐标 [param world_position] 推送给小地图状态。
+func update_player_dot(world_position: Vector2) -> void:
+	state.set_player_position(world_position)
+
+
+## 原子替换小地图使用的 [param world_map_size]、[param minimap_texture] 与 [param map_name]。
+## Design: 地图切换只更新地图业务内容，免费版 HUD 外框及玩家设置状态保持不变。
+func set_map(
+	world_map_size: Vector2,
+	minimap_texture: Texture2D,
+	map_name: String,
+) -> void:
+	if minimap_dock:
+		minimap_dock.set_map(world_map_size, minimap_texture, map_name)
+
+
+## 将当前储备能量 [param current] 与容量 [param capacity] 推送给 HUD 状态。
+func set_reserve_energy(current: float, capacity: float) -> void:
+	state.set_reserve_energy(current, capacity)
+
+
+## 根据 [param interaction] 的标题、正文和动作列表显示 NPC 交互弹窗。
 func show_npc_popup(interaction: Dictionary) -> void:
 	popup_title.text = String(interaction.get("title", "NPC"))
 	popup_body.text = String(interaction.get("body", ""))
@@ -82,6 +121,7 @@ func show_npc_popup(interaction: Dictionary) -> void:
 	popup.visible = true
 
 
+## 隐藏当前 NPC 弹窗，并在状态实际改变时通知调用方。
 func hide_popup() -> void:
 	if not popup.visible:
 		return
@@ -89,180 +129,47 @@ func hide_popup() -> void:
 	popup_closed.emit()
 
 
+## 将弹窗动作 [param action_id] 转发为 NPC 业务信号。
 func _emit_npc_action(action_id: String) -> void:
 	npc_action_requested.emit(action_id)
 
 
-func _build_top_menu() -> void:
-	var grid := GridContainer.new()
-	grid.name = "TopMenu"
-	grid.columns = 10
-	grid.set_anchors_preset(Control.PRESET_TOP_RIGHT)
-	grid.offset_left = -480
-	grid.offset_right = -170
-	grid.offset_top = 0
-	grid.offset_bottom = 58
-	grid.add_theme_constant_override("h_separation", 0)
-	grid.add_theme_constant_override("v_separation", 0)
-	grid.mouse_filter = Control.MOUSE_FILTER_STOP
-	root_control.add_child(grid)
-	for resource_name in TOP_BUTTONS:
-		grid.add_child(_state_button("top_menu/%s" % resource_name, "顶部菜单（功能待接入）"))
-	for index in range(20 - TOP_BUTTONS.size()):
-		var spacer := Panel.new()
-		spacer.custom_minimum_size = UI_CELL
-		spacer.add_theme_stylebox_override(
-			"panel", _panel_style(Color("153c65"), Color("245f91"), 1, 0)
-		)
-		grid.add_child(spacer)
+## 将 HUD 动作 [param action_id] 转发给业务层，并显示尚未接入提示。
+func _emit_hud_action(action_id: String) -> void:
+	hud_action_requested.emit(action_id)
+	if hint_label:
+		hint_label.text = "%s 功能待接入" % action_id
 
 
-func _build_minimap(minimap_texture: Texture2D) -> void:
-	var panel := Panel.new()
-	panel.name = "Minimap"
-	panel.set_anchors_preset(Control.PRESET_TOP_RIGHT)
-	panel.offset_left = -164
-	panel.offset_right = -8
-	panel.offset_top = 0
-	panel.offset_bottom = 191
-	panel.add_theme_stylebox_override(
-		"panel", _panel_style(Color("071723"), Color("19b9d7"), 2, 2)
-	)
-	panel.mouse_filter = Control.MOUSE_FILTER_STOP
-	root_control.add_child(panel)
-
-	var map := TextureRect.new()
-	map.texture = minimap_texture
-	map.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	map.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-	map.position = Vector2(4, 4)
-	map.size = Vector2(148, 148)
-	map.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	panel.add_child(map)
-	for dot_position in [Vector2(570, 1040), Vector2(845, 1190), Vector2(1045, 835), Vector2(1290, 1060)]:
-		var dot := ColorRect.new()
-		dot.color = Color(0.15, 0.95, 1.0)
-		dot.size = Vector2(3, 3)
-		dot.position = Vector2(4, 4) + dot_position / map_size * Vector2(148, 148)
-		dot.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		panel.add_child(dot)
-
-	minimap_player_dot = ColorRect.new()
-	minimap_player_dot.name = "PlayerDot"
-	minimap_player_dot.color = Color(0.2, 1.0, 0.35)
-	minimap_player_dot.size = Vector2(6, 6)
-	minimap_player_dot.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	panel.add_child(minimap_player_dot)
-
-	var title := Label.new()
-	title.text = "易安港基地大厅一层"
-	title.position = Vector2(4, 157)
-	title.size = Vector2(148, 27)
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 14)
-	title.add_theme_color_override("font_color", Color(0.25, 1.0, 0.35))
-	title.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	panel.add_child(title)
+## 读取并校验免费版 HUD 素材清单。
+## Returns 解析成功时返回清单字典，失败时返回空字典并报告错误。
+func _load_manifest() -> Dictionary:
+	if not FileAccess.file_exists(HUD_MANIFEST_PATH):
+		push_error("Free HUD manifest is missing: %s" % HUD_MANIFEST_PATH)
+		return {}
+	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(HUD_MANIFEST_PATH))
+	if not parsed is Dictionary:
+		push_error("Free HUD manifest is invalid: %s" % HUD_MANIFEST_PATH)
+		return {}
+	return parsed
 
 
-func _build_bottom_bar() -> void:
-	var rail := Panel.new()
-	rail.name = "BottomRail"
-	rail.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
-	rail.offset_top = -31
-	rail.offset_bottom = 0
-	rail.add_theme_stylebox_override(
-		"panel", _panel_style(Color("071a31"), Color("36bfe9"), 2, 0)
-	)
-	rail.mouse_filter = Control.MOUSE_FILTER_STOP
-	root_control.add_child(rail)
-
-	var shortcut := TextureRect.new()
-	shortcut.name = "ShortcutBar"
-	shortcut.texture = load(UI_ROOT + "action_bar/background.png")
-	shortcut.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	shortcut.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	shortcut.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
-	shortcut.offset_left = -249
-	shortcut.offset_right = 249
-	shortcut.offset_top = -80
-	shortcut.offset_bottom = -32
-	shortcut.mouse_filter = Control.MOUSE_FILTER_STOP
-	shortcut.tooltip_text = "快捷栏（功能待接入）"
-	root_control.add_child(shortcut)
-
-	var weapons := HBoxContainer.new()
-	weapons.name = "Weapons"
-	weapons.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
-	weapons.offset_left = 154
-	weapons.offset_right = 402
-	weapons.offset_top = -30
-	weapons.offset_bottom = -1
-	weapons.add_theme_constant_override("separation", 2)
-	root_control.add_child(weapons)
-	weapons.add_child(_weapon_slot(load(ITEM_ROOT + "energy_cannon.png"), "能量炮", "", true))
-	weapons.add_child(_weapon_slot(load(ITEM_ROOT + "missile.png"), "导弹", "1700", false))
-	weapons.add_child(_weapon_slot(null, "其他", "", false))
-
-	var menus := HBoxContainer.new()
-	menus.name = "BottomMenus"
-	menus.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
-	menus.offset_left = -256
-	menus.offset_right = -8
-	menus.offset_top = -30
-	menus.offset_bottom = -1
-	menus.add_theme_constant_override("separation", 0)
-	root_control.add_child(menus)
-	for resource_name in BOTTOM_BUTTONS:
-		menus.add_child(_state_button("bottom_menu/%s" % resource_name, "底部菜单（功能待接入）"))
+## 创建左上角的移动与交互操作提示。
+func _build_hint_label() -> void:
+	hint_label = Label.new()
+	hint_label.name = "HintLabel"
+	hint_label.text = "右键移动 · 左键点击 NPC"
+	hint_label.position = Vector2(12, 4)
+	hint_label.add_theme_font_size_override("font_size", 17)
+	hint_label.add_theme_color_override("font_color", Color(0.68, 0.95, 1.0))
+	hint_label.add_theme_color_override("font_shadow_color", Color.BLACK)
+	hint_label.add_theme_constant_override("shadow_offset_x", 2)
+	hint_label.add_theme_constant_override("shadow_offset_y", 2)
+	hint_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	root_control.add_child(hint_label)
 
 
-func _state_button(asset_directory: String, tooltip: String) -> TextureButton:
-	var button := TextureButton.new()
-	button.texture_normal = load(UI_ROOT + asset_directory + "/normal.png")
-	button.texture_hover = load(UI_ROOT + asset_directory + "/hover.png")
-	button.texture_pressed = load(UI_ROOT + asset_directory + "/pressed.png")
-	button.ignore_texture_size = true
-	button.custom_minimum_size = UI_CELL
-	button.stretch_mode = TextureButton.STRETCH_KEEP_ASPECT_CENTERED
-	button.tooltip_text = tooltip
-	return button
-
-
-func _weapon_slot(icon_texture: Texture2D, label_text: String, count_text: String, active: bool) -> Button:
-	var button := Button.new()
-	button.custom_minimum_size = Vector2(78, UI_CELL.y)
-	button.tooltip_text = "%s（功能待接入）" % label_text
-	button.add_theme_stylebox_override(
-		"normal",
-		_panel_style(
-			Color("133756") if active else Color("0a1725"),
-			Color("55edff") if active else Color("31556d"),
-			2,
-			2,
-		),
-	)
-	var row := HBoxContainer.new()
-	row.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	button.add_child(row)
-	if icon_texture:
-		var icon := TextureRect.new()
-		icon.texture = icon_texture
-		icon.custom_minimum_size = Vector2(25, 25)
-		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		row.add_child(icon)
-	var name_label := Label.new()
-	name_label.text = label_text + ("\n" + count_text if not count_text.is_empty() else "")
-	name_label.add_theme_font_size_override("font_size", 11)
-	name_label.add_theme_color_override(
-		"font_color", Color(1.0, 0.2, 0.15) if not count_text.is_empty() else Color.WHITE
-	)
-	row.add_child(name_label)
-	return button
-
-
+## 创建由标题、正文、动态动作区和关闭按钮组成的 NPC 弹窗。
 func _build_popup() -> void:
 	popup = PanelContainer.new()
 	popup.name = "NpcPopup"
@@ -271,9 +178,7 @@ func _build_popup() -> void:
 	popup.offset_right = 155
 	popup.offset_top = -125
 	popup.offset_bottom = 125
-	popup.add_theme_stylebox_override(
-		"panel", _panel_style(Color("0a1b2b"), Color("39d5ff"), 2, 6)
-	)
+	popup.add_theme_stylebox_override("panel", _panel_style(Color("0a1b2b"), Color("39d5ff")))
 	popup.visible = false
 	popup.mouse_filter = Control.MOUSE_FILTER_STOP
 	root_control.add_child(popup)
@@ -307,10 +212,12 @@ func _build_popup() -> void:
 	column.add_child(close_button)
 
 
-func _panel_style(background: Color, border: Color, width: int, radius: int) -> StyleBoxFlat:
+## 使用 [param background] 和 [param border] 创建弹窗面板样式。
+## Returns 新建的圆角面板样式。
+func _panel_style(background: Color, border: Color) -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
 	style.bg_color = background
 	style.border_color = border
-	style.set_border_width_all(width)
-	style.set_corner_radius_all(radius)
+	style.set_border_width_all(2)
+	style.set_corner_radius_all(6)
 	return style
