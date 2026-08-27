@@ -41,6 +41,9 @@ second disconnect grace period.
 The Stage-2 world route follows the recovered Glory topology instead of a
 synthetic shortcut: `RoomSvr1 -> City1Svr -> D04`. City and D04 are loaded from
 business-named Glory assets and swapped only after authoritative `MapJoined`.
+The shared player anchor keeps its position ownership across the swap: halls and
+the city project a human character, while D04 projects the eight-way starter
+combat vehicle and restores the human view when returning to the city.
 The independent real-ENet transition check is:
 
 ```powershell
@@ -57,10 +60,10 @@ spawn, atomic map ownership transfer, and post-transfer snapshot isolation.
   multiplayer/map presentation flow; it is not yet an orchestration-only entry
   point.
 - Current client ownership: `LocalPlayerController` is the sole writer of local
-  target, route, direction, prediction sequence, and character position. The
-  next extraction is `ActiveWorldController`, which will atomically swap map,
-  navigation, entities, camera, and HUD map state; `HallHud` exposes semantic
-  methods instead of internal Controls.
+  target, route, direction, prediction sequence, and player position.
+  `ActiveWorldController` atomically swaps map, navigation, entities, player
+  presentation, camera, and HUD map state; `HallHud` exposes semantic methods
+  instead of internal Controls.
 - `scripts/navigation/diamond_navigation.gd`: map-configured diamond collision,
   eight-way A*, line-of-sight checks, nearest-walkable fallback, and path
   string-pulling. The current Glory hall uses a 41×320 grid.
@@ -86,9 +89,14 @@ then resource caching and `.tscn` scene composition. See
 
 Stage 3 currently has versioned Glory-backed content definitions, vehicle and
 monster lifecycle rules, an authoritative energy-cannon module, presentation
-assets, and focused tests. It is still in progress: these foundations are not
+assets, D04 vehicle projection, and focused tests. It is still in progress: these foundations are not
 yet a complete real-session, two-client combat loop with AI, projectiles,
 drops, and skill experience.
+
+The persistence boundary now includes typed player aggregates, a repository
+contract, schema migrations, and a transactional development file repository.
+Production SQLite is intentionally not claimed until a pinned Godot 4
+GDExtension driver and its concrete repository adapter are installed and tested.
 
 See `assets/README.md` for the business-oriented asset layout and binary asset
 version-control policy. See `使用说明.md` for reverse-engineering and gameplay
