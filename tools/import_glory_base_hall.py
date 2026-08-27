@@ -943,7 +943,7 @@ def main() -> int:
         "missing_dependencies": missing_dependencies, "asset_sources": asset_sources,
     }
     write_json(DESTINATION / "map_manifest.json", manifest, compact=True)
-    write_json(DESTINATION / "navigation_grid.json", {
+    write_json(DESTINATION / "navigation_summary.json", {
         "map_id": manifest["map_id"], "source_release": "starhome_lz_ry", "grid": metadata["engine_grid_size"],
         "cell_size": [48, 12], "runtime_sha256": manifest["navigation"]["source_sha256"],
         "walkable_rule": "(flags & 0x80) != 0", "passable": metadata["navigation"]["passable"], "blocked": metadata["navigation"]["blocked"],
