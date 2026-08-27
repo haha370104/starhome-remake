@@ -97,6 +97,16 @@
     ]
   },
   "navigation_overrides": [],
+  "player_presentation": {
+    "kind": "combat_actor",
+    "actor_id": "starter_combat_vehicle",
+    "manifest": "res://assets/equipment_world/combat_visual_manifest.json",
+    "animation_evidence": {
+      "directional_coverage": "source_confirmed_eight_way",
+      "move_cycle": "source_confirmed_four_frames_per_direction",
+      "idle_cycle": "reconstructed_directional_first_frame"
+    }
+  },
   "transitions": [
     {
       "transition_id": "exit_to_c03_field",

@@ -119,6 +119,8 @@ func load_dictionary(raw: Dictionary) -> MapDefinition:
 		_load_spawn_points(raw["spawn_points"], definition)
 	if raw.has("navigation_overrides"):
 		_load_navigation_overrides(raw["navigation_overrides"], definition)
+	if raw.has("player_presentation"):
+		_load_player_presentation(raw["player_presentation"], definition)
 
 	var raw_source_audit: Variant = raw.get("source_audit", {})
 	_validate_source_audit(raw_source_audit, "source_audit")
@@ -235,7 +237,44 @@ func _load_navigation_overrides(raw: Variant, definition: MapDefinition) -> void
 			_add_error(prefix + ".override_id", "导航覆盖 ID 重复：%s" % override_id)
 		else:
 			seen_ids[override_id] = true
-		definition.navigation_overrides.append(override)
+			definition.navigation_overrides.append(override)
+
+
+## 读取并校验 [param raw] 的玩家地图外观策略，写入 [param definition]。
+## Design: 地图只声明业务 actor；旧 ALE 路径仍被隔离在独立 source audit。
+func _load_player_presentation(raw: Variant, definition: MapDefinition) -> void:
+	if not raw is Dictionary:
+		_add_error("player_presentation", "玩家外观策略必须是 object")
+		return
+	var presentation: Dictionary = raw.duplicate(true)
+	var kind := StringName(String(presentation.get("kind", "")).strip_edges())
+	if kind == &"character":
+		definition.player_presentation = {"kind": "character"}
+		return
+	if kind != &"combat_actor":
+		_add_error("player_presentation.kind", "玩家外观只支持 character 或 combat_actor")
+		return
+	var actor_id := String(presentation.get("actor_id", "")).strip_edges()
+	if not _is_business_id(actor_id):
+		_add_error("player_presentation.actor_id", "战斗角色 ID 必须是小写业务语义标识")
+	var manifest_path := String(presentation.get("manifest", ""))
+	if not manifest_path.begins_with("res://assets/equipment_world/") or not manifest_path.ends_with(".json"):
+		_add_error(
+			"player_presentation.manifest",
+			"战斗角色清单必须来自业务化 equipment_world JSON",
+		)
+	var evidence_value: Variant = presentation.get("animation_evidence", {})
+	if not evidence_value is Dictionary:
+		_add_error("player_presentation.animation_evidence", "动画证据必须是 object")
+	else:
+		var evidence: Dictionary = evidence_value
+		for key in ["directional_coverage", "move_cycle", "idle_cycle"]:
+			if String(evidence.get(key, "")).strip_edges().is_empty():
+				_add_error(
+					"player_presentation.animation_evidence.%s" % key,
+					"动画证据字段不能为空",
+				)
+	definition.player_presentation = presentation
 
 
 ## Loads and validates the requested resource data.

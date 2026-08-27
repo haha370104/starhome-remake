@@ -15,6 +15,7 @@ var resource_paths: Dictionary = {}
 var default_spawn_id: StringName
 var spawn_points: Array[MapSpawnPoint] = []
 var navigation_overrides: Array[Dictionary] = []
+var player_presentation: Dictionary = {"kind": "character"}
 var transitions: Array[MapTransition] = []
 var source_audit: Dictionary = {}
 

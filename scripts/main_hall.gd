@@ -1,12 +1,13 @@
 extends Node2D
 
 const CHARACTER_CATALOG_PATH := "res://assets/characters/character_atlases.json"
+const COMBAT_VISUAL_MANIFEST_PATH := "res://assets/equipment_world/combat_visual_manifest.json"
 const NPC_CONFIG_PATH := "res://data/npcs/yian_harbor_hall_floor_1.json"
 const MAP_DEFINITION_PATH := "res://data/maps/yian_harbor_hall_floor_1.json"
 const MAP_DIRECTORY_PATH := "res://data/maps/map_directory.json"
 const DiamondNavigationScript := preload("res://scripts/navigation/diamond_navigation.gd")
 const CharacterFactoryScript := preload("res://scripts/characters/character_factory.gd")
-const WorldCharacterScript := preload("res://scripts/characters/world_character.gd")
+const PlayerWorldAvatarScript := preload("res://scripts/characters/player_world_avatar.gd")
 const HallHudScript := preload("res://scripts/ui/hall_hud.gd")
 const HallMultiplayerPresenterScript := preload(
 	"res://scripts/client/presentation/hall_multiplayer_presenter.gd"
@@ -133,6 +134,7 @@ func _ready() -> void:
 		self,
 		sortable_world,
 		map_background,
+		player,
 		local_player_controller,
 		camera,
 		hud,
@@ -276,7 +278,7 @@ func _sync_player_nodes() -> void:
 	_update_minimap_dot()
 
 
-## Builds the requested runtime object from configuration data.
+## 创建共享玩家锚点，并同时准备人形与按地图切换的战车表现。
 func _build_world() -> void:
 	map_background = Sprite2D.new()
 	map_background.name = "MapBase"
@@ -300,14 +302,23 @@ func _build_world() -> void:
 	sortable_world.y_sort_enabled = true
 	add_child(sortable_world)
 
-	player = WorldCharacterScript.new()
+	player = PlayerWorldAvatarScript.new()
 	player.name = "Player"
-	player.configure(
+	var combat_manifest_value: Variant = JSON.parse_string(
+		FileAccess.get_file_as_string(COMBAT_VISUAL_MANIFEST_PATH)
+	)
+	var combat_manifest: Dictionary = {}
+	if combat_manifest_value is Dictionary:
+		combat_manifest = combat_manifest_value
+	var avatar_error: Error = player.configure(
 		CharacterFactoryScript.build_character_set(character_catalog, "player"),
+		combat_manifest,
 		"H番茄花园",
 		Color(0.35, 1.0, 0.92),
 		Vector2(-66, -158),
 	)
+	if avatar_error != OK:
+		push_error("Unable to configure player avatar: %s" % error_string(avatar_error))
 	player.set_animation_speed_scale(player_animation_speed_scale)
 	sortable_world.add_child(player)
 

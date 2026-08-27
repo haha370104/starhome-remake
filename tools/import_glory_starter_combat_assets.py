@@ -70,13 +70,14 @@ def _action(
     direction_mode: str = "eight_way",
     loop: bool = True,
     offset: list[int] | None = None,
+    fps: float = 10.0,
 ) -> dict[str, Any]:
     """Build one manifest action without importing source-only identifiers."""
     action = {
         "resource": resource,
         "direction_mode": direction_mode,
         "frames_per_direction": frames_per_direction,
-        "fps": 10.0,
+        "fps": fps,
         "loop": loop,
     }
     action["offset"] = offset if offset is not None else _resource_offset(resource)
@@ -275,12 +276,24 @@ def _runtime_manifest(source_assets: list[dict[str, Any]]) -> dict[str, Any]:
         "starter_combat_vehicle": {
             "display_name": "新兵战车",
             "default_action": "idle",
+            "animation_evidence": {
+                "directional_coverage": "source_confirmed_eight_way",
+                "move_cycle": "source_confirmed_four_frames_per_direction",
+                "idle_cycle": "reconstructed_directional_first_frame",
+                "idle_reason": "荣耀版只恢复到一套八向四帧底盘序列；静止姿态固定复用每个方向的首帧。",
+            },
             "layers": [
                 {
                     "id": "chassis",
                     "z_index": 0,
                     "actions": {
-                        "idle": _action(chassis, 4, offset=chassis_offset),
+                        "idle": _action(
+                            chassis,
+                            4,
+                            loop=False,
+                            offset=chassis_offset,
+                            fps=0.0,
+                        ),
                         "move": _action(chassis, 4, offset=chassis_offset),
                     },
                 },

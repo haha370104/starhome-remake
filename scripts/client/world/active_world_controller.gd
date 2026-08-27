@@ -24,6 +24,7 @@ var transition_views: Array[Node2D] = []
 var _world_root: Node2D
 var _sortable_world: Node2D
 var _background: Sprite2D
+var _player_avatar: Node2D
 var _local_player_controller: Node
 var _camera: Camera2D
 var _hud: CanvasLayer
@@ -32,13 +33,14 @@ var _npc_catalog: Dictionary = {}
 
 
 ## 绑定活动世界所需的 [param world_root]、[param sortable_world] 与 [param background]。
-## [param local_player_controller]、[param camera] 和 [param hud] 是原子提交的唯一表现出口。
+## [param player_avatar]、[param local_player_controller]、[param camera] 和 [param hud] 是原子提交的唯一表现出口。
 ## [param character_catalog] 与 [param npc_catalog] 仅用于暂存目标地图 NPC，不由入口脚本解释。
 ## Returns 依赖完整时返回 `OK`，否则返回 `ERR_INVALID_PARAMETER`。
 func configure(
 	world_root: Node2D,
 	sortable_world: Node2D,
 	background: Sprite2D,
+	player_avatar: Node2D,
 	local_player_controller: Node,
 	camera: Camera2D,
 	hud: CanvasLayer,
@@ -49,6 +51,7 @@ func configure(
 		world_root == null
 		or sortable_world == null
 		or background == null
+		or player_avatar == null
 		or local_player_controller == null
 		or camera == null
 		or hud == null
@@ -57,6 +60,7 @@ func configure(
 	_world_root = world_root
 	_sortable_world = sortable_world
 	_background = background
+	_player_avatar = player_avatar
 	_local_player_controller = local_player_controller
 	_camera = camera
 	_hud = hud
@@ -96,6 +100,9 @@ func prepare_initial_bundle(definition_path: String) -> Dictionary:
 func commit_bundle(bundle: Dictionary, spawn_position: Vector2) -> bool:
 	var staged := _stage_bundle(bundle, spawn_position)
 	if staged.is_empty():
+		return false
+	if _player_avatar.apply_map_presentation(staged["player_presentation"]) != OK:
+		staged["container"].free()
 		return false
 	active_world_will_replace.emit()
 	_clear_active_nodes()
@@ -154,6 +161,8 @@ func _stage_bundle(bundle: Dictionary, spawn_position: Vector2) -> Dictionary:
 		return {}
 	if not staged_navigation.is_walkable(spawn_position):
 		return {}
+	if _player_avatar.validate_map_presentation(staged_definition.player_presentation) != OK:
+		return {}
 	var container := Node2D.new()
 	container.name = "StagedMapContent"
 	var staged_scene_nodes: Array[Node2D] = []
@@ -174,6 +183,7 @@ func _stage_bundle(bundle: Dictionary, spawn_position: Vector2) -> Dictionary:
 		"map_manifest": staged_manifest,
 		"floor_texture": floor_texture,
 		"minimap_texture": minimap_texture,
+		"player_presentation": staged_definition.player_presentation.duplicate(true),
 		"container": container,
 		"scene_nodes": staged_scene_nodes,
 		"npc_instances": staged_npcs,
