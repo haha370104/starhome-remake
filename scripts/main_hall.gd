@@ -421,7 +421,7 @@ func _build_world() -> void:
 		combat_manifest,
 		"H番茄花园",
 		Color(0.35, 1.0, 0.92),
-		Vector2(-66, -158),
+		PlayerWorldAvatarScript.HUMAN_NAME_LABEL_POSITION,
 	)
 	if avatar_error != OK:
 		push_error("Unable to configure player avatar: %s" % error_string(avatar_error))

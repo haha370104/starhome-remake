@@ -1,6 +1,8 @@
 class_name WorldCharacter
 extends Node2D
 
+const PLAYER_NAME_LABEL_POSITION := Vector2(-65, -88)
+
 var body := AnimatedSprite2D.new()
 var equipment := AnimatedSprite2D.new()
 var shadow := AnimatedSprite2D.new()

@@ -12,6 +12,8 @@ const CharacterFactoryScript := preload("res://scripts/characters/character_fact
 
 const CHARACTER_KIND := &"character"
 const COMBAT_ACTOR_KIND := &"combat_actor"
+const HUMAN_NAME_LABEL_POSITION := WorldCharacterScript.PLAYER_NAME_LABEL_POSITION
+const COMBAT_NAME_LABEL_POSITION := Vector2(-65, -48)
 
 var presentation_kind: StringName = CHARACTER_KIND
 var combat_actor_id: StringName = &""
@@ -256,7 +258,7 @@ func _build_name_label(display_name: String, name_color: Color) -> Label:
 	var label := Label.new()
 	label.name = "CombatNameLabel"
 	label.text = display_name
-	label.position = Vector2(-65, -72)
+	label.position = COMBAT_NAME_LABEL_POSITION
 	label.size = Vector2(130, 24)
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.add_theme_font_size_override("font_size", 15)

@@ -23,6 +23,11 @@ func _run() -> void:
 	_expect(hall.camera.zoom == Vector2.ONE, "世界摄像机必须保持原客户端 1:1 像素比例")
 	_expect(player.presentation_kind == &"character", "大厅出生必须保持人形玩家")
 	_expect(player.human_character.visible, "大厅必须显示人形合成层")
+	_expect(
+		player.human_character.name_label.position
+		== player.HUMAN_NAME_LABEL_POSITION,
+		"人形昵称必须贴近原客户端脚点上方 82 像素的文字锚点",
+	)
 	_expect(not player.combat_presenter.visible, "大厅不得提前显示战车")
 
 	var city_bundle: Dictionary = hall.active_world_controller.prepare_initial_bundle(CITY_DEFINITION)
@@ -50,6 +55,10 @@ func _run() -> void:
 	_expect(not player.human_character.visible, "D04 不得把人形层叠在战车下方")
 	_expect(player.combat_presenter.visible, "D04 必须显示战车表现器")
 	_expect(player.combat_name_label.visible, "战车模式仍须保留玩家名称")
+	_expect(
+		player.combat_name_label.position == player.COMBAT_NAME_LABEL_POSITION,
+		"战车昵称必须贴近原客户端脚点上方 42 像素的文字锚点",
+	)
 	_expect(player.combat_presenter.get_child_count() == 3, "战车叠加阴影、底盘和能量炮三个来源层")
 	_expect(player.combat_status_bar.position == Vector2(0, 45), "战车状态条应复原原客户端脚点下方 45 像素锚点")
 	_expect(is_equal_approx(player.combat_status_bar._bar_width, 50.0), "战车状态条应复原原客户端 50 像素宽度")

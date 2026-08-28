@@ -271,7 +271,7 @@ func _create_remote_character(entity_id: StringName) -> Node2D:
 		CharacterFactoryScript.build_character_set(_character_catalog, _remote_appearance_key),
 		String(entity_id),
 		Color(0.55, 0.9, 1.0),
-		Vector2(-66, -158),
+		WorldCharacterScript.PLAYER_NAME_LABEL_POSITION,
 	)
 	character.set_animation_speed_scale(_remote_animation_speed_scale)
 	_remote_parent.add_child(character)
