@@ -12,11 +12,11 @@ var current_action := "stand"
 var current_direction := 6
 
 
-## Configures the instance from validated runtime inputs.
-## [param character_set] Input value consumed by the operation.
-## [param display_name] Input value consumed by the operation.
-## [param name_color] Input value consumed by the operation.
-## [param name_offset] Input value consumed by the operation.
+## 配置并初始化 `configure` 对应的模块状态。
+## [param character_set] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param display_name] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param name_color] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param name_offset] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func configure(
 	character_set: Dictionary,
 	display_name: String,
@@ -63,9 +63,9 @@ func configure(
 	set_action("stand", 6)
 
 
-## Updates the managed state with the supplied value.
-## [param action] Input value consumed by the operation.
-## [param direction] Input value consumed by the operation.
+## 设置或恢复 `set_action` 对应的模块状态。
+## [param action] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param direction] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func set_action(action: String, direction: int) -> void:
 	current_action = action
 	current_direction = direction
@@ -81,8 +81,8 @@ func set_action(action: String, direction: int) -> void:
 		shadow.play(animation)
 
 
-## Updates the managed state with the supplied value.
-## [param value] New value requested by the caller.
+## 设置或恢复 `set_animation_speed_scale` 对应的模块状态。
+## [param value] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func set_animation_speed_scale(value: float) -> void:
 	body.speed_scale = value
 	equipment.speed_scale = value

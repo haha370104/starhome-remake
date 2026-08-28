@@ -4,10 +4,10 @@ extends RefCounted
 const MOVE_ANIMATION_FPS := 14.0
 
 
-## Builds the requested runtime object from configuration data.
-## [param catalog] Configuration data that controls the operation.
-## [param key] Input value consumed by the operation.
-## Returns Structured result data produced by the operation.
+## 创建 `build_character_set` 对应的模块状态。
+## [param catalog] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param key] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 static func build_character_set(catalog: Dictionary, key: String) -> Dictionary:
 	var body_group: Dictionary = catalog["shared_body"]
 	var shadow_group: Dictionary = catalog["shared_shadow"]
@@ -22,9 +22,9 @@ static func build_character_set(catalog: Dictionary, key: String) -> Dictionary:
 	}
 
 
-## Builds the requested runtime object from configuration data.
-## [param group] Input value consumed by the operation.
-## Returns the result produced by the operation.
+## 创建 `build_frames` 对应的模块状态。
+## [param group] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 static func _build_frames(group: Dictionary) -> SpriteFrames:
 	var frames := SpriteFrames.new()
 	if frames.has_animation(&"default"):
@@ -47,9 +47,9 @@ static func _build_frames(group: Dictionary) -> SpriteFrames:
 	return frames
 
 
-## Performs the `action_offsets` operation.
-## [param group] Input value consumed by the operation.
-## Returns Structured result data produced by the operation.
+## 执行 `action_offsets` 对应的模块操作。
+## [param group] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 static func _action_offsets(group: Dictionary) -> Dictionary:
 	return {
 		"move": Vector2(group["move"]["offset"][0], group["move"]["offset"][1]),
@@ -57,11 +57,11 @@ static func _action_offsets(group: Dictionary) -> Dictionary:
 	}
 
 
-## Performs the `atlas_frame` operation.
-## [param texture] Input value consumed by the operation.
-## [param metadata] Input value consumed by the operation.
-## [param index] Sequence, tick, or index value used by the operation.
-## Returns the result produced by the operation.
+## 执行 `atlas_frame` 对应的模块操作。
+## [param texture] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param metadata] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param index] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 static func _atlas_frame(texture: Texture2D, metadata: Dictionary, index: int) -> AtlasTexture:
 	var cell := Vector2(metadata["cell"][0], metadata["cell"][1])
 	var columns := int(metadata["columns"])

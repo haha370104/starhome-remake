@@ -12,10 +12,10 @@ var visual_collision_offset := Vector2.ZERO
 var visual_collision_radius := 24.0
 
 
-## Configures this view from [param manifest] and one authoritative [param snapshot].
-## [param manifest] Business combat visual manifest containing the declared monster actor.
-## [param snapshot] Validated public monster snapshot from the authority boundary.
-## Returns `OK` after all presentation children are ready, otherwise a resource/data error.
+## 执行 `configure` 对应的模块操作。
+## [param manifest] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param snapshot] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func configure(manifest: Dictionary, snapshot: Dictionary) -> Error:
 	entity_id = String(snapshot["entity_id"])
 	presenter = CombatVisualPresenterScript.new()
@@ -50,8 +50,8 @@ func configure(manifest: Dictionary, snapshot: Dictionary) -> Error:
 	return OK
 
 
-## Applies one authoritative [param snapshot] to position, pose and combat bars.
-## [param snapshot] Validated state for this exact monster identity.
+## 执行 `apply_snapshot` 对应的模块操作。
+## [param snapshot] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func apply_snapshot(snapshot: Dictionary) -> void:
 	var point: Array = snapshot["position"]
 	position = Vector2(float(point[0]), float(point[1]))
@@ -62,24 +62,26 @@ func apply_snapshot(snapshot: Dictionary) -> void:
 	presenter.set_action(StringName(snapshot["action"]))
 
 
-## Advances animation presentation by [param delta].
-## [param delta] Frame time in seconds; combat state itself is never simulated here.
+## 按渲染帧推进当前节点的表现状态。
+## [param delta] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _process(delta: float) -> void:
 	if presenter != null and visible:
 		presenter.advance(delta)
 
 
-## Reports whether [param world_position] lies within [param radius] of the monster foot point.
-## [param world_position] World click coordinate used only for target selection.
-## [param radius] Maximum client-side selection distance in pixels.
-## Returns true only for a visible living presentation.
+## 执行 `is_selectable_at` 对应的模块操作。
+## [param world_position] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param radius] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func is_selectable_at(world_position: Vector2, radius: float) -> bool:
 	return visible and position.distance_to(world_position) <= radius
 
 
-## 检测世界线段 [param segment_start] 到 [param segment_end] 是否穿过怪物表现圆。
-## Returns 命中时返回最早参数 `t` 和视觉碰撞点，否则返回 `hit=false`。
-## Design: 该几何只用于提前结束客户端弹体，不参与伤害、命中或服务端状态预测。
+## 执行 `visual_segment_collision` 对应的模块操作。
+## [param segment_start] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param segment_end] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该几何只用于提前结束客户端弹体，不参与伤害、命中或服务端状态预测。
 func visual_segment_collision(segment_start: Vector2, segment_end: Vector2) -> Dictionary:
 	if not visible:
 		return {"hit": false}

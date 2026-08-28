@@ -8,9 +8,11 @@ var _sprite: AnimatedSprite2D
 var _interaction_rect := Rect2()
 
 
-## 以 [param transition] 的业务标识和 [param presentation] 的动画资源构建传送视图。
-## Returns 资源、动画与锚点完整时返回 `OK`，否则返回明确错误码。
-## Design: 旧客户端路径只允许存在于数据审计；运行时仅消费业务化 `res://` 资源。
+## 执行 `configure` 对应的模块操作。
+## [param transition] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param presentation] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：旧客户端路径只允许存在于数据审计；运行时仅消费业务化 `res://` 资源。
 func configure(transition: MapTransition, presentation: Dictionary) -> Error:
 	if transition == null or transition.transition_id.is_empty():
 		return ERR_INVALID_PARAMETER
@@ -62,15 +64,17 @@ func configure(transition: MapTransition, presentation: Dictionary) -> Error:
 	return OK
 
 
-## 判断世界坐标 [param world_position] 是否落在数据声明的固定本地交互矩形内。
-## Returns 命中固定区域时返回 `true`，结果不随动画帧透明像素变化。
+## 执行 `hit_test` 对应的模块操作。
+## [param world_position] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func hit_test(world_position: Vector2) -> bool:
 	if _sprite == null:
 		return false
 	return _interaction_rect.has_point(_sprite.to_local(world_position))
 
 
-## 验证 [param value] 是否是可转换为二维坐标的两个元素数组。
-## Returns 恰有两个元素时返回 `true`。
+## 执行 `is_vector_pair` 对应的模块操作。
+## [param value] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func _is_vector_pair(value: Variant) -> bool:
 	return value is Array and (value as Array).size() == 2

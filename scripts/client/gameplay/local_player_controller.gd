@@ -21,10 +21,14 @@ var _authority_position_held := false
 var _held_position := Vector2.ZERO
 
 
-## 绑定 [param character]、[param navigation]、[param destination_marker] 和可配置的 [param movement_speed]。
-## [param initial_position] 是控制器接管角色位置时使用的唯一初始坐标。
-## Returns 依赖完整且速度有效时返回 `OK`，否则返回 `ERR_INVALID_PARAMETER`。
-## Design: 配置完成后，运行时代码不得绕过本控制器写入本地角色位置或路线状态。
+## 执行 `configure` 对应的模块操作。
+## [param character] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param navigation] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param destination_marker] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param movement_speed] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param initial_position] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：配置完成后，运行时代码不得绕过本控制器写入本地角色位置或路线状态。
 func configure(
 	character: Node2D,
 	navigation: RefCounted,
@@ -43,31 +47,34 @@ func configure(
 	return OK
 
 
-## 注入 [param presenter] 作为移动意图与本地预测位移的会话端口。
-## Design: 控制器不依赖具体网络会话类型，只调用表现接缝的稳定移动 API。
+## 执行 `set_multiplayer_presenter` 对应的模块操作。
+## [param presenter] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 设计：控制器不依赖具体网络会话类型，只调用表现接缝的稳定移动 API。
 func set_multiplayer_presenter(presenter: Node) -> void:
 	_multiplayer_presenter = presenter
 
 
-## 将后续寻路切换到 [param navigation]；调用方应随后提交出生点或取消旧路线。
+## 执行 `set_navigation` 对应的模块操作。
+## [param navigation] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func set_navigation(navigation: RefCounted) -> void:
 	_navigation = navigation
 
 
-## 返回当前由控制器管理的角色坐标。
-## Returns 未配置时返回零向量。
+## 执行 `position` 对应的模块操作。
+## 返回该函数计算、查询或操作得到的结果。
 func position() -> Vector2:
 	return _character.position if _character != null else Vector2.ZERO
 
 
 ## 报告玩家是否仍有尚未完成的移动目标与路线段。
-## Returns 路线正在由控制器推进时返回 `true`。
+## 返回该函数计算、查询或操作得到的结果。
 func has_active_route() -> bool:
 	return _has_target and path_index < path_points.size()
 
 
-## 解析并请求前往 [param requested_position]，包括最近可达点回退和会话意图创建。
-## Returns 成功时包含解析目标和回退标志；失败时包含稳定原因与提示文字。
+## 执行 `request_move` 对应的模块操作。
+## [param requested_position] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func request_move(requested_position: Vector2) -> Dictionary:
 	if _character == null or _navigation == null:
 		return {"ok": false, "code": &"unconfigured", "message": "本地移动尚未初始化"}
@@ -99,7 +106,8 @@ func request_move(requested_position: Vector2) -> Dictionary:
 	}
 
 
-## 以 [param delta] 推进当前路线，并把实际位移记录到对应预测输入序号。
+## 执行 `advance` 对应的模块操作。
+## [param delta] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func advance(delta: float) -> void:
 	if _character == null or path_index >= path_points.size():
 		return
@@ -125,8 +133,9 @@ func advance(delta: float) -> void:
 	_record_predicted_delta(position() - previous_position)
 
 
-## 消费会话发布的 [param state]，并执行平滑重算或强制取消路线策略。
-## Design: `smooth` 保留业务目标并从新表现位置重算；`forced` 是传送/强纠偏边界，旧路线不可续用。
+## 执行 `apply_authoritative_presentation` 对应的模块操作。
+## [param state] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 设计：`smooth` 保留业务目标并从新表现位置重算；`forced` 是传送/强纠偏边界，旧路线不可续用。
 func apply_authoritative_presentation(state: Dictionary) -> void:
 	if _character == null:
 		return
@@ -151,7 +160,9 @@ func hold_position_for_map_commit() -> void:
 	cancel_route()
 
 
-## 采用 [param navigation] 和权威 [param spawn_position] 原子进入新地图并恢复位置投影。
+## 执行 `commit_map_position` 对应的模块操作。
+## [param navigation] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param spawn_position] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func commit_map_position(navigation: RefCounted, spawn_position: Vector2) -> void:
 	_navigation = navigation
 	_authority_position_held = false
@@ -159,7 +170,9 @@ func commit_map_position(navigation: RefCounted, spawn_position: Vector2) -> voi
 	_write_position(spawn_position)
 
 
-## 在同图传送或初始化时采用 [param new_position]；[param cancel_active_route] 控制是否终止旧路线。
+## 执行 `set_position` 对应的模块操作。
+## [param new_position] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param cancel_active_route] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func set_position(new_position: Vector2, cancel_active_route: bool = true) -> void:
 	_authority_position_held = false
 	if cancel_active_route:
@@ -167,7 +180,8 @@ func set_position(new_position: Vector2, cancel_active_route: bool = true) -> vo
 	_write_position(new_position)
 
 
-## 取消当前目标、路径和预测输入序号；非空 [param message] 会发布停步原因。
+## 执行 `cancel_route` 对应的模块操作。
+## [param message] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func cancel_route(message: String = "") -> void:
 	path_points = PackedVector2Array()
 	path_index = 0
@@ -180,7 +194,8 @@ func cancel_route(message: String = "") -> void:
 		route_stopped.emit(message)
 
 
-## 将当前角色切换到 [param action]，方向始终来自控制器当前路线段。
+## 执行 `set_character_action` 对应的模块操作。
+## [param action] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func set_character_action(action: StringName) -> void:
 	_set_character_action(action)
 
@@ -223,7 +238,8 @@ func _complete_route() -> void:
 	route_finished.emit()
 
 
-## 把 [param displacement] 记录到当前活动输入；零位移和无序号时不产生调用。
+## 执行 `record_predicted_delta` 对应的模块操作。
+## [param displacement] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _record_predicted_delta(displacement: Vector2) -> void:
 	if (
 		_multiplayer_presenter != null
@@ -236,19 +252,22 @@ func _record_predicted_delta(displacement: Vector2) -> void:
 		)
 
 
-## 通过唯一写入口把 [param new_position] 投影到角色并通知摄像机/HUD。
+## 执行 `write_position` 对应的模块操作。
+## [param new_position] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _write_position(new_position: Vector2) -> void:
 	_character.position = new_position
 	position_changed.emit(new_position)
 
 
-## 在当前 [param current_direction] 上播放业务动作 [param action]。
+## 执行 `set_character_action` 对应的模块操作。
+## [param action] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _set_character_action(action: StringName) -> void:
 	if _character != null:
 		_character.set_action(String(action), current_direction)
 
 
-## 将连续方向向量 [param motion] 量化为荣耀素材的八方向索引。
-## Returns `E, NE, N, NW, W, SW, S, SE` 对应的 `0..7`。
+## 执行 `direction_index` 对应的模块操作。
+## [param motion] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 static func direction_index(motion: Vector2) -> int:
 	return posmod(-roundi(motion.angle() / (PI / 4.0)), 8)

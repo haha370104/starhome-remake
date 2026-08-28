@@ -21,13 +21,13 @@ var _accumulator := 0.0
 var _next_command_sequence := 1
 
 
-## Rebuilds the debug authority for [param map_id] and [param requested_map_instance_id].
-## [param map_id] Active business map whose configured encounter is loaded.
-## [param requested_map_instance_id] Local debug instance identity matching client intents.
-## [param requested_player_position] Current player foot point registered as an authority actor.
-## [param requested_navigation] Loaded immutable navigation used to admit AI movement.
-## Returns `OK`; maps without encounters simply clear combat state.
-## Design: This is an in-process dedicated-server substitute for editor testing, not client-owned combat arithmetic.
+## 执行 `configure_map` 对应的模块操作。
+## [param map_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param requested_map_instance_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param requested_player_position] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param requested_navigation] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数位于客户端交互或表现边界，最终状态以服务器权威结果为准。
 func configure_map(
 	map_id: String,
 	requested_map_instance_id: String,
@@ -78,17 +78,17 @@ func configure_map(
 	return OK
 
 
-## Updates the authority-owned actor coordinate from validated local navigation [param position].
-## [param position] Current player foot point already admitted by `LocalPlayerController`.
+## 执行 `update_player_position` 对应的模块操作。
+## [param position] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func update_player_position(position: Vector2) -> void:
 	player_position = position
 	if module != null:
 		module.update_actor_position(LOCAL_ACTOR_ID, position)
 
 
-## Submits one target-only attack against [param target_entity_id].
-## [param target_entity_id] Monster identity selected from the latest authority snapshot.
-## Returns the authoritative event or a stable local-debug error dictionary.
+## 执行 `request_attack` 对应的模块操作。
+## [param target_entity_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func request_attack(target_entity_id: String) -> Dictionary:
 	if module == null or target_entity_id.is_empty():
 		return {"ok": false, "code": &"combat.no_target"}
@@ -104,8 +104,8 @@ func request_attack(target_entity_id: String) -> Dictionary:
 	return {"ok": false, "code": result.error_code, "message": result.error_message}
 
 
-## Advances the in-process authority by fixed ticks derived from frame [param delta].
-## [param delta] Frame time accumulated into the same 20 Hz simulation used by the server.
+## 按渲染帧推进当前节点的表现状态。
+## [param delta] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _process(delta: float) -> void:
 	if module == null or delta <= 0.0:
 		return
@@ -119,17 +119,17 @@ func _process(delta: float) -> void:
 			_emit_snapshot()
 
 
-## Emits the current map-scoped combat state to presentation consumers.
+## 发布 `emit_snapshot` 对应的模块状态。
 func _emit_snapshot() -> void:
 	if module != null:
 		combat_snapshot_ready.emit(module.snapshot_for_actor(LOCAL_ACTOR_ID))
 
 
-## Resolves a walkable AI step from [param current_position] to [param requested_position].
-## [param monster_id] Stable identity retained for parity with the production resolver signature.
-## [param current_position] Existing authoritative monster foot point.
-## [param requested_position] AI-selected next fixed-step coordinate.
-## Returns a walkable point or the current point when navigation rejects the request.
+## 执行 `resolve_monster_position` 对应的模块操作。
+## [param monster_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param current_position] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param requested_position] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func _resolve_monster_position(
 	monster_id: String,
 	current_position: Vector2,
@@ -143,9 +143,9 @@ func _resolve_monster_position(
 	return fallback if fallback.is_finite() else current_position
 
 
-## Snaps [param requested_position] to immutable navigation for initial monster admission.
-## [param requested_position] Configured spawn coordinate generated from the encounter group.
-## Returns a finite walkable coordinate when possible.
+## 执行 `walkable_position` 对应的模块操作。
+## [param requested_position] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func _walkable_position(requested_position: Vector2) -> Vector2:
 	if navigation == null or navigation.is_walkable(requested_position):
 		return requested_position

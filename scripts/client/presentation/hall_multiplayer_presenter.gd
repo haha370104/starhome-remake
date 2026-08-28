@@ -34,11 +34,11 @@ var _status_restore_text := ""
 
 
 ## 绑定本地角色、远端角色父节点、角色素材目录及临时状态文字载体。
-## [param local_character] 接收预测与权威坐标的现有玩家角色节点。
-## [param remote_parent] 承载远端玩家且参与场景 Y 排序的父节点。
-## [param character_catalog] `CharacterFactory` 消费的业务化角色素材配置。
-## [param status_label] 用于短暂显示连接状态和拒绝原因的现有 HUD 标签。
-## Design: 表现器只投影会话状态，不拥有路径规划、输入采样或传输协议。
+## [param local_character] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param remote_parent] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param character_catalog] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param status_label] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 设计：表现器只投影会话状态，不拥有路径规划、输入采样或传输协议。
 func configure(
 	local_character: Node2D,
 	remote_parent: Node2D,
@@ -51,9 +51,10 @@ func configure(
 	_status_label = status_label
 
 
-## 按 [param settings] 创建并启动客户端会话。
-## Returns 启动成功返回 `OK`，配置无效或连接启动失败时返回对应 Godot 错误码。
-## Design: `offline_debug_enabled` 必须由调用方显式提供；缺省值始终选择真实网络边界。
+## 执行 `start` 对应的模块操作。
+## [param settings] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：`offline_debug_enabled` 必须由调用方显式提供；缺省值始终选择真实网络边界。
 func start(settings: Dictionary) -> Error:
 	if session != null:
 		return ERR_ALREADY_IN_USE
@@ -108,30 +109,31 @@ func stop() -> void:
 		_remove_remote_character(StringName(entity_id))
 
 
-## 向客户端会话提交前往 [param requested_world_point] 的移动意图。
-## Returns 创建成功时返回带输入序号的意图字典，会话未启动或地图未就绪时返回空字典。
-## Design: 表现器不自行裁剪目标点；调用方应先完成本地导航约束解析。
+## 执行 `request_move` 对应的模块操作。
+## [param requested_world_point] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：表现器不自行裁剪目标点；调用方应先完成本地导航约束解析。
 func request_move(requested_world_point: Vector2) -> Dictionary:
 	if session == null:
 		return {}
 	return session.request_move(requested_world_point)
 
 
-## Forwards an equipped [param ability_id] against [param target_entity_id] to the authority session.
-## [param ability_id] Stable ability identifier selected by the HUD/action state.
-## [param target_entity_id] Monster identity from the latest combat snapshot.
-## Returns the strict submitted payload, or an empty dictionary when unavailable.
+## 执行 `request_use_ability` 对应的模块操作。
+## [param ability_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param target_entity_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func request_use_ability(ability_id: String, target_entity_id: String) -> Dictionary:
 	if session == null:
 		return {}
 	return session.request_use_ability(ability_id, target_entity_id)
 
 
-## Requests the server-owned exit [param transition_id] with its declared [param destination_entry_number].
-## [param transition_id] Business transition identifier selected by scene interaction.
-## [param destination_entry_number] Destination entrance number from the current map definition.
-## Returns the submitted transition payload, or an empty dictionary while unavailable/already pending.
-## Design: This presentation seam forwards identifiers only and never resolves a target map or spawn locally.
+## 执行 `request_map_change` 对应的模块操作。
+## [param transition_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param destination_entry_number] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数位于客户端交互或表现边界，最终状态以服务器权威结果为准。
 func request_map_change(
 	transition_id: StringName,
 	destination_entry_number: int = 0,
@@ -141,44 +143,50 @@ func request_map_change(
 	return session.request_map_change(transition_id, destination_entry_number)
 
 
-## 将本地路径模拟产生的 [param displacement] 记入 [param input_sequence] 的预测状态。
-## Returns 会话接受该输入序号时返回 `true`。
-## Design: 权威校正仍由 `ClientMultiplayerSession` 处理，场景不得直接写校正坐标。
+## 执行 `record_local_predicted_delta` 对应的模块操作。
+## [param input_sequence] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param displacement] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：权威校正仍由 `ClientMultiplayerSession` 处理，场景不得直接写校正坐标。
 func record_local_predicted_delta(input_sequence: int, displacement: Vector2) -> bool:
 	if session == null or input_sequence <= 0 or displacement.is_zero_approx():
 		return false
 	return session.record_local_predicted_delta(input_sequence, displacement)
 
 
-## 以临时 HUD 文字展示服务端拒绝 [param code] 与可读 [param message]。
+## 执行 `show_rejection` 对应的模块操作。
+## [param code] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param message] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func show_rejection(code: StringName, message: String) -> void:
 	_on_command_rejected(code, message)
 
 
-## 返回 [param entity_id] 对应的远端角色节点。
-## Returns 实体存在时返回 `WorldCharacter`，否则返回 `null`。
+## 执行 `remote_character` 对应的模块操作。
+## [param entity_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func remote_character(entity_id: StringName) -> Node2D:
 	return remote_characters.get(entity_id) as Node2D
 
 
 ## 查询当前由表现器管理的远端角色数量。
-## Returns 当前远端角色数量。
+## 返回该函数计算、查询或操作得到的结果。
 func remote_character_count() -> int:
 	return remote_characters.size()
 
 
-## 发布会话本地预测/校正 [param state]，由 `LocalPlayerController` 独占角色位置写入。
-## [param state] `LocalMovementPredictor` 发布的表现状态。
-## Design: 表现器不得写本地角色坐标，否则会与路线控制器形成双写。
+## 处理 `_on_local_presentation_state_changed` 对应的信号回调。
+## [param state] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 设计：表现器不得写本地角色坐标，否则会与路线控制器形成双写。
 func _on_local_presentation_state_changed(state: Dictionary) -> void:
 	if not state.has("position"):
 		return
 	local_character_state_applied.emit(state.duplicate(true))
 
 
-## 创建或更新 [param entity_id] 的远端角色表现。
-## [param state] 插值器发布的位置、方向和动作状态。
-## Design: 所有玩家均经同一 `CharacterFactory` 与 `WorldCharacter` 组合，避免网络角色形成第二套素材体系。
+## 处理 `_on_remote_presentation_state_changed` 对应的信号回调。
+## [param entity_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param state] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 设计：所有玩家均经同一 `CharacterFactory` 与 `WorldCharacter` 组合，避免网络角色形成第二套素材体系。
 func _on_remote_presentation_state_changed(entity_id: StringName, state: Dictionary) -> void:
 	if entity_id == &"" or not state.has("position"):
 		return
@@ -192,12 +200,14 @@ func _on_remote_presentation_state_changed(entity_id: StringName, state: Diction
 	character.set_action(_world_character_action(StringName(state.get("action_id", &"idle"))), direction)
 
 
-## 响应会话移除 [param entity_id] 的通知并销毁对应远端角色节点。
+## 处理 `_on_remote_entity_removed` 对应的信号回调。
+## [param entity_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _on_remote_entity_removed(entity_id: StringName) -> void:
 	_remove_remote_character(entity_id)
 
 
-## 将 [param state] 转换为短暂的中文连接状态提示。
+## 处理 `_on_connection_state_changed` 对应的信号回调。
+## [param state] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _on_connection_state_changed(state: ClientNetworkAdapter.ConnectionState) -> void:
 	match state:
 		ClientNetworkAdapter.ConnectionState.CONNECTING:
@@ -208,22 +218,25 @@ func _on_connection_state_changed(state: ClientNetworkAdapter.ConnectionState) -
 			_show_temporary_status("已与服务器断开", 3.0)
 
 
-## 展示底层连接失败的可读 [param message]。
+## 处理 `_on_connection_failed` 对应的信号回调。
+## [param message] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _on_connection_failed(message: String) -> void:
 	_show_temporary_status("连接失败：%s" % message, 4.0)
 
 
-## 展示服务器拒绝的 [param code] 与可读 [param message]。
+## 处理 `_on_command_rejected` 对应的信号回调。
+## [param code] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param message] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _on_command_rejected(code: StringName, message: String) -> void:
 	var detail := message if not message.is_empty() else String(code)
 	_show_temporary_status("请求被拒绝：%s" % detail, 4.0)
 
 
-## Publishes the correlated failure for [param transition_id] and shows its [param code]/[param message].
-## [param transition_id] Exit whose authoritative transfer failed.
-## [param code] Stable server or protocol failure code.
-## [param message] Human-readable rejection detail.
-## Design: Scene switching listens to the stable signal; temporary text is presentation-only feedback.
+## 处理 `_on_map_change_failed` 对应的信号回调。
+## [param transition_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param code] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param message] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 设计：该函数位于客户端交互或表现边界，最终状态以服务器权威结果为准。
 func _on_map_change_failed(
 	transition_id: StringName,
 	code: StringName,
@@ -234,8 +247,9 @@ func _on_map_change_failed(
 	_show_temporary_status("切换地图失败：%s" % detail, 4.0)
 
 
-## 为 [param entity_id] 创建业务化远端角色并加入共享 Y 排序父节点。
-## Returns 角色配置存在时返回新节点，配置缺失时报告错误并返回 `null`。
+## 执行 `create_remote_character` 对应的模块操作。
+## [param entity_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func _create_remote_character(entity_id: StringName) -> Node2D:
 	if not _character_catalog.has(_remote_appearance_key):
 		push_error("Remote character appearance is missing: %s" % _remote_appearance_key)
@@ -255,7 +269,8 @@ func _create_remote_character(entity_id: StringName) -> Node2D:
 	return character
 
 
-## 从场景和索引中移除 [param entity_id] 对应的远端角色。
+## 执行 `remove_remote_character` 对应的模块操作。
+## [param entity_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _remove_remote_character(entity_id: StringName) -> void:
 	var character := remote_character(entity_id)
 	if character == null:
@@ -265,8 +280,9 @@ func _remove_remote_character(entity_id: StringName) -> void:
 	remote_character_removed.emit(entity_id)
 
 
-## 将网络动作 [param action_id] 归一化为 `WorldCharacter` 支持的动作键。
-## Returns 移动类动作返回 `move`，其他动作暂时安全降级为 `stand`。
+## 执行 `world_character_action` 对应的模块操作。
+## [param action_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func _world_character_action(action_id: StringName) -> String:
 	match action_id:
 		&"move", &"moving", &"walk", &"walking", &"run", &"running":
@@ -286,7 +302,9 @@ func _ensure_status_timer() -> void:
 	add_child(_status_timer)
 
 
-## 在 [param duration_seconds] 秒内显示 [param message]，且不覆盖期间出现的新业务提示。
+## 执行 `show_temporary_status` 对应的模块操作。
+## [param message] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param duration_seconds] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _show_temporary_status(message: String, duration_seconds: float) -> void:
 	if _status_label == null:
 		return

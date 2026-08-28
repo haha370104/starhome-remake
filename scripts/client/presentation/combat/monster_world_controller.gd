@@ -11,11 +11,11 @@ var _local_player: Node2D
 var _last_event_id := 0
 
 
-## Configures the controller with [param world_parent], business [param manifest] and [param local_player].
-## [param world_parent] Y-sorted scene parent that owns each monster view directly.
-## [param manifest] Combat visual manifest used only for rendering actor IDs from snapshots.
-## [param local_player] Local authority actor presentation used only as a damage-number anchor.
-## Returns `OK` when dependencies are available.
+## 执行 `configure` 对应的模块操作。
+## [param world_parent] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param manifest] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param local_player] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func configure(world_parent: Node2D, manifest: Dictionary, local_player: Node2D) -> Error:
 	if world_parent == null or manifest.is_empty() or local_player == null:
 		return ERR_INVALID_PARAMETER
@@ -25,8 +25,8 @@ func configure(world_parent: Node2D, manifest: Dictionary, local_player: Node2D)
 	return OK
 
 
-## Reconciles all visible monsters from one authoritative [param combat_snapshot].
-## [param combat_snapshot] Validated map-scoped combat document containing a monster list.
+## 执行 `apply_snapshot` 对应的模块操作。
+## [param combat_snapshot] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func apply_snapshot(combat_snapshot: Dictionary) -> void:
 	var observed: Dictionary = {}
 	for raw_monster: Variant in combat_snapshot.get("monsters", []):
@@ -53,10 +53,10 @@ func apply_snapshot(combat_snapshot: Dictionary) -> void:
 	_apply_recent_events(combat_snapshot)
 
 
-## Finds the living monster closest to [param world_position] within [param radius].
-## [param world_position] Player click coordinate used for local target selection only.
-## [param radius] Maximum selection distance; the server still performs range and life validation.
-## Returns the selected monster ID or an empty string.
+## 执行 `nearest_target` 对应的模块操作。
+## [param world_position] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param radius] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func nearest_target(world_position: Vector2, radius: float = 72.0) -> String:
 	var selected := ""
 	var best_distance := radius
@@ -69,16 +69,18 @@ func nearest_target(world_position: Vector2, radius: float = 72.0) -> String:
 	return selected
 
 
-## Resolves the latest authority position for [param entity_id].
-## [param entity_id] Monster identity selected from this controller's reconciled views.
-## Returns the world foot point, or `Vector2.INF` when the target is absent.
+## 执行 `target_position` 对应的模块操作。
+## [param entity_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func target_position(entity_id: String) -> Vector2:
 	var view: MonsterWorldView = _views.get(entity_id)
 	return view.position if view != null and view.visible else Vector2.INF
 
 
-## 返回 [param segment_start] 到 [param segment_end] 最先穿过的可见怪物表现碰撞。
-## Returns 命中信息或 `hit=false`；结果仅供弹体特效使用。
+## 执行 `first_visual_collision` 对应的模块操作。
+## [param segment_start] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param segment_end] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func first_visual_collision(segment_start: Vector2, segment_end: Vector2) -> Dictionary:
 	var best := {"hit": false, "t": INF}
 	for view: MonsterWorldView in _views.values():
@@ -88,7 +90,7 @@ func first_visual_collision(segment_start: Vector2, segment_end: Vector2) -> Dic
 	return best
 
 
-## Removes every map-scoped monster presentation.
+## 执行 `clear` 对应的模块操作。
 func clear() -> void:
 	for view: MonsterWorldView in _views.values():
 		view.queue_free()
@@ -96,8 +98,9 @@ func clear() -> void:
 	_last_event_id = 0
 
 
-## 消费 [param combat_snapshot] 中带单调事件号的最近战斗事件并生成一次性飘字。
-## Design: 快照允许重发事件，客户端游标保证每个权威伤害只表现一次。
+## 执行 `apply_recent_events` 对应的模块操作。
+## [param combat_snapshot] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 设计：快照允许重发事件，客户端游标保证每个权威伤害只表现一次。
 func _apply_recent_events(combat_snapshot: Dictionary) -> void:
 	var events_value: Variant = combat_snapshot.get("recent_events", [])
 	if not events_value is Array:

@@ -2,7 +2,8 @@ class_name CombatDamageFloat
 extends Node2D
 
 
-## 显示红色 [param damage] 扣血值并向上淡出，结束后自动释放节点。
+## 执行 `present` 对应的模块操作。
+## [param damage] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func present(damage: int) -> void:
 	var label := Label.new()
 	label.text = "-%d" % maxi(0, damage)

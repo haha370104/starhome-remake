@@ -33,16 +33,16 @@ var map_instance_id := ""
 var _transport_endpoint: NetworkTransportEndpoint
 
 
-## Initializes node dependencies after the node enters the scene tree.
-## Design: Belongs to the client prediction/presentation boundary and reconciles to server authority.
+## 节点进入场景树后初始化运行依赖。
+## 设计：该函数位于客户端交互或表现边界，最终状态以服务器权威结果为准。
 func _ready() -> void:
 	# Real-network lifecycle signals are bound through the stable transport endpoint on demand.
 	pass
 
 
-## Configures the instance from validated runtime inputs.
-## [param enabled] Whether the corresponding behavior is enabled.
-## Design: Belongs to the client prediction/presentation boundary and reconciles to server authority.
+## 配置并初始化 `configure_offline_debug` 对应的模块状态。
+## [param enabled] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 设计：该函数位于客户端交互或表现边界，最终状态以服务器权威结果为准。
 func configure_offline_debug(enabled: bool) -> void:
 	offline_debug_enabled = enabled
 	if enabled:
@@ -51,11 +51,11 @@ func configure_offline_debug(enabled: bool) -> void:
 		_set_connection_state(ConnectionState.DISCONNECTED)
 
 
-## Processes the requested protocol or gameplay operation.
-## [param host] Input value consumed by the operation.
-## [param port] Input value consumed by the operation.
-## Returns A Godot error code describing the operation result.
-## Design: Belongs to the client prediction/presentation boundary and reconciles to server authority.
+## 执行 `connect_to_server` 对应的模块操作。
+## [param host] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param port] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数位于客户端交互或表现边界，最终状态以服务器权威结果为准。
 func connect_to_server(host: String, port: int = DEFAULT_PORT) -> Error:
 	if offline_debug_enabled:
 		_set_connection_state(ConnectionState.CONNECTED)
@@ -72,8 +72,8 @@ func connect_to_server(host: String, port: int = DEFAULT_PORT) -> Error:
 	return OK
 
 
-## Processes the requested protocol or gameplay operation.
-## Design: Belongs to the client prediction/presentation boundary and reconciles to server authority.
+## 执行 `disconnect_from_server` 对应的模块操作。
+## 设计：该函数位于客户端交互或表现边界，最终状态以服务器权威结果为准。
 func disconnect_from_server() -> void:
 	# Offline adapters deliberately have no MultiplayerAPI peer.
 	if not offline_debug_enabled and _transport_endpoint != null:
@@ -82,10 +82,10 @@ func disconnect_from_server() -> void:
 	_set_connection_state(ConnectionState.DISCONNECTED)
 
 
-## Processes the requested protocol or gameplay operation.
-## [param payload] Serialized input received at the subsystem boundary.
-## Returns A Godot error code describing the operation result.
-## Design: Belongs to the client prediction/presentation boundary and reconciles to server authority.
+## 执行 `send_move_intent` 对应的模块操作。
+## [param payload] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数位于客户端交互或表现边界，最终状态以服务器权威结果为准。
 func send_move_intent(payload: Dictionary) -> Error:
 	if connection_state != ConnectionState.CONNECTED:
 		return ERR_UNCONFIGURED
@@ -96,10 +96,10 @@ func send_move_intent(payload: Dictionary) -> Error:
 	return OK
 
 
-## Sends one validated map-transition [param payload] through the reliable command channel.
-## [param payload] Current map instance, transition ID, destination entry number and command sequence.
-## Returns `OK` after local observation/transport submission, or `ERR_UNCONFIGURED` while disconnected.
-## Design: This adapter transports the intent verbatim; destination map and spawn authority stay on the server.
+## 执行 `send_map_transition_intent` 对应的模块操作。
+## [param payload] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数位于客户端交互或表现边界，最终状态以服务器权威结果为准。
 func send_map_transition_intent(payload: Dictionary) -> Error:
 	if connection_state != ConnectionState.CONNECTED:
 		return ERR_UNCONFIGURED
@@ -110,10 +110,10 @@ func send_map_transition_intent(payload: Dictionary) -> Error:
 	return OK
 
 
-## 将一个 [param payload] 技能意图交给可靠网络通道。
-## [param payload] 当前地图、技能、目标实体和命令序号。
-## Returns 已连接或离线调试时返回 `OK`，否则返回 `ERR_UNCONFIGURED`。
-## Design: 适配器只传输意图；客户端不能通过该接口提交伤害、命中、能耗或冷却。
+## 执行 `send_use_ability_intent` 对应的模块操作。
+## [param payload] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：适配器只传输意图；客户端不能通过该接口提交伤害、命中、能耗或冷却。
 func send_use_ability_intent(payload: Dictionary) -> Error:
 	if connection_state != ConnectionState.CONNECTED:
 		return ERR_UNCONFIGURED
@@ -124,25 +124,25 @@ func send_use_ability_intent(payload: Dictionary) -> Error:
 	return OK
 
 
-## Performs the `inject_authoritative_snapshot` operation.
-## [param snapshot] Serialized input received at the subsystem boundary.
-## Design: Belongs to the client prediction/presentation boundary and reconciles to server authority.
+## 执行 `inject_authoritative_snapshot` 对应的模块操作。
+## [param snapshot] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 设计：该函数位于客户端交互或表现边界，最终状态以服务器权威结果为准。
 func inject_authoritative_snapshot(snapshot: Dictionary) -> void:
 	if offline_debug_enabled:
 		authoritative_snapshot_received.emit(snapshot.duplicate(true))
 
 
-## Performs the `inject_remote_snapshot` operation.
-## [param snapshot] Serialized input received at the subsystem boundary.
-## Design: Belongs to the client prediction/presentation boundary and reconciles to server authority.
+## 执行 `inject_remote_snapshot` 对应的模块操作。
+## [param snapshot] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 设计：该函数位于客户端交互或表现边界，最终状态以服务器权威结果为准。
 func inject_remote_snapshot(snapshot: Dictionary) -> void:
 	if offline_debug_enabled:
 		remote_snapshot_received.emit(snapshot.duplicate(true))
 
 
-## Routes reliable server control messages into client session state and public signals.
-## [param message] Server envelope containing a message type and serialized result.
-## Design: Reliable control traffic is separated from high-frequency world snapshots.
+## 执行 `receive_server_message` 对应的模块操作。
+## [param message] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 设计：该函数位于客户端交互或表现边界，最终状态以服务器权威结果为准。
 func receive_server_message(message: Dictionary) -> void:
 	var safe_message := message.duplicate(true)
 	var message_type := StringName(safe_message.get("type", ""))
@@ -163,16 +163,16 @@ func receive_server_message(message: Dictionary) -> void:
 	server_message_received.emit(safe_message)
 
 
-## Processes the requested protocol or gameplay operation.
-## [param snapshot] Serialized input received at the subsystem boundary.
-## Design: Belongs to the client prediction/presentation boundary and reconciles to server authority.
+## 执行 `receive_world_snapshot` 对应的模块操作。
+## [param snapshot] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 设计：该函数位于客户端交互或表现边界，最终状态以服务器权威结果为准。
 func receive_world_snapshot(snapshot: Dictionary) -> void:
 	authoritative_snapshot_received.emit(snapshot.duplicate(true))
 	remote_snapshot_received.emit(snapshot.duplicate(true))
 
 
-## Handles the signal callback for `on_connected_to_server`.
-## Design: Belongs to the client prediction/presentation boundary and reconciles to server authority.
+## 处理 `_on_connected_to_server` 对应的信号回调。
+## 设计：该函数位于客户端交互或表现边界，最终状态以服务器权威结果为准。
 func _on_connected_to_server() -> void:
 	_set_connection_state(ConnectionState.CONNECTED)
 	var request := {
@@ -184,8 +184,8 @@ func _on_connected_to_server() -> void:
 	_transport_endpoint.request_session(request)
 
 
-## Handles the signal callback for `on_connection_failed`.
-## Design: Belongs to the client prediction/presentation boundary and reconciles to server authority.
+## 处理 `_on_connection_failed` 对应的信号回调。
+## 设计：该函数位于客户端交互或表现边界，最终状态以服务器权威结果为准。
 func _on_connection_failed() -> void:
 	if _transport_endpoint != null:
 		_transport_endpoint.close()
@@ -194,8 +194,8 @@ func _on_connection_failed() -> void:
 	connection_failed.emit("Unable to connect to the authoritative server")
 
 
-## Handles the signal callback for `on_server_disconnected`.
-## Design: Belongs to the client prediction/presentation boundary and reconciles to server authority.
+## 处理 `_on_server_disconnected` 对应的信号回调。
+## 设计：该函数位于客户端交互或表现边界，最终状态以服务器权威结果为准。
 func _on_server_disconnected() -> void:
 	if _transport_endpoint != null:
 		_transport_endpoint.close()
@@ -203,9 +203,9 @@ func _on_server_disconnected() -> void:
 	_set_connection_state(ConnectionState.DISCONNECTED)
 
 
-## Updates the managed state with the supplied value.
-## [param next_state] Input value consumed by the operation.
-## Design: Belongs to the client prediction/presentation boundary and reconciles to server authority.
+## 设置或恢复 `set_connection_state` 对应的模块状态。
+## [param next_state] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 设计：该函数位于客户端交互或表现边界，最终状态以服务器权威结果为准。
 func _set_connection_state(next_state: ConnectionState) -> void:
 	if connection_state == next_state:
 		return
@@ -213,8 +213,8 @@ func _set_connection_state(next_state: ConnectionState) -> void:
 	connection_state_changed.emit(connection_state)
 
 
-## Installs and binds the process-wide endpoint at the protocol's stable root NodePath.
-## Design: All network RPCs use one path independent of the client gameplay scene hierarchy.
+## 执行 `ensure_transport_endpoint` 对应的模块操作。
+## 设计：该函数位于客户端交互或表现边界，最终状态以服务器权威结果为准。
 func _ensure_transport_endpoint() -> void:
 	if _transport_endpoint != null:
 		return
@@ -232,9 +232,9 @@ func _ensure_transport_endpoint() -> void:
 	_transport_endpoint.world_snapshot_received.connect(receive_world_snapshot)
 
 
-## Commits a successful handshake and routes its embedded initial snapshot immediately.
-## [param result] Successful serialized server result from a `session_opened` envelope.
-## Design: The initial snapshot and assigned identity become visible atomically to higher layers.
+## 设置或恢复 `apply_session_opened` 对应的模块状态。
+## [param result] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 设计：该函数位于客户端交互或表现边界，最终状态以服务器权威结果为准。
 func _apply_session_opened(result: Dictionary) -> void:
 	var value: Dictionary = result.get("value", {})
 	var session: Dictionary = value.get("session", {})

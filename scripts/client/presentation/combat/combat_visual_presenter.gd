@@ -16,9 +16,10 @@ var _layer_direction_overrides: Dictionary = {}
 var _elapsed_seconds := 0.0
 
 
-## 配置 [param manifest] 中声明的业务角色、方向顺序和动作资源。
-## Returns 清单结构完整时返回 `OK`，否则返回 `ERR_INVALID_DATA`。
-## Design: 表现器只消费业务化运行时清单；来源审计和旧客户端路径不进入运行时解析。
+## 执行 `configure` 对应的模块操作。
+## [param manifest] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：表现器只消费业务化运行时清单；来源审计和旧客户端路径不进入运行时解析。
 func configure(manifest: Dictionary) -> Error:
 	if not _is_valid_manifest(manifest):
 		return ERR_INVALID_DATA
@@ -27,8 +28,9 @@ func configure(manifest: Dictionary) -> Error:
 	return OK
 
 
-## 创建并显示业务角色 [param actor_id] 声明的全部可见图层。
-## Returns 角色与所有 SpriteFrames 均可加载时返回 `OK`，否则返回相应错误码。
+## 执行 `present_actor` 对应的模块操作。
+## [param actor_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func present_actor(actor_id: StringName) -> Error:
 	clear_actor()
 	var actors_value: Variant = _manifest.get("actors", {})
@@ -85,8 +87,9 @@ func clear_actor() -> void:
 	_elapsed_seconds = 0.0
 
 
-## 切换至业务动作 [param action_id] 并从首帧重新开始播放。
-## Returns 至少一个图层显式声明该动作时返回 `true`；否则保持原动作并返回 `false`。
+## 执行 `set_action` 对应的模块操作。
+## [param action_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func set_action(action_id: StringName) -> bool:
 	if current_actor_id == &"" or not _actor_supports_action(action_id):
 		return false
@@ -95,15 +98,18 @@ func set_action(action_id: StringName) -> bool:
 	return _apply_pose() == OK
 
 
-## 将任意整数 [param direction] 归一化为清单中的八方向索引并立即刷新帧。
+## 执行 `set_direction` 对应的模块操作。
+## [param direction] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func set_direction(direction: int) -> void:
 	current_direction = posmod(direction, 8)
 	_apply_pose()
 
 
-## 只把 [param layer_id] 切换到 [param action_id]，不影响底盘或其他装备图层。
-## Returns 图层显式声明该动作时返回 `true`，否则不改变覆盖状态。
-## Design: 炮塔瞄准/开火属于装备局部状态，不能污染角色移动状态机。
+## 执行 `set_layer_action` 对应的模块操作。
+## [param layer_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param action_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：炮塔瞄准/开火属于装备局部状态，不能污染角色移动状态机。
 func set_layer_action(layer_id: StringName, action_id: StringName) -> bool:
 	if not _layer_configs.has(layer_id):
 		return false
@@ -115,14 +121,17 @@ func set_layer_action(layer_id: StringName, action_id: StringName) -> bool:
 	return _apply_pose() == OK
 
 
-## 清除 [param layer_id] 的动作覆盖，使其重新跟随角色全局动作及默认回退。
+## 执行 `clear_layer_action` 对应的模块操作。
+## [param layer_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func clear_layer_action(layer_id: StringName) -> void:
 	_layer_action_overrides.erase(layer_id)
 	_apply_pose()
 
 
-## 只设置 [param layer_id] 的八向 [param direction]，用于独立炮塔瞄准。
-## Returns 图层存在时返回 `true`。
+## 执行 `set_layer_direction` 对应的模块操作。
+## [param layer_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param direction] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func set_layer_direction(layer_id: StringName, direction: int) -> bool:
 	if not _layer_configs.has(layer_id):
 		return false
@@ -130,13 +139,15 @@ func set_layer_direction(layer_id: StringName, direction: int) -> bool:
 	return _apply_pose() == OK
 
 
-## 清除 [param layer_id] 的朝向覆盖，使其重新跟随角色全局朝向。
+## 执行 `clear_layer_direction` 对应的模块操作。
+## [param layer_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func clear_layer_direction(layer_id: StringName) -> void:
 	_layer_direction_overrides.erase(layer_id)
 	_apply_pose()
 
 
-## 以 [param delta_seconds] 推进当前动作，并按每个图层独立帧率刷新图集帧。
+## 执行 `advance` 对应的模块操作。
+## [param delta_seconds] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func advance(delta_seconds: float) -> void:
 	if delta_seconds <= 0.0 or current_actor_id == &"":
 		return
@@ -144,22 +155,25 @@ func advance(delta_seconds: float) -> void:
 	_apply_pose()
 
 
-## 返回 [param layer_id] 当前使用的原始图集帧索引。
-## Returns 图层存在时返回非负帧号，否则返回 `-1`。
+## 执行 `layer_frame` 对应的模块操作。
+## [param layer_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func layer_frame(layer_id: StringName) -> int:
 	var sprite := _layers.get(layer_id) as AnimatedSprite2D
 	return sprite.frame if sprite != null else -1
 
 
-## 返回 [param layer_id] 当前加载的 SpriteFrames 资源。
-## Returns 图层存在时返回资源，否则返回 `null`。
+## 执行 `layer_frames_resource` 对应的模块操作。
+## [param layer_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func layer_frames_resource(layer_id: StringName) -> SpriteFrames:
 	var sprite := _layers.get(layer_id) as AnimatedSprite2D
 	return sprite.sprite_frames if sprite != null else null
 
 
-## 验证 [param manifest] 是否具有稳定的八方向表和业务角色字典。
-## Returns 满足最小运行时契约时返回 `true`。
+## 执行 `is_valid_manifest` 对应的模块操作。
+## [param manifest] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func _is_valid_manifest(manifest: Dictionary) -> bool:
 	var directions_value: Variant = manifest.get("direction_order", [])
 	var actors_value: Variant = manifest.get("actors", {})
@@ -171,8 +185,9 @@ func _is_valid_manifest(manifest: Dictionary) -> bool:
 	)
 
 
-## 判断当前角色任一图层是否显式支持业务动作 [param action_id]。
-## Returns 存在对应动作配置时返回 `true`。
+## 执行 `actor_supports_action` 对应的模块操作。
+## [param action_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func _actor_supports_action(action_id: StringName) -> bool:
 	for layer_value: Variant in _layer_configs.values():
 		var layer: Dictionary = layer_value
@@ -183,8 +198,8 @@ func _actor_supports_action(action_id: StringName) -> bool:
 
 
 ## 将当前动作、方向与计时原子投影到全部图层。
-## Returns 所有动作资源和帧范围有效时返回 `OK`，否则返回对应加载或数据错误。
-## Design: 缺少当前动作的辅助图层回退到角色默认动作，确保攻击时底盘仍保持稳定姿态。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：缺少当前动作的辅助图层回退到角色默认动作，确保攻击时底盘仍保持稳定姿态。
 func _apply_pose() -> Error:
 	if current_actor_id == &"":
 		return ERR_UNCONFIGURED
@@ -226,8 +241,10 @@ func _apply_pose() -> Error:
 	return OK
 
 
-## 解析 [param layer_id] 与 [param layer] 对当前动作的配置，必要时回退至角色默认动作。
-## Returns 找到时返回动作字典，否则返回空字典。
+## 执行 `resolve_layer_action` 对应的模块操作。
+## [param layer_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param layer] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func _resolve_layer_action(layer_id: StringName, layer: Dictionary) -> Dictionary:
 	var actions_value: Variant = layer.get("actions", {})
 	if not actions_value is Dictionary:

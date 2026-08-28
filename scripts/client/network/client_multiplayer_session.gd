@@ -42,8 +42,8 @@ var _suppress_local_presentation_signal := false
 var _next_ability_sequence := 1
 
 
-## Initializes node dependencies after the node enters the scene tree.
-## Design: Belongs to the client prediction/presentation boundary and reconciles to server authority.
+## 节点进入场景树后初始化运行依赖。
+## 设计：该函数位于客户端交互或表现边界，最终状态以服务器权威结果为准。
 func _ready() -> void:
 	network_adapter = ClientNetworkAdapter.new()
 	add_child(network_adapter)
@@ -60,58 +60,58 @@ func _ready() -> void:
 	network_adapter.configure_offline_debug(offline_debug_enabled)
 
 
-## Advances frame-based presentation state.
-## [param delta] Elapsed time in seconds for this update.
-## Design: Belongs to the client prediction/presentation boundary and reconciles to server authority.
+## 按渲染帧推进当前节点的表现状态。
+## [param delta] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 设计：该函数位于客户端交互或表现边界，最终状态以服务器权威结果为准。
 func _process(delta: float) -> void:
 	local_predictor.advance(delta)
 	remote_interpolator.advance(delta)
 
 
-## Processes the requested protocol or gameplay operation.
-## [param host] Input value consumed by the operation.
-## [param port] Input value consumed by the operation.
-## Returns A Godot error code describing the operation result.
-## Design: Belongs to the client prediction/presentation boundary and reconciles to server authority.
+## 执行 `connect_to_server` 对应的模块操作。
+## [param host] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param port] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数位于客户端交互或表现边界，最终状态以服务器权威结果为准。
 func connect_to_server(host: String, port: int = ClientNetworkAdapter.DEFAULT_PORT) -> Error:
 	return network_adapter.connect_to_server(host, port)
 
 
-## Processes the requested protocol or gameplay operation.
-## Design: Belongs to the client prediction/presentation boundary and reconciles to server authority.
+## 执行 `disconnect_from_server` 对应的模块操作。
+## 设计：该函数位于客户端交互或表现边界，最终状态以服务器权威结果为准。
 func disconnect_from_server() -> void:
 	network_adapter.disconnect_from_server()
 	_clear_remote_entities()
 
 
-## Initializes the subsystem and returns its startup result.
-## [param position] World-space position used by the operation.
-## Design: Belongs to the client prediction/presentation boundary and reconciles to server authority.
+## 配置并初始化 `initialize_local_player` 对应的模块状态。
+## [param position] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 设计：该函数位于客户端交互或表现边界，最终状态以服务器权威结果为准。
 func initialize_local_player(position: Vector2) -> void:
 	local_predictor.reset(position)
 
 
-## Configures the instance from validated runtime inputs.
-## [param map_instance_id] Stable identifier of the target value.
-## Design: Belongs to the client prediction/presentation boundary and reconciles to server authority.
+## 配置并初始化 `configure_map_instance` 对应的模块状态。
+## [param map_instance_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 设计：该函数位于客户端交互或表现边界，最终状态以服务器权威结果为准。
 func configure_map_instance(map_instance_id: String) -> void:
 	current_map_instance_id = map_instance_id
 
 
-## Performs the `request_move` operation.
-## [param requested_world_point] World-space position used by the operation.
-## Returns Structured result data produced by the operation.
-## Design: Belongs to the client prediction/presentation boundary and reconciles to server authority.
+## 校验并处理 `request_move` 对应的模块状态。
+## [param requested_world_point] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数位于客户端交互或表现边界，最终状态以服务器权威结果为准。
 func request_move(requested_world_point: Vector2) -> Dictionary:
 	if current_map_instance_id.is_empty() or not _pending_map_change.is_empty():
 		return {}
 	return local_predictor.create_move_intent(current_map_instance_id, requested_world_point)
 
 
-## Submits [param target_entity_id] for [param ability_id] using a monotonic client command sequence.
-## [param ability_id] Equipped ability identifier; no damage or energy fields are accepted.
-## [param target_entity_id] Monster identity selected from the latest authority snapshot.
-## Returns the strict payload, or an empty dictionary when transport/map state is unavailable.
+## 执行 `request_use_ability` 对应的模块操作。
+## [param ability_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param target_entity_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func request_use_ability(ability_id: String, target_entity_id: String) -> Dictionary:
 	if current_map_instance_id.is_empty() or ability_id.is_empty() or target_entity_id.is_empty():
 		return {}
@@ -128,11 +128,11 @@ func request_use_ability(ability_id: String, target_entity_id: String) -> Dictio
 	return payload
 
 
-## Requests the server-owned transition identified by [param transition_id] and its declared [param destination_entry_number].
-## [param transition_id] Business exit identifier selected from the current map definition.
-## [param destination_entry_number] Destination entrance number declared by that exit, never a map or position.
-## Returns the validated wire payload, or an empty dictionary if another transfer is pending or submission fails.
-## Design: Only one transfer may be pending; all current-map state remains observable until a matching `map_joined` arrives.
+## 执行 `request_map_change` 对应的模块操作。
+## [param transition_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param destination_entry_number] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数位于客户端交互或表现边界，最终状态以服务器权威结果为准。
 func request_map_change(
 	transition_id: StringName,
 	destination_entry_number: int = 0,
@@ -167,53 +167,53 @@ func request_map_change(
 	return payload
 
 
-## Reports whether a map-transfer command is waiting for a matching server result.
-## Returns `true` between a successful local submission and its authoritative join or correlated rejection.
+## 判断 `is_map_change_pending` 对应的模块状态。
+## 返回该函数计算、查询或操作得到的结果。
 func is_map_change_pending() -> bool:
 	return not _pending_map_change.is_empty()
 
 
-## Performs the `record_local_predicted_delta` operation.
-## [param input_sequence] Sequence, tick, or index value used by the operation.
-## [param displacement] Input value consumed by the operation.
-## Returns Whether the operation completed or the queried condition is satisfied.
-## Design: Belongs to the client prediction/presentation boundary and reconciles to server authority.
+## 执行 `record_local_predicted_delta` 对应的模块操作。
+## [param input_sequence] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param displacement] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数位于客户端交互或表现边界，最终状态以服务器权威结果为准。
 func record_local_predicted_delta(input_sequence: int, displacement: Vector2) -> bool:
 	return local_predictor.apply_predicted_delta(input_sequence, displacement)
 
 
-## Performs the `local_presentation_state` operation.
-## Returns Structured result data produced by the operation.
-## Design: Belongs to the client prediction/presentation boundary and reconciles to server authority.
+## 执行 `local_presentation_state` 对应的模块操作。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数位于客户端交互或表现边界，最终状态以服务器权威结果为准。
 func local_presentation_state() -> Dictionary:
 	return local_predictor.presentation_state()
 
 
-## Performs the `remote_presentation_states` operation.
-## Returns Structured result data produced by the operation.
-## Design: Belongs to the client prediction/presentation boundary and reconciles to server authority.
+## 执行 `remote_presentation_states` 对应的模块操作。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数位于客户端交互或表现边界，最终状态以服务器权威结果为准。
 func remote_presentation_states() -> Dictionary:
 	return remote_interpolator.presentation_states()
 
 
-## Performs the `inject_offline_snapshot` operation.
-## [param snapshot] Serialized input received at the subsystem boundary.
-## Design: Belongs to the client prediction/presentation boundary and reconciles to server authority.
+## 执行 `inject_offline_snapshot` 对应的模块操作。
+## [param snapshot] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 设计：该函数位于客户端交互或表现边界，最终状态以服务器权威结果为准。
 func inject_offline_snapshot(snapshot: Dictionary) -> void:
 	network_adapter.inject_authoritative_snapshot(snapshot)
 
 
-## Handles the signal callback for `on_move_intent_created`.
-## [param payload] Serialized input received at the subsystem boundary.
-## Design: Belongs to the client prediction/presentation boundary and reconciles to server authority.
+## 处理 `_on_move_intent_created` 对应的信号回调。
+## [param payload] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 设计：该函数位于客户端交互或表现边界，最终状态以服务器权威结果为准。
 func _on_move_intent_created(payload: Dictionary) -> void:
 	movement_intent_created.emit(payload.duplicate(true))
 	network_adapter.send_move_intent(payload)
 
 
-## Handles the signal callback for `on_world_snapshot`.
-## [param snapshot] Serialized input received at the subsystem boundary.
-## Design: Belongs to the client prediction/presentation boundary and reconciles to server authority.
+## 处理 `_on_world_snapshot` 对应的信号回调。
+## [param snapshot] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 设计：该函数位于客户端交互或表现边界，最终状态以服务器权威结果为准。
 func _on_world_snapshot(snapshot: Dictionary) -> void:
 	var server_tick := int(snapshot.get("server_tick", -1))
 	if server_tick < _minimum_snapshot_server_tick:
@@ -253,9 +253,9 @@ func _on_world_snapshot(snapshot: Dictionary) -> void:
 		combat_snapshot_received.emit((combat_value as Dictionary).duplicate(true))
 
 
-## Adopts the authoritative identity/map assigned by a successful network handshake.
-## [param result] Successful serialized result carried by the session-opened envelope.
-## Design: Local identity is server-assigned; exported defaults are only offline-debug conveniences.
+## 处理 `_on_session_opened` 对应的信号回调。
+## [param result] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 设计：该函数位于客户端交互或表现边界，最终状态以服务器权威结果为准。
 func _on_session_opened(result: Dictionary) -> void:
 	var value: Dictionary = result.get("value", {})
 	if not _commit_map_joined(value, false):
@@ -263,9 +263,9 @@ func _on_session_opened(result: Dictionary) -> void:
 		network_adapter.disconnect_from_server()
 
 
-## Applies an authoritative explicit map-transfer result from the reliable control channel.
-## [param result] Successful wire result containing `map_joined`, an initial snapshot and transition sequence.
-## Design: A mismatched or malformed response cannot mutate the old-map session state.
+## 处理 `_on_map_joined_received` 对应的信号回调。
+## [param result] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 设计：该函数位于客户端交互或表现边界，最终状态以服务器权威结果为准。
 func _on_map_joined_received(result: Dictionary) -> void:
 	var value: Dictionary = result.get("value", {})
 	if _pending_map_change.is_empty():
@@ -275,11 +275,11 @@ func _on_map_joined_received(result: Dictionary) -> void:
 	_commit_map_joined(value, true)
 
 
-## Validates and atomically commits the joined map described by [param value].
-## [param value] Successful result value containing the strict `MapJoined` contract and optional initial snapshot.
-## [param explicit_transition] Whether the commit must complete the currently pending map-change command.
-## Returns `true` only after identity, map state, prediction and remote tracks have all been replaced.
-## Design: Validation completes before any mutable field changes, preserving the previous map on malformed success responses.
+## 执行 `commit_map_joined` 对应的模块操作。
+## [param value] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param explicit_transition] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数位于客户端交互或表现边界，最终状态以服务器权威结果为准。
 func _commit_map_joined(value: Dictionary, explicit_transition: bool) -> bool:
 	var joined_result = MapJoinedContract.from_dictionary(value.get("map_joined", {}))
 	if not joined_result.is_ok:
@@ -336,19 +336,19 @@ func _commit_map_joined(value: Dictionary, explicit_transition: bool) -> bool:
 	return true
 
 
-## Publishes predictor [param state] unless a map-join transaction is still replacing session state.
-## [param state] Current local prediction and correction projection.
-## Design: Suppression prevents observers from seeing a new-map spawn while session identity still names the old map.
+## 处理 `_on_local_predictor_presentation_changed` 对应的信号回调。
+## [param state] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 设计：该函数位于客户端交互或表现边界，最终状态以服务器权威结果为准。
 func _on_local_predictor_presentation_changed(state: Dictionary) -> void:
 	if _suppress_local_presentation_signal:
 		return
 	local_presentation_state_changed.emit(state.duplicate(true))
 
 
-## Forwards [param code]/[param message] and correlates typed transition rejections with the pending sequence.
-## [param code] Stable server rejection code.
-## [param message] Human-readable server rejection detail.
-## Design: Movement or context-free rejections never cancel a concurrently pending map transfer.
+## 处理 `_on_command_rejected` 对应的信号回调。
+## [param code] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param message] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 设计：该函数位于客户端交互或表现边界，最终状态以服务器权威结果为准。
 func _on_command_rejected(code: StringName, message: String) -> void:
 	command_rejected.emit(code, message)
 	# The adapter's compact signal intentionally excludes protocol context. Inspect the last
@@ -356,9 +356,9 @@ func _on_command_rejected(code: StringName, message: String) -> void:
 	# Context-aware handling is performed in `_on_server_message_received`.
 
 
-## Correlates a reliable server [param message] with the active map-transfer command.
-## [param message] Raw control envelope emitted before adapter-specific projections.
-## Design: Correlation uses explicit command type and sequence, never error-code naming conventions.
+## 处理 `_on_server_message_received` 对应的信号回调。
+## [param message] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 设计：该函数位于客户端交互或表现边界，最终状态以服务器权威结果为准。
 func _on_server_message_received(message: Dictionary) -> void:
 	if StringName(message.get("type", "")) == &"combat_event":
 		var combat_result: Dictionary = message.get("result", {})
@@ -381,10 +381,10 @@ func _on_server_message_received(message: Dictionary) -> void:
 	)
 
 
-## Validates the untrusted [param snapshot] minimum combat schema before presentation signals.
-## [param snapshot] Map-scoped combat document received from transport.
-## Returns true only when local resources and every monster expose correctly typed public fields.
-## Design: Resource paths never arrive over the network; snapshots reference only committed business actor IDs.
+## 执行 `is_valid_combat_snapshot` 对应的模块操作。
+## [param snapshot] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数位于客户端交互或表现边界，最终状态以服务器权威结果为准。
 func _is_valid_combat_snapshot(snapshot: Dictionary) -> bool:
 	if typeof(snapshot.get("server_tick")) != TYPE_INT:
 		return false
@@ -419,10 +419,10 @@ func _is_valid_combat_snapshot(snapshot: Dictionary) -> bool:
 	return true
 
 
-## Ends the current pending transfer with [param code] and [param message] while retaining old-map state.
-## [param code] Stable protocol or authoritative-domain failure code.
-## [param message] Human-readable failure detail for temporary scene feedback.
-## Design: Failure clears only the command latch; map identity, prediction and remote tracks remain untouched.
+## 执行 `fail_pending_map_change` 对应的模块操作。
+## [param code] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param message] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 设计：该函数位于客户端交互或表现边界，最终状态以服务器权威结果为准。
 func _fail_pending_map_change(code: StringName, message: String) -> void:
 	if _pending_map_change.is_empty():
 		return
@@ -432,8 +432,8 @@ func _fail_pending_map_change(code: StringName, message: String) -> void:
 
 
 ## 转发网络连接状态，并在连接关闭后清理所有远端表现实体。
-## [param state] 客户端网络适配器报告的最新连接状态。
-## Design: 会话层拥有远端实体生命周期，表现层无需理解传输断开细节。
+## [param state] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 设计：会话层拥有远端实体生命周期，表现层无需理解传输断开细节。
 func _on_connection_state_changed(state: ClientNetworkAdapter.ConnectionState) -> void:
 	connection_state_changed.emit(state)
 	if state == ClientNetworkAdapter.ConnectionState.DISCONNECTED:
@@ -443,7 +443,7 @@ func _on_connection_state_changed(state: ClientNetworkAdapter.ConnectionState) -
 
 
 ## 清空插值器中的远端轨迹，并为每个已知实体发布一次移除事件。
-## Design: 快照差分与断线清理由会话层统一收口，避免场景遗留幽灵角色。
+## 设计：快照差分与断线清理由会话层统一收口，避免场景遗留幽灵角色。
 func _clear_remote_entities() -> void:
 	for entity_id in _known_remote_entity_ids:
 		remote_interpolator.remove_entity(entity_id)

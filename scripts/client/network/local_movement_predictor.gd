@@ -31,11 +31,11 @@ var _correction_elapsed := 0.0
 var _correction_duration := 0.0
 
 
-## Configures the instance from validated runtime inputs.
-## [param smooth_threshold] Input value consumed by the operation.
-## [param force_threshold] Input value consumed by the operation.
-## [param smooth_duration] Input value consumed by the operation.
-## Design: Belongs to the client prediction/presentation boundary and reconciles to server authority.
+## 配置并初始化 `configure` 对应的模块状态。
+## [param smooth_threshold] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param force_threshold] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param smooth_duration] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 设计：该函数位于客户端交互或表现边界，最终状态以服务器权威结果为准。
 func configure(
 	smooth_threshold: float = 24.0,
 	force_threshold: float = 96.0,
@@ -46,11 +46,11 @@ func configure(
 	smooth_duration_seconds = maxf(0.001, smooth_duration)
 
 
-## Resets the managed state to its initial value.
-## [param position] World-space position used by the operation.
-## [param starting_sequence] Sequence, tick, or index value used by the operation.
-## [param emit_change] Whether to publish the reset immediately; transactional owners may defer it.
-## Design: Belongs to the client prediction/presentation boundary and reconciles to server authority.
+## 执行 `reset` 对应的模块操作。
+## [param position] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param starting_sequence] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param emit_change] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 设计：该函数位于客户端交互或表现边界，最终状态以服务器权威结果为准。
 func reset(position: Vector2, starting_sequence: int = 1, emit_change: bool = true) -> void:
 	predicted_position = position
 	authoritative_position = position
@@ -63,11 +63,11 @@ func reset(position: Vector2, starting_sequence: int = 1, emit_change: bool = tr
 		_emit_presentation_state()
 
 
-## Builds the requested runtime object from configuration data.
-## [param map_instance_id] Stable identifier of the target value.
-## [param requested_world_point] World-space position used by the operation.
-## Returns Structured result data produced by the operation.
-## Design: Belongs to the client prediction/presentation boundary and reconciles to server authority.
+## 创建 `create_move_intent` 对应的模块状态。
+## [param map_instance_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param requested_world_point] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数位于客户端交互或表现边界，最终状态以服务器权威结果为准。
 func create_move_intent(map_instance_id: String, requested_world_point: Vector2) -> Dictionary:
 	var sequence := next_input_sequence
 	next_input_sequence += 1
@@ -83,11 +83,11 @@ func create_move_intent(map_instance_id: String, requested_world_point: Vector2)
 	return payload
 
 
-## Advances the managed state using the supplied update.
-## [param input_sequence] Sequence, tick, or index value used by the operation.
-## [param displacement] Input value consumed by the operation.
-## Returns Whether the operation completed or the queried condition is satisfied.
-## Design: Belongs to the client prediction/presentation boundary and reconciles to server authority.
+## 设置或恢复 `apply_predicted_delta` 对应的模块状态。
+## [param input_sequence] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param displacement] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数位于客户端交互或表现边界，最终状态以服务器权威结果为准。
 func apply_predicted_delta(input_sequence: int, displacement: Vector2) -> bool:
 	for index in range(_pending_intents.size() - 1, -1, -1):
 		var intent := _pending_intents[index]
@@ -106,12 +106,12 @@ func apply_predicted_delta(input_sequence: int, displacement: Vector2) -> bool:
 	return false
 
 
-## Advances the managed state using the supplied update.
-## [param server_tick] Sequence, tick, or index value used by the operation.
-## [param acknowledged_input_sequence] Latest client input sequence incorporated by the server.
-## [param server_position] World-space position used by the operation.
-## Returns Whether the operation completed or the queried condition is satisfied.
-## Design: Belongs to the client prediction/presentation boundary and reconciles to server authority.
+## 设置或恢复 `apply_authoritative_snapshot` 对应的模块状态。
+## [param server_tick] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param acknowledged_input_sequence] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param server_position] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数位于客户端交互或表现边界，最终状态以服务器权威结果为准。
 func apply_authoritative_snapshot(
 	server_tick: int,
 	acknowledged_input_sequence: int,
@@ -159,9 +159,9 @@ func apply_authoritative_snapshot(
 	return true
 
 
-## Advances the managed state using the supplied update.
-## [param delta] Elapsed time in seconds for this update.
-## Design: Belongs to the client prediction/presentation boundary and reconciles to server authority.
+## 执行 `advance` 对应的模块操作。
+## [param delta] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 设计：该函数位于客户端交互或表现边界，最终状态以服务器权威结果为准。
 func advance(delta: float) -> void:
 	if correction_mode != CORRECTION_SMOOTH:
 		return
@@ -174,16 +174,16 @@ func advance(delta: float) -> void:
 		_clear_correction()
 
 
-## Performs the `pending_intent_count` operation.
-## Returns the computed integer value.
-## Design: Belongs to the client prediction/presentation boundary and reconciles to server authority.
+## 执行 `pending_intent_count` 对应的模块操作。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数位于客户端交互或表现边界，最终状态以服务器权威结果为准。
 func pending_intent_count() -> int:
 	return _pending_intents.size()
 
 
-## Serializes the current state into a transport-safe dictionary.
-## Returns Structured result data produced by the operation.
-## Design: Belongs to the client prediction/presentation boundary and reconciles to server authority.
+## 执行 `presentation_state` 对应的模块操作。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数位于客户端交互或表现边界，最终状态以服务器权威结果为准。
 func presentation_state() -> Dictionary:
 	return {
 		"position": predicted_position,
@@ -195,9 +195,9 @@ func presentation_state() -> Dictionary:
 	}
 
 
-## Performs the `discard_acknowledged_intents` operation.
-## [param ack_sequence] Sequence, tick, or index value used by the operation.
-## Design: Belongs to the client prediction/presentation boundary and reconciles to server authority.
+## 执行 `discard_acknowledged_intents` 对应的模块操作。
+## [param ack_sequence] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 设计：该函数位于客户端交互或表现边界，最终状态以服务器权威结果为准。
 func _discard_acknowledged_intents(ack_sequence: int) -> void:
 	var remaining: Array[Dictionary] = []
 	for intent in _pending_intents:
@@ -206,10 +206,10 @@ func _discard_acknowledged_intents(ack_sequence: int) -> void:
 	_pending_intents = remaining
 
 
-## Performs the `intent_payload` operation.
-## [param intent] Serialized input received at the subsystem boundary.
-## Returns Structured result data produced by the operation.
-## Design: Belongs to the client prediction/presentation boundary and reconciles to server authority.
+## 执行 `intent_payload` 对应的模块操作。
+## [param intent] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数位于客户端交互或表现边界，最终状态以服务器权威结果为准。
 func _intent_payload(intent: Dictionary) -> Dictionary:
 	var contract := MoveIntentContract.new(
 		String(intent["map_instance_id"]),
@@ -219,14 +219,14 @@ func _intent_payload(intent: Dictionary) -> Dictionary:
 	return contract.to_dictionary()
 
 
-## Publishes the current state to subscribed consumers.
-## Design: Belongs to the client prediction/presentation boundary and reconciles to server authority.
+## 发布 `emit_presentation_state` 对应的模块状态。
+## 设计：该函数位于客户端交互或表现边界，最终状态以服务器权威结果为准。
 func _emit_presentation_state() -> void:
 	presentation_state_changed.emit(presentation_state())
 
 
-## Resets the managed state to its initial value.
-## Design: Belongs to the client prediction/presentation boundary and reconciles to server authority.
+## 移除并清理 `clear_correction` 对应的模块状态。
+## 设计：该函数位于客户端交互或表现边界，最终状态以服务器权威结果为准。
 func _clear_correction() -> void:
 	correction_mode = CORRECTION_NONE
 	_correction_elapsed = 0.0

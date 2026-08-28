@@ -12,8 +12,9 @@ var _pending_definition
 var _pending_resource_paths: Dictionary = {}
 
 
-## 使用 [param definition_paths] 配置业务 map_id 到 `MapDefinition` JSON 的本地映射。
-## Design: 该目录由版本化内容包提供，服务端消息不能注入任意客户端文件路径。
+## 执行 `configure` 对应的模块操作。
+## [param definition_paths] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 设计：该目录由版本化内容包提供，服务端消息不能注入任意客户端文件路径。
 func configure(definition_paths: Dictionary) -> void:
 	_definition_paths.clear()
 	for map_id_value in definition_paths:
@@ -24,9 +25,10 @@ func configure(definition_paths: Dictionary) -> void:
 	set_process(false)
 
 
-## 异步预载 [param map_id] 的贴图，并把地图定义与场景清单暂存到同一个原子 bundle。
-## Returns 请求进入加载队列返回 `OK`，未知地图、忙碌或配置错误时返回对应错误码。
-## Design: 只有全部依赖成功后才发布 `map_preload_ready`，失败不会触碰当前场景。
+## 执行 `preload_map` 对应的模块操作。
+## [param map_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：只有全部依赖成功后才发布 `map_preload_ready`，失败不会触碰当前场景。
 func preload_map(map_id: StringName) -> Error:
 	if not _pending_map_id.is_empty():
 		return ERR_BUSY
@@ -76,13 +78,13 @@ func cancel_preload() -> void:
 
 
 ## 查询当前是否正在为某张地图组装原子资源包。
-## Returns 尚有未提交的地图请求时返回 `true`。
+## 返回该函数计算、查询或操作得到的结果。
 func is_preloading() -> bool:
 	return not _pending_map_id.is_empty()
 
 
 ## 轮询 Godot 线程加载状态，并在所有贴图完成后提交资源包。
-## [param _delta] 本帧经过时间；加载状态不依赖其数值。
+## [param _delta] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _process(_delta: float) -> void:
 	if _pending_map_id.is_empty():
 		set_process(false)
@@ -129,7 +131,8 @@ func _complete_pending() -> void:
 	map_preload_ready.emit(completed_map_id, bundle)
 
 
-## 以 [param message] 结束当前请求并发布失败事件。
+## 执行 `fail_pending` 对应的模块操作。
+## [param message] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _fail_pending(message: String) -> void:
 	var failed_map_id := _pending_map_id
 	_clear_pending()

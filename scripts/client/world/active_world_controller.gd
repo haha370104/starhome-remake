@@ -32,10 +32,17 @@ var _character_catalog: Dictionary = {}
 var _npc_catalog: Dictionary = {}
 
 
-## 绑定活动世界所需的 [param world_root]、[param sortable_world] 与 [param background]。
-## [param player_avatar]、[param local_player_controller]、[param camera] 和 [param hud] 是原子提交的唯一表现出口。
-## [param character_catalog] 与 [param npc_catalog] 仅用于暂存目标地图 NPC，不由入口脚本解释。
-## Returns 依赖完整时返回 `OK`，否则返回 `ERR_INVALID_PARAMETER`。
+## 执行 `configure` 对应的模块操作。
+## [param world_root] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param sortable_world] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param background] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param player_avatar] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param local_player_controller] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param camera] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param hud] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param character_catalog] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param npc_catalog] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func configure(
 	world_root: Node2D,
 	sortable_world: Node2D,
@@ -69,9 +76,10 @@ func configure(
 	return OK
 
 
-## 从受控 [param definition_path] 同步准备初始地图 bundle。
-## Returns 定义、场景清单和两张基础纹理全部有效时返回 bundle，否则返回空字典。
-## Design: 该入口仅用于应用启动；运行中地图继续使用异步 `ClientMapPreloader`。
+## 执行 `prepare_initial_bundle` 对应的模块操作。
+## [param definition_path] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该入口仅用于应用启动；运行中地图继续使用异步 `ClientMapPreloader`。
 func prepare_initial_bundle(definition_path: String) -> Dictionary:
 	var loader: RefCounted = MapDefinitionLoaderScript.new()
 	var staged_definition: MapDefinition = loader.load_file(definition_path)
@@ -94,9 +102,11 @@ func prepare_initial_bundle(definition_path: String) -> Dictionary:
 	}
 
 
-## 完整暂存并原子提交 [param bundle]，最后把玩家放到权威 [param spawn_position]。
-## Returns 导航、场景、NPC、传送视图和基础资源全部有效时返回 `true`。
-## Design: 所有加载与节点构建先发生在离树暂存容器；失败不会清理或改写当前活动世界。
+## 执行 `commit_bundle` 对应的模块操作。
+## [param bundle] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param spawn_position] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：所有加载与节点构建先发生在离树暂存容器；失败不会清理或改写当前活动世界。
 func commit_bundle(bundle: Dictionary, spawn_position: Vector2) -> bool:
 	var staged := _stage_bundle(bundle, spawn_position)
 	if staged.is_empty():
@@ -123,8 +133,9 @@ func commit_bundle(bundle: Dictionary, spawn_position: Vector2) -> bool:
 	return true
 
 
-## 返回世界坐标 [param world_position] 命中的最上层传送视图。
-## Returns 命中时返回业务 transition view，否则返回 `null`。
+## 执行 `transition_view_at` 对应的模块操作。
+## [param world_position] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func transition_view_at(world_position: Vector2) -> Node2D:
 	for index in range(transition_views.size() - 1, -1, -1):
 		var view := transition_views[index]
@@ -133,8 +144,9 @@ func transition_view_at(world_position: Vector2) -> Node2D:
 	return null
 
 
-## 返回业务标识 [param transition_id] 对应的活动传送视图。
-## Returns 当前地图存在该视图时返回节点，否则返回 `null`。
+## 执行 `transition_view_by_id` 对应的模块操作。
+## [param transition_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func transition_view_by_id(transition_id: StringName) -> Node2D:
 	for view in transition_views:
 		if view.transition_id == transition_id:
@@ -142,8 +154,10 @@ func transition_view_by_id(transition_id: StringName) -> Node2D:
 	return null
 
 
-## 暂存 [param bundle] 的全部可失败依赖，并校验 [param spawn_position] 可行走。
-## Returns 成功时返回只待收养的节点和资源，失败时释放暂存容器并返回空字典。
+## 执行 `stage_bundle` 对应的模块操作。
+## [param bundle] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param spawn_position] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func _stage_bundle(bundle: Dictionary, spawn_position: Vector2) -> Dictionary:
 	var staged_definition: MapDefinition = bundle.get("definition")
 	var staged_manifest: Dictionary = bundle.get("map_manifest", {})
@@ -191,8 +205,11 @@ func _stage_bundle(bundle: Dictionary, spawn_position: Vector2) -> Dictionary:
 	}
 
 
-## 在 [param container] 中构建 [param manifest] 的语义场景节点并写入 [param output]。
-## Returns 所有纹理和字段有效时返回 `true`。
+## 执行 `stage_scene_nodes` 对应的模块操作。
+## [param manifest] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param container] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param output] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func _stage_scene_nodes(manifest: Dictionary, container: Node2D, output: Array[Node2D]) -> bool:
 	var composition_value: Variant = manifest.get("composition", {})
 	if not composition_value is Dictionary:
@@ -244,9 +261,12 @@ func _stage_scene_nodes(manifest: Dictionary, container: Node2D, output: Array[N
 	return true
 
 
-## 在 [param container] 中按 [param staged_definition] 和 [param staged_navigation] 暂存 NPC。
-## [param output] 接收已验证但尚未迁入活动场景的 NPC 节点。
-## Returns 当前地图无需 NPC 或全部 NPC 配置成功时返回 `true`。
+## 执行 `stage_npcs` 对应的模块操作。
+## [param staged_definition] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param staged_navigation] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param container] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param output] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func _stage_npcs(
 	staged_definition: MapDefinition,
 	staged_navigation: RefCounted,
@@ -273,9 +293,11 @@ func _stage_npcs(
 	return true
 
 
-## 为 [param staged_definition] 中带表现字段的出口在 [param container] 暂存动画视图。
-## [param output] 接收已验证但尚未迁入活动场景的传送视图。
-## Returns 所有已声明表现的出口均构建成功时返回 `true`；缺省表现暂时保持无视图兼容。
+## 执行 `stage_transition_views` 对应的模块操作。
+## [param staged_definition] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param container] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param output] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func _stage_transition_views(
 	staged_definition: MapDefinition,
 	container: Node2D,
@@ -294,8 +316,9 @@ func _stage_transition_views(
 	return true
 
 
-## 根据 [param kind] 创建大厅 NPC 表现节点。
-## Returns 对应商店、任务或环境 NPC 节点。
+## 执行 `create_npc_for_kind` 对应的模块操作。
+## [param kind] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func _create_npc_for_kind(kind: String) -> Node2D:
 	match kind:
 		"shop":
@@ -317,7 +340,8 @@ func _clear_active_nodes() -> void:
 	transition_views.clear()
 
 
-## 将 [param container] 的全部暂存子节点迁入活动 Y-sort 世界并释放空容器。
+## 执行 `adopt_staged_nodes` 对应的模块操作。
+## [param container] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _adopt_staged_nodes(container: Node2D) -> void:
 	for child in container.get_children():
 		container.remove_child(child)

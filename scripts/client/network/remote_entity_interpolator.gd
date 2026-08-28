@@ -12,15 +12,15 @@ var _tracks: Dictionary = {}
 var _latest_server_time := -1.0
 
 
-## Configures the instance from validated runtime inputs.
-## [param interpolation_delay] Input value consumed by the operation.
-## Design: Belongs to the client prediction/presentation boundary and reconciles to server authority.
+## 配置并初始化 `configure` 对应的模块状态。
+## [param interpolation_delay] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 设计：该函数位于客户端交互或表现边界，最终状态以服务器权威结果为准。
 func configure(interpolation_delay: float = 0.1) -> void:
 	interpolation_delay_seconds = maxf(0.0, interpolation_delay)
 
 
-## Resets the managed state to its initial value.
-## Design: Belongs to the client prediction/presentation boundary and reconciles to server authority.
+## 执行 `reset` 对应的模块操作。
+## 设计：该函数位于客户端交互或表现边界，最终状态以服务器权威结果为准。
 func reset() -> void:
 	_tracks.clear()
 	last_server_tick = -1
@@ -28,12 +28,12 @@ func reset() -> void:
 	playback_server_time = 0.0
 
 
-## Advances the managed state using the supplied update.
-## [param server_tick] Sequence, tick, or index value used by the operation.
-## [param server_time_seconds] Elapsed time in seconds for this update.
-## [param entities] Input value consumed by the operation.
-## Returns Whether the operation completed or the queried condition is satisfied.
-## Design: Belongs to the client prediction/presentation boundary and reconciles to server authority.
+## 执行 `push_snapshot` 对应的模块操作。
+## [param server_tick] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param server_time_seconds] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param entities] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数位于客户端交互或表现边界，最终状态以服务器权威结果为准。
 func push_snapshot(server_tick: int, server_time_seconds: float, entities: Array) -> bool:
 	if server_tick <= last_server_tick:
 		stale_snapshot_rejected.emit(server_tick)
@@ -66,9 +66,9 @@ func push_snapshot(server_tick: int, server_time_seconds: float, entities: Array
 	return true
 
 
-## Advances the managed state using the supplied update.
-## [param delta] Elapsed time in seconds for this update.
-## Design: Belongs to the client prediction/presentation boundary and reconciles to server authority.
+## 执行 `advance` 对应的模块操作。
+## [param delta] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 设计：该函数位于客户端交互或表现边界，最终状态以服务器权威结果为准。
 func advance(delta: float) -> void:
 	if _latest_server_time < 0.0:
 		return
@@ -81,11 +81,11 @@ func advance(delta: float) -> void:
 		presentation_state_changed.emit(entity_id, sample_entity_at(entity_id, playback_server_time))
 
 
-## Performs the `sample_entity_at` operation.
-## [param entity_id] Stable identifier of the target value.
-## [param server_time_seconds] Elapsed time in seconds for this update.
-## Returns Structured result data produced by the operation.
-## Design: Belongs to the client prediction/presentation boundary and reconciles to server authority.
+## 执行 `sample_entity_at` 对应的模块操作。
+## [param entity_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param server_time_seconds] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数位于客户端交互或表现边界，最终状态以服务器权威结果为准。
 func sample_entity_at(entity_id: StringName, server_time_seconds: float) -> Dictionary:
 	var track: Array = _tracks.get(entity_id, [])
 	if track.is_empty():
@@ -114,9 +114,9 @@ func sample_entity_at(entity_id: StringName, server_time_seconds: float) -> Dict
 	return _presentation_from_sample(track[track.size() - 1])
 
 
-## Serializes the current state into a transport-safe dictionary.
-## Returns Structured result data produced by the operation.
-## Design: Belongs to the client prediction/presentation boundary and reconciles to server authority.
+## 执行 `presentation_states` 对应的模块操作。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数位于客户端交互或表现边界，最终状态以服务器权威结果为准。
 func presentation_states() -> Dictionary:
 	var states := {}
 	for raw_id in _tracks:
@@ -125,24 +125,24 @@ func presentation_states() -> Dictionary:
 	return states
 
 
-## Performs the `tracked_entity_count` operation.
-## Returns the computed integer value.
-## Design: Belongs to the client prediction/presentation boundary and reconciles to server authority.
+## 执行 `tracked_entity_count` 对应的模块操作。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数位于客户端交互或表现边界，最终状态以服务器权威结果为准。
 func tracked_entity_count() -> int:
 	return _tracks.size()
 
 
-## Mutates the managed collection for the requested value.
-## [param entity_id] Stable identifier of the target value.
-## Design: Belongs to the client prediction/presentation boundary and reconciles to server authority.
+## 移除并清理 `remove_entity` 对应的模块状态。
+## [param entity_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 设计：该函数位于客户端交互或表现边界，最终状态以服务器权威结果为准。
 func remove_entity(entity_id: StringName) -> void:
 	_tracks.erase(entity_id)
 
 
-## Performs the `presentation_from_sample` operation.
-## [param sample] Input value consumed by the operation.
-## Returns Structured result data produced by the operation.
-## Design: Belongs to the client prediction/presentation boundary and reconciles to server authority.
+## 执行 `presentation_from_sample` 对应的模块操作。
+## [param sample] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数位于客户端交互或表现边界，最终状态以服务器权威结果为准。
 func _presentation_from_sample(sample: Dictionary) -> Dictionary:
 	return {
 		"position": Vector2(sample["position"]),
@@ -153,10 +153,10 @@ func _presentation_from_sample(sample: Dictionary) -> Dictionary:
 	}
 
 
-## Performs the `to_vector2` operation.
-## [param value] New value requested by the caller.
-## Returns the resolved coordinate.
-## Design: Belongs to the client prediction/presentation boundary and reconciles to server authority.
+## 序列化或保存 `to_vector2` 对应的模块状态。
+## [param value] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数位于客户端交互或表现边界，最终状态以服务器权威结果为准。
 func _to_vector2(value: Variant) -> Vector2:
 	if value is Vector2:
 		return value

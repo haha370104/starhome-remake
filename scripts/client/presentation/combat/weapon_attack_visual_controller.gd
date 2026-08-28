@@ -16,9 +16,12 @@ var _impacts: Array[Dictionary] = []
 var _visual_collision_resolver := Callable()
 
 
-## 配置 [param manifest] 中的 [param weapon_id]，并把瞬态弹体挂到 [param world_parent] 的 Y 排序世界。
-## Returns 武器声明、弹体及命中特效资源均有效时返回 `OK`，否则返回稳定错误码。
-## Design: 控制器只消费业务化武器关系；旧客户端文件名与映射推断仅保留在 source audit。
+## 执行 `configure` 对应的模块操作。
+## [param manifest] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param world_parent] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param weapon_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：控制器只消费业务化武器关系；旧客户端文件名与映射推断仅保留在 source audit。
 func configure(
 	manifest: Dictionary,
 	world_parent: Node2D,
@@ -53,15 +56,17 @@ func configure(
 	return OK
 
 
-## 安装 [param resolver] 作为弹体线段的纯表现碰撞查询。
-## [param resolver] 接收线段起终点并返回 `{hit, position}`，不得改变权威战斗状态。
+## 执行 `set_visual_collision_resolver` 对应的模块操作。
+## [param resolver] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func set_visual_collision_resolver(resolver: Callable) -> void:
 	_visual_collision_resolver = resolver
 
 
-## 请求从 [param origin] 朝 [param requested_target] 播放一次武器表现。
-## Returns 成功时返回实际弹体终点和朝向；冷却、距离或配置错误时返回稳定原因。
-## Design: 超出武器表现射程的点击会被钳制到射程边缘；伤害与命中仍必须由服务端裁决。
+## 执行 `request_fire` 对应的模块操作。
+## [param origin] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param requested_target] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：超出武器表现射程的点击会被钳制到射程边缘；伤害与命中仍必须由服务端裁决。
 func request_fire(origin: Vector2, requested_target: Vector2) -> Dictionary:
 	if _weapon.is_empty() or _world_parent == null:
 		return {"ok": false, "code": &"unconfigured"}
@@ -92,8 +97,9 @@ func request_fire(origin: Vector2, requested_target: Vector2) -> Dictionary:
 	}
 
 
-## 以 [param delta_seconds] 推进冷却、弹体飞行及一次性命中特效。
-## Design: 该显式入口使测试无需依赖真实帧时钟；节点 `_process` 只负责转发。
+## 执行 `advance` 对应的模块操作。
+## [param delta_seconds] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 设计：该显式入口使测试无需依赖真实帧时钟；节点 `_process` 只负责转发。
 func advance(delta_seconds: float) -> void:
 	if delta_seconds <= 0.0:
 		return
@@ -115,32 +121,34 @@ func clear_effects() -> void:
 	_cooldown_remaining = 0.0
 
 
-## 返回当前仍在飞行的弹体数量，供诊断和自动化测试使用。
-## Returns 当前活动弹体数量。
+## 执行 `active_projectile_count` 对应的模块操作。
+## 返回该函数计算、查询或操作得到的结果。
 func active_projectile_count() -> int:
 	return _projectiles.size()
 
 
-## 返回当前仍在播放的命中特效数量，供诊断和自动化测试使用。
-## Returns 当前活动命中特效数量。
+## 执行 `active_impact_count` 对应的模块操作。
+## 返回该函数计算、查询或操作得到的结果。
 func active_impact_count() -> int:
 	return _impacts.size()
 
 
-## 返回武器剩余的客户端表现冷却秒数。
-## Returns 大于等于零的剩余冷却秒数。
-## Design: 该冷却只抑制重复动画；服务端冷却仍是唯一玩法权威。
+## 执行 `cooldown_remaining` 对应的模块操作。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该冷却只抑制重复动画；服务端冷却仍是唯一玩法权威。
 func cooldown_remaining() -> float:
 	return _cooldown_remaining
 
 
-## 把引擎帧时间 [param delta] 转发到可测试的显式推进入口。
+## 按渲染帧推进当前节点的表现状态。
+## [param delta] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _process(delta: float) -> void:
 	advance(delta)
 
 
-## 验证 [param weapon] 的表现射程、冷却、锚点和两段特效声明。
-## Returns 满足最小运行时契约时返回 `true`。
+## 执行 `is_valid_weapon` 对应的模块操作。
+## [param weapon] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func _is_valid_weapon(weapon: Dictionary) -> bool:
 	var muzzle_value: Variant = weapon.get("muzzle_offset", [])
 	if (
@@ -156,8 +164,10 @@ func _is_valid_weapon(weapon: Dictionary) -> bool:
 	)
 
 
-## 验证 [param effect_value] 的资源、帧率与帧数；[param requires_speed] 控制是否要求飞行速度。
-## Returns 声明可用于确定性播放时返回 `true`。
+## 执行 `is_valid_effect` 对应的模块操作。
+## [param effect_value] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param requires_speed] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func _is_valid_effect(effect_value: Variant, requires_speed: bool) -> bool:
 	if not effect_value is Dictionary:
 		return false
@@ -171,14 +181,17 @@ func _is_valid_effect(effect_value: Variant, requires_speed: bool) -> bool:
 	return not requires_speed or float(effect.get("travel_pixels_per_second", 0.0)) > 0.0
 
 
-## 加载 [param resource_path] 指向且包含统一 `raw` 动画的 SpriteFrames。
-## Returns 资源有效时返回实例，否则返回 `null`。
+## 执行 `load_frames` 对应的模块操作。
+## [param resource_path] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func _load_frames(resource_path: String) -> SpriteFrames:
 	var frames := ResourceLoader.load(resource_path, "SpriteFrames") as SpriteFrames
 	return frames if frames != null and frames.has_animation(RAW_ANIMATION) else null
 
 
-## 从 [param origin] 创建飞向 [param target] 的弹体状态。
+## 执行 `spawn_projectile` 对应的模块操作。
+## [param origin] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param target] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _spawn_projectile(origin: Vector2, target: Vector2) -> void:
 	var wrapper := _create_effect_node("WeaponProjectile", origin, _projectile_frames)
 	var projectile: Dictionary = _weapon["projectile"]
@@ -192,14 +205,18 @@ func _spawn_projectile(origin: Vector2, target: Vector2) -> void:
 	})
 
 
-## 在 [param position] 创建从首帧播放的一次性命中特效状态。
+## 执行 `spawn_impact` 对应的模块操作。
+## [param position] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _spawn_impact(position: Vector2) -> void:
 	var wrapper := _create_effect_node("WeaponImpact", position, _impact_frames)
 	_impacts.append({"node": wrapper, "elapsed": 0.0})
 
 
-## 在 Y 排序世界 [param position] 创建名为 [param name_value]、使用 [param frames] 的效果包装节点。
-## Returns 可由控制器移动或销毁的世界节点。
+## 执行 `create_effect_node` 对应的模块操作。
+## [param name_value] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param position] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param frames] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func _create_effect_node(name_value: String, position: Vector2, frames: SpriteFrames) -> Node2D:
 	var wrapper := Node2D.new()
 	wrapper.name = name_value
@@ -215,8 +232,9 @@ func _create_effect_node(name_value: String, position: Vector2, frames: SpriteFr
 	return wrapper
 
 
-## 推进全部飞行弹体 [param delta_seconds]，撞上表现怪物或抵达终点时替换为命中特效。
-## Design: 使用上一位置到下一位置的连续线段查询，避免高速弹体单帧穿过小型怪物。
+## 执行 `advance_projectiles` 对应的模块操作。
+## [param delta_seconds] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 设计：使用上一位置到下一位置的连续线段查询，避免高速弹体单帧穿过小型怪物。
 func _advance_projectiles(delta_seconds: float) -> void:
 	for index in range(_projectiles.size() - 1, -1, -1):
 		var state: Dictionary = _projectiles[index]
@@ -241,8 +259,10 @@ func _advance_projectiles(delta_seconds: float) -> void:
 		_projectiles.remove_at(index)
 
 
-## 通过已安装查询器检测 [param segment_start] 到 [param segment_end] 的表现碰撞。
-## Returns 查询器有效且返回字典时透传结果，否则返回 `hit=false`。
+## 执行 `resolve_visual_collision` 对应的模块操作。
+## [param segment_start] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param segment_end] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func _resolve_visual_collision(segment_start: Vector2, segment_end: Vector2) -> Dictionary:
 	if not _visual_collision_resolver.is_valid():
 		return {"hit": false}
@@ -250,7 +270,8 @@ func _resolve_visual_collision(segment_start: Vector2, segment_end: Vector2) -> 
 	return result if result is Dictionary else {"hit": false}
 
 
-## 推进全部命中特效 [param delta_seconds]，播完配置帧数后销毁节点。
+## 执行 `advance_impacts` 对应的模块操作。
+## [param delta_seconds] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _advance_impacts(delta_seconds: float) -> void:
 	var impact: Dictionary = _weapon.get("impact", {})
 	var frame_count := int(impact.get("frames", 0))
@@ -270,7 +291,8 @@ func _advance_impacts(delta_seconds: float) -> void:
 				sprite.frame = frame
 
 
-## 释放 [param state] 中的瞬态世界节点；重复或已失效调用安全忽略。
+## 执行 `free_state_node` 对应的模块操作。
+## [param state] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _free_state_node(state: Dictionary) -> void:
 	var node := state.get("node") as Node
 	if node != null and is_instance_valid(node):
