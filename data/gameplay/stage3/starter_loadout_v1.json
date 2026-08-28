@@ -163,13 +163,16 @@
           "inventory_icon": "equipment/weapons/recruit_energy_cannon/inventory_icon",
           "detail_view": "equipment/weapons/recruit_energy_cannon/detail_view",
           "world_animation": "equipment/weapons/recruit_energy_cannon/world_animation",
-          "projectile": "equipment/weapons/recruit_energy_cannon/projectile"
+          "projectile": "equipment/weapons/recruit_energy_cannon/projectile",
+          "impact_effect": "equipment/weapons/recruit_energy_cannon/impact_effect_candidate"
         },
         "resources": {
           "combat_visual_manifest": "res://assets/equipment_world/combat_visual_manifest.json",
           "combat_actor_id": "starter_combat_vehicle",
           "layer_id": "primary_weapon",
-          "world_animation": "res://assets/equipment_world/starter_combat_vehicle/weapon/aiming/animation_frames.tres"
+          "world_animation": "res://assets/equipment_world/starter_combat_vehicle/weapon/aiming/animation_frames.tres",
+          "projectile": "res://assets/equipment_world/starter_combat_vehicle/weapon/projectile/flight/animation_frames.tres",
+          "impact_effect": "res://assets/equipment_world/starter_combat_vehicle/weapon/impact/standard_candidate/animation_frames.tres"
         }
       },
       "evidence": {
@@ -186,7 +189,9 @@
         "stats.attack_interval_seconds": {"status": "reconstructed_default", "reason": "The gameplay reconstruction document selects 0.8 seconds when the retired server cooldown is unavailable."},
         "unknowns.server_damage_formula": {"status": "unknown", "reason": "The retired server damage formula has not been recovered."},
         "unknowns.server_projectile_speed": {"status": "unknown", "reason": "The visual projectile class is known, but the authoritative server trajectory constant is not."},
-        "presentation.resources": {"status": "client_confirmed", "source": "Glory-only semantic equipment import and source manifest"}
+        "presentation.resources": {"status": "client_confirmed", "source": "Glory-only semantic equipment import and source manifest"},
+        "presentation.resources.projectile": {"status": "client_confirmed", "source": "Energy-cannon client field to projectile class relationship"},
+        "presentation.resources.impact_effect": {"status": "high_confidence_candidate", "reason": "The matching cannon-number impact family is recovered, but the retired server effect index table is not."}
       },
       "source_audit": {
         "source_release": "starhome_lz_ry",
@@ -198,7 +203,9 @@
         "source_assets": [
           {"path": "pic3/equip/bag/gun1.ale", "sha256": "068ee126aa5207b9db66d2d07ab052e87ae6bb5b1ebfef4ebf3332fe9c0e2f3e"},
           {"path": "pic3/equip/dlg/gun1.ale", "sha256": "6a3fd210d6b91b140cf7eb478b00011f29786641f433041708a62a1adcb56b77"},
-          {"path": "pic3/equip/body/gun1.ale", "sha256": "32f2ba04942891eae7cc67f0ce6c04c1f2282918b4e20210c801848adef9e563"}
+          {"path": "pic3/equip/body/gun1.ale", "sha256": "32f2ba04942891eae7cc67f0ce6c04c1f2282918b4e20210c801848adef9e563"},
+          {"path": "pic3/bullet/bullet1.ale", "sha256": "81126134e4136a73aecce757cd8d641d73e918f7750fa75a6c865e10416ba088"},
+          {"path": "pic3/effect/gun01bz.ale", "sha256": "91c506d6835f5bb836d4c61c538eb61a66e76d2345c8fd9f2b37c3c7fcea4d7f"}
         ]
       }
     }

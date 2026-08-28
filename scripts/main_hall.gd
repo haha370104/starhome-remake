@@ -21,6 +21,10 @@ const LocalPlayerControllerScript := preload(
 const ActiveWorldControllerScript := preload(
 	"res://scripts/client/world/active_world_controller.gd"
 )
+const WeaponAttackVisualControllerScript := preload(
+	"res://scripts/client/presentation/combat/weapon_attack_visual_controller.gd"
+)
+const STARTER_WEAPON_ID := &"recruit_energy_cannon"
 
 # Player tuning is intentionally local to the player. NPC patrol motion has its
 # own configuration and must not inherit these values when player progression,
@@ -113,6 +117,7 @@ var pending_map_bundle: Dictionary = {}
 var pending_authoritative_join: Dictionary = {}
 var map_commit_failure_locked := false
 var selected_transition_id: StringName = &""
+var combat_attack_controller: Node
 
 
 ## Initializes node dependencies after the node enters the scene tree.
@@ -196,9 +201,58 @@ func _unhandled_input(event: InputEvent) -> void:
 		var npc := _nearest_npc(world_position, 55.0)
 		if npc:
 			_show_npc_popup(npc)
+		elif player != null and player.is_combat_actor_active():
+			_handle_world_combat_left_click(world_position)
 		else:
 			hud.hide_popup()
 		get_viewport().set_input_as_handled()
+
+
+## 在野外战斗外观下把 [param world_position] 转为一次数据驱动的本地开火表现。
+## Design: 当前切片立即反馈弹体与命中特效；伤害、能耗和真实命中仍只接受服务端事件。
+func _handle_world_combat_left_click(world_position: Vector2) -> void:
+	if combat_attack_controller == null:
+		hint_label.text = "武器表现尚未初始化"
+		return
+	var result: Dictionary = combat_attack_controller.request_fire(player.position, world_position)
+	if not bool(result.get("ok", false)):
+		var code := StringName(result.get("code", &""))
+		if code == &"cooldown":
+			hint_label.text = "新兵能量炮冷却中"
+		elif code == &"target_too_close":
+			hint_label.text = "射击目标距离过近"
+		else:
+			hint_label.text = "当前无法开火"
+		return
+	var was_moving: bool = local_player_controller.has_active_route()
+	var direction: Vector2 = result["direction"]
+	current_direction = _direction_index(direction)
+	_set_player_action("move" if was_moving else "attack")
+	var resolved_target: Vector2 = result["resolved_target"]
+	if bool(result.get("range_clamped", false)):
+		hint_label.text = "目标超出射程，向极限点 %d, %d 开火" % [
+			roundi(resolved_target.x),
+			roundi(resolved_target.y),
+		]
+	else:
+		hint_label.text = "向 %d, %d 开火" % [
+			roundi(resolved_target.x),
+			roundi(resolved_target.y),
+		]
+	_restore_locomotion_after_attack(was_moving)
+
+
+## 在短促炮口动作结束后恢复开火前的移动状态。
+## [param was_moving] 表示开火瞬间是否已有未完成路线；路线本身从不因开火而取消。
+## Design: 等待期间若路线自然结束则恢复站立；仍在移动时从当前路径段重算朝向。
+func _restore_locomotion_after_attack(was_moving: bool) -> void:
+	await get_tree().create_timer(0.16).timeout
+	if player == null or not player.is_combat_actor_active():
+		return
+	if was_moving and local_player_controller.has_active_route():
+		local_player_controller.refresh_route_direction()
+	else:
+		_set_player_action("stand")
 
 
 ## 处理世界坐标 [param world_position] 的右键请求；传送视图命中时改走其可行走 approach point。
@@ -321,6 +375,19 @@ func _build_world() -> void:
 		push_error("Unable to configure player avatar: %s" % error_string(avatar_error))
 	player.set_animation_speed_scale(player_animation_speed_scale)
 	sortable_world.add_child(player)
+
+	combat_attack_controller = WeaponAttackVisualControllerScript.new()
+	combat_attack_controller.name = "WeaponAttackVisualController"
+	add_child(combat_attack_controller)
+	var attack_visual_error: Error = combat_attack_controller.configure(
+		combat_manifest,
+		sortable_world,
+		STARTER_WEAPON_ID,
+	)
+	if attack_visual_error != OK:
+		push_error(
+			"Unable to configure weapon attack visuals: %s" % error_string(attack_visual_error)
+		)
 
 	local_player_controller = LocalPlayerControllerScript.new()
 	local_player_controller.name = "LocalPlayerController"
@@ -447,6 +514,8 @@ func _on_active_world_will_replace() -> void:
 		active_npc.set_interaction_active(false)
 	active_npc = null
 	selected_transition_id = &""
+	if combat_attack_controller != null:
+		combat_attack_controller.clear_effects()
 
 
 ## 在玩家停步后查找触发半径内最近的内部出口，并先预载其目标地图。

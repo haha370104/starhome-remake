@@ -125,6 +125,16 @@ func set_animation_speed_scale(value: float) -> void:
 		human_character.set_animation_speed_scale(_animation_speed_scale)
 
 
+## 报告当前地图是否正在使用战斗载具外观。
+## Returns 活动表现为已配置战斗角色时返回 `true`。
+func is_combat_actor_active() -> bool:
+	return (
+		presentation_kind == COMBAT_ACTOR_KIND
+		and combat_presenter != null
+		and combat_presenter.current_actor_id != &""
+	)
+
+
 ## 每帧只推进当前可见的战斗角色动画。
 ## [param delta] 由节点树提供的秒数。
 func _process(delta: float) -> void:

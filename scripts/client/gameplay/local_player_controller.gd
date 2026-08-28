@@ -60,6 +60,12 @@ func position() -> Vector2:
 	return _character.position if _character != null else Vector2.ZERO
 
 
+## 报告玩家是否仍有尚未完成的移动目标与路线段。
+## Returns 路线正在由控制器推进时返回 `true`。
+func has_active_route() -> bool:
+	return _has_target and path_index < path_points.size()
+
+
 ## 解析并请求前往 [param requested_position]，包括最近可达点回退和会话意图创建。
 ## Returns 成功时包含解析目标和回退标志；失败时包含稳定原因与提示文字。
 func request_move(requested_position: Vector2) -> Dictionary:
