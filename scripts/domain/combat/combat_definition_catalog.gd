@@ -134,8 +134,19 @@ func starter_energy_cannon(simulation_hz: int) -> DomainResult:
 ## Returns one stable lifecycle definition per configured population member.
 ## Design: Anchors remain authoritative inputs; later spawn sampling may use the preserved radius.
 func d04_monster_lifecycles(map_instance_id: String) -> DomainResult:
+	return monster_lifecycles_for_map("d04_field_zone", map_instance_id)
+
+
+## Expands the configured encounter for [param map_id] into server lifecycle definitions.
+## [param map_id] Business map identifier whose spawn configuration is requested.
+## [param map_instance_id] Runtime authority instance that will own every generated monster.
+## Returns stable, spatially distributed definitions, or an empty list when this catalog has no encounter for the map.
+## Design: This map-keyed seam allows later maps to add configuration without changing combat runtime code.
+func monster_lifecycles_for_map(map_id: String, map_instance_id: String) -> DomainResult:
 	if map_instance_id.is_empty():
-		return DomainResult.failure(&"combat.invalid_map_instance", "D04 lifecycle generation requires a map instance")
+		return DomainResult.failure(&"combat.invalid_map_instance", "monster lifecycle generation requires a map instance")
+	if map_id != String(_d04_encounter["map_id"]):
+		return DomainResult.ok([])
 	if not bool(_d04_encounter["enabled"]):
 		return DomainResult.ok([])
 	var result: Array[Dictionary] = []
@@ -147,17 +158,30 @@ func d04_monster_lifecycles(map_instance_id: String) -> DomainResult:
 		var combat: Dictionary = species["combat"]
 		var anchor_values: Array = group["anchor"]
 		var anchor := Vector2(float(anchor_values[0]), float(anchor_values[1]))
+		var population := int(group["population"])
 		for spawn_index: int in range(int(group["population"])):
+			var angle := float(spawn_index) * 2.399963229728653
+			var radius := float(group["spawn_radius"]) * sqrt(float(spawn_index + 1) / float(population))
+			var spawn_position := anchor + Vector2(cos(angle), sin(angle)) * radius
 			result.append({
 				"monster_id": "%s.%s.%d" % [_d04_encounter["encounter_id"], group["group_id"], spawn_index],
 				"species_id": species_id,
 				"map_instance_id": map_instance_id,
-				"position": anchor,
+				"position": spawn_position,
 				"spawn_anchor": anchor,
 				"spawn_radius": float(group["spawn_radius"]),
 				"spawn_index": spawn_index,
 				"max_health": int(stats["max_health"]),
 				"base_attack": int(stats["base_attack"]),
+				"behavior_profile": String(combat["behavior_profile"]),
+				"runtime_move_speed": float(combat["runtime_move_speed"]),
+				"attack_range": float(combat["attack_range"]),
+				"aggro_radius": float(combat["aggro_radius"]),
+				"leash_distance": float(combat["leash_distance"]),
+				"wander_radius": float(combat["wander_radius"]),
+				"attack_interval_seconds": float(combat["attack_interval_seconds"]),
+				"display_name": String(species["display_name"]),
+				"combat_actor_id": String(species["combat_actor_id"]),
 				"respawn_seconds": float(combat["respawn_seconds"]),
 				"unknown_fields": _unknown_monster_fields(stats),
 			})
