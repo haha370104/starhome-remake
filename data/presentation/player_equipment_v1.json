@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "definitions": {
+    "recruit_tank": {
+      "icon": "res://assets/ui/windows/inventory/items/recruit_tank.png",
+      "dialog_texture": "res://assets/ui/windows/vehicle/preview/chassis.png",
+      "dialog_anchor": [170, 200],
+      "dialog_origin": [-77, 8],
+      "z_layer": 10
+    },
+    "beginner_engine": {
+      "icon": "res://assets/ui/windows/inventory/items/beginner_engine.png",
+      "dialog_texture": "res://assets/ui/windows/vehicle/preview/engine.png",
+      "dialog_anchor": [130, 385],
+      "dialog_origin": [-33, -15],
+      "z_layer": 30
+    },
+    "recruit_energy_cannon": {
+      "icon": "res://assets/ui/windows/inventory/items/recruit_energy_cannon.png",
+      "dialog_texture": "res://assets/ui/windows/vehicle/preview/primary_weapon.png",
+      "dialog_anchor": [170, 200],
+      "dialog_origin": [-32, -16],
+      "z_layer": 20
+    },
+    "male_sleeveless_shirt": {
+      "icon": "res://assets/ui/windows/inventory/items/male_sleeveless_shirt.png",
+      "dialog_texture": "res://assets/ui/windows/character/equipment/male_sleeveless_shirt.png",
+      "dialog_anchor": [91, 274],
+      "dialog_origin": [-37, -181],
+      "z_layer": 60,
+      "world_equipment_key": "male_sleeveless_shirt",
+      "world_layer": "upper_body"
+    }
+  }
+}

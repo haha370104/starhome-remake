@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "definitions": [
+    {
+      "id": "male_sleeveless_shirt",
+      "kind": "character_clothing",
+      "display_name": "无袖衫（男）",
+      "description": "男兵日常训练时的一种训练上衣。",
+      "character_slot": "upper_body",
+      "required_sex": "male",
+      "stats": {
+        "purchase_value": 250,
+        "sell_value": 100,
+        "clothing_class": 35,
+        "wear_damage_per_hit": 14,
+        "max_durability": 64,
+        "skill_modifiers": {}
+      }
+    }
+  ]
+}
