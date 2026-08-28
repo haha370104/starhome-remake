@@ -552,11 +552,11 @@ func _build_game_windows() -> void:
 	game_window_manager = GameWindowManagerScript.new()
 	game_window_manager.name = "GameWindowManager"
 	hud.root_control.add_child(game_window_manager)
+	game_window_manager.current_player_changed.connect(_on_current_player_changed)
 	game_window_manager.configure(
 		Callable(multiplayer_presenter, "request_player_panel_command"),
 		multiplayer_offline_debug_enabled,
 	)
-	game_window_manager.current_player_changed.connect(_on_current_player_changed)
 	multiplayer_presenter.player_panel_bundle_received.connect(
 		game_window_manager.apply_bundle
 	)
