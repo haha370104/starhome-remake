@@ -81,47 +81,50 @@ func _test_energy_cannon_authority_state_machine() -> void:
 		module.register_vehicle("player.b", MAP_INSTANCE_ID, Vector2(10.0, 0.0), assembly, {ABILITY_ID: _weapon_definition()}).is_ok,
 		"player B vehicle should register",
 	)
-	_expect(module.register_monster(_monster_definition("monster.cooldown", 30, Vector2(100.0, 0.0))).is_ok, "cooldown target should register")
+	_expect(module.register_monster(_monster_definition("monster.front", 30, Vector2(100.0, 0.0))).is_ok, "front target should register")
+	_expect(module.register_monster(_monster_definition("monster.back", 30, Vector2(180.0, 0.0))).is_ok, "back target should register")
 	var state_a: VehicleCombatState = module.vehicle_state_for("player.a")
-	var forged := _attack_intent("monster.cooldown", 1)
+	var forged := _attack_intent(Vector2(250.0, 0.0), 1)
 	forged["damage"] = 999999
 	var before_energy := state_a.working_energy
-	var before_health := module.monster_for("monster.cooldown").health
+	var before_health := module.monster_for("monster.front").health
 	var forged_result := module.handle_energy_cannon_attack("player.a", forged)
 	_expect(not forged_result.is_ok and forged_result.error_code == &"network.invalid_payload", "client damage field should be rejected by shared intent contract")
 	_expect(is_equal_approx(state_a.working_energy, before_energy), "forged damage should consume no working energy")
-	_expect(module.monster_for("monster.cooldown").health == before_health, "forged damage should mutate no target health")
-	var first_hit := module.handle_energy_cannon_attack("player.a", _attack_intent("monster.cooldown", 1))
-	_expect(first_hit.is_ok, "valid energy-cannon attack should resolve")
-	_expect(int(first_hit.value["damage"]) >= 7 and int(first_hit.value["damage"]) <= 9, "damage should come from server weapon definition")
+	_expect(module.monster_for("monster.front").health == before_health, "forged damage should mutate no target health")
+	var first_shot := module.handle_energy_cannon_attack("player.a", _attack_intent(Vector2(250.0, 0.0), 1))
+	_expect(first_shot.is_ok, "valid coordinate-only energy-cannon attack should spawn")
+	_expect(String(first_shot.value["target_entity_id"]) == "monster.front", "first intersecting monster should catch the shot")
+	_expect(int(first_shot.value["impact_tick"]) > module.current_tick, "spawn should schedule a future impact tick")
+	_expect(module.monster_for("monster.front").health == before_health, "firing must not deduct health before projectile arrival")
 	_expect(is_equal_approx(state_a.working_energy, 40.0), "successful shot should reserve exact working energy")
 	var cooldown_energy := state_a.working_energy
-	var cooldown_hp := module.monster_for("monster.cooldown").health
-	var cooldown := module.handle_energy_cannon_attack("player.a", _attack_intent("monster.cooldown", 2))
+	var cooldown := module.handle_energy_cannon_attack("player.a", _attack_intent(Vector2(250.0, 0.0), 2))
 	_expect(not cooldown.is_ok and cooldown.error_code == &"combat.weapon_cooldown", "second immediate shot should be cooling down")
 	_expect(is_equal_approx(state_a.working_energy, cooldown_energy), "cooldown rejection should consume no energy")
-	_expect(module.monster_for("monster.cooldown").health == cooldown_hp, "cooldown rejection should deal no damage")
-	_expect(module.advance_ticks(20).is_ok, "one-second cooldown should advance on fixed ticks")
-	var cooled_hit := module.handle_energy_cannon_attack("player.a", _attack_intent("monster.cooldown", 3))
-	_expect(cooled_hit.is_ok, "weapon should fire at its exact ready tick")
+	var ticks_until_impact := int(first_shot.value["impact_tick"]) - module.current_tick
+	module.advance_ticks(ticks_until_impact - 1)
+	_expect(module.monster_for("monster.front").health == before_health, "health should remain unchanged one tick before arrival")
+	module.advance_ticks(1)
+	_expect(module.monster_for("monster.front").health < before_health, "damage should apply exactly when the projectile arrives")
+	_expect(module.monster_for("monster.back").health == 30, "monster behind the first collision should remain untouched")
+	var last_event: Dictionary = module.combat_events[-1]
+	_expect(StringName(last_event["event_type"]) == &"energy_cannon_hit", "arrival should emit the authoritative hit event")
+	module.advance_ticks(20 - module.current_tick)
+	var empty_shot := module.handle_energy_cannon_attack("player.a", _attack_intent(Vector2(0.0, 250.0), 3))
+	_expect(empty_shot.is_ok and String(empty_shot.value["target_entity_id"]).is_empty(), "shooting empty space should still create a clamped projectile")
+	_settle_all_projectiles(module)
+	_expect(StringName(module.combat_events[-1]["event_type"]) == &"energy_cannon_projectile_expired", "empty shot should expire without damage")
 	state_a.working_energy = 5.0
-	_expect(module.register_monster(_monster_definition("monster.energy", 30, Vector2(100.0, 0.0))).is_ok, "energy target should register")
 	module.advance_ticks(20)
-	var insufficient := module.handle_energy_cannon_attack("player.a", _attack_intent("monster.energy", 4))
+	var insufficient := module.handle_energy_cannon_attack("player.a", _attack_intent(Vector2(250.0, 0.0), 4))
 	_expect(not insufficient.is_ok and insufficient.error_code == &"combat.insufficient_working_energy", "insufficient working energy should prevent firing")
-	_expect(module.update_actor_position("player.a", Vector2(351.0, 0.0)).is_ok, "server movement should update combat position")
-	state_a.working_energy = 50.0
-	var out_of_range := module.handle_energy_cannon_attack("player.a", _attack_intent("monster.energy", 5))
-	_expect(not out_of_range.is_ok and out_of_range.error_code == &"combat.target_out_of_range", "current range 250 should reject distance 251")
-	_expect(module.register_vehicle("player.edge", MAP_INSTANCE_ID, Vector2(350.0, 0.0), assembly, {ABILITY_ID: _weapon_definition()}).is_ok, "range-edge actor should register")
-	var edge_hit := module.handle_energy_cannon_attack("player.edge", _attack_intent("monster.energy", 1))
-	_expect(edge_hit.is_ok, "current range 250 should allow distance 250")
 	var overloaded := assembly.duplicate(true)
 	overloaded["power_overloaded"] = true
 	overloaded["passive_power_load"] = 40.0
 	overloaded["available_power_output"] = 0.0
 	_expect(module.register_vehicle("player.overloaded", MAP_INSTANCE_ID, Vector2.ZERO, overloaded, {ABILITY_ID: _weapon_definition()}).is_ok, "overloaded fixture should remain inspectable")
-	var power_rejected := module.handle_energy_cannon_attack("player.overloaded", _attack_intent("monster.energy", 1))
+	var power_rejected := module.handle_energy_cannon_attack("player.overloaded", _attack_intent(Vector2(250.0, 0.0), 1))
 	_expect(not power_rejected.is_ok and power_rejected.error_code == &"combat.insufficient_power_output", "overloaded output budget should prevent activation")
 
 
@@ -132,18 +135,19 @@ func _test_single_death_and_thirty_second_respawn() -> void:
 	module.register_vehicle("player.a", MAP_INSTANCE_ID, Vector2.ZERO, assembly, {ABILITY_ID: _fixed_damage_weapon(7)})
 	module.register_vehicle("player.b", MAP_INSTANCE_ID, Vector2.ZERO, assembly, {ABILITY_ID: _fixed_damage_weapon(7)})
 	module.register_monster(_monster_definition("monster.shared", 7, Vector2(100.0, 0.0)))
-	var killing_hit := module.handle_energy_cannon_attack("player.a", _attack_intent("monster.shared", 1))
-	_expect(killing_hit.is_ok and killing_hit.value.has("death"), "first authoritative lethal hit should settle death")
-	var duplicate_hit := module.handle_energy_cannon_attack("player.b", _attack_intent("monster.shared", 1))
-	_expect(not duplicate_hit.is_ok and duplicate_hit.error_code == &"combat.target_already_dead", "second attacker should not settle dead monster again")
+	var first_shot := module.handle_energy_cannon_attack("player.a", _attack_intent(Vector2(100.0, 0.0), 1))
+	var second_shot := module.handle_energy_cannon_attack("player.b", _attack_intent(Vector2(100.0, 0.0), 1))
+	_expect(first_shot.is_ok and second_shot.is_ok, "simultaneous shots may be in flight before either death is settled")
+	_settle_all_projectiles(module)
 	_expect(module.death_events.size() == 1, "one monster generation should emit exactly one death event")
 	var monster: MonsterLifecycle = module.monster_for("monster.shared")
 	_expect(monster.death_generation == 1 and monster.last_killer_id == "player.a", "first killer should own the settled generation")
-	_expect(monster.respawn_at_tick == 600, "30 seconds at 20 Hz should schedule tick 600")
+	var expected_respawn_tick := module.current_tick + 600
+	_expect(monster.respawn_at_tick == expected_respawn_tick, "30 seconds at 20 Hz should schedule 600 ticks after impact")
 	module.advance_ticks(599)
-	_expect(not monster.is_alive() and module.respawn_events.is_empty(), "monster should remain dead before tick 600")
+	_expect(not monster.is_alive() and module.respawn_events.is_empty(), "monster should remain dead before its scheduled respawn tick")
 	var respawns := module.advance_ticks(1)
-	_expect(respawns.is_ok and respawns.value.size() == 1, "monster should respawn exactly at tick 600")
+	_expect(respawns.is_ok and respawns.value.size() == 1, "monster should respawn exactly 600 ticks after impact")
 	_expect(monster.is_alive() and monster.health == monster.max_health, "respawn should restore full health")
 	_expect(module.death_events.size() == 1 and module.respawn_events.size() == 1, "respawn should not duplicate prior death settlement")
 
@@ -152,8 +156,12 @@ func _test_single_death_and_thirty_second_respawn() -> void:
 func _test_seeded_damage_is_reproducible() -> void:
 	var first := _new_seeded_attack_world(987654)
 	var second := _new_seeded_attack_world(987654)
-	var first_damage: int = int(first.handle_energy_cannon_attack("player.seed", _attack_intent("monster.seed", 1)).value["damage"])
-	var second_damage: int = int(second.handle_energy_cannon_attack("player.seed", _attack_intent("monster.seed", 1)).value["damage"])
+	first.handle_energy_cannon_attack("player.seed", _attack_intent(Vector2(100.0, 0.0), 1))
+	second.handle_energy_cannon_attack("player.seed", _attack_intent(Vector2(100.0, 0.0), 1))
+	_settle_all_projectiles(first)
+	_settle_all_projectiles(second)
+	var first_damage: int = 100 - first.monster_for("monster.seed").health
+	var second_damage: int = 100 - second.monster_for("monster.seed").health
 	_expect(first_damage == second_damage, "same fixed seed should reproduce the same damage roll")
 
 
@@ -166,7 +174,8 @@ func _test_three_engagement_policies() -> void:
 	passive.register_monster(_behavior_monster_definition("monster.passive", &"unresponsive"))
 	passive.advance_ticks(40)
 	_expect(passive.vehicle_state_for("player.policy").health == 70, "unresponsive monster never initiates")
-	passive.handle_energy_cannon_attack("player.policy", _attack_intent("monster.passive", 1))
+	passive.handle_energy_cannon_attack("player.policy", _attack_intent(Vector2(20.0, 0.0), 1))
+	_settle_all_projectiles(passive)
 	passive.advance_ticks(40)
 	_expect(passive.vehicle_state_for("player.policy").health == 70, "unresponsive monster never retaliates")
 
@@ -175,8 +184,8 @@ func _test_three_engagement_policies() -> void:
 	retaliatory.register_monster(_behavior_monster_definition("monster.retaliatory", &"retaliatory"))
 	retaliatory.advance_ticks(40)
 	_expect(retaliatory.vehicle_state_for("player.policy").health == 70, "retaliatory monster does not initiate")
-	retaliatory.handle_energy_cannon_attack("player.policy", _attack_intent("monster.retaliatory", 1))
-	retaliatory.advance_ticks(1)
+	retaliatory.handle_energy_cannon_attack("player.policy", _attack_intent(Vector2(20.0, 0.0), 1))
+	_settle_all_projectiles(retaliatory)
 	_expect(retaliatory.vehicle_state_for("player.policy").health == 67, "retaliatory monster attacks after being hit")
 
 	var aggressive := _new_module(103)
@@ -251,6 +260,9 @@ func _weapon_definition() -> Dictionary:
 		"range": 250,
 		"upgrade_range_limit": 400,
 		"cooldown_ticks": 20,
+		"projectile_speed": 100.0,
+		"muzzle_offset": [0.0, 0.0],
+		"muzzle_forward_offset": 0.0,
 	}
 
 
@@ -276,6 +288,7 @@ func _monster_definition(monster_id: String, health: int, position: Vector2) -> 
 		"position": position,
 		"max_health": health,
 		"respawn_seconds": 30.0,
+		"projectile_hitbox": {"offset": [0.0, 0.0], "radius": 20.0},
 	}
 
 
@@ -299,13 +312,22 @@ func _behavior_monster_definition(monster_id: String, engagement_policy: StringN
 
 
 ## 执行 `attack_intent` 对应的模块操作。
-## [param target_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param aim_world_position] 瞄准世界坐标，只用于表达发射方向。
 ## [param sequence] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## 返回该函数计算、查询或操作得到的结果。
-func _attack_intent(target_id: String, sequence: int) -> Dictionary:
+func _attack_intent(aim_world_position: Vector2, sequence: int) -> Dictionary:
 	return UseAbilityIntentContract.new(
-		MAP_INSTANCE_ID, ABILITY_ID, target_id, sequence
+		MAP_INSTANCE_ID, ABILITY_ID, aim_world_position, sequence
 	).to_dictionary()
+
+
+## 将测试模块推进到所有当前弹体的最晚权威到达 tick。
+## [param module] 待推进的隔离战斗模块。
+func _settle_all_projectiles(module: AuthoritativeCombatModule) -> void:
+	var latest_tick := module.current_tick
+	for projectile: Dictionary in module.pending_projectiles:
+		latest_tick = maxi(latest_tick, int(projectile["impact_tick"]))
+	module.advance_ticks(latest_tick - module.current_tick)
 
 
 ## 执行 `expect` 对应的模块操作。

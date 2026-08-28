@@ -152,7 +152,10 @@
         "range": 250,
         "range_limit": 400,
         "max_durability": 900,
-        "attack_interval_seconds": 0.8
+        "attack_interval_seconds": 0.8,
+        "runtime_projectile_speed": 520,
+        "runtime_muzzle_offset": [0, -16],
+        "runtime_muzzle_forward_offset": 28
       },
       "unknowns": {
         "server_damage_formula": null,
@@ -187,6 +190,9 @@
         "stats.range_limit": {"status": "client_confirmed", "source_field": "m_ndistanceUL"},
         "stats.max_durability": {"status": "client_confirmed", "source_field": "m_nMax_Hardiness"},
         "stats.attack_interval_seconds": {"status": "reconstructed_default", "reason": "The gameplay reconstruction document selects 0.8 seconds when the retired server cooldown is unavailable."},
+        "stats.runtime_projectile_speed": {"status": "reconstructed_default", "reason": "Shared server/client flight timing uses the current visual projectile speed until retired-server timing is measured."},
+        "stats.runtime_muzzle_offset": {"status": "reconstructed_default", "reason": "Shared with the current Godot cannon presentation so authoritative and predicted sweeps start from the same point."},
+        "stats.runtime_muzzle_forward_offset": {"status": "reconstructed_default", "reason": "Shared with the current Godot cannon presentation so short shots remain geometrically consistent."},
         "unknowns.server_damage_formula": {"status": "unknown", "reason": "The retired server damage formula has not been recovered."},
         "unknowns.server_projectile_speed": {"status": "unknown", "reason": "The visual projectile class is known, but the authoritative server trajectory constant is not."},
         "presentation.resources": {"status": "client_confirmed", "source": "Glory-only semantic equipment import and source manifest"},

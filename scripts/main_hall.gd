@@ -249,24 +249,23 @@ func _handle_world_combat_left_click(world_position: Vector2) -> void:
 		else:
 			hint_label.text = "当前无法开火"
 		return
-	if not target_entity_id.is_empty():
-		var submitted := false
-		if multiplayer_offline_debug_enabled and offline_combat_bridge != null:
-			var authority_result := offline_combat_bridge.request_attack(target_entity_id)
-			submitted = bool(authority_result.get("ok", false))
-			if not submitted:
-				hint_label.text = _combat_rejection_text(StringName(authority_result.get("code", &"")))
-		else:
-			submitted = not multiplayer_presenter.request_use_ability(
-				STARTER_ABILITY_ID, target_entity_id
-			).is_empty()
+	var resolved_target: Vector2 = result["resolved_target"]
+	var submitted := false
+	if multiplayer_offline_debug_enabled and offline_combat_bridge != null:
+		var authority_result := offline_combat_bridge.request_attack(resolved_target)
+		submitted = bool(authority_result.get("ok", false))
 		if not submitted:
-			return
+			hint_label.text = _combat_rejection_text(StringName(authority_result.get("code", &"")))
+	else:
+		submitted = not multiplayer_presenter.request_use_ability(
+			STARTER_ABILITY_ID, resolved_target
+		).is_empty()
+	if not submitted:
+		return
 	var was_moving: bool = local_player_controller.has_active_route()
 	var direction: Vector2 = result["direction"]
 	var weapon_direction := _direction_index(direction)
 	player.set_combat_layer_pose(&"primary_weapon", &"attack", weapon_direction)
-	var resolved_target: Vector2 = result["resolved_target"]
 	if bool(result.get("range_clamped", false)):
 		hint_label.text = "目标超出射程，向极限点 %d, %d 开火" % [
 			roundi(resolved_target.x),

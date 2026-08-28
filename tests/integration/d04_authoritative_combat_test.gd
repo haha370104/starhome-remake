@@ -81,11 +81,14 @@ func _test_authoritative_player_attack(bridge: OfflineCombatAuthorityBridge) -> 
 	var target = bridge.module.monster_for(target_id)
 	bridge.update_player_position(target.position + Vector2(100, 0))
 	var before_health: int = target.health
-	var result := bridge.request_attack(target_id)
-	_expect(result.ok, "nearby configured monster should accept a strict target-only attack")
-	_expect(target.health == before_health - 7, "new recruit cannon should apply its server-owned base attack 7")
+	var result := bridge.request_attack(target.position)
+	_expect(result.ok, "nearby configured monster should accept a coordinate-only attack")
+	_expect(target.health == before_health, "firing should not deduct health before projectile arrival")
 	var vehicle = bridge.module.vehicle_state_for(BridgeScript.LOCAL_ACTOR_ID)
-	_expect(is_equal_approx(vehicle.working_energy, 90.0), "successful shot should consume 10 working energy")
+	_expect(is_equal_approx(vehicle.working_energy, 90.0), "successful shot should consume 10 working energy immediately")
+	var impact_tick := int(result.value["impact_tick"])
+	bridge.module.advance_ticks(impact_tick - bridge.module.current_tick)
+	_expect(target.health == before_health - 7, "new recruit cannon should apply its server-owned base attack 7 on arrival")
 
 
 ## 执行 `test_zero_attack_is_not_invented` 对应的模块操作。

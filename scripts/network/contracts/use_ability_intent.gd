@@ -7,31 +7,31 @@ const Validation = preload("res://scripts/network/contracts/contract_validation.
 const ALLOWED_FIELDS: Array[StringName] = [
 	&"map_instance_id",
 	&"ability_id",
-	&"target_entity_id",
+	&"aim_world_position",
 	&"input_sequence",
 ]
 
 var map_instance_id: String
 var ability_id: String
-var target_entity_id: String
+var aim_world_position: Vector2
 var input_sequence: int
 
 
-## 创建一个只表达技能选择与目标实体的客户端意图。
+## 创建一个只表达技能选择与瞄准坐标的客户端意图。
 ## [param requested_map_instance_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## [param requested_ability_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
-## [param requested_target_entity_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param requested_aim_world_position] 客户端瞄准的世界坐标；它只确定方向，不声明命中对象。
 ## [param requested_input_sequence] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## 设计：攻击力、射程、能耗、命中与伤害均不进入客户端意图，由服务端状态推导。
 func _init(
 	requested_map_instance_id: String,
 	requested_ability_id: String,
-	requested_target_entity_id: String,
+	requested_aim_world_position: Vector2,
 	requested_input_sequence: int,
 ) -> void:
 	map_instance_id = requested_map_instance_id
 	ability_id = requested_ability_id
-	target_entity_id = requested_target_entity_id
+	aim_world_position = requested_aim_world_position
 	input_sequence = requested_input_sequence
 
 
@@ -47,7 +47,7 @@ func to_dictionary() -> Dictionary:
 	return {
 		"map_instance_id": map_instance_id,
 		"ability_id": ability_id,
-		"target_entity_id": target_entity_id,
+		"aim_world_position": Validation.vector2_to_dictionary(aim_world_position),
 		"input_sequence": input_sequence,
 	}
 
@@ -71,9 +71,9 @@ static func from_dictionary(raw: Variant):
 	var ability_result = Validation.require_identifier(source, &"ability_id")
 	if not ability_result.is_ok:
 		return ability_result
-	var target_result = Validation.require_identifier(source, &"target_entity_id")
-	if not target_result.is_ok:
-		return target_result
+	var aim_result = Validation.require_vector2(source, &"aim_world_position")
+	if not aim_result.is_ok:
+		return aim_result
 	var sequence_result = Validation.require_integer(
 		source, &"input_sequence", Protocol.MIN_SEQUENCE, Protocol.MAX_SEQUENCE
 	)
@@ -82,6 +82,6 @@ static func from_dictionary(raw: Variant):
 	return Result.ok(load("res://scripts/network/contracts/use_ability_intent.gd").new(
 		map_result.value,
 		ability_result.value,
-		target_result.value,
+		aim_result.value,
 		sequence_result.value,
 	))

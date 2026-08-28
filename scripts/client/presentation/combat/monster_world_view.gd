@@ -2,6 +2,7 @@ class_name MonsterWorldView
 extends Node2D
 
 const CombatVisualPresenterScript := preload("res://scripts/client/presentation/combat/combat_visual_presenter.gd")
+const ProjectileSweep := preload("res://scripts/domain/combat/projectile_sweep.gd")
 const WorldCombatStatusBarScript := preload("res://scripts/client/presentation/combat/world_combat_status_bar.gd")
 
 var entity_id := ""
@@ -85,27 +86,10 @@ func is_selectable_at(world_position: Vector2, radius: float) -> bool:
 func visual_segment_collision(segment_start: Vector2, segment_end: Vector2) -> Dictionary:
 	if not visible:
 		return {"hit": false}
-	var segment := segment_end - segment_start
-	var length_squared := segment.length_squared()
-	if length_squared <= 0.000001:
-		return {"hit": false}
 	var center := position + visual_collision_offset
-	var relative_start := segment_start - center
-	var radius_squared := visual_collision_radius * visual_collision_radius
-	if relative_start.length_squared() <= radius_squared:
-		return {"hit": true, "t": 0.0, "position": segment_start, "entity_id": entity_id}
-	var half_linear := relative_start.dot(segment)
-	var discriminant := half_linear * half_linear - length_squared * (
-		relative_start.length_squared() - radius_squared
+	var result := ProjectileSweep.segment_circle_intersection(
+		segment_start, segment_end, center, visual_collision_radius
 	)
-	if discriminant < 0.0:
-		return {"hit": false}
-	var first_t := (-half_linear - sqrt(discriminant)) / length_squared
-	if first_t < 0.0 or first_t > 1.0:
-		return {"hit": false}
-	return {
-		"hit": true,
-		"t": first_t,
-		"position": segment_start + segment * first_t,
-		"entity_id": entity_id,
-	}
+	if bool(result.get("hit", false)):
+		result["entity_id"] = entity_id
+	return result

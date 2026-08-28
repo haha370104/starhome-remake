@@ -124,8 +124,11 @@ func starter_energy_cannon(simulation_hz: int) -> DomainResult:
 		"range": float(stats["range"]),
 		"upgrade_range_limit": float(stats["range_limit"]),
 		"cooldown_ticks": cooldown_ticks,
+		"projectile_speed": float(stats["runtime_projectile_speed"]),
+		"muzzle_offset": (stats["runtime_muzzle_offset"] as Array).duplicate(),
+		"muzzle_forward_offset": float(stats["runtime_muzzle_forward_offset"]),
 		"damage_model": &"confirmed_base_attack_direct",
-		"unknown_fields": ["activation_power", "server_damage_formula", "server_projectile_speed"],
+		"unknown_fields": ["activation_power", "server_damage_formula", "original_server_projectile_speed"],
 	})
 
 
@@ -181,6 +184,7 @@ func monster_lifecycles_for_map(map_id: String, map_instance_id: String) -> Doma
 				"leash_distance": float(combat["leash_distance"]),
 				"wander_radius": float(combat["wander_radius"]),
 				"attack_interval_seconds": float(combat["attack_interval_seconds"]),
+				"projectile_hitbox": (combat["projectile_hitbox"] as Dictionary).duplicate(true),
 				"display_name": String(species["display_name"]),
 				"combat_actor_id": String(species["combat_actor_id"]),
 				"respawn_seconds": float(combat["respawn_seconds"]),
@@ -285,6 +289,13 @@ func _validate_runtime_links() -> DomainResult:
 			&"unresponsive", &"retaliatory", &"aggressive"
 		]:
 			return DomainResult.failure(&"combat.invalid_catalog", "monster engagement policy is invalid")
+		var projectile_hitbox: Variant = combat.get("projectile_hitbox")
+		if not projectile_hitbox is Dictionary:
+			return DomainResult.failure(&"combat.invalid_catalog", "monster projectile hitbox is missing")
+		var hitbox_offset: Variant = (projectile_hitbox as Dictionary).get("offset")
+		if not hitbox_offset is Array or hitbox_offset.size() != 2 \
+			or float((projectile_hitbox as Dictionary).get("radius", 0.0)) <= 0.0:
+			return DomainResult.failure(&"combat.invalid_catalog", "monster projectile hitbox is invalid")
 	return DomainResult.ok()
 
 

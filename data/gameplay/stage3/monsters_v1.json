@@ -18,7 +18,8 @@
         "aggro_radius": 400,
         "leash_distance": 600,
         "attack_interval_seconds": 1.5,
-        "respawn_seconds": 30
+        "respawn_seconds": 30,
+        "projectile_hitbox": {"offset": [0, -30], "radius": 34}
       },
       "drops": null,
       "rewards": null,
@@ -44,6 +45,7 @@
         "combat.leash_distance": {"status": "reconstructed_default", "reason": "First vertical-slice server AI default."},
         "combat.attack_interval_seconds": {"status": "reconstructed_default", "reason": "First vertical-slice normal-monster default."},
         "combat.respawn_seconds": {"status": "reconstructed_default", "reason": "First vertical-slice normal-monster default."},
+        "combat.projectile_hitbox": {"status": "reconstructed_default", "reason": "Promoted from the current Godot visual collision footprint so client prediction and server sweep use one geometry."},
         "drops": {"status": "unknown", "reason": "A client-side candidate expression exists, but its probability grammar and retired server authority are unverified; it is intentionally excluded from runtime data."},
         "rewards": {"status": "unknown", "reason": "No authoritative reward settlement data was recovered."},
         "presentation": {"status": "client_confirmed", "source": "Glory-only imported monster animation resources"}
@@ -75,7 +77,8 @@
         "aggro_radius": 400,
         "leash_distance": 600,
         "attack_interval_seconds": 1.5,
-        "respawn_seconds": 30
+        "respawn_seconds": 30,
+        "projectile_hitbox": {"offset": [0, -22], "radius": 26}
       },
       "drops": null,
       "rewards": null,
@@ -101,6 +104,7 @@
         "combat.leash_distance": {"status": "reconstructed_default", "reason": "First vertical-slice server AI default."},
         "combat.attack_interval_seconds": {"status": "reconstructed_default", "reason": "First vertical-slice normal-monster default."},
         "combat.respawn_seconds": {"status": "reconstructed_default", "reason": "First vertical-slice normal-monster default."},
+        "combat.projectile_hitbox": {"status": "reconstructed_default", "reason": "Promoted from the current Godot visual collision footprint so client prediction and server sweep use one geometry."},
         "drops": {"status": "unknown", "reason": "A client-side candidate expression exists, but its probability grammar and retired server authority are unverified; it is intentionally excluded from runtime data."},
         "rewards": {"status": "unknown", "reason": "No authoritative reward settlement data was recovered."},
         "presentation": {"status": "client_confirmed", "source": "Glory-only imported monster animation resources"}
@@ -132,7 +136,8 @@
         "aggro_radius": 300,
         "leash_distance": 600,
         "attack_interval_seconds": 1.5,
-        "respawn_seconds": 30
+        "respawn_seconds": 30,
+        "projectile_hitbox": {"offset": [0, -30], "radius": 28}
       },
       "drops": null,
       "rewards": null,
@@ -156,6 +161,7 @@
         "combat.leash_distance": {"status": "reconstructed_default", "reason": "First vertical-slice server AI default."},
         "combat.attack_interval_seconds": {"status": "reconstructed_default", "reason": "First vertical-slice normal-monster default."},
         "combat.respawn_seconds": {"status": "reconstructed_default", "reason": "First vertical-slice normal-monster default."},
+        "combat.projectile_hitbox": {"status": "reconstructed_default", "reason": "Promoted from the current Godot visual collision footprint so client prediction and server sweep use one geometry."},
         "drops": {"status": "unknown", "reason": "A client-side candidate expression exists, but its probability grammar and retired server authority are unverified; it is intentionally excluded from runtime data."},
         "rewards": {"status": "unknown", "reason": "No authoritative reward settlement data was recovered."},
         "presentation": {"status": "client_confirmed", "source": "Glory-only imported monster animation resources"}
@@ -188,6 +194,7 @@
         "leash_distance": 600,
         "attack_interval_seconds": 1.5,
         "respawn_seconds": 30,
+        "projectile_hitbox": {"offset": [0, -22], "radius": 28},
         "persistent_damage": null
       },
       "drops": null,
@@ -213,6 +220,7 @@
         "combat.leash_distance": {"status": "reconstructed_default", "reason": "First vertical-slice server AI default."},
         "combat.attack_interval_seconds": {"status": "reconstructed_default", "reason": "First vertical-slice normal-monster default."},
         "combat.respawn_seconds": {"status": "reconstructed_default", "reason": "First vertical-slice normal-monster default."},
+        "combat.projectile_hitbox": {"status": "reconstructed_default", "reason": "Promoted from the current Godot visual collision footprint so client prediction and server sweep use one geometry."},
         "combat.persistent_damage": {"status": "unknown", "reason": "The client confirms corrosive presentation, but damage amount, tick interval, and duration were server-controlled."},
         "drops": {"status": "unknown", "reason": "A client-side candidate expression exists, but its probability grammar and retired server authority are unverified; it is intentionally excluded from runtime data."},
         "rewards": {"status": "unknown", "reason": "No authoritative reward settlement data was recovered."},

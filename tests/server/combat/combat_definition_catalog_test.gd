@@ -75,6 +75,8 @@ func _test_formal_starter_definitions() -> void:
 	_expect(is_equal_approx(float(weapon["range"]), 250.0), "current attack range should remain 250")
 	_expect(is_equal_approx(float(weapon["upgrade_range_limit"]), 400.0), "400 should remain only the equipment-growth limit")
 	_expect(int(weapon["cooldown_ticks"]) == 16, "0.8 seconds at 20 Hz should map to 16 ticks")
+	_expect(is_equal_approx(float(weapon["projectile_speed"]), 520.0), "server and client should share the reconstructed projectile speed")
+	_expect(weapon["muzzle_offset"] == [0.0, -16.0], "authoritative sweep should share the visual muzzle offset")
 	_expect(weapon["activation_power"] == null and weapon["unknown_fields"].has("activation_power"), "missing activation power must remain explicit unknown")
 
 
@@ -97,6 +99,7 @@ func _test_d04_lifecycle_definitions() -> void:
 		_expect(String(definition["map_instance_id"]) == MAP_INSTANCE_ID, "each lifecycle should bind the requested map instance")
 		_expect(not definition.has("defense") and not definition.has("move_speed"), "runtime definition must not invent defense or speed")
 		_expect(definition["unknown_fields"].has("defense") and definition["unknown_fields"].has("move_speed"), "unknown monster stats should remain explicit")
+		_expect(definition["projectile_hitbox"] is Dictionary, "each runtime monster should expose authoritative projectile geometry")
 	var all_unique := identities.size() == lifecycles.size()
 	_expect(all_unique, "expanded monster instance IDs should be unique")
 	for species_id: String in ["om_adult", "om_larva", "photosensitive_orb", "toxic_gel"]:
@@ -116,17 +119,19 @@ func _test_catalog_to_authoritative_module_seam() -> void:
 	var monster: Dictionary = catalog.d04_monster_lifecycles(MAP_INSTANCE_ID).value[0]
 	var module: AuthoritativeCombatModule = CombatModuleScript.new()
 	_expect(module.configure(20, 24680, 0.0).is_ok, "formal combat module should configure")
-	_expect(module.register_vehicle("player.catalog", MAP_INSTANCE_ID, monster["position"], assembly, {weapon["ability_id"]: weapon}).is_ok, "formal starter vehicle and cannon should register")
+	_expect(module.register_vehicle("player.catalog", MAP_INSTANCE_ID, Vector2(monster["position"]) + Vector2(100.0, 0.0), assembly, {weapon["ability_id"]: weapon}).is_ok, "formal starter vehicle and cannon should register")
 	_expect(module.register_monster(monster).is_ok, "formal D04 lifecycle should register")
 	var intent := UseAbilityIntentContract.new(
-		MAP_INSTANCE_ID, weapon["ability_id"], monster["monster_id"], 1
+		MAP_INSTANCE_ID, weapon["ability_id"], Vector2(monster["position"]), 1
 	).to_dictionary()
-	var hit := module.handle_energy_cannon_attack("player.catalog", intent)
-	_expect(hit.is_ok, "formal catalog definitions should resolve an authoritative hit")
-	if hit.is_ok:
-		_expect(int(hit.value["damage"]) == 7, "formal hit should use confirmed base attack without client damage")
-		_expect(int(hit.value["cooldown_ready_tick"]) == 16, "formal hit should schedule the reconstructed 0.8-second cooldown")
-		_expect(int(hit.value["target_health"]) == int(monster["max_health"]) - 7, "formal hit should mutate monster health")
+	var shot := module.handle_energy_cannon_attack("player.catalog", intent)
+	_expect(shot.is_ok, "formal catalog definitions should spawn an authoritative projectile")
+	if shot.is_ok:
+		_expect(int(shot.value["damage"]) == 0, "projectile spawn must not report premature damage")
+		_expect(int(shot.value["cooldown_ready_tick"]) == 16, "formal shot should schedule the reconstructed 0.8-second cooldown")
+		_expect(module.monster_for(String(monster["monster_id"])).health == int(monster["max_health"]), "formal shot should preserve health before arrival")
+		module.advance_ticks(int(shot.value["impact_tick"]) - module.current_tick)
+		_expect(module.monster_for(String(monster["monster_id"])).health == int(monster["max_health"]) - 7, "formal impact should apply server-owned base attack at arrival")
 
 
 ## 执行 `expect` 对应的模块操作。

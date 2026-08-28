@@ -159,21 +159,22 @@ func _test_map_transition_intent() -> void:
 	)
 
 
-## 验证技能意图只携带服务器能够独立裁决的技能和目标标识。
-## 设计：客户端夹带的伤害、坐标、射程、能耗与冷却必须在契约边界直接拒绝。
+## 验证直线技能意图只携带服务器能够独立裁决的技能与瞄准坐标。
+## 设计：瞄准坐标不是命中声明；客户端夹带目标、伤害、射程、能耗与冷却必须被拒绝。
 func _test_use_ability_intent() -> void:
 	var intent := UseAbilityIntentContract.new(
-		"d04_field_zone.instance.1", "energy_cannon.primary", "monster.om_adult.1", 9
+		"d04_field_zone.instance.1", "energy_cannon.primary", Vector2(320.5, 180.25), 9
 	)
 	_expect_true(intent.validate().is_ok, "use ability constructor is valid")
 	var restored = UseAbilityIntentContract.from_dictionary(intent.to_dictionary())
 	_expect_true(restored.is_ok, "use ability intent round trip succeeds")
 	_expect_equal(restored.value.ability_id, "energy_cannon.primary", "ability ID round trips")
-	_expect_equal(restored.value.target_entity_id, "monster.om_adult.1", "target entity round trips")
+	_expect_equal(restored.value.aim_world_position, Vector2(320.5, 180.25), "aim world position round trips")
 	_expect_equal(restored.value.input_sequence, 9, "ability sequence round trips")
 	for forbidden_field in [
 		&"damage",
 		&"attack",
+		&"target_entity_id",
 		&"target_position",
 		&"range",
 		&"energy_cost",
@@ -186,12 +187,12 @@ func _test_use_ability_intent() -> void:
 			ErrorCodes.INVALID_PAYLOAD,
 			"use ability intent rejects authority field %s" % forbidden_field,
 		)
-	var unsafe_target := intent.to_dictionary()
-	unsafe_target["target_entity_id"] = "monster with spaces"
+	var unsafe_aim := intent.to_dictionary()
+	unsafe_aim["aim_world_position"] = {"x": INF, "y": 1.0}
 	_expect_error(
-		UseAbilityIntentContract.from_dictionary(unsafe_target),
-		ErrorCodes.INVALID_IDENTIFIER,
-		"use ability intent rejects unsafe target identifier",
+		UseAbilityIntentContract.from_dictionary(unsafe_aim),
+		ErrorCodes.VALUE_OUT_OF_RANGE,
+		"use ability intent rejects non-finite aim coordinates",
 	)
 
 

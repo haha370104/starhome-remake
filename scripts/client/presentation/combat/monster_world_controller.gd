@@ -113,6 +113,12 @@ func _apply_recent_events(combat_snapshot: Dictionary) -> void:
 		if event_id <= _last_event_id:
 			continue
 		_last_event_id = event_id
+		var event_type := StringName(event.get("event_type", ""))
+		if event_type not in [&"energy_cannon_hit", &"monster_attack_resolved"]:
+			continue
+		var damage := int(event.get("damage", 0))
+		if damage <= 0:
+			continue
 		var target_entity_id := String(event.get("target_entity_id", ""))
 		var anchor: Node2D = _views.get(target_entity_id)
 		if anchor == null and target_entity_id == String(combat_snapshot.get("local_entity_id", "")):
@@ -121,4 +127,4 @@ func _apply_recent_events(combat_snapshot: Dictionary) -> void:
 			continue
 		var damage_float: Node2D = CombatDamageFloatScript.new()
 		anchor.add_child(damage_float)
-		damage_float.present(int(event.get("damage", 0)))
+		damage_float.present(damage)

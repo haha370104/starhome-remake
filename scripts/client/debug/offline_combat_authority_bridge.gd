@@ -87,13 +87,13 @@ func update_player_position(position: Vector2) -> void:
 
 
 ## 执行 `request_attack` 对应的模块操作。
-## [param target_entity_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param aim_world_position] 瞄准世界坐标，只用于表达发射方向。
 ## 返回该函数计算、查询或操作得到的结果。
-func request_attack(target_entity_id: String) -> Dictionary:
-	if module == null or target_entity_id.is_empty():
-		return {"ok": false, "code": &"combat.no_target"}
+func request_attack(aim_world_position: Vector2) -> Dictionary:
+	if module == null or not aim_world_position.is_finite():
+		return {"ok": false, "code": &"combat.invalid_aim"}
 	var intent := UseAbilityIntentScript.new(
-		map_instance_id, ABILITY_ID, target_entity_id, _next_command_sequence
+		map_instance_id, ABILITY_ID, aim_world_position, _next_command_sequence
 	)
 	_next_command_sequence += 1
 	var result = module.handle_energy_cannon_attack(LOCAL_ACTOR_ID, intent.to_dictionary())

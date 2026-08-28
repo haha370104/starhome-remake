@@ -112,13 +112,13 @@ func request_move(requested_world_point: Vector2) -> Dictionary:
 
 ## 执行 `request_use_ability` 对应的模块操作。
 ## [param ability_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
-## [param target_entity_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param aim_world_position] 瞄准世界坐标，只用于表达发射方向。
 ## 返回该函数计算、查询或操作得到的结果。
-func request_use_ability(ability_id: String, target_entity_id: String) -> Dictionary:
-	if current_map_instance_id.is_empty() or ability_id.is_empty() or target_entity_id.is_empty():
+func request_use_ability(ability_id: String, aim_world_position: Vector2) -> Dictionary:
+	if current_map_instance_id.is_empty() or ability_id.is_empty() or not aim_world_position.is_finite():
 		return {}
 	var contract := UseAbilityIntentContract.new(
-		current_map_instance_id, ability_id, target_entity_id, _next_ability_sequence
+		current_map_instance_id, ability_id, aim_world_position, _next_ability_sequence
 	)
 	var validation = contract.validate()
 	if not validation.is_ok:
