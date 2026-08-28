@@ -20,6 +20,16 @@ func _initialize() -> void:
 	_expect(bundle.has("character") and bundle.has("inventory") and bundle.has("vehicle"), "查询必须成组返回三面板")
 	_expect(bundle.inventory.items.size() == 2, "初始背包应包含引擎和训练服")
 	_expect(bundle.vehicle.equipped.size() == 3, "初始战车应包含底盘、主武器和引擎")
+	_expect(bundle.character.skills.size() == 12, "人物快照应包含旧客户端查看技能窗口的十二项技能")
+	_expect(bundle.vehicle.stats.weight == 140, "整车重量应由底盘、引擎和主武器聚合为 140")
+	_expect(bundle.vehicle.stats.defense == 10, "整车防御应读取新兵战车基础防御 10")
+	_expect(bundle.vehicle.stats.armor_front == 0 and bundle.vehicle.stats.armor_rear == 0 \
+			and bundle.vehicle.stats.armor_left == 0 and bundle.vehicle.stats.armor_right == 0,
+		"未安装四向护甲时不能把底盘防御重复投影到护甲槽")
+	_expect(bundle.vehicle.stats.energy_cannon_attack == 7, "新兵能量炮攻击应为目录值 7")
+	var chassis: Dictionary = bundle.vehicle.equipped[0]
+	_expect(chassis.dialog_anchor == [170, 200], "底盘对话框锚点应来自旧客户端 EquipInDlg")
+	_expect(chassis.stats.max_health == 70, "装备悬浮快照应携带服务端目录属性")
 
 	var inventory_revision := int(bundle.inventory.revision)
 	var moved := authority.execute({

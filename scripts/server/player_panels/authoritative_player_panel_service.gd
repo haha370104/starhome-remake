@@ -11,23 +11,23 @@ const ITEM_PRESENTATION := {
 	"recruit_tank": {
 		"icon": "res://assets/ui/windows/inventory/items/recruit_tank.png",
 		"dialog_texture": "res://assets/ui/windows/vehicle/preview/chassis.png",
-		"dialog_anchor": [205, 245],
+		"dialog_anchor": [170, 200],
 		"dialog_origin": [-77, 8],
-		"z_layer": 0,
+		"z_layer": 10,
 	},
 	"beginner_engine": {
 		"icon": "res://assets/ui/windows/inventory/items/beginner_engine.png",
 		"dialog_texture": "res://assets/ui/windows/vehicle/preview/engine.png",
-		"dialog_anchor": [205, 245],
+		"dialog_anchor": [130, 385],
 		"dialog_origin": [-33, -15],
-		"z_layer": 1,
+		"z_layer": 30,
 	},
 	"recruit_energy_cannon": {
 		"icon": "res://assets/ui/windows/inventory/items/recruit_energy_cannon.png",
 		"dialog_texture": "res://assets/ui/windows/vehicle/preview/primary_weapon.png",
-		"dialog_anchor": [205, 245],
+		"dialog_anchor": [170, 200],
 		"dialog_origin": [-32, -16],
-		"z_layer": 2,
+		"z_layer": 20,
 	},
 	"male_sleeveless_shirt": {
 		"icon": "res://assets/ui/windows/inventory/items/male_sleeveless_shirt.png",
@@ -65,7 +65,14 @@ func initialize() -> DomainResult:
 		"kind": "character_clothing",
 		"display_name": "无袖衫（男）",
 		"description": "男兵日常训练时的一种训练上衣。",
-		"stats": {"max_durability": 64},
+		"stats": {
+			"purchase_value": 250,
+			"sell_value": 100,
+			"clothing_class": 35,
+			"wear_damage_per_hit": 14,
+			"max_durability": 64,
+			"skill_modifiers": {},
+		},
 	}
 	return DomainResult.ok(self)
 
@@ -369,6 +376,7 @@ func _character_snapshot(state: PlayerStateRecord) -> Dictionary:
 		"health": state.character_health,
 		"max_health": state.character_max_health,
 		"description": state.character_description,
+		"skills": _skill_snapshot(state.character_skills),
 		"worn_items": worn_items,
 		"buffs": [],
 	}
@@ -398,7 +406,8 @@ func _vehicle_snapshot(state: PlayerStateRecord) -> Dictionary:
 	var total_weight := 0
 	var propulsion := 0
 	var primary_attack := 0
-	var armor := 0
+	var defense := 0
+	var armor_by_location := {5: 0, 6: 0, 7: 0, 8: 0}
 	for equipment in state.equipment_slots:
 		if equipment.owner_kind != "vehicle":
 			continue
@@ -409,7 +418,9 @@ func _vehicle_snapshot(state: PlayerStateRecord) -> Dictionary:
 		total_weight += int(stats.get("weight", 0))
 		propulsion += int(stats.get("drive", 0))
 		primary_attack += int(stats.get("base_attack", 0))
-		armor += int(stats.get("armor", 0))
+		defense += int(stats.get("armor", 0))
+		if armor_by_location.has(equipment.slot_location):
+			armor_by_location[equipment.slot_location] += int(stats.get("armor", 0))
 	equipped.sort_custom(func(left: Dictionary, right: Dictionary) -> bool:
 		return int(left["location"]) < int(right["location"])
 	)
@@ -422,13 +433,19 @@ func _vehicle_snapshot(state: PlayerStateRecord) -> Dictionary:
 		"stats": {
 			"health": state.vehicle_health,
 			"max_health": state.vehicle_max_health,
-			"defense": armor,
-			"armor_front": armor,
-			"armor_rear": armor,
-			"armor_left": armor,
-			"armor_right": armor,
+			"max_health_base": _definition_stat(state.vehicle_definition_id, "max_health"),
+			"max_health_bonus": maxi(0, state.vehicle_max_health - _definition_stat(state.vehicle_definition_id, "max_health")),
+			"defense": defense,
+			"defense_base": defense,
+			"defense_bonus": 0,
+			"armor_front": int(armor_by_location[5]),
+			"armor_rear": int(armor_by_location[6]),
+			"armor_left": int(armor_by_location[7]),
+			"armor_right": int(armor_by_location[8]),
 			"speed": propulsion,
 			"energy_cannon_attack": primary_attack,
+			"energy_cannon_attack_base": primary_attack,
+			"energy_cannon_attack_bonus": 0,
 			"missile_attack": 0,
 			"rocket_attack": 0,
 			"propulsion": propulsion,
@@ -478,12 +495,15 @@ func _inventory_items(state: PlayerStateRecord) -> Array[Dictionary]:
 ## 返回不含源目录路径的装备字典。
 func _equipment_snapshot(equipment) -> Dictionary:
 	var presentation: Dictionary = ITEM_PRESENTATION.get(equipment.item_definition_id, {})
+	var definition: Dictionary = _definitions.get(equipment.item_definition_id, {})
 	return {
 		"owner_kind": equipment.owner_kind,
 		"slot_id": equipment.slot_id,
 		"instance_id": equipment.item_instance_id,
 		"definition_id": equipment.item_definition_id,
 		"display_name": _display_name(equipment.item_definition_id),
+		"description": String(definition.get("description", "")),
+		"stats": (definition.get("stats", {}) as Dictionary).duplicate(true),
 		"location": equipment.slot_location,
 		"location_name": "上衣" if equipment.owner_kind == "character" \
 			else EquipmentSlotRegistryScript.display_name(equipment.slot_location),
@@ -491,10 +511,46 @@ func _equipment_snapshot(equipment) -> Dictionary:
 		"durability": equipment.durability,
 		"max_durability": equipment.max_durability,
 		"dialog_texture": String(presentation.get("dialog_texture", "")),
+		"icon": String(presentation.get("icon", "")),
 		"dialog_anchor": presentation.get("dialog_anchor", [205, 245]),
 		"dialog_origin": presentation.get("dialog_origin", [0, 0]),
 		"z_layer": int(presentation.get("z_layer", equipment.slot_location)),
 	}
+
+
+## 将权威技能字典转换为旧客户端“查看技能”窗口所需的稳定顺序。
+## [param skills] 技能标识到基础等级的映射。
+## 返回包含中文名、基础等级、装备加成和经验占位的技能数组。
+func _skill_snapshot(skills: Dictionary) -> Array[Dictionary]:
+	var result: Array[Dictionary] = []
+	var ordered_ids := [
+		"energy_cannon", "repair", "driving", "mining", "cooking", "tailoring",
+		"refining", "manufacturing", "rocket_launcher", "missile", "stealth", "radar",
+	]
+	var names := {
+		"energy_cannon": "能量炮", "repair": "维修", "driving": "驾驶", "mining": "采矿",
+		"cooking": "烹饪", "tailoring": "裁缝", "refining": "提炼", "manufacturing": "制造",
+		"rocket_launcher": "火箭", "missile": "导弹", "stealth": "隐身", "radar": "雷达",
+	}
+	for skill_id: String in ordered_ids:
+		result.append({
+			"id": skill_id,
+			"display_name": String(names[skill_id]),
+			"base_level": int(skills.get(skill_id, 0)),
+			"equipment_bonus": 0,
+			"experience": 0,
+		})
+	return result
+
+
+## 查询某件定义中的整型属性。
+## [param definition_id] 目录定义标识。
+## [param stat_id] stats 内的属性名。
+## 返回不存在时为 0 的整型属性。
+func _definition_stat(definition_id: String, stat_id: String) -> int:
+	var definition: Dictionary = _definitions.get(definition_id, {})
+	var stats: Dictionary = definition.get("stats", {})
+	return int(stats.get(stat_id, 0))
 
 
 ## 用新物品字典数组重建持久化记录并推进背包 revision。
@@ -654,6 +710,7 @@ func _copy_from(target: PlayerStateRecord, source: PlayerStateRecord) -> void:
 	target.character_max_health = source.character_max_health
 	target.character_health = source.character_health
 	target.character_experience = source.character_experience
+	target.character_skills = source.character_skills.duplicate(true)
 	target.vehicle_id = source.vehicle_id
 	target.vehicle_definition_id = source.vehicle_definition_id
 	target.vehicle_max_health = source.vehicle_max_health

@@ -40,7 +40,7 @@ func _test_sqlite_runtime_and_schema_seam() -> void:
 	_expect(FileAccess.file_exists(SQL_MIGRATION_PATH), "production SQLite schema migration should be versioned")
 	var sql := FileAccess.get_file_as_string(SQL_MIGRATION_PATH)
 	for table_name: String in [
-		"accounts", "characters", "inventory_stacks", "equipment_slots", "vehicles",
+		"accounts", "characters", "character_skills", "inventory_stacks", "equipment_slots", "vehicles",
 		"character_locations", "command_receipts",
 	]:
 		_expect(sql.contains("CREATE TABLE IF NOT EXISTS %s" % table_name), "SQL migration should define %s" % table_name)
@@ -112,6 +112,8 @@ func _test_atomic_transaction_and_reload() -> void:
 	_expect(int(restored.value.vehicle_health) == 55, "reload should restore vehicle combat state")
 	_expect(int(restored.value.inventory_stacks[0].quantity) == 8, "reload should restore committed inventory stacks")
 	_expect(restored.value.equipment_slots[0].item_instance_id == "equipment.cannon.1", "reload should restore equipped item instances")
+	_expect(int(restored.value.character_skills.get("energy_cannon", 0)) == 10,
+		"重载应恢复人物技能等级")
 
 
 ## 执行 `apply_checkpoint_transaction` 对应的模块操作。
@@ -169,6 +171,7 @@ func _fixture_state() -> PlayerStateRecord:
 		"character_max_health": 100,
 		"character_health": 100,
 		"character_experience": 0,
+		"character_skills": {"energy_cannon": 10, "driving": 10},
 		"vehicle_id": "vehicle.tomato.1",
 		"vehicle_definition_id": "recruit_tank",
 		"vehicle_max_health": 70,

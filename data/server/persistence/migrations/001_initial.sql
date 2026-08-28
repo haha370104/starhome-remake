@@ -35,6 +35,14 @@ CREATE TABLE IF NOT EXISTS inventory_stacks (
     UNIQUE(character_id, slot_index)
 );
 
+CREATE TABLE IF NOT EXISTS character_skills (
+    character_id TEXT NOT NULL REFERENCES characters(character_id) ON DELETE CASCADE,
+    skill_id TEXT NOT NULL,
+    base_level INTEGER NOT NULL CHECK (base_level >= 0),
+    experience INTEGER NOT NULL DEFAULT 0 CHECK (experience >= 0),
+    PRIMARY KEY(character_id, skill_id)
+);
+
 CREATE TABLE IF NOT EXISTS vehicles (
     vehicle_id TEXT PRIMARY KEY,
     character_id TEXT NOT NULL UNIQUE REFERENCES characters(character_id) ON DELETE CASCADE,
@@ -81,5 +89,6 @@ CREATE TABLE IF NOT EXISTS command_receipts (
 );
 
 CREATE INDEX IF NOT EXISTS idx_inventory_character ON inventory_stacks(character_id);
+CREATE INDEX IF NOT EXISTS idx_character_skills_character ON character_skills(character_id);
 CREATE INDEX IF NOT EXISTS idx_equipment_character ON equipment_slots(character_id);
 CREATE INDEX IF NOT EXISTS idx_location_map_instance ON character_locations(map_instance_id);
