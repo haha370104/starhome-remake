@@ -221,7 +221,7 @@ func _build_combat_status() -> void:
 ## [param current] Current chassis combat health.
 ## [param capacity] Maximum chassis combat health.
 func _update_vehicle_health_label(current: int, capacity: int) -> void:
-	health_label.text = "战车耐久  %d / %d" % [current, capacity]
+	health_label.text = "战车生命  %d / %d" % [current, capacity]
 	health_label.add_theme_color_override("font_color", Color(0.35, 1.0, 0.42))
 
 
