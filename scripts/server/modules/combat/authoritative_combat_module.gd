@@ -395,8 +395,7 @@ func _move_monster(monster_id: String, target_position: Vector2, fixed_delta: fl
 func _update_monster_facing(runtime: Dictionary, direction: Vector2) -> void:
 	if direction.is_zero_approx():
 		return
-	var angle := fposmod(direction.angle(), TAU)
-	runtime["facing_index"] = posmod(roundi(angle / (PI / 4.0)), 8)
+	runtime["facing_index"] = posmod(-roundi(direction.angle() / (PI / 4.0)), 8)
 
 
 ## Retrieves the mutable vehicle state owned by [param actor_id] for server inspection.
