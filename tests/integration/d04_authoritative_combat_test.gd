@@ -95,15 +95,15 @@ func _test_authoritative_player_attack(bridge: OfflineCombatAuthorityBridge) -> 
 ## [param bridge] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _test_zero_attack_is_not_invented(bridge: OfflineCombatAuthorityBridge) -> void:
 	var toxic_id := ""
-	for monster_id: String in bridge.module.monster_runtime:
-		if String(bridge.module.monster_runtime[monster_id].species_id) == "toxic_gel":
+	for monster_id: String in bridge.module.monster_ids():
+		if bridge.module.monster_for(monster_id).species_id == "toxic_gel":
 			toxic_id = monster_id
 			break
 	_expect(not toxic_id.is_empty(), "toxic gel runtime should be present")
 	if toxic_id.is_empty():
 		return
 	_expect(
-		int(bridge.module.monster_runtime[toxic_id].get("base_attack", -1)) == 0,
+		bridge.module.monster_for(toxic_id).attack_mode.base_attack == 0,
 		"toxic gel must not invent unknown corrosive damage over its confirmed zero base attack",
 	)
 

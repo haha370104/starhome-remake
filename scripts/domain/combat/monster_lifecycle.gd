@@ -1,53 +1,102 @@
 class_name MonsterLifecycle
-extends RefCounted
+extends MovableEntity
 
 const DomainResult := preload("res://scripts/core/domain_result.gd")
+const MonsterAggroPolicyScript := preload(
+	"res://scripts/domain/combat/monster_aggro_policy.gd"
+)
+const MonsterAttackModeScript := preload(
+	"res://scripts/domain/combat/monster_attack_mode.gd"
+)
+const DropTableScript := preload("res://scripts/domain/combat/drop_table.gd")
 
 var monster_id := ""
 var map_instance_id := ""
-var position := Vector2.ZERO
+var species_id := ""
+var display_name := ""
+var combat_actor_id := ""
+var behavior_profile := &"idle"
+var engagement_policy = MonsterAggroPolicyScript.new()
+var attack_mode = MonsterAttackModeScript.new()
+var drop_table = DropTableScript.new()
+var defense := 0
 var max_health := 0
 var health := 0
+var aggro_radius := 0.0
+var leash_distance := 0.0
+var wander_radius := 0.0
+var home_position := Vector2.ZERO
+var target_actor_id := ""
+var wander_target := Vector2.ZERO
+var next_wander_tick := 0
+var attack_ready_tick := 0
+var action := &"idle"
+var action_sequence := 0
 var respawn_delay_ticks := 0
 var respawn_at_tick := -1
 var death_generation := 0
 var last_killer_id := ""
 
 
-## 执行 `configure` 对应的模块操作。
-## [param definition] 调用方传入的参数；具体约束由函数签名和所在模块定义。
-## [param simulation_hz] 调用方传入的参数；具体约束由函数签名和所在模块定义。
-## 返回该函数计算、查询或操作得到的结果。
+## 从地图生成配置组装完整怪物领域对象。
+## [param definition] 物种数值、索敌、攻击、掉落及本次生成点配置。
+## [param simulation_hz] 权威服务器逻辑频率。
+## 返回配置完成的怪物或字段错误。
+## 设计：怪物的生命、移动、索敌、攻击和掉落都由同一对象持有，服务端只推进模拟。
 func configure(definition: Dictionary, simulation_hz: int) -> DomainResult:
 	var requested_id := String(definition.get("monster_id", ""))
 	var requested_map_instance_id := String(definition.get("map_instance_id", ""))
 	var requested_position: Variant = definition.get("position", Vector2.INF)
 	var requested_health := int(definition.get("max_health", 0))
 	var requested_respawn_seconds := float(definition.get("respawn_seconds", -1.0))
-	if requested_id.is_empty() or requested_map_instance_id.is_empty() or not requested_position is Vector2:
+	var requested_policy := StringName(definition.get("engagement_policy", "unresponsive"))
+	if requested_id.is_empty() or requested_map_instance_id.is_empty() \
+		or not requested_position is Vector2:
 		return DomainResult.failure(&"combat.invalid_monster_definition", "monster, map identity and position are required")
 	if not requested_position.is_finite() or requested_health <= 0:
 		return DomainResult.failure(&"combat.invalid_monster_definition", "monster position or health is invalid")
 	if simulation_hz <= 0 or requested_respawn_seconds < 0.0:
 		return DomainResult.failure(&"combat.invalid_monster_definition", "monster respawn timing is invalid")
+	if not MonsterAggroPolicyScript.is_supported(requested_policy):
+		return DomainResult.failure(&"combat.invalid_engagement_policy", "monster engagement policy is invalid")
 	monster_id = requested_id
+	entity_id = requested_id
 	map_instance_id = requested_map_instance_id
 	position = requested_position
+	home_position = position
+	wander_target = position
+	movement_speed = maxf(0.0, float(definition.get("runtime_move_speed", 0.0)))
+	species_id = String(definition.get("species_id", ""))
+	display_name = String(definition.get("display_name", monster_id))
+	combat_actor_id = String(definition.get("combat_actor_id", ""))
+	behavior_profile = StringName(definition.get("behavior_profile", "idle"))
+	engagement_policy = MonsterAggroPolicyScript.new(requested_policy)
+	attack_mode = MonsterAttackModeScript.new(definition, simulation_hz)
+	drop_table = DropTableScript.new(definition.get("drops"))
+	defense = maxi(0, int(definition.get("defense", 0)))
 	max_health = requested_health
 	health = max_health
+	aggro_radius = maxf(0.0, float(definition.get("aggro_radius", 0.0)))
+	leash_distance = maxf(0.0, float(definition.get("leash_distance", 0.0)))
+	wander_radius = maxf(0.0, float(definition.get("wander_radius", 0.0)))
 	respawn_delay_ticks = roundi(requested_respawn_seconds * float(simulation_hz))
 	respawn_at_tick = -1
 	death_generation = 0
 	last_killer_id = ""
+	target_actor_id = ""
+	next_wander_tick = posmod(hash(monster_id), simulation_hz * 2) + simulation_hz
+	attack_ready_tick = 0
+	action = &"idle"
+	action_sequence = 0
+	facing_direction = 6
 	return DomainResult.ok(self)
 
 
-## 执行 `apply_damage` 对应的模块操作。
-## [param amount] 调用方传入的参数；具体约束由函数签名和所在模块定义。
-## [param attacker_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
-## [param current_tick] 调用方传入的参数；具体约束由函数签名和所在模块定义。
-## 返回该函数计算、查询或操作得到的结果。
-## 设计：该函数保持领域规则确定，并避免依赖具体表现层或传输层。
+## 应用权威伤害并按索敌策略记录攻击者。
+## [param amount] 本次原始伤害；当前阶段尚未恢复旧服防御公式。
+## [param attacker_id] 伤害来源玩家标识。
+## [param current_tick] 当前权威逻辑 tick。
+## 返回实际伤害、生命、死亡和重生信息。
 func apply_damage(amount: int, attacker_id: String, current_tick: int) -> DomainResult:
 	if health <= 0:
 		return DomainResult.failure(&"combat.target_already_dead", "monster is already dead")
@@ -60,6 +109,9 @@ func apply_damage(amount: int, attacker_id: String, current_tick: int) -> Domain
 		death_generation += 1
 		last_killer_id = attacker_id
 		respawn_at_tick = current_tick + respawn_delay_ticks
+		target_actor_id = ""
+	elif engagement_policy.retaliates_when_hit():
+		target_actor_id = attacker_id
 	return DomainResult.ok({
 		"applied_damage": applied,
 		"health": health,
@@ -69,9 +121,9 @@ func apply_damage(amount: int, attacker_id: String, current_tick: int) -> Domain
 	})
 
 
-## 执行 `advance_to_tick` 对应的模块操作。
-## [param current_tick] 调用方传入的参数；具体约束由函数签名和所在模块定义。
-## 返回该函数计算、查询或操作得到的结果。
+## 推进生命周期并在到期时恢复出生状态。
+## [param current_tick] 当前权威逻辑 tick。
+## 返回是否重生及当前生命信息。
 func advance_to_tick(current_tick: int) -> DomainResult:
 	if current_tick < 0:
 		return DomainResult.failure(&"combat.invalid_tick", "tick cannot be negative")
@@ -80,6 +132,7 @@ func advance_to_tick(current_tick: int) -> DomainResult:
 		health = max_health
 		respawn_at_tick = -1
 		last_killer_id = ""
+		reset_to_home(current_tick)
 		respawned = true
 	return DomainResult.ok({
 		"respawned": respawned,
@@ -88,21 +141,58 @@ func advance_to_tick(current_tick: int) -> DomainResult:
 	})
 
 
-## 判断 `is_alive` 对应的模块状态。
-## 返回该函数计算、查询或操作得到的结果。
+## 将怪物恢复到出生点及空闲 AI 状态。
+## [param current_tick] 当前权威逻辑 tick。
+func reset_to_home(current_tick: int) -> void:
+	position = home_position
+	action = &"idle"
+	target_actor_id = ""
+	wander_target = home_position
+	next_wander_tick = current_tick + 1
+
+
+## 判断怪物是否允许主动搜索目标。
+## 返回主动攻击策略时为 true。
+func can_acquire_target() -> bool:
+	return engagement_policy.acquires_targets_unprovoked()
+
+
+## 清除当前仇恨目标。
+func clear_target() -> void:
+	target_actor_id = ""
+
+
+## 更新八方向朝向。
+## [param direction] 指向目标的世界向量。
+func face(direction: Vector2) -> void:
+	if not direction.is_zero_approx():
+		facing_direction = posmod(-roundi(direction.angle() / (PI / 4.0)), 8)
+
+
+## 判断怪物当前是否存活。
+## 返回生命大于零时为 true。
 func is_alive() -> bool:
 	return health > 0
 
 
-## 序列化或保存 `to_dictionary` 对应的模块状态。
-## 返回该函数计算、查询或操作得到的结果。
+## 序列化怪物领域状态用于测试和调试。
+## 返回不含表现资源句柄的状态字典。
 func to_dictionary() -> Dictionary:
 	return {
 		"monster_id": monster_id,
 		"map_instance_id": map_instance_id,
+		"species_id": species_id,
+		"display_name": display_name,
 		"position": position,
+		"home_position": home_position,
+		"movement_speed": movement_speed,
 		"max_health": max_health,
 		"health": health,
+		"defense": defense,
+		"engagement_policy": engagement_policy.policy_id,
+		"attack_archetype": attack_mode.archetype,
+		"base_attack": attack_mode.base_attack,
+		"drops": drop_table.entries(),
 		"respawn_delay_ticks": respawn_delay_ticks,
 		"respawn_at_tick": respawn_at_tick,
 		"death_generation": death_generation,

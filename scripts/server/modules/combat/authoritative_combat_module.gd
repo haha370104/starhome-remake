@@ -15,7 +15,6 @@ var event_sequence := 0
 var working_energy_regen_factor := 1.0
 var actors: Dictionary = {}
 var monsters: Dictionary = {}
-var monster_runtime: Dictionary = {}
 var combat_events: Array[Dictionary] = []
 var death_events: Array[Dictionary] = []
 var respawn_events: Array[Dictionary] = []
@@ -48,7 +47,6 @@ func configure(
 	_random.seed = random_seed
 	actors.clear()
 	monsters.clear()
-	monster_runtime.clear()
 	combat_events.clear()
 	death_events.clear()
 	respawn_events.clear()
@@ -110,43 +108,13 @@ func register_vehicle(
 ## [param definition] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## 返回该函数计算、查询或操作得到的结果。
 func register_monster(definition: Dictionary) -> DomainResult:
-	var engagement_policy := StringName(definition.get("engagement_policy", "unresponsive"))
-	if engagement_policy not in [&"unresponsive", &"retaliatory", &"aggressive"]:
-		return DomainResult.failure(&"combat.invalid_engagement_policy", "monster engagement policy is invalid")
 	var lifecycle: MonsterLifecycle = MonsterLifecycleScript.new()
 	var result := lifecycle.configure(definition, simulation_hz)
 	if not result.is_ok:
 		return result
 	if monsters.has(lifecycle.monster_id):
 		return DomainResult.failure(&"combat.duplicate_monster", "monster identity is already registered")
-	var projectile_speed_value: Variant = definition.get("runtime_projectile_speed")
-	var projectile_speed := 0.0 if projectile_speed_value == null else maxf(0.0, float(projectile_speed_value))
 	monsters[lifecycle.monster_id] = lifecycle
-	monster_runtime[lifecycle.monster_id] = {
-		"species_id": String(definition.get("species_id", "")),
-		"display_name": String(definition.get("display_name", lifecycle.monster_id)),
-		"combat_actor_id": String(definition.get("combat_actor_id", "")),
-		"attack_archetype": StringName(definition.get("attack_archetype", "contact_melee")),
-		"projectile_speed": projectile_speed,
-		"projectile_hitbox": _normalize_projectile_hitbox(definition.get("projectile_hitbox", {})),
-		"home_position": lifecycle.position,
-		"behavior_profile": StringName(definition.get("behavior_profile", "idle")),
-		"engagement_policy": engagement_policy,
-		"move_speed": maxf(0.0, float(definition.get("runtime_move_speed", 0.0))),
-		"base_attack": maxi(0, int(definition.get("base_attack", 0))),
-		"attack_range": maxf(0.0, float(definition.get("attack_range", 0.0))),
-		"aggro_radius": maxf(0.0, float(definition.get("aggro_radius", 0.0))),
-		"leash_distance": maxf(0.0, float(definition.get("leash_distance", 0.0))),
-		"wander_radius": maxf(0.0, float(definition.get("wander_radius", 0.0))),
-		"attack_interval_ticks": maxi(1, roundi(float(definition.get("attack_interval_seconds", 1.5)) * simulation_hz)),
-		"attack_ready_tick": 0,
-		"target_actor_id": "",
-		"wander_target": lifecycle.position,
-		"next_wander_tick": posmod(hash(lifecycle.monster_id), simulation_hz * 2) + simulation_hz,
-		"action": &"idle",
-		"action_sequence": 0,
-		"facing_index": 6,
-	}
 	return DomainResult.ok(lifecycle)
 
 
@@ -291,13 +259,11 @@ func _first_projectile_collision(
 		var monster: MonsterLifecycle = monsters[monster_id]
 		if monster.map_instance_id != map_instance_id or not monster.is_alive():
 			continue
-		var runtime: Dictionary = monster_runtime[monster_id]
-		var hitbox: Dictionary = runtime["projectile_hitbox"]
 		var candidate := ProjectileSweep.segment_circle_intersection(
 			origin,
 			endpoint,
-			monster.position + Vector2(hitbox["offset"]),
-			float(hitbox["radius"]),
+			monster.position + monster.attack_mode.projectile_hitbox_offset,
+			monster.attack_mode.projectile_hitbox_radius,
 		)
 		if not bool(candidate.get("hit", false)) or float(candidate["t"]) >= float(best["t"]):
 			continue
@@ -338,9 +304,6 @@ func _settle_projectile(projectile: Dictionary) -> void:
 	if not damage_result.is_ok:
 		_record_projectile_expired(projectile, impact_position)
 		return
-	var runtime: Dictionary = monster_runtime[target_id]
-	if StringName(runtime["engagement_policy"]) in [&"retaliatory", &"aggressive"] and monster.is_alive():
-		runtime["target_actor_id"] = attacker_id
 	var event := _record_combat_event({
 		"event_type": &"energy_cannon_hit",
 		"server_tick": current_tick,
@@ -403,12 +366,7 @@ func advance_ticks(tick_count: int) -> DomainResult:
 			var monster: MonsterLifecycle = monsters[monster_id]
 			var lifecycle_result := monster.advance_to_tick(current_tick)
 			if bool(lifecycle_result.value["respawned"]):
-				var runtime: Dictionary = monster_runtime[monster_id]
-				monster.position = runtime["home_position"]
-				runtime["action"] = &"idle"
-				runtime["target_actor_id"] = ""
-				runtime["wander_target"] = runtime["home_position"]
-				runtime["next_wander_tick"] = current_tick + simulation_hz
+				monster.next_wander_tick = current_tick + simulation_hz
 				var respawn_event := {
 					"event_type": &"monster_respawned",
 					"server_tick": current_tick,
@@ -438,19 +396,18 @@ func snapshot_for_actor(actor_id: String) -> Dictionary:
 		var monster: MonsterLifecycle = monsters[monster_id]
 		if monster.map_instance_id != map_instance_id:
 			continue
-		var runtime: Dictionary = monster_runtime[monster_id]
 		monster_snapshots.append({
 			"entity_id": monster_id,
-			"species_id": runtime["species_id"],
-			"display_name": runtime["display_name"],
-			"combat_actor_id": runtime["combat_actor_id"],
+			"species_id": monster.species_id,
+			"display_name": monster.display_name,
+			"combat_actor_id": monster.combat_actor_id,
 			"position": [monster.position.x, monster.position.y],
 			"health": monster.health,
 			"max_health": monster.max_health,
 			"alive": monster.is_alive(),
-			"action": String(runtime["action"]),
-			"action_sequence": int(runtime["action_sequence"]),
-			"facing_index": int(runtime["facing_index"]),
+			"action": String(monster.action),
+			"action_sequence": monster.action_sequence,
+			"facing_index": monster.facing_direction,
 		})
 	return {
 		"server_tick": current_tick,
@@ -467,28 +424,27 @@ func snapshot_for_actor(actor_id: String) -> Dictionary:
 ## 设计：该函数位于权威服务器边界，客户端不得覆盖其计算结果。
 func _simulate_monster_tick(monster_id: String, fixed_delta: float) -> void:
 	var monster: MonsterLifecycle = monsters[monster_id]
-	var runtime: Dictionary = monster_runtime[monster_id]
 	var target_id := _engaged_actor_id(monster)
 	if target_id.is_empty():
 		_simulate_unengaged_monster(monster_id, fixed_delta)
 		return
 	var actor: Dictionary = actors[target_id]
 	var target_position: Vector2 = actor["position"]
-	var home_position: Vector2 = runtime["home_position"]
-	if monster.position.distance_to(home_position) > float(runtime["leash_distance"]):
+	var home_position := monster.home_position
+	if monster.position.distance_to(home_position) > monster.leash_distance:
 		_move_monster_towards_home(monster_id, fixed_delta)
 		return
-	runtime["target_actor_id"] = target_id
+	monster.target_actor_id = target_id
 	var distance := monster.position.distance_to(target_position)
-	if distance > float(runtime["attack_range"]):
+	if distance > monster.attack_mode.attack_range:
 		_move_monster(monster_id, target_position, fixed_delta)
 		return
-	runtime["action"] = &"attack"
-	_update_monster_facing(runtime, target_position - monster.position)
-	if current_tick < int(runtime["attack_ready_tick"]):
+	monster.action = &"attack"
+	monster.face(target_position - monster.position)
+	if current_tick < monster.attack_ready_tick:
 		return
-	runtime["attack_ready_tick"] = current_tick + int(runtime["attack_interval_ticks"])
-	runtime["action_sequence"] = int(runtime["action_sequence"]) + 1
+	monster.attack_ready_tick = current_tick + monster.attack_mode.interval_ticks
+	monster.action_sequence += 1
 	_begin_monster_attack(monster_id, target_id, target_position)
 
 
@@ -498,13 +454,14 @@ func _simulate_monster_tick(monster_id: String, fixed_delta: float) -> void:
 ## [param target_position] 发起攻击时冻结的目标脚点。
 func _begin_monster_attack(monster_id: String, target_id: String, target_position: Vector2) -> void:
 	var monster: MonsterLifecycle = monsters[monster_id]
-	var runtime: Dictionary = monster_runtime[monster_id]
-	var attack_archetype := StringName(runtime["attack_archetype"])
+	var attack_archetype: StringName = monster.attack_mode.archetype
 	var origin := monster.position + Vector2(0.0, -24.0)
 	var endpoint := target_position + Vector2(0.0, -16.0)
 	var impact_tick := current_tick
 	if attack_archetype != &"contact_melee":
-		var projectile_speed := float(runtime["projectile_speed"])
+		if not monster.attack_mode.is_projectile():
+			return
+		var projectile_speed: float = monster.attack_mode.projectile_speed
 		if projectile_speed <= 0.0:
 			return
 		impact_tick += maxi(
@@ -519,10 +476,10 @@ func _begin_monster_attack(monster_id: String, target_id: String, target_positio
 		"attacker_id": monster_id,
 		"target_entity_id": target_id,
 		"map_instance_id": monster.map_instance_id,
-		"damage": int(runtime["base_attack"]),
+		"damage": monster.attack_mode.base_attack,
 		"attack_archetype": attack_archetype,
-		"combat_actor_id": String(runtime["combat_actor_id"]),
-		"projectile_speed": float(runtime["projectile_speed"]),
+		"combat_actor_id": monster.combat_actor_id,
+		"projectile_speed": monster.attack_mode.projectile_speed,
 		"origin": origin,
 		"target_position": endpoint,
 		"current_position": origin,
@@ -535,8 +492,8 @@ func _begin_monster_attack(monster_id: String, target_id: String, target_positio
 		"attacker_id": monster_id,
 		"target_entity_id": target_id,
 		"attack_archetype": attack_archetype,
-		"combat_actor_id": String(runtime["combat_actor_id"]),
-		"projectile_speed": float(runtime["projectile_speed"]),
+		"combat_actor_id": monster.combat_actor_id,
+		"projectile_speed": monster.attack_mode.projectile_speed,
 		"origin": [origin.x, origin.y],
 		"target_position": [endpoint.x, endpoint.y],
 	})
@@ -673,12 +630,11 @@ func _commit_actor_position_samples() -> void:
 ## 返回该函数计算、查询或操作得到的结果。
 ## 设计：`npcinfo.attr_10` 的 0/1/2 在数据层转换为枚举，运行时不依赖怪物名称。
 func _engaged_actor_id(monster: MonsterLifecycle) -> String:
-	var runtime: Dictionary = monster_runtime[monster.monster_id]
-	var current_target := String(runtime["target_actor_id"])
+	var current_target := monster.target_actor_id
 	if not current_target.is_empty() and _is_valid_actor_target(monster, current_target):
 		return current_target
-	runtime["target_actor_id"] = ""
-	if StringName(runtime["engagement_policy"]) == &"aggressive":
+	monster.clear_target()
+	if monster.can_acquire_target():
 		return _nearest_alive_actor(monster)
 	return ""
 
@@ -713,7 +669,6 @@ func _record_combat_event(event: Dictionary) -> Dictionary:
 ## [param monster] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## 返回该函数计算、查询或操作得到的结果。
 func _nearest_alive_actor(monster: MonsterLifecycle) -> String:
-	var runtime: Dictionary = monster_runtime[monster.monster_id]
 	var best_id := ""
 	var best_distance := INF
 	for actor_id: String in actors:
@@ -722,7 +677,7 @@ func _nearest_alive_actor(monster: MonsterLifecycle) -> String:
 		if state.health <= 0 or String(actor["map_instance_id"]) != monster.map_instance_id:
 			continue
 		var distance := monster.position.distance_to(actor["position"])
-		if distance <= float(runtime["aggro_radius"]) and distance < best_distance:
+		if distance <= monster.aggro_radius and distance < best_distance:
 			best_id = actor_id
 			best_distance = distance
 	return best_id
@@ -733,11 +688,10 @@ func _nearest_alive_actor(monster: MonsterLifecycle) -> String:
 ## [param fixed_delta] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _move_monster_towards_home(monster_id: String, fixed_delta: float) -> void:
 	var monster: MonsterLifecycle = monsters[monster_id]
-	var runtime: Dictionary = monster_runtime[monster_id]
-	runtime["target_actor_id"] = ""
-	var home_position: Vector2 = runtime["home_position"]
+	monster.clear_target()
+	var home_position := monster.home_position
 	if monster.position.distance_to(home_position) <= 1.0:
-		runtime["action"] = &"idle"
+		monster.action = &"idle"
 		return
 	_move_monster(monster_id, home_position, fixed_delta)
 
@@ -748,23 +702,22 @@ func _move_monster_towards_home(monster_id: String, fixed_delta: float) -> void:
 ## 设计：该函数位于权威服务器边界，客户端不得覆盖其计算结果。
 func _simulate_unengaged_monster(monster_id: String, fixed_delta: float) -> void:
 	var monster: MonsterLifecycle = monsters[monster_id]
-	var runtime: Dictionary = monster_runtime[monster_id]
-	runtime["target_actor_id"] = ""
-	var home_position: Vector2 = runtime["home_position"]
-	var wander_radius := float(runtime["wander_radius"])
+	monster.clear_target()
+	var home_position := monster.home_position
+	var wander_radius := monster.wander_radius
 	if wander_radius <= 0.0:
 		_move_monster_towards_home(monster_id, fixed_delta)
 		return
 	if monster.position.distance_to(home_position) > wander_radius + 8.0:
 		_move_monster_towards_home(monster_id, fixed_delta)
 		return
-	var wander_target: Vector2 = runtime["wander_target"]
-	if current_tick >= int(runtime["next_wander_tick"]) or monster.position.distance_to(wander_target) <= 2.0:
+	var wander_target := monster.wander_target
+	if current_tick >= monster.next_wander_tick or monster.position.distance_to(wander_target) <= 2.0:
 		var phase_degrees := posmod(hash(monster_id) + current_tick * 47, 360)
 		var radius_factor := 0.35 + float(posmod(hash(monster_id) + current_tick, 60)) / 100.0
 		wander_target = home_position + Vector2.RIGHT.rotated(deg_to_rad(phase_degrees)) * wander_radius * radius_factor
-		runtime["wander_target"] = wander_target
-		runtime["next_wander_tick"] = current_tick + simulation_hz * 4
+		monster.wander_target = wander_target
+		monster.next_wander_tick = current_tick + simulation_hz * 4
 	_move_monster(monster_id, wander_target, fixed_delta)
 
 
@@ -774,12 +727,13 @@ func _simulate_unengaged_monster(monster_id: String, fixed_delta: float) -> void
 ## [param fixed_delta] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _move_monster(monster_id: String, target_position: Vector2, fixed_delta: float) -> void:
 	var monster: MonsterLifecycle = monsters[monster_id]
-	var runtime: Dictionary = monster_runtime[monster_id]
 	var delta := target_position - monster.position
 	if delta.is_zero_approx():
-		runtime["action"] = &"idle"
+		monster.action = &"idle"
 		return
-	var requested := monster.position + delta.normalized() * minf(delta.length(), float(runtime["move_speed"]) * fixed_delta)
+	var requested := monster.position + delta.normalized() * minf(
+		delta.length(), monster.movement_speed * fixed_delta
+	)
 	var admitted := requested
 	if _monster_position_resolver.is_valid():
 		var resolved: Variant = _monster_position_resolver.call(monster_id, monster.position, requested)
@@ -787,17 +741,8 @@ func _move_monster(monster_id: String, target_position: Vector2, fixed_delta: fl
 			admitted = resolved
 	if admitted.is_finite():
 		monster.position = admitted
-		runtime["action"] = &"move"
-		_update_monster_facing(runtime, delta)
-
-
-## 执行 `update_monster_facing` 对应的模块操作。
-## [param runtime] 调用方传入的参数；具体约束由函数签名和所在模块定义。
-## [param direction] 调用方传入的参数；具体约束由函数签名和所在模块定义。
-func _update_monster_facing(runtime: Dictionary, direction: Vector2) -> void:
-	if direction.is_zero_approx():
-		return
-	runtime["facing_index"] = posmod(-roundi(direction.angle() / (PI / 4.0)), 8)
+		monster.action = &"move"
+		monster.face(delta)
 
 
 ## 执行 `vehicle_state_for` 对应的模块操作。
@@ -816,18 +761,10 @@ func monster_for(monster_id: String) -> MonsterLifecycle:
 	return monsters.get(monster_id)
 
 
-## 将怪物定义中的弹体受击体转换为内部圆形几何。
-## [param raw_hitbox] 数据目录提供的 `{offset, radius}` 字典。
-## 返回始终可用于连续求交的规范化字典；测试夹具缺省时使用保守圆形。
-func _normalize_projectile_hitbox(raw_hitbox: Variant) -> Dictionary:
-	var offset := Vector2.ZERO
-	var radius := 24.0
-	if raw_hitbox is Dictionary:
-		var offset_values: Variant = (raw_hitbox as Dictionary).get("offset", [0.0, 0.0])
-		if offset_values is Array and offset_values.size() == 2:
-			offset = Vector2(float(offset_values[0]), float(offset_values[1]))
-		radius = maxf(1.0, float((raw_hitbox as Dictionary).get("radius", radius)))
-	return {"offset": offset, "radius": radius}
+## 查询当前权威模块登记的全部怪物标识。
+## 返回按字典当前顺序复制的标识数组。
+func monster_ids() -> Array:
+	return monsters.keys().duplicate()
 
 
 ## 执行 `normalize_energy_cannon` 对应的模块操作。
