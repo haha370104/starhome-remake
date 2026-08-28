@@ -61,6 +61,26 @@ SOURCES: dict[str, dict[str, Any]] = {
         "frames_per_direction": 1,
         "world_visible": False,
     },
+    "recruit_energy_cannon_projectile": {
+        "display_name": "新兵能量炮弹体",
+        "source_logical_path": "pic3/bullet/bullet1.ale",
+        "target": "starter_combat_vehicle/weapon/projectile/flight",
+        "expected_frames": 1,
+        "direction_mode": "shared",
+        "frames_per_direction": 1,
+        "world_visible": True,
+        "relationship_evidence": "client_confirmed_weapon_projectile",
+    },
+    "recruit_energy_cannon_impact_candidate": {
+        "display_name": "新兵能量炮命中特效候选",
+        "source_logical_path": "pic3/effect/gun01bz.ale",
+        "target": "starter_combat_vehicle/weapon/impact/standard_candidate",
+        "expected_frames": 8,
+        "direction_mode": "shared",
+        "frames_per_direction": 8,
+        "world_visible": True,
+        "relationship_evidence": "high_confidence_name_and_effect_family_candidate",
+    },
 }
 
 
@@ -187,10 +207,14 @@ def _build_tres(texture: Path, frame_count: int, width: int, height: int) -> str
 
 
 def _catalog_rows() -> dict[str, dict[str, str]]:
-    """Load only the three source equipment rows used for provenance validation."""
+    """Load only equipment-backed source rows used for provenance validation."""
     with EQUIPMENT_CATALOG.open("r", encoding="utf-8-sig", newline="") as stream:
         rows = {row["class_name"]: row for row in csv.DictReader(stream)}
-    return {spec["legacy_class"]: rows[spec["legacy_class"]] for spec in SOURCES.values()}
+    return {
+        spec["legacy_class"]: rows[spec["legacy_class"]]
+        for spec in SOURCES.values()
+        if "legacy_class" in spec
+    }
 
 
 def _export_asset(asset_id: str, spec: dict[str, Any]) -> dict[str, Any]:
@@ -243,16 +267,13 @@ def _export_asset(asset_id: str, spec: dict[str, Any]) -> dict[str, Any]:
     resource_path = target / "animation_frames.tres"
     _atomic_text(resource_path, _build_tres(texture_path, len(frames), cell_width, cell_height))
 
-    return {
+    source_audit = {
         "asset_id": asset_id,
         "display_name": spec["display_name"],
         "source_logical_path": source_logical,
         "source_sha256": _hash(source_path),
         "parsed_frames_sha256": _hash(frames_path),
         "parsed_sheet_sha256": _hash(parsed_sheet_path),
-        "source_catalog": "catalogs_utf8/equipment_catalog.csv",
-        "source_class": spec["legacy_class"],
-        "source_line": int(_catalog_rows()[spec["legacy_class"]]["source_line"]),
         "frame_count": len(frames),
         "normalized_cell": [cell_width, cell_height],
         "coordinate_bounds": [left, top, right, bottom],
@@ -261,6 +282,18 @@ def _export_asset(asset_id: str, spec: dict[str, Any]) -> dict[str, Any]:
         "frames_per_direction": spec["frames_per_direction"],
         "world_visible": spec["world_visible"],
     }
+    if "legacy_class" in spec:
+        source_class = str(spec["legacy_class"])
+        source_audit.update(
+            {
+                "source_catalog": "catalogs_utf8/equipment_catalog.csv",
+                "source_class": source_class,
+                "source_line": int(_catalog_rows()[source_class]["source_line"]),
+            }
+        )
+    else:
+        source_audit["relationship_evidence"] = spec["relationship_evidence"]
+    return source_audit
 
 
 def _runtime_manifest(source_assets: list[dict[str, Any]]) -> dict[str, Any]:
@@ -269,6 +302,12 @@ def _runtime_manifest(source_assets: list[dict[str, Any]]) -> dict[str, Any]:
     chassis = _res_path(TARGET_ROOT / SOURCES["recruit_tank"]["target"] / "animation_frames.tres")
     weapon = _res_path(TARGET_ROOT / SOURCES["recruit_energy_cannon"]["target"] / "animation_frames.tres")
     engine = _res_path(TARGET_ROOT / SOURCES["beginner_engine"]["target"] / "animation_frames.tres")
+    projectile = _res_path(
+        TARGET_ROOT / SOURCES["recruit_energy_cannon_projectile"]["target"] / "animation_frames.tres"
+    )
+    impact = _res_path(
+        TARGET_ROOT / SOURCES["recruit_energy_cannon_impact_candidate"]["target"] / "animation_frames.tres"
+    )
     chassis_offset = list(source_by_id["recruit_tank"]["coordinate_bounds"][:2])
     weapon_offset = list(source_by_id["recruit_energy_cannon"]["coordinate_bounds"][:2])
     engine_offset = list(source_by_id["beginner_engine"]["coordinate_bounds"][:2])
@@ -321,7 +360,7 @@ def _runtime_manifest(source_assets: list[dict[str, Any]]) -> dict[str, Any]:
             "layers": [{"id": "body", "z_index": 0, "actions": actor["actions"]}],
         }
     return {
-        "schema_version": 1,
+        "schema_version": 2,
         "direction_order": DIRECTIONS,
         "source_audit": "res://assets/equipment_world/source_manifest.json",
         "components": {
@@ -343,6 +382,30 @@ def _runtime_manifest(source_assets: list[dict[str, Any]]) -> dict[str, Any]:
                 ),
             },
         },
+        "weapons": {
+            "recruit_energy_cannon": {
+                "owner_actor_id": "starter_combat_vehicle",
+                "maximum_visual_range": 250.0,
+                "cooldown_seconds": 0.8,
+                "muzzle_offset": [0.0, -16.0],
+                "projectile": {
+                    "resource": projectile,
+                    "frames": 1,
+                    "fps": 10.0,
+                    "loop": True,
+                    "travel_pixels_per_second": 520.0,
+                    "speed_evidence": "reconstructed_visual_default",
+                    "relationship_evidence": "client_confirmed",
+                },
+                "impact": {
+                    "resource": impact,
+                    "frames": 8,
+                    "fps": 14.0,
+                    "loop": False,
+                    "relationship_evidence": "high_confidence_candidate",
+                },
+            },
+        },
         "actors": actors,
     }
 
@@ -351,6 +414,8 @@ def migrate() -> None:
     """Generate business-named runtime resources and the separate provenance manifest."""
     rows = _catalog_rows()
     for spec in SOURCES.values():
+        if "legacy_class" not in spec:
+            continue
         row = rows[str(spec["legacy_class"])]
         if row["display_name"] != spec["display_name"]:
             raise RuntimeError(f"catalog identity mismatch: {spec['legacy_class']}")
@@ -365,6 +430,7 @@ def migrate() -> None:
             "evidence": [
                 "荣耀版装备目录确认显示名、类别与世界素材映射",
                 "荣耀版角色合成脚本仅将底盘与武器渲染为战车世界层",
+                "武器字段明确绑定弹体资源；命中特效仍按高可信候选关系记录",
                 "每项原始容器、解析帧清单和解析图集均记录 SHA-256",
             ],
             "assets": source_assets,
@@ -410,9 +476,10 @@ def audit() -> dict[str, Any]:
             errors.append(f"parsed frame digest mismatch for {asset_id}")
         if not sheet_path.is_file() or _hash(sheet_path) != entry.get("parsed_sheet_sha256"):
             errors.append(f"parsed sheet digest mismatch for {asset_id}")
-        source_class = str(spec["legacy_class"])
-        if catalog_rows[source_class]["display_name"] != spec["display_name"]:
-            errors.append(f"catalog display name mismatch for {asset_id}")
+        if "legacy_class" in spec:
+            source_class = str(spec["legacy_class"])
+            if catalog_rows[source_class]["display_name"] != spec["display_name"]:
+                errors.append(f"catalog display name mismatch for {asset_id}")
     return {
         "source_version": source.get("source_version", ""),
         "assets": len(source.get("assets", [])),
