@@ -7,7 +7,7 @@ var failures: PackedStringArray = []
 
 
 ## 运行地图定义加载、目录校验和业务适配的全部冒烟用例并汇总结果。
-## Design: 该入口组合多个独立 JSON 夹具，以进程退出码表达测试结果。
+## 设计：该入口组合多个独立 JSON 夹具，以进程退出码表达测试结果。
 func _initialize() -> void:
 	_test_valid_configuration()
 	_test_bad_coordinate()
@@ -67,7 +67,7 @@ func _test_empty_transitions() -> void:
 
 
 ## 验证外部目标可延迟解析，同时目录查询与来源审计保持有效。
-## Design: 外部出口是跨内容包协议边界，允许缺席但必须显式列入审计结果。
+## 设计：外部出口是跨内容包协议边界，允许缺席但必须显式列入审计结果。
 func _test_unresolved_external_target() -> void:
 	var catalog := CatalogScript.new()
 	var loader := LoaderScript.new()
@@ -113,8 +113,10 @@ func _test_business_adapter_configuration() -> void:
 	)
 
 
-## 检查 [param values] 中是否至少有一项包含 [param needle] 子串。
-## Returns 找到匹配项时为 true，否则为 false。
+## 执行 `contains` 对应的模块操作。
+## [param values] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param needle] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func _contains(values: PackedStringArray, needle: String) -> bool:
 	for value in values:
 		if needle in value:
@@ -122,7 +124,9 @@ func _contains(values: PackedStringArray, needle: String) -> bool:
 	return false
 
 
-## 在 [param condition] 不成立时将 [param message] 加入失败集合。
+## 执行 `expect` 对应的模块操作。
+## [param condition] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param message] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _expect(condition: bool, message: String) -> void:
 	if not condition:
 		failures.append(message)

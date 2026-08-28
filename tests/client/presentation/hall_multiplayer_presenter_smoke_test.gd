@@ -15,7 +15,7 @@ func _init() -> void:
 
 
 ## 验证本地预测投影、远端角色增删、动作映射和拒绝提示。
-## Design: 测试通过离线注入完整权威快照，不依赖真实 ENet 端口或服务器进程。
+## 设计：测试通过离线注入完整权威快照，不依赖真实 ENet 端口或服务器进程。
 func _run() -> void:
 	var character_catalog_value: Variant = JSON.parse_string(
 		FileAccess.get_file_as_string("res://assets/characters/character_atlases.json")
@@ -134,8 +134,10 @@ func _run() -> void:
 	_finish()
 
 
-## 构造权威 tick 为 [param server_tick] 且包含 [param entities] 的完整世界快照。
-## Returns 可由客户端会话离线注入的快照字典。
+## 执行 `snapshot` 对应的模块操作。
+## [param server_tick] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param entities] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func _snapshot(server_tick: int, entities: Array) -> Dictionary:
 	return {
 		"server_tick": server_tick,
@@ -144,9 +146,9 @@ func _snapshot(server_tick: int, entities: Array) -> Dictionary:
 	}
 
 
-## Builds a successful target-map join for [param transition_sequence].
-## [param transition_sequence] Client transition sequence acknowledged by the server.
-## Returns a reliable map-joined envelope consumed by the presentation session seam.
+## 执行 `map_joined_message` 对应的模块操作。
+## [param transition_sequence] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func _map_joined_message(transition_sequence: int) -> Dictionary:
 	return {
 		"type": "map_joined",
@@ -170,12 +172,14 @@ func _map_joined_message(transition_sequence: int) -> Dictionary:
 	}
 
 
-## 构造远端或本地实体 [param entity_id] 在 [param position] 的网络快照。
-## [param direction] 八方向动画索引。
-## [param action_id] 服务端业务动作名。
-## [param acknowledged_sequence] 服务端已消费的本地输入序号。
-## [param server_tick] 此实体状态所属的权威 tick。
-## Returns 符合 `EntitySnapshot` 契约的字典。
+## 执行 `entity` 对应的模块操作。
+## [param entity_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param position] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param direction] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param action_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param acknowledged_sequence] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param server_tick] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func _entity(
 	entity_id: String,
 	position: Vector2,
@@ -196,21 +200,29 @@ func _entity(
 	}
 
 
-## 统计 [param value] 布尔断言，并以 [param label] 记录失败上下文。
+## 执行 `expect_true` 对应的模块操作。
+## [param value] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param label] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _expect_true(value: bool, label: String) -> void:
 	assertions += 1
 	if not value:
 		failures.append(label)
 
 
-## 断言 [param actual] 等于 [param expected]，并用 [param label] 标记该检查。
+## 执行 `expect_equal` 对应的模块操作。
+## [param actual] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param expected] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param label] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _expect_equal(actual: Variant, expected: Variant, label: String) -> void:
 	assertions += 1
 	if actual != expected:
 		failures.append("%s (actual=%s expected=%s)" % [label, actual, expected])
 
 
-## 断言向量 [param actual] 近似等于 [param expected]，并用 [param label] 标记该检查。
+## 执行 `expect_vector` 对应的模块操作。
+## [param actual] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param expected] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param label] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _expect_vector(actual: Vector2, expected: Vector2, label: String) -> void:
 	assertions += 1
 	if not actual.is_equal_approx(expected):

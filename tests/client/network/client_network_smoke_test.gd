@@ -12,7 +12,7 @@ var failures: Array[String] = []
 
 
 ## 启动客户端网络冒烟用例，并将需要 SceneTree 的会话集成测试延迟执行。
-## Design: 纯逻辑用例同步运行，节点生命周期用例跨帧运行后再统一结束进程。
+## 设计：纯逻辑用例同步运行，节点生命周期用例跨帧运行后再统一结束进程。
 func _init() -> void:
 	_test_offline_adapter()
 	_test_local_prediction_and_reconciliation()
@@ -82,7 +82,7 @@ func _test_offline_adapter() -> void:
 
 
 ## 验证本地输入序列、预测位置、权威确认与误差阈值校正逻辑。
-## Design: 该用例锁定客户端预测与服务器权威快照之间的边界行为。
+## 设计：该用例锁定客户端预测与服务器权威快照之间的边界行为。
 func _test_local_prediction_and_reconciliation() -> void:
 	var predictor := Predictor.new()
 	predictor.reset(Vector2(10.0, 20.0))
@@ -152,7 +152,7 @@ func _test_remote_interpolation() -> void:
 
 
 ## 验证离线会话节点对本地预测、远端快照和生命周期信号的集成。
-## Design: 该异步夹具等待 SceneTree 帧，以覆盖节点就绪与信号回调时序。
+## 设计：该异步夹具等待 SceneTree 帧，以覆盖节点就绪与信号回调时序。
 func _test_session_integration() -> void:
 	var session := Session.new()
 	session.offline_debug_enabled = true
@@ -219,8 +219,8 @@ func _test_session_integration() -> void:
 
 
 ## 验证切图请求的最小权限载荷、失败原子性，以及成功后的状态整体替换。
-## [param session] 已进入旧地图并拥有本地预测与远端轨迹的离线客户端会话。
-## Design: 用原始可靠消息注入覆盖关联序列，确保移动拒绝和失配响应不能破坏 pending 切图。
+## [param session] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 设计：用原始可靠消息注入覆盖关联序列，确保移动拒绝和失配响应不能破坏 pending 切图。
 func _test_map_change_session(session) -> void:
 	var requested: Array[Dictionary] = []
 	var joined_events: Array[Dictionary] = []
@@ -371,10 +371,10 @@ func _test_map_change_session(session) -> void:
 	_expect_vector(session.local_presentation_state()["position"], Vector2(420.0, 520.0), "pre-join snapshot is ignored")
 
 
-## Builds a correlated transition rejection for [param transition_sequence] and [param code].
-## [param transition_sequence] Client command sequence echoed by the authoritative server.
-## [param code] Stable rejection code explaining why the map transfer was denied.
-## Returns a reliable command-rejected envelope with explicit map-transition context.
+## 执行 `map_change_rejected_message` 对应的模块操作。
+## [param transition_sequence] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param code] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func _map_change_rejected_message(transition_sequence: int, code: String) -> Dictionary:
 	return {
 		"type": "command_rejected",
@@ -390,12 +390,12 @@ func _map_change_rejected_message(transition_sequence: int, code: String) -> Dic
 	}
 
 
-## Builds a successful reliable map-join envelope for [param transition_sequence].
-## [param transition_sequence] Client transition command sequence acknowledged by the server.
-## [param server_tick] Authoritative global tick at which the transfer committed.
-## [param instance_id] Newly assigned target-map instance identifier.
-## [param spawn_position] Authoritative target-map spawn point.
-## Returns a complete server message containing strict join data and an initial target-map snapshot.
+## 执行 `map_joined_message` 对应的模块操作。
+## [param transition_sequence] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param server_tick] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param instance_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param spawn_position] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func _map_joined_message(
 	transition_sequence: int,
 	server_tick: int,
@@ -435,10 +435,13 @@ func _map_joined_message(
 	}
 
 
-## 构造 ID 为 [param entity_id]、横坐标为 [param x]、方向为 [param direction] 的实体快照。
-## [param acknowledged_input_sequence] 服务端已纳入模拟的最后输入序号。
-## [param server_tick] 生成该实体状态的权威服务器 tick。
-## Returns 符合客户端插值器输入契约的实体字典。
+## 执行 `entity` 对应的模块操作。
+## [param entity_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param x] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param direction] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param acknowledged_input_sequence] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param server_tick] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func _entity(
 	entity_id: String,
 	x: float,
@@ -458,10 +461,10 @@ func _entity(
 	}
 
 
-## Builds one world snapshot at [param server_tick] containing [param entities].
-## [param server_tick] Authoritative tick shared by the world and entity snapshots.
-## [param entities] Complete map-scoped entity snapshot list.
-## Returns a transport-safe complete world snapshot dictionary.
+## 执行 `snapshot` 对应的模块操作。
+## [param server_tick] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param entities] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func _snapshot(server_tick: int, entities: Array) -> Dictionary:
 	return {
 		"server_tick": server_tick,
@@ -470,26 +473,36 @@ func _snapshot(server_tick: int, entities: Array) -> Dictionary:
 	}
 
 
-## 统计 [param value] 布尔断言，并以 [param label] 记录失败上下文。
+## 执行 `expect_true` 对应的模块操作。
+## [param value] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param label] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _expect_true(value: bool, label: String) -> void:
 	assertions += 1
 	if not value:
 		failures.append(label)
 
 
-## 断言 [param value] 为 false，并用 [param label] 标记该检查。
+## 执行 `expect_false` 对应的模块操作。
+## [param value] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param label] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _expect_false(value: bool, label: String) -> void:
 	_expect_true(not value, label)
 
 
-## 断言 [param actual] 等于 [param expected]，并用 [param label] 标记该检查。
+## 执行 `expect_equal` 对应的模块操作。
+## [param actual] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param expected] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param label] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _expect_equal(actual: Variant, expected: Variant, label: String) -> void:
 	assertions += 1
 	if actual != expected:
 		failures.append("%s (actual=%s expected=%s)" % [label, actual, expected])
 
 
-## 断言向量 [param actual] 近似等于 [param expected]，并用 [param label] 标记该检查。
+## 执行 `expect_vector` 对应的模块操作。
+## [param actual] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param expected] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param label] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _expect_vector(actual: Vector2, expected: Vector2, label: String) -> void:
 	assertions += 1
 	if not actual.is_equal_approx(expected):

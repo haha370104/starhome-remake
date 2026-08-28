@@ -15,7 +15,7 @@ var _failed := 0
 
 
 ## 运行领域层冒烟测试并根据累计断言结果结束测试进程。
-## Design: 入口以进程退出码对接工程检查脚本，不依赖第三方测试框架。
+## 设计：入口以进程退出码对接工程检查脚本，不依赖第三方测试框架。
 func _initialize() -> void:
 	_run_all()
 	if _failed == 0:
@@ -27,7 +27,7 @@ func _initialize() -> void:
 
 
 ## 加载共享配置夹具并依次验证技能、载具移动和物品栏规则。
-## Design: 配置仅在此处读取一次，再显式传入各领域用例以隔离文件 I/O。
+## 设计：配置仅在此处读取一次，再显式传入各领域用例以隔离文件 I/O。
 func _run_all() -> void:
 	var skill_config := _load_config(SKILL_CONFIG_PATH)
 	var vehicle_config := _load_config(VEHICLE_CONFIG_PATH)
@@ -40,7 +40,8 @@ func _run_all() -> void:
 	_test_inventory(inventory_config)
 
 
-## 使用 [param config] 验证技能升级阈值、分段系数和非法输入处理。
+## 执行 `test_skill_thresholds` 对应的模块操作。
+## [param config] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _test_skill_thresholds(config: Dictionary) -> void:
 	_expect_equal(SkillProgression.get_need_points(&"energy_cannon", 0, config).value, 1, "energy cannon level 0 threshold")
 	_expect_equal(SkillProgression.get_need_points(&"energy_cannon", 49, config).value, 3750, "energy cannon boundary before coefficient change")
@@ -50,7 +51,8 @@ func _test_skill_thresholds(config: Dictionary) -> void:
 	_expect_false(SkillProgression.get_need_points(&"driving", -1, config).is_ok, "negative level is rejected")
 
 
-## 使用 [param config] 验证技能经验授予、单次升级和溢出清理语义。
+## 执行 `test_skill_grants` 对应的模块操作。
+## [param config] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _test_skill_grants(config: Dictionary) -> void:
 	var state := SkillState.new(&"energy_cannon", 20, 100, 0.25)
 	var threshold: int = int(SkillProgression.get_need_points(state.skill_id, state.level, config).value)
@@ -74,7 +76,8 @@ func _test_skill_grants(config: Dictionary) -> void:
 	_expect_false(SkillProgression.apply_exp(max_state, 1.0, config).is_ok, "maximum level cannot upgrade")
 
 
-## 使用 [param config] 验证驾驶等级、推进力、载重与速度上限的组合规则。
+## 执行 `test_vehicle_movement` 对应的模块操作。
+## [param config] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _test_vehicle_movement(config: Dictionary) -> void:
 	var full := VehicleMovement.base_speed(10, 10, 20, [50, 50], config)
 	_expect_true(full.is_ok, "valid vehicle speed succeeds")
@@ -91,8 +94,9 @@ func _test_vehicle_movement(config: Dictionary) -> void:
 	_expect_false(VehicleMovement.base_speed(10, 10, -1, [], config).is_ok, "negative propulsion is rejected even without weight")
 
 
-## 使用 [param config] 验证固定容量物品栏的堆叠、拆分与失败原子性。
-## Design: 每个失败分支都与操作前快照比较，确保领域事务不会部分提交。
+## 执行 `test_inventory` 对应的模块操作。
+## [param config] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 设计：每个失败分支都与操作前快照比较，确保领域事务不会部分提交。
 func _test_inventory(config: Dictionary) -> void:
 	var capacity: int = int(config["person_bag_capacity"])
 	var bag := FixedInventory.new(capacity)
@@ -122,15 +126,18 @@ func _test_inventory(config: Dictionary) -> void:
 	_expect_equal(full_bag.to_dictionary(), full_snapshot, "failed add is atomic")
 
 
-## 从 [param path] 加载 JSON 配置并将加载结果计入断言统计。
-## Returns 加载成功时返回配置字典，失败时返回空字典。
+## 执行 `load_config` 对应的模块操作。
+## [param path] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func _load_config(path: String) -> Dictionary:
 	var result := JsonConfigLoader.load_dictionary(path)
 	_expect_true(result.is_ok, "load configuration %s" % path)
 	return {} if not result.is_ok else result.value
 
 
-## 统计布尔断言，并以 [param label] 描述 [param condition] 失败原因。
+## 执行 `expect_true` 对应的模块操作。
+## [param condition] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param label] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _expect_true(condition: bool, label: String) -> void:
 	if condition:
 		_passed += 1
@@ -139,16 +146,24 @@ func _expect_true(condition: bool, label: String) -> void:
 		push_error("FAIL: %s" % label)
 
 
-## 断言 [param condition] 为 false，并用 [param label] 标记该检查。
+## 执行 `expect_false` 对应的模块操作。
+## [param condition] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param label] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _expect_false(condition: bool, label: String) -> void:
 	_expect_true(not condition, label)
 
 
-## 断言 [param actual] 与 [param expected] 相等，并以 [param label] 标记该检查。
+## 执行 `expect_equal` 对应的模块操作。
+## [param actual] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param expected] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param label] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _expect_equal(actual: Variant, expected: Variant, label: String) -> void:
 	_expect_true(actual == expected, "%s (expected %s, got %s)" % [label, str(expected), str(actual)])
 
 
-## 断言浮点 [param actual] 近似等于 [param expected]，并以 [param label] 标记该检查。
+## 执行 `expect_near` 对应的模块操作。
+## [param actual] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param expected] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param label] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _expect_near(actual: float, expected: float, label: String) -> void:
 	_expect_true(is_equal_approx(actual, expected), "%s (expected %f, got %f)" % [label, expected, actual])

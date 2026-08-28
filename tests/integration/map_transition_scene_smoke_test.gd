@@ -91,7 +91,9 @@ func _run() -> void:
 	quit(1)
 
 
-## 等待 [param hall] 提交 [param expected_map_id]，最多允许 600 个处理帧。
+## 执行 `wait_for_map` 对应的模块操作。
+## [param hall] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param expected_map_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _wait_for_map(hall: Node2D, expected_map_id: StringName) -> void:
 	for _frame in range(600):
 		if hall.map_definition.map_id == expected_map_id:
@@ -100,13 +102,16 @@ func _wait_for_map(hall: Node2D, expected_map_id: StringName) -> void:
 	_fail("等待地图提交超时：%s" % expected_map_id)
 
 
-## 累加断言，并在 [param condition] 不成立时记录 [param message]。
+## 执行 `expect` 对应的模块操作。
+## [param condition] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param message] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _expect(condition: bool, message: String) -> void:
 	assertions += 1
 	if not condition:
 		failures.append(message)
 
 
-## 无条件记录一条 [param message] 失败。
+## 执行 `fail` 对应的模块操作。
+## [param message] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _fail(message: String) -> void:
 	failures.append(message)

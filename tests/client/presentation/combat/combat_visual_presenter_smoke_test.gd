@@ -16,7 +16,7 @@ func _init() -> void:
 
 
 ## 验证业务清单、荣耀来源审计、八方向切换、动作推进和四类怪物加载。
-## Design: 测试只加载按需资源，不实例化大厅、网络或服务端逻辑。
+## 设计：测试只加载按需资源，不实例化大厅、网络或服务端逻辑。
 func _run() -> void:
 	var runtime := _read_json(RUNTIME_MANIFEST)
 	var source := _read_json(SOURCE_MANIFEST)
@@ -62,8 +62,9 @@ func _run() -> void:
 	_finish()
 
 
-## 读取 [param path] 的 JSON 对象。
-## Returns JSON 根为字典时返回其内容，否则记录失败并返回空字典。
+## 执行 `read_json` 对应的模块操作。
+## [param path] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func _read_json(path: String) -> Dictionary:
 	var value: Variant = JSON.parse_string(FileAccess.get_file_as_string(path))
 	if value is Dictionary:
@@ -72,7 +73,8 @@ func _read_json(path: String) -> Dictionary:
 	return {}
 
 
-## 断言运行时 [param manifest] 不泄漏旧目录、ALE 容器或时间戳标识。
+## 执行 `expect_runtime_names_are_semantic` 对应的模块操作。
+## [param manifest] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _expect_runtime_names_are_semantic(manifest: Dictionary) -> void:
 	var expression := RegEx.new()
 	expression.compile("(?i)(pic2?|\\.ale|CHN_[0-9]{4}|[0-9]{4}_[0-9]{2}_[0-9]{2})")
@@ -80,7 +82,8 @@ func _expect_runtime_names_are_semantic(manifest: Dictionary) -> void:
 	_expect_true(expression.search(serialized) == null, "runtime manifest contains business names only")
 
 
-## 验证 [param source] 中装备部件及开火特效的帧数、方向策略与来源证据。
+## 执行 `expect_source_components` 对应的模块操作。
+## [param source] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _expect_source_components(source: Dictionary) -> void:
 	var by_id: Dictionary = {}
 	for entry_value: Variant in source.get("assets", []):
@@ -108,7 +111,8 @@ func _expect_source_components(source: Dictionary) -> void:
 		_expect_equal(String(entry.get("source_sha256", "")).length(), 64, "raw source SHA-256 is retained")
 
 
-## 递归加载 [param manifest] 中所有动作资源，防止清单路径漂移。
+## 执行 `expect_all_resources_load` 对应的模块操作。
+## [param manifest] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _expect_all_resources_load(manifest: Dictionary) -> void:
 	var components: Dictionary = manifest.get("components", {})
 	for component_value: Variant in components.values():
@@ -129,7 +133,8 @@ func _expect_all_resources_load(manifest: Dictionary) -> void:
 				_expect_action_resource_load(action_value)
 
 
-## 加载 [param action_value] 指向的 SpriteFrames，并验证统一的原始动画入口。
+## 执行 `expect_action_resource_load` 对应的模块操作。
+## [param action_value] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _expect_action_resource_load(action_value: Variant) -> void:
 	if not action_value is Dictionary:
 		_expect_true(false, "action descriptor is a dictionary")
@@ -142,7 +147,10 @@ func _expect_action_resource_load(action_value: Variant) -> void:
 		_expect_true(frames.has_animation(&"raw"), "resource exposes raw animation")
 
 
-## 通过 [param presenter] 验证八向怪物 [param actor_id] 支持 [param action_frames] 声明的动作与方向块宽。
+## 执行 `expect_monster` 对应的模块操作。
+## [param presenter] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param actor_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param action_frames] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _expect_monster(
 	presenter: Node2D,
 	actor_id: StringName,
@@ -161,7 +169,10 @@ func _expect_monster(
 		)
 
 
-## 通过 [param presenter] 验证无朝向怪物 [param actor_id] 的 [param actions] 在八个朝向上复用同一帧块。
+## 执行 `expect_shared_monster` 对应的模块操作。
+## [param presenter] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param actor_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param actions] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _expect_shared_monster(
 	presenter: Node2D,
 	actor_id: StringName,
@@ -176,14 +187,19 @@ func _expect_shared_monster(
 		_expect_equal(presenter.layer_frame(&"body"), east_frame, "%s shares direction frames" % actor_id)
 
 
-## 统计 [param value] 布尔断言，并以 [param label] 记录失败上下文。
+## 执行 `expect_true` 对应的模块操作。
+## [param value] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param label] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _expect_true(value: bool, label: String) -> void:
 	assertions += 1
 	if not value:
 		failures.append(label)
 
 
-## 断言 [param actual] 与 [param expected] 相等，并用 [param label] 记录上下文。
+## 执行 `expect_equal` 对应的模块操作。
+## [param actual] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param expected] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param label] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _expect_equal(actual: Variant, expected: Variant, label: String) -> void:
 	assertions += 1
 	if actual != expected:

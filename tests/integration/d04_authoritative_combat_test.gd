@@ -8,7 +8,7 @@ var failures: Array[String] = []
 var assertions := 0
 
 
-## Verifies D04 configured populations, server-owned vehicle resources, attack settlement and zero-damage evidence handling.
+## 初始化当前模块或独立测试夹具。
 func _initialize() -> void:
 	var bridge: OfflineCombatAuthorityBridge = BridgeScript.new()
 	root.add_child(bridge)
@@ -45,8 +45,8 @@ func _initialize() -> void:
 	quit(1)
 
 
-## Checks all four species, configured population and initial vehicle health/energy in [param bridge].
-## [param bridge] Configured in-process authority adapter.
+## 执行 `test_population_and_resources` 对应的模块操作。
+## [param bridge] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _test_population_and_resources(bridge: OfflineCombatAuthorityBridge) -> void:
 	var snapshot := bridge.module.snapshot_for_actor(BridgeScript.LOCAL_ACTOR_ID)
 	_expect(snapshot.monsters.size() == 16, "D04 should spawn four configured members of each base species")
@@ -74,8 +74,8 @@ func _test_population_and_resources(bridge: OfflineCombatAuthorityBridge) -> voi
 	)
 
 
-## Fires at one nearby monster through [param bridge] and verifies authority-owned damage and cost.
-## [param bridge] Configured authority adapter whose player coordinate can be moved by validated navigation.
+## 执行 `test_authoritative_player_attack` 对应的模块操作。
+## [param bridge] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _test_authoritative_player_attack(bridge: OfflineCombatAuthorityBridge) -> void:
 	var target_id: String = bridge.module.monsters.keys()[0]
 	var target = bridge.module.monster_for(target_id)
@@ -88,8 +88,8 @@ func _test_authoritative_player_attack(bridge: OfflineCombatAuthorityBridge) -> 
 	_expect(is_equal_approx(vehicle.working_energy, 90.0), "successful shot should consume 10 working energy")
 
 
-## Places the player beside toxic gel and verifies its recovered zero attack remains zero in [param bridge].
-## [param bridge] Configured authority adapter containing all D04 species.
+## 执行 `test_zero_attack_is_not_invented` 对应的模块操作。
+## [param bridge] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _test_zero_attack_is_not_invented(bridge: OfflineCombatAuthorityBridge) -> void:
 	var toxic_id := ""
 	for monster_id: String in bridge.module.monster_runtime:
@@ -107,9 +107,9 @@ func _test_zero_attack_is_not_invented(bridge: OfflineCombatAuthorityBridge) -> 
 	_expect(vehicle.health == before_health, "toxic gel must not invent unknown corrosive damage over its confirmed zero base attack")
 
 
-## Records one assertion [param condition] and failure [param message].
-## [param condition] Required test condition.
-## [param message] Diagnostic appended when the condition is false.
+## 执行 `expect` 对应的模块操作。
+## [param condition] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param message] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _expect(condition: bool, message: String) -> void:
 	assertions += 1
 	if not condition:

@@ -16,7 +16,7 @@ var _failed := 0
 
 
 ## 运行全部网络契约用例，并通过进程退出码报告断言汇总结果。
-## Design: 测试直接约束线上消息的公开边界，避免客户端与服务器各自漂移。
+## 设计：测试直接约束线上消息的公开边界，避免客户端与服务器各自漂移。
 func _initialize() -> void:
 	_test_protocol_configuration()
 	_test_error_codes()
@@ -77,7 +77,7 @@ func _test_error_codes() -> void:
 
 
 ## 验证移动意图的构造、序列化、反序列化与非法字段拒绝规则。
-## Design: 该用例覆盖客户端输入进入服务器前的完整协议边界。
+## 设计：该用例覆盖客户端输入进入服务器前的完整协议边界。
 func _test_move_intent() -> void:
 	var intent := MoveIntentContract.new("hall.instance.1", Vector2(480.5, 370.25), 12)
 	_expect_true(intent.validate().is_ok, "move intent constructor produces valid contract")
@@ -133,7 +133,7 @@ func _test_move_intent() -> void:
 
 
 ## 验证地图切换意图只携带服务器可校验的出口与入口标识。
-## Design: 目标地图和出生坐标属于服务端权威字段，任何客户端夹带都会被拒绝。
+## 设计：目标地图和出生坐标属于服务端权威字段，任何客户端夹带都会被拒绝。
 func _test_map_transition_intent() -> void:
 	var intent := MapTransitionIntentContract.new("field.instance.1", "north_exit", 3, 7)
 	_expect_true(intent.validate().is_ok, "map transition intent constructor is valid")
@@ -160,7 +160,7 @@ func _test_map_transition_intent() -> void:
 
 
 ## 验证技能意图只携带服务器能够独立裁决的技能和目标标识。
-## Design: 客户端夹带的伤害、坐标、射程、能耗与冷却必须在契约边界直接拒绝。
+## 设计：客户端夹带的伤害、坐标、射程、能耗与冷却必须在契约边界直接拒绝。
 func _test_use_ability_intent() -> void:
 	var intent := UseAbilityIntentContract.new(
 		"d04_field_zone.instance.1", "energy_cannon.primary", "monster.om_adult.1", 9
@@ -283,7 +283,7 @@ func _test_position_correction() -> void:
 
 
 ## 验证网络消息信封的类型、载荷、时间戳和版本校验规则。
-## Design: 信封是所有业务消息共用的传输边界，此处集中锁定兼容性要求。
+## 设计：信封是所有业务消息共用的传输边界，此处集中锁定兼容性要求。
 func _test_message_envelope() -> void:
 	var payload := MoveIntentContract.new("hall.instance.1", Vector2(100.0, 200.0), 3).to_dictionary()
 	var envelope := MessageEnvelopeContract.new(Protocol.MOVE_INTENT, 5, payload)
@@ -327,12 +327,17 @@ func _test_sequence_gate() -> void:
 	_expect_error(gate.accept(&"", 0), ErrorCodes.INVALID_IDENTIFIER, "empty stream ID is rejected")
 
 
-## 断言 [param result] 为错误且代码等于 [param expected_code]，并用 [param label] 标记检查。
+## 执行 `expect_error` 对应的模块操作。
+## [param result] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param expected_code] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param label] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _expect_error(result: Variant, expected_code: StringName, label: String) -> void:
 	_expect_true(not result.is_ok and result.error_code == expected_code, label)
 
 
-## 统计 [param condition] 布尔断言，并以 [param label] 记录失败上下文。
+## 执行 `expect_true` 对应的模块操作。
+## [param condition] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param label] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _expect_true(condition: bool, label: String) -> void:
 	if condition:
 		_passed += 1
@@ -341,6 +346,9 @@ func _expect_true(condition: bool, label: String) -> void:
 		push_error("FAIL: %s" % label)
 
 
-## 断言 [param actual] 等于 [param expected]，并以 [param label] 标记检查。
+## 执行 `expect_equal` 对应的模块操作。
+## [param actual] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param expected] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param label] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _expect_equal(actual: Variant, expected: Variant, label: String) -> void:
 	_expect_true(actual == expected, "%s (expected %s, got %s)" % [label, str(expected), str(actual)])

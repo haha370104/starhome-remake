@@ -7,7 +7,7 @@ var failures: PackedStringArray = []
 
 
 ## 加载荣耀版大厅导航数据并验证关键可达性、阻挡与寻路约束。
-## Design: 该入口同时承担测试夹具初始化和进程退出码汇总，保持无外部测试框架依赖。
+## 设计：该入口同时承担测试夹具初始化和进程退出码汇总，保持无外部测试框架依赖。
 func _initialize() -> void:
 	var navigation: DiamondNavigation = DiamondNavigationScript.new()
 	_expect(
@@ -39,7 +39,9 @@ func _initialize() -> void:
 	quit(1)
 
 
-## 记录一条导航断言在 [param condition] 不成立时对应的 [param message]。
+## 执行 `expect` 对应的模块操作。
+## [param condition] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param message] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _expect(condition: bool, message: String) -> void:
 	if not condition:
 		failures.append(message)

@@ -7,8 +7,9 @@ class TestMapPreloader:
 
 	var requested_map_id: StringName = &""
 
-	## 记录 [param map_id] 而不启动线程资源请求，以便隔离验证到达提交边界。
-	## Returns 始终返回 `OK`，表示请求已被可控测试替身接收。
+	## 执行 `preload_map` 对应的模块操作。
+	## [param map_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+	## 返回该函数计算、查询或操作得到的结果。
 	func preload_map(map_id: StringName) -> Error:
 		requested_map_id = map_id
 		return OK
@@ -74,8 +75,9 @@ func _run() -> void:
 	_finish(hall)
 
 
-## 用故意缺失语义纹理的城市 [param bundle] 验证 [param active] 不半提交。
-## [param hall] 提供可观测的当前玩家、HUD 和摄像机状态。
+## 执行 `test_failed_bundle_isolation` 对应的模块操作。
+## [param hall] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param active] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _test_failed_bundle_isolation(hall: Node2D, active: Node) -> void:
 	var old_definition: RefCounted = active.definition
 	var old_navigation: RefCounted = active.navigation
@@ -112,19 +114,23 @@ func _test_failed_bundle_isolation(hall: Node2D, active: Node) -> void:
 	_expect(old_first_scene == null or is_instance_valid(old_first_scene), "提交失败不得释放旧场景节点")
 
 
-## 累加断言，并在 [param condition] 不成立时记录 [param message]。
+## 执行 `expect` 对应的模块操作。
+## [param condition] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param message] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _expect(condition: bool, message: String) -> void:
 	assertions += 1
 	if not condition:
 		failures.append(message)
 
 
-## 无条件记录一条 [param message] 失败。
+## 执行 `fail` 对应的模块操作。
+## [param message] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _fail(message: String) -> void:
 	failures.append(message)
 
 
-## 释放 [param hall] 并根据累计结果结束测试进程。
+## 执行 `finish` 对应的模块操作。
+## [param hall] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _finish(hall: Node2D) -> void:
 	if failures.is_empty():
 		print("ACTIVE_WORLD_TRANSITION_VIEW_OK (%d assertions)" % assertions)

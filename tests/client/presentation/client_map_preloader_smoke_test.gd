@@ -70,18 +70,24 @@ func _run() -> void:
 	quit(1)
 
 
-## 保存 [param map_id] 对应的完整 [param bundle] 供主测试断言。
+## 处理 `_on_map_preload_ready` 对应的信号回调。
+## [param map_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param bundle] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _on_map_preload_ready(map_id: StringName, bundle: Dictionary) -> void:
 	ready_map_id = map_id
 	ready_bundle = bundle
 
 
-## 保存 [param map_id] 的预载失败结果；[param _message] 仅供诊断。
+## 处理 `_on_map_preload_failed` 对应的信号回调。
+## [param map_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param _message] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _on_map_preload_failed(map_id: StringName, _message: String) -> void:
 	failed_map_id = map_id
 
 
-## 累加断言，并在 [param condition] 不成立时记录 [param message]。
+## 执行 `expect` 对应的模块操作。
+## [param condition] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param message] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _expect(condition: bool, message: String) -> void:
 	assertions += 1
 	if not condition:

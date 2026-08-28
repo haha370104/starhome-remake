@@ -31,7 +31,8 @@ func _initialize() -> void:
 	_finish()
 
 
-## 验证 [param controller] 会钳制远距离点击、抑制冷却重复射击并清理完成特效。
+## 执行 `test_fire_lifecycle` 对应的模块操作。
+## [param controller] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _test_fire_lifecycle(controller: Node) -> void:
 	var first: Dictionary = controller.request_fire(Vector2(100, 100), Vector2(600, 100))
 	_expect(bool(first.get("ok", false)), "first field shot should start")
@@ -71,17 +72,19 @@ func _test_fire_lifecycle(controller: Node) -> void:
 	)
 
 
-## 返回测试线段与 X=80 交叉时的纯表现碰撞，不模拟任何权威伤害。
-## [param segment_start] 测试弹体在本帧开始时的位置。
-## [param segment_end] 测试弹体在本帧结束时的位置。
-## Returns 线段跨过测试平面时返回命中点，否则返回 `hit=false`。
+## 执行 `fake_visual_collision` 对应的模块操作。
+## [param segment_start] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param segment_end] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func _fake_visual_collision(segment_start: Vector2, segment_end: Vector2) -> Dictionary:
 	if segment_start.x <= 80.0 and segment_end.x >= 80.0:
 		return {"hit": true, "position": Vector2(80, 0)}
 	return {"hit": false}
 
 
-## 记录 [param condition] 断言，并用 [param message] 保存失败上下文。
+## 执行 `expect` 对应的模块操作。
+## [param condition] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param message] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _expect(condition: bool, message: String) -> void:
 	assertions += 1
 	if not condition:

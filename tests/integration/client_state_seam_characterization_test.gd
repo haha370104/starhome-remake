@@ -12,7 +12,7 @@ func _initialize() -> void:
 
 
 ## 组合验证权威校正的路线策略，以及预载失败前后的旧地图隔离状态。
-## Design: 成功切图的原子替换已由 `map_transition_scene_smoke_test` 覆盖，本夹具只补其失败分支与移动接缝。
+## 设计：成功切图的原子替换已由 `map_transition_scene_smoke_test` 覆盖，本夹具只补其失败分支与移动接缝。
 func _run() -> void:
 	await _test_route_policy_after_authoritative_correction()
 	await _test_pre_authority_preload_failure_keeps_old_world_active()
@@ -97,7 +97,7 @@ func _test_pre_authority_preload_failure_keeps_old_world_active() -> void:
 
 
 ## 验证会话已接受 `map_joined` 后的本地预载失败保留旧画面但永久冻结其输入。
-## Design: 服务端权威身份不可回滚；客户端只能保留旧画面作诊断并锁输入，等待重连或恢复资源。
+## 设计：服务端权威身份不可回滚；客户端只能保留旧画面作诊断并锁输入，等待重连或恢复资源。
 func _test_post_authority_preload_failure_locks_old_world() -> void:
 	var hall := await _create_hall()
 	var old_map_id: StringName = hall.map_definition.map_id
@@ -134,7 +134,7 @@ func _test_post_authority_preload_failure_locks_old_world() -> void:
 
 
 ## 创建完成 `_ready` 的大厅并暂停其逐帧行走，供接缝状态做确定性断言。
-## Returns 初始化完成的大厅根节点。
+## 返回该函数计算、查询或操作得到的结果。
 func _create_hall() -> Node2D:
 	var hall: Node2D = MainHallScene.instantiate()
 	root.add_child(hall)
@@ -144,8 +144,9 @@ func _create_hall() -> Node2D:
 	return hall
 
 
-## 从 [param hall] 当前玩家附近寻找一处具有非空导航路径的稳定目标。
-## Returns 找到时返回目标坐标，否则返回非有限向量。
+## 执行 `find_route_target` 对应的模块操作。
+## [param hall] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func _find_route_target(hall: Node2D) -> Vector2:
 	var origin: Vector2 = hall.player.position
 	var offsets := [
@@ -163,8 +164,11 @@ func _find_route_target(hall: Node2D) -> Vector2:
 	return Vector2(INF, INF)
 
 
-## 在 [param hall] 中寻找距当前位置小于平滑阈值、且到 [param target] 路线不同于 [param original_path] 的校正点。
-## Returns 找到时返回可走坐标，否则返回非有限向量。
+## 执行 `find_small_correction_with_distinct_path` 对应的模块操作。
+## [param hall] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param target] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param original_path] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func _find_small_correction_with_distinct_path(
 	hall: Node2D,
 	target: Vector2,
@@ -189,8 +193,10 @@ func _find_small_correction_with_distinct_path(
 	return Vector2(INF, INF)
 
 
-## 断言实际路线 [param actual] 与期望路线 [param expected] 的全部节点近似相等。
-## [param message] 路线不一致时记录的失败说明。
+## 执行 `expect_path` 对应的模块操作。
+## [param actual] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param expected] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param message] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _expect_path(
 	actual: PackedVector2Array,
 	expected: PackedVector2Array,
@@ -199,8 +205,10 @@ func _expect_path(
 	_expect(_paths_equal(actual, expected), "%s (actual=%s expected=%s)" % [message, actual, expected])
 
 
-## 比较 [param left] 与 [param right] 的节点数量和逐点坐标。
-## Returns 两条路线完全等价时返回 `true`。
+## 执行 `paths_equal` 对应的模块操作。
+## [param left] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param right] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func _paths_equal(left: PackedVector2Array, right: PackedVector2Array) -> bool:
 	if left.size() != right.size():
 		return false
@@ -210,7 +218,9 @@ func _paths_equal(left: PackedVector2Array, right: PackedVector2Array) -> bool:
 	return true
 
 
-## 累加断言，并在 [param condition] 不成立时记录 [param message]。
+## 执行 `expect` 对应的模块操作。
+## [param condition] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param message] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _expect(condition: bool, message: String) -> void:
 	assertions += 1
 	if not condition:
