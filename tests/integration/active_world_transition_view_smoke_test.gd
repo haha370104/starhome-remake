@@ -132,11 +132,11 @@ func _test_city_transition_views(active: Node) -> void:
 	_expect(active.commit_bundle(city_bundle, Vector2(1399, 954)), "城区 bundle 必须可原子提交")
 	_expect(active.transition_views.size() == 5, "城区五个已启用出口必须全部显示传送动画")
 	var expected_orientations := {
-		&"enter_base_hall_floor_1": "south_west",
-		&"exit_to_d04_northwest_gate": "south_west",
-		&"exit_to_d04_southwest_gate": "north_west",
-		&"exit_to_d04_southeast_gate": "north_east",
-		&"exit_to_d04_northeast_gate": "south_east",
+		&"enter_base_hall_floor_1": "north_east",
+		&"exit_to_d04_northwest_gate": "north_west",
+		&"exit_to_d04_southwest_gate": "south_west",
+		&"exit_to_d04_southeast_gate": "south_east",
+		&"exit_to_d04_northeast_gate": "north_east",
 	}
 	for transition_id: StringName in expected_orientations:
 		var view: Node2D = active.transition_view_by_id(transition_id)

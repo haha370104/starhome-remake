@@ -18,11 +18,11 @@ MAP_MANIFEST = PROJECT_ROOT / "assets/maps/yian_harbor/hall_floor_1/map_manifest
 TRANSITION_DIR = PROJECT_ROOT / "assets/maps/yian_harbor/hall_floor_1/transitions/exit_to_city"
 IMPORT_METADATA = TRANSITION_DIR / "import_metadata.json"
 MARKER_CATALOG = PROJECT_ROOT / "data/presentation/map_transition_marker_catalog.json"
-SHARED_TRANSITION_DIR = PROJECT_ROOT / "assets/maps/shared/directional_transitions/south_west"
+SHARED_TRANSITION_DIR = PROJECT_ROOT / "assets/maps/shared/directional_transitions/north_west"
 SHARED_IMPORT_METADATA = SHARED_TRANSITION_DIR / "import_metadata.json"
 SOURCE_FCC = OUTPUTS_ROOT / "starhome_lz_ry_full_parsed/ftc_resources/expanded/NFT_BT/map/RoomSvr1/roomsvr1.fcc.cab"
 TRANSPORT_CLASS = OUTPUTS_ROOT / "starhome_lz_ry_full_parsed/ftc_resources/expanded/transport/transport.fcc.cab"
-EXPECTED_SHARED_RESOURCE = "res://assets/maps/shared/directional_transitions/south_west/animation_frames.tres"
+EXPECTED_SHARED_RESOURCE = "res://assets/maps/shared/directional_transitions/north_west/animation_frames.tres"
 
 
 def read_json(path: Path) -> dict:
@@ -106,11 +106,11 @@ def main() -> int:
             errors.append("map definition destination is not City1Svr entry 0")
         expected_definition_presentation = {
             "kind": "directional_transition",
-            "orientation": "south_west",
+            "orientation": "north_west",
             "activation": "enabled_transition",
         }
         if definition_transition.get("presentation") != expected_definition_presentation:
-            errors.append("map definition no longer delegates the hall marker to the shared south-west component")
+            errors.append("map definition no longer delegates source as4 to the shared north-west component")
         if manifest_transition.get("presentation") != metadata.get("presentation", {}):
             errors.append("scene manifest presentation drifted from import metadata")
 
@@ -137,13 +137,13 @@ def main() -> int:
         if presentation.get(field) != expected:
             errors.append(f"presentation {field} expected {expected!r}, got {presentation.get(field)!r}")
 
-    shared_presentation = marker_catalog.get("markers", {}).get("south_west", {})
+    shared_presentation = marker_catalog.get("markers", {}).get("north_west", {})
     if shared_presentation.get("resource") != EXPECTED_SHARED_RESOURCE:
         errors.append("hall marker does not resolve to the shared as4 directional animation")
     if shared_metadata.get("source_logical_path") != "pic3/interface/sportimg/as4.ale":
-        errors.append("shared south-west marker no longer proves the Glory sportimg/as4 source")
+        errors.append("shared north-west marker no longer proves the Glory sportimg/as4 source")
     if shared_metadata.get("frame_count") != 9 or shared_metadata.get("legacy_playdelay_ms") != 100:
-        errors.append("shared south-west marker frame timing drifted from Glory evidence")
+        errors.append("shared north-west marker frame timing drifted from Glory evidence")
 
     source_audit = metadata.get("source_audit", {})
     if source_audit.get("source_release") != "starhome_lz_ry":

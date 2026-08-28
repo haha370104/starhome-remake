@@ -156,11 +156,14 @@
         "source_release": "starhome_lz_ry",
         "source_map_code": "d04",
         "source_output": "maps/d04/variant_01_nft_bl/transitions.json",
-        "source_line": 551
+        "source_line": 551,
+        "source_icon_ale": "../../map/mapimg/ani/CHN_2005_06_28_19_32_06_50/jt-04..ale",
+        "source_marker_family": "field_directional_marker",
+        "source_marker_style": 4
       },
       "presentation": {
         "kind": "directional_transition",
-        "orientation": "south_west",
+        "orientation": "north_west",
         "activation": "enabled_transition"
       }
     },
@@ -186,7 +189,10 @@
         "source_release": "starhome_lz_ry",
         "source_map_code": "d04",
         "source_output": "maps/d04/variant_01_nft_bl/transitions.json",
-        "source_line": 553
+        "source_line": 553,
+        "source_icon_ale": "../../map/mapimg/ani/CHN_2005_06_28_19_32_06_50/jt-05..ale",
+        "source_marker_family": "field_directional_marker",
+        "source_marker_style": 5
       },
       "presentation": {
         "kind": "directional_transition",
@@ -216,11 +222,14 @@
         "source_release": "starhome_lz_ry",
         "source_map_code": "d04",
         "source_output": "maps/d04/variant_01_nft_bl/transitions.json",
-        "source_line": 559
+        "source_line": 559,
+        "source_icon_ale": "../../map/mapimg/ani/CHN_2005_06_28_19_32_06_50/jt-06..ale",
+        "source_marker_family": "field_directional_marker",
+        "source_marker_style": 6
       },
       "presentation": {
         "kind": "directional_transition",
-        "orientation": "north_west",
+        "orientation": "south_west",
         "activation": "enabled_transition"
       }
     },
@@ -247,11 +256,14 @@
         "source_release": "starhome_lz_ry",
         "source_map_code": "d04",
         "source_output": "maps/d04/variant_01_nft_bl/transitions.json",
-        "source_line": 555
+        "source_line": 555,
+        "source_icon_ale": "../../map/mapimg/ani/CHN_2005_06_28_19_32_06_50/jt-08..ale",
+        "source_marker_family": "field_directional_marker",
+        "source_marker_style": 8
       },
       "presentation": {
         "kind": "directional_transition",
-        "orientation": "north_east",
+        "orientation": "south_east",
         "activation": "enabled_transition"
       }
     },
@@ -278,11 +290,14 @@
         "source_release": "starhome_lz_ry",
         "source_map_code": "d04",
         "source_output": "maps/d04/variant_01_nft_bl/transitions.json",
-        "source_line": 557
+        "source_line": 557,
+        "source_icon_ale": "../../map/mapimg/ani/CHN_2005_06_28_19_32_06_50/jt-02..ale",
+        "source_marker_family": "field_directional_marker",
+        "source_marker_style": 2
       },
       "presentation": {
         "kind": "directional_transition",
-        "orientation": "south_east",
+        "orientation": "north_east",
         "activation": "enabled_transition"
       }
     },
@@ -309,11 +324,14 @@
         "source_release": "starhome_lz_ry",
         "source_map_code": "d04",
         "source_output": "maps/d04/variant_01_nft_bl/transitions.json",
-        "source_line": 558
+        "source_line": 558,
+        "source_icon_ale": "../../map/mapimg/ani/CHN_2005_06_28_19_32_06_50/jt-04..ale",
+        "source_marker_family": "field_directional_marker",
+        "source_marker_style": 4
       },
       "presentation": {
         "kind": "directional_transition",
-        "orientation": "south_west",
+        "orientation": "north_west",
         "activation": "enabled_transition"
       }
     },
@@ -340,11 +358,14 @@
         "source_release": "starhome_lz_ry",
         "source_map_code": "d04",
         "source_output": "maps/d04/variant_01_nft_bl/transitions.json",
-        "source_line": 556
+        "source_line": 556,
+        "source_icon_ale": "../../map/mapimg/ani/CHN_2005_06_28_19_32_06_50/jt-06..ale",
+        "source_marker_family": "field_directional_marker",
+        "source_marker_style": 6
       },
       "presentation": {
         "kind": "directional_transition",
-        "orientation": "north_west",
+        "orientation": "south_west",
         "activation": "enabled_transition"
       }
     },
@@ -370,11 +391,14 @@
         "source_release": "starhome_lz_ry",
         "source_map_code": "d04",
         "source_output": "maps/d04/variant_01_nft_bl/transitions.json",
-        "source_line": 550
+        "source_line": 550,
+        "source_icon_ale": "../../map/mapimg/ani/CHN_2005_06_28_19_32_06_50/jt-03..ale",
+        "source_marker_family": "field_directional_marker",
+        "source_marker_style": 3
       },
       "presentation": {
         "kind": "directional_transition",
-        "orientation": "south",
+        "orientation": "north",
         "activation": "enabled_transition"
       }
     },
@@ -400,11 +424,14 @@
         "source_release": "starhome_lz_ry",
         "source_map_code": "d04",
         "source_output": "maps/d04/variant_01_nft_bl/transitions.json",
-        "source_line": 560
+        "source_line": 560,
+        "source_icon_ale": "../../map/mapimg/ani/CHN_2005_06_28_19_32_06_50/jt-07..ale",
+        "source_marker_family": "field_directional_marker",
+        "source_marker_style": 7
       },
       "presentation": {
         "kind": "directional_transition",
-        "orientation": "north",
+        "orientation": "south",
         "activation": "enabled_transition"
       }
     },
@@ -430,11 +457,14 @@
         "source_release": "starhome_lz_ry",
         "source_map_code": "d04",
         "source_output": "maps/d04/variant_01_nft_bl/transitions.json",
-        "source_line": 552
+        "source_line": 552,
+        "source_icon_ale": "../../map/mapimg/ani/CHN_2005_06_28_19_32_06_50/jt-02..ale",
+        "source_marker_family": "field_directional_marker",
+        "source_marker_style": 2
       },
       "presentation": {
         "kind": "directional_transition",
-        "orientation": "south_east",
+        "orientation": "north_east",
         "activation": "enabled_transition"
       }
     },
@@ -460,7 +490,10 @@
         "source_release": "starhome_lz_ry",
         "source_map_code": "d04",
         "source_output": "maps/d04/variant_01_nft_bl/transitions.json",
-        "source_line": 554
+        "source_line": 554,
+        "source_icon_ale": "../../map/mapimg/ani/CHN_2005_06_28_19_32_06_50/jt-01..ale",
+        "source_marker_family": "field_directional_marker",
+        "source_marker_style": 1
       },
       "presentation": {
         "kind": "directional_transition",
@@ -490,11 +523,14 @@
         "source_release": "starhome_lz_ry",
         "source_map_code": "d04",
         "source_output": "maps/d04/variant_01_nft_bl/transitions.json",
-        "source_line": 561
+        "source_line": 561,
+        "source_icon_ale": "../../map/mapimg/ani/CHN_2005_06_28_19_32_06_50/jt-08..ale",
+        "source_marker_family": "field_directional_marker",
+        "source_marker_style": 8
       },
       "presentation": {
         "kind": "directional_transition",
-        "orientation": "north_east",
+        "orientation": "south_east",
         "activation": "enabled_transition"
       }
     }

@@ -107,12 +107,27 @@ func _test_definitions(directory: Dictionary) -> void:
 		hall.transition_by_id(&"exit_to_city").destination_map_id == &"yian_harbor_city",
 		"大厅唯一出口必须指向 City1Svr 业务定义",
 	)
+	_expect(
+		String(hall.transition_by_id(&"exit_to_city").presentation.get("orientation", "")) == "north_west",
+		"大厅出口必须忠实采用源 as4 的屏幕左上方向",
+	)
 	var city = definitions_by_id["yian_harbor_city"]
 	_expect(city.transitions.size() == 5, "City1Svr 本纵切应提升大厅边和四条 D04 边")
 	for entry_number in range(5):
 		_expect(city.spawn_for_entry(entry_number) != null, "City1Svr 缺少入口 %d 出生点" % entry_number)
+	var city_hall_transition: MapTransition = city.transition_by_id(&"enter_base_hall_floor_1")
+	_expect(
+		String(city_hall_transition.presentation.get("orientation", "")) == "north_east",
+		"城区基地入口必须忠实采用源 as2 的屏幕右上方向",
+	)
+	_expect(int(city_hall_transition.source_audit.get("source_marker_style", 0)) == 2, "城区基地入口必须保留源 as2 审计")
 	var d04 = definitions_by_id["d04_field_zone"]
 	_expect(d04.transitions.size() == 12, "D04 的 12 条荣耀版有效出口必须全部保留")
+	for transition: MapTransition in d04.transitions:
+		_expect(
+			String(transition.source_audit.get("source_marker_family", "")) == "field_directional_marker",
+			"D04 必须保留源 jt 标记族，不得伪装成城区 as 关联",
+		)
 	for entry_number in range(1, 5):
 		_expect(d04.spawn_for_entry(entry_number) != null, "D04 缺少城市入口 %d 出生点" % entry_number)
 	_test_g08_transitions(definitions_by_id["g08_field_zone"])
@@ -191,6 +206,10 @@ func _test_g08_transitions(definition) -> void:
 	for transition in definition.transitions:
 		actual_codes.append(transition.destination_legacy_code)
 		_expect(transition.external_target, "G08 未提升的目标必须显式标记 external")
+		_expect(
+			String(transition.source_audit.get("source_marker_family", "")) == "house_directional_marker",
+			"G08 必须保留源 as 标记族",
+		)
 	actual_codes.sort()
 	_expect(actual_codes == PackedStringArray(["f07", "f08", "g07", "h07", "h08"]), "G08 目的地集合错误")
 

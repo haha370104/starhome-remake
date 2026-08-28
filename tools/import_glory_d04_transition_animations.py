@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
-"""从荣耀版 ``sportimg/as1-as8`` 恢复 D04 八方向传送器动画。"""
+"""从荣耀版 ``sportimg/as1-as8`` 恢复共享动画并同步正式地图关联。"""
 
 from __future__ import annotations
 
 import hashlib
 import json
 import os
+import re
 from pathlib import Path
 from typing import Any
 
@@ -16,35 +17,32 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 OUTPUTS_ROOT = PROJECT_ROOT.parent
 GLORY_RAW = OUTPUTS_ROOT / "starhome_lz_ry_full" / "raw"
 GLORY_PARSED = OUTPUTS_ROOT / "starhome_lz_ry_full_parsed" / "ale_sprites"
-MAP_PATH = PROJECT_ROOT / "data" / "maps" / "d04_field_zone.json"
+MAP_PATHS = (
+    PROJECT_ROOT / "data" / "maps" / "yian_harbor_hall_floor_1.json",
+    PROJECT_ROOT / "data" / "maps" / "yian_harbor_city.json",
+    PROJECT_ROOT / "data" / "maps" / "d04_field_zone.json",
+    PROJECT_ROOT / "data" / "maps" / "g08_field_zone.json",
+)
+GLORY_MAPS_PARSED = OUTPUTS_ROOT / "starhome_lz_ry_maps_parsed"
+FREE_FIELD_MARKER_FALLBACK = (
+    OUTPUTS_ROOT
+    / "starhome_lz_ry_full_parsed"
+    / "official_lazy_cache"
+    / "free_version_transition_fallback"
+    / "raw"
+)
 TARGET_ROOT = PROJECT_ROOT / "assets" / "maps" / "shared" / "directional_transitions"
 TARGET_CATALOG = PROJECT_ROOT / "data" / "presentation" / "map_transition_marker_catalog.json"
 
-# Transition business ID -> legacy style retained only inside this import tool/audit.
-STYLE_BY_TRANSITION = {
-    "exit_to_c03_field": 4,
-    "exit_to_c04_field": 5,
-    "exit_to_c05_field": 6,
-    "enter_city_via_northwest_gate": 8,
-    "enter_city_via_southwest_gate": 2,
-    "enter_city_via_southeast_gate": 4,
-    "enter_city_via_northeast_gate": 6,
-    "exit_to_d03_field": 3,
-    "exit_to_d05_field": 7,
-    "exit_to_e03_field": 2,
-    "exit_to_e04_field": 1,
-    "exit_to_e05_field": 8,
-}
-
 DIRECTION_BY_STYLE = {
     1: "east",
-    2: "south_east",
-    3: "south",
-    4: "south_west",
+    2: "north_east",
+    3: "north",
+    4: "north_west",
     5: "west",
-    6: "north_west",
-    7: "north",
-    8: "north_east",
+    6: "south_west",
+    7: "south",
+    8: "south_east",
 }
 
 
@@ -146,6 +144,28 @@ def _export_direction(legacy_style: int) -> dict[str, Any]:
         "direction": direction,
         "frame_count": len(source_frames),
     }
+    field_marker_fallback = FREE_FIELD_MARKER_FALLBACK / f"source_style_{legacy_style:02d}.ale"
+    if not field_marker_fallback.is_file():
+        raise FileNotFoundError(f"missing field marker fallback evidence: {field_marker_fallback}")
+    fallback_hash = _sha256(field_marker_fallback)
+    if fallback_hash != audit["source_sha256"]:
+        raise ValueError(
+            f"field jt-{legacy_style:02d} marker differs from Glory as{legacy_style} marker"
+        )
+    audit["source_equivalence"] = {
+        "field_marker_logical_path": (
+            "map/mapimg/ani/CHN_2005_06_28_19_32_06_50/"
+            f"jt-{legacy_style:02d}..ale"
+        ),
+        "fallback_release": "starhome_lz_fr",
+        "fallback_url": (
+            "http://update.ftxjjy.com/gameser/fr_www/map/mapimg/ani/"
+            "CHN_2005_06_28_19_32_06_50/"
+            f"jt-{legacy_style:02d}..ale"
+        ),
+        "fallback_sha256": fallback_hash,
+        "byte_identical_to_glory_directional_marker": True,
+    }
     _atomic_text(target / "import_metadata.json", json.dumps(audit, ensure_ascii=False, indent=2) + "\n")
     return {
         "asset_id": f"maps/shared/directional_transitions/{direction}",
@@ -170,10 +190,69 @@ def _transition_presentation(direction: str) -> dict[str, Any]:
     }
 
 
+def _source_transition_for(runtime_transition: dict[str, Any]) -> dict[str, Any]:
+    """按审计输出和源码行号取得原地图明确声明的传送素材关联。"""
+    audit = runtime_transition.get("source_audit", {})
+    source_output = str(audit.get("source_output", ""))
+    source_line = int(audit.get("source_line", 0))
+    if not source_output or source_line <= 0:
+        raise ValueError(
+            f"{runtime_transition.get('transition_id')} lacks source_output/source_line audit"
+        )
+    source_path = GLORY_MAPS_PARSED / source_output
+    if source_path.name.lower() != "transitions.json":
+        source_path = source_path / "transitions.json"
+    source_data = json.loads(source_path.read_text(encoding="utf-8"))
+    candidates = [
+        item for item in source_data.get("enabled", [])
+        if int(item.get("source_line", 0)) == source_line
+        and list(item.get("icon_anchor", [])) == list(runtime_transition.get("source_anchor", []))
+    ]
+    if "choice_index" in audit:
+        candidates = [
+            item for item in candidates
+            if int(item.get("choice_index", 0)) == int(audit["choice_index"])
+        ]
+    if len(candidates) != 1:
+        raise ValueError(
+            f"{runtime_transition.get('transition_id')} expected one source line {source_line}, "
+            f"found {len(candidates)}"
+        )
+    return candidates[0]
+
+
+def _bind_map_transitions(map_path: Path) -> int:
+    """依据源 ``icon_ale`` 为一张正式地图写入业务化八方向表现声明。"""
+    map_data = json.loads(map_path.read_text(encoding="utf-8"))
+    bound_count = 0
+    for transition in map_data.get("transitions", []):
+        source_transition = _source_transition_for(transition)
+        source_icon = str(source_transition.get("icon_ale", ""))
+        house_match = re.search(r"(?:^|/)as([1-8])\.ale$", source_icon, re.IGNORECASE)
+        field_match = re.search(r"(?:^|/)jt-0?([1-8])\.+ale$", source_icon, re.IGNORECASE)
+        if house_match is None and field_match is None:
+            raise ValueError(
+                f"{map_data.get('map_id')}/{transition.get('transition_id')} has unsupported "
+                f"source icon {source_icon!r}"
+            )
+        if list(source_transition.get("icon_anchor", [])) != list(transition.get("source_anchor", [])):
+            raise ValueError(
+                f"{map_data.get('map_id')}/{transition.get('transition_id')} anchor drifted from source"
+            )
+        style = int((house_match or field_match).group(1))
+        transition["presentation"] = _transition_presentation(DIRECTION_BY_STYLE[style])
+        transition["source_audit"]["source_icon_ale"] = source_icon
+        transition["source_audit"]["source_marker_family"] = (
+            "house_directional_marker" if house_match is not None else "field_directional_marker"
+        )
+        transition["source_audit"]["source_marker_style"] = style
+        bound_count += 1
+    _atomic_text(map_path, json.dumps(map_data, ensure_ascii=False, indent=2) + "\n")
+    return bound_count
+
+
 def main() -> int:
-    """导出八方向共享传送动画并把 D04 出口绑定到对应方向。"""
-    global MAP_DATA
-    MAP_DATA = json.loads(MAP_PATH.read_text(encoding="utf-8"))
+    """导出八方向动画，并按源地图的 ``icon_ale`` 同步所有正式地图。"""
     direction_assets = {style: _export_direction(style) for style in DIRECTION_BY_STYLE}
     marker_catalog = {
         "schema_version": 1,
@@ -183,17 +262,9 @@ def main() -> int:
         },
     }
     _atomic_text(TARGET_CATALOG, json.dumps(marker_catalog, ensure_ascii=False, indent=2) + "\n")
-    for transition in MAP_DATA["transitions"]:
-        transition_id = str(transition["transition_id"])
-        transition["presentation"] = _transition_presentation(
-            DIRECTION_BY_STYLE[STYLE_BY_TRANSITION[transition_id]],
-        )
-    _atomic_text(MAP_PATH, json.dumps(MAP_DATA, ensure_ascii=False, indent=2) + "\n")
-    print(f"exported {len(MAP_DATA['transitions'])} D04 transition animations")
+    bound_count = sum(_bind_map_transitions(map_path) for map_path in MAP_PATHS)
+    print(f"exported 8 shared transition animations and source-bound {bound_count} markers")
     return 0
-
-
-MAP_DATA: dict[str, Any] = {}
 
 
 if __name__ == "__main__":

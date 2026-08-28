@@ -4,13 +4,24 @@
   "display_name": "易安港基地大厅一层",
   "category": "city_interior",
   "legacy": {
-    "codes": ["roomsvr1"]
+    "codes": [
+      "roomsvr1"
+    ]
   },
   "world": {
-    "size": [1944, 1920],
+    "size": [
+      1944,
+      1920
+    ],
     "navigation": {
-      "grid_size": [41, 320],
-      "cell_size": [48, 12],
+      "grid_size": [
+        41,
+        320
+      ],
+      "cell_size": [
+        48,
+        12
+      ],
       "data_path": "res://assets/maps/yian_harbor/hall_floor_1/navigation_grid.bin"
     }
   },
@@ -34,7 +45,10 @@
       {
         "spawn_id": "development_arrival",
         "entry_number": null,
-        "position": [730, 1330],
+        "position": [
+          730,
+          1330
+        ],
         "enabled": true,
         "evidence_level": "reconstructed_default",
         "source_audit": {
@@ -46,7 +60,10 @@
       {
         "spawn_id": "arrival_from_yian_harbor_city",
         "entry_number": 0,
-        "position": [480, 370],
+        "position": [
+          480,
+          370
+        ],
         "enabled": true,
         "evidence_level": "navigation_derived",
         "source_audit": {
@@ -65,11 +82,17 @@
       "kind": "standard",
       "enabled": true,
       "label": "通往城市",
-      "source_anchor": [408, 348],
-      "approach_point": [480, 370],
+      "source_anchor": [
+        408,
+        348
+      ],
+      "approach_point": [
+        480,
+        370
+      ],
       "presentation": {
         "kind": "directional_transition",
-        "orientation": "south_west",
+        "orientation": "north_west",
         "activation": "enabled_transition"
       },
       "destination": {
@@ -81,7 +104,11 @@
       "source_audit": {
         "source_release": "starhome_lz_ry",
         "source_map_code": "RoomSvr1",
-        "source_output": "maps/roomsvr1/variant_02_nft_bt/transitions.json"
+        "source_output": "maps/roomsvr1/variant_02_nft_bt",
+        "source_line": 107,
+        "source_icon_ale": "../../map/mapimg/house/CHN_2005_06_28_19_30_52_38/as4.ale",
+        "source_marker_style": 4,
+        "source_marker_family": "house_directional_marker"
       }
     }
   ],
@@ -89,7 +116,10 @@
     "source_release": "starhome_lz_ry",
     "source_map_code": "RoomSvr1",
     "source_output": "maps/roomsvr1/variant_02_nft_bt",
-    "source_branches": ["NFT_BT", "NFT_SK"],
+    "source_branches": [
+      "NFT_BT",
+      "NFT_SK"
+    ],
     "source_script_sha256": "e3a7b70219823faca7f0bcbfddc4c892b390778b1944e9fb212129f0592c23c0",
     "migration_state": "glory_import_complete"
   }

@@ -140,6 +140,12 @@ if ($LASTEXITCODE -ne 0) {
     throw "Hall exit transition audit failed"
 }
 
+Write-Output "Auditing source-bound transition markers"
+& python (Join-Path $PSScriptRoot "audit_transition_marker_sources.py")
+if ($LASTEXITCODE -ne 0) {
+    throw "Transition marker source audit failed"
+}
+
 Write-Output "Auditing Stage-3 Glory combat content"
 & python (Join-Path $PSScriptRoot "audit_stage3_content.py")
 if ($LASTEXITCODE -ne 0) {

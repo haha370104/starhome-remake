@@ -4,13 +4,24 @@
   "display_name": "易安港城区",
   "category": "city_exterior",
   "legacy": {
-    "codes": ["city1svr"]
+    "codes": [
+      "city1svr"
+    ]
   },
   "world": {
-    "size": [3384, 3360],
+    "size": [
+      3384,
+      3360
+    ],
     "navigation": {
-      "grid_size": [71, 560],
-      "cell_size": [48, 12],
+      "grid_size": [
+        71,
+        560
+      ],
+      "cell_size": [
+        48,
+        12
+      ],
       "data_path": "res://assets/maps/yian_harbor/city/navigation_grid.bin"
     }
   },
@@ -32,7 +43,10 @@
       {
         "spawn_id": "city_center",
         "entry_number": null,
-        "position": [1399, 954],
+        "position": [
+          1399,
+          954
+        ],
         "enabled": true,
         "evidence_level": "navigation_derived",
         "source_audit": {
@@ -45,7 +59,10 @@
       {
         "spawn_id": "arrival_from_base_hall",
         "entry_number": 0,
-        "position": [1399, 954],
+        "position": [
+          1399,
+          954
+        ],
         "enabled": true,
         "evidence_level": "navigation_derived",
         "source_audit": {
@@ -58,7 +75,10 @@
       {
         "spawn_id": "arrival_from_d04_northwest_gate",
         "entry_number": 1,
-        "position": [78, 170],
+        "position": [
+          78,
+          170
+        ],
         "enabled": true,
         "evidence_level": "navigation_derived",
         "source_audit": {
@@ -71,7 +91,10 @@
       {
         "spawn_id": "arrival_from_d04_southwest_gate",
         "entry_number": 2,
-        "position": [127, 3172],
+        "position": [
+          127,
+          3172
+        ],
         "enabled": true,
         "evidence_level": "navigation_derived",
         "source_audit": {
@@ -84,7 +107,10 @@
       {
         "spawn_id": "arrival_from_d04_southeast_gate",
         "entry_number": 3,
-        "position": [3073, 3177],
+        "position": [
+          3073,
+          3177
+        ],
         "enabled": true,
         "evidence_level": "navigation_derived",
         "source_audit": {
@@ -97,7 +123,10 @@
       {
         "spawn_id": "arrival_from_d04_northeast_gate",
         "entry_number": 4,
-        "position": [3290, 178],
+        "position": [
+          3290,
+          178
+        ],
         "enabled": true,
         "evidence_level": "navigation_derived",
         "source_audit": {
@@ -116,11 +145,17 @@
       "kind": "multi_choice",
       "enabled": true,
       "label": "进入基地大厅",
-      "source_anchor": [1368, 948],
-      "approach_point": [1399, 954],
+      "source_anchor": [
+        1368,
+        948
+      ],
+      "approach_point": [
+        1399,
+        954
+      ],
       "presentation": {
         "kind": "directional_transition",
-        "orientation": "south_west",
+        "orientation": "north_east",
         "activation": "enabled_transition"
       },
       "destination": {
@@ -134,7 +169,10 @@
         "source_map_code": "City1Svr",
         "source_output": "maps/city1svr/variant_01_nft_bl/transitions.json",
         "source_line": 381,
-        "choice_index": 0
+        "choice_index": 0,
+        "source_icon_ale": "../../map/mapimg/house/CHN_2005_06_28_19_30_52_38/as2.ale",
+        "source_marker_style": 2,
+        "source_marker_family": "house_directional_marker"
       }
     },
     {
@@ -142,11 +180,17 @@
       "kind": "standard",
       "enabled": true,
       "label": "通往D04区",
-      "source_anchor": [24, 156],
-      "approach_point": [78, 170],
+      "source_anchor": [
+        24,
+        156
+      ],
+      "approach_point": [
+        78,
+        170
+      ],
       "presentation": {
         "kind": "directional_transition",
-        "orientation": "south_west",
+        "orientation": "north_west",
         "activation": "enabled_transition"
       },
       "destination": {
@@ -159,7 +203,10 @@
         "source_release": "starhome_lz_ry",
         "source_map_code": "City1Svr",
         "source_output": "maps/city1svr/variant_01_nft_bl/transitions.json",
-        "source_line": 378
+        "source_line": 378,
+        "source_icon_ale": "../../map/mapimg/house/CHN_2005_06_28_19_30_52_38/as4.ale",
+        "source_marker_style": 4,
+        "source_marker_family": "house_directional_marker"
       }
     },
     {
@@ -167,11 +214,17 @@
       "kind": "standard",
       "enabled": true,
       "label": "通往D04区",
-      "source_anchor": [72, 3180],
-      "approach_point": [127, 3172],
+      "source_anchor": [
+        72,
+        3180
+      ],
+      "approach_point": [
+        127,
+        3172
+      ],
       "presentation": {
         "kind": "directional_transition",
-        "orientation": "north_west",
+        "orientation": "south_west",
         "activation": "enabled_transition"
       },
       "destination": {
@@ -184,7 +237,10 @@
         "source_release": "starhome_lz_ry",
         "source_map_code": "City1Svr",
         "source_output": "maps/city1svr/variant_01_nft_bl/transitions.json",
-        "source_line": 398
+        "source_line": 398,
+        "source_icon_ale": "../../map/mapimg/house/CHN_2005_06_28_19_30_52_38/as6.ale",
+        "source_marker_style": 6,
+        "source_marker_family": "house_directional_marker"
       }
     },
     {
@@ -192,11 +248,17 @@
       "kind": "standard",
       "enabled": true,
       "label": "通往D04区",
-      "source_anchor": [3048, 3180],
-      "approach_point": [3073, 3177],
+      "source_anchor": [
+        3048,
+        3180
+      ],
+      "approach_point": [
+        3073,
+        3177
+      ],
       "presentation": {
         "kind": "directional_transition",
-        "orientation": "north_east",
+        "orientation": "south_east",
         "activation": "enabled_transition"
       },
       "destination": {
@@ -209,7 +271,10 @@
         "source_release": "starhome_lz_ry",
         "source_map_code": "City1Svr",
         "source_output": "maps/city1svr/variant_01_nft_bl/transitions.json",
-        "source_line": 399
+        "source_line": 399,
+        "source_icon_ale": "../../map/mapimg/house/CHN_2005_06_28_19_30_52_38/as8.ale",
+        "source_marker_style": 8,
+        "source_marker_family": "house_directional_marker"
       }
     },
     {
@@ -217,11 +282,17 @@
       "kind": "standard",
       "enabled": true,
       "label": "通往D04区",
-      "source_anchor": [3264, 168],
-      "approach_point": [3290, 178],
+      "source_anchor": [
+        3264,
+        168
+      ],
+      "approach_point": [
+        3290,
+        178
+      ],
       "presentation": {
         "kind": "directional_transition",
-        "orientation": "south_east",
+        "orientation": "north_east",
         "activation": "enabled_transition"
       },
       "destination": {
@@ -234,7 +305,10 @@
         "source_release": "starhome_lz_ry",
         "source_map_code": "City1Svr",
         "source_output": "maps/city1svr/variant_01_nft_bl/transitions.json",
-        "source_line": 379
+        "source_line": 379,
+        "source_icon_ale": "../../map/mapimg/house/CHN_2005_06_28_19_30_52_38/as2.ale",
+        "source_marker_style": 2,
+        "source_marker_family": "house_directional_marker"
       }
     }
   ],
@@ -243,7 +317,10 @@
     "source_map_code": "City1Svr",
     "source_map_name": "龙之城",
     "source_output": "maps/city1svr/variant_01_nft_bl",
-    "source_branches": ["NFT_BL", "NFT_BT"],
+    "source_branches": [
+      "NFT_BL",
+      "NFT_BT"
+    ],
     "source_script_sha256": "6651e41fc072da7d20d3abe8837aacdb48f9402c3b6cf2c435928b3963768c71",
     "navigation_sha256": "46bfb65fc3a6c5faef835ec35602139bec96d3a29469bfe313136ca25a5a3fde",
     "navigation_passable": 32958,

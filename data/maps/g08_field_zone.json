@@ -4,13 +4,24 @@
   "display_name": "G08区",
   "category": "field",
   "legacy": {
-    "codes": ["g08"]
+    "codes": [
+      "g08"
+    ]
   },
   "world": {
-    "size": [4824, 4800],
+    "size": [
+      4824,
+      4800
+    ],
     "navigation": {
-      "grid_size": [101, 800],
-      "cell_size": [48, 12],
+      "grid_size": [
+        101,
+        800
+      ],
+      "cell_size": [
+        48,
+        12
+      ],
       "data_path": "res://assets/maps/exploration/g08_field_zone/navigation_grid.bin"
     }
   },
@@ -32,7 +43,10 @@
       {
         "spawn_id": "field_center",
         "entry_number": 0,
-        "position": [2412, 2400],
+        "position": [
+          2412,
+          2400
+        ],
         "enabled": true,
         "evidence_level": "navigation_derived",
         "source_audit": {
@@ -51,55 +65,165 @@
       "kind": "standard",
       "enabled": true,
       "label": "通往F07区",
-      "source_anchor": [96, 72],
-      "approach_point": [156, 84],
-      "presentation": {"kind": "directional_transition", "orientation": "south_west", "activation": "enabled_transition"},
-      "destination": {"legacy_code": "f07", "entry_number": 0, "external": true},
-      "source_audit": {"source_release": "starhome_lz_ry", "source_map_code": "g08", "source_output": "maps/g08/variant_01_nft_bl/transitions.json", "source_line": 509}
+      "source_anchor": [
+        96,
+        72
+      ],
+      "approach_point": [
+        156,
+        84
+      ],
+      "presentation": {
+        "kind": "directional_transition",
+        "orientation": "north_west",
+        "activation": "enabled_transition"
+      },
+      "destination": {
+        "legacy_code": "f07",
+        "entry_number": 0,
+        "external": true
+      },
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_map_code": "g08",
+        "source_output": "maps/g08/variant_01_nft_bl/transitions.json",
+        "source_line": 509,
+        "source_icon_ale": "../../map/mapimg/house/CHN_2005_06_28_19_30_52_38/as4.ale",
+        "source_marker_family": "house_directional_marker",
+        "source_marker_style": 4
+      }
     },
     {
       "transition_id": "exit_to_g07_field",
       "kind": "standard",
       "enabled": true,
       "label": "通往G07区",
-      "source_anchor": [2280, 84],
-      "approach_point": [2315, 90],
-      "presentation": {"kind": "directional_transition", "orientation": "south", "activation": "enabled_transition"},
-      "destination": {"legacy_code": "g07", "entry_number": 0, "external": true},
-      "source_audit": {"source_release": "starhome_lz_ry", "source_map_code": "g08", "source_output": "maps/g08/variant_01_nft_bl/transitions.json", "source_line": 510}
+      "source_anchor": [
+        2280,
+        84
+      ],
+      "approach_point": [
+        2315,
+        90
+      ],
+      "presentation": {
+        "kind": "directional_transition",
+        "orientation": "north",
+        "activation": "enabled_transition"
+      },
+      "destination": {
+        "legacy_code": "g07",
+        "entry_number": 0,
+        "external": true
+      },
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_map_code": "g08",
+        "source_output": "maps/g08/variant_01_nft_bl/transitions.json",
+        "source_line": 510,
+        "source_icon_ale": "../../map/mapimg/house/CHN_2005_06_28_19_30_52_38/as3.ale",
+        "source_marker_family": "house_directional_marker",
+        "source_marker_style": 3
+      }
     },
     {
       "transition_id": "exit_to_h07_field",
       "kind": "standard",
       "enabled": true,
       "label": "通往H07区",
-      "source_anchor": [4632, 84],
-      "approach_point": [4653, 91],
-      "presentation": {"kind": "directional_transition", "orientation": "south_east", "activation": "enabled_transition"},
-      "destination": {"legacy_code": "h07", "entry_number": 0, "external": true},
-      "source_audit": {"source_release": "starhome_lz_ry", "source_map_code": "g08", "source_output": "maps/g08/variant_01_nft_bl/transitions.json", "source_line": 511}
+      "source_anchor": [
+        4632,
+        84
+      ],
+      "approach_point": [
+        4653,
+        91
+      ],
+      "presentation": {
+        "kind": "directional_transition",
+        "orientation": "north_east",
+        "activation": "enabled_transition"
+      },
+      "destination": {
+        "legacy_code": "h07",
+        "entry_number": 0,
+        "external": true
+      },
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_map_code": "g08",
+        "source_output": "maps/g08/variant_01_nft_bl/transitions.json",
+        "source_line": 511,
+        "source_icon_ale": "../../map/mapimg/house/CHN_2005_06_28_19_30_52_38/as2.ale",
+        "source_marker_family": "house_directional_marker",
+        "source_marker_style": 2
+      }
     },
     {
       "transition_id": "exit_to_h08_field",
       "kind": "standard",
       "enabled": true,
       "label": "通往H08区",
-      "source_anchor": [4656, 2448],
-      "approach_point": [4662, 2441],
-      "presentation": {"kind": "directional_transition", "orientation": "east", "activation": "enabled_transition"},
-      "destination": {"legacy_code": "h08", "entry_number": 0, "external": true},
-      "source_audit": {"source_release": "starhome_lz_ry", "source_map_code": "g08", "source_output": "maps/g08/variant_01_nft_bl/transitions.json", "source_line": 512}
+      "source_anchor": [
+        4656,
+        2448
+      ],
+      "approach_point": [
+        4662,
+        2441
+      ],
+      "presentation": {
+        "kind": "directional_transition",
+        "orientation": "east",
+        "activation": "enabled_transition"
+      },
+      "destination": {
+        "legacy_code": "h08",
+        "entry_number": 0,
+        "external": true
+      },
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_map_code": "g08",
+        "source_output": "maps/g08/variant_01_nft_bl/transitions.json",
+        "source_line": 512,
+        "source_icon_ale": "../../map/mapimg/house/CHN_2005_06_28_19_30_52_38/as1.ale",
+        "source_marker_family": "house_directional_marker",
+        "source_marker_style": 1
+      }
     },
     {
       "transition_id": "exit_to_f08_field",
       "kind": "standard",
       "enabled": true,
       "label": "通往F08区",
-      "source_anchor": [96, 2736],
-      "approach_point": [174, 2728],
-      "presentation": {"kind": "directional_transition", "orientation": "north_west", "activation": "enabled_transition"},
-      "destination": {"legacy_code": "f08", "entry_number": 0, "external": true},
-      "source_audit": {"source_release": "starhome_lz_ry", "source_map_code": "g08", "source_output": "maps/g08/variant_01_nft_bl/transitions.json", "source_line": 513}
+      "source_anchor": [
+        96,
+        2736
+      ],
+      "approach_point": [
+        174,
+        2728
+      ],
+      "presentation": {
+        "kind": "directional_transition",
+        "orientation": "west",
+        "activation": "enabled_transition"
+      },
+      "destination": {
+        "legacy_code": "f08",
+        "entry_number": 0,
+        "external": true
+      },
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_map_code": "g08",
+        "source_output": "maps/g08/variant_01_nft_bl/transitions.json",
+        "source_line": 513,
+        "source_icon_ale": "../../map/mapimg/house/CHN_2005_06_28_19_30_52_38/as5.ale",
+        "source_marker_family": "house_directional_marker",
+        "source_marker_style": 5
+      }
     }
   ],
   "source_audit": {
@@ -107,7 +231,10 @@
     "source_map_code": "g08",
     "source_map_name": "G08区域",
     "source_output": "maps/g08/variant_01_nft_bl",
-    "source_branches": ["NFT_BL", "NFT_BT"],
+    "source_branches": [
+      "NFT_BL",
+      "NFT_BT"
+    ],
     "source_script_sha256": "223023b3b01d99925349731ba7376e09bad312774334011caef9fa85ccf08bb1",
     "navigation_sha256": "df15d24a1bb74f63385d10d51e2419e3ffa5669810b52dc6b1d1913dc21537dc",
     "navigation_passable": 72738,
