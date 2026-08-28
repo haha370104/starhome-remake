@@ -87,3 +87,18 @@ func set_animation_speed_scale(value: float) -> void:
 	body.speed_scale = value
 	equipment.speed_scale = value
 	shadow.speed_scale = value
+
+
+## 替换人物当前上衣的八方向动画资源。
+## [param character_set] CharacterFactory 为具体 Clothing 构建的角色图层集合。
+func set_equipment_set(character_set: Dictionary) -> void:
+	equipment.sprite_frames = character_set["equipment_frames"]
+	equipment_offsets = character_set["equipment_offsets"]
+	equipment.visible = true
+	set_action(current_action, current_direction)
+
+
+## 设置人物服装层是否可见；裸模和阴影始终保留。
+## [param visible] 当前 CharacterEquipment 是否在上衣槽拥有服装。
+func set_equipment_visible(visible: bool) -> void:
+	equipment.visible = visible

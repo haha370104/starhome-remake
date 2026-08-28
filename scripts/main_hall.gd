@@ -556,9 +556,20 @@ func _build_game_windows() -> void:
 		Callable(multiplayer_presenter, "request_player_panel_command"),
 		multiplayer_offline_debug_enabled,
 	)
+	game_window_manager.current_player_changed.connect(_on_current_player_changed)
 	multiplayer_presenter.player_panel_bundle_received.connect(
 		game_window_manager.apply_bundle
 	)
+
+
+## 将客户端唯一 CurrentPlayer 的服装对象同步到世界人物表现。
+## [param current_player] 刚应用同事务权威快照的当前玩家聚合。
+func _on_current_player_changed(current_player: Player) -> void:
+	if player != null:
+		player.apply_character_equipment(
+			current_player.character_equipment,
+			character_catalog,
+		)
 
 
 ## 读取受控地图目录的 `definitions` 映射，格式错误时返回仅包含当前大厅的安全目录。

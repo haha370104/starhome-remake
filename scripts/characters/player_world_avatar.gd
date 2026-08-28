@@ -8,6 +8,7 @@ const CombatVisualPresenterScript := preload(
 const WorldCombatStatusBarScript := preload(
 	"res://scripts/client/presentation/combat/world_combat_status_bar.gd"
 )
+const CharacterFactoryScript := preload("res://scripts/characters/character_factory.gd")
 
 const CHARACTER_KIND := &"character"
 const COMBAT_ACTOR_KIND := &"combat_actor"
@@ -51,6 +52,7 @@ func configure(
 		name_color,
 		human_name_offset,
 	)
+	human_character.set_equipment_visible(false)
 	add_child(human_character)
 
 	combat_presenter = CombatVisualPresenterScript.new()
@@ -172,6 +174,31 @@ func set_animation_speed_scale(value: float) -> void:
 	_animation_speed_scale = maxf(value, 0.0)
 	if human_character != null:
 		human_character.set_animation_speed_scale(_animation_speed_scale)
+
+
+## 让世界人物服装层消费当前 Player 的固定人物装备对象。
+## [param equipment] 当前玩家的 CharacterEquipment。
+## [param character_catalog] 已导入的语义化人物动画目录。
+## 返回服装表现是否成功应用。
+func apply_character_equipment(
+	equipment: CharacterEquipment,
+	character_catalog: Dictionary,
+) -> bool:
+	if human_character == null or equipment == null:
+		return false
+	var upper_body := equipment.at("upper_body")
+	if upper_body == null:
+		human_character.set_equipment_visible(false)
+		return true
+	var appearance_key := String(upper_body.presentation.get("world_equipment_key", ""))
+	if appearance_key.is_empty() or not character_catalog.has(appearance_key):
+		push_warning("Character clothing has no world appearance: %s" % upper_body.definition_id)
+		return false
+	var character_set := CharacterFactoryScript.build_character_set(
+		character_catalog, appearance_key
+	)
+	human_character.set_equipment_set(character_set)
+	return true
 
 
 ## 报告当前地图是否正在使用战斗载具外观。

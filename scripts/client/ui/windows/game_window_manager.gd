@@ -2,12 +2,13 @@ class_name GameWindowManager
 extends Control
 
 signal command_dispatched(command: Dictionary)
+signal current_player_changed(player: Player)
 
 const CharacterPanelScript := preload("res://scripts/client/ui/windows/character/character_panel.gd")
 const InventoryPanelScript := preload("res://scripts/client/ui/windows/inventory/inventory_panel.gd")
 const VehiclePanelScript := preload("res://scripts/client/ui/windows/vehicle/vehicle_equipment_panel.gd")
 const OfflineAuthorityScript := preload("res://scripts/client/debug/offline_player_panel_authority.gd")
-const CurrentPlayerStateScript := preload("res://scripts/client/state/current_player_state.gd")
+const CurrentPlayerScript := preload("res://scripts/client/state/current_player.gd")
 
 var character_panel: CharacterPanel
 var inventory_panel: InventoryPanel
@@ -15,7 +16,7 @@ var vehicle_panel: VehicleEquipmentPanel
 
 ## 【重点 Review】当前登录人物的客户端只读全局投影；业务 UI 必须从这里读取同版本人物与战车状态。
 ## 设计：属性值仍由权威服务器产生，本对象只负责跨面板共享与信号通知。
-var current_player: CurrentPlayerState
+var current_player: CurrentPlayer
 
 var _dispatcher: Callable
 var _offline_authority: OfflinePlayerPanelAuthority
@@ -29,7 +30,7 @@ var _bundle: Dictionary = {}
 ## 设计：管理器只负责窗口生命周期和成组快照，不实现背包或装备规则。
 func configure(dispatcher: Callable, offline_debug_enabled: bool) -> bool:
 	_dispatcher = dispatcher
-	current_player = CurrentPlayerStateScript.new()
+	current_player = CurrentPlayerScript.new()
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	resized.connect(_clamp_windows)
@@ -89,6 +90,7 @@ func apply_bundle(bundle: Dictionary) -> void:
 	character_panel.set_inventory_revision(int(_bundle["inventory"].get("revision", -1)))
 	vehicle_panel.set_inventory_revision(int(_bundle["inventory"].get("revision", -1)))
 	vehicle_panel.apply_snapshot(_bundle["vehicle"])
+	current_player_changed.emit(current_player)
 
 
 ## 将面板命令补全双 revision 后发送到所选权威边界。
