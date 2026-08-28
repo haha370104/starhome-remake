@@ -57,6 +57,7 @@ $testScripts = @(
 	"res://tests/client/presentation/hall_multiplayer_presenter_smoke_test.gd",
 	"res://tests/client/presentation/client_map_preloader_smoke_test.gd",
 	"res://tests/client/presentation/combat/combat_visual_presenter_smoke_test.gd",
+	"res://tests/client/presentation/combat/weapon_attack_visual_controller_test.gd",
 	"res://tests/server/authoritative_server_smoke_test.gd",
 	"res://tests/server/combat/authoritative_combat_module_test.gd",
 	"res://tests/server/combat/combat_definition_catalog_test.gd",
