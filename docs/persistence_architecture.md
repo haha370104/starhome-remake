@@ -44,7 +44,7 @@ SqliteDriverPort -> approved GDExtension adapter
 `PlayerStateRecord` 当前覆盖首个经济纵切所需的最小状态：
 
 - 账户：稳定 ID、显示账户名、状态；认证密钥不进入该聚合。
-- 角色：稳定 ID、显示名、聚合 revision、生命和经验。
+- 角色：稳定 ID、显示名、聚合 revision、生命、经验和按稳定技能 ID 保存的基础技能等级。
 - 背包：容量、独立 inventory revision、稳定实例 ID、定义 ID、数量、容器、像素位置、占用矩形、
   锁定/绑定和耐久；旧 `slot_index` 只用于 schema 1 向后兼容。
 - 装备：角色/战车 owner、业务槽位、荣耀客户端 Location、实例 ID、定义 ID、耐久和强化等级。
@@ -54,7 +54,7 @@ SqliteDriverPort -> approved GDExtension adapter
 JSON 只存在于文件替身的信任边界。读取后立即转换为 `PlayerStateRecord`、
 `InventoryStackRecord` 和 `EquipmentSlotRecord`；事务回调只接收隔离的类型化副本。
 
-生产 SQL schema 将账户、角色、背包堆叠、装备槽、战车、位置和命令回执拆为独立表，并用
+生产 SQL schema 将账户、角色、人物技能、背包堆叠、装备槽、战车、位置和命令回执拆为独立表，并用
 外键、唯一索引和 `CHECK` 约束保护最小结构不变量。`command_receipts` 为后续拾取、出售和制造
 命令的幂等结果预留稳定落点。
 
