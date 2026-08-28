@@ -65,6 +65,13 @@ func _test_population_and_resources(bridge: OfflineCombatAuthorityBridge) -> voi
 		and is_equal_approx(snapshot.local_vehicle.working_energy_capacity, 100.0),
 		"starter vehicle should expose 100 current working energy",
 	)
+	var first_id: String = snapshot.monsters[0].entity_id
+	var first_position: Vector2 = bridge.module.monster_for(first_id).position
+	bridge.module.advance_ticks(60)
+	_expect(
+		not bridge.module.monster_for(first_id).position.is_equal_approx(first_position),
+		"unengaged monsters should roam under deterministic authority ticks",
+	)
 
 
 ## Fires at one nearby monster through [param bridge] and verifies authority-owned damage and cost.

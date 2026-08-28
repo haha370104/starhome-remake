@@ -117,6 +117,8 @@ func register_monster(definition: Dictionary) -> DomainResult:
 		"attack_interval_ticks": maxi(1, roundi(float(definition.get("attack_interval_seconds", 1.5)) * simulation_hz)),
 		"attack_ready_tick": 0,
 		"target_actor_id": "",
+		"wander_target": lifecycle.position,
+		"next_wander_tick": posmod(hash(lifecycle.monster_id), simulation_hz * 2) + simulation_hz,
 		"action": &"idle",
 		"facing_index": 6,
 	}
@@ -241,6 +243,8 @@ func advance_ticks(tick_count: int) -> DomainResult:
 				monster.position = runtime["home_position"]
 				runtime["action"] = &"idle"
 				runtime["target_actor_id"] = ""
+				runtime["wander_target"] = runtime["home_position"]
+				runtime["next_wander_tick"] = current_tick + simulation_hz
 				var respawn_event := {
 					"event_type": &"monster_respawned",
 					"server_tick": current_tick,
@@ -299,7 +303,7 @@ func _simulate_monster_tick(monster_id: String, fixed_delta: float) -> void:
 	var runtime: Dictionary = monster_runtime[monster_id]
 	var target_id := _nearest_alive_actor(monster)
 	if target_id.is_empty():
-		_move_monster_towards_home(monster_id, fixed_delta)
+		_simulate_unengaged_monster(monster_id, fixed_delta)
 		return
 	var actor: Dictionary = actors[target_id]
 	var vehicle_state: VehicleCombatState = actor["vehicle_state"]
@@ -364,6 +368,32 @@ func _move_monster_towards_home(monster_id: String, fixed_delta: float) -> void:
 		runtime["action"] = &"idle"
 		return
 	_move_monster(monster_id, home_position, fixed_delta)
+
+
+## Simulates deterministic idle roaming for [param monster_id] by [param fixed_delta].
+## [param monster_id] Registered monster without an eligible aggro target.
+## [param fixed_delta] One fixed simulation interval controlling admitted displacement.
+## Design: The authority selects reproducible patrol points inside configured wander radius; clients never randomize monster position.
+func _simulate_unengaged_monster(monster_id: String, fixed_delta: float) -> void:
+	var monster: MonsterLifecycle = monsters[monster_id]
+	var runtime: Dictionary = monster_runtime[monster_id]
+	runtime["target_actor_id"] = ""
+	var home_position: Vector2 = runtime["home_position"]
+	var wander_radius := float(runtime["wander_radius"])
+	if wander_radius <= 0.0:
+		_move_monster_towards_home(monster_id, fixed_delta)
+		return
+	if monster.position.distance_to(home_position) > wander_radius + 8.0:
+		_move_monster_towards_home(monster_id, fixed_delta)
+		return
+	var wander_target: Vector2 = runtime["wander_target"]
+	if current_tick >= int(runtime["next_wander_tick"]) or monster.position.distance_to(wander_target) <= 2.0:
+		var phase_degrees := posmod(hash(monster_id) + current_tick * 47, 360)
+		var radius_factor := 0.35 + float(posmod(hash(monster_id) + current_tick, 60)) / 100.0
+		wander_target = home_position + Vector2.RIGHT.rotated(deg_to_rad(phase_degrees)) * wander_radius * radius_factor
+		runtime["wander_target"] = wander_target
+		runtime["next_wander_tick"] = current_tick + simulation_hz * 4
+	_move_monster(monster_id, wander_target, fixed_delta)
 
 
 ## Requests one authority-admitted movement step for [param monster_id] toward [param target_position].
