@@ -6,6 +6,7 @@ const DiamondNavigationScript := preload("res://scripts/navigation/diamond_navig
 const EntityScript := preload("res://scripts/server/authoritative_entity.gd")
 const MoveIntentContract := preload("res://scripts/network/contracts/move_intent.gd")
 const ErrorCodes := preload("res://scripts/network/contracts/network_error_codes.gd")
+const CombatModuleScript := preload("res://scripts/server/modules/combat/authoritative_combat_module.gd")
 
 var definition
 var navigation
@@ -14,6 +15,10 @@ var movement_speed_cap := 240.0
 var dynamic_blocking_enabled := true
 var dynamic_blocking_radius := 18.0
 var instance_id := ""
+var combat_module: AuthoritativeCombatModule
+var _combat_catalog
+var _combat_assembly: Dictionary = {}
+var _combat_weapons: Dictionary = {}
 
 
 ## Loads and validates the requested resource data.
@@ -35,6 +40,52 @@ func load_map(map_config_path: String) -> Dictionary:
 		definition = null
 		return _failure(&"invalid_navigation", "map navigation failed to load")
 	return _success(definition)
+
+
+## Configures optional map-scoped combat from [param catalog] at [param simulation_hz].
+## [param catalog] Validated gameplay definition catalog owned by the server process.
+## [param simulation_hz] Fixed authority frequency used for cooldown, AI and respawn timing.
+## Returns success with the monster count, including zero for maps without an encounter.
+## Design: Map instances own combat populations so spawn rules and interest snapshots remain map-scoped.
+func configure_combat(catalog, simulation_hz: int) -> Dictionary:
+	if definition == null or navigation == null:
+		return _failure(&"combat.map_not_loaded", "load map navigation before combat")
+	var lifecycle_result = catalog.monster_lifecycles_for_map(String(definition.map_id), instance_id)
+	if not lifecycle_result.is_ok:
+		return _failure(lifecycle_result.error_code, lifecycle_result.error_message)
+	if lifecycle_result.value.is_empty():
+		return _success(0)
+	var assembly_result = catalog.starter_vehicle_assembly(10, {
+		"base_speed_multiplier": 1500.0,
+		"base_speed_cap": movement_speed_cap,
+	})
+	var weapon_result = catalog.starter_energy_cannon(simulation_hz)
+	if not assembly_result.is_ok or not weapon_result.is_ok:
+		return _failure(&"combat.definition_invalid", "starter vehicle combat definitions are invalid")
+	_combat_catalog = catalog
+	_combat_assembly = assembly_result.value
+	_combat_weapons = {"energy_cannon.primary": weapon_result.value}
+	combat_module = CombatModuleScript.new()
+	var configured = combat_module.configure(simulation_hz, hash(instance_id), 1.0)
+	if not configured.is_ok:
+		return _failure(configured.error_code, configured.error_message)
+	combat_module.set_monster_position_resolver(_resolve_monster_position)
+	for raw_definition: Variant in lifecycle_result.value:
+		var monster_definition: Dictionary = raw_definition.duplicate(true)
+		var requested_position: Vector2 = monster_definition["position"]
+		if not navigation.is_walkable(requested_position):
+			requested_position = navigation.closest_walkable_position(requested_position)
+		if not requested_position.is_finite():
+			return _failure(&"combat.no_monster_spawn", "monster group has no walkable spawn")
+		monster_definition["position"] = requested_position
+		var registration = combat_module.register_monster(monster_definition)
+		if not registration.is_ok:
+			return _failure(registration.error_code, registration.error_message)
+	for entity_id: String in entities:
+		var registration := _register_vehicle_combat(entity_id)
+		if not registration.ok:
+			return registration
+	return _success(combat_module.monsters.size())
 
 
 ## Builds the requested runtime object from configuration data.
@@ -62,6 +113,11 @@ func spawn_entity(entity_id: String, requested_position: Vector2, movement_speed
 	entity.target_position = spawn_position
 	entity.movement_speed = movement_speed
 	entities[entity_id] = entity
+	if combat_module != null:
+		var combat_result := _register_vehicle_combat(entity_id)
+		if not combat_result.ok:
+			entities.erase(entity_id)
+			return combat_result
 	return _success(entity)
 
 
@@ -89,7 +145,20 @@ func admitted_spawn_position(
 ## Returns Whether the operation completed or the queried condition is satisfied.
 ## Design: Runs within the authoritative server boundary; clients must not override the resulting state.
 func remove_entity(entity_id: String) -> bool:
+	if combat_module != null:
+		combat_module.unregister_vehicle(entity_id)
 	return entities.erase(entity_id)
+
+
+## Resolves an authenticated ability [param raw_intent] for [param entity_id] inside this map authority.
+## [param entity_id] Session-owned vehicle entity selected by the server transport layer.
+## [param raw_intent] Untrusted shared ability contract from the network boundary.
+## Returns the authoritative combat result without accepting damage, energy or position from the client.
+func handle_use_ability(entity_id: String, raw_intent: Variant):
+	if combat_module == null:
+		return _failure(&"combat.not_available", "this map has no configured combat encounter")
+	var result = combat_module.handle_energy_cannon_attack(entity_id, raw_intent)
+	return _success(result.value) if result.is_ok else _failure(result.error_code, result.error_message)
 
 
 ## Processes the requested protocol or gameplay operation.
@@ -161,6 +230,10 @@ func simulate(delta: float) -> void:
 			)
 		):
 			_restore_motion_state(entity, motion_state)
+	if combat_module != null:
+		for entity_id: String in entities:
+			combat_module.update_actor_position(entity_id, entities[entity_id].position)
+		combat_module.advance_ticks(1)
 
 
 ## Finds the nearest static navigation point that clears every other entity foot point and reserved destination.
@@ -332,6 +405,50 @@ func snapshot(server_tick: int, server_time_seconds: float) -> Dictionary:
 		"server_time_seconds": server_time_seconds,
 		"entities": entity_snapshots,
 	}
+
+
+## Serializes the world plus private combat state visible to [param actor_id].
+## [param server_tick] Current fixed authority tick.
+## [param server_time_seconds] Current simulation time in seconds.
+## [param actor_id] Authenticated recipient entity whose vehicle resources may be disclosed.
+## Returns the ordinary world snapshot with an optional `combat` document.
+func snapshot_for_actor(server_tick: int, server_time_seconds: float, actor_id: String) -> Dictionary:
+	var result := snapshot(server_tick, server_time_seconds)
+	if combat_module != null:
+		result["combat"] = combat_module.snapshot_for_actor(actor_id)
+	return result
+
+
+## Registers [param entity_id] with the already configured starter vehicle combat definition.
+## [param entity_id] Existing movement entity entering this combat-enabled map instance.
+## Returns a map-style success/failure result while all mutable resources remain server-owned.
+func _register_vehicle_combat(entity_id: String) -> Dictionary:
+	var entity: AuthoritativeEntity = entities.get(entity_id)
+	if entity == null or combat_module == null:
+		return _failure(&"combat.invalid_actor", "combat vehicle registration requires a map entity")
+	var result = combat_module.register_vehicle(
+		entity_id, instance_id, entity.position, _combat_assembly, _combat_weapons
+	)
+	return _success(result.value) if result.is_ok else _failure(result.error_code, result.error_message)
+
+
+## Admits one monster step from [param current_position] toward [param requested_position].
+## [param monster_id] Stable monster identity retained for future dynamic avoidance policies.
+## [param current_position] Current server lifecycle foot point.
+## [param requested_position] AI-selected next fixed-step position.
+## Returns a walkable next position, or the unchanged current point when static navigation rejects the step.
+## Design: Combat AI cannot bypass the same immutable navigation authority used by players.
+func _resolve_monster_position(
+	monster_id: String,
+	current_position: Vector2,
+	requested_position: Vector2,
+) -> Vector2:
+	if monster_id.is_empty() or navigation == null:
+		return current_position
+	if navigation.is_walkable(requested_position):
+		return requested_position
+	var fallback: Vector2 = navigation.closest_reachable_position(current_position, requested_position)
+	return fallback if fallback.is_finite() else current_position
 
 
 ## Performs the `success` operation.

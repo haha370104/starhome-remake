@@ -11,10 +11,12 @@ var current_tick := 0
 var working_energy_regen_factor := 1.0
 var actors: Dictionary = {}
 var monsters: Dictionary = {}
+var monster_runtime: Dictionary = {}
 var combat_events: Array[Dictionary] = []
 var death_events: Array[Dictionary] = []
 var respawn_events: Array[Dictionary] = []
 var _random := RandomNumberGenerator.new()
+var _monster_position_resolver := Callable()
 
 
 ## Configures deterministic tick and random state for the authoritative combat world.
@@ -35,10 +37,18 @@ func configure(
 	_random.seed = random_seed
 	actors.clear()
 	monsters.clear()
+	monster_runtime.clear()
 	combat_events.clear()
 	death_events.clear()
 	respawn_events.clear()
 	return DomainResult.ok(self)
+
+
+## Installs an authority-owned [param resolver] for static-map monster movement admission.
+## [param resolver] Callable receiving monster ID, current position and requested position, then returning an admitted `Vector2`.
+## Design: AI owns intent and speed while the map/navigation module remains the sole walkability authority.
+func set_monster_position_resolver(resolver: Callable) -> void:
+	_monster_position_resolver = resolver
 
 
 ## Registers one server-owned vehicle combatant in [param map_instance_id] at [param position].
@@ -92,7 +102,32 @@ func register_monster(definition: Dictionary) -> DomainResult:
 	if monsters.has(lifecycle.monster_id):
 		return DomainResult.failure(&"combat.duplicate_monster", "monster identity is already registered")
 	monsters[lifecycle.monster_id] = lifecycle
+	monster_runtime[lifecycle.monster_id] = {
+		"species_id": String(definition.get("species_id", "")),
+		"display_name": String(definition.get("display_name", lifecycle.monster_id)),
+		"combat_actor_id": String(definition.get("combat_actor_id", "")),
+		"home_position": lifecycle.position,
+		"behavior_profile": StringName(definition.get("behavior_profile", "idle")),
+		"move_speed": maxf(0.0, float(definition.get("runtime_move_speed", 0.0))),
+		"base_attack": maxi(0, int(definition.get("base_attack", 0))),
+		"attack_range": maxf(0.0, float(definition.get("attack_range", 0.0))),
+		"aggro_radius": maxf(0.0, float(definition.get("aggro_radius", 0.0))),
+		"leash_distance": maxf(0.0, float(definition.get("leash_distance", 0.0))),
+		"wander_radius": maxf(0.0, float(definition.get("wander_radius", 0.0))),
+		"attack_interval_ticks": maxi(1, roundi(float(definition.get("attack_interval_seconds", 1.5)) * simulation_hz)),
+		"attack_ready_tick": 0,
+		"target_actor_id": "",
+		"action": &"idle",
+		"facing_index": 6,
+	}
 	return DomainResult.ok(lifecycle)
+
+
+## Removes the vehicle owned by [param actor_id] from this map-scoped combat world.
+## [param actor_id] Authenticated entity leaving the map instance or expiring its session.
+## Returns true when an actor existed and was removed.
+func unregister_vehicle(actor_id: String) -> bool:
+	return actors.erase(actor_id)
 
 
 ## Updates authoritative [param actor_id] position without accepting a client coordinate in attack payloads.
@@ -202,6 +237,10 @@ func advance_ticks(tick_count: int) -> DomainResult:
 			var monster: MonsterLifecycle = monsters[monster_id]
 			var lifecycle_result := monster.advance_to_tick(current_tick)
 			if bool(lifecycle_result.value["respawned"]):
+				var runtime: Dictionary = monster_runtime[monster_id]
+				monster.position = runtime["home_position"]
+				runtime["action"] = &"idle"
+				runtime["target_actor_id"] = ""
 				var respawn_event := {
 					"event_type": &"monster_respawned",
 					"server_tick": current_tick,
@@ -210,7 +249,154 @@ func advance_ticks(tick_count: int) -> DomainResult:
 				}
 				respawn_events.append(respawn_event)
 				emitted_respawns.append(respawn_event)
+			if monster.is_alive():
+				_simulate_monster_tick(monster_id, fixed_delta)
 	return DomainResult.ok(emitted_respawns)
+
+
+## Builds a client-safe combat snapshot scoped to [param actor_id]'s map instance.
+## [param actor_id] Authenticated local vehicle whose private resource state is included.
+## Returns local vehicle resources plus public monster presentation/combat facts, or an empty dictionary for unknown actors.
+## Design: Definitions and random rolls remain server-side; clients receive only current authoritative results.
+func snapshot_for_actor(actor_id: String) -> Dictionary:
+	if not actors.has(actor_id):
+		return {}
+	var actor: Dictionary = actors[actor_id]
+	var map_instance_id := String(actor["map_instance_id"])
+	var monster_snapshots: Array[Dictionary] = []
+	var monster_ids := monsters.keys()
+	monster_ids.sort()
+	for monster_id: String in monster_ids:
+		var monster: MonsterLifecycle = monsters[monster_id]
+		if monster.map_instance_id != map_instance_id:
+			continue
+		var runtime: Dictionary = monster_runtime[monster_id]
+		monster_snapshots.append({
+			"entity_id": monster_id,
+			"species_id": runtime["species_id"],
+			"display_name": runtime["display_name"],
+			"combat_actor_id": runtime["combat_actor_id"],
+			"position": [monster.position.x, monster.position.y],
+			"health": monster.health,
+			"max_health": monster.max_health,
+			"alive": monster.is_alive(),
+			"action": String(runtime["action"]),
+			"facing_index": int(runtime["facing_index"]),
+		})
+	return {
+		"server_tick": current_tick,
+		"local_vehicle": (actor["vehicle_state"] as VehicleCombatState).to_dictionary(),
+		"monsters": monster_snapshots,
+	}
+
+
+## Advances one configured monster [param monster_id] by [param fixed_delta] under server authority.
+## [param monster_id] Registered lifecycle and behavior identity.
+## [param fixed_delta] One fixed simulation interval in seconds.
+## Design: Target selection, movement, cooldown and vehicle damage are never accepted from client payloads.
+func _simulate_monster_tick(monster_id: String, fixed_delta: float) -> void:
+	var monster: MonsterLifecycle = monsters[monster_id]
+	var runtime: Dictionary = monster_runtime[monster_id]
+	var target_id := _nearest_alive_actor(monster)
+	if target_id.is_empty():
+		_move_monster_towards_home(monster_id, fixed_delta)
+		return
+	var actor: Dictionary = actors[target_id]
+	var vehicle_state: VehicleCombatState = actor["vehicle_state"]
+	var target_position: Vector2 = actor["position"]
+	var home_position: Vector2 = runtime["home_position"]
+	if monster.position.distance_to(home_position) > float(runtime["leash_distance"]):
+		_move_monster_towards_home(monster_id, fixed_delta)
+		return
+	runtime["target_actor_id"] = target_id
+	var distance := monster.position.distance_to(target_position)
+	if distance > float(runtime["attack_range"]):
+		_move_monster(monster_id, target_position, fixed_delta)
+		return
+	runtime["action"] = &"attack"
+	_update_monster_facing(runtime, target_position - monster.position)
+	if current_tick < int(runtime["attack_ready_tick"]):
+		return
+	runtime["attack_ready_tick"] = current_tick + int(runtime["attack_interval_ticks"])
+	var damage := int(runtime["base_attack"])
+	var damage_result := vehicle_state.apply_damage(damage)
+	if not damage_result.is_ok:
+		return
+	combat_events.append({
+		"event_type": &"monster_attack_resolved",
+		"server_tick": current_tick,
+		"attacker_id": monster_id,
+		"target_entity_id": target_id,
+		"damage": int(damage_result.value["applied_damage"]),
+		"target_health": int(damage_result.value["health"]),
+		"target_destroyed": bool(damage_result.value["destroyed"]),
+	})
+
+
+## Finds the nearest living actor that [param monster] can aggro on its own map.
+## [param monster] Server-owned monster lifecycle used for map and range filtering.
+## Returns an actor ID or an empty string when no eligible vehicle is within aggro range.
+func _nearest_alive_actor(monster: MonsterLifecycle) -> String:
+	var runtime: Dictionary = monster_runtime[monster.monster_id]
+	var best_id := ""
+	var best_distance := INF
+	for actor_id: String in actors:
+		var actor: Dictionary = actors[actor_id]
+		var state: VehicleCombatState = actor["vehicle_state"]
+		if state.health <= 0 or String(actor["map_instance_id"]) != monster.map_instance_id:
+			continue
+		var distance := monster.position.distance_to(actor["position"])
+		if distance <= float(runtime["aggro_radius"]) and distance < best_distance:
+			best_id = actor_id
+			best_distance = distance
+	return best_id
+
+
+## Moves [param monster_id] toward its configured home point by one [param fixed_delta].
+## [param monster_id] Registered monster returning after losing or leashing a target.
+## [param fixed_delta] One fixed simulation interval in seconds.
+func _move_monster_towards_home(monster_id: String, fixed_delta: float) -> void:
+	var monster: MonsterLifecycle = monsters[monster_id]
+	var runtime: Dictionary = monster_runtime[monster_id]
+	runtime["target_actor_id"] = ""
+	var home_position: Vector2 = runtime["home_position"]
+	if monster.position.distance_to(home_position) <= 1.0:
+		runtime["action"] = &"idle"
+		return
+	_move_monster(monster_id, home_position, fixed_delta)
+
+
+## Requests one authority-admitted movement step for [param monster_id] toward [param target_position].
+## [param monster_id] Registered monster whose lifecycle position will change.
+## [param target_position] Server-selected target or home coordinate.
+## [param fixed_delta] One fixed simulation interval controlling maximum displacement.
+func _move_monster(monster_id: String, target_position: Vector2, fixed_delta: float) -> void:
+	var monster: MonsterLifecycle = monsters[monster_id]
+	var runtime: Dictionary = monster_runtime[monster_id]
+	var delta := target_position - monster.position
+	if delta.is_zero_approx():
+		runtime["action"] = &"idle"
+		return
+	var requested := monster.position + delta.normalized() * minf(delta.length(), float(runtime["move_speed"]) * fixed_delta)
+	var admitted := requested
+	if _monster_position_resolver.is_valid():
+		var resolved: Variant = _monster_position_resolver.call(monster_id, monster.position, requested)
+		if resolved is Vector2:
+			admitted = resolved
+	if admitted.is_finite():
+		monster.position = admitted
+		runtime["action"] = &"move"
+		_update_monster_facing(runtime, delta)
+
+
+## Quantizes [param direction] into the shared eight-direction index on [param runtime].
+## [param runtime] Mutable server presentation state for one monster.
+## [param direction] Intended world-space motion or aim vector.
+func _update_monster_facing(runtime: Dictionary, direction: Vector2) -> void:
+	if direction.is_zero_approx():
+		return
+	var angle := fposmod(direction.angle(), TAU)
+	runtime["facing_index"] = posmod(roundi(angle / (PI / 4.0)), 8)
 
 
 ## Retrieves the mutable vehicle state owned by [param actor_id] for server inspection.

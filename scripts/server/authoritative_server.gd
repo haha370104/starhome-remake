@@ -10,6 +10,7 @@ const ErrorCodes := preload("res://scripts/network/contracts/network_error_codes
 const MapJoinedContract := preload("res://scripts/network/contracts/map_joined.gd")
 const MapTransitionIntentContract := preload("res://scripts/network/contracts/map_transition_intent.gd")
 const TransportEndpointScript := preload("res://scripts/network/transport/network_transport_endpoint.gd")
+const CombatCatalogScript := preload("res://scripts/domain/combat/combat_definition_catalog.gd")
 
 signal snapshot_generated(snapshot: Dictionary)
 signal command_rejected(peer_id: int, code: StringName)
@@ -25,6 +26,7 @@ var _ticks_per_snapshot := 2
 var _next_entity_number := 1
 var _network_started := false
 var _transport_endpoint: NetworkTransportEndpoint
+var _combat_catalog
 
 
 ## Initializes node dependencies after the node enters the scene tree.
@@ -74,6 +76,10 @@ func initialize(
 	if not errors.is_empty():
 		return _failure(&"invalid_server_config", "; ".join(errors))
 	map_registry = MapRegistryScript.new()
+	var combat_catalog_result = CombatCatalogScript.load_default()
+	if not combat_catalog_result.is_ok:
+		return _failure(combat_catalog_result.error_code, combat_catalog_result.error_message)
+	_combat_catalog = combat_catalog_result.value
 	if injected_map_instances.is_empty():
 		var load_result := _load_configured_map_instances()
 		if not load_result.ok:
@@ -131,6 +137,7 @@ func _ensure_transport_endpoint() -> void:
 	_transport_endpoint.session_request_received.connect(_on_transport_session_request)
 	_transport_endpoint.move_intent_received.connect(_on_transport_move_intent)
 	_transport_endpoint.map_transition_intent_received.connect(_on_transport_map_transition_intent)
+	_transport_endpoint.use_ability_intent_received.connect(_on_transport_use_ability_intent)
 	_transport_endpoint.peer_disconnected.connect(_on_peer_disconnected)
 
 
@@ -222,6 +229,23 @@ func handle_peer_move(peer_id: int, intent: Dictionary) -> Dictionary:
 	if current_instance == null:
 		return _failure(&"session_map_unavailable", "session map is not registered")
 	var result := current_instance.handle_move_intent(session.entity_id, intent)
+	if not result.ok:
+		command_rejected.emit(peer_id, result.code)
+	return result
+
+
+## Validates and resolves one authenticated ability [param intent] from [param peer_id].
+## [param peer_id] ENet identity already associated with a server session.
+## [param intent] Untrusted shared ability payload containing only map, ability, target and sequence.
+## Returns server-owned energy, cooldown, damage and death results or a stable rejection.
+func handle_peer_use_ability(peer_id: int, intent: Dictionary) -> Dictionary:
+	var session: ServerSession = sessions.session_for_peer(peer_id)
+	if session == null:
+		return _failure(&"unauthenticated_peer", "open a session before using abilities")
+	var current_instance := map_registry.instance_by_id(session.map_instance_id)
+	if current_instance == null:
+		return _failure(&"session_map_unavailable", "session map is not registered")
+	var result: Dictionary = current_instance.handle_use_ability(session.entity_id, intent)
 	if not result.ok:
 		command_rejected.emit(peer_id, result.code)
 	return result
@@ -336,8 +360,9 @@ func handle_peer_map_transition(peer_id: int, raw_intent: Variant) -> Dictionary
 	)
 	return _success({
 		"map_joined": joined.to_dictionary(),
-		"snapshot": destination_instance.snapshot(
+		"snapshot": destination_instance.snapshot_for_actor(
 			server_tick, float(server_tick) / float(config.simulation_hz)
+			, session.entity_id
 		),
 		"transition_sequence": intent.input_sequence,
 	})
@@ -354,8 +379,8 @@ func snapshot_for_peer(peer_id: int) -> Dictionary:
 	var session_map := map_registry.instance_by_id(session.map_instance_id)
 	if session_map == null:
 		return {}
-	return session_map.snapshot(
-		server_tick, float(server_tick) / float(config.simulation_hz)
+	return session_map.snapshot_for_actor(
+		server_tick, float(server_tick) / float(config.simulation_hz), session.entity_id
 	)
 
 
@@ -384,6 +409,17 @@ func _on_transport_move_intent(peer_id: int, intent: Dictionary) -> void:
 	var result := handle_peer_move(peer_id, intent)
 	if not result.ok:
 		_send_reliable(peer_id, {"type": "command_rejected", "result": _wire_result(result)})
+
+
+## Resolves one authenticated ability [param intent] received from [param peer_id].
+## [param peer_id] ENet sender identity supplied by MultiplayerAPI.
+## [param intent] Strict client command that contains no damage or coordinate authority.
+func _on_transport_use_ability_intent(peer_id: int, intent: Dictionary) -> void:
+	var result := handle_peer_use_ability(peer_id, intent)
+	_send_reliable(peer_id, {
+		"type": "combat_event" if result.ok else "command_rejected",
+		"result": _wire_result(result),
+	})
 
 
 ## Handles an authenticated map-transition [param intent] from [param peer_id].
@@ -452,8 +488,8 @@ func _session_response(session: ServerSession, resumed: bool) -> Dictionary:
 		"session": session.snapshot(),
 		"resumed": resumed,
 		"map_joined": joined.to_dictionary(),
-		"snapshot": session_map.snapshot(
-			server_tick, float(server_tick) / float(config.simulation_hz)
+		"snapshot": session_map.snapshot_for_actor(
+			server_tick, float(server_tick) / float(config.simulation_hz), session.entity_id
 		),
 	})
 
@@ -520,6 +556,12 @@ func _load_configured_map_instances() -> Dictionary:
 			return _failure(
 				&"map_catalog_load_failed",
 				"%s: %s" % [definition_path, map_result.get("message", "unknown map error")],
+			)
+		var combat_result := loaded_instance.configure_combat(_combat_catalog, config.simulation_hz)
+		if not combat_result.ok:
+			return _failure(
+				&"map_combat_load_failed",
+				"%s: %s" % [definition_path, combat_result.get("message", "unknown combat error")],
 			)
 		var registration := map_registry.register_instance(loaded_instance)
 		if not registration.ok:
