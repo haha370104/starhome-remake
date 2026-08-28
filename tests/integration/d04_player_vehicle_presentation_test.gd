@@ -50,6 +50,9 @@ func _run() -> void:
 	_expect(player.combat_presenter.visible, "D04 必须显示战车表现器")
 	_expect(player.combat_name_label.visible, "战车模式仍须保留玩家名称")
 	_expect(player.combat_presenter.get_child_count() == 3, "战车叠加阴影、底盘和能量炮三个来源层")
+	_expect(player.combat_status_bar.position == Vector2(0, 45), "战车状态条应复原原客户端脚点下方 45 像素锚点")
+	_expect(is_equal_approx(player.combat_status_bar._bar_width, 50.0), "战车状态条应复原原客户端 50 像素宽度")
+	_expect(is_equal_approx(player.combat_status_bar._energy_offset_y, 4.0), "能量条应紧接生命条下方四像素")
 	_test_eight_way_idle_and_move(player, hall.local_player_controller)
 	_test_move_and_fire_keeps_route(hall)
 	_test_evidence_contract(d04_definition, player.combat_presenter)
@@ -63,8 +66,9 @@ func _run() -> void:
 	_finish(hall)
 
 
-## 验证 [param player] 的八向静止首帧和移动四帧，不依赖截图判断方向。
-## [param controller] 提供正式方向量化与动作入口。
+## 执行 `test_eight_way_idle_and_move` 对应的模块操作。
+## [param player] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param controller] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _test_eight_way_idle_and_move(player: Node2D, controller: Node) -> void:
 	for direction in range(8):
 		player.set_action("stand", direction)
@@ -84,7 +88,8 @@ func _test_eight_way_idle_and_move(player: Node2D, controller: Node) -> void:
 	_expect(controller.direction_index(Vector2(-1, -1)) == 3, "正式移动控制器左上必须映射 north_west")
 
 
-## 验证 [param hall] 的战车在活动寻路中开火不会取消剩余路线或预测移动。
+## 执行 `test_move_and_fire_keeps_route` 对应的模块操作。
+## [param hall] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _test_move_and_fire_keeps_route(hall: Node2D) -> void:
 	var origin: Vector2 = hall.player.position
 	var requested_target := origin + Vector2(180, 90)
@@ -104,7 +109,9 @@ func _test_move_and_fire_keeps_route(hall: Node2D) -> void:
 	_expect(hall.combat_attack_controller.active_projectile_count() == 1, "移动中开火仍须生成弹体")
 
 
-## 验证 [param definition] 与 [param presenter] 没有虚构独立 idle 资源。
+## 执行 `test_evidence_contract` 对应的模块操作。
+## [param definition] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param presenter] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _test_evidence_contract(definition: MapDefinition, presenter: Node2D) -> void:
 	var map_evidence: Dictionary = definition.player_presentation.get("animation_evidence", {})
 	_expect(
@@ -133,14 +140,17 @@ func _test_evidence_contract(definition: MapDefinition, presenter: Node2D) -> vo
 	_expect(float((chassis_actions["move"] as Dictionary).get("fps", 0.0)) == 10.0, "move 必须采用来源清单帧率")
 
 
-## 记录 [param condition]，失败时附带 [param message]。
+## 执行 `expect` 对应的模块操作。
+## [param condition] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param message] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _expect(condition: bool, message: String) -> void:
 	assertions += 1
 	if not condition:
 		failures.append(message)
 
 
-## 输出结果、释放 [param hall] 并结束测试进程。
+## 执行 `finish` 对应的模块操作。
+## [param hall] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _finish(hall: Node2D) -> void:
 	if failures.is_empty():
 		print("D04_PLAYER_VEHICLE_PRESENTATION_OK (%d assertions)" % assertions)
