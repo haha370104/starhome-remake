@@ -129,6 +129,7 @@ MONSTER_ACTORS: dict[str, dict[str, Any]] = {
     "om_adult_standard": {
         "display_name": "奥姆虫",
         "default_action": "idle",
+        "visual_collision": {"offset": [0, -30], "radius": 34},
         "actions": {
             "idle": _action("res://assets/monsters/om_adult/variants/standard/idle/animation_frames.tres", 5),
             "move": _action("res://assets/monsters/om_adult/variants/standard/move/animation_frames.tres", 5),
@@ -138,6 +139,7 @@ MONSTER_ACTORS: dict[str, dict[str, Any]] = {
     "om_larva_standard": {
         "display_name": "奥姆幼虫",
         "default_action": "idle",
+        "visual_collision": {"offset": [0, -22], "radius": 26},
         "actions": {
             "idle": _action("res://assets/monsters/om_larva/variants/standard/idle/animation_frames.tres", 5),
             "move": _action("res://assets/monsters/om_larva/variants/standard/move/animation_frames.tres", 5),
@@ -147,6 +149,7 @@ MONSTER_ACTORS: dict[str, dict[str, Any]] = {
     "photosensitive_orb_standard": {
         "display_name": "感光质",
         "default_action": "idle",
+        "visual_collision": {"offset": [0, -30], "radius": 28},
         "actions": {
             "idle": _action("res://assets/monsters/photosensitive_orb/variants/standard/idle/animation_frames.tres", 5, direction_mode="shared"),
             "move": _action("res://assets/monsters/photosensitive_orb/variants/standard/move_attack/animation_frames.tres", 5, direction_mode="shared"),
@@ -156,6 +159,7 @@ MONSTER_ACTORS: dict[str, dict[str, Any]] = {
     "photosensitive_orb_cold": {
         "display_name": "低温感光质",
         "default_action": "idle",
+        "visual_collision": {"offset": [0, -30], "radius": 28},
         "actions": {
             "idle": _action("res://assets/monsters/photosensitive_orb/variants/cold/idle/animation_frames.tres", 5, direction_mode="shared"),
             "move": _action("res://assets/monsters/photosensitive_orb/variants/cold/move_attack/animation_frames.tres", 5, direction_mode="shared"),
@@ -165,6 +169,7 @@ MONSTER_ACTORS: dict[str, dict[str, Any]] = {
     "photosensitive_orb_malignant": {
         "display_name": "恶性感光质",
         "default_action": "idle",
+        "visual_collision": {"offset": [0, -30], "radius": 28},
         "actions": {
             "idle": _action("res://assets/monsters/photosensitive_orb/variants/malignant/idle/animation_frames.tres", 5, direction_mode="shared"),
             "move": _action("res://assets/monsters/photosensitive_orb/variants/malignant/move_attack/animation_frames.tres", 5, direction_mode="shared"),
@@ -174,6 +179,7 @@ MONSTER_ACTORS: dict[str, dict[str, Any]] = {
     "toxic_gel_standard": {
         "display_name": "毒胶",
         "default_action": "idle",
+        "visual_collision": {"offset": [0, -22], "radius": 28},
         "actions": {
             "idle": _action("res://assets/monsters/toxic_gel/variants/standard/idle/animation_frames.tres", 5, direction_mode="shared"),
             "move": _action("res://assets/monsters/toxic_gel/variants/standard/move/animation_frames.tres", 5),
@@ -430,6 +436,7 @@ def _runtime_manifest(source_assets: list[dict[str, Any]]) -> dict[str, Any]:
         actors[actor_id] = {
             "display_name": actor["display_name"],
             "default_action": actor["default_action"],
+            "visual_collision": actor["visual_collision"],
             "layers": layers,
         }
     return {

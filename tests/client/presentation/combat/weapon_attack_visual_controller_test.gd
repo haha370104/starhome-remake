@@ -58,11 +58,27 @@ func _test_fire_lifecycle(controller: Node) -> void:
 		not bool(too_close.get("ok", false)) and too_close.get("code") == &"target_too_close",
 		"near-zero aim should not create an invalid projectile",
 	)
+	controller.set_visual_collision_resolver(_fake_visual_collision)
+	var collision_shot: Dictionary = controller.request_fire(Vector2.ZERO, Vector2(200, 0))
+	_expect(bool(collision_shot.get("ok", false)), "visual-collision shot should start")
+	controller.advance(0.2)
+	_expect(controller.active_projectile_count() == 0, "continuous segment collision should stop projectile early")
+	_expect(controller.active_impact_count() == 1, "visual monster collision should spawn impact immediately")
 	controller.clear_effects()
 	_expect(
 		controller.active_projectile_count() == 0 and controller.active_impact_count() == 0,
 		"map cleanup should leave no transient effects",
 	)
+
+
+## 返回测试线段与 X=80 交叉时的纯表现碰撞，不模拟任何权威伤害。
+## [param segment_start] 测试弹体在本帧开始时的位置。
+## [param segment_end] 测试弹体在本帧结束时的位置。
+## Returns 线段跨过测试平面时返回命中点，否则返回 `hit=false`。
+func _fake_visual_collision(segment_start: Vector2, segment_end: Vector2) -> Dictionary:
+	if segment_start.x <= 80.0 and segment_end.x >= 80.0:
+		return {"hit": true, "position": Vector2(80, 0)}
+	return {"hit": false}
 
 
 ## 记录 [param condition] 断言，并用 [param message] 保存失败上下文。

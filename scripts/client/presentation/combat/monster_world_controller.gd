@@ -77,6 +77,17 @@ func target_position(entity_id: String) -> Vector2:
 	return view.position if view != null and view.visible else Vector2.INF
 
 
+## 返回 [param segment_start] 到 [param segment_end] 最先穿过的可见怪物表现碰撞。
+## Returns 命中信息或 `hit=false`；结果仅供弹体特效使用。
+func first_visual_collision(segment_start: Vector2, segment_end: Vector2) -> Dictionary:
+	var best := {"hit": false, "t": INF}
+	for view: MonsterWorldView in _views.values():
+		var candidate: Dictionary = view.visual_segment_collision(segment_start, segment_end)
+		if bool(candidate.get("hit", false)) and float(candidate.get("t", INF)) < float(best["t"]):
+			best = candidate
+	return best
+
+
 ## Removes every map-scoped monster presentation.
 func clear() -> void:
 	for view: MonsterWorldView in _views.values():

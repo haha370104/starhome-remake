@@ -8,6 +8,8 @@ var entity_id := ""
 var presenter: CombatVisualPresenter
 var name_label: Label
 var health_bar: WorldCombatStatusBar
+var visual_collision_offset := Vector2.ZERO
+var visual_collision_radius := 24.0
 
 
 ## Configures this view from [param manifest] and one authoritative [param snapshot].
@@ -24,6 +26,15 @@ func configure(manifest: Dictionary, snapshot: Dictionary) -> Error:
 	error = presenter.present_actor(StringName(snapshot["combat_actor_id"]))
 	if error != OK:
 		return error
+	var actor_value: Variant = (manifest.get("actors", {}) as Dictionary).get(
+		String(snapshot["combat_actor_id"]), {}
+	)
+	if actor_value is Dictionary:
+		var collision: Dictionary = (actor_value as Dictionary).get("visual_collision", {})
+		var offset_value: Variant = collision.get("offset", [0, -24])
+		if offset_value is Array and (offset_value as Array).size() == 2:
+			visual_collision_offset = Vector2(float(offset_value[0]), float(offset_value[1]))
+		visual_collision_radius = maxf(4.0, float(collision.get("radius", 24.0)))
 	name_label = Label.new()
 	name_label.position = Vector2(-44, -88)
 	name_label.size = Vector2(88, 18)
@@ -64,3 +75,35 @@ func _process(delta: float) -> void:
 ## Returns true only for a visible living presentation.
 func is_selectable_at(world_position: Vector2, radius: float) -> bool:
 	return visible and position.distance_to(world_position) <= radius
+
+
+## 检测世界线段 [param segment_start] 到 [param segment_end] 是否穿过怪物表现圆。
+## Returns 命中时返回最早参数 `t` 和视觉碰撞点，否则返回 `hit=false`。
+## Design: 该几何只用于提前结束客户端弹体，不参与伤害、命中或服务端状态预测。
+func visual_segment_collision(segment_start: Vector2, segment_end: Vector2) -> Dictionary:
+	if not visible:
+		return {"hit": false}
+	var segment := segment_end - segment_start
+	var length_squared := segment.length_squared()
+	if length_squared <= 0.000001:
+		return {"hit": false}
+	var center := position + visual_collision_offset
+	var relative_start := segment_start - center
+	var radius_squared := visual_collision_radius * visual_collision_radius
+	if relative_start.length_squared() <= radius_squared:
+		return {"hit": true, "t": 0.0, "position": segment_start, "entity_id": entity_id}
+	var half_linear := relative_start.dot(segment)
+	var discriminant := half_linear * half_linear - length_squared * (
+		relative_start.length_squared() - radius_squared
+	)
+	if discriminant < 0.0:
+		return {"hit": false}
+	var first_t := (-half_linear - sqrt(discriminant)) / length_squared
+	if first_t < 0.0 or first_t > 1.0:
+		return {"hit": false}
+	return {
+		"hit": true,
+		"t": first_t,
+		"position": segment_start + segment * first_t,
+		"entity_id": entity_id,
+	}

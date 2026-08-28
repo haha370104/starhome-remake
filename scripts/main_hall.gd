@@ -441,6 +441,10 @@ func _build_world() -> void:
 	var monster_error := monster_world_controller.configure(sortable_world, combat_manifest, player)
 	if monster_error != OK:
 		push_error("Unable to configure monster world presentation: %s" % error_string(monster_error))
+	else:
+		combat_attack_controller.set_visual_collision_resolver(
+			monster_world_controller.first_visual_collision
+		)
 
 	local_player_controller = LocalPlayerControllerScript.new()
 	local_player_controller.name = "LocalPlayerController"

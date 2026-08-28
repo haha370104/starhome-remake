@@ -13,6 +13,7 @@ var _impact_frames: SpriteFrames
 var _cooldown_remaining := 0.0
 var _projectiles: Array[Dictionary] = []
 var _impacts: Array[Dictionary] = []
+var _visual_collision_resolver := Callable()
 
 
 ## 配置 [param manifest] 中的 [param weapon_id]，并把瞬态弹体挂到 [param world_parent] 的 Y 排序世界。
@@ -29,6 +30,7 @@ func configure(
 	_weapon.clear()
 	_projectile_frames = null
 	_impact_frames = null
+	_visual_collision_resolver = Callable()
 	_cooldown_remaining = 0.0
 	if _world_parent == null or _weapon_id == &"":
 		return ERR_INVALID_PARAMETER
@@ -49,6 +51,12 @@ func configure(
 		return ERR_CANT_OPEN
 	_weapon = candidate
 	return OK
+
+
+## 安装 [param resolver] 作为弹体线段的纯表现碰撞查询。
+## [param resolver] 接收线段起终点并返回 `{hit, position}`，不得改变权威战斗状态。
+func set_visual_collision_resolver(resolver: Callable) -> void:
+	_visual_collision_resolver = resolver
 
 
 ## 请求从 [param origin] 朝 [param requested_target] 播放一次武器表现。
@@ -207,20 +215,39 @@ func _create_effect_node(name_value: String, position: Vector2, frames: SpriteFr
 	return wrapper
 
 
-## 推进全部飞行弹体 [param delta_seconds]，抵达时原子替换为命中特效。
+## 推进全部飞行弹体 [param delta_seconds]，撞上表现怪物或抵达终点时替换为命中特效。
+## Design: 使用上一位置到下一位置的连续线段查询，避免高速弹体单帧穿过小型怪物。
 func _advance_projectiles(delta_seconds: float) -> void:
 	for index in range(_projectiles.size() - 1, -1, -1):
 		var state: Dictionary = _projectiles[index]
+		var previous_progress := minf(float(state["elapsed"]) / float(state["duration"]), 1.0)
+		var previous_position := Vector2(state["origin"]).lerp(Vector2(state["target"]), previous_progress)
 		state["elapsed"] = float(state["elapsed"]) + delta_seconds
 		var progress := minf(float(state["elapsed"]) / float(state["duration"]), 1.0)
+		var next_position := Vector2(state["origin"]).lerp(Vector2(state["target"]), progress)
+		var collision := _resolve_visual_collision(previous_position, next_position)
+		if bool(collision.get("hit", false)):
+			_free_state_node(state)
+			_spawn_impact(Vector2(collision.get("position", next_position)))
+			_projectiles.remove_at(index)
+			continue
 		var wrapper := state["node"] as Node2D
 		if wrapper != null and is_instance_valid(wrapper):
-			wrapper.position = Vector2(state["origin"]).lerp(Vector2(state["target"]), progress)
+			wrapper.position = next_position
 		if progress < 1.0:
 			continue
 		_free_state_node(state)
 		_spawn_impact(Vector2(state["target"]))
 		_projectiles.remove_at(index)
+
+
+## 通过已安装查询器检测 [param segment_start] 到 [param segment_end] 的表现碰撞。
+## Returns 查询器有效且返回字典时透传结果，否则返回 `hit=false`。
+func _resolve_visual_collision(segment_start: Vector2, segment_end: Vector2) -> Dictionary:
+	if not _visual_collision_resolver.is_valid():
+		return {"hit": false}
+	var result: Variant = _visual_collision_resolver.call(segment_start, segment_end)
+	return result if result is Dictionary else {"hit": false}
 
 
 ## 推进全部命中特效 [param delta_seconds]，播完配置帧数后销毁节点。
