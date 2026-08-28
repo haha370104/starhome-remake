@@ -8,6 +8,7 @@ const VehicleCombatStateScript := preload("res://scripts/domain/combat/vehicle_c
 const UseAbilityIntentContract := preload("res://scripts/network/contracts/use_ability_intent.gd")
 const ACTOR_PROJECTILE_HITBOX_OFFSET := Vector2(0.0, -16.0)
 const ACTOR_PROJECTILE_HITBOX_RADIUS := 18.0
+const LOOT_PICKUP_RADIUS := 96.0
 
 var simulation_hz := 20
 var current_tick := 0
@@ -20,10 +21,12 @@ var death_events: Array[Dictionary] = []
 var respawn_events: Array[Dictionary] = []
 var pending_projectiles: Array[Dictionary] = []
 var pending_monster_attacks: Array[Dictionary] = []
+var ground_loot: Dictionary = {}
 var _random := RandomNumberGenerator.new()
 var _monster_position_resolver := Callable()
 var _shot_sequence := 0
 var _monster_attack_sequence := 0
+var _loot_sequence := 0
 
 
 ## 配置并初始化 `configure` 对应的模块状态。
@@ -43,6 +46,7 @@ func configure(
 	event_sequence = 0
 	_shot_sequence = 0
 	_monster_attack_sequence = 0
+	_loot_sequence = 0
 	working_energy_regen_factor = regen_factor
 	_random.seed = random_seed
 	actors.clear()
@@ -52,6 +56,7 @@ func configure(
 	respawn_events.clear()
 	pending_projectiles.clear()
 	pending_monster_attacks.clear()
+	ground_loot.clear()
 	return DomainResult.ok(self)
 
 
@@ -317,6 +322,7 @@ func _settle_projectile(projectile: Dictionary) -> void:
 		"target_health": damage_result.value["health"],
 	})
 	if bool(damage_result.value["died"]):
+		var spawned_loot := _spawn_monster_loot(monster, attacker_id)
 		var death_event := {
 			"event_type": &"monster_died",
 			"server_tick": current_tick,
@@ -325,6 +331,7 @@ func _settle_projectile(projectile: Dictionary) -> void:
 			"death_generation": damage_result.value["death_generation"],
 			"respawn_at_tick": damage_result.value["respawn_at_tick"],
 			"position": [monster.position.x, monster.position.y],
+			"loot_drops": spawned_loot,
 		}
 		death_events.append(death_event)
 		event["death"] = death_event.duplicate(true)
@@ -366,7 +373,7 @@ func advance_ticks(tick_count: int) -> DomainResult:
 			var monster: MonsterLifecycle = monsters[monster_id]
 			var lifecycle_result := monster.advance_to_tick(current_tick)
 			if bool(lifecycle_result.value["respawned"]):
-				monster.next_wander_tick = current_tick + simulation_hz
+				monster.next_wander_tick = current_tick + monster.wander_interval_ticks
 				var respawn_event := {
 					"event_type": &"monster_respawned",
 					"server_tick": current_tick,
@@ -414,8 +421,88 @@ func snapshot_for_actor(actor_id: String) -> Dictionary:
 		"local_entity_id": actor_id,
 		"local_vehicle": (actor["vehicle_state"] as VehicleCombatState).to_dictionary(),
 		"monsters": monster_snapshots,
+		"ground_loot": _ground_loot_for_map(map_instance_id),
 		"recent_events": combat_events.slice(maxi(0, combat_events.size() - 32)).duplicate(true),
 	}
+
+
+## 预检玩家拾取地面掉落物的身份、地图和距离。
+## [param actor_id] 由认证会话绑定的玩家实体标识。
+## [param loot_id] 客户端仅用于指明目标的掉落实例标识。
+## 返回可交给背包事务的掉落值对象，或身份、地图、距离错误。
+## 设计：本函数不移除掉落物，确保背包或持久化提交失败时不会吞掉物品。
+func prepare_loot_pickup(actor_id: String, loot_id: String) -> DomainResult:
+	if not actors.has(actor_id):
+		return DomainResult.failure(&"combat.unknown_actor", "authenticated actor is not registered")
+	var loot_value: Variant = ground_loot.get(loot_id)
+	if not loot_value is Dictionary:
+		return DomainResult.failure(&"loot.not_found", "ground loot does not exist")
+	var actor: Dictionary = actors[actor_id]
+	var loot: Dictionary = loot_value
+	if String(loot["map_instance_id"]) != String(actor["map_instance_id"]):
+		return DomainResult.failure(&"loot.map_mismatch", "ground loot belongs to another map instance")
+	var loot_position := Vector2(float(loot["position"][0]), float(loot["position"][1]))
+	if (actor["position"] as Vector2).distance_to(loot_position) > LOOT_PICKUP_RADIUS:
+		return DomainResult.failure(&"loot.out_of_range", "ground loot is outside pickup range")
+	return DomainResult.ok(loot.duplicate(true))
+
+
+## 在背包事务成功后提交一次地面掉落移除。
+## [param actor_id] 已通过会话认证并完成背包入账的玩家实体标识。
+## [param loot_id] 待移除的掉落实例标识。
+## 返回拾取事件或并发状态变化错误。
+func commit_loot_pickup(actor_id: String, loot_id: String) -> DomainResult:
+	var prepared := prepare_loot_pickup(actor_id, loot_id)
+	if not prepared.is_ok:
+		return prepared
+	var loot: Dictionary = prepared.value
+	ground_loot.erase(loot_id)
+	return DomainResult.ok(_record_combat_event({
+		"event_type": &"loot_picked_up",
+		"server_tick": current_tick,
+		"actor_id": actor_id,
+		"loot_id": loot_id,
+		"item_definition_id": loot["item_definition_id"],
+		"quantity": loot["quantity"],
+	}))
+
+
+## 将怪物领域掉落结果生成为当前地图的权威地面实体。
+## [param monster] 本次死亡且持有掉落表的怪物聚合。
+## [param killer_id] 触发死亡结算的玩家实体标识。
+## 返回嵌入死亡事件的掉落 DTO 数组。
+func _spawn_monster_loot(monster: MonsterLifecycle, killer_id: String) -> Array[Dictionary]:
+	var spawned: Array[Dictionary] = []
+	for rolled: Dictionary in monster.drop_table.roll(_random):
+		_loot_sequence += 1
+		var loot_id := "%s.loot.%d.%d" % [monster.monster_id, monster.death_generation, _loot_sequence]
+		var loot := {
+			"loot_id": loot_id,
+			"map_instance_id": monster.map_instance_id,
+			"source_monster_id": monster.monster_id,
+			"killer_id": killer_id,
+			"item_definition_id": String(rolled["item_definition_id"]),
+			"quantity": int(rolled["quantity"]),
+			"position": [monster.position.x, monster.position.y],
+			"spawn_tick": current_tick,
+		}
+		ground_loot[loot_id] = loot
+		spawned.append(loot.duplicate(true))
+	return spawned
+
+
+## 查询指定地图当前可见的全部地面掉落物。
+## [param map_instance_id] 快照接收玩家所在的地图实例标识。
+## 返回按稳定 loot_id 排序的 DTO 数组。
+func _ground_loot_for_map(map_instance_id: String) -> Array[Dictionary]:
+	var result: Array[Dictionary] = []
+	var loot_ids := ground_loot.keys()
+	loot_ids.sort()
+	for loot_id: String in loot_ids:
+		var loot: Dictionary = ground_loot[loot_id]
+		if String(loot["map_instance_id"]) == map_instance_id:
+			result.append(loot.duplicate(true))
+	return result
 
 
 ## 执行 `simulate_monster_tick` 对应的模块操作。
@@ -712,12 +799,23 @@ func _simulate_unengaged_monster(monster_id: String, fixed_delta: float) -> void
 		_move_monster_towards_home(monster_id, fixed_delta)
 		return
 	var wander_target := monster.wander_target
-	if current_tick >= monster.next_wander_tick or monster.position.distance_to(wander_target) <= 2.0:
+	var reached_target := monster.position.distance_to(wander_target) <= 2.0
+	if not reached_target:
+		_move_monster(monster_id, wander_target, fixed_delta)
+		return
+	if monster.action == &"move":
+		monster.action = &"idle"
+		monster.wander_target = monster.position
+		monster.next_wander_tick = current_tick + monster.wander_interval_ticks
+		return
+	if current_tick < monster.next_wander_tick:
+		monster.action = &"idle"
+		return
+	if current_tick >= monster.next_wander_tick:
 		var phase_degrees := posmod(hash(monster_id) + current_tick * 47, 360)
 		var radius_factor := 0.35 + float(posmod(hash(monster_id) + current_tick, 60)) / 100.0
 		wander_target = home_position + Vector2.RIGHT.rotated(deg_to_rad(phase_degrees)) * wander_radius * radius_factor
 		monster.wander_target = wander_target
-		monster.next_wander_tick = current_tick + simulation_hz * 4
 	_move_monster(monster_id, wander_target, fixed_delta)
 
 

@@ -7,6 +7,7 @@ const EquipmentSlotRegistryScript := preload("res://scripts/domain/equipment/equ
 const GAMEPLAY_PATHS := [
 	"res://data/gameplay/stage3/starter_loadout_v1.json",
 	"res://data/gameplay/character_items_v1.json",
+	"res://data/gameplay/material_items_v1.json",
 ]
 const PRESENTATION_PATH := "res://data/presentation/player_equipment_v1.json"
 

@@ -83,6 +83,14 @@ func arrange_inventory(expected_inventory_revision: int) -> DomainResult:
 	return inventory.arrange(expected_inventory_revision)
 
 
+## 接收由权威战斗结算创建的怪物掉落物。
+## [param item] 已通过物品目录还原具体类型的奖励实例。
+## 返回背包合并、放置或容量错误。
+## 设计：Player 仍是背包一致性边界；战斗模块不得直接写持久化 DTO。
+func receive_loot(item: GameItem) -> DomainResult:
+	return inventory.add_reward(item)
+
+
 ## 将背包内战车装备安装到固定 Location。
 ## [param instance_id] 背包物品实例标识。
 ## [param location] 目标战车 Location。

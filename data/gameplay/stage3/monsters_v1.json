@@ -15,6 +15,7 @@
         "runtime_move_speed": 72,
         "attack_range": 210,
         "wander_radius": 120,
+        "wander_interval_seconds": 5,
         "aggro_radius": 400,
         "leash_distance": 600,
         "attack_interval_seconds": 1.5,
@@ -22,7 +23,10 @@
         "respawn_seconds": 30,
         "projectile_hitbox": {"offset": [0, -30], "radius": 34}
       },
-      "drops": null,
+      "drops": [
+        {"item_definition_id": "low_grade_biosilicon", "minimum_quantity": 1, "maximum_quantity": 3, "chance": 0.75},
+        {"item_definition_id": "low_grade_quadruped_shell", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25}
+      ],
       "rewards": null,
       "presentation": {
         "idle": "res://assets/monsters/om_adult/variants/standard/idle/animation_frames.tres",
@@ -42,13 +46,14 @@
         "combat.runtime_move_speed": {"status": "reconstructed_default", "reason": "Recovered runtime speed is unknown; this is explicit remake tuning."},
         "combat.attack_range": {"status": "reconstructed_default", "reason": "First-playable server attack distance."},
         "combat.wander_radius": {"status": "reconstructed_default", "reason": "First-playable server idle-area tuning."},
+        "combat.wander_interval_seconds": {"status": "reconstructed_default", "reason": "Remake tuning: wait five seconds after completing each idle roam segment."},
         "combat.aggro_radius": {"status": "reconstructed_default", "reason": "First vertical-slice remote-monster default."},
         "combat.leash_distance": {"status": "reconstructed_default", "reason": "First vertical-slice server AI default."},
         "combat.attack_interval_seconds": {"status": "reconstructed_default", "reason": "First vertical-slice normal-monster default."},
         "combat.runtime_projectile_speed": {"status": "client_derived", "reason": "Glory uses npcbulletRoto with line speed parameter 1000. The recovered nMFly controller advances one interpolation step per 16 ms and allocates distance*150/parameter steps at the default 100% time scale, yielding about 416.667 map pixels/s. The remake uses that effective visual speed for shared client/server timing."},
         "combat.respawn_seconds": {"status": "reconstructed_default", "reason": "First vertical-slice normal-monster default."},
         "combat.projectile_hitbox": {"status": "reconstructed_default", "reason": "Promoted from the current Godot visual collision footprint so client prediction and server sweep use one geometry."},
-        "drops": {"status": "unknown", "reason": "A client-side candidate expression exists, but its probability grammar and retired server authority are unverified; it is intentionally excluded from runtime data."},
+        "drops": {"status": "reconstructed_default", "reason": "The item families and quantity bounds follow the recovered client candidate; probabilities are explicit remake tuning because the retired server grammar is unverified."},
         "rewards": {"status": "unknown", "reason": "No authoritative reward settlement data was recovered."},
         "presentation": {"status": "client_confirmed", "source": "Glory-only imported monster animation resources"}
       },
@@ -80,6 +85,7 @@
         "runtime_move_speed": 62,
         "attack_range": 180,
         "wander_radius": 96,
+        "wander_interval_seconds": 5,
         "aggro_radius": 400,
         "leash_distance": 600,
         "attack_interval_seconds": 1.5,
@@ -87,7 +93,9 @@
         "respawn_seconds": 30,
         "projectile_hitbox": {"offset": [0, -22], "radius": 26}
       },
-      "drops": null,
+      "drops": [
+        {"item_definition_id": "low_grade_biosilicon", "minimum_quantity": 1, "maximum_quantity": 2, "chance": 0.65}
+      ],
       "rewards": null,
       "presentation": {
         "idle": "res://assets/monsters/om_larva/variants/standard/idle/animation_frames.tres",
@@ -107,13 +115,14 @@
         "combat.runtime_move_speed": {"status": "reconstructed_default", "reason": "Recovered runtime speed is unknown; this is explicit remake tuning."},
         "combat.attack_range": {"status": "reconstructed_default", "reason": "First-playable server attack distance."},
         "combat.wander_radius": {"status": "reconstructed_default", "reason": "First-playable server idle-area tuning."},
+        "combat.wander_interval_seconds": {"status": "reconstructed_default", "reason": "Remake tuning: wait five seconds after completing each idle roam segment."},
         "combat.aggro_radius": {"status": "reconstructed_default", "reason": "First vertical-slice remote-monster default."},
         "combat.leash_distance": {"status": "reconstructed_default", "reason": "First vertical-slice server AI default."},
         "combat.attack_interval_seconds": {"status": "reconstructed_default", "reason": "First vertical-slice normal-monster default."},
         "combat.runtime_projectile_speed": {"status": "client_derived", "reason": "Glory uses npcbullet with line speed parameter 1000. The recovered nMFly controller advances one interpolation step per 16 ms and allocates distance*150/parameter steps at the default 100% time scale, yielding about 416.667 map pixels/s. The remake uses that effective visual speed for shared client/server timing."},
         "combat.respawn_seconds": {"status": "reconstructed_default", "reason": "First vertical-slice normal-monster default."},
         "combat.projectile_hitbox": {"status": "reconstructed_default", "reason": "Promoted from the current Godot visual collision footprint so client prediction and server sweep use one geometry."},
-        "drops": {"status": "unknown", "reason": "A client-side candidate expression exists, but its probability grammar and retired server authority are unverified; it is intentionally excluded from runtime data."},
+        "drops": {"status": "reconstructed_default", "reason": "The item family and quantity bounds follow the recovered client candidate; probability is explicit remake tuning because the retired server grammar is unverified."},
         "rewards": {"status": "unknown", "reason": "No authoritative reward settlement data was recovered."},
         "presentation": {"status": "client_confirmed", "source": "Glory-only imported monster animation resources"}
       },
@@ -145,6 +154,7 @@
         "runtime_move_speed": 78,
         "attack_range": 38,
         "wander_radius": 110,
+        "wander_interval_seconds": 5,
         "aggro_radius": 300,
         "leash_distance": 600,
         "attack_interval_seconds": 1.5,
@@ -152,7 +162,10 @@
         "respawn_seconds": 30,
         "projectile_hitbox": {"offset": [0, -30], "radius": 28}
       },
-      "drops": null,
+      "drops": [
+        {"item_definition_id": "low_grade_energy_pack", "minimum_quantity": 1, "maximum_quantity": 3, "chance": 0.65},
+        {"item_definition_id": "low_grade_energy_catalyst", "minimum_quantity": 1, "maximum_quantity": 2, "chance": 0.25}
+      ],
       "rewards": null,
       "presentation": {
         "idle": "res://assets/monsters/photosensitive_orb/variants/standard/idle/animation_frames.tres",
@@ -170,13 +183,14 @@
         "combat.runtime_move_speed": {"status": "reconstructed_default", "reason": "Recovered runtime speed is unknown; this is explicit remake tuning."},
         "combat.attack_range": {"status": "reconstructed_default", "reason": "First-playable server contact distance."},
         "combat.wander_radius": {"status": "reconstructed_default", "reason": "First-playable server idle-area tuning."},
+        "combat.wander_interval_seconds": {"status": "reconstructed_default", "reason": "Remake tuning: wait five seconds after completing each idle roam segment."},
         "combat.aggro_radius": {"status": "reconstructed_default", "reason": "First vertical-slice melee-monster default."},
         "combat.leash_distance": {"status": "reconstructed_default", "reason": "First vertical-slice server AI default."},
         "combat.attack_interval_seconds": {"status": "reconstructed_default", "reason": "First vertical-slice normal-monster default."},
         "combat.runtime_projectile_speed": {"status": "not_applicable", "reason": "Glory classifies this family as contact melee and creates no ordinary ranged projectile."},
         "combat.respawn_seconds": {"status": "reconstructed_default", "reason": "First vertical-slice normal-monster default."},
         "combat.projectile_hitbox": {"status": "reconstructed_default", "reason": "Promoted from the current Godot visual collision footprint so client prediction and server sweep use one geometry."},
-        "drops": {"status": "unknown", "reason": "A client-side candidate expression exists, but its probability grammar and retired server authority are unverified; it is intentionally excluded from runtime data."},
+        "drops": {"status": "reconstructed_default", "reason": "The item families and quantity bounds follow the recovered client candidate; probabilities are explicit remake tuning because the retired server grammar is unverified."},
         "rewards": {"status": "unknown", "reason": "No authoritative reward settlement data was recovered."},
         "presentation": {"status": "client_confirmed", "source": "Glory-only imported monster animation resources"}
       },
@@ -204,6 +218,7 @@
         "runtime_move_speed": 48,
         "attack_range": 190,
         "wander_radius": 88,
+        "wander_interval_seconds": 5,
         "aggro_radius": 400,
         "leash_distance": 600,
         "attack_interval_seconds": 1.5,
@@ -212,7 +227,9 @@
         "projectile_hitbox": {"offset": [0, -22], "radius": 28},
         "persistent_damage": null
       },
-      "drops": null,
+      "drops": [
+        {"item_definition_id": "low_grade_gel", "minimum_quantity": 1, "maximum_quantity": 3, "chance": 0.75}
+      ],
       "rewards": null,
       "presentation": {
         "idle": "res://assets/monsters/toxic_gel/variants/standard/idle/animation_frames.tres",
@@ -231,6 +248,7 @@
         "combat.runtime_move_speed": {"status": "reconstructed_default", "reason": "Recovered runtime speed is unknown; this is explicit remake tuning."},
         "combat.attack_range": {"status": "reconstructed_default", "reason": "First-playable server attack distance."},
         "combat.wander_radius": {"status": "reconstructed_default", "reason": "First-playable server idle-area tuning."},
+        "combat.wander_interval_seconds": {"status": "reconstructed_default", "reason": "Remake tuning: wait five seconds after completing each idle roam segment."},
         "combat.aggro_radius": {"status": "reconstructed_default", "reason": "First vertical-slice remote-monster default."},
         "combat.leash_distance": {"status": "reconstructed_default", "reason": "First vertical-slice server AI default."},
         "combat.attack_interval_seconds": {"status": "reconstructed_default", "reason": "First vertical-slice normal-monster default."},
@@ -238,7 +256,7 @@
         "combat.respawn_seconds": {"status": "reconstructed_default", "reason": "First vertical-slice normal-monster default."},
         "combat.projectile_hitbox": {"status": "reconstructed_default", "reason": "Promoted from the current Godot visual collision footprint so client prediction and server sweep use one geometry."},
         "combat.persistent_damage": {"status": "unknown", "reason": "The client confirms corrosive presentation, but damage amount, tick interval, and duration were server-controlled."},
-        "drops": {"status": "unknown", "reason": "A client-side candidate expression exists, but its probability grammar and retired server authority are unverified; it is intentionally excluded from runtime data."},
+        "drops": {"status": "reconstructed_default", "reason": "The item family and quantity bounds follow the recovered client candidate; probability is explicit remake tuning because the retired server grammar is unverified."},
         "rewards": {"status": "unknown", "reason": "No authoritative reward settlement data was recovered."},
         "presentation": {"status": "client_confirmed", "source": "Glory-only imported monster animation resources"}
       },

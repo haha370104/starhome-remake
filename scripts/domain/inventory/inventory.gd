@@ -116,6 +116,33 @@ func add_from_transfer(item: GameItem) -> DomainResult:
 	return DomainResult.ok()
 
 
+## 将权威奖励物品合并到已有堆叠或放入首个可用背包位置。
+## [param item] 已由受控物品目录创建且带唯一实例标识的奖励物品。
+## 返回合并后的实例或容量、布局、数量错误。
+## 设计：一次调用要么完整接收数量并推进 revision，要么完全不修改背包。
+func add_reward(item: GameItem) -> DomainResult:
+	if item == null or item.instance_id.is_empty() or item.quantity <= 0 \
+		or item.quantity > item.max_stack:
+		return DomainResult.failure(&"inventory.invalid_reward", "reward item identity or quantity is invalid")
+	if find(item.instance_id) != null:
+		return DomainResult.failure(&"inventory.duplicate_item", "reward item identity already exists")
+	for current: GameItem in _items:
+		if current.definition_id != item.definition_id or current.bound != item.bound \
+			or current.locked or current.quantity + item.quantity > current.max_stack:
+			continue
+		current.quantity += item.quantity
+		revision += 1
+		return DomainResult.ok(current)
+	var position_result := transfer_position(item)
+	if not position_result.is_ok:
+		return position_result
+	item.container_id = InventoryLayoutScript.MAIN_CONTAINER_ID
+	item.position_px = position_result.value
+	_items.append(item)
+	revision += 1
+	return DomainResult.ok(item)
+
+
 ## 预检一次装备转移后可使用的背包位置。
 ## [param item] 即将放入背包的物品。
 ## [param excluding_instance_id] 同一事务中将先移出的背包物品标识。

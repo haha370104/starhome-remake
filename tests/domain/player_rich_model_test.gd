@@ -63,6 +63,17 @@ func _initialize() -> void:
 		"充血装配模型应保留特殊装备系列与四行语义")
 	_expect(EquipmentSlotRegistryScript.display_name(18) == "宏原子",
 		"Location 18 应恢复为荣耀版宏原子槽")
+	var first_loot := catalog.create("low_grade_gel", {
+		"instance_id": "loot.first", "quantity": 2, "footprint_px": [30, 30],
+	})
+	var second_loot := catalog.create("low_grade_gel", {
+		"instance_id": "loot.second", "quantity": 3, "footprint_px": [30, 30],
+	})
+	_expect(first_loot.is_ok and second_loot.is_ok, "怪物材料应由物品目录组装为可堆叠物品")
+	_expect(player.receive_loot(first_loot.value).is_ok, "首次掉落应进入背包空位")
+	_expect(player.receive_loot(second_loot.value).is_ok, "同定义掉落应合并到已有堆叠")
+	_expect(player.inventory.find("loot.first").quantity == 5, "合并后的掉落数量应为权威结算总和")
+	_expect(player.inventory.find("loot.second") == null, "已合并掉落不应额外占用背包格")
 	_finish()
 
 

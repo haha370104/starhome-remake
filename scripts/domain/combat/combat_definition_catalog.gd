@@ -184,12 +184,15 @@ func monster_lifecycles_for_map(map_id: String, map_instance_id: String) -> Doma
 				"aggro_radius": float(combat["aggro_radius"]),
 				"leash_distance": float(combat["leash_distance"]),
 				"wander_radius": float(combat["wander_radius"]),
+				"wander_interval_seconds": float(combat.get("wander_interval_seconds", 5.0)),
 				"attack_interval_seconds": float(combat["attack_interval_seconds"]),
 				"runtime_projectile_speed": combat["runtime_projectile_speed"],
 				"projectile_hitbox": (combat["projectile_hitbox"] as Dictionary).duplicate(true),
 				"display_name": String(species["display_name"]),
 				"combat_actor_id": String(species["combat_actor_id"]),
 				"respawn_seconds": float(combat["respawn_seconds"]),
+				"drops": (species.get("drops") as Array).duplicate(true)
+					if species.get("drops") is Array else null,
 				"unknown_fields": _unknown_monster_fields(stats),
 			})
 	return DomainResult.ok(result)
@@ -307,6 +310,8 @@ func _validate_runtime_links() -> DomainResult:
 		if not hitbox_offset is Array or hitbox_offset.size() != 2 \
 			or float((projectile_hitbox as Dictionary).get("radius", 0.0)) <= 0.0:
 			return DomainResult.failure(&"combat.invalid_catalog", "monster projectile hitbox is invalid")
+		if float(combat.get("wander_interval_seconds", -1.0)) < 0.0:
+			return DomainResult.failure(&"combat.invalid_catalog", "monster wander interval is invalid")
 	return DomainResult.ok()
 
 

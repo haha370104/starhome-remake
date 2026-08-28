@@ -19,6 +19,8 @@ func _initialize() -> void:
 	_test_single_death_and_thirty_second_respawn()
 	_test_seeded_damage_is_reproducible()
 	_test_three_engagement_policies()
+	_test_five_second_wander_interval()
+	_test_authoritative_ground_loot_lifecycle()
 	_test_monster_projectile_timing()
 	_test_monster_projectile_can_be_dodged()
 	if failures.is_empty():
@@ -198,6 +200,63 @@ func _test_three_engagement_policies() -> void:
 	var snapshot: Dictionary = aggressive.snapshot_for_actor("player.policy")
 	_expect(String(snapshot.get("local_entity_id", "")) == "player.policy", "snapshot identifies local damage target")
 	_expect((snapshot.get("recent_events", []) as Array).size() == 2, "snapshot includes deduplicatable attack-start and damage events")
+
+
+## 验证空闲怪物完成一次游走后等待五秒才选择下一段路径。
+func _test_five_second_wander_interval() -> void:
+	var module := _new_module(106)
+	var definition := _monster_definition("monster.wander", 30, Vector2(200.0, 200.0))
+	definition.merge({
+		"runtime_move_speed": 60.0,
+		"wander_radius": 80.0,
+		"wander_interval_seconds": 5.0,
+	}, true)
+	_expect(module.register_monster(definition).is_ok, "wandering monster should register")
+	var monster: MonsterLifecycle = module.monster_for("monster.wander")
+	var initial_position := monster.position
+	module.advance_ticks(99)
+	_expect(monster.position.is_equal_approx(initial_position), "monster should remain idle before five seconds")
+	module.advance_ticks(1)
+	_expect(not monster.position.is_equal_approx(initial_position), "monster should begin roaming on the fifth second")
+	var safety_ticks := 400
+	while monster.action == &"move" and safety_ticks > 0:
+		module.advance_ticks(1)
+		safety_ticks -= 1
+	var settled_position := monster.position
+	module.advance_ticks(99)
+	_expect(monster.position.is_equal_approx(settled_position), "completed roam should be followed by another five-second pause")
+
+
+## 验证死亡结算生成地面掉落，并只允许附近玩家提交一次拾取。
+func _test_authoritative_ground_loot_lifecycle() -> void:
+	var module := _new_module(107)
+	module.register_vehicle(
+		"player.loot", MAP_INSTANCE_ID, Vector2.ZERO, _assembly_result().value,
+		{ABILITY_ID: _fixed_damage_weapon(7)},
+	)
+	var definition := _monster_definition("monster.loot", 7, Vector2(40.0, 0.0))
+	definition["drops"] = [{
+		"item_definition_id": "low_grade_gel",
+		"minimum_quantity": 2,
+		"maximum_quantity": 2,
+		"chance": 1.0,
+	}]
+	_expect(module.register_monster(definition).is_ok, "monster with a valid drop table should register")
+	var shot := module.handle_energy_cannon_attack(
+		"player.loot", _attack_intent(Vector2(40.0, 0.0), 1)
+	)
+	_expect(shot.is_ok, "loot fixture attack should spawn")
+	_settle_all_projectiles(module)
+	_expect(module.ground_loot.size() == 1, "one guaranteed drop should become one ground entity")
+	var snapshot := module.snapshot_for_actor("player.loot")
+	_expect((snapshot["ground_loot"] as Array).size() == 1, "ground loot should be included in the actor combat snapshot")
+	var loot: Dictionary = snapshot["ground_loot"][0]
+	_expect(loot.item_definition_id == "low_grade_gel" and loot.quantity == 2, "drop definition and rolled quantity should remain server-owned")
+	var prepared := module.prepare_loot_pickup("player.loot", String(loot.loot_id))
+	_expect(prepared.is_ok, "nearby authenticated player should pass pickup preflight")
+	var committed := module.commit_loot_pickup("player.loot", String(loot.loot_id))
+	_expect(committed.is_ok and module.ground_loot.is_empty(), "committed pickup should remove the ground entity")
+	_expect(not module.commit_loot_pickup("player.loot", String(loot.loot_id)).is_ok, "the same drop must not be picked up twice")
 
 
 ## 验证远程怪物只在权威弹体首次接触玩家受击圆时扣除生命。

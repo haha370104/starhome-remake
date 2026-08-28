@@ -29,6 +29,7 @@ var home_position := Vector2.ZERO
 var target_actor_id := ""
 var wander_target := Vector2.ZERO
 var next_wander_tick := 0
+var wander_interval_ticks := 0
 var attack_ready_tick := 0
 var action := &"idle"
 var action_sequence := 0
@@ -49,13 +50,17 @@ func configure(definition: Dictionary, simulation_hz: int) -> DomainResult:
 	var requested_position: Variant = definition.get("position", Vector2.INF)
 	var requested_health := int(definition.get("max_health", 0))
 	var requested_respawn_seconds := float(definition.get("respawn_seconds", -1.0))
+	var requested_wander_interval_seconds := float(
+		definition.get("wander_interval_seconds", 5.0)
+	)
 	var requested_policy := StringName(definition.get("engagement_policy", "unresponsive"))
 	if requested_id.is_empty() or requested_map_instance_id.is_empty() \
 		or not requested_position is Vector2:
 		return DomainResult.failure(&"combat.invalid_monster_definition", "monster, map identity and position are required")
 	if not requested_position.is_finite() or requested_health <= 0:
 		return DomainResult.failure(&"combat.invalid_monster_definition", "monster position or health is invalid")
-	if simulation_hz <= 0 or requested_respawn_seconds < 0.0:
+	if simulation_hz <= 0 or requested_respawn_seconds < 0.0 \
+		or requested_wander_interval_seconds < 0.0:
 		return DomainResult.failure(&"combat.invalid_monster_definition", "monster respawn timing is invalid")
 	if not MonsterAggroPolicyScript.is_supported(requested_policy):
 		return DomainResult.failure(&"combat.invalid_engagement_policy", "monster engagement policy is invalid")
@@ -72,19 +77,23 @@ func configure(definition: Dictionary, simulation_hz: int) -> DomainResult:
 	behavior_profile = StringName(definition.get("behavior_profile", "idle"))
 	engagement_policy = MonsterAggroPolicyScript.new(requested_policy)
 	attack_mode = MonsterAttackModeScript.new(definition, simulation_hz)
-	drop_table = DropTableScript.new(definition.get("drops"))
+	drop_table = DropTableScript.new()
+	var drop_result := drop_table.configure(definition.get("drops"))
+	if not drop_result.is_ok:
+		return drop_result
 	defense = maxi(0, int(definition.get("defense", 0)))
 	max_health = requested_health
 	health = max_health
 	aggro_radius = maxf(0.0, float(definition.get("aggro_radius", 0.0)))
 	leash_distance = maxf(0.0, float(definition.get("leash_distance", 0.0)))
 	wander_radius = maxf(0.0, float(definition.get("wander_radius", 0.0)))
+	wander_interval_ticks = roundi(requested_wander_interval_seconds * float(simulation_hz))
 	respawn_delay_ticks = roundi(requested_respawn_seconds * float(simulation_hz))
 	respawn_at_tick = -1
 	death_generation = 0
 	last_killer_id = ""
 	target_actor_id = ""
-	next_wander_tick = posmod(hash(monster_id), simulation_hz * 2) + simulation_hz
+	next_wander_tick = wander_interval_ticks
 	attack_ready_tick = 0
 	action = &"idle"
 	action_sequence = 0
@@ -148,7 +157,7 @@ func reset_to_home(current_tick: int) -> void:
 	action = &"idle"
 	target_actor_id = ""
 	wander_target = home_position
-	next_wander_tick = current_tick + 1
+	next_wander_tick = current_tick + wander_interval_ticks
 
 
 ## 判断怪物是否允许主动搜索目标。
@@ -193,6 +202,7 @@ func to_dictionary() -> Dictionary:
 		"attack_archetype": attack_mode.archetype,
 		"base_attack": attack_mode.base_attack,
 		"drops": drop_table.entries(),
+		"wander_interval_ticks": wander_interval_ticks,
 		"respawn_delay_ticks": respawn_delay_ticks,
 		"respawn_at_tick": respawn_at_tick,
 		"death_generation": death_generation,
