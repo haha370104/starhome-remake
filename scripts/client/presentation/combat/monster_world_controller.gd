@@ -2,21 +2,26 @@ class_name MonsterWorldController
 extends Node
 
 const MonsterWorldViewScript := preload("res://scripts/client/presentation/combat/monster_world_view.gd")
+const CombatDamageFloatScript := preload("res://scripts/client/presentation/combat/combat_damage_float.gd")
 
 var _world_parent: Node2D
 var _manifest: Dictionary = {}
 var _views: Dictionary = {}
+var _local_player: Node2D
+var _last_event_id := 0
 
 
-## Configures the controller with [param world_parent] and business [param manifest].
+## Configures the controller with [param world_parent], business [param manifest] and [param local_player].
 ## [param world_parent] Y-sorted scene parent that owns each monster view directly.
 ## [param manifest] Combat visual manifest used only for rendering actor IDs from snapshots.
+## [param local_player] Local authority actor presentation used only as a damage-number anchor.
 ## Returns `OK` when dependencies are available.
-func configure(world_parent: Node2D, manifest: Dictionary) -> Error:
-	if world_parent == null or manifest.is_empty():
+func configure(world_parent: Node2D, manifest: Dictionary, local_player: Node2D) -> Error:
+	if world_parent == null or manifest.is_empty() or local_player == null:
 		return ERR_INVALID_PARAMETER
 	_world_parent = world_parent
 	_manifest = manifest.duplicate(true)
+	_local_player = local_player
 	return OK
 
 
@@ -45,6 +50,7 @@ func apply_snapshot(combat_snapshot: Dictionary) -> void:
 		var stale: MonsterWorldView = _views[entity_id]
 		stale.queue_free()
 		_views.erase(entity_id)
+	_apply_recent_events(combat_snapshot)
 
 
 ## Finds the living monster closest to [param world_position] within [param radius].
@@ -76,3 +82,29 @@ func clear() -> void:
 	for view: MonsterWorldView in _views.values():
 		view.queue_free()
 	_views.clear()
+	_last_event_id = 0
+
+
+## 消费 [param combat_snapshot] 中带单调事件号的最近战斗事件并生成一次性飘字。
+## Design: 快照允许重发事件，客户端游标保证每个权威伤害只表现一次。
+func _apply_recent_events(combat_snapshot: Dictionary) -> void:
+	var events_value: Variant = combat_snapshot.get("recent_events", [])
+	if not events_value is Array:
+		return
+	for raw_event: Variant in events_value:
+		if not raw_event is Dictionary:
+			continue
+		var event: Dictionary = raw_event
+		var event_id := int(event.get("event_id", 0))
+		if event_id <= _last_event_id:
+			continue
+		_last_event_id = event_id
+		var target_entity_id := String(event.get("target_entity_id", ""))
+		var anchor: Node2D = _views.get(target_entity_id)
+		if anchor == null and target_entity_id == String(combat_snapshot.get("local_entity_id", "")):
+			anchor = _local_player
+		if anchor == null:
+			continue
+		var damage_float: Node2D = CombatDamageFloatScript.new()
+		anchor.add_child(damage_float)
+		damage_float.present(int(event.get("damage", 0)))

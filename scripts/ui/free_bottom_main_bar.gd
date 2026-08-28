@@ -25,7 +25,7 @@ var shortcut_visibility_buttons: Dictionary = {}
 
 
 ## 用 [param definition] 构建免费版底栏，读取 [param shortcut_definition] 的显隐按钮并绑定 [param state]。
-## Design: 中央 1024×29 设计面保持原始像素，宽屏区域仅使用边缘色延展。
+## Design: 中央 1024×29 设计面保持原始像素；宽屏两侧透明，不伪造免费版不存在的蓝色底板。
 func configure(definition: Dictionary, shortcut_definition: Dictionary, state: HudState) -> void:
 	name = "BottomMainBar"
 	hud_state = state
@@ -35,14 +35,6 @@ func configure(definition: Dictionary, shortcut_definition: Dictionary, state: H
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 	var background_definition: Dictionary = definition.get("background", {})
-	var edge_colors: Dictionary = background_definition.get("edge_colors", {})
-	var extension := ColorRect.new()
-	extension.name = "EdgeExtension"
-	extension.color = Color(String(edge_colors.get("left", "082946")))
-	extension.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	extension.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(extension)
-
 	design_surface = Control.new()
 	design_surface.name = "DesignSurface"
 	design_surface.set_anchors_preset(Control.PRESET_CENTER)

@@ -2,11 +2,12 @@ class_name MonsterWorldView
 extends Node2D
 
 const CombatVisualPresenterScript := preload("res://scripts/client/presentation/combat/combat_visual_presenter.gd")
+const WorldCombatStatusBarScript := preload("res://scripts/client/presentation/combat/world_combat_status_bar.gd")
 
 var entity_id := ""
 var presenter: CombatVisualPresenter
 var name_label: Label
-var health_bar: ProgressBar
+var health_bar: WorldCombatStatusBar
 
 
 ## Configures this view from [param manifest] and one authoritative [param snapshot].
@@ -31,11 +32,8 @@ func configure(manifest: Dictionary, snapshot: Dictionary) -> Error:
 	name_label.add_theme_color_override("font_color", Color(1.0, 0.86, 0.45))
 	name_label.add_theme_color_override("font_shadow_color", Color.BLACK)
 	add_child(name_label)
-	health_bar = ProgressBar.new()
-	health_bar.position = Vector2(-30, -69)
-	health_bar.size = Vector2(60, 7)
-	health_bar.show_percentage = false
-	health_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	health_bar = WorldCombatStatusBarScript.new()
+	health_bar.configure(58.0, false, Vector2(0, 10))
 	add_child(health_bar)
 	apply_snapshot(snapshot)
 	return OK
@@ -48,8 +46,7 @@ func apply_snapshot(snapshot: Dictionary) -> void:
 	position = Vector2(float(point[0]), float(point[1]))
 	visible = bool(snapshot["alive"])
 	name_label.text = String(snapshot["display_name"])
-	health_bar.max_value = maxi(1, int(snapshot["max_health"]))
-	health_bar.value = clampi(int(snapshot["health"]), 0, int(health_bar.max_value))
+	health_bar.set_health(float(snapshot["health"]), float(snapshot["max_health"]))
 	presenter.set_direction(int(snapshot["facing_index"]))
 	presenter.set_action(StringName(snapshot["action"]))
 

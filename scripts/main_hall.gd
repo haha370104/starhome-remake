@@ -255,8 +255,8 @@ func _handle_world_combat_left_click(world_position: Vector2) -> void:
 			return
 	var was_moving: bool = local_player_controller.has_active_route()
 	var direction: Vector2 = result["direction"]
-	current_direction = _direction_index(direction)
-	_set_player_action("move" if was_moving else "attack")
+	var weapon_direction := _direction_index(direction)
+	player.set_combat_layer_pose(&"primary_weapon", &"attack", weapon_direction)
 	var resolved_target: Vector2 = result["resolved_target"]
 	if bool(result.get("range_clamped", false)):
 		hint_label.text = "目标超出射程，向极限点 %d, %d 开火" % [
@@ -295,6 +295,7 @@ func _restore_locomotion_after_attack(was_moving: bool) -> void:
 	await get_tree().create_timer(0.16).timeout
 	if player == null or not player.is_combat_actor_active():
 		return
+	player.clear_combat_layer_action(&"primary_weapon")
 	if was_moving and local_player_controller.has_active_route():
 		local_player_controller.refresh_route_direction()
 	else:
@@ -437,7 +438,7 @@ func _build_world() -> void:
 	monster_world_controller = MonsterWorldControllerScript.new()
 	monster_world_controller.name = "MonsterWorldController"
 	add_child(monster_world_controller)
-	var monster_error := monster_world_controller.configure(sortable_world, combat_manifest)
+	var monster_error := monster_world_controller.configure(sortable_world, combat_manifest, player)
 	if monster_error != OK:
 		push_error("Unable to configure monster world presentation: %s" % error_string(monster_error))
 
@@ -782,6 +783,7 @@ func _on_combat_snapshot_received(snapshot: Dictionary) -> void:
 	monster_world_controller.apply_snapshot(snapshot)
 	var vehicle: Variant = snapshot.get("local_vehicle", {})
 	if vehicle is Dictionary:
+		player.set_combat_status(vehicle)
 		hud.set_vehicle_combat_state(vehicle)
 
 

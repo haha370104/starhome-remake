@@ -25,9 +25,6 @@ var shortcut_bar: Control
 var bottom_main_bar: Control
 var state: HudState
 var asset_manifest: Dictionary = {}
-var combat_status: VBoxContainer
-var health_label: Label
-var working_energy_label: Label
 
 
 ## 以 [param world_map_size]、[param minimap_texture] 和 [param map_name] 组装大厅 HUD。
@@ -81,7 +78,6 @@ func configure(world_map_size: Vector2, minimap_texture: Texture2D, map_name := 
 
 	_build_popup()
 	_build_hint_label()
-	_build_combat_status()
 
 
 ## 将玩家世界坐标 [param world_position] 推送给小地图状态。
@@ -109,9 +105,7 @@ func set_reserve_energy(current: float, capacity: float) -> void:
 ## [param snapshot] Server-owned health and energy dictionary from the local combat snapshot.
 func set_vehicle_combat_state(snapshot: Dictionary) -> void:
 	if snapshot.is_empty():
-		combat_status.visible = false
 		return
-	combat_status.visible = true
 	state.set_vehicle_health(int(snapshot.get("health", 0)), int(snapshot.get("max_health", 0)))
 	state.set_working_energy(
 		float(snapshot.get("working_energy", 0.0)),
@@ -189,48 +183,6 @@ func _build_hint_label() -> void:
 	hint_label.add_theme_constant_override("shadow_offset_y", 2)
 	hint_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	root_control.add_child(hint_label)
-
-
-## Creates a compact bottom-left combat readout driven only by `HudState` authority projections.
-## Design: Health and working energy remain distinct from the original long reserve-energy strip.
-func _build_combat_status() -> void:
-	combat_status = VBoxContainer.new()
-	combat_status.name = "CombatStatus"
-	combat_status.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
-	combat_status.position = Vector2(10, -92)
-	combat_status.size = Vector2(176, 48)
-	combat_status.add_theme_constant_override("separation", 1)
-	combat_status.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	root_control.add_child(combat_status)
-	health_label = Label.new()
-	working_energy_label = Label.new()
-	for label: Label in [health_label, working_energy_label]:
-		label.add_theme_font_size_override("font_size", 14)
-		label.add_theme_color_override("font_shadow_color", Color.BLACK)
-		label.add_theme_constant_override("shadow_offset_x", 1)
-		label.add_theme_constant_override("shadow_offset_y", 1)
-		combat_status.add_child(label)
-	state.vehicle_health_changed.connect(_update_vehicle_health_label)
-	state.working_energy_changed.connect(_update_working_energy_label)
-	_update_vehicle_health_label(state.vehicle_health, state.vehicle_health_capacity)
-	_update_working_energy_label(state.working_energy, state.working_energy_capacity)
-	combat_status.visible = false
-
-
-## Renders authoritative vehicle [param current] health against [param capacity].
-## [param current] Current chassis combat health.
-## [param capacity] Maximum chassis combat health.
-func _update_vehicle_health_label(current: int, capacity: int) -> void:
-	health_label.text = "战车生命  %d / %d" % [current, capacity]
-	health_label.add_theme_color_override("font_color", Color(0.35, 1.0, 0.42))
-
-
-## Renders spendable working [param current] energy against [param capacity].
-## [param current] Current working energy available to weapons.
-## [param capacity] Maximum working energy buffer.
-func _update_working_energy_label(current: float, capacity: float) -> void:
-	working_energy_label.text = "当前能量  %.0f / %.0f" % [current, capacity]
-	working_energy_label.add_theme_color_override("font_color", Color(0.25, 0.86, 1.0))
 
 
 ## 创建由标题、正文、动态动作区和关闭按钮组成的 NPC 弹窗。

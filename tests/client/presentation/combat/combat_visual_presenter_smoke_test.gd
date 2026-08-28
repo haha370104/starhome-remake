@@ -22,7 +22,7 @@ func _run() -> void:
 	var source := _read_json(SOURCE_MANIFEST)
 	_expect_equal(int(runtime.get("schema_version", 0)), 2, "runtime schema is versioned")
 	_expect_equal((runtime.get("direction_order", []) as Array).size(), 8, "runtime declares eight directions")
-	_expect_equal((source.get("assets", []) as Array).size(), 5, "starter components and cannon effects are audited")
+	_expect_equal((source.get("assets", []) as Array).size(), 6, "starter components, shadow and cannon effects are audited")
 	_expect_equal(String(source.get("source_version", "")), "starhome_lz_ry", "Glory is canonical source")
 	var components: Dictionary = runtime.get("components", {})
 	_expect_equal(String((components["beginner_engine"] as Dictionary).get("render_policy", "")), "installed_only", "engine is configured but not drawn")
@@ -43,15 +43,20 @@ func _run() -> void:
 	presenter.advance(0.21)
 	_expect_equal(presenter.layer_frame(&"chassis"), 30, "chassis advances inside selected direction")
 	_expect_equal(presenter.layer_frame(&"primary_weapon"), 7, "one-frame weapon remains stable")
+	_expect_true(presenter.set_layer_direction(&"primary_weapon", 2), "weapon accepts independent aim direction")
+	_expect_equal(presenter.layer_frame(&"chassis"), 30, "independent aiming does not rotate chassis")
+	_expect_equal(presenter.layer_frame(&"primary_weapon"), 2, "independent aiming rotates only weapon")
 	_expect_true(presenter.set_action(&"attack"), "weapon exposes attack action")
 	_expect_equal(presenter.layer_frame(&"chassis"), 28, "missing chassis attack falls back to idle")
 
 	_expect_monster(presenter, &"om_adult_standard", {&"idle": 5, &"move": 5, &"attack": 6})
 	_expect_monster(presenter, &"om_larva_standard", {&"idle": 5, &"move": 5, &"attack": 5})
 	_expect_shared_monster(presenter, &"photosensitive_orb_standard", [&"idle", &"move", &"attack"])
-	_expect_shared_monster(presenter, &"toxic_gel_standard", [&"idle"])
+	_expect_shared_monster(presenter, &"photosensitive_orb_cold", [&"idle", &"move", &"attack"])
+	_expect_shared_monster(presenter, &"photosensitive_orb_malignant", [&"idle", &"move", &"attack"])
+	_expect_shared_monster(presenter, &"toxic_gel_standard", [&"idle", &"attack"])
 	_expect_monster(presenter, &"toxic_gel_standard", {&"move": 5})
-	_expect_true(not presenter.set_action(&"attack"), "toxic gel rejects undeclared attack")
+	_expect_true(presenter.set_action(&"attack"), "toxic gel uses its source-confirmed idle body during projectile attack")
 
 	presenter.queue_free()
 	_finish()
@@ -82,6 +87,7 @@ func _expect_source_components(source: Dictionary) -> void:
 		var entry: Dictionary = entry_value
 		by_id[String(entry.get("asset_id", ""))] = entry
 	_expect_equal(int((by_id["recruit_tank"] as Dictionary).get("frame_count", 0)), 32, "chassis has 8x4 frames")
+	_expect_equal(int((by_id["recruit_tank_shadow"] as Dictionary).get("frame_count", 0)), 8, "chassis shadow has eight directions")
 	_expect_equal(int((by_id["recruit_energy_cannon"] as Dictionary).get("frame_count", 0)), 8, "cannon has eight frames")
 	var engine: Dictionary = by_id["beginner_engine"]
 	_expect_equal(int(engine.get("frame_count", 0)), 1, "engine source is a shared single frame")

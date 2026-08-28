@@ -11,6 +11,8 @@ var _manifest: Dictionary = {}
 var _actor: Dictionary = {}
 var _layers: Dictionary = {}
 var _layer_configs: Dictionary = {}
+var _layer_action_overrides: Dictionary = {}
+var _layer_direction_overrides: Dictionary = {}
 var _elapsed_seconds := 0.0
 
 
@@ -74,6 +76,8 @@ func clear_actor() -> void:
 			sprite.free()
 	_layers.clear()
 	_layer_configs.clear()
+	_layer_action_overrides.clear()
+	_layer_direction_overrides.clear()
 	_actor.clear()
 	current_actor_id = &""
 	current_action_id = &""
@@ -94,6 +98,41 @@ func set_action(action_id: StringName) -> bool:
 ## 将任意整数 [param direction] 归一化为清单中的八方向索引并立即刷新帧。
 func set_direction(direction: int) -> void:
 	current_direction = posmod(direction, 8)
+	_apply_pose()
+
+
+## 只把 [param layer_id] 切换到 [param action_id]，不影响底盘或其他装备图层。
+## Returns 图层显式声明该动作时返回 `true`，否则不改变覆盖状态。
+## Design: 炮塔瞄准/开火属于装备局部状态，不能污染角色移动状态机。
+func set_layer_action(layer_id: StringName, action_id: StringName) -> bool:
+	if not _layer_configs.has(layer_id):
+		return false
+	var layer: Dictionary = _layer_configs[layer_id]
+	var actions_value: Variant = layer.get("actions", {})
+	if not actions_value is Dictionary or not (actions_value as Dictionary).has(String(action_id)):
+		return false
+	_layer_action_overrides[layer_id] = action_id
+	return _apply_pose() == OK
+
+
+## 清除 [param layer_id] 的动作覆盖，使其重新跟随角色全局动作及默认回退。
+func clear_layer_action(layer_id: StringName) -> void:
+	_layer_action_overrides.erase(layer_id)
+	_apply_pose()
+
+
+## 只设置 [param layer_id] 的八向 [param direction]，用于独立炮塔瞄准。
+## Returns 图层存在时返回 `true`。
+func set_layer_direction(layer_id: StringName, direction: int) -> bool:
+	if not _layer_configs.has(layer_id):
+		return false
+	_layer_direction_overrides[layer_id] = posmod(direction, 8)
+	return _apply_pose() == OK
+
+
+## 清除 [param layer_id] 的朝向覆盖，使其重新跟随角色全局朝向。
+func clear_layer_direction(layer_id: StringName) -> void:
+	_layer_direction_overrides.erase(layer_id)
 	_apply_pose()
 
 
@@ -153,7 +192,7 @@ func _apply_pose() -> Error:
 		var layer_id := StringName(layer_id_value)
 		var sprite := _layers[layer_id] as AnimatedSprite2D
 		var layer: Dictionary = _layer_configs[layer_id]
-		var action := _resolve_layer_action(layer)
+		var action := _resolve_layer_action(layer_id, layer)
 		if action.is_empty():
 			return ERR_INVALID_DATA
 		var resource_path := String(action.get("resource", ""))
@@ -173,7 +212,8 @@ func _apply_pose() -> Error:
 		var frames_per_direction := int(action.get("frames_per_direction", 0))
 		if frames_per_direction <= 0:
 			return ERR_INVALID_DATA
-		var direction_slot := current_direction if String(action.get("direction_mode", "")) == "eight_way" else 0
+		var resolved_direction := int(_layer_direction_overrides.get(layer_id, current_direction))
+		var direction_slot := resolved_direction if String(action.get("direction_mode", "")) == "eight_way" else 0
 		var local_frame := int(floor(_elapsed_seconds * float(action.get("fps", 10.0))))
 		if bool(action.get("loop", true)):
 			local_frame = posmod(local_frame, frames_per_direction)
@@ -186,14 +226,15 @@ func _apply_pose() -> Error:
 	return OK
 
 
-## 解析 [param layer] 对当前动作的配置，必要时回退至角色默认动作。
+## 解析 [param layer_id] 与 [param layer] 对当前动作的配置，必要时回退至角色默认动作。
 ## Returns 找到时返回动作字典，否则返回空字典。
-func _resolve_layer_action(layer: Dictionary) -> Dictionary:
+func _resolve_layer_action(layer_id: StringName, layer: Dictionary) -> Dictionary:
 	var actions_value: Variant = layer.get("actions", {})
 	if not actions_value is Dictionary:
 		return {}
 	var actions: Dictionary = actions_value
-	var action_value: Variant = actions.get(String(current_action_id), {})
+	var requested_action := StringName(_layer_action_overrides.get(layer_id, current_action_id))
+	var action_value: Variant = actions.get(String(requested_action), {})
 	if action_value is Dictionary and not (action_value as Dictionary).is_empty():
 		return action_value
 	var fallback_value: Variant = actions.get(String(_actor.get("default_action", "idle")), {})

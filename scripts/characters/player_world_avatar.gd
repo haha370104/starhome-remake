@@ -5,6 +5,9 @@ const WorldCharacterScript := preload("res://scripts/characters/world_character.
 const CombatVisualPresenterScript := preload(
 	"res://scripts/client/presentation/combat/combat_visual_presenter.gd"
 )
+const WorldCombatStatusBarScript := preload(
+	"res://scripts/client/presentation/combat/world_combat_status_bar.gd"
+)
 
 const CHARACTER_KIND := &"character"
 const COMBAT_ACTOR_KIND := &"combat_actor"
@@ -14,6 +17,7 @@ var combat_actor_id: StringName = &""
 var human_character: Node2D
 var combat_presenter: Node2D
 var combat_name_label: Label
+var combat_status_bar: WorldCombatStatusBar
 
 var _combat_manifest: Dictionary = {}
 var _current_action := &"stand"
@@ -59,6 +63,11 @@ func configure(
 	combat_name_label = _build_name_label(display_name, name_color)
 	combat_name_label.visible = false
 	add_child(combat_name_label)
+	combat_status_bar = WorldCombatStatusBarScript.new()
+	combat_status_bar.name = "CombatStatusBar"
+	combat_status_bar.configure(64.0, true, Vector2(0, 12))
+	combat_status_bar.visible = false
+	add_child(combat_status_bar)
 	return OK
 
 
@@ -93,6 +102,7 @@ func apply_map_presentation(presentation: Dictionary) -> Error:
 		human_character.visible = true
 		combat_presenter.visible = false
 		combat_name_label.visible = false
+		combat_status_bar.visible = false
 		_apply_active_pose()
 		return OK
 
@@ -106,6 +116,7 @@ func apply_map_presentation(presentation: Dictionary) -> Error:
 	human_character.visible = false
 	combat_presenter.visible = true
 	combat_name_label.visible = true
+	combat_status_bar.visible = true
 	_apply_active_pose()
 	return OK
 
@@ -115,6 +126,34 @@ func set_action(action: String, direction: int) -> void:
 	_current_action = StringName(action)
 	_current_direction = posmod(direction, 8)
 	_apply_active_pose()
+
+
+## 只设置战斗装备 [param layer_id] 的 [param action] 与八向 [param direction]。
+## Returns 当前为战车且图层接受覆盖时返回 `true`。
+func set_combat_layer_pose(layer_id: StringName, action: StringName, direction: int) -> bool:
+	if not is_combat_actor_active():
+		return false
+	return (
+		combat_presenter.set_layer_direction(layer_id, direction)
+		and combat_presenter.set_layer_action(layer_id, action)
+	)
+
+
+## 清除战斗装备 [param layer_id] 的动作覆盖；朝向保留为最后瞄准方向。
+func clear_combat_layer_action(layer_id: StringName) -> void:
+	if combat_presenter != null:
+		combat_presenter.clear_layer_action(layer_id)
+
+
+## 把权威 [param snapshot] 的生命与当前能量投影到战车脚点状态条。
+func set_combat_status(snapshot: Dictionary) -> void:
+	if combat_status_bar == null or snapshot.is_empty():
+		return
+	combat_status_bar.set_health(float(snapshot.get("health", 0)), float(snapshot.get("max_health", 1)))
+	combat_status_bar.set_energy(
+		float(snapshot.get("working_energy", 0.0)),
+		float(snapshot.get("max_working_energy", 1.0)),
+	)
 
 
 ## 设置人形动画倍率；战车继续采用其荣耀来源清单中的独立帧率。

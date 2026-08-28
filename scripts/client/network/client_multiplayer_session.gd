@@ -388,7 +388,10 @@ func _on_server_message_received(message: Dictionary) -> void:
 func _is_valid_combat_snapshot(snapshot: Dictionary) -> bool:
 	if typeof(snapshot.get("server_tick")) != TYPE_INT:
 		return false
-	if not snapshot.get("local_vehicle") is Dictionary or not snapshot.get("monsters") is Array:
+	if typeof(snapshot.get("local_entity_id")) != TYPE_STRING \
+		or not snapshot.get("local_vehicle") is Dictionary \
+		or not snapshot.get("monsters") is Array \
+		or not snapshot.get("recent_events") is Array:
 		return false
 	for raw_monster: Variant in snapshot["monsters"]:
 		if not raw_monster is Dictionary:
@@ -402,6 +405,16 @@ func _is_valid_combat_snapshot(snapshot: Dictionary) -> bool:
 			or typeof(monster.get("health")) != TYPE_INT \
 			or typeof(monster.get("max_health")) != TYPE_INT \
 			or typeof(monster.get("alive")) != TYPE_BOOL:
+			return false
+	for raw_event: Variant in snapshot["recent_events"]:
+		if not raw_event is Dictionary:
+			return false
+		var event: Dictionary = raw_event
+		var event_type_kind := typeof(event.get("event_type"))
+		if typeof(event.get("event_id")) != TYPE_INT \
+			or event_type_kind not in [TYPE_STRING, TYPE_STRING_NAME] \
+			or typeof(event.get("target_entity_id")) != TYPE_STRING \
+			or typeof(event.get("damage")) != TYPE_INT:
 			return false
 	return true
 

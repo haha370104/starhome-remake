@@ -49,7 +49,7 @@ func _run() -> void:
 	_expect(not player.human_character.visible, "D04 不得把人形层叠在战车下方")
 	_expect(player.combat_presenter.visible, "D04 必须显示战车表现器")
 	_expect(player.combat_name_label.visible, "战车模式仍须保留玩家名称")
-	_expect(player.combat_presenter.get_child_count() == 2, "战车仅叠底盘和能量炮两个世界层")
+	_expect(player.combat_presenter.get_child_count() == 3, "战车叠加阴影、底盘和能量炮三个来源层")
 	_test_eight_way_idle_and_move(player, hall.local_player_controller)
 	_test_move_and_fire_keeps_route(hall)
 	_test_evidence_contract(d04_definition, player.combat_presenter)
@@ -119,7 +119,11 @@ func _test_evidence_contract(definition: MapDefinition, presenter: Node2D) -> vo
 	var actor_evidence: Dictionary = actor.get("animation_evidence", {})
 	_expect(actor_evidence == map_evidence or not actor_evidence.is_empty(), "战车运行时清单必须保存动画证据")
 	var layers: Array = actor.get("layers", [])
-	var chassis_actions: Dictionary = (layers[0] as Dictionary).get("actions", {})
+	var chassis_actions: Dictionary = {}
+	for raw_layer: Variant in layers:
+		var layer: Dictionary = raw_layer
+		if StringName(layer.get("id", "")) == &"chassis":
+			chassis_actions = layer.get("actions", {})
 	_expect(
 		String((chassis_actions["idle"] as Dictionary).get("resource", ""))
 		== String((chassis_actions["move"] as Dictionary).get("resource", "")),
