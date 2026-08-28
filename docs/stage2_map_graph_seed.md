@@ -84,13 +84,13 @@ City 与 D04 已完成荣耀版语义场景导入，不再使用空 resource 路
 
 | map_id | 已解析摆放 | 缺失摆放 | 语义层 | atlas | Glory-only 校验 |
 | --- | ---: | ---: | ---: | ---: | --- |
-| `yian_harbor_city` | 787 | 31 | 811 | 2048×2967 | 精确重合；拒绝 2 个免费版 fallback |
-| `d04_field_zone` | 35 | 26 | 86 | 2048×668 | 精确重合；无跨版本 fallback |
+| `yian_harbor_city` | 818 | 0 | 919 | 2048×4770 | 精确重合；官网惰性恢复 31 个摆放 |
+| `d04_field_zone` | 45 | 16 | 117 | 2048×845 | 精确重合；官网惰性恢复 10 个摆放 |
 
 两张地图都已生成业务化 `floor.png`、`minimap.jpg`、`map_manifest.json` 和共享语义 atlas；
 MapDefinition 的 `assets.resources` 指向这些受控 `res://assets/maps/...` 路径。manifest 的
-`semantic_reconstruction_exact` 与 `parsed_composite_matches_glory_only` 均为 true。缺失摆放
-仍保留在 `missing_dependencies` 中，不以免费版或激战版素材补洞。
+`semantic_reconstruction_exact` 与 `parsed_composite_matches_glory_only` 均为 true。City 已无
+场景缺口；D04 剩余 16 个摆放仍保留在 `missing_dependencies` 中，不以免费版或激战版素材补洞。
 
 G08 当前仍只有图谱、五出口定义、入口配置与导航字节。它尚未导入 floor、minimap 或语义
 场景 manifest，因此 `assets.resources` 保持为空，`presentation_state` 继续标记为素材导入

@@ -239,8 +239,9 @@
     "navigation_sha256": "6596d9afc3b99553649f5d980de0365dc51a36eacb50a2e07fc0075fa612f65b",
     "navigation_passable": 77814,
     "navigation_blocked": 2986,
-    "scene_objects_resolved": 35,
-    "scene_objects_missing": 26,
+    "scene_objects_resolved": 45,
+    "scene_objects_missing": 16,
+    "official_lazy_recovered_placements": 10,
     "presentation_state": "glory_semantic_import_complete_with_missing_dependencies",
     "promoted_transition_count": 12
   }

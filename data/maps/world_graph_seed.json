@@ -41,13 +41,13 @@
       "gap_id": "city_presentation_assets",
       "scope": ["yian_harbor_city"],
       "state": "glory_semantic_import_complete",
-      "detail": "Glory-only semantic presentation imports 787 scene objects, rejects 2 Free-version fallback objects, and leaves 29 additional source misses blank."
+      "detail": "Glory-only semantic presentation imports all 818 scene objects; 31 placements were recovered by exact FCC paths from the official Glory lazy-resource endpoint."
     },
     {
       "gap_id": "d04_presentation_assets",
       "scope": ["d04_field_zone"],
       "state": "glory_semantic_import_complete_with_missing_dependencies",
-      "detail": "Glory-only semantic presentation imports 35 of 61 scene objects and leaves 26 missing placements blank; navigation and all 12 transitions are ready."
+      "detail": "Glory-only semantic presentation imports 45 of 61 scene objects, including 10 official lazy-resource recoveries, and leaves 16 confirmed-missing placements blank; navigation and all 12 transitions are ready."
     },
     {
       "gap_id": "g08_presentation_assets",

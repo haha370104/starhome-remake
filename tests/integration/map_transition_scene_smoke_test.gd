@@ -58,7 +58,7 @@ func _run() -> void:
 	_expect(hall.map_definition.map_id == &"yian_harbor_city", "大厅出口必须进入真实 City1Svr 业务图")
 	_expect(hall.player.position == Vector2(1399, 954), "城市入口0必须采用配置化权威落点")
 	_expect(hall.navigation.grid_size == Vector2i(71, 560), "城市必须切换到自己的荣耀导航")
-	_expect(hall.map_scene_nodes.size() == 811, "城市必须提交完整语义遮挡层")
+	_expect(hall.map_scene_nodes.size() == 919, "城市必须提交官网惰性资源恢复后的完整语义遮挡层")
 	_expect(hall.npc_instances.is_empty(), "大厅 NPC 不得泄漏到城市")
 	_expect(hall.hud.minimap_dock.map_name_label.text == "易安港城区", "HUD 必须原子更新城市名")
 
@@ -68,7 +68,7 @@ func _run() -> void:
 	_expect(hall.map_definition.map_id == &"d04_field_zone", "城市西北门必须进入 D04")
 	_expect(hall.player.position == Vector2(1290, 2562), "D04入口1必须采用配置化权威落点")
 	_expect(hall.navigation.grid_size == Vector2i(101, 800), "D04必须切换到自己的荣耀导航")
-	_expect(hall.map_scene_nodes.size() == 86, "D04必须提交荣耀语义遮挡层")
+	_expect(hall.map_scene_nodes.size() == 117, "D04必须提交官网惰性资源恢复后的荣耀语义遮挡层")
 	_expect(hall.hud.minimap_dock.map_name_label.text == "D04区", "HUD 必须原子更新 D04 名称")
 	_expect(hall.multiplayer_presenter.session.current_map_id == &"d04_field_zone", "离线调试会话也必须同步当前业务地图")
 	var final_sequence: int = hall.multiplayer_presenter.session.local_predictor.next_input_sequence
