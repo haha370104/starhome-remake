@@ -4,13 +4,24 @@
   "display_name": "D04区",
   "category": "field",
   "legacy": {
-    "codes": ["d04"]
+    "codes": [
+      "d04"
+    ]
   },
   "world": {
-    "size": [4824, 4800],
+    "size": [
+      4824,
+      4800
+    ],
     "navigation": {
-      "grid_size": [101, 800],
-      "cell_size": [48, 12],
+      "grid_size": [
+        101,
+        800
+      ],
+      "cell_size": [
+        48,
+        12
+      ],
       "data_path": "res://assets/maps/exploration/d04_field_zone/navigation_grid.bin"
     }
   },
@@ -32,7 +43,10 @@
       {
         "spawn_id": "field_center",
         "entry_number": 0,
-        "position": [2412, 2400],
+        "position": [
+          2412,
+          2400
+        ],
         "enabled": true,
         "evidence_level": "navigation_derived",
         "source_audit": {
@@ -45,7 +59,10 @@
       {
         "spawn_id": "arrival_from_city_northwest_gate",
         "entry_number": 1,
-        "position": [1290, 2562],
+        "position": [
+          1290,
+          2562
+        ],
         "enabled": true,
         "evidence_level": "navigation_derived",
         "source_audit": {
@@ -58,7 +75,10 @@
       {
         "spawn_id": "arrival_from_city_southwest_gate",
         "entry_number": 2,
-        "position": [1277, 2980],
+        "position": [
+          1277,
+          2980
+        ],
         "enabled": true,
         "evidence_level": "navigation_derived",
         "source_audit": {
@@ -71,7 +91,10 @@
       {
         "spawn_id": "arrival_from_city_southeast_gate",
         "entry_number": 3,
-        "position": [1973, 3006],
+        "position": [
+          1973,
+          3006
+        ],
         "enabled": true,
         "evidence_level": "navigation_derived",
         "source_audit": {
@@ -84,7 +107,10 @@
       {
         "spawn_id": "arrival_from_city_northeast_gate",
         "entry_number": 4,
-        "position": [1960, 2582],
+        "position": [
+          1960,
+          2582
+        ],
         "enabled": true,
         "evidence_level": "navigation_derived",
         "source_audit": {
@@ -113,120 +139,628 @@
       "kind": "standard",
       "enabled": true,
       "label": "进入C03",
-      "source_anchor": [67, 53],
-      "approach_point": [126, 65],
-      "destination": {"legacy_code": "c03", "entry_number": 0, "external": true},
-      "source_audit": {"source_release": "starhome_lz_ry", "source_map_code": "d04", "source_output": "maps/d04/variant_01_nft_bl/transitions.json", "source_line": 551}
+      "source_anchor": [
+        67,
+        53
+      ],
+      "approach_point": [
+        126,
+        65
+      ],
+      "destination": {
+        "legacy_code": "c03",
+        "entry_number": 0,
+        "external": true
+      },
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_map_code": "d04",
+        "source_output": "maps/d04/variant_01_nft_bl/transitions.json",
+        "source_line": 551
+      },
+      "presentation": {
+        "asset_id": "maps/exploration/d04_field_zone/transitions/exit_to_c03_field",
+        "kind": "animated_sprite",
+        "resource": "res://assets/maps/exploration/d04_field_zone/transitions/exit_to_c03_field/animation_frames.tres",
+        "animation": "active",
+        "anchor": [
+          67,
+          53
+        ],
+        "offset": [
+          -52,
+          -38
+        ],
+        "centered": false,
+        "interaction_rect": [
+          0,
+          0,
+          108,
+          71
+        ],
+        "interaction_space": "asset_local_fixed_bounds",
+        "sort_baseline": 53,
+        "frame_count": 4,
+        "frame_duration_ms": 125,
+        "loop": true,
+        "activation": "enabled_transition"
+      }
     },
     {
       "transition_id": "exit_to_c04_field",
       "kind": "standard",
       "enabled": true,
       "label": "进入C04",
-      "source_anchor": [52, 2558],
-      "approach_point": [130, 2553],
-      "destination": {"legacy_code": "c04", "entry_number": 0, "external": true},
-      "source_audit": {"source_release": "starhome_lz_ry", "source_map_code": "d04", "source_output": "maps/d04/variant_01_nft_bl/transitions.json", "source_line": 553}
+      "source_anchor": [
+        52,
+        2558
+      ],
+      "approach_point": [
+        130,
+        2553
+      ],
+      "destination": {
+        "legacy_code": "c04",
+        "entry_number": 0,
+        "external": true
+      },
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_map_code": "d04",
+        "source_output": "maps/d04/variant_01_nft_bl/transitions.json",
+        "source_line": 553
+      },
+      "presentation": {
+        "asset_id": "maps/exploration/d04_field_zone/transitions/exit_to_c04_field",
+        "kind": "animated_sprite",
+        "resource": "res://assets/maps/exploration/d04_field_zone/transitions/exit_to_c04_field/animation_frames.tres",
+        "animation": "active",
+        "anchor": [
+          52,
+          2558
+        ],
+        "offset": [
+          -62,
+          -38
+        ],
+        "centered": false,
+        "interaction_rect": [
+          0,
+          0,
+          114,
+          75
+        ],
+        "interaction_space": "asset_local_fixed_bounds",
+        "sort_baseline": 2558,
+        "frame_count": 4,
+        "frame_duration_ms": 125,
+        "loop": true,
+        "activation": "enabled_transition"
+      }
     },
     {
       "transition_id": "exit_to_c05_field",
       "kind": "standard",
       "enabled": true,
       "label": "进入C05",
-      "source_anchor": [64, 4707],
-      "approach_point": [120, 4696],
-      "destination": {"legacy_code": "c05", "entry_number": 0, "external": true},
-      "source_audit": {"source_release": "starhome_lz_ry", "source_map_code": "d04", "source_output": "maps/d04/variant_01_nft_bl/transitions.json", "source_line": 559}
+      "source_anchor": [
+        64,
+        4707
+      ],
+      "approach_point": [
+        120,
+        4696
+      ],
+      "destination": {
+        "legacy_code": "c05",
+        "entry_number": 0,
+        "external": true
+      },
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_map_code": "d04",
+        "source_output": "maps/d04/variant_01_nft_bl/transitions.json",
+        "source_line": 559
+      },
+      "presentation": {
+        "asset_id": "maps/exploration/d04_field_zone/transitions/exit_to_c05_field",
+        "kind": "animated_sprite",
+        "resource": "res://assets/maps/exploration/d04_field_zone/transitions/exit_to_c05_field/animation_frames.tres",
+        "animation": "active",
+        "anchor": [
+          64,
+          4707
+        ],
+        "offset": [
+          -52,
+          -37
+        ],
+        "centered": false,
+        "interaction_rect": [
+          0,
+          0,
+          101,
+          76
+        ],
+        "interaction_space": "asset_local_fixed_bounds",
+        "sort_baseline": 4707,
+        "frame_count": 4,
+        "frame_duration_ms": 125,
+        "loop": true,
+        "activation": "enabled_transition"
+      }
     },
     {
       "transition_id": "enter_city_via_northwest_gate",
       "kind": "standard",
       "enabled": true,
       "label": "进入龙之城",
-      "source_anchor": [1270, 2572],
-      "approach_point": [1290, 2562],
-      "destination": {"map_id": "yian_harbor_city", "legacy_code": "city1svr", "entry_number": 1, "external": false},
-      "source_audit": {"source_release": "starhome_lz_ry", "source_map_code": "d04", "source_output": "maps/d04/variant_01_nft_bl/transitions.json", "source_line": 555}
+      "source_anchor": [
+        1270,
+        2572
+      ],
+      "approach_point": [
+        1290,
+        2562
+      ],
+      "destination": {
+        "map_id": "yian_harbor_city",
+        "legacy_code": "city1svr",
+        "entry_number": 1,
+        "external": false
+      },
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_map_code": "d04",
+        "source_output": "maps/d04/variant_01_nft_bl/transitions.json",
+        "source_line": 555
+      },
+      "presentation": {
+        "asset_id": "maps/exploration/d04_field_zone/transitions/enter_city_via_northwest_gate",
+        "kind": "animated_sprite",
+        "resource": "res://assets/maps/exploration/d04_field_zone/transitions/enter_city_via_northwest_gate/animation_frames.tres",
+        "animation": "active",
+        "anchor": [
+          1270,
+          2572
+        ],
+        "offset": [
+          -58,
+          -44
+        ],
+        "centered": false,
+        "interaction_rect": [
+          0,
+          0,
+          122,
+          82
+        ],
+        "interaction_space": "asset_local_fixed_bounds",
+        "sort_baseline": 2572,
+        "frame_count": 4,
+        "frame_duration_ms": 125,
+        "loop": true,
+        "activation": "enabled_transition"
+      }
     },
     {
       "transition_id": "enter_city_via_southwest_gate",
       "kind": "standard",
       "enabled": true,
       "label": "进入龙之城",
-      "source_anchor": [1259, 2972],
-      "approach_point": [1277, 2980],
-      "destination": {"map_id": "yian_harbor_city", "legacy_code": "city1svr", "entry_number": 2, "external": false},
-      "source_audit": {"source_release": "starhome_lz_ry", "source_map_code": "d04", "source_output": "maps/d04/variant_01_nft_bl/transitions.json", "source_line": 557}
+      "source_anchor": [
+        1259,
+        2972
+      ],
+      "approach_point": [
+        1277,
+        2980
+      ],
+      "destination": {
+        "map_id": "yian_harbor_city",
+        "legacy_code": "city1svr",
+        "entry_number": 2,
+        "external": false
+      },
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_map_code": "d04",
+        "source_output": "maps/d04/variant_01_nft_bl/transitions.json",
+        "source_line": 557
+      },
+      "presentation": {
+        "asset_id": "maps/exploration/d04_field_zone/transitions/enter_city_via_southwest_gate",
+        "kind": "animated_sprite",
+        "resource": "res://assets/maps/exploration/d04_field_zone/transitions/enter_city_via_southwest_gate/animation_frames.tres",
+        "animation": "active",
+        "anchor": [
+          1259,
+          2972
+        ],
+        "offset": [
+          -61,
+          -39
+        ],
+        "centered": false,
+        "interaction_rect": [
+          0,
+          0,
+          116,
+          74
+        ],
+        "interaction_space": "asset_local_fixed_bounds",
+        "sort_baseline": 2972,
+        "frame_count": 4,
+        "frame_duration_ms": 125,
+        "loop": true,
+        "activation": "enabled_transition"
+      }
     },
     {
       "transition_id": "enter_city_via_southeast_gate",
       "kind": "standard",
       "enabled": true,
       "label": "进入龙之城",
-      "source_anchor": [1914, 2996],
-      "approach_point": [1973, 3006],
-      "destination": {"map_id": "yian_harbor_city", "legacy_code": "city1svr", "entry_number": 3, "external": false},
-      "source_audit": {"source_release": "starhome_lz_ry", "source_map_code": "d04", "source_output": "maps/d04/variant_01_nft_bl/transitions.json", "source_line": 558}
+      "source_anchor": [
+        1914,
+        2996
+      ],
+      "approach_point": [
+        1973,
+        3006
+      ],
+      "destination": {
+        "map_id": "yian_harbor_city",
+        "legacy_code": "city1svr",
+        "entry_number": 3,
+        "external": false
+      },
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_map_code": "d04",
+        "source_output": "maps/d04/variant_01_nft_bl/transitions.json",
+        "source_line": 558
+      },
+      "presentation": {
+        "asset_id": "maps/exploration/d04_field_zone/transitions/enter_city_via_southeast_gate",
+        "kind": "animated_sprite",
+        "resource": "res://assets/maps/exploration/d04_field_zone/transitions/enter_city_via_southeast_gate/animation_frames.tres",
+        "animation": "active",
+        "anchor": [
+          1914,
+          2996
+        ],
+        "offset": [
+          -52,
+          -38
+        ],
+        "centered": false,
+        "interaction_rect": [
+          0,
+          0,
+          108,
+          71
+        ],
+        "interaction_space": "asset_local_fixed_bounds",
+        "sort_baseline": 2996,
+        "frame_count": 4,
+        "frame_duration_ms": 125,
+        "loop": true,
+        "activation": "enabled_transition"
+      }
     },
     {
       "transition_id": "enter_city_via_northeast_gate",
       "kind": "standard",
       "enabled": true,
       "label": "进入龙之城",
-      "source_anchor": [1903, 2590],
-      "approach_point": [1960, 2582],
-      "destination": {"map_id": "yian_harbor_city", "legacy_code": "city1svr", "entry_number": 4, "external": false},
-      "source_audit": {"source_release": "starhome_lz_ry", "source_map_code": "d04", "source_output": "maps/d04/variant_01_nft_bl/transitions.json", "source_line": 556}
+      "source_anchor": [
+        1903,
+        2590
+      ],
+      "approach_point": [
+        1960,
+        2582
+      ],
+      "destination": {
+        "map_id": "yian_harbor_city",
+        "legacy_code": "city1svr",
+        "entry_number": 4,
+        "external": false
+      },
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_map_code": "d04",
+        "source_output": "maps/d04/variant_01_nft_bl/transitions.json",
+        "source_line": 556
+      },
+      "presentation": {
+        "asset_id": "maps/exploration/d04_field_zone/transitions/enter_city_via_northeast_gate",
+        "kind": "animated_sprite",
+        "resource": "res://assets/maps/exploration/d04_field_zone/transitions/enter_city_via_northeast_gate/animation_frames.tres",
+        "animation": "active",
+        "anchor": [
+          1903,
+          2590
+        ],
+        "offset": [
+          -52,
+          -37
+        ],
+        "centered": false,
+        "interaction_rect": [
+          0,
+          0,
+          101,
+          76
+        ],
+        "interaction_space": "asset_local_fixed_bounds",
+        "sort_baseline": 2590,
+        "frame_count": 4,
+        "frame_duration_ms": 125,
+        "loop": true,
+        "activation": "enabled_transition"
+      }
     },
     {
       "transition_id": "exit_to_d03_field",
       "kind": "standard",
       "enabled": true,
       "label": "进入D03",
-      "source_anchor": [2479, 46],
-      "approach_point": [2508, 68],
-      "destination": {"legacy_code": "d03", "entry_number": 0, "external": true},
-      "source_audit": {"source_release": "starhome_lz_ry", "source_map_code": "d04", "source_output": "maps/d04/variant_01_nft_bl/transitions.json", "source_line": 550}
+      "source_anchor": [
+        2479,
+        46
+      ],
+      "approach_point": [
+        2508,
+        68
+      ],
+      "destination": {
+        "legacy_code": "d03",
+        "entry_number": 0,
+        "external": true
+      },
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_map_code": "d04",
+        "source_output": "maps/d04/variant_01_nft_bl/transitions.json",
+        "source_line": 550
+      },
+      "presentation": {
+        "asset_id": "maps/exploration/d04_field_zone/transitions/exit_to_d03_field",
+        "kind": "animated_sprite",
+        "resource": "res://assets/maps/exploration/d04_field_zone/transitions/exit_to_d03_field/animation_frames.tres",
+        "animation": "active",
+        "anchor": [
+          2479,
+          46
+        ],
+        "offset": [
+          -48,
+          -39
+        ],
+        "centered": false,
+        "interaction_rect": [
+          0,
+          0,
+          96,
+          75
+        ],
+        "interaction_space": "asset_local_fixed_bounds",
+        "sort_baseline": 46,
+        "frame_count": 4,
+        "frame_duration_ms": 125,
+        "loop": true,
+        "activation": "enabled_transition"
+      }
     },
     {
       "transition_id": "exit_to_d05_field",
       "kind": "standard",
       "enabled": true,
       "label": "进入D05",
-      "source_anchor": [2502, 4714],
-      "approach_point": [2529, 4696],
-      "destination": {"legacy_code": "d05", "entry_number": 0, "external": true},
-      "source_audit": {"source_release": "starhome_lz_ry", "source_map_code": "d04", "source_output": "maps/d04/variant_01_nft_bl/transitions.json", "source_line": 560}
+      "source_anchor": [
+        2502,
+        4714
+      ],
+      "approach_point": [
+        2529,
+        4696
+      ],
+      "destination": {
+        "legacy_code": "d05",
+        "entry_number": 0,
+        "external": true
+      },
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_map_code": "d04",
+        "source_output": "maps/d04/variant_01_nft_bl/transitions.json",
+        "source_line": 560
+      },
+      "presentation": {
+        "asset_id": "maps/exploration/d04_field_zone/transitions/exit_to_d05_field",
+        "kind": "animated_sprite",
+        "resource": "res://assets/maps/exploration/d04_field_zone/transitions/exit_to_d05_field/animation_frames.tres",
+        "animation": "active",
+        "anchor": [
+          2502,
+          4714
+        ],
+        "offset": [
+          -58,
+          -44
+        ],
+        "centered": false,
+        "interaction_rect": [
+          0,
+          0,
+          122,
+          82
+        ],
+        "interaction_space": "asset_local_fixed_bounds",
+        "sort_baseline": 4714,
+        "frame_count": 4,
+        "frame_duration_ms": 125,
+        "loop": true,
+        "activation": "enabled_transition"
+      }
     },
     {
       "transition_id": "exit_to_e03_field",
       "kind": "standard",
       "enabled": true,
       "label": "进入E03",
-      "source_anchor": [4687, 61],
-      "approach_point": [4707, 75],
-      "destination": {"legacy_code": "e03", "entry_number": 0, "external": true},
-      "source_audit": {"source_release": "starhome_lz_ry", "source_map_code": "d04", "source_output": "maps/d04/variant_01_nft_bl/transitions.json", "source_line": 552}
+      "source_anchor": [
+        4687,
+        61
+      ],
+      "approach_point": [
+        4707,
+        75
+      ],
+      "destination": {
+        "legacy_code": "e03",
+        "entry_number": 0,
+        "external": true
+      },
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_map_code": "d04",
+        "source_output": "maps/d04/variant_01_nft_bl/transitions.json",
+        "source_line": 552
+      },
+      "presentation": {
+        "asset_id": "maps/exploration/d04_field_zone/transitions/exit_to_e03_field",
+        "kind": "animated_sprite",
+        "resource": "res://assets/maps/exploration/d04_field_zone/transitions/exit_to_e03_field/animation_frames.tres",
+        "animation": "active",
+        "anchor": [
+          4687,
+          61
+        ],
+        "offset": [
+          -61,
+          -39
+        ],
+        "centered": false,
+        "interaction_rect": [
+          0,
+          0,
+          116,
+          74
+        ],
+        "interaction_space": "asset_local_fixed_bounds",
+        "sort_baseline": 61,
+        "frame_count": 4,
+        "frame_duration_ms": 125,
+        "loop": true,
+        "activation": "enabled_transition"
+      }
     },
     {
       "transition_id": "exit_to_e04_field",
       "kind": "standard",
       "enabled": true,
       "label": "进入E04",
-      "source_anchor": [4688, 2561],
-      "approach_point": [4692, 2556],
-      "destination": {"legacy_code": "e04", "entry_number": 0, "external": true},
-      "source_audit": {"source_release": "starhome_lz_ry", "source_map_code": "d04", "source_output": "maps/d04/variant_01_nft_bl/transitions.json", "source_line": 554}
+      "source_anchor": [
+        4688,
+        2561
+      ],
+      "approach_point": [
+        4692,
+        2556
+      ],
+      "destination": {
+        "legacy_code": "e04",
+        "entry_number": 0,
+        "external": true
+      },
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_map_code": "d04",
+        "source_output": "maps/d04/variant_01_nft_bl/transitions.json",
+        "source_line": 554
+      },
+      "presentation": {
+        "asset_id": "maps/exploration/d04_field_zone/transitions/exit_to_e04_field",
+        "kind": "animated_sprite",
+        "resource": "res://assets/maps/exploration/d04_field_zone/transitions/exit_to_e04_field/animation_frames.tres",
+        "animation": "active",
+        "anchor": [
+          4688,
+          2561
+        ],
+        "offset": [
+          -56,
+          -36
+        ],
+        "centered": false,
+        "interaction_rect": [
+          0,
+          0,
+          108,
+          71
+        ],
+        "interaction_space": "asset_local_fixed_bounds",
+        "sort_baseline": 2561,
+        "frame_count": 4,
+        "frame_duration_ms": 125,
+        "loop": true,
+        "activation": "enabled_transition"
+      }
     },
     {
       "transition_id": "exit_to_e05_field",
       "kind": "standard",
       "enabled": true,
       "label": "进入E05",
-      "source_anchor": [4694, 4717],
-      "approach_point": [4716, 4706],
-      "destination": {"legacy_code": "e05", "entry_number": 0, "external": true},
-      "source_audit": {"source_release": "starhome_lz_ry", "source_map_code": "d04", "source_output": "maps/d04/variant_01_nft_bl/transitions.json", "source_line": 561}
+      "source_anchor": [
+        4694,
+        4717
+      ],
+      "approach_point": [
+        4716,
+        4706
+      ],
+      "destination": {
+        "legacy_code": "e05",
+        "entry_number": 0,
+        "external": true
+      },
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_map_code": "d04",
+        "source_output": "maps/d04/variant_01_nft_bl/transitions.json",
+        "source_line": 561
+      },
+      "presentation": {
+        "asset_id": "maps/exploration/d04_field_zone/transitions/exit_to_e05_field",
+        "kind": "animated_sprite",
+        "resource": "res://assets/maps/exploration/d04_field_zone/transitions/exit_to_e05_field/animation_frames.tres",
+        "animation": "active",
+        "anchor": [
+          4694,
+          4717
+        ],
+        "offset": [
+          -58,
+          -44
+        ],
+        "centered": false,
+        "interaction_rect": [
+          0,
+          0,
+          122,
+          82
+        ],
+        "interaction_space": "asset_local_fixed_bounds",
+        "sort_baseline": 4717,
+        "frame_count": 4,
+        "frame_duration_ms": 125,
+        "loop": true,
+        "activation": "enabled_transition"
+      }
     }
   ],
   "source_audit": {
@@ -234,7 +768,12 @@
     "source_map_code": "d04",
     "source_map_name": "D04区域",
     "source_output": "maps/d04/variant_01_nft_bl",
-    "source_branches": ["NFT_BL", "NFT_BT", "NFT_BTB", "NFT_PL"],
+    "source_branches": [
+      "NFT_BL",
+      "NFT_BT",
+      "NFT_BTB",
+      "NFT_PL"
+    ],
     "source_script_sha256": "408e5752538208bff58591987f67fca472ab36a716e4f33d59a7e8c403653baa",
     "navigation_sha256": "6596d9afc3b99553649f5d980de0365dc51a36eacb50a2e07fc0075fa612f65b",
     "navigation_passable": 77814,

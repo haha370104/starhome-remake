@@ -104,6 +104,13 @@ func _test_definitions(directory: Dictionary) -> void:
 		_expect(city.spawn_for_entry(entry_number) != null, "City1Svr 缺少入口 %d 出生点" % entry_number)
 	var d04 = definitions_by_id["d04_field_zone"]
 	_expect(d04.transitions.size() == 12, "D04 的 12 条荣耀版有效出口必须全部保留")
+	for transition: MapTransition in d04.transitions:
+		_expect(not transition.presentation.is_empty(), "D04 每个出口都必须恢复可见传送点")
+		_expect(int(transition.presentation.get("frame_count", 0)) == 4, "D04 传送点必须是四帧闪烁动画")
+		_expect(
+			ResourceLoader.exists(String(transition.presentation.get("resource", ""))),
+			"D04 传送动画资源必须可加载：%s" % transition.transition_id,
+		)
 	for entry_number in range(1, 5):
 		_expect(d04.spawn_for_entry(entry_number) != null, "D04 缺少城市入口 %d 出生点" % entry_number)
 	_test_g08_transitions(definitions_by_id["g08_field_zone"])

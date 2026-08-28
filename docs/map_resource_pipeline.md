@@ -326,6 +326,13 @@ python tools/map_pipeline/extract_map_transitions.py `
 `map_transitions.json`、UTF-8 CSV、仅有效边清单、G08 专项清单和无法在同分支找到目标
 代码的审计报告。
 
+D04 的十二条有效出口引用同一旧动画目录下的 `jt-01..08` 四帧素材；截至 2026-08-28，
+官网对单点与双点文件名均返回 404，恢复包中也没有这些文件。运行时不会因此静默隐藏出口：
+`tools/import_glory_d04_transition_animations.py` 使用同一荣耀版本仍可从官网取得的方向标记
+生成四帧明暗循环，并为每条业务出口写独立资源与 `missing_original_http_status=404` 审计。
+其中旧样式 08 没有同名方向标记，明确回退到同版通用传送标记；找到原四帧 ALE 后只需替换
+导入器来源，地图定义中的业务 `asset_id` 和交互契约无需变化。
+
 供 remake 直接消费的结构化结果分为两层：
 
 - 根目录 `map_transition_graph.json` 保存 497 个唯一地图节点、83 个未落入地图目录的外部
