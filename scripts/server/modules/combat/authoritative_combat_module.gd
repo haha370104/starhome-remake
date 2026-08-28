@@ -570,6 +570,10 @@ func _settle_due_monster_attacks() -> void:
 
 
 ## 查找当前逻辑 tick 内最先接住怪物弹体的存活玩家。
+## [param map_instance_id] 弹体所属的权威地图实例。
+## [param segment_start] 弹体在本逻辑 tick 的起点。
+## [param segment_end] 弹体在本逻辑 tick 的终点。
+## 返回最早交点、实际目标玩家和归一化线段参数；无交点时返回 `hit=false`。
 ## 玩家与弹体都可能在 tick 内移动，因此在相对坐标中扫掠两条线段，避免穿透或躲开后仍命中。
 func _first_actor_projectile_collision(
 	map_instance_id: String,
@@ -641,6 +645,8 @@ func _resolve_monster_attack(attack: Dictionary) -> void:
 
 
 ## 记录怪物弹体抵达原始瞄准点但没有碰到任何玩家。
+## [param attack] 正在结束的权威怪物攻击状态。
+## [param impact_position] 弹体无伤害消失的世界坐标。
 func _record_monster_attack_expired(attack: Dictionary, impact_position: Vector2) -> void:
 	_record_combat_event({
 		"event_type": &"monster_attack_expired",
