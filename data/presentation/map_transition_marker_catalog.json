@@ -5,69 +5,37 @@
       "asset_id": "maps/shared/directional_transitions/east",
       "resource": "res://assets/maps/shared/directional_transitions/east/animation_frames.tres",
       "animation": "active",
-      "offset": [0, 0],
+      "offset": [
+        0,
+        0
+      ],
       "centered": false,
-      "interaction_rect": [0, 0, 83, 30],
+      "interaction_rect": [
+        0,
+        0,
+        83,
+        30
+      ],
       "interaction_space": "asset_local_fixed_bounds",
       "frame_count": 9,
       "frame_duration_ms": 100,
       "loop": true
     },
-    "south_east": {
-      "asset_id": "maps/shared/directional_transitions/south_east",
-      "resource": "res://assets/maps/shared/directional_transitions/south_east/animation_frames.tres",
+    "north_east": {
+      "asset_id": "maps/shared/directional_transitions/north_east",
+      "resource": "res://assets/maps/shared/directional_transitions/north_east/animation_frames.tres",
       "animation": "active",
-      "offset": [0, 0],
+      "offset": [
+        0,
+        0
+      ],
       "centered": false,
-      "interaction_rect": [0, 0, 78, 41],
-      "interaction_space": "asset_local_fixed_bounds",
-      "frame_count": 10,
-      "frame_duration_ms": 100,
-      "loop": true
-    },
-    "south": {
-      "asset_id": "maps/shared/directional_transitions/south",
-      "resource": "res://assets/maps/shared/directional_transitions/south/animation_frames.tres",
-      "animation": "active",
-      "offset": [0, -1],
-      "centered": false,
-      "interaction_rect": [0, 0, 56, 44],
-      "interaction_space": "asset_local_fixed_bounds",
-      "frame_count": 10,
-      "frame_duration_ms": 100,
-      "loop": true
-    },
-    "south_west": {
-      "asset_id": "maps/shared/directional_transitions/south_west",
-      "resource": "res://assets/maps/shared/directional_transitions/south_west/animation_frames.tres",
-      "animation": "active",
-      "offset": [0, 0],
-      "centered": false,
-      "interaction_rect": [0, 0, 78, 41],
-      "interaction_space": "asset_local_fixed_bounds",
-      "frame_count": 9,
-      "frame_duration_ms": 100,
-      "loop": true
-    },
-    "west": {
-      "asset_id": "maps/shared/directional_transitions/west",
-      "resource": "res://assets/maps/shared/directional_transitions/west/animation_frames.tres",
-      "animation": "active",
-      "offset": [-1, 0],
-      "centered": false,
-      "interaction_rect": [0, 0, 84, 30],
-      "interaction_space": "asset_local_fixed_bounds",
-      "frame_count": 10,
-      "frame_duration_ms": 100,
-      "loop": true
-    },
-    "north_west": {
-      "asset_id": "maps/shared/directional_transitions/north_west",
-      "resource": "res://assets/maps/shared/directional_transitions/north_west/animation_frames.tres",
-      "animation": "active",
-      "offset": [0, 0],
-      "centered": false,
-      "interaction_rect": [0, 0, 78, 42],
+      "interaction_rect": [
+        0,
+        0,
+        78,
+        41
+      ],
       "interaction_space": "asset_local_fixed_bounds",
       "frame_count": 10,
       "frame_duration_ms": 100,
@@ -77,21 +45,117 @@
       "asset_id": "maps/shared/directional_transitions/north",
       "resource": "res://assets/maps/shared/directional_transitions/north/animation_frames.tres",
       "animation": "active",
-      "offset": [0, 0],
+      "offset": [
+        0,
+        -1
+      ],
       "centered": false,
-      "interaction_rect": [0, 0, 56, 44],
+      "interaction_rect": [
+        0,
+        0,
+        56,
+        44
+      ],
       "interaction_space": "asset_local_fixed_bounds",
       "frame_count": 10,
       "frame_duration_ms": 100,
       "loop": true
     },
-    "north_east": {
-      "asset_id": "maps/shared/directional_transitions/north_east",
-      "resource": "res://assets/maps/shared/directional_transitions/north_east/animation_frames.tres",
+    "north_west": {
+      "asset_id": "maps/shared/directional_transitions/north_west",
+      "resource": "res://assets/maps/shared/directional_transitions/north_west/animation_frames.tres",
       "animation": "active",
-      "offset": [0, 0],
+      "offset": [
+        0,
+        0
+      ],
       "centered": false,
-      "interaction_rect": [0, 0, 78, 42],
+      "interaction_rect": [
+        0,
+        0,
+        78,
+        41
+      ],
+      "interaction_space": "asset_local_fixed_bounds",
+      "frame_count": 9,
+      "frame_duration_ms": 100,
+      "loop": true
+    },
+    "west": {
+      "asset_id": "maps/shared/directional_transitions/west",
+      "resource": "res://assets/maps/shared/directional_transitions/west/animation_frames.tres",
+      "animation": "active",
+      "offset": [
+        -1,
+        0
+      ],
+      "centered": false,
+      "interaction_rect": [
+        0,
+        0,
+        84,
+        30
+      ],
+      "interaction_space": "asset_local_fixed_bounds",
+      "frame_count": 10,
+      "frame_duration_ms": 100,
+      "loop": true
+    },
+    "south_west": {
+      "asset_id": "maps/shared/directional_transitions/south_west",
+      "resource": "res://assets/maps/shared/directional_transitions/south_west/animation_frames.tres",
+      "animation": "active",
+      "offset": [
+        0,
+        0
+      ],
+      "centered": false,
+      "interaction_rect": [
+        0,
+        0,
+        78,
+        42
+      ],
+      "interaction_space": "asset_local_fixed_bounds",
+      "frame_count": 10,
+      "frame_duration_ms": 100,
+      "loop": true
+    },
+    "south": {
+      "asset_id": "maps/shared/directional_transitions/south",
+      "resource": "res://assets/maps/shared/directional_transitions/south/animation_frames.tres",
+      "animation": "active",
+      "offset": [
+        0,
+        0
+      ],
+      "centered": false,
+      "interaction_rect": [
+        0,
+        0,
+        56,
+        44
+      ],
+      "interaction_space": "asset_local_fixed_bounds",
+      "frame_count": 10,
+      "frame_duration_ms": 100,
+      "loop": true
+    },
+    "south_east": {
+      "asset_id": "maps/shared/directional_transitions/south_east",
+      "resource": "res://assets/maps/shared/directional_transitions/south_east/animation_frames.tres",
+      "animation": "active",
+      "offset": [
+        0,
+        0
+      ],
+      "centered": false,
+      "interaction_rect": [
+        0,
+        0,
+        78,
+        42
+      ],
       "interaction_space": "asset_local_fixed_bounds",
       "frame_count": 9,
       "frame_duration_ms": 100,
