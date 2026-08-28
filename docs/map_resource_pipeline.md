@@ -193,7 +193,7 @@ Godot 的 `DiamondNavigation` 对菱形边邻居建图，再在不穿墙角的�
 支持八向移动；A* 后用密集视线采样拉直路径，使每段无遮挡路线只播放一个最接近的
 八向动画。
 
-## 5. 荣耀版是否还能离线解析
+## 5. 荣耀版是否还能解析
 
 可以。对当前完整荣耀版展开目录重新扫描的结果：
 
@@ -206,8 +206,14 @@ Godot 的 `DiamondNavigation` 对菱形边邻居建图，再在不穿墙角的�
 
 早期“只有 21 张地图”的记录来自尚未下载完整时的旧缓存分析，不能代表现在的
 `starhome_lz_ry_full`。登录服务器失效不会影响已经落在本地全量包里的 FCC、ALE、
-小地图和碰撞数据。真正无法离线恢复的只有从未缓存、也未包含在全量下载中的惰性
-资源；这类缺失应根据 FCC 引用做依赖审计并明确报告。
+小地图和碰撞数据。但 `files_dir.dz` 只是更新/校验目录，不是官网物理目录的完整枚举：
+全局依赖审计发现 294 种脚本引用的 ALE 未在清单资源库命中，其中 269 种仍能按 FCC
+精确路径从荣耀官网取得并成功解析，25 种返回 404。
+
+因此地图解析顺序固定为：清单内荣耀资源 → 已验证的荣耀官网惰性缓存 → 官网同版本精确
+路径请求一次 → 保留缺失。不得用模糊同名或免费版/激战版资源自动补洞。成功和失败结果都
+写入 `starhome_lz_ry_full_parsed/official_lazy_cache/official_recovery_manifest.json`；正常运行
+不会重复请求同一路径，只有 `--retry-official-failures` 才会重试失败记录。
 
 同名地图在不同 NFT 分支可能是版本变体，不能仅按文件名覆盖。选择正式地图时需要
 比较 FCC 哈希、地图尺寸、引用资源和场景内容，再为 remake 赋予唯一业务名。
@@ -254,6 +260,13 @@ python tools/map_pipeline/extract_all_maps.py `
   --engine-dll "D:\Program Files\FancyBoxII Games\newsystem_ry\fkernel.dll"
 ```
 
+上面的全量命令默认在本地未命中 ALE 时访问荣耀更新目录
+`http://update.ftxjjy.com/gameser/ry_www/`。可用 `--offline` 禁止联网但继续消费既有缓存；
+也可用 `--official-cache-root`、`--official-base-url`、`--official-timeout` 和
+`--ale-decoder` 显式覆盖缓存、服务器、超时与解码器位置。下载结果必须具备 ALE/RLE0/AEX
+文件头并由解码器实际生成 `frames.json` 后才算恢复成功。没有 `files_dir.dz` MD5 的文件会
+自行记录下载后的 MD5 与 SHA-256。
+
 若荣耀版地图 FCC 明确引用了荣耀版全量包中不存在的 ALE，可在**离线比对报告**中把
 免费版、激战版解析目录作为只读检索库，用来确认缺口的业务含义；这种模式的输出不能
 进入正式工程。解析器始终优先荣耀版完整逻辑路径，检索库也先按完整路径匹配，仅当同名
@@ -288,8 +301,9 @@ python tools/map_pipeline/extract_all_maps.py `
 
 根目录的 `map_names.csv` 使用 UTF-8 BOM，适合直接用 Excel 查看；`map_catalog.json`
 保留 828 条来源；`unique_maps.json` 记录 497 份唯一产物；`index.html` 可按名称、代码和
-分支搜索。`partial` 不等于地图失败：当前多数 partial 仅表示原全量包缺少一个或多个
-AddImg ALE；地图图块、碰撞和小地图仍可能全部成功，应查看 `issues` 与分层状态。
+分支搜索。`partial` 不等于地图失败：官网补抓后 497 张唯一地图中 431 张完整，66 张仍
+存在结构、小地图或场景物件问题；其中 49 张包含 298 个摆放缺口，对应 25 个官网 404 的
+唯一 ALE。地图图块、碰撞和小地图仍可能成功，应查看 `issues` 与分层状态。
 
 ### 地图跳转关系
 
@@ -341,13 +355,14 @@ python tools/map_pipeline/generate_missing_scene_review.py `
 红色标记表示未解析 `AddImg`，黄色表示 `AddImgEx`，同一锚点混合两种类型时为洋红色。
 锚点落在地图画布外时无法在 PNG 上绘制，但仍会写入逐图 JSON、总 JSON 和 CSV。审计包
 根目录的 `index.html` 可按地图代码、名称、分支或缺失 ALE 路径搜索；每张卡片链接原尺寸
-标记图、未标记复原图和机器可读清单。当前结果覆盖 230 张地图、4496 个缺失摆放，生成
-过程无错误；其中 42 个摆放锚点位于画布外。
+标记图、未标记复原图和机器可读清单。官网精确路径恢复后，当前结果覆盖 49 张地图、298 个
+缺失摆放、25 种唯一缺失 ALE，生成过程无错误；其中 11 个摆放锚点位于画布外。
 
 ## 7. 新地图接入检查表
 
 1. 从荣耀版 FCC 建立地图目录与来源清单，确认选择了正确 NFT 变体。
-2. 校验所有 `oversrc`、`AddImg`、`AddImgEx`、小地图和声音引用是否本地存在。
+2. 校验所有 `oversrc`、`AddImg`、`AddImgEx`、小地图和声音引用是否本地存在；ALE 未命中时
+   先查持久缓存，再按荣耀官网精确路径请求一次，并保存成功/404/错误审计。
 3. 解析每条摆放的注释状态和完整参数；按 FCC 顺序合成有效项并生成最终像素 owner。
 4. 普通 owner 默认使用锚点 Y；可穿行复合物件应提供资产局部 depth profile，禁止坐标补丁。
 5. 将 owner 层裁到 alpha bbox，离线重合成并与静态 composite 逐像素校验。

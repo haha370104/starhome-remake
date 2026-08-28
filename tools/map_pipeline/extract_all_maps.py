@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Reconstruct every cached Glory-edition FancyBoxII map offline.
+"""Reconstruct every Glory-edition FancyBoxII map with audited lazy recovery.
 
 The tool inventories all NFT branch map FCC files, decodes their GB18030 map
 names, deduplicates byte-identical scripts, reconstructs ALE background layers,
@@ -31,6 +31,7 @@ from PIL import Image, ImageChops
 
 from extract_navigation import extract as extract_navigation
 from extract_navigation import run_unpacker
+from official_asset_recovery import OfficialAleRecovery
 
 
 Image.MAX_IMAGE_PIXELS = None
@@ -62,6 +63,8 @@ PROP_RESOURCE_RE = re.compile(
 )
 FIELD_CODE_RE = re.compile(r"^[A-Za-z]\d{2}$")
 SAFE_SLUG_RE = re.compile(r"[^a-z0-9_-]+")
+DEFAULT_GLORY_UPDATE_URL = "http://update.ftxjjy.com/gameser/ry_www/"
+DEFAULT_ALE_DECODER = Path(__file__).resolve().parents[4] / "work" / "ale_sprite.py"
 
 
 def digest(data: bytes) -> str:
@@ -275,9 +278,27 @@ def parse_map(script: Path, expanded_root: Path) -> MapRecord | None:
 
 
 class AleRepository:
-    def __init__(self, root: Path, fallback_roots: list[Path] | None = None) -> None:
+    def __init__(
+        self,
+        root: Path,
+        fallback_roots: list[Path] | None = None,
+        recovery: OfficialAleRecovery | None = None,
+    ) -> None:
+        """Index parsed Glory ALEs and optionally attach exact-path HTTP recovery.
+
+        Args:
+            root: Primary parsed Glory ALE sprite root.
+            fallback_roots: Cross-release roots used only for explicit research.
+            recovery: Same-release official lazy-resource resolver.
+        """
         self.root = root
-        self.roots = [root, *(fallback_roots or [])]
+        self.recovery = recovery
+        self.recovery_root_index = 1 if recovery is not None else None
+        self.fallback_start_index = 2 if recovery is not None else 1
+        self.roots = [root]
+        if recovery is not None:
+            self.roots.append(recovery.parsed_root)
+        self.roots.extend(fallback_roots or [])
         self.by_logical_path: dict[str, tuple[Path, int]] = {}
         self.by_basename: dict[str, list[tuple[Path, str, int]]] = defaultdict(list)
         self.folder_metadata: dict[Path, tuple[str, int]] = {}
@@ -294,17 +315,46 @@ class AleRepository:
                 self.folder_metadata[folder] = (logical, root_index)
 
     def resolve(self, source: str) -> tuple[Path | None, str]:
+        """Resolve an ALE, attempting the same-release official URL before fuzzy lookup.
+
+        Args:
+            source: Original FCC logical ALE reference.
+
+        Returns:
+            Parsed folder and a provenance-aware resolution label.
+        """
         logical = normalize_ale_reference(source)
         direct = self.by_logical_path.get(logical.lower())
         if direct:
             folder, root_index = direct
-            resolution = "logical_path" if root_index == 0 else "fallback_logical_path"
+            if root_index == 0:
+                resolution = "logical_path"
+            elif root_index == self.recovery_root_index:
+                resolution = "official_lazy_cache"
+            else:
+                resolution = "fallback_logical_path"
             return folder, resolution
+        if self.recovery is not None:
+            recovered, resolution = self.recovery.resolve(source)
+            if recovered is not None:
+                logical_key = recovered.relative_to(self.recovery.parsed_root).as_posix().lower()
+                root_index = int(self.recovery_root_index)
+                self.by_logical_path[logical_key] = (recovered, root_index)
+                self.by_basename[recovered.name.lower()].append(
+                    (recovered, logical_key, root_index)
+                )
+                self.folder_metadata[recovered] = (logical_key, root_index)
+                return recovered, resolution
         basename_matches = self.by_basename.get(Path(logical).name.lower(), [])
         distinct_logical_paths = {match[1] for match in basename_matches}
         if len(distinct_logical_paths) == 1:
             folder, _, root_index = min(basename_matches, key=lambda match: match[2])
-            resolution = "unique_basename" if root_index == 0 else "fallback_unique_basename"
+            if root_index == 0:
+                resolution = "unique_basename"
+            elif root_index == self.recovery_root_index:
+                resolution = "official_cache_unique_basename"
+            else:
+                resolution = "fallback_unique_basename"
             return folder, resolution
         return None, "missing" if not basename_matches else "ambiguous_basename"
 
@@ -339,10 +389,31 @@ class AleRepository:
         return image, frame
 
     def logical_path(self, folder: Path) -> str:
+        """Return an auditable logical path, prefixing non-indexed repositories.
+
+        Args:
+            folder: Resolved parsed ALE folder.
+
+        Returns:
+            Logical source path with a cache or fallback marker when applicable.
+        """
         logical, root_index = self.folder_metadata[folder]
         if root_index == 0:
             return logical
+        if root_index == self.recovery_root_index:
+            return f"@official_glory_lazy_cache/{logical}"
         return f"@{self.roots[root_index].parent.name}/{logical}"
+
+    def source_audit(self, source: str) -> dict[str, Any] | None:
+        """Expose official recovery provenance for one map dependency.
+
+        Args:
+            source: Original FCC logical ALE reference.
+
+        Returns:
+            Recovery audit record, or ``None`` for indexed/fallback assets.
+        """
+        return self.recovery.audit_for(source) if self.recovery is not None else None
 
     def close(self) -> None:
         for page in self.pages.values():
@@ -626,6 +697,9 @@ def compose_background(
         return canvas, status
     folder, resolution = repository.resolve(record.oversrc)
     status["resolution"] = resolution
+    source_audit = repository.source_audit(record.oversrc)
+    if source_audit is not None:
+        status["source_audit"] = source_audit
     if folder is None:
         status["error"] = "ALE source was not found"
         if tile_layer is not None:
@@ -689,6 +763,9 @@ def composite_props(
             "anchor": [prop.anchor_x, prop.anchor_y],
             "resolution": resolution,
         }
+        source_audit = repository.source_audit(prop.source)
+        if source_audit is not None:
+            item["source_audit"] = source_audit
         if folder is not None:
             try:
                 image, frame = repository.frame(folder, 0)
@@ -714,6 +791,16 @@ def composite_props(
         "count": len(objects),
         "resolved": resolved,
         "missing": len(objects) - resolved,
+        "official_lazy_recovered": sum(
+            row.get("status") == "ok"
+            and str(row.get("resolution", "")).startswith("official_")
+            for row in objects
+        ),
+        "official_probe_failures": sum(
+            row.get("status") != "ok"
+            and str(row.get("resolution", "")).startswith("official_")
+            for row in objects
+        ),
         "objects": objects,
     }
     (output_dir / "scene_objects.json").write_text(
@@ -846,6 +933,8 @@ def render_map(
             "count": props["count"],
             "resolved": props["resolved"],
             "missing": props["missing"],
+            "official_lazy_recovered": props["official_lazy_recovered"],
+            "official_probe_failures": props["official_probe_failures"],
         }
         if props["missing"]:
             errors.append(f"scene objects: {props['missing']} unresolved")
@@ -1013,6 +1102,38 @@ def main() -> int:
         help="parsed ALE sprite root used only when the primary Glory-edition root has no match",
     )
     parser.add_argument(
+        "--official-base-url",
+        default=DEFAULT_GLORY_UPDATE_URL,
+        help="same-release update root used for exact FCC-path recovery",
+    )
+    parser.add_argument(
+        "--official-cache-root",
+        type=Path,
+        help="persistent raw/parsed recovery cache; defaults beside the parsed Glory library",
+    )
+    parser.add_argument(
+        "--ale-decoder",
+        type=Path,
+        default=DEFAULT_ALE_DECODER,
+        help="audited ale_sprite.py used to validate and decode recovered files",
+    )
+    parser.add_argument(
+        "--official-timeout",
+        type=float,
+        default=30.0,
+        help="timeout in seconds for each exact-path official request",
+    )
+    parser.add_argument(
+        "--offline",
+        action="store_true",
+        help="use the persistent official cache but never issue a network request",
+    )
+    parser.add_argument(
+        "--retry-official-failures",
+        action="store_true",
+        help="retry exact paths whose previous official request or parse failed",
+    )
+    parser.add_argument(
         "--retry-structural-partials",
         action="store_true",
         help="rerender only maps whose navigation/tile/background structure failed previously",
@@ -1063,7 +1184,24 @@ def main() -> int:
         write_catalogs(args.output_root, records, existing_results)
         return 0
 
-    ale_repository = AleRepository(args.ale_root, args.fallback_ale_root)
+    recovery_cache_root = (
+        args.official_cache_root
+        if args.official_cache_root is not None
+        else args.ale_root.parent / "official_lazy_cache"
+    )
+    official_recovery = OfficialAleRecovery(
+        args.official_base_url,
+        recovery_cache_root,
+        args.ale_decoder,
+        timeout_seconds=args.official_timeout,
+        retry_failures=args.retry_official_failures,
+        allow_network=not args.offline,
+    )
+    ale_repository = AleRepository(
+        args.ale_root,
+        args.fallback_ale_root,
+        recovery=official_recovery,
+    )
     minimap_repository = MinimapRepository(args.raw_root)
     raw_image_repository = RawImageRepository(args.raw_root)
     unique_results: list[dict[str, Any]] = []

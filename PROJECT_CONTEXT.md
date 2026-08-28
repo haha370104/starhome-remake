@@ -10,17 +10,23 @@
 - 唯一解析资源根：`../starhome_lz_ry_full_parsed/`
 - 原始全量资源：`../starhome_lz_ry_full/raw/`
 - ALE 精灵图：`../starhome_lz_ry_full_parsed/ale_sprites/`
+- 官网惰性资源缓存：`../starhome_lz_ry_full_parsed/official_lazy_cache/`
 - FTC/FCC 解包结果：`../starhome_lz_ry_full_parsed/ftc_resources/`
 - UTF-8 装备、配方、NPC 数据：`../starhome_lz_ry_full_parsed/catalogs_utf8/`
 
 ## 强制规则
 
 1. 后续人物、NPC、怪物、场景、装备、物品、地图和非 HUD UI 素材都从荣耀版提取。
-   素材检索只从上面的两个根目录开始，不把中间工作目录当作正式来源。
+   素材检索只从上面的两个根目录及其 `official_lazy_cache` 开始，不把中间工作目录当作正式来源。
+   `files_dir.dz` 不是官网资源全集；FCC 提供精确逻辑路径而本地未命中时，地图离线工具可向
+   荣耀版官网同路径请求一次，通过文件头和实际解析校验后写入持久缓存。
 2. 唯一例外：顶部栏、底部控制栏/快捷栏、小地图边框和控制按钮可从 `starhome_lz_fr`（免费版）导入，边界以 `docs/free_hud_rendering.md` 第 1 节为准。小地图实际 JPG、弹窗内容和全部非 HUD 资源不在豁免内。
 3. `starhome_jznp`（激战版）仍只用于格式研究和版本对比，不作为新增正式素材来源；免费版除上一条列出的 HUD 外也同样如此。
-4. 如果荣耀版确实不存在所需的非 HUD 素材，应先报告缺失和检索证据；没有用户明确许可，不得自动用其他版本替代。
-5. 每次按需导入应在对应 manifest 或提交说明中记录原始发布版与原始逻辑路径，避免只保留无法追溯的 PNG；HUD 免费版素材必须明确写 `source_release: starhome_lz_fr`。
+4. 如果荣耀版清单、本地惰性缓存和官网精确路径均不存在所需的非 HUD 素材，应先报告缺失和
+   检索证据；没有用户明确许可，不得自动用其他版本替代。官网恢复禁止模糊文件名猜测和跨版本回退。
+5. 每次按需导入应在对应 manifest 或提交说明中记录原始发布版与原始逻辑路径，避免只保留无法
+   追溯的 PNG；官网惰性恢复还必须记录 URL、HTTP 状态、字节数、MD5、SHA-256 和解析结果。
+   HUD 免费版素材必须明确写 `source_release: starhome_lz_fr`。
 6. 工程内禁止沿用原客户端的素材名称和目录结构。`pic`、`pic2`、补丁批次、ALE 时间戳、哈希名和原窗口类名只能出现在 `source_*` 溯源字段中，不能成为运行时路径。导入时必须按 `业务类别 / 实体 / 变体 / 动作或状态` 重命名，例如 `monsters/om_adult/variants/toxic/attack/`、`ui/hud/top_menu/help/normal.png`。
 7. 同一业务实体只保留一个正式目录；版本差异用 manifest 的来源信息表达，不得通过 `pic2`、`new`、`final` 一类目录继续叠补丁。
 8. 本约定不自动追溯替换此前已经导入工程的素材版本；HUD 在相关功能再次开发时迁移到免费版目标，其余旧素材仍有计划地迁移到荣耀版，并统一遵守业务语义命名。
