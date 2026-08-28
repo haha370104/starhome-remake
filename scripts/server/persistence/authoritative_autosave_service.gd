@@ -107,6 +107,26 @@ func save_player(character_id: String, state_collector: Callable) -> DomainResul
 	return DomainResult.ok((committed.value as PlayerStateRecord).duplicate_record())
 
 
+## 原子提交面板事务生成的完整玩家聚合，并刷新自动存档内存副本。
+## [param character_id] 已登记角色标识。
+## [param candidate] 已由权威领域服务校验的候选聚合。
+## 返回仓储提交后的新 revision 聚合或冲突错误。
+## 设计：装备事务同时修改背包和装配，必须通过一次仓储提交保持两份快照一致。
+func commit_player_state(character_id: String, candidate: PlayerStateRecord) -> DomainResult:
+	if _repository == null or not _states.has(character_id) or candidate == null \
+			or candidate.character_id != character_id:
+		return DomainResult.failure(&"persistence.autosave_character_unknown", "autosave character is not registered")
+	var current: PlayerStateRecord = _states[character_id]
+	var committed := _repository.save_player(candidate, current.revision)
+	if not committed.is_ok:
+		last_errors[character_id] = committed.error_code
+		return committed
+	_states[character_id] = committed.value
+	last_errors.erase(character_id)
+	save_count += 1
+	return DomainResult.ok((committed.value as PlayerStateRecord).duplicate_record())
+
+
 ## 移除角色的内存登记，但保留仓储中最后一次提交的记录。
 ## [param character_id] 不再参与自动存档的角色标识。
 func unregister_player(character_id: String) -> void:

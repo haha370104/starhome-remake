@@ -10,6 +10,8 @@ var item_definition_id := ""
 var max_durability := 0
 var durability := 0
 var upgrade_level := 0
+var slot_location := -1
+var equip_kind := -1
 
 
 ## 执行 `from_dictionary` 对应的模块操作。
@@ -26,11 +28,14 @@ static func from_dictionary(raw: Variant) -> DomainResult:
 	slot.max_durability = int(raw.get("max_durability", 0))
 	slot.durability = int(raw.get("durability", -1))
 	slot.upgrade_level = int(raw.get("upgrade_level", 0))
+	slot.slot_location = int(raw.get("slot_location", _legacy_location(slot.slot_id)))
+	slot.equip_kind = int(raw.get("equip_kind", -1))
 	if slot.owner_kind not in ["character", "vehicle"] or slot.slot_id.is_empty() \
 		or slot.item_instance_id.is_empty() or slot.item_definition_id.is_empty():
 		return DomainResult.failure(&"persistence.invalid_equipment_slot", "equipment identity fields are invalid")
 	if slot.max_durability <= 0 or slot.durability < 0 \
-		or slot.durability > slot.max_durability or slot.upgrade_level < 0:
+			or slot.durability > slot.max_durability or slot.upgrade_level < 0 \
+			or slot.slot_location < 0:
 		return DomainResult.failure(&"persistence.invalid_equipment_slot", "equipment state is invalid")
 	return DomainResult.ok(slot)
 
@@ -46,7 +51,30 @@ func to_dictionary() -> Dictionary:
 		"max_durability": max_durability,
 		"durability": durability,
 		"upgrade_level": upgrade_level,
+		"slot_location": slot_location,
+		"equip_kind": equip_kind,
 	}
+
+
+## 将旧存档中的字符串槽位映射为稳定的客户端 Location 编号。
+## [param slot_name] 旧存档槽位名称。
+## 返回荣耀客户端使用的 Location 编号；未知槽位保留在扩展区 100。
+static func _legacy_location(slot_name: String) -> int:
+	return {
+		"chassis": 0,
+		"primary_weapon": 1,
+		"defense": 2,
+		"propulsion": 3,
+		"front_armor": 5,
+		"rear_armor": 6,
+		"left_armor": 7,
+		"right_armor": 8,
+		"tactical": 13,
+		"secondary_power": 14,
+		"control": 16,
+		"amplifier": 17,
+		"energy_core": 18,
+	}.get(slot_name, 100)
 
 
 ## 执行 `duplicate_record` 对应的模块操作。

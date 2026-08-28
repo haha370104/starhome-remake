@@ -13,9 +13,17 @@ var character_id := ""
 var display_name := ""
 var revision := 0
 var inventory_revision := 0
+var vehicle_loadout_revision := 0
 var inventory_capacity := 40
 var inventory_stacks: Array[InventoryStackRecord] = []
 var equipment_slots: Array[EquipmentSlotRecord] = []
+var currency := 0
+var character_sex := "male"
+var character_level := 1
+var character_profession := "新兵"
+var character_faction := "易安港"
+var character_residence := "易安港基地"
+var character_description := ""
 var character_max_health := 1
 var character_health := 1
 var character_experience := 0
@@ -52,7 +60,15 @@ static func from_dictionary(raw: Variant) -> DomainResult:
 	record.display_name = String(raw.get("display_name", ""))
 	record.revision = int(raw.get("revision", -1))
 	record.inventory_revision = int(raw.get("inventory_revision", -1))
+	record.vehicle_loadout_revision = int(raw.get("vehicle_loadout_revision", 0))
 	record.inventory_capacity = int(raw.get("inventory_capacity", 0))
+	record.currency = int(raw.get("currency", 0))
+	record.character_sex = String(raw.get("character_sex", "male"))
+	record.character_level = int(raw.get("character_level", 1))
+	record.character_profession = String(raw.get("character_profession", "新兵"))
+	record.character_faction = String(raw.get("character_faction", "易安港"))
+	record.character_residence = String(raw.get("character_residence", "易安港基地"))
+	record.character_description = String(raw.get("character_description", ""))
 	record.character_max_health = int(raw.get("character_max_health", 0))
 	record.character_health = int(raw.get("character_health", -1))
 	record.character_experience = int(raw.get("character_experience", -1))
@@ -89,8 +105,13 @@ func validate() -> DomainResult:
 	if account_id.is_empty() or account_name.is_empty() or account_status.is_empty() \
 		or character_id.is_empty() or display_name.is_empty():
 		return DomainResult.failure(&"persistence.invalid_player_state", "account and character identity are required")
-	if revision < 0 or inventory_revision < 0 or inventory_capacity <= 0:
+	if revision < 0 or inventory_revision < 0 or vehicle_loadout_revision < 0 \
+			or inventory_capacity <= 0 or currency < 0:
 		return DomainResult.failure(&"persistence.invalid_player_state", "aggregate revisions or capacity are invalid")
+	if character_sex not in ["male", "female"] or character_level <= 0 \
+			or character_profession.is_empty() or character_faction.is_empty() \
+			or character_residence.is_empty():
+		return DomainResult.failure(&"persistence.invalid_player_state", "character panel identity is invalid")
 	if character_max_health <= 0 or character_health < 0 or character_health > character_max_health \
 		or character_experience < 0:
 		return DomainResult.failure(&"persistence.invalid_player_state", "character state is invalid")
@@ -143,7 +164,15 @@ func to_dictionary() -> Dictionary:
 		"display_name": display_name,
 		"revision": revision,
 		"inventory_revision": inventory_revision,
+		"vehicle_loadout_revision": vehicle_loadout_revision,
 		"inventory_capacity": inventory_capacity,
+		"currency": currency,
+		"character_sex": character_sex,
+		"character_level": character_level,
+		"character_profession": character_profession,
+		"character_faction": character_faction,
+		"character_residence": character_residence,
+		"character_description": character_description,
 		"inventory_stacks": serialized_stacks,
 		"equipment_slots": serialized_equipment,
 		"character_max_health": character_max_health,

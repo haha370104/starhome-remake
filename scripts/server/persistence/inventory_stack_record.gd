@@ -7,6 +7,13 @@ var stack_id := ""
 var item_definition_id := ""
 var quantity := 0
 var slot_index := -1
+var container_id := "main"
+var position_px := Vector2i.ZERO
+var footprint_px := Vector2i(30, 30)
+var locked := false
+var bound := false
+var max_durability := 0
+var durability := 0
 
 
 ## 执行 `from_dictionary` 对应的模块操作。
@@ -20,8 +27,27 @@ static func from_dictionary(raw: Variant) -> DomainResult:
 	stack.item_definition_id = String(raw.get("item_definition_id", ""))
 	stack.quantity = int(raw.get("quantity", 0))
 	stack.slot_index = int(raw.get("slot_index", -1))
+	stack.container_id = String(raw.get("container_id", "main"))
+	var position_value: Variant = raw.get("position_px", [
+		(stack.slot_index % 8) * 30,
+		(stack.slot_index / 8) * 30,
+	])
+	var footprint_value: Variant = raw.get("footprint_px", [30, 30])
+	if not position_value is Array or position_value.size() != 2 \
+			or not footprint_value is Array or footprint_value.size() != 2:
+		return DomainResult.failure(&"persistence.invalid_inventory_stack", "inventory geometry must contain two coordinates")
+	stack.position_px = Vector2i(int(position_value[0]), int(position_value[1]))
+	stack.footprint_px = Vector2i(int(footprint_value[0]), int(footprint_value[1]))
+	stack.locked = bool(raw.get("locked", false))
+	stack.bound = bool(raw.get("bound", false))
+	stack.max_durability = int(raw.get("max_durability", 0))
+	stack.durability = int(raw.get("durability", stack.max_durability))
 	if stack.stack_id.is_empty() or stack.item_definition_id.is_empty() \
-		or stack.quantity <= 0 or stack.slot_index < 0:
+			or stack.quantity <= 0 or stack.slot_index < 0 or stack.container_id.is_empty() \
+			or stack.position_px.x < 0 or stack.position_px.y < 0 \
+			or stack.footprint_px.x <= 0 or stack.footprint_px.y <= 0 \
+			or stack.max_durability < 0 or stack.durability < 0 \
+			or stack.durability > stack.max_durability:
 		return DomainResult.failure(&"persistence.invalid_inventory_stack", "inventory stack fields are invalid")
 	return DomainResult.ok(stack)
 
@@ -34,6 +60,13 @@ func to_dictionary() -> Dictionary:
 		"item_definition_id": item_definition_id,
 		"quantity": quantity,
 		"slot_index": slot_index,
+		"container_id": container_id,
+		"position_px": [position_px.x, position_px.y],
+		"footprint_px": [footprint_px.x, footprint_px.y],
+		"locked": locked,
+		"bound": bound,
+		"max_durability": max_durability,
+		"durability": durability,
 	}
 
 
