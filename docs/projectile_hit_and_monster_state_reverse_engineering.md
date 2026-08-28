@@ -74,7 +74,7 @@
 
 `bullet.fcc` 的 `laserbullet`：
 
-- 速度参数为 `1000`；
+- `line` 速度参数为 `1000`，不是 `1000 px/s`；运行容器的 `nMFly` 换算后默认有效速度约为 `416.667 px/s`；
 - 使用 `line(x0, y0, x1, y1, m_nspeed, 8, "endfly")` 做直线飞行；
 - 使用 `hittest := point(BULLET_HITID, "atattack", "onhit")` 做本地表现碰撞；
 - `onhit` 默认会停止 `fly`、关闭 `hittest`、隐藏弹体并延迟删除；
@@ -141,7 +141,7 @@
 
 普通 `npcbullet` 和旋转弹 `npcbulletRoto` 都在客户端创建：
 
-- 速度参数为 `1000`；
+- `line` 速度参数为 `1000`，默认有效速度约为 `416.667 px/s`；
 - 客户端沿 `OnNpcAttack(x,y)` 给出的终点播放；
 - `npcbulletRoto` 会以 `(目标点 - 发射点)` 调用 `CalAngle`，再对 ALE 的每一帧执行 `RotoFrame(i, -angle)`；奥姆虫弹体的原图朝右，不能不旋转就沿任意轨迹平移；
 - 本地 `hittest` 负责让视觉弹体在接触对象时消失；
@@ -394,7 +394,7 @@ MonsterSnapshot {
 
 怪物快照带 `action_sequence`，同一 `attack` 状态下的新一次攻击也会从首帧重播。奥姆虫、奥姆幼虫和毒胶按 `monster_attack_started` 使用各自荣耀版弹体素材；旋转弹会按权威起点到目标点的矢量设置节点角度。感光质保留 `contact_melee`：攻击开始时只播放身体动画，不伪造远程弹体；收到 `monster_attack_resolved` 后，才在受击战车位置播放 5 帧白蓝覆盖效果。
 
-远程怪物在服务端同样预约 `impact_tick`，发射时不扣玩家生命，到达时才产生 `monster_attack_resolved`。当前共享的 1000 px/s 来自荣耀客户端弹体表现速度，并作为明确的复刻权威调参；退役服务端常量仍未恢复。结算事件保留 `combat_actor_id`，使表现层无需用中文名猜命中特效。
+远程怪物在服务端同样预约 `impact_tick`，发射时不扣玩家生命，到达时才产生 `monster_attack_resolved`。奥姆虫与奥姆幼虫当前共享 `416.666667 px/s`：该值来自对荣耀运行容器 `nMFly` 的反汇编换算，而不是把 FCC 的 `m_nspeed=1000` 直接当作像素/秒。完整公式、速度档与无弹道例外见 [monster_projectile_speed_reverse_engineering.md](monster_projectile_speed_reverse_engineering.md)。结算事件保留 `combat_actor_id`，使表现层无需用中文名猜命中特效。
 
 ## 10. 实施记录与后续顺序
 
