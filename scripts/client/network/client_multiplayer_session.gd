@@ -26,6 +26,7 @@ signal map_change_failed(transition_id: StringName, code: StringName, message: S
 signal combat_snapshot_received(snapshot: Dictionary)
 signal combat_event_received(event: Dictionary)
 signal player_panel_bundle_received(bundle: Dictionary)
+signal loot_picked_up(event: Dictionary, panel_bundle: Dictionary)
 
 @export var offline_debug_enabled := false
 @export var local_entity_id: StringName = &"player.local"
@@ -127,6 +128,18 @@ func request_use_ability(ability_id: String, aim_world_position: Vector2) -> Dic
 	if network_adapter.send_use_ability_intent(payload) != OK:
 		return {}
 	_next_ability_sequence += 1
+	return payload
+
+
+## 请求拾取权威快照中可见的一件地面掉落物。
+## [param loot_id] 服务端生成并随战斗快照发布的掉落实例标识。
+## 返回实际发送的最小意图；会话不可用时返回空字典。
+func request_loot_pickup(loot_id: String) -> Dictionary:
+	if network_adapter == null or current_map_instance_id.is_empty() or loot_id.is_empty():
+		return {}
+	var payload := {"loot_id": loot_id}
+	if network_adapter.send_pickup_loot_intent(payload) != OK:
+		return {}
 	return payload
 
 
@@ -377,6 +390,16 @@ func _on_command_rejected(code: StringName, message: String) -> void:
 ## [param message] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## 设计：该函数位于客户端交互或表现边界，最终状态以服务器权威结果为准。
 func _on_server_message_received(message: Dictionary) -> void:
+	if StringName(message.get("type", "")) == &"loot_picked_up":
+		var loot_result: Dictionary = message.get("result", {})
+		var loot_value: Variant = loot_result.get("value")
+		if bool(loot_result.get("ok", false)) and loot_value is Dictionary:
+			var value: Dictionary = loot_value
+			loot_picked_up.emit(
+				(value.get("loot_event", {}) as Dictionary).duplicate(true),
+				(value.get("panel_bundle", {}) as Dictionary).duplicate(true),
+			)
+		return
 	if StringName(message.get("type", "")) == &"player_panels":
 		var panels_result: Dictionary = message.get("result", {})
 		var panels_value: Variant = panels_result.get("value")
@@ -414,6 +437,7 @@ func _is_valid_combat_snapshot(snapshot: Dictionary) -> bool:
 	if typeof(snapshot.get("local_entity_id")) != TYPE_STRING \
 		or not snapshot.get("local_vehicle") is Dictionary \
 		or not snapshot.get("monsters") is Array \
+		or not snapshot.get("ground_loot", []) is Array \
 		or not snapshot.get("recent_events") is Array:
 		return false
 	for raw_monster: Variant in snapshot["monsters"]:

@@ -119,6 +119,22 @@ func execute(command: Dictionary) -> DomainResult:
 	return DomainResult.ok(_service.build_bundle(_state))
 
 
+## 在显式离线调试中复用正式服务端的掉落入包事务。
+## [param loot] 由离线战斗权威生成的掉落 DTO。
+## 返回更新后的三面板快照或目录、容量、布局错误。
+## 设计：本方法不自行构造物品，只桥接 AuthoritativePlayerPanelService 的正式规则。
+func grant_loot(loot: Dictionary) -> DomainResult:
+	if _service == null or _state == null:
+		return DomainResult.failure(&"loot.offline_unavailable", "offline loot authority is unavailable")
+	var result := _service.grant_loot(_state, loot)
+	if not result.is_ok:
+		return result
+	var value: Dictionary = result.value
+	_state = value["candidate"]
+	_state.revision += 1
+	return DomainResult.ok(_service.build_bundle(_state))
+
+
 ## 创建离线初始装备记录字典。
 ## [param instance_id] 稳定装备实例标识。
 ## [param slot_id] 业务槽位名。

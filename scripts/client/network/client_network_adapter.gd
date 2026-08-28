@@ -6,6 +6,7 @@ signal connection_failed(message: String)
 signal move_intent_sent(payload: Dictionary)
 signal map_transition_intent_sent(payload: Dictionary)
 signal use_ability_intent_sent(payload: Dictionary)
+signal pickup_loot_intent_sent(payload: Dictionary)
 signal player_panel_command_sent(payload: Dictionary)
 signal authoritative_snapshot_received(snapshot: Dictionary)
 signal remote_snapshot_received(snapshot: Dictionary)
@@ -122,6 +123,19 @@ func send_use_ability_intent(payload: Dictionary) -> Error:
 	if offline_debug_enabled:
 		return OK
 	_transport_endpoint.send_use_ability_intent(payload)
+	return OK
+
+
+## 将地面掉落拾取意图发往权威服务器。
+## [param payload] 仅包含 loot_id 的目标选择字典。
+## 返回传输可用时 OK；未连接时返回 ERR_UNCONFIGURED。
+func send_pickup_loot_intent(payload: Dictionary) -> Error:
+	if connection_state != ConnectionState.CONNECTED:
+		return ERR_UNCONFIGURED
+	pickup_loot_intent_sent.emit(payload.duplicate(true))
+	if offline_debug_enabled:
+		return OK
+	_transport_endpoint.send_pickup_loot_intent(payload)
 	return OK
 
 

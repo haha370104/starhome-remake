@@ -9,6 +9,7 @@ signal session_request_received(peer_id: int, request: Dictionary)
 signal move_intent_received(peer_id: int, intent: Dictionary)
 signal map_transition_intent_received(peer_id: int, intent: Dictionary)
 signal use_ability_intent_received(peer_id: int, intent: Dictionary)
+signal pickup_loot_intent_received(peer_id: int, intent: Dictionary)
 signal player_panel_command_received(peer_id: int, command: Dictionary)
 signal server_message_received(message: Dictionary)
 signal world_snapshot_received(snapshot: Dictionary)
@@ -94,6 +95,13 @@ func send_use_ability_intent(intent: Dictionary) -> void:
 	rpc_submit_use_ability_intent.rpc_id(SERVER_PEER_ID, intent)
 
 
+## 向权威服务器提交地面掉落拾取意图。
+## [param intent] 仅包含 loot_id 的目标选择字典。
+## 设计：玩家身份、距离、物品定义和数量均由服务端会话与地面实体决定。
+func send_pickup_loot_intent(intent: Dictionary) -> void:
+	rpc_submit_pickup_loot_intent.rpc_id(SERVER_PEER_ID, intent)
+
+
 ## 向权威服务器提交人物、背包或战车面板操作意图。
 ## [param command] 仅包含命令类型、实例标识、目标位置和客户端 revision 的字典。
 ## 设计：传输层不解释物品归属、碰撞或装备数值，服务端必须重新校验。
@@ -147,6 +155,15 @@ func rpc_submit_map_transition_intent(intent: Dictionary) -> void:
 ## 设计：传输层不解释技能，也不接受载荷中的身份、伤害或命中声明。
 func rpc_submit_use_ability_intent(intent: Dictionary) -> void:
 	use_ability_intent_received.emit(
+		multiplayer.get_remote_sender_id(), intent.duplicate(true)
+	)
+
+
+@rpc("any_peer", "call_remote", "reliable", 1)
+## 接收地面掉落拾取意图并附加不可伪造的远端 peer 身份。
+## [param intent] 客户端提交的目标掉落标识。
+func rpc_submit_pickup_loot_intent(intent: Dictionary) -> void:
+	pickup_loot_intent_received.emit(
 		multiplayer.get_remote_sender_id(), intent.duplicate(true)
 	)
 

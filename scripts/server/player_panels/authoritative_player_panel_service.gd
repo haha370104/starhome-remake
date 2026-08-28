@@ -69,6 +69,44 @@ func build_bundle(state: PlayerStateRecord) -> Dictionary:
 	return _projector.build_bundle(mapped.value)
 
 
+## 将战斗模块预检通过的地面掉落加入权威玩家聚合。
+## [param state] 自动存档服务持有的当前玩家记录副本。
+## [param loot] 包含 loot_id、item_definition_id 与 quantity 的可信掉落 DTO。
+## 返回待原子提交的 candidate 以及更新后的三面板快照。
+## 设计：目录组装和背包规则在共享领域层完成，本服务不信任客户端提供的物品内容。
+func grant_loot(state: PlayerStateRecord, loot: Dictionary) -> DomainResult:
+	if state == null or _mapper == null or _catalog == null or _projector == null:
+		return DomainResult.failure(&"loot.service_unavailable", "loot service is unavailable")
+	var mapped := _mapper.to_domain(state)
+	if not mapped.is_ok:
+		return mapped
+	var loot_id := String(loot.get("loot_id", ""))
+	var definition_id := String(loot.get("item_definition_id", ""))
+	var quantity := int(loot.get("quantity", 0))
+	if loot_id.is_empty() or definition_id.is_empty() or quantity <= 0:
+		return DomainResult.failure(&"loot.invalid_payload", "authoritative loot payload is invalid")
+	var created := _catalog.create(definition_id, {
+		"instance_id": loot_id,
+		"quantity": quantity,
+		"container_id": "main",
+		"position_px": [0, 0],
+		"footprint_px": [30, 30],
+	})
+	if not created.is_ok:
+		return created
+	var player: Player = mapped.value
+	var received := player.receive_loot(created.value)
+	if not received.is_ok:
+		return received
+	var persisted := _mapper.to_record(player)
+	if not persisted.is_ok:
+		return persisted
+	return DomainResult.ok({
+		"candidate": persisted.value,
+		"panel_bundle": _projector.build_bundle(player),
+	})
+
+
 ## 将应用层命令路由到 Player 聚合的公开行为。
 ## [param player] 本次事务内的玩家聚合。
 ## [param command_type] 命令类型。

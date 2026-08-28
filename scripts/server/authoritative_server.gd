@@ -156,6 +156,7 @@ func _ensure_transport_endpoint() -> void:
 	_transport_endpoint.move_intent_received.connect(_on_transport_move_intent)
 	_transport_endpoint.map_transition_intent_received.connect(_on_transport_map_transition_intent)
 	_transport_endpoint.use_ability_intent_received.connect(_on_transport_use_ability_intent)
+	_transport_endpoint.pickup_loot_intent_received.connect(_on_transport_pickup_loot_intent)
 	_transport_endpoint.player_panel_command_received.connect(_on_transport_player_panel_command)
 	_transport_endpoint.peer_disconnected.connect(_on_peer_disconnected)
 
@@ -462,6 +463,47 @@ func handle_peer_player_panel_command(peer_id: int, command: Dictionary) -> Dict
 	return _success(player_panel_service.build_bundle(committed.value))
 
 
+## 处理玩家对地面掉落物的拾取请求并原子写入持久化背包。
+## [param peer_id] 由传输层提供的不可伪造 peer 标识。
+## [param intent] 仅包含 loot_id 的客户端意图。
+## 返回拾取事件与更新后的面板快照，或身份、距离、容量和持久化错误。
+## 设计：先预检地面实体，再提交背包，最后移除掉落；服务器主线程保证两阶段期间无并发插入。
+func handle_peer_loot_pickup(peer_id: int, intent: Dictionary) -> Dictionary:
+	var session: ServerSession = sessions.session_for_peer(peer_id)
+	if session == null:
+		return _failure(&"loot.session_missing", "peer has no active authoritative session")
+	if autosave_service == null or player_panel_service == null:
+		return _failure(&"loot.persistence_required", "loot pickup requires authoritative persistence")
+	var loot_id := String(intent.get("loot_id", ""))
+	if loot_id.is_empty() or intent.size() != 1:
+		return _failure(&"loot.invalid_payload", "loot pickup intent must contain only loot_id")
+	var current_instance := map_registry.instance_by_id(session.map_instance_id)
+	if current_instance == null:
+		return _failure(&"loot.map_unavailable", "session map instance is unavailable")
+	var prepared := current_instance.prepare_loot_pickup(session.entity_id, loot_id)
+	if not prepared.is_ok:
+		return _failure(prepared.error_code, prepared.error_message)
+	var current := autosave_service.state_for(session.entity_id)
+	if current == null:
+		return _failure(&"loot.state_missing", "authoritative player state is not registered")
+	var granted := player_panel_service.grant_loot(current, prepared.value)
+	if not granted.is_ok:
+		return _failure(granted.error_code, granted.error_message)
+	var grant_value: Dictionary = granted.value
+	var committed := autosave_service.commit_player_state(
+		session.entity_id, grant_value["candidate"]
+	)
+	if not committed.is_ok:
+		return _failure(committed.error_code, committed.error_message)
+	var pickup := current_instance.commit_loot_pickup(session.entity_id, loot_id)
+	if not pickup.is_ok:
+		return _failure(pickup.error_code, pickup.error_message)
+	return _success({
+		"loot_event": pickup.value,
+		"panel_bundle": player_panel_service.build_bundle(committed.value),
+	})
+
+
 ## 处理 `_on_peer_disconnected` 对应的信号回调。
 ## [param peer_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## 设计：该函数位于权威服务器边界，客户端不得覆盖其计算结果。
@@ -496,6 +538,17 @@ func _on_transport_use_ability_intent(peer_id: int, intent: Dictionary) -> void:
 	var result := handle_peer_use_ability(peer_id, intent)
 	_send_reliable(peer_id, {
 		"type": "combat_event" if result.ok else "command_rejected",
+		"result": _wire_result(result),
+	})
+
+
+## 处理可靠通道收到的地面掉落拾取意图。
+## [param peer_id] 发送命令的远端 peer。
+## [param intent] 仅含 loot_id 的拾取目标。
+func _on_transport_pickup_loot_intent(peer_id: int, intent: Dictionary) -> void:
+	var result := handle_peer_loot_pickup(peer_id, intent)
+	_send_reliable(peer_id, {
+		"type": "loot_picked_up" if result.ok else "command_rejected",
 		"result": _wire_result(result),
 	})
 

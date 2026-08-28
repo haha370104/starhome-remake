@@ -7,6 +7,7 @@ const EntityScript := preload("res://scripts/server/authoritative_entity.gd")
 const MoveIntentContract := preload("res://scripts/network/contracts/move_intent.gd")
 const ErrorCodes := preload("res://scripts/network/contracts/network_error_codes.gd")
 const CombatModuleScript := preload("res://scripts/server/modules/combat/authoritative_combat_module.gd")
+const DomainResult := preload("res://scripts/core/domain_result.gd")
 
 var definition
 var navigation
@@ -158,6 +159,26 @@ func handle_use_ability(entity_id: String, raw_intent: Variant):
 		return _failure(&"combat.not_available", "this map has no configured combat encounter")
 	var result = combat_module.handle_energy_cannon_attack(entity_id, raw_intent)
 	return _success(result.value) if result.is_ok else _failure(result.error_code, result.error_message)
+
+
+## 预检指定玩家是否可拾取当前地图的一件地面掉落物。
+## [param entity_id] 由服务器会话绑定的玩家实体标识。
+## [param loot_id] 客户端请求拾取的地面掉落实例标识。
+## 返回供背包事务消费的掉落 DTO 或拒绝原因。
+func prepare_loot_pickup(entity_id: String, loot_id: String) -> DomainResult:
+	if combat_module == null:
+		return DomainResult.failure(&"combat.module_unavailable", "map combat module is unavailable")
+	return combat_module.prepare_loot_pickup(entity_id, loot_id)
+
+
+## 在玩家背包持久化成功后移除当前地图的一件地面掉落物。
+## [param entity_id] 已完成背包入账的玩家实体标识。
+## [param loot_id] 待提交移除的地面掉落实例标识。
+## 返回权威拾取事件或并发状态变化错误。
+func commit_loot_pickup(entity_id: String, loot_id: String) -> DomainResult:
+	if combat_module == null:
+		return DomainResult.failure(&"combat.module_unavailable", "map combat module is unavailable")
+	return combat_module.commit_loot_pickup(entity_id, loot_id)
 
 
 ## 校验并处理 `handle_move_intent` 对应的模块状态。

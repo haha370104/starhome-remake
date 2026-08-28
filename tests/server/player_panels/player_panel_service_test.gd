@@ -77,6 +77,19 @@ func _initialize() -> void:
 	if character_equipped.is_ok:
 		bundle = character_equipped.value
 		_expect(bundle.character.worn_items.size() == 1, "人物面板应收到独立 dialog 穿着层")
+	var loot_grant := authority.grant_loot({
+		"loot_id": "monster.loot.1",
+		"item_definition_id": "low_grade_biosilicon",
+		"quantity": 3,
+	})
+	_expect(loot_grant.is_ok, "权威掉落应通过同一玩家聚合进入背包")
+	if loot_grant.is_ok:
+		var loot_items: Array = loot_grant.value.inventory.items
+		var matches := loot_items.filter(func(item: Dictionary) -> bool:
+			return String(item.get("definition_id", "")) == "low_grade_biosilicon" \
+				and int(item.get("amount", 0)) == 3
+		)
+		_expect(matches.size() == 1, "面板快照应立即包含权威结算的三份低级生物硅")
 	_finish()
 
 

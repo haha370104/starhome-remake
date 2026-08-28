@@ -13,6 +13,7 @@
     "move_intent",
     "map_transition_intent",
     "use_ability_intent",
+    "pickup_loot_intent",
     "entity_snapshot",
     "map_joined",
     "position_correction"

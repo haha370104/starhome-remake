@@ -17,6 +17,7 @@ const MAX_ACTION_LENGTH := 64
 const MOVE_INTENT: StringName = &"move_intent"
 const MAP_TRANSITION_INTENT: StringName = &"map_transition_intent"
 const USE_ABILITY_INTENT: StringName = &"use_ability_intent"
+const PICKUP_LOOT_INTENT: StringName = &"pickup_loot_intent"
 const ENTITY_SNAPSHOT: StringName = &"entity_snapshot"
 const MAP_JOINED: StringName = &"map_joined"
 const POSITION_CORRECTION: StringName = &"position_correction"
@@ -30,6 +31,7 @@ static func supported_message_types() -> Array[StringName]:
 		MOVE_INTENT,
 		MAP_TRANSITION_INTENT,
 		USE_ABILITY_INTENT,
+		PICKUP_LOOT_INTENT,
 		ENTITY_SNAPSHOT,
 		MAP_JOINED,
 		POSITION_CORRECTION,
