@@ -165,7 +165,7 @@ func _emit_npc_action(action_id: String) -> void:
 ## [param action_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _emit_hud_action(action_id: String) -> void:
 	hud_action_requested.emit(action_id)
-	if hint_label:
+	if hint_label and action_id not in ["character", "inventory", "vehicle_equipment"]:
 		hint_label.text = "%s 功能待接入" % action_id
 
 

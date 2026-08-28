@@ -1,0 +1,83 @@
+class_name InventoryItemView
+extends Control
+
+signal move_requested(instance_id: String, position_px: Vector2i)
+signal equip_requested(instance_id: String, location: int)
+signal character_equip_requested(instance_id: String, slot_id: String)
+
+var item_snapshot: Dictionary = {}
+var _dragging := false
+var _drag_offset := Vector2.ZERO
+
+
+## 使用权威物品快照配置一个可拖动背包视图。
+## [param snapshot] 单个物品的显示与布局快照。
+## 设计：拖动只移动本地幽灵节点，释放后提交意图；下一次权威快照决定最终位置。
+func configure(snapshot: Dictionary) -> void:
+	item_snapshot = snapshot.duplicate(true)
+	var footprint_value: Array = snapshot.get("footprint_px", [30, 30])
+	size = Vector2(float(footprint_value[0]), float(footprint_value[1]))
+	mouse_filter = Control.MOUSE_FILTER_STOP
+	tooltip_text = "%s\n%s" % [
+		String(snapshot.get("display_name", snapshot.get("definition_id", "物品"))),
+		String(snapshot.get("description", "")),
+	]
+	gui_input.connect(_on_gui_input)
+
+	var icon := TextureRect.new()
+	icon.name = "Icon"
+	var icon_path := String(snapshot.get("icon", ""))
+	icon.texture = load(icon_path) as Texture2D if ResourceLoader.exists(icon_path) else null
+	icon.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(icon)
+
+	var amount := int(snapshot.get("amount", 1))
+	if amount > 1:
+		var amount_label := Label.new()
+		amount_label.text = str(amount)
+		amount_label.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
+		amount_label.position = Vector2(-18, -16)
+		amount_label.size = Vector2(18, 16)
+		amount_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		amount_label.add_theme_font_size_override("font_size", 11)
+		amount_label.add_theme_color_override("font_outline_color", Color.BLACK)
+		amount_label.add_theme_constant_override("outline_size", 2)
+		amount_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		add_child(amount_label)
+
+	if bool(snapshot.get("locked", false)):
+		modulate = Color(0.65, 0.65, 0.65)
+
+
+## 处理物品拖动和双击装备手势。
+## [param event] Godot GUI 输入事件。
+func _on_gui_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
+		if event.double_click and event.pressed:
+			var location := int(item_snapshot.get("equipment_location", -1))
+			if location >= 0:
+				equip_requested.emit(String(item_snapshot.get("instance_id", "")), location)
+			elif not String(item_snapshot.get("character_slot", "")).is_empty():
+				character_equip_requested.emit(
+					String(item_snapshot.get("instance_id", "")),
+					String(item_snapshot.get("character_slot", "")),
+				)
+			accept_event()
+			return
+		if event.pressed and not bool(item_snapshot.get("locked", false)):
+			_dragging = true
+			_drag_offset = event.position
+			modulate.a = 0.65
+		else:
+			if _dragging:
+				var requested := Vector2i((position + event.position - _drag_offset).round())
+				move_requested.emit(String(item_snapshot.get("instance_id", "")), requested)
+			_dragging = false
+			modulate.a = 1.0
+		accept_event()
+	elif event is InputEventMouseMotion and _dragging:
+		position += event.relative
+		accept_event()

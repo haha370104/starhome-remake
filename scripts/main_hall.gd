@@ -33,6 +33,9 @@ const MonsterWorldControllerScript := preload(
 const OfflineCombatAuthorityBridgeScript := preload(
 	"res://scripts/client/debug/offline_combat_authority_bridge.gd"
 )
+const GameWindowManagerScript := preload(
+	"res://scripts/client/ui/windows/game_window_manager.gd"
+)
 const STARTER_WEAPON_ID := &"recruit_energy_cannon"
 const STARTER_ABILITY_ID := "energy_cannon.primary"
 
@@ -130,6 +133,7 @@ var selected_transition_id: StringName = &""
 var combat_attack_controller: Node
 var monster_world_controller: MonsterWorldController
 var offline_combat_bridge: OfflineCombatAuthorityBridge
+var game_window_manager: GameWindowManager
 
 
 ## 节点进入场景树后初始化运行依赖。
@@ -494,6 +498,7 @@ func _build_hud(initial_bundle: Dictionary) -> void:
 	minimap_player_dot = hud.minimap_player_dot
 	hud.popup_closed.connect(_on_npc_popup_closed)
 	hud.npc_action_requested.connect(_on_npc_action_requested)
+	hud.hud_action_requested.connect(_on_hud_action_requested)
 
 
 ## 创建大厅客户端会话表现器，并以显式配置选择离线调试或真实网络入口。
@@ -532,6 +537,7 @@ func _build_multiplayer_presentation() -> void:
 	if start_error != OK:
 		push_warning("Unable to start hall multiplayer presentation: %s" % error_string(start_error))
 	local_player_controller.set_multiplayer_presenter(multiplayer_presenter)
+	_build_game_windows()
 	if multiplayer_offline_debug_enabled:
 		offline_combat_bridge = OfflineCombatAuthorityBridgeScript.new()
 		offline_combat_bridge.name = "OfflineCombatAuthorityBridge"
@@ -539,6 +545,21 @@ func _build_multiplayer_presentation() -> void:
 		offline_combat_bridge.combat_event_ready.connect(_on_combat_event_received)
 		add_child(offline_combat_bridge)
 		_configure_offline_combat_for_active_map()
+
+
+## 创建人物、背包和战车单例窗口并接入客户端会话。
+## 设计：正式模式只通过表现器发送意图；离线模式显式使用复用服务端规则的调试权威。
+func _build_game_windows() -> void:
+	game_window_manager = GameWindowManagerScript.new()
+	game_window_manager.name = "GameWindowManager"
+	hud.root_control.add_child(game_window_manager)
+	game_window_manager.configure(
+		Callable(multiplayer_presenter, "request_player_panel_command"),
+		multiplayer_offline_debug_enabled,
+	)
+	multiplayer_presenter.player_panel_bundle_received.connect(
+		game_window_manager.apply_bundle
+	)
 
 
 ## 读取受控地图目录的 `definitions` 映射，格式错误时返回仅包含当前大厅的安全目录。
@@ -884,6 +905,17 @@ func _on_npc_popup_closed() -> void:
 func _on_npc_action_requested(action_id: String) -> void:
 	if active_npc:
 		hint_label.text = active_npc.handle_action(action_id)
+
+
+## 将底栏人物、背包和战车按钮交给窗口管理器，其余动作保持 HUD 原有提示。
+## [param action_id] 免费版底栏发出的业务动作标识。
+func _on_hud_action_requested(action_id: String) -> void:
+	if game_window_manager != null and game_window_manager.toggle(action_id):
+		hint_label.text = "已切换%s面板" % {
+			"character": "人物",
+			"inventory": "背包",
+			"vehicle_equipment": "战车",
+		}.get(action_id, action_id)
 
 
 ## 推进并更新 `update_minimap_dot` 对应的模块状态。
