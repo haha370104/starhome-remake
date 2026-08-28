@@ -7,10 +7,15 @@ const CharacterPanelScript := preload("res://scripts/client/ui/windows/character
 const InventoryPanelScript := preload("res://scripts/client/ui/windows/inventory/inventory_panel.gd")
 const VehiclePanelScript := preload("res://scripts/client/ui/windows/vehicle/vehicle_equipment_panel.gd")
 const OfflineAuthorityScript := preload("res://scripts/client/debug/offline_player_panel_authority.gd")
+const CurrentPlayerStateScript := preload("res://scripts/client/state/current_player_state.gd")
 
 var character_panel: CharacterPanel
 var inventory_panel: InventoryPanel
 var vehicle_panel: VehicleEquipmentPanel
+
+## 【重点 Review】当前登录人物的客户端只读全局投影；业务 UI 必须从这里读取同版本人物与战车状态。
+## 设计：属性值仍由权威服务器产生，本对象只负责跨面板共享与信号通知。
+var current_player: CurrentPlayerState
 
 var _dispatcher: Callable
 var _offline_authority: OfflinePlayerPanelAuthority
@@ -24,6 +29,7 @@ var _bundle: Dictionary = {}
 ## 设计：管理器只负责窗口生命周期和成组快照，不实现背包或装备规则。
 func configure(dispatcher: Callable, offline_debug_enabled: bool) -> bool:
 	_dispatcher = dispatcher
+	current_player = CurrentPlayerStateScript.new()
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	resized.connect(_clamp_windows)
@@ -75,11 +81,9 @@ func toggle(action_id: String) -> bool:
 ## 原子应用服务端返回的三面板快照。
 ## [param bundle] 含 character、inventory、vehicle 与 transaction_revision 的快照组。
 func apply_bundle(bundle: Dictionary) -> void:
-	if not bundle.get("character") is Dictionary \
-			or not bundle.get("inventory") is Dictionary \
-			or not bundle.get("vehicle") is Dictionary:
+	if current_player == null or not current_player.apply_bundle(bundle):
 		return
-	_bundle = bundle.duplicate(true)
+	_bundle = current_player.snapshot_bundle()
 	character_panel.apply_snapshot(_bundle["character"])
 	inventory_panel.apply_snapshot(_bundle["inventory"])
 	character_panel.set_inventory_revision(int(_bundle["inventory"].get("revision", -1)))
