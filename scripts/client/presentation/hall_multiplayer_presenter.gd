@@ -14,6 +14,7 @@ signal map_joined(
 signal map_change_failed(transition_id: StringName, code: StringName, message: String)
 signal combat_snapshot_received(snapshot: Dictionary)
 signal combat_event_received(event: Dictionary)
+signal player_panel_bundle_received(bundle: Dictionary)
 
 const SessionScript := preload("res://scripts/client/network/client_multiplayer_session.gd")
 const CharacterFactoryScript := preload("res://scripts/characters/character_factory.gd")
@@ -84,6 +85,7 @@ func start(settings: Dictionary) -> Error:
 	session.map_change_failed.connect(_on_map_change_failed)
 	session.combat_snapshot_received.connect(combat_snapshot_received.emit)
 	session.combat_event_received.connect(combat_event_received.emit)
+	session.player_panel_bundle_received.connect(player_panel_bundle_received.emit)
 	add_child(session)
 	session.initialize_local_player(Vector2(settings.get("initial_position", _local_character.position)))
 
@@ -127,6 +129,15 @@ func request_use_ability(ability_id: String, target_entity_id: String) -> Dictio
 	if session == null:
 		return {}
 	return session.request_use_ability(ability_id, target_entity_id)
+
+
+## 将面板操作意图转交客户端会话。
+## [param command] 查询、移动、整理、穿装或卸装命令。
+## 返回已发送载荷；会话未建立时返回空字典。
+func request_player_panel_command(command: Dictionary) -> Dictionary:
+	if session == null:
+		return {}
+	return session.request_player_panel_command(command)
 
 
 ## 执行 `request_map_change` 对应的模块操作。

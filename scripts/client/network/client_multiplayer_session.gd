@@ -25,6 +25,7 @@ signal map_joined(
 signal map_change_failed(transition_id: StringName, code: StringName, message: String)
 signal combat_snapshot_received(snapshot: Dictionary)
 signal combat_event_received(event: Dictionary)
+signal player_panel_bundle_received(bundle: Dictionary)
 
 @export var offline_debug_enabled := false
 @export var local_entity_id: StringName = &"player.local"
@@ -40,6 +41,7 @@ var _pending_map_change: Dictionary = {}
 var _minimum_snapshot_server_tick := -1
 var _suppress_local_presentation_signal := false
 var _next_ability_sequence := 1
+var _next_panel_command_sequence := 1
 
 
 ## 节点进入场景树后初始化运行依赖。
@@ -125,6 +127,21 @@ func request_use_ability(ability_id: String, target_entity_id: String) -> Dictio
 	if network_adapter.send_use_ability_intent(payload) != OK:
 		return {}
 	_next_ability_sequence += 1
+	return payload
+
+
+## 提交人物、背包或战车面板命令，并附加单调客户端序号。
+## [param command] 查询、移动、整理或换装意图；不得包含角色所有权和权威数值。
+## 返回实际发送的载荷；会话不可用时返回空字典。
+## 设计：客户端不预测物品或装备状态，只有 player_panels 回包会改变面板快照。
+func request_player_panel_command(command: Dictionary) -> Dictionary:
+	if network_adapter == null or command.is_empty():
+		return {}
+	var payload := command.duplicate(true)
+	payload["command_sequence"] = _next_panel_command_sequence
+	if network_adapter.send_player_panel_command(payload) != OK:
+		return {}
+	_next_panel_command_sequence += 1
 	return payload
 
 
@@ -360,6 +377,12 @@ func _on_command_rejected(code: StringName, message: String) -> void:
 ## [param message] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## 设计：该函数位于客户端交互或表现边界，最终状态以服务器权威结果为准。
 func _on_server_message_received(message: Dictionary) -> void:
+	if StringName(message.get("type", "")) == &"player_panels":
+		var panels_result: Dictionary = message.get("result", {})
+		var panels_value: Variant = panels_result.get("value")
+		if bool(panels_result.get("ok", false)) and panels_value is Dictionary:
+			player_panel_bundle_received.emit((panels_value as Dictionary).duplicate(true))
+		return
 	if StringName(message.get("type", "")) == &"combat_event":
 		var combat_result: Dictionary = message.get("result", {})
 		if bool(combat_result.get("ok", false)) and combat_result.get("value") is Dictionary:

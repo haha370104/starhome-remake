@@ -6,6 +6,7 @@ signal connection_failed(message: String)
 signal move_intent_sent(payload: Dictionary)
 signal map_transition_intent_sent(payload: Dictionary)
 signal use_ability_intent_sent(payload: Dictionary)
+signal player_panel_command_sent(payload: Dictionary)
 signal authoritative_snapshot_received(snapshot: Dictionary)
 signal remote_snapshot_received(snapshot: Dictionary)
 signal server_message_received(message: Dictionary)
@@ -121,6 +122,20 @@ func send_use_ability_intent(payload: Dictionary) -> Error:
 	if offline_debug_enabled:
 		return OK
 	_transport_endpoint.send_use_ability_intent(payload)
+	return OK
+
+
+## 将面板查询或事务意图发往权威服务器。
+## [param payload] 已由会话层生成的命令字典。
+## 返回传输可用时 OK；未连接时返回 ERR_UNCONFIGURED。
+## 设计：离线调试只发出可观测信号，不在适配器内伪造权威状态。
+func send_player_panel_command(payload: Dictionary) -> Error:
+	if connection_state != ConnectionState.CONNECTED:
+		return ERR_UNCONFIGURED
+	player_panel_command_sent.emit(payload.duplicate(true))
+	if offline_debug_enabled:
+		return OK
+	_transport_endpoint.send_player_panel_command(payload)
 	return OK
 
 

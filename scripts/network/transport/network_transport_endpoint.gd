@@ -9,6 +9,7 @@ signal session_request_received(peer_id: int, request: Dictionary)
 signal move_intent_received(peer_id: int, intent: Dictionary)
 signal map_transition_intent_received(peer_id: int, intent: Dictionary)
 signal use_ability_intent_received(peer_id: int, intent: Dictionary)
+signal player_panel_command_received(peer_id: int, command: Dictionary)
 signal server_message_received(message: Dictionary)
 signal world_snapshot_received(snapshot: Dictionary)
 
@@ -93,6 +94,13 @@ func send_use_ability_intent(intent: Dictionary) -> void:
 	rpc_submit_use_ability_intent.rpc_id(SERVER_PEER_ID, intent)
 
 
+## 向权威服务器提交人物、背包或战车面板操作意图。
+## [param command] 仅包含命令类型、实例标识、目标位置和客户端 revision 的字典。
+## 设计：传输层不解释物品归属、碰撞或装备数值，服务端必须重新校验。
+func send_player_panel_command(command: Dictionary) -> void:
+	rpc_submit_player_panel_command.rpc_id(SERVER_PEER_ID, command)
+
+
 ## 执行 `send_server_message` 对应的模块操作。
 ## [param peer_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## [param message] 调用方传入的参数；具体约束由函数签名和所在模块定义。
@@ -140,6 +148,16 @@ func rpc_submit_map_transition_intent(intent: Dictionary) -> void:
 func rpc_submit_use_ability_intent(intent: Dictionary) -> void:
 	use_ability_intent_received.emit(
 		multiplayer.get_remote_sender_id(), intent.duplicate(true)
+	)
+
+
+@rpc("any_peer", "call_remote", "reliable", 0)
+## 接收客户端面板命令并附加不可伪造的远端 peer 身份。
+## [param command] 客户端提交的面板操作意图。
+## 设计：该函数只处理协议边界，不信任载荷中的角色、账号或所有权字段。
+func rpc_submit_player_panel_command(command: Dictionary) -> void:
+	player_panel_command_received.emit(
+		multiplayer.get_remote_sender_id(), command.duplicate(true)
 	)
 
 

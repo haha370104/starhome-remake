@@ -14,6 +14,7 @@ const CombatCatalogScript := preload("res://scripts/domain/combat/combat_definit
 const PlayerStateRecordScript := preload("res://scripts/server/persistence/player_state_record.gd")
 const FilePlayerStateRepositoryScript := preload("res://scripts/server/persistence/file_player_state_repository.gd")
 const AutosaveServiceScript := preload("res://scripts/server/persistence/authoritative_autosave_service.gd")
+const PlayerPanelServiceScript := preload("res://scripts/server/player_panels/authoritative_player_panel_service.gd")
 const DomainResultScript := preload("res://scripts/core/domain_result.gd")
 
 signal snapshot_generated(snapshot: Dictionary)
@@ -33,6 +34,7 @@ var _transport_endpoint: NetworkTransportEndpoint
 var _combat_catalog
 var player_state_repository: PlayerStateRepository
 var autosave_service: AuthoritativeAutosaveService
+var player_panel_service: AuthoritativePlayerPanelService
 
 
 ## 节点进入场景树后初始化运行依赖。
@@ -104,6 +106,10 @@ func initialize(
 	var persistence_result := _initialize_persistence(injected_repository)
 	if not persistence_result.ok:
 		return persistence_result
+	player_panel_service = PlayerPanelServiceScript.new()
+	var panel_result = player_panel_service.initialize()
+	if not panel_result.is_ok:
+		return _failure(panel_result.error_code, panel_result.error_message)
 	_ticks_per_snapshot = config.simulation_hz / config.snapshot_hz
 	return _success(map_instance.definition.map_id)
 
@@ -150,6 +156,7 @@ func _ensure_transport_endpoint() -> void:
 	_transport_endpoint.move_intent_received.connect(_on_transport_move_intent)
 	_transport_endpoint.map_transition_intent_received.connect(_on_transport_map_transition_intent)
 	_transport_endpoint.use_ability_intent_received.connect(_on_transport_use_ability_intent)
+	_transport_endpoint.player_panel_command_received.connect(_on_transport_player_panel_command)
 	_transport_endpoint.peer_disconnected.connect(_on_peer_disconnected)
 
 
@@ -429,6 +436,32 @@ func snapshot_for_peer(peer_id: int) -> Dictionary:
 	)
 
 
+## 处理绑定到 peer 会话的人物、背包与战车面板命令。
+## [param peer_id] 由传输层提供的不可伪造 peer 标识。
+## [param command] 客户端面板操作意图。
+## 返回包含同一事务 revision 的三面板权威快照或拒绝原因。
+## 设计：角色身份只取自会话；变更由领域服务校验后一次性提交完整玩家聚合。
+func handle_peer_player_panel_command(peer_id: int, command: Dictionary) -> Dictionary:
+	var session: ServerSession = sessions.session_for_peer(peer_id)
+	if session == null:
+		return _failure(&"panels.session_missing", "peer has no active authoritative session")
+	if autosave_service == null or player_panel_service == null:
+		return _failure(&"panels.persistence_required", "player panels require authoritative persistence")
+	var current := autosave_service.state_for(session.entity_id)
+	if current == null:
+		return _failure(&"panels.state_missing", "authoritative player state is not registered")
+	var executed = player_panel_service.execute(current, command)
+	if not executed.is_ok:
+		return _failure(executed.error_code, executed.error_message)
+	var value: Dictionary = executed.value
+	if not bool(value.get("changed", false)):
+		return _success(value["panel_bundle"])
+	var committed = autosave_service.commit_player_state(session.entity_id, value["candidate"])
+	if not committed.is_ok:
+		return _failure(committed.error_code, committed.error_message)
+	return _success(player_panel_service.build_bundle(committed.value))
+
+
 ## 处理 `_on_peer_disconnected` 对应的信号回调。
 ## [param peer_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## 设计：该函数位于权威服务器边界，客户端不得覆盖其计算结果。
@@ -463,6 +496,17 @@ func _on_transport_use_ability_intent(peer_id: int, intent: Dictionary) -> void:
 	var result := handle_peer_use_ability(peer_id, intent)
 	_send_reliable(peer_id, {
 		"type": "combat_event" if result.ok else "command_rejected",
+		"result": _wire_result(result),
+	})
+
+
+## 处理可靠通道收到的面板命令并回传完整权威快照。
+## [param peer_id] 发送命令的远端 peer。
+## [param command] 客户端面板操作意图。
+func _on_transport_player_panel_command(peer_id: int, command: Dictionary) -> void:
+	var result := handle_peer_player_panel_command(peer_id, command)
+	_send_reliable(peer_id, {
+		"type": "player_panels" if result.ok else "command_rejected",
 		"result": _wire_result(result),
 	})
 
@@ -606,13 +650,67 @@ func _register_persistent_player(
 		"display_name": entity.entity_id,
 		"revision": 0,
 		"inventory_revision": 0,
+		"vehicle_loadout_revision": 0,
 		"inventory_capacity": 40,
-		"inventory_stacks": [],
+		"currency": 1000,
+		"character_sex": "male",
+		"character_level": 1,
+		"character_profession": "新兵",
+		"character_faction": "易安港",
+		"character_residence": "易安港基地",
+		"character_description": "正在探索蓝古星的年轻殖民者。",
+		"inventory_stacks": [{
+			"stack_id": "inventory.%s.spare_engine" % entity.entity_id,
+			"item_definition_id": "beginner_engine",
+			"quantity": 1,
+			"slot_index": 0,
+			"container_id": "main",
+			"position_px": [0, 0],
+			"footprint_px": [45, 45],
+			"locked": false,
+			"bound": false,
+			"max_durability": 900,
+			"durability": 900,
+		}, {
+			"stack_id": "inventory.%s.training_shirt" % entity.entity_id,
+			"item_definition_id": "male_sleeveless_shirt",
+			"quantity": 1,
+			"slot_index": 1,
+			"container_id": "main",
+			"position_px": [60, 0],
+			"footprint_px": [45, 45],
+			"locked": false,
+			"bound": true,
+			"max_durability": 64,
+			"durability": 64,
+		}],
 		"equipment_slots": [{
 			"owner_kind": "vehicle",
+			"slot_id": "chassis",
+			"slot_location": 0,
+			"equip_kind": 0,
+			"item_instance_id": "equipment.%s.chassis" % entity.entity_id,
+			"item_definition_id": "recruit_tank",
+			"max_durability": 1020,
+			"durability": 1020,
+			"upgrade_level": 0,
+		}, {
+			"owner_kind": "vehicle",
 			"slot_id": "primary_weapon",
+			"slot_location": 1,
+			"equip_kind": 1,
 			"item_instance_id": "equipment.%s.primary_weapon" % entity.entity_id,
 			"item_definition_id": "recruit_energy_cannon",
+			"max_durability": 900,
+			"durability": 900,
+			"upgrade_level": 0,
+		}, {
+			"owner_kind": "vehicle",
+			"slot_id": "propulsion",
+			"slot_location": 3,
+			"equip_kind": 3,
+			"item_instance_id": "equipment.%s.propulsion" % entity.entity_id,
+			"item_definition_id": "beginner_engine",
 			"max_durability": 900,
 			"durability": 900,
 			"upgrade_level": 0,
