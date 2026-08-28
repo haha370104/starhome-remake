@@ -30,6 +30,10 @@ func _run() -> void:
 	_expect(manager.vehicle_panel.size == Vector2(604, 460), "战车面板应保持荣耀版原始尺寸")
 	_expect(manager.inventory_panel._item_canvas.get_child_count() == 2, "背包应呈现两个权威物品实例")
 	_expect(manager.vehicle_panel._slot_root.get_child_count() == 3, "战车应呈现三个已装备槽位")
+	_expect(manager.vehicle_panel._slot_label_root.get_child_count() == 14,
+		"战车面板应恢复十四条原版固定槽位文字")
+	_expect(manager.vehicle_panel._slot_label_root.get_node("DisplaySlot_6").text == "推进器",
+		"视觉槽 6 应沿用原版推进器文字而不是装置编号")
 	_expect(manager.current_player.is_ready(), "窗口管理器应维护当前登录人物的同版本全局投影")
 	_expect(manager.character_panel._portrait_body.position == Vector2(56, 64),
 		"男性裸体底模应包含人物预览子窗口偏移")

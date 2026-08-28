@@ -96,28 +96,21 @@ func _equipment_view(equipment: Equipment, owner_kind: String) -> Dictionary:
 	var location: int = equipment.equipment_location if equipment is VehicleEquipment else 0
 	view["owner_kind"] = owner_kind
 	view["slot_id"] = (equipment as Clothing).character_slot \
-		if equipment is Clothing else _slot_id(location)
+		if equipment is Clothing else EquipmentSlotRegistry.slot_id(location)
 	view["location"] = location
 	view["location_name"] = "上衣" if equipment is Clothing \
 		else EquipmentSlotRegistry.display_name(location)
+	view["display_slot_id"] = -1 if equipment is Clothing \
+		else EquipmentSlotRegistry.display_slot_id(location)
+	view["special_series"] = "" if equipment is Clothing \
+		else EquipmentSlotRegistry.special_series(location)
+	view["special_row"] = -1 if equipment is Clothing \
+		else EquipmentSlotRegistry.special_row(location)
 	view["dialog_texture"] = String(equipment.presentation.get("dialog_texture", ""))
 	view["dialog_anchor"] = _int_pair(equipment.presentation.get("dialog_anchor", [205, 245]), [205, 245])
 	view["dialog_origin"] = _int_pair(equipment.presentation.get("dialog_origin", [0, 0]), [0, 0])
 	view["z_layer"] = int(equipment.presentation.get("z_layer", location))
 	return view
-
-
-## 将 Location 转为兼容客户端的槽位字符串。
-## [param location] 稳定战车 Location。
-## 返回业务槽位标识。
-func _slot_id(location: int) -> String:
-	return {
-		0: "chassis", 1: "primary_weapon", 2: "defense", 3: "propulsion",
-		5: "front_armor", 6: "rear_armor", 7: "left_armor", 8: "right_armor",
-		13: "tactical", 14: "secondary_power", 16: "control", 17: "amplifier",
-		18: "energy_core",
-	}.get(location, "extension_%d" % location)
-
 
 ## 将 JSON 数值对规范化为旧 UI 契约使用的整数数组。
 ## [param value] 待解析的外部值。

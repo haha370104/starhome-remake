@@ -5,6 +5,9 @@ const CurrentPlayerScript := preload("res://scripts/client/state/current_player.
 const PlayerPanelProjectorScript := preload(
 	"res://scripts/server/player_panels/player_panel_projector.gd"
 )
+const EquipmentSlotRegistryScript := preload(
+	"res://scripts/domain/equipment/equipment_slot_registry.gd"
+)
 
 var failures: PackedStringArray = []
 var assertions := 0
@@ -51,6 +54,15 @@ func _initialize() -> void:
 	_expect(current is Player, "客户端全局自己应当就是 Player 子类")
 	_expect(current.character_equipment.at("upper_body") is Clothing, "客户端人物面板与场景应共享同一服装对象")
 	_expect(current.vehicle.loadout.at(1) is VehicleWeapon, "客户端战车槽应恢复具体武器类型")
+	_expect(EquipmentSlotRegistryScript.display_slot_id(19) == 10 \
+		and EquipmentSlotRegistryScript.display_slot_id(24) == 10 \
+		and EquipmentSlotRegistryScript.display_slot_id(28) == 10,
+		"三系特殊装备第一个逻辑槽应映射到同一视觉行")
+	_expect(EquipmentSlotRegistryScript.special_series(22) == "sama" \
+		and EquipmentSlotRegistryScript.special_row(31) == 3,
+		"充血装配模型应保留特殊装备系列与四行语义")
+	_expect(EquipmentSlotRegistryScript.display_name(18) == "宏原子",
+		"Location 18 应恢复为荣耀版宏原子槽")
 	_finish()
 
 

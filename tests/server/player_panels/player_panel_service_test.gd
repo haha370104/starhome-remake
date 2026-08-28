@@ -30,6 +30,8 @@ func _initialize() -> void:
 	var chassis: Dictionary = bundle.vehicle.equipped[0]
 	_expect(chassis.dialog_anchor == [170, 200], "底盘对话框锚点应来自旧客户端 EquipInDlg")
 	_expect(chassis.stats.max_health == 70, "装备悬浮快照应携带服务端目录属性")
+	_expect(chassis.slot_id == "chassis" and chassis.display_slot_id == -1,
+		"投影器应从领域槽位注册表输出中央底盘语义")
 
 	var inventory_revision := int(bundle.inventory.revision)
 	var moved := authority.execute({

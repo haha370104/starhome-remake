@@ -1,20 +1,45 @@
 class_name EquipmentSlotRegistry
 extends RefCounted
 
-const VISIBLE_LOCATIONS := {
-	0: "底盘",
-	1: "主武器",
-	2: "防御装置",
-	3: "推进装置",
-	5: "前装甲",
-	6: "后装甲",
-	7: "左装甲",
-	8: "右装甲",
-	13: "战术装置",
-	14: "副能源",
-	16: "控制装置",
-	17: "增幅器",
-	18: "能源核心",
+const LOCATION_DEFINITIONS := {
+	0: {"slot_id": "chassis", "name": "车体", "display_slot_id": -1},
+	1: {"slot_id": "primary_weapon", "name": "主武器", "display_slot_id": -1},
+	2: {"slot_id": "defense", "name": "防护装置", "display_slot_id": -1},
+	3: {"slot_id": "propulsion", "name": "推进器", "display_slot_id": 6},
+	5: {"slot_id": "front_armor", "name": "前护甲", "display_slot_id": 0},
+	6: {"slot_id": "rear_armor", "name": "后护甲", "display_slot_id": 9},
+	7: {"slot_id": "left_armor", "name": "左护甲", "display_slot_id": 7},
+	8: {"slot_id": "right_armor", "name": "右护甲", "display_slot_id": 8},
+	13: {"slot_id": "tactical", "name": "战术设备", "display_slot_id": 1},
+	14: {"slot_id": "generator", "name": "发生器 / 副炮", "display_slot_id": 4},
+	16: {"slot_id": "extension_a", "name": "共享扩展位 A", "display_slot_id": 2},
+	17: {"slot_id": "extension_b", "name": "共享扩展位 B", "display_slot_id": 3},
+	18: {"slot_id": "macro_atom", "name": "宏原子", "display_slot_id": 5},
+	19: {"slot_id": "sama_condenser", "name": "撒玛聚能器", "display_slot_id": 10,
+		"series": "sama", "special_row": 0},
+	20: {"slot_id": "sama_pulser", "name": "撒玛脉冲器", "display_slot_id": 11,
+		"series": "sama", "special_row": 1},
+	21: {"slot_id": "sama_reactor", "name": "撒玛核变器", "display_slot_id": 12,
+		"series": "sama", "special_row": 2},
+	22: {"slot_id": "sama_turbulator", "name": "撒玛扰流器", "display_slot_id": 13,
+		"series": "sama", "special_row": 3},
+	23: {"slot_id": "force_field_armor", "name": "防御力场装甲", "display_slot_id": -1},
+	24: {"slot_id": "austin_glory", "name": "奥斯格兰的光辉", "display_slot_id": 10,
+		"series": "austin_glens", "special_row": 0},
+	25: {"slot_id": "austin_honor", "name": "奥斯格兰的荣耀", "display_slot_id": 11,
+		"series": "austin_glens", "special_row": 1},
+	26: {"slot_id": "austin_evolution", "name": "奥斯格兰的进化", "display_slot_id": 12,
+		"series": "austin_glens", "special_row": 2},
+	27: {"slot_id": "austin_legacy", "name": "奥斯格兰的传承", "display_slot_id": 13,
+		"series": "austin_glens", "special_row": 3},
+	28: {"slot_id": "crystal_mountain", "name": "晶源体—山", "display_slot_id": 10,
+		"series": "crystal", "special_row": 0},
+	29: {"slot_id": "crystal_power", "name": "晶源体—力", "display_slot_id": 11,
+		"series": "crystal", "special_row": 1},
+	30: {"slot_id": "crystal_fire", "name": "晶源体—火", "display_slot_id": 12,
+		"series": "crystal", "special_row": 2},
+	31: {"slot_id": "crystal_speed", "name": "晶源体—疾", "display_slot_id": 13,
+		"series": "crystal", "special_row": 3},
 }
 
 const DEFINITION_LOCATIONS := {
@@ -35,7 +60,40 @@ static func location_for_definition(definition_id: String) -> int:
 ## [param location] 荣耀客户端 Location 编号。
 ## 返回适合 UI 展示的槽位名。
 static func display_name(location: int) -> String:
-	return String(VISIBLE_LOCATIONS.get(location, "扩展槽位 %d" % location))
+	var definition: Dictionary = LOCATION_DEFINITIONS.get(location, {})
+	return String(definition.get("name", "扩展槽位 %d" % location))
+
+
+## 查询持久化与网络边界使用的稳定槽位标识。
+## [param location] 荣耀客户端 Location 编号。
+## 返回业务槽位标识；未知位置保留 extension_N 形式。
+static func slot_id(location: int) -> String:
+	var definition: Dictionary = LOCATION_DEFINITIONS.get(location, {})
+	return String(definition.get("slot_id", "extension_%d" % location))
+
+
+## 查询逻辑 Location 所属的十四格视觉编号。
+## [param location] 荣耀客户端 Location 编号。
+## 返回 0..13；中央预览或补丁槽返回 -1。
+static func display_slot_id(location: int) -> int:
+	var definition: Dictionary = LOCATION_DEFINITIONS.get(location, {})
+	return int(definition.get("display_slot_id", -1))
+
+
+## 查询右侧特殊装备系列。
+## [param location] 荣耀客户端 Location 编号。
+## 返回 sama、austin_glens、crystal；普通装备返回空字符串。
+static func special_series(location: int) -> String:
+	var definition: Dictionary = LOCATION_DEFINITIONS.get(location, {})
+	return String(definition.get("series", ""))
+
+
+## 查询右侧特殊装备视觉行。
+## [param location] 荣耀客户端 Location 编号。
+## 返回 0..3；普通装备返回 -1。
+static func special_row(location: int) -> int:
+	var definition: Dictionary = LOCATION_DEFINITIONS.get(location, {})
+	return int(definition.get("special_row", -1))
 
 
 ## 判断给定定义是否允许安装到目标 Location。
