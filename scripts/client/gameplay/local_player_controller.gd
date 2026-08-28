@@ -12,7 +12,6 @@ var active_movement_input_sequence := 0
 
 var _character: Node2D
 var _navigation: RefCounted
-var _destination_marker: CanvasItem
 var _multiplayer_presenter: Node
 var _movement_speed := 140.0
 var _target_position := Vector2.ZERO
@@ -24,7 +23,6 @@ var _held_position := Vector2.ZERO
 ## 执行 `configure` 对应的模块操作。
 ## [param character] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## [param navigation] 调用方传入的参数；具体约束由函数签名和所在模块定义。
-## [param destination_marker] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## [param movement_speed] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## [param initial_position] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## 返回该函数计算、查询或操作得到的结果。
@@ -32,15 +30,13 @@ var _held_position := Vector2.ZERO
 func configure(
 	character: Node2D,
 	navigation: RefCounted,
-	destination_marker: CanvasItem,
 	movement_speed: float,
 	initial_position: Vector2,
 ) -> Error:
-	if character == null or navigation == null or destination_marker == null or movement_speed <= 0.0:
+	if character == null or navigation == null or movement_speed <= 0.0:
 		return ERR_INVALID_PARAMETER
 	_character = character
 	_navigation = navigation
-	_destination_marker = destination_marker
 	_movement_speed = movement_speed
 	_write_position(initial_position)
 	cancel_route()
@@ -96,8 +92,6 @@ func request_move(requested_position: Vector2) -> Dictionary:
 	if _multiplayer_presenter != null:
 		var movement_intent: Dictionary = _multiplayer_presenter.request_move(resolved_position)
 		active_movement_input_sequence = int(movement_intent.get("input_sequence", 0))
-	_destination_marker.position = resolved_position
-	_destination_marker.visible = true
 	_begin_current_segment()
 	return {
 		"ok": true,
@@ -187,8 +181,6 @@ func cancel_route(message: String = "") -> void:
 	path_index = 0
 	active_movement_input_sequence = 0
 	_has_target = false
-	if _destination_marker != null:
-		_destination_marker.visible = false
 	_set_character_action(&"stand")
 	if not message.is_empty():
 		route_stopped.emit(message)
@@ -227,13 +219,12 @@ func _begin_current_segment() -> void:
 	_set_character_action(&"move")
 
 
-## 完成路线、隐藏目标并通知场景层检查地图出口。
+## 完成路线并通知场景层检查地图出口。
 func _complete_route() -> void:
 	path_points = PackedVector2Array()
 	path_index = 0
 	active_movement_input_sequence = 0
 	_has_target = false
-	_destination_marker.visible = false
 	_set_character_action(&"stand")
 	route_finished.emit()
 

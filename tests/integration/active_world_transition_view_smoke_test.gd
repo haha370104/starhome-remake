@@ -50,11 +50,18 @@ func _run() -> void:
 
 	hall.call("_handle_world_right_click", Vector2(420, 360))
 	_expect(hall.selected_transition_id == &"exit_to_city", "右键传送图标必须记录具体业务出口")
-	_expect(hall.destination_marker.position == Vector2(480, 370), "传送图标应导航到 approach_point 而非图标锚点")
+	_expect(hall.movement_click_effects.frame_count() == 6, "荣耀版右键落点反馈必须保留完整 6 帧")
+	_expect(hall.movement_click_effects.active_effect_count() == 1, "右键点击必须立即创建一次落点反馈")
+	_expect(
+		hall.movement_click_effects.last_presented_position == Vector2(420, 360),
+		"落点反馈必须留在实际点击点，不得跟随寻路接近点",
+	)
 	_expect(not hall.path_points.is_empty(), "命中传送图标必须生成可行路线")
 	if not hall.path_points.is_empty():
 		_expect(hall.path_points[-1].is_equal_approx(Vector2(480, 370)), "传送路线终点必须是 approach_point")
 	_expect(hall.pending_map_transition.is_empty(), "玩家到达前不得提交地图切换")
+	await create_timer(0.65).timeout
+	_expect(hall.movement_click_effects.active_effect_count() == 0, "落点反馈必须在约 600ms 后自动删除")
 
 	var test_preloader := TestMapPreloader.new()
 	hall.add_child(test_preloader)
@@ -71,7 +78,7 @@ func _run() -> void:
 	hall.selected_transition_id = &""
 
 	_test_failed_bundle_isolation(hall, active)
-	_expect(assertions == 26, "组合回归必须执行完整的 26 条业务断言")
+	_expect(assertions == 29, "组合回归必须执行完整的 29 条业务断言")
 	_finish(hall)
 
 

@@ -44,7 +44,7 @@ func _test_route_policy_after_authoritative_correction() -> void:
 			expected_replanned,
 			"平滑权威校正必须保留目标并从校正位置重算路线",
 		)
-		_expect(hall.destination_marker.visible, "平滑校正后旧目标标记应继续显示")
+		_expect(hall.movement_click_effects.active_effect_count() == 0, "权威校正不得生成鼠标落点反馈")
 
 	# Re-establish a route so the forced correction assertion is independent from
 	# the small-correction result above.
@@ -60,7 +60,7 @@ func _test_route_policy_after_authoritative_correction() -> void:
 	})
 	_expect(hall.path_points.is_empty(), "强制权威校正必须取消旧地图路线")
 	_expect(hall.active_movement_input_sequence == 0, "强制权威校正必须清除旧移动输入序号")
-	_expect(not hall.destination_marker.visible, "强制权威校正必须隐藏旧目标标记")
+	_expect(hall.movement_click_effects.active_effect_count() == 0, "强制权威校正不得生成鼠标落点反馈")
 	hall.free()
 
 

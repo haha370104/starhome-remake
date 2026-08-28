@@ -18,6 +18,9 @@ const ClientMapPreloaderScript := preload(
 const LocalPlayerControllerScript := preload(
 	"res://scripts/client/gameplay/local_player_controller.gd"
 )
+const MovementClickEffectPresenterScript := preload(
+	"res://scripts/client/presentation/movement_click_effect_presenter.gd"
+)
 const ActiveWorldControllerScript := preload(
 	"res://scripts/client/world/active_world_controller.gd"
 )
@@ -106,7 +109,7 @@ var npc_instances: Array[Node2D]:
 		return active_world_controller.npc_instances if active_world_controller else []
 var active_npc: Node2D
 var camera: Camera2D
-var destination_marker: Polygon2D
+var movement_click_effects: MovementClickEffectPresenter
 var hud: CanvasLayer
 var hint_label: Label
 var popup: PanelContainer
@@ -306,8 +309,9 @@ func _restore_locomotion_after_attack(was_moving: bool) -> void:
 
 ## 执行 `handle_world_right_click` 对应的模块操作。
 ## [param world_position] 调用方传入的参数；具体约束由函数签名和所在模块定义。
-## 设计：图标锚点仅用于渲染/命中，绝不能替代地图定义中的接近点。
+## 设计：先在实际点击点播放原版反馈；图标锚点仅用于命中，不能替代可行走接近点。
 func _handle_world_right_click(world_position: Vector2) -> void:
+	movement_click_effects.present(world_position)
 	var transition_view: Node2D = active_world_controller.transition_view_at(world_position)
 	if transition_view != null:
 		_move_to(transition_view.approach_point, transition_view.transition_id)
@@ -391,15 +395,10 @@ func _build_world() -> void:
 	map_background.z_index = -100
 	add_child(map_background)
 
-	destination_marker = Polygon2D.new()
-	destination_marker.name = "DestinationMarker"
-	destination_marker.polygon = PackedVector2Array(
-		[Vector2(0, -10), Vector2(18, 0), Vector2(0, 10), Vector2(-18, 0)]
-	)
-	destination_marker.color = Color(0.1, 1.0, 0.55, 0.72)
-	destination_marker.visible = false
-	destination_marker.z_index = -20
-	add_child(destination_marker)
+	movement_click_effects = MovementClickEffectPresenterScript.new()
+	movement_click_effects.name = "MovementClickEffects"
+	movement_click_effects.z_index = -20
+	add_child(movement_click_effects)
 
 	sortable_world = Node2D.new()
 	sortable_world.name = "YSortedWorld"
@@ -455,7 +454,6 @@ func _build_world() -> void:
 	var controller_error: Error = local_player_controller.configure(
 		player,
 		DiamondNavigationScript.new(),
-		destination_marker,
 		player_movement_speed,
 		Vector2.ZERO,
 	)
@@ -589,6 +587,8 @@ func _on_active_world_will_replace() -> void:
 		active_npc.set_interaction_active(false)
 	active_npc = null
 	selected_transition_id = &""
+	if movement_click_effects != null:
+		movement_click_effects.clear_effects()
 	if combat_attack_controller != null:
 		combat_attack_controller.clear_effects()
 	if monster_world_controller != null:
