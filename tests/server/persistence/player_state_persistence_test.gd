@@ -12,7 +12,7 @@ var assertions := 0
 var database_path := ""
 
 
-## Runs runtime capability, migration, transaction and reconnect-reload persistence tests.
+## 初始化当前模块或独立测试夹具。
 func _initialize() -> void:
 	database_path = TEST_DIRECTORY.path_join(
 		"player_state_%d_%d.tmp" % [OS.get_process_id(), Time.get_ticks_msec()]
@@ -30,7 +30,7 @@ func _initialize() -> void:
 	quit(1)
 
 
-## Verifies the current runtime honestly reports no SQLite driver and keeps a concrete SQL seam.
+## 执行 `test_sqlite_runtime_and_schema_seam` 对应的模块操作。
 func _test_sqlite_runtime_and_schema_seam() -> void:
 	var capability: Dictionary = SqliteDriverPortScript.runtime_capability()
 	_expect(not bool(capability["available"]), "bundled Godot 4.7 runtime should not claim an unavailable SQLite driver")
@@ -46,7 +46,7 @@ func _test_sqlite_runtime_and_schema_seam() -> void:
 		_expect(sql.contains("CREATE TABLE IF NOT EXISTS %s" % table_name), "SQL migration should define %s" % table_name)
 
 
-## Verifies a schema-zero aggregate file migrates and remains loadable as schema one.
+## 执行 `test_schema_zero_migration` 对应的模块操作。
 func _test_schema_zero_migration() -> void:
 	var migration_path := database_path.replace("player_state_", "player_state_migration_")
 	var state: PlayerStateRecord = _fixture_state()
@@ -71,7 +71,7 @@ func _test_schema_zero_migration() -> void:
 	_expect(migrated_root.has("players") and not migrated_root.has("characters"), "migration should replace the legacy aggregate key")
 
 
-## Verifies successful commit, callback rollback, stale revision rejection and process-style reload.
+## 执行 `test_atomic_transaction_and_reload` 对应的模块操作。
 func _test_atomic_transaction_and_reload() -> void:
 	var repository: FilePlayerStateRepository = FileRepositoryScript.new(database_path)
 	var initialized := repository.initialize()
@@ -114,9 +114,9 @@ func _test_atomic_transaction_and_reload() -> void:
 	_expect(restored.value.equipment_slots[0].item_instance_id == "equipment.cannon.1", "reload should restore equipped item instances")
 
 
-## Applies a representative disconnect checkpoint to mutable [param state].
-## [param state] Transaction-isolated player aggregate owned by the repository callback.
-## Returns success so the repository validates and commits the complete aggregate.
+## 执行 `apply_checkpoint_transaction` 对应的模块操作。
+## [param state] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func _apply_checkpoint_transaction(state: PlayerStateRecord) -> DomainResult:
 	state.map_id = "d04_field_zone"
 	state.map_instance_id = "d04.instance.7"
@@ -128,9 +128,9 @@ func _apply_checkpoint_transaction(state: PlayerStateRecord) -> DomainResult:
 	return DomainResult.ok()
 
 
-## Mutates isolated [param state] and deliberately rejects the transaction.
-## [param state] Transaction copy whose changes must never become visible.
-## Returns a forced failure used to prove callback rollback.
+## 执行 `abort_after_mutation` 对应的模块操作。
+## [param state] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func _abort_after_mutation(state: PlayerStateRecord) -> DomainResult:
 	state.inventory_stacks[0].quantity = 999
 	state.vehicle_health = 1
@@ -138,8 +138,8 @@ func _abort_after_mutation(state: PlayerStateRecord) -> DomainResult:
 	return DomainResult.failure(&"test.forced_rollback", "forced transaction rollback")
 
 
-## Builds the complete valid player aggregate used by persistence tests.
-## Returns account, character, inventory, equipment, vehicle and location state.
+## 执行 `fixture_state` 对应的模块操作。
+## 返回该函数计算、查询或操作得到的结果。
 func _fixture_state() -> PlayerStateRecord:
 	var result := PlayerStateRecordScript.from_dictionary({
 		"schema_version": 1,
@@ -188,7 +188,7 @@ func _fixture_state() -> PlayerStateRecord:
 	return result.value
 
 
-## Removes only the exact generated database snapshots created by this test process.
+## 移除并清理 `cleanup_test_files` 对应的模块状态。
 func _cleanup_test_files() -> void:
 	var migration_path := database_path.replace("player_state_", "player_state_migration_")
 	for path: String in [
@@ -199,9 +199,9 @@ func _cleanup_test_files() -> void:
 			DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
 
 
-## Records one assertion and its [param message].
-## [param condition] Boolean requirement under test.
-## [param message] Failure context emitted at test completion.
+## 执行 `expect` 对应的模块操作。
+## [param condition] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param message] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _expect(condition: bool, message: String) -> void:
 	assertions += 1
 	if not condition:

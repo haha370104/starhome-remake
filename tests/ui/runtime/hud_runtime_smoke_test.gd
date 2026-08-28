@@ -9,7 +9,7 @@ var assertions := 0
 
 
 ## 延迟启动 HUD 运行时冒烟测试，避免在 SceneTree 初始化期间操作根视口。
-## Design: 测试主体需要跨渲染帧等待布局完成，因此从延迟调用进入异步流程。
+## 设计：测试主体需要跨渲染帧等待布局完成，因此从延迟调用进入异步流程。
 func _initialize() -> void:
 	call_deferred("_run")
 
@@ -49,7 +49,8 @@ func _run() -> void:
 	quit(1)
 
 
-## 验证 [param hud] 在 1280×720 视口下的四个 HUD 区域布局和独立按钮数量。
+## 执行 `assert_1280_layout` 对应的模块操作。
+## [param hud] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _assert_1280_layout(hud: CanvasLayer) -> void:
 	_expect(hud.top_menu.size == Vector2(330, 54), "顶部菜单必须保持 330×54 原始像素")
 	_expect(hud.top_menu.position == Vector2(825, 0), "1280 宽时顶部菜单应在 125 宽小地图左侧贴顶")
@@ -67,7 +68,8 @@ func _assert_1280_layout(hud: CanvasLayer) -> void:
 	_expect(hud.shortcut_bar.position == Vector2(432.5, 651), "快捷栏应紧贴底部主栏上方居中")
 
 
-## 验证 [param hud] 的坐标、能量裁剪、武器选中和快捷栏显隐状态同步。
+## 执行 `assert_state_updates` 对应的模块操作。
+## [param hud] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _assert_state_updates(hud: CanvasLayer) -> void:
 	var dot_before: Vector2 = hud.minimap_dock.player_dot.position
 	hud.update_player_dot(Vector2(972, 960))
@@ -89,7 +91,8 @@ func _assert_state_updates(hud: CanvasLayer) -> void:
 	hud.state.set_shortcut_visible(true)
 
 
-## 验证 [param hud] 切换地图内容时保留 HUD 外框状态并按新世界尺寸重算小地图投影。
+## 执行 `assert_map_rebinding` 对应的模块操作。
+## [param hud] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _assert_map_rebinding(hud: CanvasLayer) -> void:
 	var minimap_texture: Texture2D = hud.minimap_dock.map_image.texture
 	hud.set_map(Vector2(3888, 3840), minimap_texture, "G08")
@@ -100,7 +103,8 @@ func _assert_map_rebinding(hud: CanvasLayer) -> void:
 	hud.set_map(Vector2(1944, 1920), minimap_texture, "易安港基地大厅一层")
 
 
-## 验证 [param hud] 小地图大小、折叠状态与顶部菜单折叠时的联动布局。
+## 执行 `assert_minimap_modes` 对应的模块操作。
+## [param hud] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _assert_minimap_modes(hud: CanvasLayer) -> void:
 	hud.state.set_minimap_size("large")
 	_expect(hud.minimap_dock.map_viewport.size == Vector2(300, 300), "大地图模式必须直接使用专用 JPG 原始尺寸")
@@ -120,7 +124,8 @@ func _assert_minimap_modes(hud: CanvasLayer) -> void:
 	hud.state.set_minimap_size("small")
 
 
-## 验证 [param hud] 在 1600×900 视口下保持固定像素并分别吸附四条 HUD 边界。
+## 执行 `assert_1600_layout` 对应的模块操作。
+## [param hud] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _assert_1600_layout(hud: CanvasLayer) -> void:
 	_expect(hud.top_menu.position == Vector2(1145, 0), "1600 宽时顶部菜单应仍位于小地图左侧")
 	_expect(hud.top_menu.size == Vector2(330, 54), "窗口变大不得缩放顶部菜单")
@@ -132,7 +137,9 @@ func _assert_1600_layout(hud: CanvasLayer) -> void:
 	_expect(hud.shortcut_bar.size == Vector2(415, 40), "窗口变大不得缩放快捷栏")
 
 
-## 记录一次断言，并在 [param condition] 为假时保存 [param message]。
+## 执行 `expect` 对应的模块操作。
+## [param condition] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param message] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _expect(condition: bool, message: String) -> void:
 	assertions += 1
 	if not condition:

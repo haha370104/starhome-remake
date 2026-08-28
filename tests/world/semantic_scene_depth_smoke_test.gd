@@ -11,9 +11,8 @@ var failures: PackedStringArray = []
 var assertions := 0
 
 
-## Runs the semantic depth regression suite and exits with a process status.
-## Design: structural owner checks and real character ordering are kept in one
-## headless suite so the map import contract cannot drift from runtime usage.
+## 初始化当前模块或独立测试夹具。
+## 设计：该测试以隔离夹具验证公开契约，不依赖未声明的全局状态。
 func _initialize() -> void:
 	_test_layer_preserves_cropped_pixel_position()
 	_test_manifest_uses_semantic_owners()
@@ -29,7 +28,7 @@ func _initialize() -> void:
 	quit(1)
 
 
-## Verifies that a packed atlas region keeps its original map pixel position.
+## 执行 `test_layer_preserves_cropped_pixel_position` 对应的模块操作。
 func _test_layer_preserves_cropped_pixel_position() -> void:
 	var layer: Node2D = SemanticSceneLayerScript.new()
 	layer.configure(null, Rect2(20, 30, 40, 50), Vector2(120, 896), 993.0)
@@ -41,7 +40,7 @@ func _test_layer_preserves_cropped_pixel_position() -> void:
 	layer.free()
 
 
-## Validates manifest strategy, cropped regions, disabled FCC calls and hashes.
+## 执行 `test_manifest_uses_semantic_owners` 对应的模块操作。
 func _test_manifest_uses_semantic_owners() -> void:
 	var manifest: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(MANIFEST_PATH))
 	var composition: Dictionary = manifest["composition"]
@@ -86,9 +85,8 @@ func _test_manifest_uses_semantic_owners() -> void:
 		_expect(not disabled_indices.has(int(owner["source_index"])), "被注释禁用的摆放不得拥有运行时像素")
 
 
-## Proves overlap winners follow semantic baselines instead of FCC call order.
-## Design: the assertion discovers all stair/platform intersections from the
-## generated overlap graph; no screen or map coordinate is hard-coded.
+## 执行 `test_semantic_overlap_order` 对应的模块操作。
+## 设计：该测试以隔离夹具验证公开契约，不依赖未声明的全局状态。
 func _test_semantic_overlap_order() -> void:
 	var manifest: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(MANIFEST_PATH))
 	var composition: Dictionary = manifest["composition"]
@@ -116,7 +114,7 @@ func _test_semantic_overlap_order() -> void:
 	_expect(rails_with_later_source_platform_overlap.size() == 2, "两组楼梯扶手都必须按基线盖住 FCC 中后创建的高台构件")
 
 
-## Uses the production character composition to check front/back stair order.
+## 执行 `test_stair_profile_with_real_character` 对应的模块操作。
 func _test_stair_profile_with_real_character() -> void:
 	var manifest: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(MANIFEST_PATH))
 	var composition: Dictionary = manifest["composition"]
@@ -182,7 +180,7 @@ func _test_stair_profile_with_real_character() -> void:
 	character.free()
 
 
-## Proves the asset-local stair masks are disjoint and cover source alpha.
+## 执行 `test_stair_masks_partition_asset` 对应的模块操作。
 func _test_stair_masks_partition_asset() -> void:
 	var profile: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(PROFILE_PATH))
 	_expect(String(profile["profile_id"]) == "industrial_stairway_traversable", "楼梯应使用可复用业务 depth profile")
@@ -209,9 +207,9 @@ func _test_stair_masks_partition_asset() -> void:
 	_expect(rail.get_pixel(160, 228).r > 0.5, "前扶手像素应属于 occluder")
 
 
-## Records one assertion result.
-## [param condition] is the expected test condition.
-## [param message] is appended to failures when the condition is false.
+## 执行 `expect` 对应的模块操作。
+## [param condition] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param message] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _expect(condition: bool, message: String) -> void:
 	assertions += 1
 	if not condition:

@@ -10,7 +10,7 @@ var failures: Array[String] = []
 var assertions := 0
 
 
-## Runs controlled catalog, formal starter-loadout and D04 lifecycle seam tests.
+## 初始化当前模块或独立测试夹具。
 func _initialize() -> void:
 	_test_controlled_load_and_read_only_queries()
 	_test_formal_starter_definitions()
@@ -25,7 +25,7 @@ func _initialize() -> void:
 	quit(1)
 
 
-## Verifies the catalog only loads controlled stage-three files and returns defensive copies.
+## 执行 `test_controlled_load_and_read_only_queries` 对应的模块操作。
 func _test_controlled_load_and_read_only_queries() -> void:
 	var rejected: Variant = CatalogScript.load_file("res://data/maps/map_directory.json")
 	_expect(not rejected.is_ok and rejected.error_code == &"combat.catalog_path_not_allowed", "catalog must reject paths outside its controlled root")
@@ -43,7 +43,7 @@ func _test_controlled_load_and_read_only_queries() -> void:
 	_expect(catalog.monster_definition("missing").is_empty(), "unknown monster query should be empty")
 
 
-## Verifies formal starter health, hardiness, movement, energy-cannon range and cooldown semantics.
+## 执行 `test_formal_starter_definitions` 对应的模块操作。
 func _test_formal_starter_definitions() -> void:
 	var catalog: Variant = CatalogScript.load_default().value
 	var assembly_result: Variant = catalog.starter_vehicle_assembly(
@@ -78,7 +78,7 @@ func _test_formal_starter_definitions() -> void:
 	_expect(weapon["activation_power"] == null and weapon["unknown_fields"].has("activation_power"), "missing activation power must remain explicit unknown")
 
 
-## Verifies D04 expands to stable lifecycle inputs without invented defense or movement speed.
+## 执行 `test_d04_lifecycle_definitions` 对应的模块操作。
 func _test_d04_lifecycle_definitions() -> void:
 	var catalog: Variant = CatalogScript.load_default().value
 	var lifecycle_result: Variant = catalog.d04_monster_lifecycles(MAP_INSTANCE_ID)
@@ -106,7 +106,7 @@ func _test_d04_lifecycle_definitions() -> void:
 	_expect(lifecycle.max_health == int(lifecycles[0]["max_health"]), "monster lifecycle should preserve formal health semantics")
 
 
-## Verifies formal catalog outputs register and resolve one authoritative cannon attack end to end.
+## 执行 `test_catalog_to_authoritative_module_seam` 对应的模块操作。
 func _test_catalog_to_authoritative_module_seam() -> void:
 	var catalog: Variant = CatalogScript.load_default().value
 	var assembly: Dictionary = catalog.starter_vehicle_assembly(
@@ -129,9 +129,9 @@ func _test_catalog_to_authoritative_module_seam() -> void:
 		_expect(int(hit.value["target_health"]) == int(monster["max_health"]) - 7, "formal hit should mutate monster health")
 
 
-## Records one assertion and its [param message].
-## [param condition] Boolean requirement under test.
-## [param message] Failure context emitted at test completion.
+## 执行 `expect` 对应的模块操作。
+## [param condition] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param message] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _expect(condition: bool, message: String) -> void:
 	assertions += 1
 	if not condition:

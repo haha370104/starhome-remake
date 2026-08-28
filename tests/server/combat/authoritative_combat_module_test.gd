@@ -11,8 +11,8 @@ var failures: Array[String] = []
 var assertions := 0
 
 
-## Runs deterministic vehicle, energy-cannon and monster-lifecycle server tests.
-## Design: Every gameplay definition is an explicit fixture until formal Glory definitions are imported.
+## 初始化当前模块或独立测试夹具。
+## 设计：该测试以隔离夹具验证公开契约，不依赖未声明的全局状态。
 func _initialize() -> void:
 	_test_vehicle_assembly_and_energy_domains()
 	_test_energy_cannon_authority_state_machine()
@@ -28,7 +28,7 @@ func _initialize() -> void:
 	quit(1)
 
 
-## Verifies injected assembly aggregation and separation of reserve, working and output-power state.
+## 执行 `test_vehicle_assembly_and_energy_domains` 对应的模块操作。
 func _test_vehicle_assembly_and_energy_domains() -> void:
 	var assembly_result: Variant = _assembly_result()
 	_expect(assembly_result.is_ok, "injected rookie vehicle assembly should calculate")
@@ -68,8 +68,8 @@ func _test_vehicle_assembly_and_energy_domains() -> void:
 	)
 
 
-## Verifies server-owned attack validation, energy reservation, damage and cooldown transitions.
-## Design: Forged client damage is rejected before any energy, sequence or target mutation.
+## 执行 `test_energy_cannon_authority_state_machine` 对应的模块操作。
+## 设计：该测试以隔离夹具验证公开契约，不依赖未声明的全局状态。
 func _test_energy_cannon_authority_state_machine() -> void:
 	var module := _new_module(12345)
 	var assembly: Dictionary = _assembly_result().value
@@ -125,7 +125,7 @@ func _test_energy_cannon_authority_state_machine() -> void:
 	_expect(not power_rejected.is_ok and power_rejected.error_code == &"combat.insufficient_power_output", "overloaded output budget should prevent activation")
 
 
-## Verifies two attackers cannot settle one monster death twice and respawn occurs after exactly 30 seconds.
+## 执行 `test_single_death_and_thirty_second_respawn` 对应的模块操作。
 func _test_single_death_and_thirty_second_respawn() -> void:
 	var module := _new_module(77)
 	var assembly: Dictionary = _assembly_result().value
@@ -148,7 +148,7 @@ func _test_single_death_and_thirty_second_respawn() -> void:
 	_expect(module.death_events.size() == 1 and module.respawn_events.size() == 1, "respawn should not duplicate prior death settlement")
 
 
-## Verifies equal injected seeds produce identical authoritative damage sequences.
+## 执行 `test_seeded_damage_is_reproducible` 对应的模块操作。
 func _test_seeded_damage_is_reproducible() -> void:
 	var first := _new_seeded_attack_world(987654)
 	var second := _new_seeded_attack_world(987654)
@@ -157,8 +157,8 @@ func _test_seeded_damage_is_reproducible() -> void:
 	_expect(first_damage == second_damage, "same fixed seed should reproduce the same damage roll")
 
 
-## Verifies unresponsive, retaliatory and aggressive monsters obey the recovered three-state behavior field.
-## Design: The fixture uses the same geometry for all policies so only engagement semantics can change damage.
+## 执行 `test_three_engagement_policies` 对应的模块操作。
+## 设计：该测试以隔离夹具验证公开契约，不依赖未声明的全局状态。
 func _test_three_engagement_policies() -> void:
 	var assembly: Dictionary = _assembly_result().value
 	var passive := _new_module(101)
@@ -189,9 +189,9 @@ func _test_three_engagement_policies() -> void:
 	_expect((snapshot.get("recent_events", []) as Array).size() == 1, "snapshot includes one deduplicatable damage event")
 
 
-## Builds a configured combat module using [param seed].
-## [param seed] Fixed random seed supplied to deterministic damage simulation.
-## Returns a newly configured authoritative module.
+## 执行 `new_module` 对应的模块操作。
+## [param seed] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func _new_module(seed: int) -> AuthoritativeCombatModule:
 	var module: AuthoritativeCombatModule = CombatModuleScript.new()
 	var configured := module.configure(20, seed, 0.0)
@@ -199,9 +199,9 @@ func _new_module(seed: int) -> AuthoritativeCombatModule:
 	return module
 
 
-## Builds a one-player, one-monster attack world using [param seed].
-## [param seed] Fixed seed whose first damage roll is compared across worlds.
-## Returns a ready authoritative combat module.
+## 执行 `new_seeded_attack_world` 对应的模块操作。
+## [param seed] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func _new_seeded_attack_world(seed: int) -> AuthoritativeCombatModule:
 	var module := _new_module(seed)
 	module.register_vehicle("player.seed", MAP_INSTANCE_ID, Vector2.ZERO, _assembly_result().value, {ABILITY_ID: _weapon_definition()})
@@ -209,8 +209,7 @@ func _new_seeded_attack_world(seed: int) -> AuthoritativeCombatModule:
 	return module
 
 
-## Calculates the common rookie-vehicle fixture used by combat tests.
-## Returns a `DomainResult` containing normalized aggregate stats.
+## 执行 `assembly_result` 对应的模块操作。
 func _assembly_result():
 	var components: Array[Dictionary] = [
 		{"weight": 50, "propulsion": 20, "required_driving_level": 10, "continuous_power_draw": 5},
@@ -221,8 +220,8 @@ func _assembly_result():
 	)
 
 
-## Builds the reconstructed rookie chassis fixture.
-## Returns independent combat health, equipment hardiness, energy and output-power capacities.
+## 执行 `chassis_definition` 对应的模块操作。
+## 返回该函数计算、查询或操作得到的结果。
 func _chassis_definition() -> Dictionary:
 	return {
 		"weight": 100,
@@ -234,14 +233,14 @@ func _chassis_definition() -> Dictionary:
 	}
 
 
-## Builds the existing project movement-rule fixture.
-## Returns speed multiplier and cap used by vehicle assembly calculation.
+## 执行 `movement_config` 对应的模块操作。
+## 返回该函数计算、查询或操作得到的结果。
 func _movement_config() -> Dictionary:
 	return {"base_speed_multiplier": 1500, "base_speed_cap": 240}
 
 
-## Builds an injected variable-damage rookie energy cannon fixture.
-## Returns weapon stats owned exclusively by the server module.
+## 执行 `weapon_definition` 对应的模块操作。
+## 返回该函数计算、查询或操作得到的结果。
 func _weapon_definition() -> Dictionary:
 	return {
 		"weapon_id": "rookie_energy_cannon",
@@ -255,9 +254,9 @@ func _weapon_definition() -> Dictionary:
 	}
 
 
-## Builds a fixed-damage energy cannon using [param damage].
-## [param damage] Deterministic damage applied by every valid shot.
-## Returns a server weapon fixture with all other rookie cannon constraints.
+## 执行 `fixed_damage_weapon` 对应的模块操作。
+## [param damage] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func _fixed_damage_weapon(damage: int) -> Dictionary:
 	var definition := _weapon_definition()
 	definition["minimum_damage"] = damage
@@ -265,11 +264,11 @@ func _fixed_damage_weapon(damage: int) -> Dictionary:
 	return definition
 
 
-## Builds a monster fixture with [param monster_id], [param health] and [param position].
-## [param monster_id] Stable identity for one lifecycle generation.
-## [param health] Maximum authoritative combat health restored on respawn.
-## [param position] Authoritative target point used for range validation.
-## Returns a 30-second-respawn monster definition.
+## 执行 `monster_definition` 对应的模块操作。
+## [param monster_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param health] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param position] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func _monster_definition(monster_id: String, health: int, position: Vector2) -> Dictionary:
 	return {
 		"monster_id": monster_id,
@@ -280,8 +279,10 @@ func _monster_definition(monster_id: String, health: int, position: Vector2) -> 
 	}
 
 
-## Builds a close-range monster [param monster_id] using [param engagement_policy].
-## Returns a deterministic attacker fixture with every authority movement/combat field explicit.
+## 执行 `behavior_monster_definition` 对应的模块操作。
+## [param monster_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param engagement_policy] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func _behavior_monster_definition(monster_id: String, engagement_policy: StringName) -> Dictionary:
 	var definition := _monster_definition(monster_id, 30, Vector2(20.0, 0.0))
 	definition.merge({
@@ -297,19 +298,19 @@ func _behavior_monster_definition(monster_id: String, engagement_policy: StringN
 	return definition
 
 
-## Builds a client-safe energy-cannon intent targeting [param target_id] at [param sequence].
-## [param target_id] Registered monster selected by the player.
-## [param sequence] Monotonic per-actor attack command sequence.
-## Returns the only four fields accepted by the combat boundary.
+## 执行 `attack_intent` 对应的模块操作。
+## [param target_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param sequence] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func _attack_intent(target_id: String, sequence: int) -> Dictionary:
 	return UseAbilityIntentContract.new(
 		MAP_INSTANCE_ID, ABILITY_ID, target_id, sequence
 	).to_dictionary()
 
 
-## Records one assertion and its [param message].
-## [param condition] Boolean requirement under test.
-## [param message] Failure context emitted at test completion.
+## 执行 `expect` 对应的模块操作。
+## [param condition] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param message] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _expect(condition: bool, message: String) -> void:
 	assertions += 1
 	if not condition:
