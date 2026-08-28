@@ -15,7 +15,13 @@ from typing import Any, Iterable
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 CATALOG_PATH = PROJECT_ROOT / "data/gameplay/stage3/catalog_v1.json"
 GLORY_RAW_ROOT = PROJECT_ROOT.parent / "starhome_lz_ry_full/raw"
-ALLOWED_EVIDENCE_STATUSES = {"client_confirmed", "reconstructed_default", "unknown"}
+ALLOWED_EVIDENCE_STATUSES = {
+    "client_confirmed",
+    "client_derived",
+    "not_applicable",
+    "reconstructed_default",
+    "unknown",
+}
 SEMANTIC_ID_RE = re.compile(r"^[a-z][a-z0-9_]*$")
 FORBIDDEN_RUNTIME_PATTERNS = (
     re.compile(r"(?:^|[/\\])pic(?:2|3)?(?:[/\\]|$)", re.IGNORECASE),
@@ -242,14 +248,14 @@ def audit_equipment(document: dict[str, Any]) -> tuple[int, int]:
     return evidence_count, asset_count
 
 
-def audit_monsters(document: dict[str, Any]) -> tuple[int, int]:
+def audit_monsters(document: dict[str, Any]) -> tuple[int, int, int]:
     """Audit monster values, evidence, animation references, and source rows.
 
     Args:
         document: Parsed monster definition document.
 
     Returns:
-        Tuple containing evidence-entry and presentation-resource counts.
+        Tuple containing evidence-entry, presentation-resource, and runtime-drop counts.
     """
 
     expected_ids = {"om_adult", "om_larva", "photosensitive_orb", "toxic_gel"}
@@ -257,6 +263,7 @@ def audit_monsters(document: dict[str, Any]) -> tuple[int, int]:
     assert_equal({item.get("id") for item in definitions}, expected_ids, "monster ids")
     evidence_count = 0
     resource_count = 0
+    drop_count = 0
     for definition in definitions:
         if not SEMANTIC_ID_RE.fullmatch(definition["id"]):
             raise AuditFailure(f"non-semantic monster id: {definition['id']!r}")
@@ -264,8 +271,19 @@ def audit_monsters(document: dict[str, Any]) -> tuple[int, int]:
         required_evidence.extend(f"combat.{key}" for key in definition["combat"])
         required_evidence.extend(("drops", "rewards", "presentation"))
         evidence_count += audit_evidence_map(definition, required_evidence)
-        if definition["drops"] is not None:
-            raise AuditFailure(f"runtime drops must remain unknown: {definition['id']}")
+        drops = definition["drops"]
+        if not isinstance(drops, list) or not drops:
+            raise AuditFailure(f"runtime drops must be configured: {definition['id']}")
+        for drop in drops:
+            if (
+                not isinstance(drop, dict)
+                or not SEMANTIC_ID_RE.fullmatch(str(drop.get("item_definition_id", "")))
+                or int(drop.get("minimum_quantity", 0)) <= 0
+                or int(drop.get("maximum_quantity", 0)) < int(drop.get("minimum_quantity", 0))
+                or not 0.0 <= float(drop.get("chance", -1.0)) <= 1.0
+            ):
+                raise AuditFailure(f"invalid runtime drop entry: {definition['id']}")
+            drop_count += 1
         audit = definition["source_audit"]
         source_path = resolve_project_reference(audit["catalog"])
         row, row_hash = canonical_csv_row(source_path, audit["row_selector"])
@@ -281,7 +299,7 @@ def audit_monsters(document: dict[str, Any]) -> tuple[int, int]:
             if not resource_path.is_file():
                 raise AuditFailure(f"missing monster presentation resource: {resource_path}")
             resource_count += 1
-    return evidence_count, resource_count
+    return evidence_count, resource_count, drop_count
 
 
 def world_to_cell(position: list[int], cell_size: tuple[float, float]) -> tuple[int, int]:
@@ -369,7 +387,9 @@ def main() -> int:
         equipment_evidence, equipment_assets = audit_equipment(
             documents["starter_loadout"]
         )
-        monster_evidence, monster_resources = audit_monsters(documents["monsters"])
+        monster_evidence, monster_resources, runtime_drops = audit_monsters(
+            documents["monsters"]
+        )
         monster_ids = {item["id"] for item in documents["monsters"]["definitions"]}
         encounter_groups = audit_encounters(documents["d04_encounters"], monster_ids)
         runtime_strings = audit_runtime_names(
@@ -383,7 +403,8 @@ def main() -> int:
         "STAGE3 AUDIT PASSED: "
         f"equipment=3 source_assets={equipment_assets} equipment_evidence={equipment_evidence} "
         f"monsters=4 monster_resources={monster_resources} monster_evidence={monster_evidence} "
-        f"encounter_groups={encounter_groups} runtime_strings={runtime_strings} drops_imported=0"
+        f"encounter_groups={encounter_groups} runtime_strings={runtime_strings} "
+        f"runtime_drops={runtime_drops} source_drop_grammar_imported=0"
     )
     return 0
 

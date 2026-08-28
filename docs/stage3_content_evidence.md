@@ -94,19 +94,21 @@
 - 荣耀客户端 `equipclt.fcc` 给普通战车分别创建 `healthbar(25,45)` 与 `energybar(25,49)`；两者原始尺寸均为 `50×4`。当前战车状态条据此以脚点下方 45 像素为生命条起点，能量条紧接在 49 像素处，而不是按素材包围盒猜测锚点。
 - 弹体每帧以连续线段查询可见怪物的业务化表现碰撞圆；首次接触会提前结束弹体并在交点播放爆炸。该查询不提交命中、不预测扣血，也不改变服务端状态，因此网络延迟下允许出现“客户端已经爆炸、服务端最终未扣血”的短暂视觉差异。
 
-警戒半径、回归距离、攻击间隔与 30 秒刷新时间均为 `reconstructed_default`。动画资源只引用已经按业务语义导入的荣耀版 `res://assets/monsters/...` 路径。
+警戒半径、回归距离、攻击间隔、游走间隔与 30 秒刷新时间均为 `reconstructed_default`。空闲怪物完成一段游走后等待 5 秒再选择下一目标；索敌追击、攻击和返巢不受该等待影响。动画资源只引用已经按业务语义导入的荣耀版 `res://assets/monsters/...` 路径。
 
 ## 4. 掉落边界
 
 四条荣耀客户端记录都带有 `produce_obj` 候选表达式，但目前没有恢复其完整概率语法，也不能证明退役服务端按客户端候选原样结算。
 
-因此：
+当前采用双层记录：
 
 - 原始表达式只保存在各怪物的 `source_audit.untrusted_drop_candidate`，用于后续比对。
-- 所有运行时 `drops` 都是 `null`，证据状态为 `unknown`。
-- 审计工具强制 `runtime_drop_imported=false`，防止后续误把候选字符串当成正式掉落表。
+- 物品种类和候选数量范围用于构造首个可玩纵切；概率明确标记为 `reconstructed_default`，不宣称来自退役服务端。
+- `runtime_drop_imported=false` 继续表示“没有直接导入旧候选语法”，并不再表示运行时掉落表为空。
+- 服务端死亡结算使用固定种子随机源抽表，生成唯一 `loot_id` 的地面实体；战斗快照只投影结果，不向客户端公开或委托掉落概率。
+- 拾取采用两阶段事务：先校验会话、地图和 96 像素距离，再由 `Player`/`Inventory` 合并或放置物品并提交持久化，成功后才移除地面实体。
 
-这不是断言这些候选物“一定不会掉”，而是拒绝在概率和服务端权威尚未恢复时制造正式掉落规则。
+这些规则提供可测试的复刻版经济起点；将来恢复原始概率语法时，只替换服务端配置，不改变死亡、快照、拾取和存档协议。
 
 ## 5. 首张野外刷怪配置
 
@@ -141,10 +143,10 @@ python -X utf8 tools\audit_stage3_content.py
 - 所有属性的证据状态与未知值理由。
 - D04 的 4 个重建刷怪锚点及导航安全邻域。
 - 运行时字段不含旧 `pic` 分层、ALE 文件名、时间戳式资源名或旧怪物类名。
-- 正式运行时掉落导入数必须为 0。
+- 6 条复刻版运行时掉落配置的结构与概率范围；旧候选语法直接导入数仍必须为 0。
 
 当前通过摘要：
 
 ```text
-STAGE3 AUDIT PASSED: equipment=3 source_assets=11 equipment_evidence=42 monsters=4 monster_resources=17 monster_evidence=69 encounter_groups=4 runtime_strings=370 drops_imported=0
+STAGE3 AUDIT PASSED: equipment=3 source_assets=11 equipment_evidence=45 monsters=4 monster_resources=17 monster_evidence=81 encounter_groups=4 runtime_strings=406 runtime_drops=6 source_drop_grammar_imported=0
 ```
