@@ -41,6 +41,16 @@ SOURCES: dict[str, dict[str, Any]] = {
         "frames_per_direction": 4,
         "world_visible": True,
     },
+    "recruit_tank_shadow": {
+        "display_name": "新兵战车阴影",
+        "source_logical_path": "pic3/equip/tank1shadow.ale",
+        "target": "starter_combat_vehicle/chassis/shadow",
+        "expected_frames": 8,
+        "direction_mode": "eight_way",
+        "frames_per_direction": 1,
+        "world_visible": True,
+        "relationship_evidence": "client_confirmed_tank_shadow_mapping",
+    },
     "recruit_energy_cannon": {
         "legacy_class": "gun1",
         "display_name": "新兵能量炮",
@@ -143,12 +153,31 @@ MONSTER_ACTORS: dict[str, dict[str, Any]] = {
             "attack": _action("res://assets/monsters/photosensitive_orb/variants/standard/move_attack/animation_frames.tres", 5, direction_mode="shared", loop=False),
         },
     },
+    "photosensitive_orb_cold": {
+        "display_name": "低温感光质",
+        "default_action": "idle",
+        "actions": {
+            "idle": _action("res://assets/monsters/photosensitive_orb/variants/cold/idle/animation_frames.tres", 5, direction_mode="shared"),
+            "move": _action("res://assets/monsters/photosensitive_orb/variants/cold/move_attack/animation_frames.tres", 5, direction_mode="shared"),
+            "attack": _action("res://assets/monsters/photosensitive_orb/variants/cold/move_attack/animation_frames.tres", 5, direction_mode="shared", loop=False),
+        },
+    },
+    "photosensitive_orb_malignant": {
+        "display_name": "恶性感光质",
+        "default_action": "idle",
+        "actions": {
+            "idle": _action("res://assets/monsters/photosensitive_orb/variants/malignant/idle/animation_frames.tres", 5, direction_mode="shared"),
+            "move": _action("res://assets/monsters/photosensitive_orb/variants/malignant/move_attack/animation_frames.tres", 5, direction_mode="shared"),
+            "attack": _action("res://assets/monsters/photosensitive_orb/variants/malignant/move_attack/animation_frames.tres", 5, direction_mode="shared", loop=False),
+        },
+    },
     "toxic_gel_standard": {
         "display_name": "毒胶",
         "default_action": "idle",
         "actions": {
             "idle": _action("res://assets/monsters/toxic_gel/variants/standard/idle/animation_frames.tres", 5, direction_mode="shared"),
             "move": _action("res://assets/monsters/toxic_gel/variants/standard/move/animation_frames.tres", 5),
+            "attack": _action("res://assets/monsters/toxic_gel/variants/standard/idle/animation_frames.tres", 5, direction_mode="shared", loop=False),
         },
     },
 }
@@ -300,6 +329,9 @@ def _runtime_manifest(source_assets: list[dict[str, Any]]) -> dict[str, Any]:
     """Build the runtime-only combat visual manifest with business-semantic paths."""
     source_by_id = {entry["asset_id"]: entry for entry in source_assets}
     chassis = _res_path(TARGET_ROOT / SOURCES["recruit_tank"]["target"] / "animation_frames.tres")
+    chassis_shadow = _res_path(
+        TARGET_ROOT / SOURCES["recruit_tank_shadow"]["target"] / "animation_frames.tres"
+    )
     weapon = _res_path(TARGET_ROOT / SOURCES["recruit_energy_cannon"]["target"] / "animation_frames.tres")
     engine = _res_path(TARGET_ROOT / SOURCES["beginner_engine"]["target"] / "animation_frames.tres")
     projectile = _res_path(
@@ -309,6 +341,7 @@ def _runtime_manifest(source_assets: list[dict[str, Any]]) -> dict[str, Any]:
         TARGET_ROOT / SOURCES["recruit_energy_cannon_impact_candidate"]["target"] / "animation_frames.tres"
     )
     chassis_offset = list(source_by_id["recruit_tank"]["coordinate_bounds"][:2])
+    chassis_shadow_offset = list(source_by_id["recruit_tank_shadow"]["coordinate_bounds"][:2])
     weapon_offset = list(source_by_id["recruit_energy_cannon"]["coordinate_bounds"][:2])
     engine_offset = list(source_by_id["beginner_engine"]["coordinate_bounds"][:2])
     actors: dict[str, Any] = {
@@ -322,6 +355,15 @@ def _runtime_manifest(source_assets: list[dict[str, Any]]) -> dict[str, Any]:
                 "idle_reason": "荣耀版只恢复到一套八向四帧底盘序列；静止姿态固定复用每个方向的首帧。",
             },
             "layers": [
+                {
+                    "id": "shadow",
+                    "z_index": -1,
+                    "actions": {
+                        "idle": _action(chassis_shadow, 1, loop=False, offset=chassis_shadow_offset, fps=0.0),
+                        "move": _action(chassis_shadow, 1, loop=False, offset=chassis_shadow_offset, fps=0.0),
+                        "attack": _action(chassis_shadow, 1, loop=False, offset=chassis_shadow_offset, fps=0.0),
+                    },
+                },
                 {
                     "id": "chassis",
                     "z_index": 0,
@@ -353,11 +395,42 @@ def _runtime_manifest(source_assets: list[dict[str, Any]]) -> dict[str, Any]:
             ],
         }
     }
+    monster_shadows = {
+        "om_adult_standard": {
+            "idle": _action("res://assets/monsters/om_adult/shared/shadows/idle/animation_frames.tres", 5),
+            "move": _action("res://assets/monsters/om_adult/shared/shadows/move/animation_frames.tres", 5),
+            "attack": _action("res://assets/monsters/om_adult/shared/shadows/attack/animation_frames.tres", 6, loop=False),
+        },
+        "om_larva_standard": {
+            "idle": _action("res://assets/monsters/om_larva/shared/shadow/animation_frames.tres", 5),
+            "move": _action("res://assets/monsters/om_larva/shared/shadow/animation_frames.tres", 5),
+            "attack": _action("res://assets/monsters/om_larva/shared/shadow/animation_frames.tres", 5, loop=False),
+        },
+        "photosensitive_orb_standard": {
+            "idle": _action("res://assets/monsters/photosensitive_orb/shared/shadow/animation_frames.tres", 5, direction_mode="shared"),
+            "move": _action("res://assets/monsters/photosensitive_orb/shared/shadow/animation_frames.tres", 5, direction_mode="shared"),
+            "attack": _action("res://assets/monsters/photosensitive_orb/shared/shadow/animation_frames.tres", 5, direction_mode="shared", loop=False),
+        },
+        "photosensitive_orb_cold": {
+            "idle": _action("res://assets/monsters/photosensitive_orb/shared/shadow/animation_frames.tres", 5, direction_mode="shared"),
+            "move": _action("res://assets/monsters/photosensitive_orb/shared/shadow/animation_frames.tres", 5, direction_mode="shared"),
+            "attack": _action("res://assets/monsters/photosensitive_orb/shared/shadow/animation_frames.tres", 5, direction_mode="shared", loop=False),
+        },
+        "photosensitive_orb_malignant": {
+            "idle": _action("res://assets/monsters/photosensitive_orb/shared/shadow/animation_frames.tres", 5, direction_mode="shared"),
+            "move": _action("res://assets/monsters/photosensitive_orb/shared/shadow/animation_frames.tres", 5, direction_mode="shared"),
+            "attack": _action("res://assets/monsters/photosensitive_orb/shared/shadow/animation_frames.tres", 5, direction_mode="shared", loop=False),
+        },
+    }
     for actor_id, actor in MONSTER_ACTORS.items():
+        layers: list[dict[str, Any]] = []
+        if actor_id in monster_shadows:
+            layers.append({"id": "shadow", "z_index": -1, "actions": monster_shadows[actor_id]})
+        layers.append({"id": "body", "z_index": 0, "actions": actor["actions"]})
         actors[actor_id] = {
             "display_name": actor["display_name"],
             "default_action": actor["default_action"],
-            "layers": [{"id": "body", "z_index": 0, "actions": actor["actions"]}],
+            "layers": layers,
         }
     return {
         "schema_version": 2,
