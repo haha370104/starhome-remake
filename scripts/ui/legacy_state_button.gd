@@ -12,8 +12,9 @@ var current_state := "normal"
 var bounds_origin := Vector2.ZERO
 
 
-## 按 [param definition] 中的状态贴图、尺寸与原点配置旧版像素按钮。
-## Design: 控件以所有状态的联合边界作为点击区域，保证不同 origin 的帧切换时视觉锚点不跳动。
+## 执行 `configure` 对应的模块操作。
+## [param definition] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 设计：控件以所有状态的联合边界作为点击区域，保证不同 origin 的帧切换时视觉锚点不跳动。
 func configure(definition: Dictionary) -> void:
 	textures.clear()
 	origins.clear()
@@ -67,18 +68,21 @@ func configure(definition: Dictionary) -> void:
 	set_base_state("normal" if textures.has("normal") else String(textures.keys()[0]))
 
 
-## 将素材边界原点对齐到 [param source_anchor] 指定的旧客户端坐标。
+## 执行 `place_at` 对应的模块操作。
+## [param source_anchor] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func place_at(source_anchor: Vector2) -> void:
 	position = source_anchor + bounds_origin
 
 
-## 将 [param state_name] 设为按钮的常驻状态，并立即刷新显示。
+## 执行 `set_base_state` 对应的模块操作。
+## [param state_name] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func set_base_state(state_name: String) -> void:
 	base_state = state_name if textures.has(state_name) else "normal"
 	set_visual_state(base_state)
 
 
-## 显示 [param state_name] 对应的贴图状态；缺失时回退到常驻状态。
+## 执行 `set_visual_state` 对应的模块操作。
+## [param state_name] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func set_visual_state(state_name: String) -> void:
 	if not textures.has(state_name):
 		state_name = base_state
@@ -109,8 +113,10 @@ func _on_button_up() -> void:
 	set_visual_state("hover" if textures.has("hover") and hit_button.is_hovered() else base_state)
 
 
-## 将 [param value] 的前两个数组元素转换为向量，格式无效时使用 [param fallback]。
-## Returns 转换后的二维向量。
+## 执行 `vector_from_array` 对应的模块操作。
+## [param value] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param fallback] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func _vector_from_array(value: Variant, fallback: Vector2) -> Vector2:
 	if value is Array and value.size() >= 2:
 		return Vector2(float(value[0]), float(value[1]))

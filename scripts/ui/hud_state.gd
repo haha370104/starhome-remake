@@ -32,7 +32,8 @@ var working_energy := 100.0
 var working_energy_capacity := 100.0
 
 
-## 设置 HUD 的整体可见状态，并在状态改变时广播。[param value] 为目标可见状态。
+## 执行 `set_hud_visible` 对应的模块操作。
+## [param value] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func set_hud_visible(value: bool) -> void:
 	if hud_visible == value:
 		return
@@ -40,7 +41,8 @@ func set_hud_visible(value: bool) -> void:
 	hud_visibility_changed.emit(value)
 
 
-## 切换小地图尺寸模式，并把非法的 [param value] 归一化为 `small`。
+## 执行 `set_minimap_size` 对应的模块操作。
+## [param value] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func set_minimap_size(value: String) -> void:
 	var normalized := "large" if value == "large" else "small"
 	if minimap_size == normalized:
@@ -54,7 +56,8 @@ func toggle_minimap_size() -> void:
 	set_minimap_size("large" if minimap_size == "small" else "small")
 
 
-## 设置小地图是否折叠；[param value] 为目标折叠状态。
+## 执行 `set_minimap_collapsed` 对应的模块操作。
+## [param value] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func set_minimap_collapsed(value: bool) -> void:
 	if minimap_collapsed == value:
 		return
@@ -67,7 +70,8 @@ func toggle_minimap_collapsed() -> void:
 	set_minimap_collapsed(not minimap_collapsed)
 
 
-## 设置顶部菜单是否展开；[param value] 为目标展开状态。
+## 执行 `set_top_menu_expanded` 对应的模块操作。
+## [param value] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func set_top_menu_expanded(value: bool) -> void:
 	if top_menu_expanded == value:
 		return
@@ -80,7 +84,8 @@ func toggle_top_menu_expanded() -> void:
 	set_top_menu_expanded(not top_menu_expanded)
 
 
-## 设置通用快捷栏是否可见；[param value] 为目标可见状态。
+## 执行 `set_shortcut_visible` 对应的模块操作。
+## [param value] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func set_shortcut_visible(value: bool) -> void:
 	if shortcut_visible == value:
 		return
@@ -93,8 +98,10 @@ func toggle_shortcut_visible() -> void:
 	set_shortcut_visible(not shortcut_visible)
 
 
-## 设置 [param kind] 所指快捷栏的 [param page] 页，并把页码限制在可用范围。
-## Design: 物品与技能页分别保存，避免界面切页时覆盖另一类快捷键状态。
+## 执行 `set_shortcut_page` 对应的模块操作。
+## [param kind] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param page] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 设计：物品与技能页分别保存，避免界面切页时覆盖另一类快捷键状态。
 func set_shortcut_page(kind: String, page: int) -> void:
 	var normalized := clampi(page, 0, 1)
 	if kind == "item":
@@ -110,38 +117,42 @@ func set_shortcut_page(kind: String, page: int) -> void:
 	shortcut_page_changed.emit(kind, normalized)
 
 
-## 更新玩家世界坐标为 [param value]，供小地图等 HUD 消费。
+## 执行 `set_player_position` 对应的模块操作。
+## [param value] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func set_player_position(value: Vector2) -> void:
 	player_position = value
 	player_position_changed.emit(value)
 
 
-## 更新储备能量；[param current] 会按 [param capacity] 归一化并限制在有效区间。
+## 执行 `set_reserve_energy` 对应的模块操作。
+## [param current] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param capacity] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func set_reserve_energy(current: float, capacity: float) -> void:
 	reserve_energy_capacity = maxf(capacity, 0.0)
 	reserve_energy = clampf(current, 0.0, reserve_energy_capacity)
 	reserve_energy_changed.emit(reserve_energy, reserve_energy_capacity)
 
 
-## Updates vehicle durability-like combat health from authoritative [param current] and [param capacity].
-## [param current] Current server-owned chassis health.
-## [param capacity] Maximum chassis health after authoritative assembly calculation.
+## 执行 `set_vehicle_health` 对应的模块操作。
+## [param current] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param capacity] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func set_vehicle_health(current: int, capacity: int) -> void:
 	vehicle_health_capacity = maxi(capacity, 0)
 	vehicle_health = clampi(current, 0, vehicle_health_capacity)
 	vehicle_health_changed.emit(vehicle_health, vehicle_health_capacity)
 
 
-## Updates the spendable working-energy pool from authoritative [param current] and [param capacity].
-## [param current] Current energy consumed by weapons and restored by server regeneration.
-## [param capacity] Maximum working-energy buffer for the active assembly.
+## 执行 `set_working_energy` 对应的模块操作。
+## [param current] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param capacity] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func set_working_energy(current: float, capacity: float) -> void:
 	working_energy_capacity = maxf(capacity, 0.0)
 	working_energy = clampf(current, 0.0, working_energy_capacity)
 	working_energy_changed.emit(working_energy, working_energy_capacity)
 
 
-## 将当前动作槽设为 [param slot_id]，并仅在值变化时广播。
+## 执行 `set_selected_action_slot` 对应的模块操作。
+## [param slot_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func set_selected_action_slot(slot_id: String) -> void:
 	if selected_action_slot == slot_id:
 		return

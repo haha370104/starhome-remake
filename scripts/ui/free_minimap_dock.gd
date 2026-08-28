@@ -25,8 +25,13 @@ var control_area_position := Vector2(1, 122)
 var control_area_size := Vector2(124, 41)
 
 
-## 以 [param world_map_size]、[param minimap_texture] 和 [param display_name] 构建小地图，素材来自 [param asset_definition]，状态由 [param state] 驱动。
-## Design: 小图模式固定玩家点并反向移动地图；大图模式固定地图并按世界比例移动玩家点。
+## 执行 `configure` 对应的模块操作。
+## [param world_map_size] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param minimap_texture] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param display_name] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param asset_definition] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param state] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 设计：小图模式固定玩家点并反向移动地图；大图模式固定地图并按世界比例移动玩家点。
 func configure(
 	world_map_size: Vector2,
 	minimap_texture: Texture2D,
@@ -133,7 +138,8 @@ func configure(
 	update_player_position(hud_state.player_position)
 
 
-## 把 [param world_position] 投影到小地图像素并更新坐标文本。
+## 执行 `update_player_position` 对应的模块操作。
+## [param world_position] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func update_player_position(world_position: Vector2) -> void:
 	if not map_viewport:
 		return
@@ -147,9 +153,11 @@ func update_player_position(world_position: Vector2) -> void:
 	coordinate_label.text = "%d,%d" % [roundi(world_position.x), roundi(world_position.y)]
 
 
-## 原子替换当前地图尺寸、[param minimap_texture] 与 [param display_name]，并重新投影玩家点。
-## [param world_map_size] 新地图的世界像素尺寸。
-## Design: 外框、大小模式及收起状态属于 HUD 偏好，不随地图切换重建。
+## 执行 `set_map` 对应的模块操作。
+## [param world_map_size] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param minimap_texture] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param display_name] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 设计：外框、大小模式及收起状态属于 HUD 偏好，不随地图切换重建。
 func set_map(
 	world_map_size: Vector2,
 	minimap_texture: Texture2D,
@@ -186,7 +194,8 @@ func _build_state_buttons() -> void:
 		collapse_buttons[config["id"]] = button
 
 
-## 根据 HUD 状态重新排布地图与控制区；[param _unused] 用于兼容无关信号载荷。
+## 执行 `apply_layout` 对应的模块操作。
+## [param _unused] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _apply_layout(_unused: Variant = null) -> void:
 	var collapsed := hud_state.minimap_collapsed
 	var large := hud_state.minimap_size == "large"
@@ -226,8 +235,11 @@ func _apply_layout(_unused: Variant = null) -> void:
 	layout_width_changed.emit(total_size.x)
 
 
-## 用 [param asset] 创建名为 [param node_name] 且提示为 [param tooltip] 的状态按钮。
-## Returns 配置后的旧版像素按钮控件。
+## 执行 `state_button` 对应的模块操作。
+## [param asset] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param node_name] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param tooltip] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func _state_button(asset: Dictionary, node_name: String, tooltip: String) -> Control:
 	var button := LegacyStateButtonScript.new()
 	button.name = node_name.to_pascal_case()
@@ -236,15 +248,16 @@ func _state_button(asset: Dictionary, node_name: String, tooltip: String) -> Con
 	return button
 
 
-## 加载 [param asset] 指向的主纹理。
-## Returns 路径有效时返回纹理，否则返回 `null`。
+## 执行 `load_primary_texture` 对应的模块操作。
+## [param asset] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func _load_primary_texture(asset: Dictionary) -> Texture2D:
 	var path := String(asset.get("path", asset.get("texture", "")))
 	return load(path) as Texture2D if ResourceLoader.exists(path) else null
 
 
 ## 创建小地图视口使用的青色像素边框样式。
-## Returns 新建的边框样式。
+## 返回该函数计算、查询或操作得到的结果。
 func _border_style() -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
 	style.bg_color = Color(0, 0.12, 0.14, 0.45)
@@ -253,8 +266,10 @@ func _border_style() -> StyleBoxFlat:
 	return style
 
 
-## 将 [param value] 的前两个数值元素转换为坐标，格式不合法时返回 [param fallback]。
-## Returns 解析后的二维向量。
+## 执行 `vector_from_array` 对应的模块操作。
+## [param value] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param fallback] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func _vector_from_array(value: Variant, fallback: Vector2) -> Vector2:
 	if value is Array and value.size() >= 2:
 		return Vector2(float(value[0]), float(value[1]))

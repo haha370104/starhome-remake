@@ -27,8 +27,11 @@ var state: HudState
 var asset_manifest: Dictionary = {}
 
 
-## 以 [param world_map_size]、[param minimap_texture] 和 [param map_name] 组装大厅 HUD。
-## Design: 本节点只负责组合免费版 HUD 组件与转发业务信号，共享状态集中在 `HudState`。
+## 执行 `configure` 对应的模块操作。
+## [param world_map_size] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param minimap_texture] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param map_name] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 设计：本节点只负责组合免费版 HUD 组件与转发业务信号，共享状态集中在 `HudState`。
 func configure(world_map_size: Vector2, minimap_texture: Texture2D, map_name := "") -> void:
 	layer = 50
 	name = "HallHud"
@@ -80,13 +83,17 @@ func configure(world_map_size: Vector2, minimap_texture: Texture2D, map_name := 
 	_build_hint_label()
 
 
-## 将玩家世界坐标 [param world_position] 推送给小地图状态。
+## 执行 `update_player_dot` 对应的模块操作。
+## [param world_position] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func update_player_dot(world_position: Vector2) -> void:
 	state.set_player_position(world_position)
 
 
-## 原子替换小地图使用的 [param world_map_size]、[param minimap_texture] 与 [param map_name]。
-## Design: 地图切换只更新地图业务内容，免费版 HUD 外框及玩家设置状态保持不变。
+## 执行 `set_map` 对应的模块操作。
+## [param world_map_size] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param minimap_texture] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param map_name] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 设计：地图切换只更新地图业务内容，免费版 HUD 外框及玩家设置状态保持不变。
 func set_map(
 	world_map_size: Vector2,
 	minimap_texture: Texture2D,
@@ -96,13 +103,15 @@ func set_map(
 		minimap_dock.set_map(world_map_size, minimap_texture, map_name)
 
 
-## 将当前储备能量 [param current] 与容量 [param capacity] 推送给 HUD 状态。
+## 执行 `set_reserve_energy` 对应的模块操作。
+## [param current] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param capacity] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func set_reserve_energy(current: float, capacity: float) -> void:
 	state.set_reserve_energy(current, capacity)
 
 
-## Applies authoritative vehicle combat [param snapshot] to the HUD resource model.
-## [param snapshot] Server-owned health and energy dictionary from the local combat snapshot.
+## 执行 `set_vehicle_combat_state` 对应的模块操作。
+## [param snapshot] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func set_vehicle_combat_state(snapshot: Dictionary) -> void:
 	if snapshot.is_empty():
 		return
@@ -117,7 +126,8 @@ func set_vehicle_combat_state(snapshot: Dictionary) -> void:
 	)
 
 
-## 根据 [param interaction] 的标题、正文和动作列表显示 NPC 交互弹窗。
+## 执行 `show_npc_popup` 对应的模块操作。
+## [param interaction] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func show_npc_popup(interaction: Dictionary) -> void:
 	popup_title.text = String(interaction.get("title", "NPC"))
 	popup_body.text = String(interaction.get("body", ""))
@@ -145,12 +155,14 @@ func hide_popup() -> void:
 	popup_closed.emit()
 
 
-## 将弹窗动作 [param action_id] 转发为 NPC 业务信号。
+## 执行 `emit_npc_action` 对应的模块操作。
+## [param action_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _emit_npc_action(action_id: String) -> void:
 	npc_action_requested.emit(action_id)
 
 
-## 将 HUD 动作 [param action_id] 转发给业务层，并显示尚未接入提示。
+## 执行 `emit_hud_action` 对应的模块操作。
+## [param action_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _emit_hud_action(action_id: String) -> void:
 	hud_action_requested.emit(action_id)
 	if hint_label:
@@ -158,7 +170,7 @@ func _emit_hud_action(action_id: String) -> void:
 
 
 ## 读取并校验免费版 HUD 素材清单。
-## Returns 解析成功时返回清单字典，失败时返回空字典并报告错误。
+## 返回该函数计算、查询或操作得到的结果。
 func _load_manifest() -> Dictionary:
 	if not FileAccess.file_exists(HUD_MANIFEST_PATH):
 		push_error("Free HUD manifest is missing: %s" % HUD_MANIFEST_PATH)
@@ -228,8 +240,10 @@ func _build_popup() -> void:
 	column.add_child(close_button)
 
 
-## 使用 [param background] 和 [param border] 创建弹窗面板样式。
-## Returns 新建的圆角面板样式。
+## 执行 `panel_style` 对应的模块操作。
+## [param background] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param border] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func _panel_style(background: Color, border: Color) -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
 	style.bg_color = background

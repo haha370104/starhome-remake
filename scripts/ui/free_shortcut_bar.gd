@@ -13,8 +13,10 @@ var item_page_count := 2
 var skill_page_count := 2
 
 
-## 用 [param definition] 构建免费版通用快捷栏，并绑定共享 [param state]。
-## Design: 物品槽与技能槽分别分页和发出业务索引，控件不持有实际物品或技能对象。
+## 执行 `configure` 对应的模块操作。
+## [param definition] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param state] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 设计：物品槽与技能槽分别分页和发出业务索引，控件不持有实际物品或技能对象。
 func configure(definition: Dictionary, state: HudState) -> void:
 	name = "GeneralShortcutBar"
 	hud_state = state
@@ -55,7 +57,9 @@ func configure(definition: Dictionary, state: HudState) -> void:
 	_apply_visibility(hud_state.shortcut_visible)
 
 
-## 按 [param definition] 为 [param kind] 快捷槽构建清单指定坐标和尺寸的翻页控件。
+## 执行 `build_page_controls` 对应的模块操作。
+## [param definition] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param kind] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _build_page_controls(definition: Dictionary, kind: String) -> void:
 	var up_definition: Dictionary = definition.get("page_up", {})
 	var down_definition: Dictionary = definition.get("page_down", {})
@@ -84,14 +88,18 @@ func _build_page_controls(definition: Dictionary, kind: String) -> void:
 		skill_page_label = page_label
 
 
-## 将 [param kind] 页码循环偏移 [param delta]。
+## 执行 `change_page` 对应的模块操作。
+## [param kind] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param delta] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _change_page(kind: String, delta: int) -> void:
 	var current := hud_state.item_shortcut_page if kind == "item" else hud_state.skill_shortcut_page
 	var page_count := item_page_count if kind == "item" else skill_page_count
 	hud_state.set_shortcut_page(kind, posmod(current + delta, page_count))
 
 
-## 把 [param kind] 的页码标签更新为零基 [param page] 对应的显示值。
+## 执行 `update_page_labels` 对应的模块操作。
+## [param kind] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param page] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _update_page_labels(kind: String, page: int) -> void:
 	if kind == "item":
 		item_page_label.text = str(page + 1)
@@ -99,23 +107,29 @@ func _update_page_labels(kind: String, page: int) -> void:
 		skill_page_label.text = str(page + 1)
 
 
-## 将快捷栏可见性应用为 [param value]。
+## 执行 `apply_visibility` 对应的模块操作。
+## [param value] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _apply_visibility(value: bool) -> void:
 	visible = value
 
 
-## 把当前物品页的局部 [param index] 换算为全局槽位并发出请求。
+## 执行 `emit_item_slot` 对应的模块操作。
+## [param index] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _emit_item_slot(index: int) -> void:
 	item_slot_requested.emit(hud_state.item_shortcut_page * 5 + index)
 
 
-## 把当前技能页的局部 [param index] 换算为全局槽位并发出请求。
+## 执行 `emit_skill_slot` 对应的模块操作。
+## [param index] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _emit_skill_slot(index: int) -> void:
 	skill_slot_requested.emit(hud_state.skill_shortcut_page * 7 + index)
 
 
-## 在 [param position_value] 创建名为 [param node_name]、尺寸为 [param size_value] 的透明点击槽。
-## Returns 新建的快捷槽按钮。
+## 执行 `empty_slot` 对应的模块操作。
+## [param node_name] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param position_value] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param size_value] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func _empty_slot(node_name: String, position_value: Vector2, size_value: Vector2) -> TextureButton:
 	var button := TextureButton.new()
 	button.name = node_name
@@ -126,8 +140,10 @@ func _empty_slot(node_name: String, position_value: Vector2, size_value: Vector2
 	return button
 
 
-## 从 [param definition] 创建名为 [param node_name] 的单纹理按钮。
-## Returns 配置后的纹理按钮。
+## 执行 `texture_button` 对应的模块操作。
+## [param definition] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param node_name] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func _texture_button(definition: Dictionary, node_name: String) -> TextureButton:
 	var button := TextureButton.new()
 	button.name = node_name
@@ -142,15 +158,20 @@ func _texture_button(definition: Dictionary, node_name: String) -> TextureButton
 	return button
 
 
-## 加载 [param definition] 指向的主纹理。
-## Returns 路径有效时返回纹理，否则返回 `null`。
+## 执行 `load_primary_texture` 对应的模块操作。
+## [param definition] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func _load_primary_texture(definition: Dictionary) -> Texture2D:
 	var path := String(definition.get("path", definition.get("texture", "")))
 	return load(path) as Texture2D if ResourceLoader.exists(path) else null
 
 
-## 从 [param definition] 与 [param button_definition] 返回 [param kind] 类型的翻页按钮坐标；[param is_up] 为真时选择上翻坐标。
-## Returns 清单中的物品或技能翻页按钮坐标。
+## 执行 `page_control_position` 对应的模块操作。
+## [param definition] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param button_definition] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param kind] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param is_up] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func _page_control_position(
 	definition: Dictionary,
 	button_definition: Dictionary,
@@ -163,8 +184,10 @@ func _page_control_position(
 	return _vector_from_array(definition.get(key, []), Vector2(391, 4 if is_up else 20))
 
 
-## 将 [param value] 的前两个数值元素转换为坐标，格式不合法时返回 [param fallback]。
-## Returns 解析后的二维向量。
+## 执行 `vector_from_array` 对应的模块操作。
+## [param value] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param fallback] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func _vector_from_array(value: Variant, fallback: Vector2) -> Vector2:
 	if value is Array and value.size() >= 2:
 		return Vector2(float(value[0]), float(value[1]))

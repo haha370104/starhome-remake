@@ -2,13 +2,12 @@ class_name SemanticSceneLayer
 extends Node2D
 
 
-## Configures one cropped final-owner chunk at its original world position.
-## [param texture] is the shared packed semantic atlas texture.
-## [param atlas_region] selects this chunk from the shared atlas.
-## [param pixel_offset] is the chunk's top-left coordinate in map pixels.
-## [param sort_baseline] is the owning scene semantic's world Y baseline.
-## Design: only this parent participates in Y-sort; the child compensates the
-## baseline so changing draw order cannot move reconstructed static pixels.
+## 配置并初始化 `configure` 对应的模块状态。
+## [param texture] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param atlas_region] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param pixel_offset] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param sort_baseline] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 设计：该函数遵循所在模块的职责边界。
 func configure(
 	texture: Texture2D,
 	atlas_region: Rect2,

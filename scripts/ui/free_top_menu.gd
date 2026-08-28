@@ -22,8 +22,10 @@ var expanded_size := Vector2(330, 54)
 var collapsed_size := Vector2(12, 26)
 
 
-## 用 [param definition] 构建免费版顶部菜单，并绑定共享的 [param state]。
-## Design: 菜单保持原始像素尺寸，只依据小地图宽度重新锚定，不参与视口缩放。
+## 执行 `configure` 对应的模块操作。
+## [param definition] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param state] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 设计：菜单保持原始像素尺寸，只依据小地图宽度重新锚定，不参与视口缩放。
 func configure(definition: Dictionary, state: HudState) -> void:
 	name = "TopMenu"
 	hud_state = state
@@ -65,13 +67,15 @@ func configure(definition: Dictionary, state: HudState) -> void:
 	_apply_expanded(hud_state.top_menu_expanded)
 
 
-## 接收相邻小地图的 [param value] 宽度并重新计算右上角锚点。
+## 执行 `set_minimap_width` 对应的模块操作。
+## [param value] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func set_minimap_width(value: float) -> void:
 	minimap_width = value
 	_update_anchor()
 
 
-## 应用 [param expanded] 展开状态，切换菜单内容与展开/收起按钮。
+## 执行 `apply_expanded` 对应的模块操作。
+## [param expanded] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _apply_expanded(expanded: bool) -> void:
 	background.visible = expanded
 	for button in action_buttons.values():
@@ -90,8 +94,11 @@ func _update_anchor() -> void:
 	offset_bottom = target_size.y
 
 
-## 从 [param definition] 构建动作 [param action_id] 的按钮并设置 [param tooltip]。
-## Returns 已配置且会发出菜单动作信号的按钮控件。
+## 执行 `build_button` 对应的模块操作。
+## [param definition] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param action_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param tooltip] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func _build_button(definition: Dictionary, action_id: String, tooltip: String) -> Control:
 	var button := LegacyStateButtonScript.new()
 	button.name = action_id.to_pascal_case()
@@ -102,15 +109,18 @@ func _build_button(definition: Dictionary, action_id: String, tooltip: String) -
 	return button
 
 
-## 加载 [param definition] 指向的主状态纹理。
-## Returns 存在时返回纹理，否则返回 `null`。
+## 执行 `load_primary_texture` 对应的模块操作。
+## [param definition] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func _load_primary_texture(definition: Dictionary) -> Texture2D:
 	var path := String(definition.get("path", definition.get("texture", "")))
 	return load(path) as Texture2D if ResourceLoader.exists(path) else null
 
 
-## 将 [param value] 的前两个数值元素转换为坐标，格式不合法时返回 [param fallback]。
-## Returns 解析后的二维向量。
+## 执行 `vector_from_array` 对应的模块操作。
+## [param value] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param fallback] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func _vector_from_array(value: Variant, fallback: Vector2) -> Vector2:
 	if value is Array and value.size() >= 2:
 		return Vector2(float(value[0]), float(value[1]))

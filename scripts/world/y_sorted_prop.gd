@@ -2,8 +2,12 @@ class_name YSortedProp
 extends Node2D
 
 
-## 用 [param texture] 创建场景构件，将素材 [param anchor] 与 [param draw_offset] 对齐到 [param sort_baseline] 深度基线。
-## Design: 父节点只承载 Y-sort 语义基线，子精灵反向补偿位置以保持原始像素坐标不变。
+## 执行 `configure` 对应的模块操作。
+## [param texture] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param anchor] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param draw_offset] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param sort_baseline] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 设计：父节点只承载 Y-sort 语义基线，子精灵反向补偿位置以保持原始像素坐标不变。
 func configure(
 	texture: Texture2D,
 	anchor: Vector2,

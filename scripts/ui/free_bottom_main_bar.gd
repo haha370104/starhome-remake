@@ -24,8 +24,11 @@ var weapon_buttons: Dictionary = {}
 var shortcut_visibility_buttons: Dictionary = {}
 
 
-## 用 [param definition] 构建免费版底栏，读取 [param shortcut_definition] 的显隐按钮并绑定 [param state]。
-## Design: 中央 1024×29 设计面保持原始像素；宽屏两侧透明，不伪造免费版不存在的蓝色底板。
+## 执行 `configure` 对应的模块操作。
+## [param definition] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param shortcut_definition] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param state] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 设计：中央 1024×29 设计面保持原始像素；宽屏两侧透明，不伪造免费版不存在的蓝色底板。
 func configure(definition: Dictionary, shortcut_definition: Dictionary, state: HudState) -> void:
 	name = "BottomMainBar"
 	hud_state = state
@@ -92,7 +95,8 @@ func configure(definition: Dictionary, shortcut_definition: Dictionary, state: H
 	_update_shortcut_visibility_button(hud_state.shortcut_visible)
 
 
-## 按 [param definition] 创建 323×3 的储备能量裁剪条。
+## 执行 `build_reserve_energy` 对应的模块操作。
+## [param definition] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _build_reserve_energy(definition: Dictionary) -> void:
 	reserve_energy_clip = Control.new()
 	reserve_energy_clip.name = "ReserveEnergyClip"
@@ -114,7 +118,10 @@ func _build_reserve_energy(definition: Dictionary) -> void:
 	reserve_energy_clip.add_child(reserve_energy_fill)
 
 
-## 创建 [param action_id] 武器按钮，按 [param definition] 配图并放在清单坐标；[param count_text] 可显示数量。
+## 执行 `build_weapon_button` 对应的模块操作。
+## [param action_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param definition] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param count_text] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _build_weapon_button(
 	action_id: String,
 	definition: Dictionary,
@@ -137,28 +144,35 @@ func _build_weapon_button(
 		design_surface.add_child(label)
 
 
-## 根据 [param visible] 在“收起”和“展开”快捷栏按钮间切换。
+## 执行 `update_shortcut_visibility_button` 对应的模块操作。
+## [param visible] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _update_shortcut_visibility_button(visible: bool) -> void:
 	shortcut_visibility_buttons["collapse"].visible = visible
 	shortcut_visibility_buttons["expand"].visible = not visible
 
 
-## 根据 [param current] 与 [param capacity] 通过裁剪而非缩放更新能量条。
+## 执行 `update_reserve_energy` 对应的模块操作。
+## [param current] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param capacity] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _update_reserve_energy(current: float, capacity: float) -> void:
 	var ratio := clampf(current / capacity, 0.0, 1.0) if capacity > 0.0 else 0.0
 	reserve_energy_clip.size.x = 323.0 * ratio
 	reserve_energy_clip.tooltip_text = "储备能量 %.0f/%.0f" % [current, capacity]
 
 
-## 将 [param action_id] 对应武器设为选中态，其余恢复普通态。
+## 执行 `update_selected_weapon` 对应的模块操作。
+## [param action_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _update_selected_weapon(action_id: String) -> void:
 	for button_id in weapon_buttons:
 		var button: Control = weapon_buttons[button_id]
 		button.set_base_state("selected" if button_id == action_id else "normal")
 
 
-## 从 [param definition] 构建 [param action_id] 状态按钮并附加 [param tooltip]。
-## Returns 配置完成的旧版像素按钮控件。
+## 执行 `build_state_button` 对应的模块操作。
+## [param definition] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param action_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param tooltip] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func _build_state_button(definition: Dictionary, action_id: String, tooltip: String) -> Control:
 	var button := LegacyStateButtonScript.new()
 	button.name = action_id.to_pascal_case()
@@ -167,8 +181,9 @@ func _build_state_button(definition: Dictionary, action_id: String, tooltip: Str
 	return button
 
 
-## 从 [param definition] 的单图或首帧路径加载主纹理。
-## Returns 路径有效时返回纹理，否则返回 `null`。
+## 执行 `load_primary_texture` 对应的模块操作。
+## [param definition] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func _load_primary_texture(definition: Dictionary) -> Texture2D:
 	var path := String(definition.get("path", definition.get("texture", "")))
 	if path.is_empty():
@@ -180,8 +195,10 @@ func _load_primary_texture(definition: Dictionary) -> Texture2D:
 	return load(path) as Texture2D if ResourceLoader.exists(path) else null
 
 
-## 将 [param value] 的前两个数值元素转换为坐标，格式不合法时返回 [param fallback]。
-## Returns 解析后的二维向量。
+## 执行 `vector_from_array` 对应的模块操作。
+## [param value] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param fallback] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func _vector_from_array(value: Variant, fallback: Vector2) -> Vector2:
 	if value is Array and value.size() >= 2:
 		return Vector2(float(value[0]), float(value[1]))

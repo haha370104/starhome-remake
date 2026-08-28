@@ -13,6 +13,7 @@ SOURCE_ROOTS = (PROJECT_ROOT / "scripts", PROJECT_ROOT / "tests")
 FUNC_START = re.compile(r"^(?P<indent>\s*)(?:static\s+)?func\s+(?P<name>[A-Za-z0-9_]+)\s*\(")
 FUNC_END = re.compile(r"\)\s*(?:->\s*(?P<return>[^:]+))?\s*:\s*$")
 PARAM_NAME = re.compile(r"^(?P<name>[A-Za-z_][A-Za-z0-9_]*)")
+CHINESE_TEXT = re.compile(r"[\u3400-\u9fff]")
 
 
 def split_parameters(source: str) -> list[str]:
@@ -104,10 +105,13 @@ def inspect_file(path: Path) -> list[str]:
         end_match = FUNC_END.search(signature)
         location = f"{path.relative_to(PROJECT_ROOT).as_posix()}:{index + 1}"
         docs = preceding_doc_block(lines, index)
-        if not docs or not any(value for value in docs if not value.startswith(("[param ", "Returns ", "Design:"))):
+        if not docs or not any(value for value in docs if not value.startswith(("[param ", "返回", "设计："))):
             errors.append(f"{location}: missing responsibility `##` documentation")
             index = max(index + 1, end_index + 1)
             continue
+        for value in docs:
+            if not CHINESE_TEXT.search(value):
+                errors.append(f"{location}: function documentation must be written in Chinese: {value}")
         open_paren = signature.find("(")
         close_paren = signature.rfind(")")
         parameters = split_parameters(signature[open_paren + 1 : close_paren])
@@ -120,8 +124,8 @@ def inspect_file(path: Path) -> list[str]:
                     f"{location}: missing `[param {parameter_match.group('name')}]` documentation"
                 )
         return_type = end_match.group("return").strip() if end_match and end_match.group("return") else ""
-        if return_type and return_type != "void" and not any(line.startswith("Returns ") for line in docs):
-            errors.append(f"{location}: non-void function missing `Returns ...` documentation")
+        if return_type and return_type != "void" and not any(line.startswith("返回") for line in docs):
+            errors.append(f"{location}: non-void function missing `返回...` documentation")
         index = max(index + 1, end_index + 1)
     return errors
 
