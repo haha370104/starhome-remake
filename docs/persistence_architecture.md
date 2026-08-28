@@ -45,8 +45,9 @@ SqliteDriverPort -> approved GDExtension adapter
 
 - 账户：稳定 ID、显示账户名、状态；认证密钥不进入该聚合。
 - 角色：稳定 ID、显示名、聚合 revision、生命和经验。
-- 背包：容量、独立 inventory revision、稳定 stack ID、定义 ID、数量和槽位。
-- 装备：角色/战车 owner、业务槽位、实例 ID、定义 ID、耐久和强化等级。
+- 背包：容量、独立 inventory revision、稳定实例 ID、定义 ID、数量、容器、像素位置、占用矩形、
+  锁定/绑定和耐久；旧 `slot_index` 只用于 schema 1 向后兼容。
+- 装备：角色/战车 owner、业务槽位、荣耀客户端 Location、实例 ID、定义 ID、耐久和强化等级。
 - 战车：实例/定义 ID、战斗生命、储备能量、工作能量和输出功率。
 - 位置：业务地图 ID、运行时地图实例、脚点、八向朝向和 checkpoint。
 
@@ -64,6 +65,11 @@ JSON 只存在于文件替身的信任边界。读取后立即转换为 `PlayerS
 - `save_player(state, expected_revision)`：乐观并发保存；revision 不匹配时稳定拒绝。
 - `transact_player(character_id, operation)`：加载隔离副本，执行业务回调，验证完整聚合，
   一次提交并递增 revision。回调失败、验证失败或存储失败均不发布内存候选状态。
+
+面板换装由 `AuthoritativePlayerPanelService` 先在自动存档服务的隔离副本上执行，再调用
+`commit_player_state` 一次提交。人物、背包与战车快照只在提交成功后成组发布；背包 revision、
+战车 loadout revision 或玩家聚合 revision 过期时不会产生部分修改。详细边界见
+`docs/player_panels_architecture.md`。
 
 文件替身先写临时文件，再暂存旧快照为备份并替换主文件；启动时若主文件缺失而备份存在，
 会恢复备份。该流程用于让测试可运行和暴露仓储边界，不替代 SQLite 的事务日志。

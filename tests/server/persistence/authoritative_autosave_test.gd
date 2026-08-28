@@ -71,6 +71,22 @@ func _test_three_second_authoritative_autosave() -> void:
 	_expect(is_equal_approx(committed.value.reserve_energy, expected_reserve), "存档应采集权威储备能量")
 	_expect(is_equal_approx(committed.value.working_energy, expected_working), "存档应采集权威当前能量")
 
+	var panel_query: Dictionary = first_server.handle_peer_player_panel_command(71, {"type": "query"})
+	_expect(panel_query.ok, "已登录角色应能查询三面板权威快照")
+	if panel_query.ok:
+		var panel_bundle: Dictionary = panel_query.value
+		_expect(panel_bundle.inventory.items.size() == 2, "新角色应有备用引擎和训练服")
+		var panel_move: Dictionary = first_server.handle_peer_player_panel_command(71, {
+			"type": "move_inventory_item",
+			"instance_id": "inventory.%s.spare_engine" % entity_id,
+			"position_px": [92, 61],
+			"inventory_revision": int(panel_bundle.inventory.revision),
+		})
+		_expect(panel_move.ok, "背包移动应由权威服务器立即原子提交")
+		var panel_committed = first_server.player_state_repository.load_player(entity_id)
+		_expect(panel_committed.is_ok and panel_committed.value.revision == 2, "面板事务应立即推进玩家聚合 revision")
+		_expect(panel_committed.value.inventory_stacks[0].position_px == Vector2i(90, 60), "面板事务应持久化吸附后的像素坐标")
+
 	var second_server = ServerScript.new()
 	var reopened: Dictionary = second_server.initialize(_server_config())
 	_expect(reopened.ok, "新服务器实例应重新打开同一存档")
@@ -85,6 +101,12 @@ func _test_three_second_authoritative_autosave() -> void:
 	_expect(restored_entity.position.is_equal_approx(persisted_position), "新服务器应恢复已提交位置")
 	_expect(restored_entity.facing_index == 5, "新服务器应恢复已提交朝向")
 	_expect(restored_combat != null and restored_combat.health == expected_health, "新服务器应恢复战车生命")
+	var restored_panel_state = second_server.player_state_repository.load_player(entity_id)
+	_expect(
+		restored_panel_state.is_ok \
+		and restored_panel_state.value.inventory_stacks[0].position_px == Vector2i(90, 60),
+		"服务器重建后应恢复背包像素布局",
+	)
 	_expect(
 		restored_combat != null and is_equal_approx(restored_combat.reserve_energy, expected_reserve),
 		"新服务器应恢复储备能量",
