@@ -3,6 +3,9 @@ extends SceneTree
 const LoaderScript := preload("res://scripts/maps/map_definition_loader.gd")
 const CatalogScript := preload("res://scripts/maps/map_catalog.gd")
 const NavigationScript := preload("res://scripts/navigation/diamond_navigation.gd")
+const TransitionMarkerCatalogScript := preload(
+	"res://scripts/client/world/map_transition_marker_catalog.gd"
+)
 const DIRECTORY_PATH := "res://data/maps/map_directory.json"
 const WORLD_GRAPH_PATH := "res://data/maps/world_graph_seed.json"
 
@@ -79,6 +82,8 @@ func _test_world_graph(graph: Dictionary) -> void:
 ## [param directory] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _test_definitions(directory: Dictionary) -> void:
 	var catalog = CatalogScript.new()
+	var marker_catalog = TransitionMarkerCatalogScript.new()
+	_expect(marker_catalog.load_default() == OK, "八方向传送点公共目录必须可加载")
 	var definitions_by_id := {}
 	for map_id in EXPECTED_DEFINITIONS:
 		var loader = LoaderScript.new()
@@ -91,6 +96,7 @@ func _test_definitions(directory: Dictionary) -> void:
 		_expect(catalog.add_map(definition), "地图目录加入失败：%s" % map_id)
 		_test_navigation(definition)
 		_test_spawns(definition)
+		_test_transition_presentations(definition, marker_catalog)
 
 	_expect(catalog.validate_links(), "内部地图边必须全部解析：%s" % catalog.errors)
 	if definitions_by_id.size() != EXPECTED_DEFINITIONS.size():
@@ -107,26 +113,32 @@ func _test_definitions(directory: Dictionary) -> void:
 		_expect(city.spawn_for_entry(entry_number) != null, "City1Svr 缺少入口 %d 出生点" % entry_number)
 	var d04 = definitions_by_id["d04_field_zone"]
 	_expect(d04.transitions.size() == 12, "D04 的 12 条荣耀版有效出口必须全部保留")
-	for transition: MapTransition in d04.transitions:
-		_expect(not transition.presentation.is_empty(), "D04 每个出口都必须恢复可见传送点")
-		_expect(
-			int(transition.presentation.get("frame_count", 0)) in [9, 10],
-			"D04 传送点必须保留荣耀版方向素材的全部 9 或 10 帧",
-		)
-		_expect(int(transition.presentation.get("frame_duration_ms", 0)) == 100, "D04 传送点必须复原 100 毫秒源播放间隔")
-		_expect(
-			String(transition.presentation.get("resource", "")).begins_with(
-				"res://assets/maps/shared/directional_transitions/"
-			),
-			"同方向传送点必须复用业务化共享动画资源",
-		)
-		_expect(
-			ResourceLoader.exists(String(transition.presentation.get("resource", ""))),
-			"D04 传送动画资源必须可加载：%s" % transition.transition_id,
-		)
 	for entry_number in range(1, 5):
 		_expect(d04.spawn_for_entry(entry_number) != null, "D04 缺少城市入口 %d 出生点" % entry_number)
 	_test_g08_transitions(definitions_by_id["g08_field_zone"])
+
+
+## 验证每张正式地图只声明传送方向，并能通过公共目录解析为完整动画表现。
+## [param definition] 待检查的地图定义。
+## [param marker_catalog] 已加载的八方向传送点公共目录。
+func _test_transition_presentations(definition, marker_catalog) -> void:
+	for transition: MapTransition in definition.transitions:
+		if not transition.enabled:
+			continue
+		var presentation: Dictionary = transition.presentation
+		_expect(not presentation.is_empty(), "启用的传送点必须声明公共组件方向：%s/%s" % [definition.map_id, transition.transition_id])
+		_expect(String(presentation.get("kind", "")) == "directional_transition", "地图不得直接配置传送动画资源")
+		_expect(not presentation.has("resource"), "地图定义不得重复保存共享传送动画路径")
+		var resolved: Dictionary = marker_catalog.resolve(
+			StringName(String(presentation.get("orientation", ""))),
+			transition.source_anchor,
+		)
+		_expect(not resolved.is_empty(), "传送方向必须能由公共目录解析：%s" % transition.transition_id)
+		if resolved.is_empty():
+			continue
+		_expect(int(resolved.get("frame_count", 0)) in [9, 10], "as1-as8 必须保留完整 9 或 10 帧")
+		_expect(int(resolved.get("frame_duration_ms", 0)) == 100, "传送点必须保持 100 毫秒源播放间隔")
+		_expect(ResourceLoader.exists(String(resolved.get("resource", ""))), "共享传送动画资源必须可加载")
 
 
 ## 执行 `test_navigation` 对应的模块操作。

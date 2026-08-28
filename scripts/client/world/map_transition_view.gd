@@ -8,11 +8,11 @@ var _sprite: AnimatedSprite2D
 var _interaction_rect := Rect2()
 
 
-## 执行 `configure` 对应的模块操作。
-## [param transition] 调用方传入的参数；具体约束由函数签名和所在模块定义。
-## [param presentation] 调用方传入的参数；具体约束由函数签名和所在模块定义。
-## 返回该函数计算、查询或操作得到的结果。
-## 设计：旧客户端路径只允许存在于数据审计；运行时仅消费业务化 `res://` 资源。
+## 按已解析的共享表现数据创建一个可点击、循环播放的地图传送点。
+## [param transition] 传送业务数据，提供唯一标识与寻路接近点。
+## [param presentation] 由共享目录解析出的动画资源、锚点和固定命中框。
+## 返回：[enum Error]；创建成功返回 [constant OK]，非法配置或资源缺失返回错误码。
+## 设计：本组件不识别旧客户端文件名；方向到资源的映射由共享目录集中完成。
 func configure(transition: MapTransition, presentation: Dictionary) -> Error:
 	if transition == null or transition.transition_id.is_empty():
 		return ERR_INVALID_PARAMETER
@@ -64,17 +64,17 @@ func configure(transition: MapTransition, presentation: Dictionary) -> Error:
 	return OK
 
 
-## 执行 `hit_test` 对应的模块操作。
-## [param world_position] 调用方传入的参数；具体约束由函数签名和所在模块定义。
-## 返回该函数计算、查询或操作得到的结果。
+## 判断一个世界坐标是否落在传送点固定交互矩形内。
+## [param world_position] 鼠标点击对应的地图世界坐标。
+## 返回：位于命中框内且精灵已创建时为 [code]true[/code]。
 func hit_test(world_position: Vector2) -> bool:
 	if _sprite == null:
 		return false
 	return _interaction_rect.has_point(_sprite.to_local(world_position))
 
 
-## 执行 `is_vector_pair` 对应的模块操作。
-## [param value] 调用方传入的参数；具体约束由函数签名和所在模块定义。
-## 返回该函数计算、查询或操作得到的结果。
+## 判断动态值是否为可转换为 [Vector2] 的二元素数组。
+## [param value] 待校验的 JSON 动态值。
+## 返回：值为长度二的数组时为 [code]true[/code]。
 func _is_vector_pair(value: Variant) -> bool:
 	return value is Array and (value as Array).size() == 2

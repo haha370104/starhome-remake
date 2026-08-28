@@ -12,6 +12,9 @@ const NpcBaseScript := preload("res://scripts/npcs/npc_base.gd")
 const ShopNpcScript := preload("res://scripts/npcs/shop_npc.gd")
 const QuestNpcScript := preload("res://scripts/npcs/quest_npc.gd")
 const TransitionViewScript := preload("res://scripts/client/world/map_transition_view.gd")
+const TransitionMarkerCatalogScript := preload(
+	"res://scripts/client/world/map_transition_marker_catalog.gd"
+)
 
 var definition: MapDefinition
 var navigation: RefCounted
@@ -30,6 +33,7 @@ var _camera: Camera2D
 var _hud: CanvasLayer
 var _character_catalog: Dictionary = {}
 var _npc_catalog: Dictionary = {}
+var _transition_marker_catalog: RefCounted
 
 
 ## 执行 `configure` 对应的模块操作。
@@ -73,6 +77,10 @@ func configure(
 	_hud = hud
 	_character_catalog = character_catalog
 	_npc_catalog = npc_catalog
+	_transition_marker_catalog = TransitionMarkerCatalogScript.new()
+	if _transition_marker_catalog.load_default() != OK:
+		_transition_marker_catalog = null
+		return ERR_CANT_OPEN
 	return OK
 
 
@@ -306,9 +314,16 @@ func _stage_transition_views(
 	for transition in staged_definition.enabled_transitions():
 		if transition.presentation.is_empty():
 			continue
+		var orientation := StringName(String(transition.presentation.get("orientation", "")))
+		var resolved_presentation: Dictionary = _transition_marker_catalog.resolve(
+			orientation,
+			transition.source_anchor,
+		)
+		if resolved_presentation.is_empty():
+			return false
 		var view: Node2D = TransitionViewScript.new()
 		view.name = "Transition_%s" % String(transition.transition_id).to_pascal_case()
-		if view.configure(transition, transition.presentation) != OK:
+		if view.configure(transition, resolved_presentation) != OK:
 			view.free()
 			return false
 		container.add_child(view)

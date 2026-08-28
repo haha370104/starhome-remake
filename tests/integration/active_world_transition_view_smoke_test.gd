@@ -78,7 +78,8 @@ func _run() -> void:
 	hall.selected_transition_id = &""
 
 	_test_failed_bundle_isolation(hall, active)
-	_expect(assertions == 29, "组合回归必须执行完整的 29 条业务断言")
+	_test_city_transition_views(active)
+	_expect(assertions == 42, "组合回归必须执行完整的 42 条业务断言")
 	_finish(hall)
 
 
@@ -119,6 +120,35 @@ func _test_failed_bundle_isolation(hall: Node2D, active: Node) -> void:
 	_expect(active.scene_nodes.size() == old_scene_count, "提交失败必须保留旧语义层数量")
 	_expect(active.npc_instances.size() == old_npc_count, "提交失败必须保留旧 NPC 集合")
 	_expect(old_first_scene == null or is_instance_valid(old_first_scene), "提交失败不得释放旧场景节点")
+
+
+## 提交城区地图并验证五处出口全部由八方向公共组件生成。
+## [param active] 当前活动世界控制器。
+func _test_city_transition_views(active: Node) -> void:
+	var city_bundle: Dictionary = active.prepare_initial_bundle("res://data/maps/yian_harbor_city.json")
+	_expect(not city_bundle.is_empty(), "城区 bundle 必须可加载")
+	if city_bundle.is_empty():
+		return
+	_expect(active.commit_bundle(city_bundle, Vector2(1399, 954)), "城区 bundle 必须可原子提交")
+	_expect(active.transition_views.size() == 5, "城区五个已启用出口必须全部显示传送动画")
+	var expected_orientations := {
+		&"enter_base_hall_floor_1": "south_west",
+		&"exit_to_d04_northwest_gate": "south_west",
+		&"exit_to_d04_southwest_gate": "north_west",
+		&"exit_to_d04_southeast_gate": "north_east",
+		&"exit_to_d04_northeast_gate": "south_east",
+	}
+	for transition_id: StringName in expected_orientations:
+		var view: Node2D = active.transition_view_by_id(transition_id)
+		_expect(view != null, "城区传送点必须存在：%s" % transition_id)
+		if view == null:
+			continue
+		var sprite := view.get_node_or_null("AnimatedIcon") as AnimatedSprite2D
+		var expected_fragment := "/%s/animation_frames.tres" % expected_orientations[transition_id]
+		_expect(
+			sprite != null and String(sprite.sprite_frames.resource_path).ends_with(expected_fragment),
+			"城区传送点必须使用对应方向的共享 as1-as8 动画：%s" % transition_id,
+		)
 
 
 ## 执行 `expect` 对应的模块操作。

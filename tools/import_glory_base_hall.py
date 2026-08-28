@@ -875,7 +875,11 @@ def main() -> int:
         runtime_transition = dict(transition)
         if transition is exit_transition:
             runtime_transition["transition_id"] = EXIT_TRANSITION_ID
-            runtime_transition["presentation"] = transition_animation["presentation"]
+            runtime_transition["presentation"] = {
+                "kind": "directional_transition",
+                "orientation": "south_west",
+                "activation": "enabled_transition",
+            }
         runtime_transitions.append(runtime_transition)
 
     stairway_profile, stairway_masks = build_stairway_depth_profile(props_dir)

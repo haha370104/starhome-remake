@@ -17,9 +17,12 @@ MAP_DEFINITION = PROJECT_ROOT / "data/maps/yian_harbor_hall_floor_1.json"
 MAP_MANIFEST = PROJECT_ROOT / "assets/maps/yian_harbor/hall_floor_1/map_manifest.json"
 TRANSITION_DIR = PROJECT_ROOT / "assets/maps/yian_harbor/hall_floor_1/transitions/exit_to_city"
 IMPORT_METADATA = TRANSITION_DIR / "import_metadata.json"
+MARKER_CATALOG = PROJECT_ROOT / "data/presentation/map_transition_marker_catalog.json"
+SHARED_TRANSITION_DIR = PROJECT_ROOT / "assets/maps/shared/directional_transitions/south_west"
+SHARED_IMPORT_METADATA = SHARED_TRANSITION_DIR / "import_metadata.json"
 SOURCE_FCC = OUTPUTS_ROOT / "starhome_lz_ry_full_parsed/ftc_resources/expanded/NFT_BT/map/RoomSvr1/roomsvr1.fcc.cab"
 TRANSPORT_CLASS = OUTPUTS_ROOT / "starhome_lz_ry_full_parsed/ftc_resources/expanded/transport/transport.fcc.cab"
-EXPECTED_RESOURCE = "res://assets/maps/yian_harbor/hall_floor_1/transitions/exit_to_city/animation_frames.tres"
+EXPECTED_SHARED_RESOURCE = "res://assets/maps/shared/directional_transitions/south_west/animation_frames.tres"
 
 
 def read_json(path: Path) -> dict:
@@ -61,8 +64,12 @@ def main() -> int:
         MAP_DEFINITION,
         MAP_MANIFEST,
         IMPORT_METADATA,
+        MARKER_CATALOG,
+        SHARED_IMPORT_METADATA,
         TRANSITION_DIR / "frames.png",
         TRANSITION_DIR / "animation_frames.tres",
+        SHARED_TRANSITION_DIR / "frames.png",
+        SHARED_TRANSITION_DIR / "animation_frames.tres",
         SOURCE_FCC,
         TRANSPORT_CLASS,
     )
@@ -77,6 +84,8 @@ def main() -> int:
     map_definition = read_json(MAP_DEFINITION)
     manifest = read_json(MAP_MANIFEST)
     metadata = read_json(IMPORT_METADATA)
+    marker_catalog = read_json(MARKER_CATALOG)
+    shared_metadata = read_json(SHARED_IMPORT_METADATA)
     definition_transition = next(
         (item for item in map_definition.get("transitions", []) if item.get("transition_id") == "exit_to_city"),
         None,
@@ -95,15 +104,19 @@ def main() -> int:
         destination = definition_transition.get("destination", {})
         if destination.get("map_id") != "yian_harbor_city" or destination.get("entry_number") != 0:
             errors.append("map definition destination is not City1Svr entry 0")
-        expected_presentation = metadata.get("presentation", {})
-        if definition_transition.get("presentation") != expected_presentation:
-            errors.append("map definition presentation drifted from import metadata")
-        if manifest_transition.get("presentation") != expected_presentation:
+        expected_definition_presentation = {
+            "kind": "directional_transition",
+            "orientation": "south_west",
+            "activation": "enabled_transition",
+        }
+        if definition_transition.get("presentation") != expected_definition_presentation:
+            errors.append("map definition no longer delegates the hall marker to the shared south-west component")
+        if manifest_transition.get("presentation") != metadata.get("presentation", {}):
             errors.append("scene manifest presentation drifted from import metadata")
 
     presentation = metadata.get("presentation", {})
-    if presentation.get("resource") != EXPECTED_RESOURCE:
-        errors.append("runtime resource path is not business-semantic")
+    if presentation.get("resource") != "res://assets/maps/yian_harbor/hall_floor_1/transitions/exit_to_city/animation_frames.tres":
+        errors.append("historical hall transport evidence path drifted")
     if any(token in str(presentation.get("resource", "")).lower() for token in ("/pic/", "/pic2/", ".ale")):
         errors.append("runtime resource path leaks a legacy directory or ALE name")
     expected_presentation_fields = {
@@ -123,6 +136,14 @@ def main() -> int:
     for field, expected in expected_presentation_fields.items():
         if presentation.get(field) != expected:
             errors.append(f"presentation {field} expected {expected!r}, got {presentation.get(field)!r}")
+
+    shared_presentation = marker_catalog.get("markers", {}).get("south_west", {})
+    if shared_presentation.get("resource") != EXPECTED_SHARED_RESOURCE:
+        errors.append("hall marker does not resolve to the shared as4 directional animation")
+    if shared_metadata.get("source_logical_path") != "pic3/interface/sportimg/as4.ale":
+        errors.append("shared south-west marker no longer proves the Glory sportimg/as4 source")
+    if shared_metadata.get("frame_count") != 9 or shared_metadata.get("legacy_playdelay_ms") != 100:
+        errors.append("shared south-west marker frame timing drifted from Glory evidence")
 
     source_audit = metadata.get("source_audit", {})
     if source_audit.get("source_release") != "starhome_lz_ry":
@@ -155,12 +176,12 @@ def main() -> int:
     if b"class transport:img" not in transport_source or b"playdelay=100;" not in transport_source:
         errors.append("transport class no longer proves the 100 ms animation delay")
 
-    frames_resource = (TRANSITION_DIR / "animation_frames.tres").read_text(encoding="utf-8")
+    frames_resource = (SHARED_TRANSITION_DIR / "animation_frames.tres").read_text(encoding="utf-8")
     if frames_resource.count('[sub_resource type="AtlasTexture"') != 9:
         errors.append("SpriteFrames does not expose all nine Glory frames")
     if '"name": &"active"' not in frames_resource or '"speed": 10.0' not in frames_resource:
         errors.append("SpriteFrames animation identity or speed is incorrect")
-    with Image.open(TRANSITION_DIR / "frames.png") as atlas:
+    with Image.open(SHARED_TRANSITION_DIR / "frames.png") as atlas:
         if atlas.size != (702, 41):
             errors.append(f"normalized transport atlas expected 702x41, got {atlas.size}")
 
@@ -187,7 +208,7 @@ def main() -> int:
         return 1
     print(
         "Hall exit transition audit passed: RoomSvr1 (408,348) -> "
-        "City1Svr entry 0, approach (480,370), 9 frames at 100 ms"
+        "City1Svr entry 0 via shared sportimg/as4, approach (480,370), 9 frames at 100 ms"
     )
     return 0
 

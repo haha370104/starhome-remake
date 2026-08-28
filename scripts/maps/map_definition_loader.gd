@@ -350,41 +350,28 @@ func _load_transition(raw: Dictionary, index: int, world_size: Vector2) -> MapTr
 	return transition
 
 
-## 执行 `validate_transition_presentation` 对应的模块操作。
-## [param presentation] 调用方传入的参数；具体约束由函数签名和所在模块定义。
-## [param prefix] 调用方传入的参数；具体约束由函数签名和所在模块定义。
-## [param world_size] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 校验地图传送点是否只声明公共组件所需的方向语义。
+## [param presentation] 地图 JSON 中的精简传送点表现声明。
+## [param prefix] 用于生成定位明确的校验错误字段路径。
+## [param _world_size] 当前地图尺寸；为保持校验器接口一致而保留，本规则不直接使用。
 func _validate_transition_presentation(
 	presentation: Dictionary,
 	prefix: String,
-	world_size: Vector2,
+	_world_size: Vector2,
 ) -> void:
-	if not _is_business_asset_id(String(presentation.get("asset_id", ""))):
-		_add_error(prefix + ".asset_id", "asset_id 必须是业务语义路径")
-	if String(presentation.get("kind", "")) != "animated_sprite":
-		_add_error(prefix + ".kind", "当前仅支持 animated_sprite")
-	var resource_path := String(presentation.get("resource", ""))
-	if not resource_path.begins_with("res://"):
-		_add_error(prefix + ".resource", "动画资源必须使用 res://")
-	if String(presentation.get("animation", "")).is_empty():
-		_add_error(prefix + ".animation", "animation 不能为空")
-	_read_map_point(presentation.get("anchor", []), prefix + ".anchor", world_size)
-	_read_vector2(presentation.get("offset", [0, 0]), prefix + ".offset", false)
-	if int(presentation.get("frame_count", 0)) <= 0:
-		_add_error(prefix + ".frame_count", "frame_count 必须大于 0")
-	if int(presentation.get("frame_duration_ms", 0)) <= 0:
-		_add_error(prefix + ".frame_duration_ms", "frame_duration_ms 必须大于 0")
+	if String(presentation.get("kind", "")) != "directional_transition":
+		_add_error(prefix + ".kind", "地图传送点必须使用 directional_transition 公共组件")
+	var orientation := String(presentation.get("orientation", ""))
+	if orientation not in [
+		"east", "south_east", "south", "south_west",
+		"west", "north_west", "north", "north_east",
+	]:
+		_add_error(prefix + ".orientation", "orientation 必须是八方向业务标识")
 	if String(presentation.get("activation", "")) != "enabled_transition":
 		_add_error(prefix + ".activation", "activation 必须为 enabled_transition")
-	var interaction_value: Variant = presentation.get("interaction_rect", [])
-	if not interaction_value is Array or (interaction_value as Array).size() != 4:
-		_add_error(prefix + ".interaction_rect", "interaction_rect 必须是四元素固定矩形")
-	else:
-		var interaction: Array = interaction_value
-		if float(interaction[2]) <= 0.0 or float(interaction[3]) <= 0.0:
-			_add_error(prefix + ".interaction_rect", "interaction_rect 宽高必须大于 0")
-	if String(presentation.get("interaction_space", "")) != "asset_local_fixed_bounds":
-		_add_error(prefix + ".interaction_space", "interaction_space 必须为 asset_local_fixed_bounds")
+	for forbidden_key in ["asset_id", "resource", "animation", "frame_count", "interaction_rect"]:
+		if presentation.has(forbidden_key):
+			_add_error(prefix + "." + forbidden_key, "资源细节必须由传送点公共目录统一提供")
 
 
 ## 执行 `read_map_point` 对应的模块操作。

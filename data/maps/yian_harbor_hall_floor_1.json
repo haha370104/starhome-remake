@@ -68,19 +68,8 @@
       "source_anchor": [408, 348],
       "approach_point": [480, 370],
       "presentation": {
-        "asset_id": "maps/yian_harbor/hall_floor_1/transitions/exit_to_city",
-        "kind": "animated_sprite",
-        "resource": "res://assets/maps/yian_harbor/hall_floor_1/transitions/exit_to_city/animation_frames.tres",
-        "animation": "active",
-        "anchor": [408, 348],
-        "offset": [0, 0],
-        "centered": false,
-        "interaction_rect": [0, 0, 78, 41],
-        "interaction_space": "asset_local_fixed_bounds",
-        "sort_baseline": 348,
-        "frame_count": 9,
-        "frame_duration_ms": 100,
-        "loop": true,
+        "kind": "directional_transition",
+        "orientation": "south_west",
         "activation": "enabled_transition"
       },
       "destination": {

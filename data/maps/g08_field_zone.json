@@ -53,6 +53,7 @@
       "label": "通往F07区",
       "source_anchor": [96, 72],
       "approach_point": [156, 84],
+      "presentation": {"kind": "directional_transition", "orientation": "south_west", "activation": "enabled_transition"},
       "destination": {"legacy_code": "f07", "entry_number": 0, "external": true},
       "source_audit": {"source_release": "starhome_lz_ry", "source_map_code": "g08", "source_output": "maps/g08/variant_01_nft_bl/transitions.json", "source_line": 509}
     },
@@ -63,6 +64,7 @@
       "label": "通往G07区",
       "source_anchor": [2280, 84],
       "approach_point": [2315, 90],
+      "presentation": {"kind": "directional_transition", "orientation": "south", "activation": "enabled_transition"},
       "destination": {"legacy_code": "g07", "entry_number": 0, "external": true},
       "source_audit": {"source_release": "starhome_lz_ry", "source_map_code": "g08", "source_output": "maps/g08/variant_01_nft_bl/transitions.json", "source_line": 510}
     },
@@ -73,6 +75,7 @@
       "label": "通往H07区",
       "source_anchor": [4632, 84],
       "approach_point": [4653, 91],
+      "presentation": {"kind": "directional_transition", "orientation": "south_east", "activation": "enabled_transition"},
       "destination": {"legacy_code": "h07", "entry_number": 0, "external": true},
       "source_audit": {"source_release": "starhome_lz_ry", "source_map_code": "g08", "source_output": "maps/g08/variant_01_nft_bl/transitions.json", "source_line": 511}
     },
@@ -83,6 +86,7 @@
       "label": "通往H08区",
       "source_anchor": [4656, 2448],
       "approach_point": [4662, 2441],
+      "presentation": {"kind": "directional_transition", "orientation": "east", "activation": "enabled_transition"},
       "destination": {"legacy_code": "h08", "entry_number": 0, "external": true},
       "source_audit": {"source_release": "starhome_lz_ry", "source_map_code": "g08", "source_output": "maps/g08/variant_01_nft_bl/transitions.json", "source_line": 512}
     },
@@ -93,6 +97,7 @@
       "label": "通往F08区",
       "source_anchor": [96, 2736],
       "approach_point": [174, 2728],
+      "presentation": {"kind": "directional_transition", "orientation": "north_west", "activation": "enabled_transition"},
       "destination": {"legacy_code": "f08", "entry_number": 0, "external": true},
       "source_audit": {"source_release": "starhome_lz_ry", "source_map_code": "g08", "source_output": "maps/g08/variant_01_nft_bl/transitions.json", "source_line": 513}
     }

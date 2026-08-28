@@ -18,6 +18,7 @@ GLORY_RAW = OUTPUTS_ROOT / "starhome_lz_ry_full" / "raw"
 GLORY_PARSED = OUTPUTS_ROOT / "starhome_lz_ry_full_parsed" / "ale_sprites"
 MAP_PATH = PROJECT_ROOT / "data" / "maps" / "d04_field_zone.json"
 TARGET_ROOT = PROJECT_ROOT / "assets" / "maps" / "shared" / "directional_transitions"
+TARGET_CATALOG = PROJECT_ROOT / "data" / "presentation" / "map_transition_marker_catalog.json"
 
 # Transition business ID -> legacy style retained only inside this import tool/audit.
 STYLE_BY_TRANSITION = {
@@ -149,29 +150,22 @@ def _export_direction(legacy_style: int) -> dict[str, Any]:
     return {
         "asset_id": f"maps/shared/directional_transitions/{direction}",
         "resource": f"res://assets/maps/shared/directional_transitions/{direction}/animation_frames.tres",
+        "animation": "active",
         "offset": [minimum_origin_x, minimum_origin_y],
+        "centered": False,
         "interaction_rect": [0, 0, width, height],
+        "interaction_space": "asset_local_fixed_bounds",
         "frame_count": len(source_frames),
+        "frame_duration_ms": 100,
+        "loop": True,
     }
 
 
-def _transition_presentation(transition: dict[str, Any], direction_asset: dict[str, Any]) -> dict[str, Any]:
-    """将共享方向素材绑定到一个具有独立锚点的 D04 传送定义。"""
-    anchor = transition["source_anchor"]
+def _transition_presentation(direction: str) -> dict[str, Any]:
+    """返回地图侧只含方向语义、不重复资源细节的公共组件声明。"""
     return {
-        "asset_id": direction_asset["asset_id"],
-        "kind": "animated_sprite",
-        "resource": direction_asset["resource"],
-        "animation": "active",
-        "anchor": anchor,
-        "offset": direction_asset["offset"],
-        "centered": False,
-        "interaction_rect": direction_asset["interaction_rect"],
-        "interaction_space": "asset_local_fixed_bounds",
-        "sort_baseline": anchor[1],
-        "frame_count": direction_asset["frame_count"],
-        "frame_duration_ms": 100,
-        "loop": True,
+        "kind": "directional_transition",
+        "orientation": direction,
         "activation": "enabled_transition",
     }
 
@@ -181,11 +175,18 @@ def main() -> int:
     global MAP_DATA
     MAP_DATA = json.loads(MAP_PATH.read_text(encoding="utf-8"))
     direction_assets = {style: _export_direction(style) for style in DIRECTION_BY_STYLE}
+    marker_catalog = {
+        "schema_version": 1,
+        "markers": {
+            DIRECTION_BY_STYLE[style]: direction_assets[style]
+            for style in DIRECTION_BY_STYLE
+        },
+    }
+    _atomic_text(TARGET_CATALOG, json.dumps(marker_catalog, ensure_ascii=False, indent=2) + "\n")
     for transition in MAP_DATA["transitions"]:
         transition_id = str(transition["transition_id"])
         transition["presentation"] = _transition_presentation(
-            transition,
-            direction_assets[STYLE_BY_TRANSITION[transition_id]],
+            DIRECTION_BY_STYLE[STYLE_BY_TRANSITION[transition_id]],
         )
     _atomic_text(MAP_PATH, json.dumps(MAP_DATA, ensure_ascii=False, indent=2) + "\n")
     print(f"exported {len(MAP_DATA['transitions'])} D04 transition animations")

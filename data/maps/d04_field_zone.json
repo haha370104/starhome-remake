@@ -159,30 +159,8 @@
         "source_line": 551
       },
       "presentation": {
-        "asset_id": "maps/shared/directional_transitions/south_west",
-        "kind": "animated_sprite",
-        "resource": "res://assets/maps/shared/directional_transitions/south_west/animation_frames.tres",
-        "animation": "active",
-        "anchor": [
-          67,
-          53
-        ],
-        "offset": [
-          0,
-          0
-        ],
-        "centered": false,
-        "interaction_rect": [
-          0,
-          0,
-          78,
-          41
-        ],
-        "interaction_space": "asset_local_fixed_bounds",
-        "sort_baseline": 53,
-        "frame_count": 9,
-        "frame_duration_ms": 100,
-        "loop": true,
+        "kind": "directional_transition",
+        "orientation": "south_west",
         "activation": "enabled_transition"
       }
     },
@@ -211,30 +189,8 @@
         "source_line": 553
       },
       "presentation": {
-        "asset_id": "maps/shared/directional_transitions/west",
-        "kind": "animated_sprite",
-        "resource": "res://assets/maps/shared/directional_transitions/west/animation_frames.tres",
-        "animation": "active",
-        "anchor": [
-          52,
-          2558
-        ],
-        "offset": [
-          -1,
-          0
-        ],
-        "centered": false,
-        "interaction_rect": [
-          0,
-          0,
-          84,
-          30
-        ],
-        "interaction_space": "asset_local_fixed_bounds",
-        "sort_baseline": 2558,
-        "frame_count": 10,
-        "frame_duration_ms": 100,
-        "loop": true,
+        "kind": "directional_transition",
+        "orientation": "west",
         "activation": "enabled_transition"
       }
     },
@@ -263,30 +219,8 @@
         "source_line": 559
       },
       "presentation": {
-        "asset_id": "maps/shared/directional_transitions/north_west",
-        "kind": "animated_sprite",
-        "resource": "res://assets/maps/shared/directional_transitions/north_west/animation_frames.tres",
-        "animation": "active",
-        "anchor": [
-          64,
-          4707
-        ],
-        "offset": [
-          0,
-          0
-        ],
-        "centered": false,
-        "interaction_rect": [
-          0,
-          0,
-          78,
-          42
-        ],
-        "interaction_space": "asset_local_fixed_bounds",
-        "sort_baseline": 4707,
-        "frame_count": 10,
-        "frame_duration_ms": 100,
-        "loop": true,
+        "kind": "directional_transition",
+        "orientation": "north_west",
         "activation": "enabled_transition"
       }
     },
@@ -316,30 +250,8 @@
         "source_line": 555
       },
       "presentation": {
-        "asset_id": "maps/shared/directional_transitions/north_east",
-        "kind": "animated_sprite",
-        "resource": "res://assets/maps/shared/directional_transitions/north_east/animation_frames.tres",
-        "animation": "active",
-        "anchor": [
-          1270,
-          2572
-        ],
-        "offset": [
-          0,
-          0
-        ],
-        "centered": false,
-        "interaction_rect": [
-          0,
-          0,
-          78,
-          42
-        ],
-        "interaction_space": "asset_local_fixed_bounds",
-        "sort_baseline": 2572,
-        "frame_count": 9,
-        "frame_duration_ms": 100,
-        "loop": true,
+        "kind": "directional_transition",
+        "orientation": "north_east",
         "activation": "enabled_transition"
       }
     },
@@ -369,30 +281,8 @@
         "source_line": 557
       },
       "presentation": {
-        "asset_id": "maps/shared/directional_transitions/south_east",
-        "kind": "animated_sprite",
-        "resource": "res://assets/maps/shared/directional_transitions/south_east/animation_frames.tres",
-        "animation": "active",
-        "anchor": [
-          1259,
-          2972
-        ],
-        "offset": [
-          0,
-          0
-        ],
-        "centered": false,
-        "interaction_rect": [
-          0,
-          0,
-          78,
-          41
-        ],
-        "interaction_space": "asset_local_fixed_bounds",
-        "sort_baseline": 2972,
-        "frame_count": 10,
-        "frame_duration_ms": 100,
-        "loop": true,
+        "kind": "directional_transition",
+        "orientation": "south_east",
         "activation": "enabled_transition"
       }
     },
@@ -422,30 +312,8 @@
         "source_line": 558
       },
       "presentation": {
-        "asset_id": "maps/shared/directional_transitions/south_west",
-        "kind": "animated_sprite",
-        "resource": "res://assets/maps/shared/directional_transitions/south_west/animation_frames.tres",
-        "animation": "active",
-        "anchor": [
-          1914,
-          2996
-        ],
-        "offset": [
-          0,
-          0
-        ],
-        "centered": false,
-        "interaction_rect": [
-          0,
-          0,
-          78,
-          41
-        ],
-        "interaction_space": "asset_local_fixed_bounds",
-        "sort_baseline": 2996,
-        "frame_count": 9,
-        "frame_duration_ms": 100,
-        "loop": true,
+        "kind": "directional_transition",
+        "orientation": "south_west",
         "activation": "enabled_transition"
       }
     },
@@ -475,30 +343,8 @@
         "source_line": 556
       },
       "presentation": {
-        "asset_id": "maps/shared/directional_transitions/north_west",
-        "kind": "animated_sprite",
-        "resource": "res://assets/maps/shared/directional_transitions/north_west/animation_frames.tres",
-        "animation": "active",
-        "anchor": [
-          1903,
-          2590
-        ],
-        "offset": [
-          0,
-          0
-        ],
-        "centered": false,
-        "interaction_rect": [
-          0,
-          0,
-          78,
-          42
-        ],
-        "interaction_space": "asset_local_fixed_bounds",
-        "sort_baseline": 2590,
-        "frame_count": 10,
-        "frame_duration_ms": 100,
-        "loop": true,
+        "kind": "directional_transition",
+        "orientation": "north_west",
         "activation": "enabled_transition"
       }
     },
@@ -527,30 +373,8 @@
         "source_line": 550
       },
       "presentation": {
-        "asset_id": "maps/shared/directional_transitions/south",
-        "kind": "animated_sprite",
-        "resource": "res://assets/maps/shared/directional_transitions/south/animation_frames.tres",
-        "animation": "active",
-        "anchor": [
-          2479,
-          46
-        ],
-        "offset": [
-          0,
-          -1
-        ],
-        "centered": false,
-        "interaction_rect": [
-          0,
-          0,
-          56,
-          44
-        ],
-        "interaction_space": "asset_local_fixed_bounds",
-        "sort_baseline": 46,
-        "frame_count": 10,
-        "frame_duration_ms": 100,
-        "loop": true,
+        "kind": "directional_transition",
+        "orientation": "south",
         "activation": "enabled_transition"
       }
     },
@@ -579,30 +403,8 @@
         "source_line": 560
       },
       "presentation": {
-        "asset_id": "maps/shared/directional_transitions/north",
-        "kind": "animated_sprite",
-        "resource": "res://assets/maps/shared/directional_transitions/north/animation_frames.tres",
-        "animation": "active",
-        "anchor": [
-          2502,
-          4714
-        ],
-        "offset": [
-          0,
-          0
-        ],
-        "centered": false,
-        "interaction_rect": [
-          0,
-          0,
-          56,
-          44
-        ],
-        "interaction_space": "asset_local_fixed_bounds",
-        "sort_baseline": 4714,
-        "frame_count": 10,
-        "frame_duration_ms": 100,
-        "loop": true,
+        "kind": "directional_transition",
+        "orientation": "north",
         "activation": "enabled_transition"
       }
     },
@@ -631,30 +433,8 @@
         "source_line": 552
       },
       "presentation": {
-        "asset_id": "maps/shared/directional_transitions/south_east",
-        "kind": "animated_sprite",
-        "resource": "res://assets/maps/shared/directional_transitions/south_east/animation_frames.tres",
-        "animation": "active",
-        "anchor": [
-          4687,
-          61
-        ],
-        "offset": [
-          0,
-          0
-        ],
-        "centered": false,
-        "interaction_rect": [
-          0,
-          0,
-          78,
-          41
-        ],
-        "interaction_space": "asset_local_fixed_bounds",
-        "sort_baseline": 61,
-        "frame_count": 10,
-        "frame_duration_ms": 100,
-        "loop": true,
+        "kind": "directional_transition",
+        "orientation": "south_east",
         "activation": "enabled_transition"
       }
     },
@@ -683,30 +463,8 @@
         "source_line": 554
       },
       "presentation": {
-        "asset_id": "maps/shared/directional_transitions/east",
-        "kind": "animated_sprite",
-        "resource": "res://assets/maps/shared/directional_transitions/east/animation_frames.tres",
-        "animation": "active",
-        "anchor": [
-          4688,
-          2561
-        ],
-        "offset": [
-          0,
-          0
-        ],
-        "centered": false,
-        "interaction_rect": [
-          0,
-          0,
-          83,
-          30
-        ],
-        "interaction_space": "asset_local_fixed_bounds",
-        "sort_baseline": 2561,
-        "frame_count": 9,
-        "frame_duration_ms": 100,
-        "loop": true,
+        "kind": "directional_transition",
+        "orientation": "east",
         "activation": "enabled_transition"
       }
     },
@@ -735,30 +493,8 @@
         "source_line": 561
       },
       "presentation": {
-        "asset_id": "maps/shared/directional_transitions/north_east",
-        "kind": "animated_sprite",
-        "resource": "res://assets/maps/shared/directional_transitions/north_east/animation_frames.tres",
-        "animation": "active",
-        "anchor": [
-          4694,
-          4717
-        ],
-        "offset": [
-          0,
-          0
-        ],
-        "centered": false,
-        "interaction_rect": [
-          0,
-          0,
-          78,
-          42
-        ],
-        "interaction_space": "asset_local_fixed_bounds",
-        "sort_baseline": 4717,
-        "frame_count": 9,
-        "frame_duration_ms": 100,
-        "loop": true,
+        "kind": "directional_transition",
+        "orientation": "north_east",
         "activation": "enabled_transition"
       }
     }

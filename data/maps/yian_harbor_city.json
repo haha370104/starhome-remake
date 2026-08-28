@@ -118,6 +118,11 @@
       "label": "进入基地大厅",
       "source_anchor": [1368, 948],
       "approach_point": [1399, 954],
+      "presentation": {
+        "kind": "directional_transition",
+        "orientation": "south_west",
+        "activation": "enabled_transition"
+      },
       "destination": {
         "map_id": "yian_harbor_hall_floor_1",
         "legacy_code": "roomsvr1",
@@ -139,6 +144,11 @@
       "label": "通往D04区",
       "source_anchor": [24, 156],
       "approach_point": [78, 170],
+      "presentation": {
+        "kind": "directional_transition",
+        "orientation": "south_west",
+        "activation": "enabled_transition"
+      },
       "destination": {
         "map_id": "d04_field_zone",
         "legacy_code": "d04",
@@ -159,6 +169,11 @@
       "label": "通往D04区",
       "source_anchor": [72, 3180],
       "approach_point": [127, 3172],
+      "presentation": {
+        "kind": "directional_transition",
+        "orientation": "north_west",
+        "activation": "enabled_transition"
+      },
       "destination": {
         "map_id": "d04_field_zone",
         "legacy_code": "d04",
@@ -179,6 +194,11 @@
       "label": "通往D04区",
       "source_anchor": [3048, 3180],
       "approach_point": [3073, 3177],
+      "presentation": {
+        "kind": "directional_transition",
+        "orientation": "north_east",
+        "activation": "enabled_transition"
+      },
       "destination": {
         "map_id": "d04_field_zone",
         "legacy_code": "d04",
@@ -199,6 +219,11 @@
       "label": "通往D04区",
       "source_anchor": [3264, 168],
       "approach_point": [3290, 178],
+      "presentation": {
+        "kind": "directional_transition",
+        "orientation": "south_east",
+        "activation": "enabled_transition"
+      },
       "destination": {
         "map_id": "d04_field_zone",
         "legacy_code": "d04",
