@@ -1,20 +1,20 @@
-class_name NpcBase
+class_name NpcWorldView
 extends "res://scripts/characters/world_character.gd"
 
 enum PatrolState { WAITING, MOVING }
 
 const DEFAULT_MOVEMENT_SPEED := 203.0
 const DEFAULT_ANIMATION_SPEED_SCALE := 1.0
+const NpcModelScript := preload("res://scripts/domain/npcs/npc_base.gd")
 
 var npc_id := ""
 var npc_definition: Dictionary
+var npc_model: NpcBase
 var navigation: RefCounted
-var patrol_points: Array[Dictionary] = []
 var patrol_state := PatrolState.WAITING
 var patrol_index := 0
 var path_points := PackedVector2Array()
 var path_index := 0
-var movement_speed := DEFAULT_MOVEMENT_SPEED
 var wait_remaining := 0.0
 var interaction_active := false
 var random := RandomNumberGenerator.new()
@@ -31,7 +31,11 @@ func configure_npc(
 	navigation_service: RefCounted,
 ) -> void:
 	npc_definition = definition
-	npc_id = String(definition.get("id", "npc"))
+	npc_model = create_npc_model()
+	var model_result := npc_model.configure(definition)
+	if not model_result.is_ok:
+		push_error("NPC domain model failed: %s" % model_result.error_message)
+	npc_id = npc_model.entity_id
 	navigation = navigation_service
 	name = npc_id
 	var requested_spawn := _vector_from(definition["spawn"])
@@ -42,6 +46,7 @@ func configure_npc(
 		push_error("NPC %s has no walkable spawn point" % npc_id)
 		spawn = requested_spawn
 	position = spawn
+	npc_model.position = spawn
 	var name_offset := _vector_from(definition.get("name_offset", [-64, -88]))
 	configure(
 		character_set,
@@ -50,7 +55,6 @@ func configure_npc(
 		name_offset,
 	)
 	var patrol: Dictionary = definition.get("patrol", {})
-	movement_speed = float(patrol.get("speed", DEFAULT_MOVEMENT_SPEED))
 	set_animation_speed_scale(
 		float(patrol.get("animation_speed_scale", DEFAULT_ANIMATION_SPEED_SCALE))
 	)
@@ -61,10 +65,13 @@ func configure_npc(
 		if not navigation.is_walkable(requested):
 			resolved = navigation.closest_reachable_position(spawn, requested)
 		point["resolved_position"] = resolved
-		patrol_points.append(point)
-	if patrol_points.is_empty():
-		patrol_points.append({"resolved_position": spawn, "dwell": [2.0, 4.0]})
-	patrol_index = 0
+		var resolved_points := npc_model.patrol_points
+		resolved_points.append(point)
+		npc_model.patrol_points = resolved_points
+	if npc_model.patrol_points.is_empty():
+		npc_model.set_patrol_points([{"resolved_position": spawn, "dwell": [2.0, 4.0]}])
+	else:
+		npc_model.set_patrol_points(npc_model.patrol_points)
 	random.randomize()
 	random.seed = random.seed ^ hash(npc_id)
 	wait_remaining = _random_seconds(patrol.get("initial_delay", [0.4, 2.4]), 1.0)
@@ -75,7 +82,7 @@ func configure_npc(
 ## [param delta] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## 设计：该函数遵循所在模块的职责边界。
 func _process(delta: float) -> void:
-	if interaction_active or patrol_points.size() < 2:
+	if interaction_active or npc_model == null or npc_model.patrol_points.size() < 2:
 		return
 	if patrol_state == PatrolState.WAITING:
 		wait_remaining -= delta
@@ -100,24 +107,14 @@ func set_interaction_active(active: bool) -> void:
 ## 返回该函数计算、查询或操作得到的结果。
 ## 设计：该函数遵循所在模块的职责边界。
 func get_interaction_data() -> Dictionary:
-	var interaction: Dictionary = npc_definition.get("interaction", {})
-	var actions: Array = interaction.get("actions", [])
-	if actions.is_empty():
-		actions = default_actions()
-	return {
-		"npc_id": npc_id,
-		"kind": String(npc_definition.get("kind", "ambient")),
-		"title": String(npc_definition.get("name", npc_id)),
-		"body": String(interaction.get("body", "对方似乎暂时没有事情要交给你。")),
-		"actions": actions,
-	}
+	return npc_model.interaction_data()
 
 
 ## 执行 `default_actions` 对应的模块操作。
 ## 返回该函数计算、查询或操作得到的结果。
 ## 设计：该函数遵循所在模块的职责边界。
 func default_actions() -> Array:
-	return [{"id": "talk", "label": "交谈"}]
+	return npc_model.default_actions()
 
 
 ## 校验并处理 `handle_action` 对应的模块状态。
@@ -125,14 +122,20 @@ func default_actions() -> Array:
 ## 返回该函数计算、查询或操作得到的结果。
 ## 设计：该函数遵循所在模块的职责边界。
 func handle_action(action_id: String) -> String:
-	return "%s 的“%s”功能尚未接入" % [String(npc_definition.get("name", npc_id)), action_id]
+	return npc_model.handle_action(action_id)
+
+
+## 创建当前世界表现节点对应的 NPC 领域模型。
+## 返回基础 NPC 模型；商店和任务表现子类覆盖此工厂方法。
+## 设计：场景继承负责选择业务子类，移动渲染仍统一复用本节点。
+func create_npc_model() -> NpcBase:
+	return NpcModelScript.new()
 
 
 ## 执行 `start_next_leg` 对应的模块操作。
 ## 设计：该函数遵循所在模块的职责边界。
 func _start_next_leg() -> void:
-	patrol_index = (patrol_index + 1) % patrol_points.size()
-	var target := _patrol_position(patrol_index)
+	var target := npc_model.advance_patrol_point()
 	path_points = navigation.find_path(position, target)
 	if path_points.is_empty():
 		patrol_state = PatrolState.WAITING
@@ -152,7 +155,7 @@ func _advance_movement(delta: float) -> void:
 		return
 	var waypoint := path_points[path_index]
 	var motion := waypoint - position
-	var step := movement_speed * delta
+	var step := npc_model.movement_speed * delta
 	if motion.length() <= step:
 		position = waypoint
 		path_index += 1
@@ -162,6 +165,7 @@ func _advance_movement(delta: float) -> void:
 			_begin_path_segment()
 	else:
 		position += motion.normalized() * step
+	npc_model.position = position
 
 
 ## 执行 `begin_path_segment` 对应的模块操作。
@@ -183,7 +187,8 @@ func _arrive_at_patrol_point() -> void:
 	path_points = PackedVector2Array()
 	path_index = 0
 	set_action("stand", current_direction)
-	wait_remaining = _random_seconds(patrol_points[patrol_index].get("dwell", [1.5, 3.5]), 2.0)
+	npc_model.position = position
+	wait_remaining = _random_seconds(npc_model.current_dwell_range(), 2.0)
 
 
 ## 执行 `patrol_position` 对应的模块操作。
@@ -191,7 +196,7 @@ func _arrive_at_patrol_point() -> void:
 ## 返回该函数计算、查询或操作得到的结果。
 ## 设计：该函数遵循所在模块的职责边界。
 func _patrol_position(index: int) -> Vector2:
-	return patrol_points[index]["resolved_position"]
+	return npc_model.patrol_points[index]["resolved_position"]
 
 
 ## 执行 `random_seconds` 对应的模块操作。
