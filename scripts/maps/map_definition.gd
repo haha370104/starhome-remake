@@ -20,10 +20,10 @@ var transitions: Array[MapTransition] = []
 var source_audit: Dictionary = {}
 
 
-## Retrieves the requested value from the managed state.
-## [param transition_id] Stable identifier of the target value.
-## Returns the resolved map model, or null when no match exists.
-## Design: Keeps runtime map semantics separate from legacy source-audit metadata.
+## 执行 `transition_by_id` 对应的模块操作。
+## [param transition_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数遵循所在模块的职责边界。
 func transition_by_id(transition_id: StringName) -> MapTransition:
 	for transition in transitions:
 		if transition.transition_id == transition_id:
@@ -31,9 +31,9 @@ func transition_by_id(transition_id: StringName) -> MapTransition:
 	return null
 
 
-## Performs the `enabled_transitions` operation.
-## Returns the resulting collection.
-## Design: Keeps runtime map semantics separate from legacy source-audit metadata.
+## 执行 `enabled_transitions` 对应的模块操作。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数遵循所在模块的职责边界。
 func enabled_transitions() -> Array[MapTransition]:
 	var result: Array[MapTransition] = []
 	for transition in transitions:
@@ -42,8 +42,9 @@ func enabled_transitions() -> Array[MapTransition]:
 	return result
 
 
-## 查找稳定业务标识为 [param spawn_id] 的出生点。
-## Returns 匹配的出生点；不存在时返回 null。
+## 执行 `spawn_by_id` 对应的模块操作。
+## [param spawn_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func spawn_by_id(spawn_id: StringName) -> MapSpawnPoint:
 	for spawn_point in spawn_points:
 		if spawn_point.spawn_id == spawn_id:
@@ -51,9 +52,10 @@ func spawn_by_id(spawn_id: StringName) -> MapSpawnPoint:
 	return null
 
 
-## 查找普通旧传送入口号 [param entry_number] 对应的已启用出生点。
-## Returns 精确入口匹配；入口未配置时返回默认出生点；两者都不存在时返回 null。
-## Design: 旧客户端普通传送只携带入口号，不能把源图 approach_point 冒充目标落点。
+## 执行 `spawn_for_entry` 对应的模块操作。
+## [param entry_number] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：旧客户端普通传送只携带入口号，不能把源图 approach_point 冒充目标落点。
 func spawn_for_entry(entry_number: int) -> MapSpawnPoint:
 	for spawn_point in spawn_points:
 		if spawn_point.enabled and spawn_point.entry_number == entry_number:

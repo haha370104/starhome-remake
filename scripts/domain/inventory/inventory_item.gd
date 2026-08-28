@@ -13,12 +13,12 @@ var enhancement: Dictionary
 var slot: int = -1
 
 
-## Initializes a new instance with its required state.
-## [param item_instance_id] Stable identifier of the target value.
-## [param item_template_id] Stable identifier of the target value.
-## [param item_quantity] Input value consumed by the operation.
-## [param item_max_stack] Input value consumed by the operation.
-## Design: Keeps deterministic game rules independent from scene and UI state.
+## 使用调用方参数初始化当前实例。
+## [param item_instance_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param item_template_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param item_quantity] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param item_max_stack] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 设计：该函数保持领域规则确定，并避免依赖具体表现层或传输层。
 func _init(
 	item_instance_id: String,
 	item_template_id: StringName,
@@ -36,9 +36,8 @@ func _init(
 	enhancement = {}
 
 
-## Performs the `duplicate_item` operation.
-## Returns the result produced by the operation.
-## Design: Keeps deterministic game rules independent from scene and UI state.
+## 执行 `duplicate_item` 对应的模块操作。
+## 设计：该函数保持领域规则确定，并避免依赖具体表现层或传输层。
 func duplicate_item():
 	var copy = get_script().new(instance_id, template_id, quantity, max_stack)
 	copy.durability = durability
@@ -50,9 +49,9 @@ func duplicate_item():
 	return copy
 
 
-## Reports whether the requested condition is satisfied.
-## Returns Whether the operation completed or the queried condition is satisfied.
-## Design: Keeps deterministic game rules independent from scene and UI state.
+## 判断 `is_valid` 对应的模块状态。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数保持领域规则确定，并避免依赖具体表现层或传输层。
 func is_valid() -> bool:
 	return (
 		not instance_id.is_empty()
@@ -65,10 +64,10 @@ func is_valid() -> bool:
 	)
 
 
-## Reports whether the requested condition is satisfied.
-## [param other] Input value consumed by the operation.
-## Returns Whether the operation completed or the queried condition is satisfied.
-## Design: Keeps deterministic game rules independent from scene and UI state.
+## 判断 `can_stack_with` 对应的模块状态。
+## [param other] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数保持领域规则确定，并避免依赖具体表现层或传输层。
 func can_stack_with(other) -> bool:
 	return (
 		other != null
@@ -83,9 +82,9 @@ func can_stack_with(other) -> bool:
 	)
 
 
-## Serializes the current state into a transport-safe dictionary.
-## Returns Structured result data produced by the operation.
-## Design: Keeps deterministic game rules independent from scene and UI state.
+## 序列化或保存 `to_dictionary` 对应的模块状态。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数保持领域规则确定，并避免依赖具体表现层或传输层。
 func to_dictionary() -> Dictionary:
 	return {
 		"instance_id": instance_id,

@@ -24,18 +24,18 @@ var presentation: Dictionary = {}
 var source_audit: Dictionary = {}
 
 
-## Performs the `destination_key` operation.
-## Returns the resolved string value.
-## Design: Keeps runtime map semantics separate from legacy source-audit metadata.
+## 执行 `destination_key` 对应的模块操作。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数遵循所在模块的职责边界。
 func destination_key() -> String:
 	if not destination_map_id.is_empty():
 		return String(destination_map_id)
 	return destination_legacy_code.to_lower()
 
 
-## Performs the `kind_name` operation.
-## Returns the resolved string value.
-## Design: Keeps runtime map semantics separate from legacy source-audit metadata.
+## 执行 `kind_name` 对应的模块操作。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数遵循所在模块的职责边界。
 func kind_name() -> String:
 	match kind:
 		Kind.MULTI_CHOICE:

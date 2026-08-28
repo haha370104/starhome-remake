@@ -129,7 +129,7 @@ var monster_world_controller: MonsterWorldController
 var offline_combat_bridge: OfflineCombatAuthorityBridge
 
 
-## Initializes node dependencies after the node enters the scene tree.
+## 节点进入场景树后初始化运行依赖。
 func _ready() -> void:
 	_apply_multiplayer_command_line(OS.get_cmdline_user_args())
 	character_catalog = JSON.parse_string(FileAccess.get_file_as_string(CHARACTER_CATALOG_PATH))
@@ -168,8 +168,9 @@ func _ready() -> void:
 	_sync_player_nodes()
 
 
-## 将 [param arguments] 中的联机启动参数覆盖到大厅导出配置。
-## Design: 编辑器默认保持离线调试；正式联机必须显式传入 `--online`，避免无服务器时影响美术预览。
+## 执行 `apply_multiplayer_command_line` 对应的模块操作。
+## [param arguments] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 设计：编辑器默认保持离线调试；正式联机必须显式传入 `--online`，避免无服务器时影响美术预览。
 func _apply_multiplayer_command_line(arguments: PackedStringArray) -> void:
 	for argument in arguments:
 		if argument == "--online":
@@ -186,15 +187,15 @@ func _apply_multiplayer_command_line(arguments: PackedStringArray) -> void:
 				multiplayer_server_port = requested_port
 
 
-## Advances frame-based presentation state.
-## [param delta] Elapsed time in seconds for this update.
+## 按渲染帧推进当前节点的表现状态。
+## [param delta] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _process(delta: float) -> void:
 	if local_player_controller:
 		local_player_controller.advance(delta)
 
 
-## Routes unhandled player input into gameplay interactions.
-## [param event] Input event to inspect.
+## 接收并分发当前节点负责的输入事件。
+## [param event] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _unhandled_input(event: InputEvent) -> void:
 	if not event is InputEventMouseButton or not event.pressed:
 		return
@@ -217,8 +218,9 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 
 
-## 在野外战斗外观下把 [param world_position] 转为一次数据驱动的本地开火表现。
-## Design: 当前切片立即反馈弹体与命中特效；伤害、能耗和真实命中仍只接受服务端事件。
+## 执行 `handle_world_combat_left_click` 对应的模块操作。
+## [param world_position] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 设计：当前切片立即反馈弹体与命中特效；伤害、能耗和真实命中仍只接受服务端事件。
 func _handle_world_combat_left_click(world_position: Vector2) -> void:
 	if combat_attack_controller == null:
 		hint_label.text = "武器表现尚未初始化"
@@ -271,9 +273,9 @@ func _handle_world_combat_left_click(world_position: Vector2) -> void:
 	_restore_locomotion_after_attack(was_moving)
 
 
-## Converts authoritative combat rejection [param code] into a concise player-facing message.
-## [param code] Stable combat-domain failure from the local debug or remote authority.
-## Returns localized HUD feedback without exposing transport internals.
+## 执行 `combat_rejection_text` 对应的模块操作。
+## [param code] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func _combat_rejection_text(code: StringName) -> String:
 	match code:
 		&"combat.target_out_of_range":
@@ -289,8 +291,8 @@ func _combat_rejection_text(code: StringName) -> String:
 
 
 ## 在短促炮口动作结束后恢复开火前的移动状态。
-## [param was_moving] 表示开火瞬间是否已有未完成路线；路线本身从不因开火而取消。
-## Design: 等待期间若路线自然结束则恢复站立；仍在移动时从当前路径段重算朝向。
+## [param was_moving] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 设计：等待期间若路线自然结束则恢复站立；仍在移动时从当前路径段重算朝向。
 func _restore_locomotion_after_attack(was_moving: bool) -> void:
 	await get_tree().create_timer(0.16).timeout
 	if player == null or not player.is_combat_actor_active():
@@ -302,8 +304,9 @@ func _restore_locomotion_after_attack(was_moving: bool) -> void:
 		_set_player_action("stand")
 
 
-## 处理世界坐标 [param world_position] 的右键请求；传送视图命中时改走其可行走 approach point。
-## Design: 图标锚点仅用于渲染/命中，绝不能替代地图定义中的接近点。
+## 执行 `handle_world_right_click` 对应的模块操作。
+## [param world_position] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 设计：图标锚点仅用于渲染/命中，绝不能替代地图定义中的接近点。
 func _handle_world_right_click(world_position: Vector2) -> void:
 	var transition_view: Node2D = active_world_controller.transition_view_at(world_position)
 	if transition_view != null:
@@ -312,9 +315,9 @@ func _handle_world_right_click(world_position: Vector2) -> void:
 		_move_to(world_position)
 
 
-## Performs the `move_to` operation.
-## [param world_position] 玩家真正要到达的可行走坐标。
-## [param transition_id] 非空时表示该目标来自传送视图，抵达后只提交此业务出口。
+## 执行 `move_to` 对应的模块操作。
+## [param world_position] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param transition_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _move_to(world_position: Vector2, transition_id: StringName = &"") -> void:
 	if _world_input_locked():
 		_stop_moving("地图切换中，暂时不能移动")
@@ -341,14 +344,14 @@ func _move_to(world_position: Vector2, transition_id: StringName = &"") -> void:
 	hud.hide_popup()
 
 
-## Performs the `begin_current_path_segment` operation.
+## 执行 `begin_current_path_segment` 对应的模块操作。
 func _begin_current_path_segment() -> void:
 	if local_player_controller:
 		local_player_controller.refresh_route_direction()
 
 
-## Performs the `stop_moving` operation.
-## [param message] Serialized input received at the subsystem boundary.
+## 执行 `stop_moving` 对应的模块操作。
+## [param message] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _stop_moving(message: String) -> void:
 	if local_player_controller:
 		local_player_controller.cancel_route()
@@ -357,21 +360,21 @@ func _stop_moving(message: String) -> void:
 		hint_label.text = message
 
 
-## Performs the `direction_index` operation.
-## [param motion] Input value consumed by the operation.
-## Returns the computed integer value.
+## 执行 `direction_index` 对应的模块操作。
+## [param motion] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func _direction_index(motion: Vector2) -> int:
 	return LocalPlayerControllerScript.direction_index(motion)
 
 
-## Updates the managed state with the supplied value.
-## [param action] Input value consumed by the operation.
+## 设置或恢复 `set_player_action` 对应的模块状态。
+## [param action] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _set_player_action(action: String) -> void:
 	if local_player_controller:
 		local_player_controller.set_character_action(StringName(action))
 
 
-## Performs the `sync_player_nodes` operation.
+## 执行 `sync_player_nodes` 对应的模块操作。
 func _sync_player_nodes() -> void:
 	if not player:
 		return
@@ -476,7 +479,8 @@ func _build_world() -> void:
 	local_player_controller.route_stopped.connect(_on_local_player_route_stopped)
 
 
-## 以已验证 [param initial_bundle] 创建固定 HUD 外壳；后续地图内容由活动世界控制器更新。
+## 执行 `build_hud` 对应的模块操作。
+## [param initial_bundle] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _build_hud(initial_bundle: Dictionary) -> void:
 	var initial_definition: MapDefinition = initial_bundle["definition"]
 	var initial_resources: Dictionary = initial_bundle["resources"]
@@ -495,7 +499,7 @@ func _build_hud(initial_bundle: Dictionary) -> void:
 
 
 ## 创建大厅客户端会话表现器，并以显式配置选择离线调试或真实网络入口。
-## Design: 大厅保留输入、导航与动画职责；表现器仅将预测/权威状态投影到角色节点。
+## 设计：大厅保留输入、导航与动画职责；表现器仅将预测/权威状态投影到角色节点。
 func _build_multiplayer_presentation() -> void:
 	map_preloader = ClientMapPreloaderScript.new()
 	map_preloader.name = "ClientMapPreloader"
@@ -540,8 +544,8 @@ func _build_multiplayer_presentation() -> void:
 
 
 ## 读取受控地图目录的 `definitions` 映射，格式错误时返回仅包含当前大厅的安全目录。
-## Returns 业务 map_id 到本地 `res://` 定义路径的映射。
-## Design: 网络消息不能提供资源路径；所有预载目标必须先存在于版本化目录。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：网络消息不能提供资源路径；所有预载目标必须先存在于版本化目录。
 func _load_map_directory_definitions() -> Dictionary:
 	var fallback := {StringName(map_definition.map_id): MAP_DEFINITION_PATH}
 	if not FileAccess.file_exists(MAP_DIRECTORY_PATH):
@@ -552,12 +556,14 @@ func _load_map_directory_definitions() -> Dictionary:
 	return parsed["definitions"].duplicate(true)
 
 
-## 将表现器发布的 [param state] 交给本地玩家唯一位置写入者处理。
+## 处理 `_on_multiplayer_local_character_state_applied` 对应的信号回调。
+## [param state] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _on_multiplayer_local_character_state_applied(state: Dictionary) -> void:
 	local_player_controller.apply_authoritative_presentation(state)
 
 
-## 在控制器采用 [param _position] 后同步摄像机和小地图投影。
+## 处理 `_on_local_player_position_changed` 对应的信号回调。
+## [param _position] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _on_local_player_position_changed(_position: Vector2) -> void:
 	_sync_player_nodes()
 	if offline_combat_bridge != null:
@@ -569,7 +575,8 @@ func _on_local_player_route_finished() -> void:
 	_try_begin_nearby_map_transition()
 
 
-## 将控制器停止路线的 [param message] 显示到大厅状态栏。
+## 处理 `_on_local_player_route_stopped` 对应的信号回调。
+## [param message] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _on_local_player_route_stopped(message: String) -> void:
 	selected_transition_id = &""
 	if hint_label:
@@ -589,7 +596,7 @@ func _on_active_world_will_replace() -> void:
 
 
 ## 在玩家停步后查找触发半径内最近的内部出口，并先预载其目标地图。
-## Design: 客户端只从受控本地定义取得目标内容；真正的地图和落点仍由服务端裁决。
+## 设计：客户端只从受控本地定义取得目标内容；真正的地图和落点仍由服务端裁决。
 func _try_begin_nearby_map_transition() -> void:
 	if not pending_map_transition.is_empty() or map_preloader == null:
 		return
@@ -626,7 +633,9 @@ func _try_begin_nearby_map_transition() -> void:
 		pending_map_transition.clear()
 
 
-## 接收 [param map_id] 的完整 [param bundle]；预载先于权威请求，或补偿重连后的目标地图。
+## 处理 `_on_map_preload_ready` 对应的信号回调。
+## [param map_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param bundle] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _on_map_preload_ready(map_id: StringName, bundle: Dictionary) -> void:
 	if (
 		not pending_authoritative_join.is_empty()
@@ -670,7 +679,9 @@ func _on_map_preload_ready(map_id: StringName, bundle: Dictionary) -> void:
 		pending_map_bundle.clear()
 
 
-## 在 [param map_id] 预载失败时保留旧场景，并显示 [param message]。
+## 处理 `_on_map_preload_failed` 对应的信号回调。
+## [param map_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param message] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _on_map_preload_failed(map_id: StringName, message: String) -> void:
 	if not pending_authoritative_join.is_empty():
 		pending_authoritative_join.clear()
@@ -681,8 +692,11 @@ func _on_map_preload_failed(map_id: StringName, message: String) -> void:
 	pending_map_bundle.clear()
 
 
-## 处理服务端确认的 [param map_id]、[param map_instance_id] 与 [param spawn_position]。
-## [param _definition_version] 已由会话层契约校验；资源版本由本地目录控制。
+## 处理 `_on_authoritative_map_joined` 对应的信号回调。
+## [param map_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param map_instance_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param spawn_position] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param _definition_version] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _on_authoritative_map_joined(
 	map_id: StringName,
 	map_instance_id: String,
@@ -711,11 +725,11 @@ func _on_authoritative_map_joined(
 		_handle_map_commit_failure("客户端缺少权威地图资源")
 
 
-## 暂存 [param map_id] 的权威加入信息，并在 [param map_instance_id] 资源提交前保持旧图脚点。
-## [param map_id] 服务端已经迁入的目标业务地图。
-## [param map_instance_id] 服务端分配的目标地图实例。
-## [param spawn_position] 服务端裁决的目标地图出生点。
-## Design: 立即终止旧路径；新出生点由 session 持有，但旧场景直到 bundle 提交前不呈现它。
+## 执行 `hold_old_map_for_authoritative_join` 对应的模块操作。
+## [param map_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param map_instance_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param spawn_position] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 设计：立即终止旧路径；新出生点由 session 持有，但旧场景直到 bundle 提交前不呈现它。
 func _hold_old_map_for_authoritative_join(
 	map_id: StringName,
 	map_instance_id: String,
@@ -733,9 +747,9 @@ func _hold_old_map_for_authoritative_join(
 
 
 ## 在权威切图拒绝时清空对应预载包；旧地图画面和导航保持不变。
-## [param _transition_id] 被拒绝的出口业务标识。
-## [param _code] 服务端稳定错误码；表现器已负责显示。
-## [param _message] 服务端可读原因；表现器已负责显示。
+## [param _transition_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param _code] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param _message] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _on_authoritative_map_change_failed(
 	_transition_id: StringName,
 	_code: StringName,
@@ -746,9 +760,12 @@ func _on_authoritative_map_change_failed(
 	pending_authoritative_join.clear()
 
 
-## 验证并原子提交 [param bundle]，把玩家放到 [param spawn_position] 并采用 [param map_instance_id]。
-## Returns 新导航、贴图和清单全部有效且提交成功时返回 `true`。
-## Design: 所有可失败加载均先暂存，当前场景直到验证完成才被清理。
+## 执行 `commit_map_bundle` 对应的模块操作。
+## [param bundle] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param spawn_position] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param map_instance_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：所有可失败加载均先暂存，当前场景直到验证完成才被清理。
 func _commit_map_bundle(
 	bundle: Dictionary,
 	spawn_position: Vector2,
@@ -766,8 +783,8 @@ func _commit_map_bundle(
 	return true
 
 
-## Rebuilds the editor-only combat authority for the currently committed map.
-## Design: Production online mode never creates this bridge and consumes only dedicated-server snapshots.
+## 配置并初始化 `configure_offline_combat_for_active_map` 对应的模块状态。
+## 设计：该函数遵循所在模块的职责边界。
 func _configure_offline_combat_for_active_map() -> void:
 	if offline_combat_bridge == null or map_definition == null or navigation == null:
 		return
@@ -781,8 +798,8 @@ func _configure_offline_combat_for_active_map() -> void:
 		push_error("Unable to configure offline combat authority: %s" % error_string(error))
 
 
-## Projects one validated authority [param snapshot] into monsters and local vehicle HUD state.
-## [param snapshot] Combat document emitted by either the dedicated server or offline authority adapter.
+## 处理 `_on_combat_snapshot_received` 对应的信号回调。
+## [param snapshot] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _on_combat_snapshot_received(snapshot: Dictionary) -> void:
 	monster_world_controller.apply_snapshot(snapshot)
 	var vehicle: Variant = snapshot.get("local_vehicle", {})
@@ -791,8 +808,8 @@ func _on_combat_snapshot_received(snapshot: Dictionary) -> void:
 		hud.set_vehicle_combat_state(vehicle)
 
 
-## Shows concise feedback for one resolved authority [param event].
-## [param event] Successful combat result containing damage and current target health.
+## 处理 `_on_combat_event_received` 对应的信号回调。
+## [param event] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _on_combat_event_received(event: Dictionary) -> void:
 	if StringName(event.get("event_type", "")) == &"energy_cannon_hit":
 		hint_label.text = "命中目标，造成%d点伤害（剩余%d）" % [
@@ -801,7 +818,8 @@ func _on_combat_event_received(event: Dictionary) -> void:
 		]
 
 
-## 报告不可恢复的客户端地图提交 [param message] 并停止网络会话，避免在错误地图上发输入。
+## 执行 `handle_map_commit_failure` 对应的模块操作。
+## [param message] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _handle_map_commit_failure(message: String) -> void:
 	map_commit_failure_locked = true
 	_stop_moving(message)
@@ -813,8 +831,8 @@ func _handle_map_commit_failure(message: String) -> void:
 
 
 ## 报告旧地图世界输入是否必须暂停，直到切图完成、失败回滚或会话被安全关闭。
-## Returns 预载、权威确认、会话切图或不可恢复提交失败期间返回 `true`。
-## Design: 闸门只冻结本地世界交互；服务端拒绝会清空 pending 并恢复旧地图输入。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：闸门只冻结本地世界交互；服务端拒绝会清空 pending 并恢复旧地图输入。
 func _world_input_locked() -> bool:
 	if map_commit_failure_locked:
 		return true
@@ -828,10 +846,10 @@ func _world_input_locked() -> bool:
 	return multiplayer_presenter.session.is_map_change_pending()
 
 
-## Resolves the best matching value for the supplied query.
-## [param world_position] World-space position used by the operation.
-## [param maximum_distance] Input value consumed by the operation.
-## Returns the result produced by the operation.
+## 执行 `nearest_npc` 对应的模块操作。
+## [param world_position] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param maximum_distance] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func _nearest_npc(world_position: Vector2, maximum_distance: float) -> Node2D:
 	var result: Node2D
 	var closest_distance := maximum_distance
@@ -843,8 +861,8 @@ func _nearest_npc(world_position: Vector2, maximum_distance: float) -> Node2D:
 	return result
 
 
-## Performs the `show_npc_popup` operation.
-## [param npc] Input value consumed by the operation.
+## 执行 `show_npc_popup` 对应的模块操作。
+## [param npc] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _show_npc_popup(npc: Node2D) -> void:
 	_stop_moving("正在与%s交互" % String(npc.get_interaction_data()["title"]))
 	if active_npc and active_npc != npc:
@@ -854,21 +872,21 @@ func _show_npc_popup(npc: Node2D) -> void:
 	hud.show_npc_popup(active_npc.get_interaction_data())
 
 
-## Handles the signal callback for `on_npc_popup_closed`.
+## 处理 `_on_npc_popup_closed` 对应的信号回调。
 func _on_npc_popup_closed() -> void:
 	if active_npc:
 		active_npc.set_interaction_active(false)
 		active_npc = null
 
 
-## Handles the signal callback for `on_npc_action_requested`.
-## [param action_id] Stable identifier of the target value.
+## 处理 `_on_npc_action_requested` 对应的信号回调。
+## [param action_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _on_npc_action_requested(action_id: String) -> void:
 	if active_npc:
 		hint_label.text = active_npc.handle_action(action_id)
 
 
-## Advances the managed state using the supplied update.
+## 推进并更新 `update_minimap_dot` 对应的模块状态。
 func _update_minimap_dot() -> void:
 	if hud and player:
 		hud.update_player_dot(player.position)
@@ -876,51 +894,51 @@ func _update_minimap_dot() -> void:
 
 # Diagnostic compatibility wrappers keep map tests focused on behavior while
 # the implementation lives in DiamondNavigation.
-## Converts coordinates between world and navigation-grid space.
-## [param world_position] World-space position used by the operation.
-## Returns the resolved coordinate.
+## 执行 `world_to_cell` 对应的模块操作。
+## [param world_position] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func _world_to_cell(world_position: Vector2) -> Vector2i:
 	return navigation.world_to_cell(world_position)
 
 
-## Converts coordinates between world and navigation-grid space.
-## [param cell] Navigation-grid cell used by the operation.
-## Returns the resolved coordinate.
+## 执行 `cell_to_world` 对应的模块操作。
+## [param cell] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func _cell_to_world(cell: Vector2i) -> Vector2:
 	return navigation.cell_to_world(cell)
 
 
-## Performs the `cell_id` operation.
-## [param cell] Navigation-grid cell used by the operation.
-## Returns the computed integer value.
+## 执行 `cell_id` 对应的模块操作。
+## [param cell] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func _cell_id(cell: Vector2i) -> int:
 	return navigation.cell_id(cell)
 
 
-## Reports whether the requested condition is satisfied.
-## [param cell] Navigation-grid cell used by the operation.
-## Returns Whether the operation completed or the queried condition is satisfied.
+## 执行 `raw_cell_walkable` 对应的模块操作。
+## [param cell] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func _raw_cell_walkable(cell: Vector2i) -> bool:
 	return navigation.raw_cell_walkable(cell)
 
 
-## Reports whether the requested condition is satisfied.
-## [param world_position] World-space position used by the operation.
-## Returns Whether the operation completed or the queried condition is satisfied.
+## 判断 `is_walkable` 对应的模块状态。
+## [param world_position] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func _is_walkable(world_position: Vector2) -> bool:
 	return navigation.is_walkable(world_position)
 
 
-## Performs the `simplify_path` operation.
-## [param raw_path] Resource or movement path consumed by the operation.
-## Returns the resolved movement path.
+## 执行 `simplify_path` 对应的模块操作。
+## [param raw_path] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func _simplify_path(raw_path: PackedVector2Array) -> PackedVector2Array:
 	return navigation.simplify_path(raw_path)
 
 
-## Performs the `segment_is_walkable` operation.
-## [param from_position] World-space position used by the operation.
-## [param to_position] World-space position used by the operation.
-## Returns Whether the operation completed or the queried condition is satisfied.
+## 执行 `segment_is_walkable` 对应的模块操作。
+## [param from_position] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param to_position] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func _segment_is_walkable(from_position: Vector2, to_position: Vector2) -> bool:
 	return navigation.segment_is_walkable(from_position, to_position)

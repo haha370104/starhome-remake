@@ -15,10 +15,10 @@ var available_power_output := 0.0
 var power_overloaded := false
 
 
-## Initializes mutable vehicle resources from an injected calculated [param assembly].
-## [param assembly] Validated result produced by `VehicleAssemblyCalculator`.
-## Returns this state on success or a validation failure without partial initialization.
-## Design: Both energy pools start full, while output power remains a non-consumable load budget.
+## 执行 `configure` 对应的模块操作。
+## [param assembly] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数保持领域规则确定，并避免依赖具体表现层或传输层。
 func configure(assembly: Dictionary) -> DomainResult:
 	var requested_health := int(assembly.get("max_health", 0))
 	var requested_reserve := float(assembly.get("reserve_energy_capacity", -1.0))
@@ -42,9 +42,9 @@ func configure(assembly: Dictionary) -> DomainResult:
 	return DomainResult.ok(self)
 
 
-## Consumes [param amount] exclusively from the working-energy pool.
-## [param amount] Server-defined ability cost to reserve before an attack is emitted.
-## Returns remaining working energy, or a failure that leaves both energy pools unchanged.
+## 执行 `consume_working_energy` 对应的模块操作。
+## [param amount] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func consume_working_energy(amount: float) -> DomainResult:
 	if not is_finite(amount) or amount < 0.0:
 		return DomainResult.failure(&"combat.invalid_energy_cost", "energy cost must be finite and non-negative")
@@ -54,11 +54,11 @@ func consume_working_energy(amount: float) -> DomainResult:
 	return DomainResult.ok(working_energy)
 
 
-## Restores working energy over [param elapsed_seconds] by draining reserve energy.
-## [param elapsed_seconds] Fixed-step server simulation time.
-## [param regen_factor] Reconstructed conversion per available output-power unit per second.
-## Returns the exact restored amount without changing the output-power budget.
-## Design: Output power controls the rate, reserve energy supplies the resource, and working energy receives it.
+## 执行 `regenerate_working_energy` 对应的模块操作。
+## [param elapsed_seconds] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param regen_factor] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数保持领域规则确定，并避免依赖具体表现层或传输层。
 func regenerate_working_energy(elapsed_seconds: float, regen_factor: float = 1.0) -> DomainResult:
 	if elapsed_seconds < 0.0 or regen_factor < 0.0:
 		return DomainResult.failure(&"combat.invalid_regeneration", "regeneration inputs cannot be negative")
@@ -74,9 +74,9 @@ func regenerate_working_energy(elapsed_seconds: float, regen_factor: float = 1.0
 	return DomainResult.ok(restored)
 
 
-## Applies authoritative [param amount] to vehicle combat health.
-## [param amount] Non-negative damage after server-side combat calculation.
-## Returns applied damage, remaining health and newly-destroyed state.
+## 执行 `apply_damage` 对应的模块操作。
+## [param amount] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func apply_damage(amount: int) -> DomainResult:
 	if amount < 0:
 		return DomainResult.failure(&"combat.invalid_damage", "damage cannot be negative")
@@ -90,17 +90,17 @@ func apply_damage(amount: int) -> DomainResult:
 	})
 
 
-## Reports whether the vehicle can supply [param activation_power] without consuming it.
-## [param activation_power] Weapon activation load checked against currently available output power.
-## Returns true when the assembly is not overloaded and the transient load fits the budget.
+## 执行 `supports_activation_power` 对应的模块操作。
+## [param activation_power] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func supports_activation_power(activation_power: float) -> bool:
 	return activation_power >= 0.0 \
 		and not power_overloaded \
 		and activation_power <= available_power_output + 0.000001
 
 
-## Serializes the three independent energy/power concepts and combat health.
-## Returns a dictionary suitable for server snapshots and deterministic assertions.
+## 序列化或保存 `to_dictionary` 对应的模块状态。
+## 返回该函数计算、查询或操作得到的结果。
 func to_dictionary() -> Dictionary:
 	return {
 		"max_health": max_health,

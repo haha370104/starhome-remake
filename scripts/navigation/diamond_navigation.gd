@@ -11,11 +11,11 @@ var grid_size := DEFAULT_GRID_SIZE
 var cell_size := DEFAULT_CELL_SIZE
 
 
-## Configures the instance from validated runtime inputs.
-## [param requested_grid_size] New value requested by the caller.
-## [param requested_cell_size] Navigation-grid cell used by the operation.
-## Returns Whether the operation completed or the queried condition is satisfied.
-## Design: Encapsulates the navigation strategy behind world/grid conversion and reachability operations.
+## 配置并初始化 `configure` 对应的模块状态。
+## [param requested_grid_size] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param requested_cell_size] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数遵循所在模块的职责边界。
 func configure(requested_grid_size: Vector2i, requested_cell_size := DEFAULT_CELL_SIZE) -> bool:
 	if requested_grid_size.x <= 0 or requested_grid_size.y <= 0:
 		push_error("Navigation grid dimensions must be positive")
@@ -28,12 +28,12 @@ func configure(requested_grid_size: Vector2i, requested_cell_size := DEFAULT_CEL
 	return true
 
 
-## Loads and validates the requested resource data.
-## [param path] Resource or movement path consumed by the operation.
-## [param requested_grid_size] New value requested by the caller.
-## [param requested_cell_size] Navigation-grid cell used by the operation.
-## Returns Whether the operation completed or the queried condition is satisfied.
-## Design: Encapsulates the navigation strategy behind world/grid conversion and reachability operations.
+## 加载并校验 `load_from` 对应的模块状态。
+## [param path] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param requested_grid_size] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param requested_cell_size] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数遵循所在模块的职责边界。
 func load_from(
 	path: String,
 	requested_grid_size := Vector2i.ZERO,
@@ -57,12 +57,12 @@ func load_from(
 	return true
 
 
-## Resolves the best matching value for the supplied query.
-## [param from_position] World-space position used by the operation.
-## [param to_position] World-space position used by the operation.
-## [param should_simplify] Whether line-of-sight simplification may remove graph waypoints.
-## Returns the resolved movement path.
-## Design: Dynamic-obstacle callers disable graph points and set [param should_simplify] false so simplification cannot cut back through those temporary obstacles.
+## 查询并返回 `find_path` 对应的模块状态。
+## [param from_position] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param to_position] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param should_simplify] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数遵循所在模块的职责边界。
 func find_path(
 	from_position: Vector2,
 	to_position: Vector2,
@@ -88,11 +88,11 @@ func find_path(
 	return simplify_path(raw_path) if should_simplify else raw_path
 
 
-## Resolves the best matching value for the supplied query.
-## [param from_position] World-space position used by the operation.
-## [param requested_position] World-space position used by the operation.
-## Returns the resolved coordinate.
-## Design: Encapsulates the navigation strategy behind world/grid conversion and reachability operations.
+## 执行 `closest_reachable_position` 对应的模块操作。
+## [param from_position] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param requested_position] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数遵循所在模块的职责边界。
 func closest_reachable_position(from_position: Vector2, requested_position: Vector2) -> Vector2:
 	var from_id := cell_id(world_to_cell(from_position))
 	if not graph.has_point(from_id):
@@ -124,10 +124,10 @@ func closest_reachable_position(from_position: Vector2, requested_position: Vect
 	return best_position
 
 
-## Resolves the best matching value for the supplied query.
-## [param requested_position] World-space position used by the operation.
-## Returns the resolved coordinate.
-## Design: Encapsulates the navigation strategy behind world/grid conversion and reachability operations.
+## 执行 `closest_walkable_position` 对应的模块操作。
+## [param requested_position] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数遵循所在模块的职责边界。
 func closest_walkable_position(requested_position: Vector2) -> Vector2:
 	var closest_id := graph.get_closest_point(requested_position)
 	if closest_id < 0:
@@ -135,10 +135,10 @@ func closest_walkable_position(requested_position: Vector2) -> Vector2:
 	return graph.get_point_position(closest_id)
 
 
-## Performs the `simplify_path` operation.
-## [param raw_path] Resource or movement path consumed by the operation.
-## Returns the resolved movement path.
-## Design: Encapsulates the navigation strategy behind world/grid conversion and reachability operations.
+## 执行 `simplify_path` 对应的模块操作。
+## [param raw_path] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数遵循所在模块的职责边界。
 func simplify_path(raw_path: PackedVector2Array) -> PackedVector2Array:
 	if raw_path.size() <= 2:
 		return raw_path
@@ -155,11 +155,11 @@ func simplify_path(raw_path: PackedVector2Array) -> PackedVector2Array:
 	return simplified
 
 
-## Performs the `segment_is_walkable` operation.
-## [param from_position] World-space position used by the operation.
-## [param to_position] World-space position used by the operation.
-## Returns Whether the operation completed or the queried condition is satisfied.
-## Design: Encapsulates the navigation strategy behind world/grid conversion and reachability operations.
+## 执行 `segment_is_walkable` 对应的模块操作。
+## [param from_position] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param to_position] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数遵循所在模块的职责边界。
 func segment_is_walkable(from_position: Vector2, to_position: Vector2) -> bool:
 	var distance := from_position.distance_to(to_position)
 	var sample_count := maxi(1, ceili(distance / LINE_OF_SIGHT_SAMPLE_STEP))
@@ -170,10 +170,10 @@ func segment_is_walkable(from_position: Vector2, to_position: Vector2) -> bool:
 	return true
 
 
-## Converts coordinates between world and navigation-grid space.
-## [param world_position] World-space position used by the operation.
-## Returns the resolved coordinate.
-## Design: Encapsulates the navigation strategy behind world/grid conversion and reachability operations.
+## 执行 `world_to_cell` 对应的模块操作。
+## [param world_position] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数遵循所在模块的职责边界。
 func world_to_cell(world_position: Vector2) -> Vector2i:
 	# Exact coordinate transform used by nEngineBkTile (enginebktile.cpp).
 	var projected_y := (
@@ -187,10 +187,10 @@ func world_to_cell(world_position: Vector2) -> Vector2i:
 	)
 
 
-## Converts coordinates between world and navigation-grid space.
-## [param cell] Navigation-grid cell used by the operation.
-## Returns the resolved coordinate.
-## Design: Encapsulates the navigation strategy behind world/grid conversion and reachability operations.
+## 执行 `cell_to_world` 对应的模块操作。
+## [param cell] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数遵循所在模块的职责边界。
 func cell_to_world(cell: Vector2i) -> Vector2:
 	return Vector2(
 		cell.x * cell_size.x + (cell_size.x * 0.5 if cell.y % 2 else 0.0),
@@ -198,18 +198,18 @@ func cell_to_world(cell: Vector2i) -> Vector2:
 	)
 
 
-## Performs the `cell_id` operation.
-## [param cell] Navigation-grid cell used by the operation.
-## Returns the computed integer value.
-## Design: Encapsulates the navigation strategy behind world/grid conversion and reachability operations.
+## 执行 `cell_id` 对应的模块操作。
+## [param cell] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数遵循所在模块的职责边界。
 func cell_id(cell: Vector2i) -> int:
 	return cell.y * grid_size.x + cell.x
 
 
-## Reports whether the requested condition is satisfied.
-## [param cell] Navigation-grid cell used by the operation.
-## Returns Whether the operation completed or the queried condition is satisfied.
-## Design: Encapsulates the navigation strategy behind world/grid conversion and reachability operations.
+## 执行 `raw_cell_walkable` 对应的模块操作。
+## [param cell] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数遵循所在模块的职责边界。
 func raw_cell_walkable(cell: Vector2i) -> bool:
 	if cell.x < 0 or cell.x >= grid_size.x or cell.y < 0 or cell.y >= grid_size.y:
 		return false
@@ -217,16 +217,16 @@ func raw_cell_walkable(cell: Vector2i) -> bool:
 	return index < data.size() and data[index] != 0
 
 
-## Reports whether the requested condition is satisfied.
-## [param world_position] World-space position used by the operation.
-## Returns Whether the operation completed or the queried condition is satisfied.
-## Design: Encapsulates the navigation strategy behind world/grid conversion and reachability operations.
+## 判断 `is_walkable` 对应的模块状态。
+## [param world_position] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数遵循所在模块的职责边界。
 func is_walkable(world_position: Vector2) -> bool:
 	return raw_cell_walkable(world_to_cell(world_position))
 
 
-## Builds the requested runtime object from configuration data.
-## Design: Encapsulates the navigation strategy behind world/grid conversion and reachability operations.
+## 创建 `build_graph` 对应的模块状态。
+## 设计：该函数遵循所在模块的职责边界。
 func _build_graph() -> void:
 	graph = AStar2D.new()
 	for y in range(grid_size.y):
@@ -273,10 +273,10 @@ func _build_graph() -> void:
 				_connect(cell, south)
 
 
-## Performs the `connect` operation.
-## [param from_cell] Navigation-grid cell used by the operation.
-## [param to_cell] Navigation-grid cell used by the operation.
-## Design: Encapsulates the navigation strategy behind world/grid conversion and reachability operations.
+## 执行 `connect` 对应的模块操作。
+## [param from_cell] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param to_cell] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 设计：该函数遵循所在模块的职责边界。
 func _connect(from_cell: Vector2i, to_cell: Vector2i) -> void:
 	var from_id := cell_id(from_cell)
 	var to_id := cell_id(to_cell)

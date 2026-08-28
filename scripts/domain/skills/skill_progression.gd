@@ -5,12 +5,12 @@ const DomainResult = preload("res://scripts/core/domain_result.gd")
 const SkillState = preload("res://scripts/domain/skills/skill_state.gd")
 
 
-## Retrieves the requested value from the managed state.
-## [param skill_id] Stable identifier of the target value.
-## [param current_level] Input value consumed by the operation.
-## [param config] Configuration data that controls the operation.
-## Returns A domain result containing either the computed value or a validation error.
-## Design: Keeps deterministic game rules independent from scene and UI state.
+## 查询并返回 `get_need_points` 对应的模块状态。
+## [param skill_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param current_level] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param config] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数保持领域规则确定，并避免依赖具体表现层或传输层。
 static func get_need_points(skill_id: StringName, current_level: int, config: Dictionary) -> DomainResult:
 	var validation := _validate_level_and_config(skill_id, current_level, config)
 	if not validation.is_ok:
@@ -28,12 +28,12 @@ static func get_need_points(skill_id: StringName, current_level: int, config: Di
 	return DomainResult.ok(need_points)
 
 
-## Advances the managed state using the supplied update.
-## [param state] Input value consumed by the operation.
-## [param grant] Input value consumed by the operation.
-## [param config] Configuration data that controls the operation.
-## Returns A domain result containing either the computed value or a validation error.
-## Design: Keeps deterministic game rules independent from scene and UI state.
+## 设置或恢复 `apply_exp` 对应的模块状态。
+## [param state] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param grant] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param config] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数保持领域规则确定，并避免依赖具体表现层或传输层。
 static func apply_exp(state: SkillState, grant: float, config: Dictionary) -> DomainResult:
 	if state == null:
 		return DomainResult.failure(&"missing_skill_state", "Skill state is required")
@@ -74,12 +74,12 @@ static func apply_exp(state: SkillState, grant: float, config: Dictionary) -> Do
 	})
 
 
-## Validates the supplied state against the domain invariants.
-## [param skill_id] Stable identifier of the target value.
-## [param current_level] Input value consumed by the operation.
-## [param config] Configuration data that controls the operation.
-## Returns A domain result containing either the computed value or a validation error.
-## Design: Keeps deterministic game rules independent from scene and UI state.
+## 校验 `validate_level_and_config` 对应的模块状态。
+## [param skill_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param current_level] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param config] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数保持领域规则确定，并避免依赖具体表现层或传输层。
 static func _validate_level_and_config(
 	skill_id: StringName,
 	current_level: int,
@@ -95,12 +95,12 @@ static func _validate_level_and_config(
 	return DomainResult.ok()
 
 
-## Performs the `coefficient_for` operation.
-## [param skill_id] Stable identifier of the target value.
-## [param level] Sequence, tick, or index value used by the operation.
-## [param config] Configuration data that controls the operation.
-## Returns A domain result containing either the computed value or a validation error.
-## Design: Keeps deterministic game rules independent from scene and UI state.
+## 执行 `coefficient_for` 对应的模块操作。
+## [param skill_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param level] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param config] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数保持领域规则确定，并避免依赖具体表现层或传输层。
 static func _coefficient_for(skill_id: StringName, level: int, config: Dictionary) -> DomainResult:
 	var coefficient_bands: Dictionary = config["coefficient_bands"]
 	var bands: Variant = coefficient_bands[String(skill_id)]

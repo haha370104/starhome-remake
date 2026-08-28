@@ -6,18 +6,18 @@ var _by_legacy_code: Dictionary = {}
 var errors: PackedStringArray = []
 
 
-## Resets the managed state to its initial value.
-## Design: Keeps runtime map semantics separate from legacy source-audit metadata.
+## 执行 `clear` 对应的模块操作。
+## 设计：该函数遵循所在模块的职责边界。
 func clear() -> void:
 	_by_id.clear()
 	_by_legacy_code.clear()
 	errors.clear()
 
 
-## Mutates the managed collection for the requested value.
-## [param definition] Configuration data that controls the operation.
-## Returns Whether the operation completed or the queried condition is satisfied.
-## Design: Keeps runtime map semantics separate from legacy source-audit metadata.
+## 执行 `add_map` 对应的模块操作。
+## [param definition] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数遵循所在模块的职责边界。
 func add_map(definition: MapDefinition) -> bool:
 	var succeeded := true
 	var id_key := String(definition.map_id)
@@ -37,10 +37,10 @@ func add_map(definition: MapDefinition) -> bool:
 	return true
 
 
-## Mutates the managed collection for the requested value.
-## [param paths] Resource or movement path consumed by the operation.
-## Returns Whether the operation completed or the queried condition is satisfied.
-## Design: Keeps runtime map semantics separate from legacy source-audit metadata.
+## 执行 `add_files` 对应的模块操作。
+## [param paths] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数遵循所在模块的职责边界。
 func add_files(paths: PackedStringArray) -> bool:
 	var LoaderScript := load("res://scripts/maps/map_definition_loader.gd")
 	var succeeded := true
@@ -56,35 +56,35 @@ func add_files(paths: PackedStringArray) -> bool:
 	return succeeded
 
 
-## Retrieves the requested value from the managed state.
-## [param map_id] Stable identifier of the target value.
-## Returns the resolved map model, or null when no match exists.
-## Design: Keeps runtime map semantics separate from legacy source-audit metadata.
+## 执行 `map_by_id` 对应的模块操作。
+## [param map_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数遵循所在模块的职责边界。
 func map_by_id(map_id: StringName) -> MapDefinition:
 	return _by_id.get(String(map_id))
 
 
-## Performs the `map_by_legacy_code` operation.
-## [param code] Stable identifier of the target value.
-## Returns the resolved map model, or null when no match exists.
-## Design: Keeps runtime map semantics separate from legacy source-audit metadata.
+## 执行 `map_by_legacy_code` 对应的模块操作。
+## [param code] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数遵循所在模块的职责边界。
 func map_by_legacy_code(code: String) -> MapDefinition:
 	return _by_legacy_code.get(code.strip_edges().to_lower())
 
 
-## Retrieves the requested value from the managed state.
-## [param map_id] Stable identifier of the target value.
-## Returns Structured result data produced by the operation.
-## Design: Keeps runtime map semantics separate from legacy source-audit metadata.
+## 执行 `source_audit_for_map` 对应的模块操作。
+## [param map_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数遵循所在模块的职责边界。
 func source_audit_for_map(map_id: StringName) -> Dictionary:
 	var definition := map_by_id(map_id)
 	return definition.source_audit.duplicate(true) if definition != null else {}
 
 
-## Resolves the best matching value for the supplied query.
-## [param transition] Input value consumed by the operation.
-## Returns the resolved map model, or null when no match exists.
-## Design: Keeps runtime map semantics separate from legacy source-audit metadata.
+## 查询并返回 `resolve_target` 对应的模块状态。
+## [param transition] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数遵循所在模块的职责边界。
 func resolve_target(transition: MapTransition) -> MapDefinition:
 	if not transition.destination_map_id.is_empty():
 		var by_id := map_by_id(transition.destination_map_id)
@@ -95,9 +95,9 @@ func resolve_target(transition: MapTransition) -> MapDefinition:
 	return null
 
 
-## Validates the supplied state against the domain invariants.
-## Returns Whether the operation completed or the queried condition is satisfied.
-## Design: Keeps runtime map semantics separate from legacy source-audit metadata.
+## 校验 `validate_links` 对应的模块状态。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数遵循所在模块的职责边界。
 func validate_links() -> bool:
 	var succeeded := true
 	for definition: MapDefinition in _by_id.values():
@@ -117,9 +117,9 @@ func validate_links() -> bool:
 	return succeeded
 
 
-## Performs the `all_maps` operation.
-## Returns the resulting collection.
-## Design: Keeps runtime map semantics separate from legacy source-audit metadata.
+## 执行 `all_maps` 对应的模块操作。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数遵循所在模块的职责边界。
 func all_maps() -> Array[MapDefinition]:
 	var result: Array[MapDefinition] = []
 	for definition: MapDefinition in _by_id.values():
@@ -130,9 +130,9 @@ func all_maps() -> Array[MapDefinition]:
 	return result
 
 
-## Performs the `unresolved_external_transitions` operation.
-## Returns the resulting collection.
-## Design: Keeps runtime map semantics separate from legacy source-audit metadata.
+## 执行 `unresolved_external_transitions` 对应的模块操作。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数遵循所在模块的职责边界。
 func unresolved_external_transitions() -> Array[Dictionary]:
 	var result: Array[Dictionary] = []
 	for definition: MapDefinition in _by_id.values():
@@ -147,16 +147,16 @@ func unresolved_external_transitions() -> Array[Dictionary]:
 	return result
 
 
-## Performs the `size` operation.
-## Returns the computed integer value.
-## Design: Keeps runtime map semantics separate from legacy source-audit metadata.
+## 执行 `size` 对应的模块操作。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数遵循所在模块的职责边界。
 func size() -> int:
 	return _by_id.size()
 
 
-## Mutates the managed collection for the requested value.
-## [param kind] Stable identifier of the target value.
-## [param message] Serialized input received at the subsystem boundary.
-## Design: Keeps runtime map semantics separate from legacy source-audit metadata.
+## 执行 `add_error` 对应的模块操作。
+## [param kind] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param message] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 设计：该函数遵循所在模块的职责边界。
 func _add_error(kind: String, message: String) -> void:
 	errors.append("%s: %s" % [kind, message])

@@ -7,11 +7,11 @@ var error_message: String
 var value: Variant
 
 
-## Initializes a new instance with its required state.
-## [param result_is_ok] Input value consumed by the operation.
-## [param result_value] Input value consumed by the operation.
-## [param result_error_code] Diagnostic value associated with the operation.
-## [param result_error_message] Diagnostic value associated with the operation.
+## 使用调用方参数初始化当前实例。
+## [param result_is_ok] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param result_value] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param result_error_code] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param result_error_message] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _init(
 	result_is_ok: bool,
 	result_value: Variant = null,
@@ -24,16 +24,14 @@ func _init(
 	error_message = result_error_message
 
 
-## Performs the `ok` operation.
-## [param result_value] Input value consumed by the operation.
-## Returns the result produced by the operation.
+## 执行 `ok` 对应的模块操作。
+## [param result_value] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 static func ok(result_value: Variant = null):
 	return load("res://scripts/core/domain_result.gd").new(true, result_value)
 
 
-## Performs the `failure` operation.
-## [param code] Stable identifier of the target value.
-## [param message] Serialized input received at the subsystem boundary.
-## Returns the result produced by the operation.
+## 执行 `failure` 对应的模块操作。
+## [param code] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param message] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 static func failure(code: StringName, message: String):
 	return load("res://scripts/core/domain_result.gd").new(false, null, code, message)

@@ -14,10 +14,10 @@ var death_generation := 0
 var last_killer_id := ""
 
 
-## Configures this lifecycle from an injected monster [param definition].
-## [param definition] Server definition containing identity, position, combat health and respawn seconds.
-## [param simulation_hz] Fixed authoritative tick frequency used to derive the respawn deadline.
-## Returns this lifecycle on success, otherwise a validation failure without a live monster.
+## 执行 `configure` 对应的模块操作。
+## [param definition] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param simulation_hz] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func configure(definition: Dictionary, simulation_hz: int) -> DomainResult:
 	var requested_id := String(definition.get("monster_id", ""))
 	var requested_map_instance_id := String(definition.get("map_instance_id", ""))
@@ -42,12 +42,12 @@ func configure(definition: Dictionary, simulation_hz: int) -> DomainResult:
 	return DomainResult.ok(self)
 
 
-## Applies [param amount] from [param attacker_id] at [param current_tick].
-## [param amount] Server-calculated non-negative damage.
-## [param attacker_id] Authenticated authoritative entity receiving kill attribution.
-## [param current_tick] Fixed simulation tick used to schedule respawn.
-## Returns damage/death facts, or rejects attacks against an already-dead generation.
-## Design: Only the alive-to-dead edge increments generation and schedules one respawn.
+## 执行 `apply_damage` 对应的模块操作。
+## [param amount] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param attacker_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param current_tick] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数保持领域规则确定，并避免依赖具体表现层或传输层。
 func apply_damage(amount: int, attacker_id: String, current_tick: int) -> DomainResult:
 	if health <= 0:
 		return DomainResult.failure(&"combat.target_already_dead", "monster is already dead")
@@ -69,9 +69,9 @@ func apply_damage(amount: int, attacker_id: String, current_tick: int) -> Domain
 	})
 
 
-## Advances this lifecycle to [param current_tick] and performs a due respawn once.
-## [param current_tick] Monotonic authoritative tick.
-## Returns whether a respawn occurred and the current generation/health.
+## 执行 `advance_to_tick` 对应的模块操作。
+## [param current_tick] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func advance_to_tick(current_tick: int) -> DomainResult:
 	if current_tick < 0:
 		return DomainResult.failure(&"combat.invalid_tick", "tick cannot be negative")
@@ -88,14 +88,14 @@ func advance_to_tick(current_tick: int) -> DomainResult:
 	})
 
 
-## Reports whether the current monster generation is alive.
-## Returns true while combat health remains above zero.
+## 判断 `is_alive` 对应的模块状态。
+## 返回该函数计算、查询或操作得到的结果。
 func is_alive() -> bool:
 	return health > 0
 
 
-## Serializes lifecycle state for server module inspection.
-## Returns a dictionary containing health, generation and respawn deadline.
+## 序列化或保存 `to_dictionary` 对应的模块状态。
+## 返回该函数计算、查询或操作得到的结果。
 func to_dictionary() -> Dictionary:
 	return {
 		"monster_id": monster_id,

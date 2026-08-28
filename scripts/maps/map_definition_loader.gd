@@ -8,10 +8,10 @@ const MapSpawnPointScript := preload("res://scripts/maps/map_spawn_point.gd")
 var errors: PackedStringArray = []
 
 
-## Loads and validates the requested resource data.
-## [param path] Resource or movement path consumed by the operation.
-## Returns the resolved map model, or null when no match exists.
-## Design: Keeps runtime map semantics separate from legacy source-audit metadata.
+## 加载并校验 `load_file` 对应的模块状态。
+## [param path] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数遵循所在模块的职责边界。
 func load_file(path: String) -> MapDefinition:
 	errors.clear()
 	if not FileAccess.file_exists(path):
@@ -28,10 +28,10 @@ func load_file(path: String) -> MapDefinition:
 	return load_dictionary(parsed)
 
 
-## Loads and validates the requested resource data.
-## [param raw] Serialized input received at the subsystem boundary.
-## Returns the resolved map model, or null when no match exists.
-## Design: Keeps runtime map semantics separate from legacy source-audit metadata.
+## 加载并校验 `load_dictionary` 对应的模块状态。
+## [param raw] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数遵循所在模块的职责边界。
 func load_dictionary(raw: Dictionary) -> MapDefinition:
 	errors.clear()
 	var definition: MapDefinition = MapDefinitionScript.new()
@@ -151,8 +151,10 @@ func load_dictionary(raw: Dictionary) -> MapDefinition:
 	return definition if errors.is_empty() else null
 
 
-## 读取并校验 [param raw] 中的默认出生点及普通传送入口映射，写入 [param definition]。
-## Design: 出生点是新服务端配置；evidence_level 明确区分原客户端证据与重建默认。
+## 执行 `load_spawn_points` 对应的模块操作。
+## [param raw] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param definition] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 设计：出生点是新服务端配置；evidence_level 明确区分原客户端证据与重建默认。
 func _load_spawn_points(raw: Variant, definition: MapDefinition) -> void:
 	if not raw is Dictionary:
 		_add_error("spawn_points", "spawn_points 必须是 object")
@@ -217,8 +219,10 @@ func _load_spawn_points(raw: Variant, definition: MapDefinition) -> void:
 		_add_error("spawn_points.default_id", "默认出生点未出现在 points 中")
 
 
-## 读取 [param raw] 中声明的动态导航覆盖元数据并写入 [param definition]。
-## Design: 本阶段只建立接口，空数组表示目标地图没有已确认的 SetGoFlag 动态规则。
+## 执行 `load_navigation_overrides` 对应的模块操作。
+## [param raw] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param definition] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 设计：本阶段只建立接口，空数组表示目标地图没有已确认的 SetGoFlag 动态规则。
 func _load_navigation_overrides(raw: Variant, definition: MapDefinition) -> void:
 	if not raw is Array:
 		_add_error("navigation_overrides", "navigation_overrides 必须是 array")
@@ -240,8 +244,10 @@ func _load_navigation_overrides(raw: Variant, definition: MapDefinition) -> void
 			definition.navigation_overrides.append(override)
 
 
-## 读取并校验 [param raw] 的玩家地图外观策略，写入 [param definition]。
-## Design: 地图只声明业务 actor；旧 ALE 路径仍被隔离在独立 source audit。
+## 执行 `load_player_presentation` 对应的模块操作。
+## [param raw] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param definition] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 设计：地图只声明业务 actor；旧 ALE 路径仍被隔离在独立 source audit。
 func _load_player_presentation(raw: Variant, definition: MapDefinition) -> void:
 	if not raw is Dictionary:
 		_add_error("player_presentation", "玩家外观策略必须是 object")
@@ -277,12 +283,12 @@ func _load_player_presentation(raw: Variant, definition: MapDefinition) -> void:
 	definition.player_presentation = presentation
 
 
-## Loads and validates the requested resource data.
-## [param raw] Serialized input received at the subsystem boundary.
-## [param index] Sequence, tick, or index value used by the operation.
-## [param world_size] Input value consumed by the operation.
-## Returns the resolved map model, or null when no match exists.
-## Design: Keeps runtime map semantics separate from legacy source-audit metadata.
+## 加载并校验 `load_transition` 对应的模块状态。
+## [param raw] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param index] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param world_size] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数遵循所在模块的职责边界。
 func _load_transition(raw: Dictionary, index: int, world_size: Vector2) -> MapTransition:
 	var prefix := "transitions[%d]" % index
 	var transition: MapTransition = MapTransitionScript.new()
@@ -344,8 +350,10 @@ func _load_transition(raw: Dictionary, index: int, world_size: Vector2) -> MapTr
 	return transition
 
 
-## 校验 [param presentation] 的业务动画资源、锚点与播放元数据。
-## [param prefix] 用于生成精确字段错误；[param world_size] 限制锚点在地图范围内。
+## 执行 `validate_transition_presentation` 对应的模块操作。
+## [param presentation] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param prefix] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param world_size] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _validate_transition_presentation(
 	presentation: Dictionary,
 	prefix: String,
@@ -379,12 +387,12 @@ func _validate_transition_presentation(
 		_add_error(prefix + ".interaction_space", "interaction_space 必须为 asset_local_fixed_bounds")
 
 
-## Performs the `read_map_point` operation.
-## [param value] New value requested by the caller.
-## [param field] Input value consumed by the operation.
-## [param world_size] Input value consumed by the operation.
-## Returns the resolved coordinate.
-## Design: Keeps runtime map semantics separate from legacy source-audit metadata.
+## 执行 `read_map_point` 对应的模块操作。
+## [param value] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param field] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param world_size] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数遵循所在模块的职责边界。
 func _read_map_point(value: Variant, field: String, world_size: Vector2) -> Vector2:
 	var point := _read_vector2(value, field, false)
 	if point.x < 0.0 or point.y < 0.0 or point.x > world_size.x or point.y > world_size.y:
@@ -392,12 +400,12 @@ func _read_map_point(value: Variant, field: String, world_size: Vector2) -> Vect
 	return point
 
 
-## Performs the `read_vector2` operation.
-## [param value] New value requested by the caller.
-## [param field] Input value consumed by the operation.
-## [param positive] Whether the corresponding behavior is enabled.
-## Returns the resolved coordinate.
-## Design: Keeps runtime map semantics separate from legacy source-audit metadata.
+## 执行 `read_vector2` 对应的模块操作。
+## [param value] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param field] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param positive] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数遵循所在模块的职责边界。
 func _read_vector2(value: Variant, field: String, positive: bool) -> Vector2:
 	if not value is Array or value.size() != 2:
 		_add_error(field, "必须是 [x, y]")
@@ -413,12 +421,12 @@ func _read_vector2(value: Variant, field: String, positive: bool) -> Vector2:
 	return result
 
 
-## Performs the `read_vector2i` operation.
-## [param value] New value requested by the caller.
-## [param field] Input value consumed by the operation.
-## [param positive] Whether the corresponding behavior is enabled.
-## Returns the resolved coordinate.
-## Design: Keeps runtime map semantics separate from legacy source-audit metadata.
+## 执行 `read_vector2i` 对应的模块操作。
+## [param value] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param field] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param positive] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数遵循所在模块的职责边界。
 func _read_vector2i(value: Variant, field: String, positive: bool) -> Vector2i:
 	var vector := _read_vector2(value, field, positive)
 	if vector.x != floorf(vector.x) or vector.y != floorf(vector.y):
@@ -426,10 +434,10 @@ func _read_vector2i(value: Variant, field: String, positive: bool) -> Vector2i:
 	return Vector2i(roundi(vector.x), roundi(vector.y))
 
 
-## Validates the supplied state against the domain invariants.
-## [param audit] Input value consumed by the operation.
-## [param field] Input value consumed by the operation.
-## Design: Keeps runtime map semantics separate from legacy source-audit metadata.
+## 校验 `validate_source_audit` 对应的模块状态。
+## [param audit] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param field] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 设计：该函数遵循所在模块的职责边界。
 func _validate_source_audit(audit: Variant, field: String) -> void:
 	if not audit is Dictionary:
 		_add_error(field, "source_audit 必须是 object")
@@ -439,10 +447,10 @@ func _validate_source_audit(audit: Variant, field: String) -> void:
 			_add_error(field + "." + required_key, "溯源字段不能为空")
 
 
-## Reports whether the requested condition is satisfied.
-## [param value] New value requested by the caller.
-## Returns Whether the operation completed or the queried condition is satisfied.
-## Design: Keeps runtime map semantics separate from legacy source-audit metadata.
+## 判断 `is_business_id` 对应的模块状态。
+## [param value] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数遵循所在模块的职责边界。
 func _is_business_id(value: String) -> bool:
 	if value.is_empty() or value != value.to_lower():
 		return false
@@ -452,10 +460,10 @@ func _is_business_id(value: String) -> bool:
 	return true
 
 
-## Reports whether the requested condition is satisfied.
-## [param value] New value requested by the caller.
-## Returns Whether the operation completed or the queried condition is satisfied.
-## Design: Keeps runtime map semantics separate from legacy source-audit metadata.
+## 判断 `is_business_asset_id` 对应的模块状态。
+## [param value] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数遵循所在模块的职责边界。
 func _is_business_asset_id(value: String) -> bool:
 	if value.is_empty() or value != value.to_lower():
 		return false
@@ -473,10 +481,10 @@ func _is_business_asset_id(value: String) -> bool:
 	return true
 
 
-## Performs the `looks_like_timestamped_source_name` operation.
-## [param segment] Input value consumed by the operation.
-## Returns Whether the operation completed or the queried condition is satisfied.
-## Design: Keeps runtime map semantics separate from legacy source-audit metadata.
+## 执行 `looks_like_timestamped_source_name` 对应的模块操作。
+## [param segment] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数遵循所在模块的职责边界。
 func _looks_like_timestamped_source_name(segment: String) -> bool:
 	# Original ALE exports often use YYYY_MM_DD... names. Those belong only in
 	# source_audit and must never leak into a runtime asset ID.
@@ -490,9 +498,9 @@ func _looks_like_timestamped_source_name(segment: String) -> bool:
 	)
 
 
-## Mutates the managed collection for the requested value.
-## [param field] Input value consumed by the operation.
-## [param message] Serialized input received at the subsystem boundary.
-## Design: Keeps runtime map semantics separate from legacy source-audit metadata.
+## 执行 `add_error` 对应的模块操作。
+## [param field] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param message] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 设计：该函数遵循所在模块的职责边界。
 func _add_error(field: String, message: String) -> void:
 	errors.append("%s: %s" % [field, message])

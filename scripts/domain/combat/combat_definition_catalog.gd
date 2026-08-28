@@ -15,16 +15,16 @@ var _monsters_by_id: Dictionary = {}
 var _d04_encounter: Dictionary = {}
 
 
-## Loads the committed stage-three catalog through its controlled root document.
-## Returns an immutable-query catalog or a stable file/schema validation failure.
+## 加载并校验 `load_default` 对应的模块状态。
+## 返回该函数计算、查询或操作得到的结果。
 static func load_default() -> DomainResult:
 	return load_file(DEFAULT_CATALOG_PATH)
 
 
-## Loads one controlled catalog at [param catalog_path] and all three declared documents.
-## [param catalog_path] Catalog path restricted to the stage-three gameplay data directory.
-## Returns an immutable-query catalog or a stable validation failure.
-## Design: Referenced paths cannot escape the controlled directory or silently omit a required document.
+## 执行 `load_file` 对应的模块操作。
+## [param catalog_path] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数保持领域规则确定，并避免依赖具体表现层或传输层。
 static func load_file(catalog_path: String) -> DomainResult:
 	if not _is_controlled_json_path(catalog_path):
 		return DomainResult.failure(&"combat.catalog_path_not_allowed", "catalog path is outside the controlled stage-three directory")
@@ -54,11 +54,11 @@ static func load_file(catalog_path: String) -> DomainResult:
 	return DomainResult.ok(catalog) if configured.is_ok else configured
 
 
-## Builds the formal starter vehicle assembly for [param driving_skill_level].
-## [param driving_skill_level] Server-owned skill value used by propulsion scaling.
-## [param movement_config] Explicit reconstructed movement formula configuration.
-## Returns calculated combat stats plus separately preserved equipment-hardiness facts.
-## Design: Only chassis `max_health` becomes combat health; equipment hardiness never contributes.
+## 执行 `starter_vehicle_assembly` 对应的模块操作。
+## [param driving_skill_level] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param movement_config] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数保持领域规则确定，并避免依赖具体表现层或传输层。
 func starter_vehicle_assembly(
 	driving_skill_level: int,
 	movement_config: Dictionary,
@@ -101,10 +101,10 @@ func starter_vehicle_assembly(
 	return DomainResult.ok(assembly)
 
 
-## Builds the authoritative starter energy-cannon definition for [param simulation_hz].
-## [param simulation_hz] Fixed server tick rate used to convert 0.8 seconds to cooldown ticks.
-## Returns a definition keyed by `energy_cannon.primary` without inventing activation power.
-## Design: The confirmed base attack is used directly while the missing retired-server formula stays explicit.
+## 执行 `starter_energy_cannon` 对应的模块操作。
+## [param simulation_hz] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数保持领域规则确定，并避免依赖具体表现层或传输层。
 func starter_energy_cannon(simulation_hz: int) -> DomainResult:
 	if simulation_hz <= 0:
 		return DomainResult.failure(&"combat.invalid_simulation_hz", "simulation frequency must be positive")
@@ -129,19 +129,19 @@ func starter_energy_cannon(simulation_hz: int) -> DomainResult:
 	})
 
 
-## Expands the formal D04 encounter into lifecycle definitions for [param map_instance_id].
-## [param map_instance_id] Runtime instance identity assigned by the authoritative map server.
-## Returns one stable lifecycle definition per configured population member.
-## Design: Anchors remain authoritative inputs; later spawn sampling may use the preserved radius.
+## 执行 `d04_monster_lifecycles` 对应的模块操作。
+## [param map_instance_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数保持领域规则确定，并避免依赖具体表现层或传输层。
 func d04_monster_lifecycles(map_instance_id: String) -> DomainResult:
 	return monster_lifecycles_for_map("d04_field_zone", map_instance_id)
 
 
-## Expands the configured encounter for [param map_id] into server lifecycle definitions.
-## [param map_id] Business map identifier whose spawn configuration is requested.
-## [param map_instance_id] Runtime authority instance that will own every generated monster.
-## Returns stable, spatially distributed definitions, or an empty list when this catalog has no encounter for the map.
-## Design: This map-keyed seam allows later maps to add configuration without changing combat runtime code.
+## 执行 `monster_lifecycles_for_map` 对应的模块操作。
+## [param map_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param map_instance_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数保持领域规则确定，并避免依赖具体表现层或传输层。
 func monster_lifecycles_for_map(map_id: String, map_instance_id: String) -> DomainResult:
 	if map_instance_id.is_empty():
 		return DomainResult.failure(&"combat.invalid_map_instance", "monster lifecycle generation requires a map instance")
@@ -189,26 +189,26 @@ func monster_lifecycles_for_map(map_id: String, map_instance_id: String) -> Doma
 	return DomainResult.ok(result)
 
 
-## Retrieves a defensive copy of equipment [param equipment_id].
-## [param equipment_id] Stable equipment ID declared by the starter document.
-## Returns the full evidence-bearing definition, or an empty dictionary when unknown.
+## 执行 `equipment_definition` 对应的模块操作。
+## [param equipment_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func equipment_definition(equipment_id: String) -> Dictionary:
 	var definition: Variant = _equipment_by_id.get(equipment_id)
 	return definition.duplicate(true) if definition is Dictionary else {}
 
 
-## Retrieves a defensive copy of monster species [param species_id].
-## [param species_id] Stable monster ID declared by the monster document.
-## Returns the full evidence-bearing definition, or an empty dictionary when unknown.
+## 执行 `monster_definition` 对应的模块操作。
+## [param species_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func monster_definition(species_id: String) -> Dictionary:
 	var definition: Variant = _monsters_by_id.get(species_id)
 	return definition.duplicate(true) if definition is Dictionary else {}
 
 
-## Validates and indexes the root [param catalog] with [param documents].
-## [param catalog] Already parsed catalog root.
-## [param documents] Required parsed documents keyed by their catalog role.
-## Returns success after one-time initialization or a stable schema failure.
+## 执行 `configure` 对应的模块操作。
+## [param catalog] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param documents] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func _configure(catalog: Dictionary, documents: Dictionary) -> DomainResult:
 	content_version = String(catalog.get("content_version", ""))
 	for key: String in ["starter_loadout", "monsters", "d04_encounters"]:
@@ -230,11 +230,11 @@ func _configure(catalog: Dictionary, documents: Dictionary) -> DomainResult:
 	return _validate_runtime_links()
 
 
-## Indexes [param raw_definitions] into [param destination] with unique IDs.
-## [param raw_definitions] JSON array of definition dictionaries.
-## [param destination] Private catalog index populated only after validation.
-## [param context] Diagnostic name used by stable errors.
-## Returns success or a malformed/duplicate definition failure.
+## 执行 `index_definitions` 对应的模块操作。
+## [param raw_definitions] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param destination] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param context] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func _index_definitions(raw_definitions: Variant, destination: Dictionary, context: String) -> DomainResult:
 	if not raw_definitions is Array:
 		return DomainResult.failure(&"combat.invalid_catalog", "%s definitions must be an array" % context)
@@ -251,8 +251,8 @@ func _index_definitions(raw_definitions: Variant, destination: Dictionary, conte
 	return DomainResult.ok()
 
 
-## Validates loadout, encounter and unknown-field links after indexing.
-## Returns success when every runtime reference is explicit and well formed.
+## 校验 `validate_runtime_links` 对应的模块状态。
+## 返回该函数计算、查询或操作得到的结果。
 func _validate_runtime_links() -> DomainResult:
 	var vehicle_id := String(_starter_loadout.get("vehicle_id", ""))
 	if not _equipment_by_id.has(vehicle_id) or String(_equipment_by_id[vehicle_id].get("kind")) != "vehicle_chassis":
@@ -288,9 +288,9 @@ func _validate_runtime_links() -> DomainResult:
 	return DomainResult.ok()
 
 
-## Collects explicit unknown stat names from [param stats].
-## [param stats] Validated monster stat dictionary whose nulls carry unknown semantics.
-## Returns names of null fields without assigning runtime defaults.
+## 执行 `unknown_monster_fields` 对应的模块操作。
+## [param stats] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 static func _unknown_monster_fields(stats: Dictionary) -> Array[String]:
 	var fields: Array[String] = []
 	for field_name: String in ["defense", "move_speed"]:
@@ -299,10 +299,10 @@ static func _unknown_monster_fields(stats: Dictionary) -> Array[String]:
 	return fields
 
 
-## Validates schema metadata on [param document] from [param context].
-## [param document] Parsed JSON root dictionary.
-## [param context] Human-readable document role used in failures.
-## Returns success only for supported schema and non-empty content version.
+## 执行 `validate_document_header` 对应的模块操作。
+## [param document] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param context] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 static func _validate_document_header(document: Dictionary, context: String) -> DomainResult:
 	if int(document.get("schema_version", -1)) != SUPPORTED_SCHEMA_VERSION:
 		return DomainResult.failure(&"combat.unsupported_catalog_schema", "%s schema version is unsupported" % context)
@@ -311,9 +311,9 @@ static func _validate_document_header(document: Dictionary, context: String) -> 
 	return DomainResult.ok()
 
 
-## Reads a JSON dictionary from controlled [param path].
-## [param path] Existing stage-three JSON resource path.
-## Returns the parsed dictionary or a stable I/O/JSON failure.
+## 执行 `read_json_dictionary` 对应的模块操作。
+## [param path] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 static func _read_json_dictionary(path: String) -> DomainResult:
 	if not FileAccess.file_exists(path):
 		return DomainResult.failure(&"combat.catalog_file_missing", "catalog document does not exist: %s" % path)
@@ -323,9 +323,9 @@ static func _read_json_dictionary(path: String) -> DomainResult:
 	return DomainResult.ok(parsed)
 
 
-## Reports whether [param path] is a normalized controlled stage-three JSON path.
-## [param path] Candidate Godot resource path from a catalog reference.
-## Returns true only inside the allowed root without parent traversal.
+## 执行 `is_controlled_json_path` 对应的模块操作。
+## [param path] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 static func _is_controlled_json_path(path: String) -> bool:
 	return path.begins_with(CONTROLLED_DATA_ROOT) \
 		and path.ends_with(".json") \

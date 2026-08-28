@@ -4,13 +4,13 @@ extends RefCounted
 const DomainResult := preload("res://scripts/core/domain_result.gd")
 
 
-## Calculates authoritative aggregate statistics from an injected [param chassis] and [param components].
-## [param chassis] Vehicle-body definition containing base capacities and output power.
-## [param components] Installed equipment definitions containing weight, propulsion and passive load.
-## [param driving_skill_level] Server-owned driving level used to scale engine propulsion.
-## [param movement_config] Reconstructed movement multiplier and speed cap configuration.
-## Returns a normalized immutable-stat dictionary or a validation failure.
-## Design: Reserve energy, working energy and output-power budget remain independent quantities.
+## 执行 `calculate` 对应的模块操作。
+## [param chassis] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param components] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param driving_skill_level] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param movement_config] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数保持领域规则确定，并避免依赖具体表现层或传输层。
 static func calculate(
 	chassis: Dictionary,
 	components: Array[Dictionary],
@@ -74,10 +74,10 @@ static func calculate(
 	})
 
 
-## Validates all recognized numeric fields in one injected [param definition].
-## [param definition] Chassis or component definition at the server data boundary.
-## [param context] Human-readable source name used in diagnostics.
-## Returns success for non-negative finite values, otherwise a stable validation failure.
+## 执行 `validate_stat_definition` 对应的模块操作。
+## [param definition] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param context] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 static func _validate_stat_definition(definition: Dictionary, context: String) -> DomainResult:
 	for field_name: String in [
 		"weight", "max_health", "max_durability", "reserve_energy_capacity", "working_energy_capacity",

@@ -8,18 +8,18 @@ var capacity: int
 var _slots: Array[InventoryItem] = []
 
 
-## Initializes a new instance with its required state.
-## [param slot_capacity] Input value consumed by the operation.
-## Design: Keeps deterministic game rules independent from scene and UI state.
+## 使用调用方参数初始化当前实例。
+## [param slot_capacity] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 设计：该函数保持领域规则确定，并避免依赖具体表现层或传输层。
 func _init(slot_capacity: int) -> void:
 	capacity = slot_capacity
 	_slots.resize(maxi(0, capacity))
 
 
-## Mutates the managed collection for the requested value.
-## [param item] Input value consumed by the operation.
-## Returns A domain result containing either the computed value or a validation error.
-## Design: Keeps deterministic game rules independent from scene and UI state.
+## 执行 `add_item` 对应的模块操作。
+## [param item] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数保持领域规则确定，并避免依赖具体表现层或传输层。
 func add_item(item: InventoryItem) -> DomainResult:
 	var state_result := validate_state()
 	if not state_result.is_ok:
@@ -68,11 +68,11 @@ func add_item(item: InventoryItem) -> DomainResult:
 	return DomainResult.ok({"added_quantity": item.quantity, "touched_slots": touched_slots})
 
 
-## Mutates the managed collection for the requested value.
-## [param instance_id] Stable identifier of the target value.
-## [param quantity] Input value consumed by the operation.
-## Returns A domain result containing either the computed value or a validation error.
-## Design: Keeps deterministic game rules independent from scene and UI state.
+## 移除并清理 `remove_instance` 对应的模块状态。
+## [param instance_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param quantity] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数保持领域规则确定，并避免依赖具体表现层或传输层。
 func remove_instance(instance_id: String, quantity: int) -> DomainResult:
 	var state_result := validate_state()
 	if not state_result.is_ok:
@@ -91,11 +91,11 @@ func remove_instance(instance_id: String, quantity: int) -> DomainResult:
 	return DomainResult.ok({"removed_quantity": quantity, "slot": slot_index})
 
 
-## Mutates the managed collection for the requested value.
-## [param template_id] Stable identifier of the target value.
-## [param quantity] Input value consumed by the operation.
-## Returns A domain result containing either the computed value or a validation error.
-## Design: Keeps deterministic game rules independent from scene and UI state.
+## 移除并清理 `remove_template` 对应的模块状态。
+## [param template_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param quantity] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数保持领域规则确定，并避免依赖具体表现层或传输层。
 func remove_template(template_id: StringName, quantity: int) -> DomainResult:
 	var state_result := validate_state()
 	if not state_result.is_ok:
@@ -126,20 +126,20 @@ func remove_template(template_id: StringName, quantity: int) -> DomainResult:
 	return DomainResult.ok({"removed_quantity": quantity, "touched_slots": touched_slots})
 
 
-## Retrieves the requested value from the managed state.
-## [param slot_index] Sequence, tick, or index value used by the operation.
-## Returns the result produced by the operation.
-## Design: Keeps deterministic game rules independent from scene and UI state.
+## 执行 `item_at` 对应的模块操作。
+## [param slot_index] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数保持领域规则确定，并避免依赖具体表现层或传输层。
 func item_at(slot_index: int) -> InventoryItem:
 	if slot_index < 0 or slot_index >= capacity:
 		return null
 	return _slots[slot_index]
 
 
-## Resolves the best matching value for the supplied query.
-## [param instance_id] Stable identifier of the target value.
-## Returns the computed integer value.
-## Design: Keeps deterministic game rules independent from scene and UI state.
+## 查询并返回 `find_instance_slot` 对应的模块状态。
+## [param instance_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数保持领域规则确定，并避免依赖具体表现层或传输层。
 func find_instance_slot(instance_id: String) -> int:
 	for slot_index: int in range(capacity):
 		var item := _slots[slot_index]
@@ -148,10 +148,10 @@ func find_instance_slot(instance_id: String) -> int:
 	return -1
 
 
-## Calculates the requested domain value.
-## [param template_id] Stable identifier of the target value.
-## Returns the computed integer value.
-## Design: Keeps deterministic game rules independent from scene and UI state.
+## 执行 `count_template` 对应的模块操作。
+## [param template_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数保持领域规则确定，并避免依赖具体表现层或传输层。
 func count_template(template_id: StringName) -> int:
 	var total := 0
 	for item: InventoryItem in _slots:
@@ -160,9 +160,9 @@ func count_template(template_id: StringName) -> int:
 	return total
 
 
-## Performs the `occupied_slots` operation.
-## Returns the computed integer value.
-## Design: Keeps deterministic game rules independent from scene and UI state.
+## 执行 `occupied_slots` 对应的模块操作。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数保持领域规则确定，并避免依赖具体表现层或传输层。
 func occupied_slots() -> int:
 	var count := 0
 	for item: InventoryItem in _slots:
@@ -171,9 +171,9 @@ func occupied_slots() -> int:
 	return count
 
 
-## Validates the supplied state against the domain invariants.
-## Returns A domain result containing either the computed value or a validation error.
-## Design: Keeps deterministic game rules independent from scene and UI state.
+## 校验 `validate_state` 对应的模块状态。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数保持领域规则确定，并避免依赖具体表现层或传输层。
 func validate_state() -> DomainResult:
 	if capacity <= 0 or _slots.size() != capacity:
 		return DomainResult.failure(&"invalid_inventory_capacity", "Inventory capacity must be positive and stable")
@@ -190,9 +190,9 @@ func validate_state() -> DomainResult:
 	return DomainResult.ok()
 
 
-## Serializes the current state into a transport-safe dictionary.
-## Returns Structured result data produced by the operation.
-## Design: Keeps deterministic game rules independent from scene and UI state.
+## 序列化或保存 `to_dictionary` 对应的模块状态。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数保持领域规则确定，并避免依赖具体表现层或传输层。
 func to_dictionary() -> Dictionary:
 	var serialized_slots: Array[Variant] = []
 	serialized_slots.resize(capacity)
@@ -202,10 +202,10 @@ func to_dictionary() -> Dictionary:
 	return {"capacity": capacity, "slots": serialized_slots}
 
 
-## Validates the supplied state against the domain invariants.
-## [param item] Input value consumed by the operation.
-## Returns A domain result containing either the computed value or a validation error.
-## Design: Keeps deterministic game rules independent from scene and UI state.
+## 校验 `validate_incoming_item` 对应的模块状态。
+## [param item] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数保持领域规则确定，并避免依赖具体表现层或传输层。
 func _validate_incoming_item(item: InventoryItem) -> DomainResult:
 	if item == null or not item.is_valid():
 		return DomainResult.failure(&"invalid_inventory_item", "Incoming item is invalid")

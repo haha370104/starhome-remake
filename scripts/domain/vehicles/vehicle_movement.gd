@@ -4,12 +4,12 @@ extends RefCounted
 const DomainResult = preload("res://scripts/core/domain_result.gd")
 
 
-## Calculates the requested domain value.
-## [param driving_skill_level] Input value consumed by the operation.
-## [param engine_required_level] Input value consumed by the operation.
-## [param engine_current_propulsion] Input value consumed by the operation.
-## Returns A domain result containing either the computed value or a validation error.
-## Design: Keeps deterministic game rules independent from scene and UI state.
+## 执行 `effective_propulsion` 对应的模块操作。
+## [param driving_skill_level] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param engine_required_level] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param engine_current_propulsion] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数保持领域规则确定，并避免依赖具体表现层或传输层。
 static func effective_propulsion(
 	driving_skill_level: int,
 	engine_required_level: int,
@@ -25,10 +25,10 @@ static func effective_propulsion(
 	)
 
 
-## Calculates the requested domain value.
-## [param component_weights] Input value consumed by the operation.
-## Returns A domain result containing either the computed value or a validation error.
-## Design: Keeps deterministic game rules independent from scene and UI state.
+## 执行 `total_weight` 对应的模块操作。
+## [param component_weights] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数保持领域规则确定，并避免依赖具体表现层或传输层。
 static func total_weight(component_weights: Array[int]) -> DomainResult:
 	var weight := 0
 	for component_weight: int in component_weights:
@@ -38,14 +38,14 @@ static func total_weight(component_weights: Array[int]) -> DomainResult:
 	return DomainResult.ok(weight)
 
 
-## Calculates the requested domain value.
-## [param driving_skill_level] Input value consumed by the operation.
-## [param engine_required_level] Input value consumed by the operation.
-## [param engine_current_propulsion] Input value consumed by the operation.
-## [param component_weights] Input value consumed by the operation.
-## [param config] Configuration data that controls the operation.
-## Returns A domain result containing either the computed value or a validation error.
-## Design: Keeps deterministic game rules independent from scene and UI state.
+## 执行 `base_speed` 对应的模块操作。
+## [param driving_skill_level] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param engine_required_level] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param engine_current_propulsion] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param component_weights] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param config] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数保持领域规则确定，并避免依赖具体表现层或传输层。
 static func base_speed(
 	driving_skill_level: int,
 	engine_required_level: int,
