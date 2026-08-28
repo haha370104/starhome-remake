@@ -363,6 +363,18 @@ NPC 也不再以“角色节点子类”作为长期业务边界：`NpcView` 负
 不能上报伤害、掉落、经验或“已经命中”。投射物表现可以预测，命中结果必须与服务端事件
 对齐。
 
+D04 首条战斗纵切采用“每地图一个战斗世界”：`AuthoritativeMapInstance` 从
+`CombatDefinitionCatalog` 按业务 `map_id` 装载刷怪组，拥有怪物生命周期、AI tick、玩家战车
+资源和能力结算。`AuthoritativeServer` 只按已鉴权会话把 `UseAbilityIntent` 路由到当前地图，
+再为每个接收者生成包含私有战车状态的战斗快照。客户端 `MonsterWorldController` 仅按
+`combat_actor_id` 投影怪物，HUD 仅显示服务端生命/工作能量；任何客户端坐标、攻击力和耗能
+都不会进入结算。编辑器离线模式通过 `OfflineCombatAuthorityBridge` 复用同一权威模块，
+它是调试用进程内服务器替身，不是第二套客户端战斗规则。
+
+怪物表中的已恢复生命、基础攻击与未知字段保持证据原义；为可玩纵切增加的 AI 速度、攻击
+距离、游荡半径均显式标记 `reconstructed_default`。尤其奥姆幼虫和毒胶的已恢复基础攻击为
+零，在持续腐蚀等服务端规则被证实前，不得为了“看起来合理”而制造伤害。
+
 ### 7.4 物品、装备与背包
 
 `ItemDefinition` 描述模板；`ItemInstance` 保存数量、耐久、绑定、强化点和随机属性。
