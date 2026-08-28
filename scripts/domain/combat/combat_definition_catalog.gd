@@ -174,6 +174,7 @@ func monster_lifecycles_for_map(map_id: String, map_instance_id: String) -> Doma
 				"max_health": int(stats["max_health"]),
 				"base_attack": int(stats["base_attack"]),
 				"behavior_profile": String(combat["behavior_profile"]),
+				"engagement_policy": String(combat["engagement_policy"]),
 				"runtime_move_speed": float(combat["runtime_move_speed"]),
 				"attack_range": float(combat["attack_range"]),
 				"aggro_radius": float(combat["aggro_radius"]),
@@ -276,9 +277,14 @@ func _validate_runtime_links() -> DomainResult:
 			return DomainResult.failure(&"combat.invalid_catalog", "D04 spawn group contains unresolved or invalid data")
 	for species: Dictionary in _monsters_by_id.values():
 		var stats: Dictionary = species["stats"]
+		var combat: Dictionary = species.get("combat", {})
 		if not stats.has("defense") or stats["defense"] != null \
 			or not stats.has("move_speed") or stats["move_speed"] != null:
 			return DomainResult.failure(&"combat.invalid_catalog", "unknown monster defense and speed must remain explicit nulls")
+		if StringName(combat.get("engagement_policy", "")) not in [
+			&"unresponsive", &"retaliatory", &"aggressive"
+		]:
+			return DomainResult.failure(&"combat.invalid_catalog", "monster engagement policy is invalid")
 	return DomainResult.ok()
 
 

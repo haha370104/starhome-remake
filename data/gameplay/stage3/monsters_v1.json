@@ -11,6 +11,7 @@
       "combat": {
         "attack_archetype": "ranged_projectile",
         "behavior_profile": "ranged_chase",
+        "engagement_policy": "retaliatory",
         "runtime_move_speed": 72,
         "attack_range": 210,
         "wander_radius": 120,
@@ -35,6 +36,7 @@
         "stats.move_speed": {"status": "unknown", "reason": "Runtime speed was delivered during instance creation and cannot be safely mapped from the anonymous row alone."},
         "combat.attack_archetype": {"status": "client_confirmed", "source": "Glory client monster class and projectile behavior"},
         "combat.behavior_profile": {"status": "reconstructed_default", "reason": "First-playable server AI profile."},
+        "combat.engagement_policy": {"status": "client_confirmed", "source_field": "attr_10", "semantic_confidence": "high_inference", "note": "The 0/1/2 values align with unresponsive, retaliatory and aggressive behavior across the recovered monster families."},
         "combat.runtime_move_speed": {"status": "reconstructed_default", "reason": "Recovered runtime speed is unknown; this is explicit remake tuning."},
         "combat.attack_range": {"status": "reconstructed_default", "reason": "First-playable server attack distance."},
         "combat.wander_radius": {"status": "reconstructed_default", "reason": "First-playable server idle-area tuning."},
@@ -52,6 +54,7 @@
         "row_selector": {"index": "4", "npc_name": "奥姆虫"},
         "row_sha256": "cb165aeb32c21fd68bf02a5eca6504d89483f102acd72447fedaccb508fe4672",
         "raw_attribute_prefix": [60, 6, 1, 90, 5, 1000, 200],
+        "npcinfo_attr_10": 1,
         "untrusted_drop_candidate": "低级生物硅*1*3*1#低级生物硅*1*3*1#低级四足甲的壳*1*1*1",
         "runtime_drop_imported": false
       }
@@ -65,6 +68,7 @@
       "combat": {
         "attack_archetype": "ranged_projectile",
         "behavior_profile": "ranged_chase",
+        "engagement_policy": "unresponsive",
         "runtime_move_speed": 62,
         "attack_range": 180,
         "wander_radius": 96,
@@ -89,6 +93,7 @@
         "stats.move_speed": {"status": "unknown", "reason": "Runtime speed was delivered during instance creation and cannot be safely mapped from the anonymous row alone."},
         "combat.attack_archetype": {"status": "client_confirmed", "source": "Glory client monster class and projectile behavior"},
         "combat.behavior_profile": {"status": "reconstructed_default", "reason": "First-playable server AI profile; zero base attack remains authoritative."},
+        "combat.engagement_policy": {"status": "client_confirmed", "source_field": "attr_10", "semantic_confidence": "high_inference", "note": "The 0/1/2 values align with unresponsive, retaliatory and aggressive behavior across the recovered monster families."},
         "combat.runtime_move_speed": {"status": "reconstructed_default", "reason": "Recovered runtime speed is unknown; this is explicit remake tuning."},
         "combat.attack_range": {"status": "reconstructed_default", "reason": "First-playable server attack distance."},
         "combat.wander_radius": {"status": "reconstructed_default", "reason": "First-playable server idle-area tuning."},
@@ -106,6 +111,7 @@
         "row_selector": {"index": "3", "npc_name": "奥姆幼虫"},
         "row_sha256": "666f95abfce2c1ebda7aacac58a17f633ac6b26efd44b7e97f1984629ea8d6d9",
         "raw_attribute_prefix": [42, 0, 2, 100, 2, 1000, 200],
+        "npcinfo_attr_10": 0,
         "untrusted_drop_candidate": "低级生物硅*1*3*1#低级生物硅*1*3*1",
         "runtime_drop_imported": false
       }
@@ -119,6 +125,7 @@
       "combat": {
         "attack_archetype": "contact_melee",
         "behavior_profile": "contact_chase",
+        "engagement_policy": "retaliatory",
         "runtime_move_speed": 78,
         "attack_range": 38,
         "wander_radius": 110,
@@ -141,6 +148,7 @@
         "stats.move_speed": {"status": "unknown", "reason": "Runtime speed was delivered during instance creation and cannot be safely mapped from the anonymous row alone."},
         "combat.attack_archetype": {"status": "client_confirmed", "source": "Glory client close-contact monster base class"},
         "combat.behavior_profile": {"status": "reconstructed_default", "reason": "First-playable server contact AI profile."},
+        "combat.engagement_policy": {"status": "client_confirmed", "source_field": "attr_10", "semantic_confidence": "high_inference", "note": "The 0/1/2 values align with unresponsive, retaliatory and aggressive behavior across the recovered monster families."},
         "combat.runtime_move_speed": {"status": "reconstructed_default", "reason": "Recovered runtime speed is unknown; this is explicit remake tuning."},
         "combat.attack_range": {"status": "reconstructed_default", "reason": "First-playable server contact distance."},
         "combat.wander_radius": {"status": "reconstructed_default", "reason": "First-playable server idle-area tuning."},
@@ -158,6 +166,7 @@
         "row_selector": {"index": "2", "npc_name": "感光质"},
         "row_sha256": "219e4696c07616213ee19d736425f425fd3170c407692599208db8592c699afb",
         "raw_attribute_prefix": [36, 3, 1, 120, 0, 1000, 50, 20],
+        "npcinfo_attr_10": 1,
         "untrusted_drop_candidate": "低级能量包*1*3*1#低级能量催化剂*1*3*2",
         "runtime_drop_imported": false
       }
@@ -171,6 +180,7 @@
       "combat": {
         "attack_archetype": "corrosive_projectile",
         "behavior_profile": "ranged_chase",
+        "engagement_policy": "unresponsive",
         "runtime_move_speed": 48,
         "attack_range": 190,
         "wander_radius": 88,
@@ -195,6 +205,7 @@
         "stats.move_speed": {"status": "unknown", "reason": "Runtime speed was delivered during instance creation and cannot be safely mapped from the anonymous row alone."},
         "combat.attack_archetype": {"status": "client_confirmed", "source": "Glory client corrosive projectile class"},
         "combat.behavior_profile": {"status": "reconstructed_default", "reason": "First-playable server AI profile; unknown corrosion damage is not invented."},
+        "combat.engagement_policy": {"status": "client_confirmed", "source_field": "attr_10", "semantic_confidence": "high_inference", "note": "The 0/1/2 values align with unresponsive, retaliatory and aggressive behavior across the recovered monster families."},
         "combat.runtime_move_speed": {"status": "reconstructed_default", "reason": "Recovered runtime speed is unknown; this is explicit remake tuning."},
         "combat.attack_range": {"status": "reconstructed_default", "reason": "First-playable server attack distance."},
         "combat.wander_radius": {"status": "reconstructed_default", "reason": "First-playable server idle-area tuning."},
@@ -213,6 +224,7 @@
         "row_selector": {"index": "1", "npc_name": "毒胶"},
         "row_sha256": "81e8945985a246f0ca89c5aa1253f6dc672ef0342d17d189fb42eb86e63eb058",
         "raw_attribute_prefix": [30, 0, 2, 65, 0, 1000, 100],
+        "npcinfo_attr_10": 0,
         "untrusted_drop_candidate": "低级类胶*1*3*1#低级类胶*1*3*1",
         "runtime_drop_imported": false
       }

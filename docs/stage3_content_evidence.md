@@ -74,6 +74,24 @@
 
 四类怪物的防御和移动速度均保持 `unknown`。客户端创建接口会接收服务端下发的生命和速度，因此不能从匿名属性列随意挑一个数值代替权威运行值。
 
+### 3.1 三态接战策略
+
+荣耀版 `npcinfo` 的 `attr_10` 在同族变体间稳定形成 `0/1/2` 三档，并与实机行为逐组吻合：
+
+- `0 = unresponsive`：不主动攻击，受击也不还击；普通毒胶、奥姆幼虫属于此类。
+- `1 = retaliatory`：不主动攻击，受击后锁定攻击者；普通感光质、奥姆虫属于此类。
+- `2 = aggressive`：警戒半径内主动索敌；恶性毒胶、恶性感光质、血腥幼虫和血腥成虫属于此类。
+
+服务端配置使用 `engagement_policy` 枚举，并在 `source_audit.npcinfo_attr_10` 保存原值。怪物名称只用于显示，不参与 AI 分支。D04 当前投放的四种普通怪物分别采用 `0/1` 对应策略；后续新增恶性/血腥变体时直接配置 `aggressive`。
+
+### 3.2 表现层关系
+
+- 奥姆虫与奥姆幼虫分别使用站立、移动、攻击三套八向身体动画，并同步播放客户端声明的阴影动画。
+- 感光质使用共享五帧模板及阴影；荣耀补丁中 `71/75/79` 三组内嵌色索引资源分别作为绿、蓝、紫运行时变体，避免继续使用与实机颜色不符的旧 ACT 重着色结果。
+- 毒胶客户端只有站立、移动身体序列；发射腐蚀弹时身体沿用站立序列，不虚构第三套身体素材。客户端类也没有独立毒胶阴影节点，因此当前不伪造阴影。
+- 新兵战车由方向阴影、四帧八向底盘和单帧八向炮塔三层组成。开火只覆盖炮塔的朝向/动作，底盘移动路线、朝向和动画不被中断。
+- 生命与当前能量条锚定实体脚点下方；受击数字来自带单调 `event_id` 的权威事件窗口，客户端只负责去重与表现。
+
 警戒半径、回归距离、攻击间隔与 30 秒刷新时间均为 `reconstructed_default`。动画资源只引用已经按业务语义导入的荣耀版 `res://assets/monsters/...` 路径。
 
 ## 4. 掉落边界
@@ -126,5 +144,5 @@ python -X utf8 tools\audit_stage3_content.py
 当前通过摘要：
 
 ```text
-STAGE3 AUDIT PASSED: equipment=3 source_assets=9 equipment_evidence=42 monsters=4 monster_resources=17 monster_evidence=49 encounter_groups=4 runtime_strings=291 drops_imported=0
+STAGE3 AUDIT PASSED: equipment=3 source_assets=11 equipment_evidence=42 monsters=4 monster_resources=17 monster_evidence=69 encounter_groups=4 runtime_strings=370 drops_imported=0
 ```

@@ -8,6 +8,7 @@ const UseAbilityIntentContract := preload("res://scripts/network/contracts/use_a
 
 var simulation_hz := 20
 var current_tick := 0
+var event_sequence := 0
 var working_energy_regen_factor := 1.0
 var actors: Dictionary = {}
 var monsters: Dictionary = {}
@@ -33,6 +34,7 @@ func configure(
 		return DomainResult.failure(&"combat.invalid_module_config", "tick rate and regeneration factor are invalid")
 	simulation_hz = requested_simulation_hz
 	current_tick = 0
+	event_sequence = 0
 	working_energy_regen_factor = regen_factor
 	_random.seed = random_seed
 	actors.clear()
@@ -95,6 +97,9 @@ func register_vehicle(
 ## [param definition] Monster identity, position, combat health and respawn-seconds fixture/definition.
 ## Returns the initialized `MonsterLifecycle` or a validation failure.
 func register_monster(definition: Dictionary) -> DomainResult:
+	var engagement_policy := StringName(definition.get("engagement_policy", "unresponsive"))
+	if engagement_policy not in [&"unresponsive", &"retaliatory", &"aggressive"]:
+		return DomainResult.failure(&"combat.invalid_engagement_policy", "monster engagement policy is invalid")
 	var lifecycle: MonsterLifecycle = MonsterLifecycleScript.new()
 	var result := lifecycle.configure(definition, simulation_hz)
 	if not result.is_ok:
@@ -108,6 +113,7 @@ func register_monster(definition: Dictionary) -> DomainResult:
 		"combat_actor_id": String(definition.get("combat_actor_id", "")),
 		"home_position": lifecycle.position,
 		"behavior_profile": StringName(definition.get("behavior_profile", "idle")),
+		"engagement_policy": engagement_policy,
 		"move_speed": maxf(0.0, float(definition.get("runtime_move_speed", 0.0))),
 		"base_attack": maxi(0, int(definition.get("base_attack", 0))),
 		"attack_range": maxf(0.0, float(definition.get("attack_range", 0.0))),
@@ -196,7 +202,10 @@ func handle_energy_cannon_attack(actor_id: String, raw_intent: Variant) -> Domai
 	var damage_result := monster.apply_damage(damage, actor_id, current_tick)
 	if not damage_result.is_ok:
 		return damage_result
-	var event := {
+	var runtime: Dictionary = monster_runtime[target_id]
+	if StringName(runtime["engagement_policy"]) in [&"retaliatory", &"aggressive"] and monster.is_alive():
+		runtime["target_actor_id"] = actor_id
+	var event := _record_combat_event({
 		"event_type": &"energy_cannon_hit",
 		"server_tick": current_tick,
 		"attacker_id": actor_id,
@@ -206,8 +215,7 @@ func handle_energy_cannon_attack(actor_id: String, raw_intent: Variant) -> Domai
 		"target_health": damage_result.value["health"],
 		"working_energy": vehicle_state.working_energy,
 		"cooldown_ready_tick": actor["cooldown_ready_ticks"][ability_id],
-	}
-	combat_events.append(event)
+	})
 	if bool(damage_result.value["died"]):
 		var death_event := {
 			"event_type": &"monster_died",
@@ -289,8 +297,10 @@ func snapshot_for_actor(actor_id: String) -> Dictionary:
 		})
 	return {
 		"server_tick": current_tick,
+		"local_entity_id": actor_id,
 		"local_vehicle": (actor["vehicle_state"] as VehicleCombatState).to_dictionary(),
 		"monsters": monster_snapshots,
+		"recent_events": combat_events.slice(maxi(0, combat_events.size() - 32)).duplicate(true),
 	}
 
 
@@ -301,7 +311,7 @@ func snapshot_for_actor(actor_id: String) -> Dictionary:
 func _simulate_monster_tick(monster_id: String, fixed_delta: float) -> void:
 	var monster: MonsterLifecycle = monsters[monster_id]
 	var runtime: Dictionary = monster_runtime[monster_id]
-	var target_id := _nearest_alive_actor(monster)
+	var target_id := _engaged_actor_id(monster)
 	if target_id.is_empty():
 		_simulate_unengaged_monster(monster_id, fixed_delta)
 		return
@@ -326,7 +336,7 @@ func _simulate_monster_tick(monster_id: String, fixed_delta: float) -> void:
 	var damage_result := vehicle_state.apply_damage(damage)
 	if not damage_result.is_ok:
 		return
-	combat_events.append({
+	_record_combat_event({
 		"event_type": &"monster_attack_resolved",
 		"server_tick": current_tick,
 		"attacker_id": monster_id,
@@ -335,6 +345,43 @@ func _simulate_monster_tick(monster_id: String, fixed_delta: float) -> void:
 		"target_health": int(damage_result.value["health"]),
 		"target_destroyed": bool(damage_result.value["destroyed"]),
 	})
+
+
+## 依据 [param monster] 的三态接战策略解析当前目标。
+## Returns 不还击时恒为空；反击型只保留受击目标；主动型可自行搜索最近玩家。
+## Design: `npcinfo.attr_10` 的 0/1/2 在数据层转换为枚举，运行时不依赖怪物名称。
+func _engaged_actor_id(monster: MonsterLifecycle) -> String:
+	var runtime: Dictionary = monster_runtime[monster.monster_id]
+	var current_target := String(runtime["target_actor_id"])
+	if not current_target.is_empty() and _is_valid_actor_target(monster, current_target):
+		return current_target
+	runtime["target_actor_id"] = ""
+	if StringName(runtime["engagement_policy"]) == &"aggressive":
+		return _nearest_alive_actor(monster)
+	return ""
+
+
+## 验证 [param actor_id] 是否仍是 [param monster] 同地图上的存活目标。
+## Returns 身份、地图与载具生命都有效时返回 `true`。
+func _is_valid_actor_target(monster: MonsterLifecycle, actor_id: String) -> bool:
+	if not actors.has(actor_id):
+		return false
+	var actor: Dictionary = actors[actor_id]
+	var state: VehicleCombatState = actor["vehicle_state"]
+	return state.health > 0 and String(actor["map_instance_id"]) == monster.map_instance_id
+
+
+## 为 [param event] 分配单调事件号、写入有界重放窗口并返回记录副本。
+## Returns 包含 `event_id` 的权威事件。
+## Design: 快照携带短事件窗口以容忍 UDP/快照丢包，客户端按事件号去重。
+func _record_combat_event(event: Dictionary) -> Dictionary:
+	event_sequence += 1
+	var recorded := event.duplicate(true)
+	recorded["event_id"] = event_sequence
+	combat_events.append(recorded)
+	if combat_events.size() > 64:
+		combat_events.pop_front()
+	return recorded
 
 
 ## Finds the nearest living actor that [param monster] can aggro on its own map.

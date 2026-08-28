@@ -18,6 +18,7 @@ func _initialize() -> void:
 	_test_energy_cannon_authority_state_machine()
 	_test_single_death_and_thirty_second_respawn()
 	_test_seeded_damage_is_reproducible()
+	_test_three_engagement_policies()
 	if failures.is_empty():
 		print("AUTHORITATIVE_COMBAT_MODULE_OK (%d assertions)" % assertions)
 		quit(0)
@@ -156,6 +157,38 @@ func _test_seeded_damage_is_reproducible() -> void:
 	_expect(first_damage == second_damage, "same fixed seed should reproduce the same damage roll")
 
 
+## Verifies unresponsive, retaliatory and aggressive monsters obey the recovered three-state behavior field.
+## Design: The fixture uses the same geometry for all policies so only engagement semantics can change damage.
+func _test_three_engagement_policies() -> void:
+	var assembly: Dictionary = _assembly_result().value
+	var passive := _new_module(101)
+	passive.register_vehicle("player.policy", MAP_INSTANCE_ID, Vector2.ZERO, assembly, {ABILITY_ID: _fixed_damage_weapon(1)})
+	passive.register_monster(_behavior_monster_definition("monster.passive", &"unresponsive"))
+	passive.advance_ticks(40)
+	_expect(passive.vehicle_state_for("player.policy").health == 70, "unresponsive monster never initiates")
+	passive.handle_energy_cannon_attack("player.policy", _attack_intent("monster.passive", 1))
+	passive.advance_ticks(40)
+	_expect(passive.vehicle_state_for("player.policy").health == 70, "unresponsive monster never retaliates")
+
+	var retaliatory := _new_module(102)
+	retaliatory.register_vehicle("player.policy", MAP_INSTANCE_ID, Vector2.ZERO, assembly, {ABILITY_ID: _fixed_damage_weapon(1)})
+	retaliatory.register_monster(_behavior_monster_definition("monster.retaliatory", &"retaliatory"))
+	retaliatory.advance_ticks(40)
+	_expect(retaliatory.vehicle_state_for("player.policy").health == 70, "retaliatory monster does not initiate")
+	retaliatory.handle_energy_cannon_attack("player.policy", _attack_intent("monster.retaliatory", 1))
+	retaliatory.advance_ticks(1)
+	_expect(retaliatory.vehicle_state_for("player.policy").health == 67, "retaliatory monster attacks after being hit")
+
+	var aggressive := _new_module(103)
+	aggressive.register_vehicle("player.policy", MAP_INSTANCE_ID, Vector2.ZERO, assembly, {ABILITY_ID: _fixed_damage_weapon(1)})
+	aggressive.register_monster(_behavior_monster_definition("monster.aggressive", &"aggressive"))
+	aggressive.advance_ticks(1)
+	_expect(aggressive.vehicle_state_for("player.policy").health == 67, "aggressive monster initiates inside aggro radius")
+	var snapshot: Dictionary = aggressive.snapshot_for_actor("player.policy")
+	_expect(String(snapshot.get("local_entity_id", "")) == "player.policy", "snapshot identifies local damage target")
+	_expect((snapshot.get("recent_events", []) as Array).size() == 1, "snapshot includes one deduplicatable damage event")
+
+
 ## Builds a configured combat module using [param seed].
 ## [param seed] Fixed random seed supplied to deterministic damage simulation.
 ## Returns a newly configured authoritative module.
@@ -245,6 +278,23 @@ func _monster_definition(monster_id: String, health: int, position: Vector2) -> 
 		"max_health": health,
 		"respawn_seconds": 30.0,
 	}
+
+
+## Builds a close-range monster [param monster_id] using [param engagement_policy].
+## Returns a deterministic attacker fixture with every authority movement/combat field explicit.
+func _behavior_monster_definition(monster_id: String, engagement_policy: StringName) -> Dictionary:
+	var definition := _monster_definition(monster_id, 30, Vector2(20.0, 0.0))
+	definition.merge({
+		"engagement_policy": engagement_policy,
+		"base_attack": 3,
+		"attack_range": 40.0,
+		"aggro_radius": 200.0,
+		"leash_distance": 600.0,
+		"wander_radius": 0.0,
+		"runtime_move_speed": 0.0,
+		"attack_interval_seconds": 1.0,
+	}, true)
+	return definition
 
 
 ## Builds a client-safe energy-cannon intent targeting [param target_id] at [param sequence].
