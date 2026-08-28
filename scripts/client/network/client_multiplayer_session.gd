@@ -6,6 +6,7 @@ const MapJoinedContract := preload("res://scripts/network/contracts/map_joined.g
 const MapTransitionIntentContract := preload("res://scripts/network/contracts/map_transition_intent.gd")
 const NetworkErrorCodes := preload("res://scripts/network/contracts/network_error_codes.gd")
 const Protocol := preload("res://scripts/network/contracts/network_protocol.gd")
+const UseAbilityIntentContract := preload("res://scripts/network/contracts/use_ability_intent.gd")
 
 signal connection_state_changed(state: ClientNetworkAdapter.ConnectionState)
 signal connection_failed(message: String)
@@ -22,6 +23,8 @@ signal map_joined(
 	definition_version: int,
 )
 signal map_change_failed(transition_id: StringName, code: StringName, message: String)
+signal combat_snapshot_received(snapshot: Dictionary)
+signal combat_event_received(event: Dictionary)
 
 @export var offline_debug_enabled := false
 @export var local_entity_id: StringName = &"player.local"
@@ -36,6 +39,7 @@ var _next_transition_sequence := 1
 var _pending_map_change: Dictionary = {}
 var _minimum_snapshot_server_tick := -1
 var _suppress_local_presentation_signal := false
+var _next_ability_sequence := 1
 
 
 ## Initializes node dependencies after the node enters the scene tree.
@@ -102,6 +106,26 @@ func request_move(requested_world_point: Vector2) -> Dictionary:
 	if current_map_instance_id.is_empty() or not _pending_map_change.is_empty():
 		return {}
 	return local_predictor.create_move_intent(current_map_instance_id, requested_world_point)
+
+
+## Submits [param target_entity_id] for [param ability_id] using a monotonic client command sequence.
+## [param ability_id] Equipped ability identifier; no damage or energy fields are accepted.
+## [param target_entity_id] Monster identity selected from the latest authority snapshot.
+## Returns the strict payload, or an empty dictionary when transport/map state is unavailable.
+func request_use_ability(ability_id: String, target_entity_id: String) -> Dictionary:
+	if current_map_instance_id.is_empty() or ability_id.is_empty() or target_entity_id.is_empty():
+		return {}
+	var contract := UseAbilityIntentContract.new(
+		current_map_instance_id, ability_id, target_entity_id, _next_ability_sequence
+	)
+	var validation = contract.validate()
+	if not validation.is_ok:
+		return {}
+	var payload: Dictionary = contract.to_dictionary()
+	if network_adapter.send_use_ability_intent(payload) != OK:
+		return {}
+	_next_ability_sequence += 1
+	return payload
 
 
 ## Requests the server-owned transition identified by [param transition_id] and its declared [param destination_entry_number].
@@ -224,6 +248,9 @@ func _on_world_snapshot(snapshot: Dictionary) -> void:
 		remote_interpolator.remove_entity(known_entity_id)
 		remote_entity_removed.emit(known_entity_id)
 	_known_remote_entity_ids = current_remote_entity_ids
+	var combat_value: Variant = snapshot.get("combat")
+	if combat_value is Dictionary and _is_valid_combat_snapshot(combat_value):
+		combat_snapshot_received.emit((combat_value as Dictionary).duplicate(true))
 
 
 ## Adopts the authoritative identity/map assigned by a successful network handshake.
@@ -333,6 +360,11 @@ func _on_command_rejected(code: StringName, message: String) -> void:
 ## [param message] Raw control envelope emitted before adapter-specific projections.
 ## Design: Correlation uses explicit command type and sequence, never error-code naming conventions.
 func _on_server_message_received(message: Dictionary) -> void:
+	if StringName(message.get("type", "")) == &"combat_event":
+		var combat_result: Dictionary = message.get("result", {})
+		if bool(combat_result.get("ok", false)) and combat_result.get("value") is Dictionary:
+			combat_event_received.emit((combat_result["value"] as Dictionary).duplicate(true))
+		return
 	if StringName(message.get("type", "")) != &"command_rejected":
 		return
 	if _pending_map_change.is_empty():
@@ -347,6 +379,31 @@ func _on_server_message_received(message: Dictionary) -> void:
 		StringName(result.get("code", NetworkErrorCodes.INVALID_PAYLOAD)),
 		String(result.get("message", "Server rejected the map transition")),
 	)
+
+
+## Validates the untrusted [param snapshot] minimum combat schema before presentation signals.
+## [param snapshot] Map-scoped combat document received from transport.
+## Returns true only when local resources and every monster expose correctly typed public fields.
+## Design: Resource paths never arrive over the network; snapshots reference only committed business actor IDs.
+func _is_valid_combat_snapshot(snapshot: Dictionary) -> bool:
+	if typeof(snapshot.get("server_tick")) != TYPE_INT:
+		return false
+	if not snapshot.get("local_vehicle") is Dictionary or not snapshot.get("monsters") is Array:
+		return false
+	for raw_monster: Variant in snapshot["monsters"]:
+		if not raw_monster is Dictionary:
+			return false
+		var monster: Dictionary = raw_monster
+		if typeof(monster.get("entity_id")) != TYPE_STRING \
+			or typeof(monster.get("species_id")) != TYPE_STRING \
+			or typeof(monster.get("combat_actor_id")) != TYPE_STRING \
+			or typeof(monster.get("position")) != TYPE_ARRAY \
+			or (monster["position"] as Array).size() != 2 \
+			or typeof(monster.get("health")) != TYPE_INT \
+			or typeof(monster.get("max_health")) != TYPE_INT \
+			or typeof(monster.get("alive")) != TYPE_BOOL:
+			return false
+	return true
 
 
 ## Ends the current pending transfer with [param code] and [param message] while retaining old-map state.

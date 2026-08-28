@@ -12,6 +12,8 @@ signal map_joined(
 	definition_version: int,
 )
 signal map_change_failed(transition_id: StringName, code: StringName, message: String)
+signal combat_snapshot_received(snapshot: Dictionary)
+signal combat_event_received(event: Dictionary)
 
 const SessionScript := preload("res://scripts/client/network/client_multiplayer_session.gd")
 const CharacterFactoryScript := preload("res://scripts/characters/character_factory.gd")
@@ -79,6 +81,8 @@ func start(settings: Dictionary) -> Error:
 	session.map_change_requested.connect(map_change_requested.emit)
 	session.map_joined.connect(map_joined.emit)
 	session.map_change_failed.connect(_on_map_change_failed)
+	session.combat_snapshot_received.connect(combat_snapshot_received.emit)
+	session.combat_event_received.connect(combat_event_received.emit)
 	add_child(session)
 	session.initialize_local_player(Vector2(settings.get("initial_position", _local_character.position)))
 
@@ -111,6 +115,16 @@ func request_move(requested_world_point: Vector2) -> Dictionary:
 	if session == null:
 		return {}
 	return session.request_move(requested_world_point)
+
+
+## Forwards an equipped [param ability_id] against [param target_entity_id] to the authority session.
+## [param ability_id] Stable ability identifier selected by the HUD/action state.
+## [param target_entity_id] Monster identity from the latest combat snapshot.
+## Returns the strict submitted payload, or an empty dictionary when unavailable.
+func request_use_ability(ability_id: String, target_entity_id: String) -> Dictionary:
+	if session == null:
+		return {}
+	return session.request_use_ability(ability_id, target_entity_id)
 
 
 ## Requests the server-owned exit [param transition_id] with its declared [param destination_entry_number].

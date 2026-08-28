@@ -9,6 +9,8 @@ signal shortcut_visibility_changed(visible: bool)
 signal shortcut_page_changed(kind: String, page: int)
 signal player_position_changed(world_position: Vector2)
 signal reserve_energy_changed(current: float, capacity: float)
+signal vehicle_health_changed(current: int, capacity: int)
+signal working_energy_changed(current: float, capacity: float)
 signal selected_action_slot_changed(slot_id: String)
 
 var hud_visible := true
@@ -24,6 +26,10 @@ var skill_shortcut_page := 0
 var player_position := Vector2.ZERO
 var reserve_energy := 10000.0
 var reserve_energy_capacity := 10000.0
+var vehicle_health := 70
+var vehicle_health_capacity := 70
+var working_energy := 100.0
+var working_energy_capacity := 100.0
 
 
 ## 设置 HUD 的整体可见状态，并在状态改变时广播。[param value] 为目标可见状态。
@@ -115,6 +121,24 @@ func set_reserve_energy(current: float, capacity: float) -> void:
 	reserve_energy_capacity = maxf(capacity, 0.0)
 	reserve_energy = clampf(current, 0.0, reserve_energy_capacity)
 	reserve_energy_changed.emit(reserve_energy, reserve_energy_capacity)
+
+
+## Updates vehicle durability-like combat health from authoritative [param current] and [param capacity].
+## [param current] Current server-owned chassis health.
+## [param capacity] Maximum chassis health after authoritative assembly calculation.
+func set_vehicle_health(current: int, capacity: int) -> void:
+	vehicle_health_capacity = maxi(capacity, 0)
+	vehicle_health = clampi(current, 0, vehicle_health_capacity)
+	vehicle_health_changed.emit(vehicle_health, vehicle_health_capacity)
+
+
+## Updates the spendable working-energy pool from authoritative [param current] and [param capacity].
+## [param current] Current energy consumed by weapons and restored by server regeneration.
+## [param capacity] Maximum working-energy buffer for the active assembly.
+func set_working_energy(current: float, capacity: float) -> void:
+	working_energy_capacity = maxf(capacity, 0.0)
+	working_energy = clampf(current, 0.0, working_energy_capacity)
+	working_energy_changed.emit(working_energy, working_energy_capacity)
 
 
 ## 将当前动作槽设为 [param slot_id]，并仅在值变化时广播。

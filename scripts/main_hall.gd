@@ -24,7 +24,14 @@ const ActiveWorldControllerScript := preload(
 const WeaponAttackVisualControllerScript := preload(
 	"res://scripts/client/presentation/combat/weapon_attack_visual_controller.gd"
 )
+const MonsterWorldControllerScript := preload(
+	"res://scripts/client/presentation/combat/monster_world_controller.gd"
+)
+const OfflineCombatAuthorityBridgeScript := preload(
+	"res://scripts/client/debug/offline_combat_authority_bridge.gd"
+)
 const STARTER_WEAPON_ID := &"recruit_energy_cannon"
+const STARTER_ABILITY_ID := "energy_cannon.primary"
 
 # Player tuning is intentionally local to the player. NPC patrol motion has its
 # own configuration and must not inherit these values when player progression,
@@ -118,6 +125,8 @@ var pending_authoritative_join: Dictionary = {}
 var map_commit_failure_locked := false
 var selected_transition_id: StringName = &""
 var combat_attack_controller: Node
+var monster_world_controller: MonsterWorldController
+var offline_combat_bridge: OfflineCombatAuthorityBridge
 
 
 ## Initializes node dependencies after the node enters the scene tree.
@@ -214,7 +223,14 @@ func _handle_world_combat_left_click(world_position: Vector2) -> void:
 	if combat_attack_controller == null:
 		hint_label.text = "武器表现尚未初始化"
 		return
-	var result: Dictionary = combat_attack_controller.request_fire(player.position, world_position)
+	var target_entity_id := monster_world_controller.nearest_target(world_position)
+	var authoritative_target := world_position
+	if not target_entity_id.is_empty():
+		authoritative_target = monster_world_controller.target_position(target_entity_id)
+	if not authoritative_target.is_finite():
+		hint_label.text = "目标已离开当前地图"
+		return
+	var result: Dictionary = combat_attack_controller.request_fire(player.position, authoritative_target)
 	if not bool(result.get("ok", false)):
 		var code := StringName(result.get("code", &""))
 		if code == &"cooldown":
@@ -224,6 +240,19 @@ func _handle_world_combat_left_click(world_position: Vector2) -> void:
 		else:
 			hint_label.text = "当前无法开火"
 		return
+	if not target_entity_id.is_empty():
+		var submitted := false
+		if multiplayer_offline_debug_enabled and offline_combat_bridge != null:
+			var authority_result := offline_combat_bridge.request_attack(target_entity_id)
+			submitted = bool(authority_result.get("ok", false))
+			if not submitted:
+				hint_label.text = _combat_rejection_text(StringName(authority_result.get("code", &"")))
+		else:
+			submitted = not multiplayer_presenter.request_use_ability(
+				STARTER_ABILITY_ID, target_entity_id
+			).is_empty()
+		if not submitted:
+			return
 	var was_moving: bool = local_player_controller.has_active_route()
 	var direction: Vector2 = result["direction"]
 	current_direction = _direction_index(direction)
@@ -240,6 +269,23 @@ func _handle_world_combat_left_click(world_position: Vector2) -> void:
 			roundi(resolved_target.y),
 		]
 	_restore_locomotion_after_attack(was_moving)
+
+
+## Converts authoritative combat rejection [param code] into a concise player-facing message.
+## [param code] Stable combat-domain failure from the local debug or remote authority.
+## Returns localized HUD feedback without exposing transport internals.
+func _combat_rejection_text(code: StringName) -> String:
+	match code:
+		&"combat.target_out_of_range":
+			return "目标超出新兵能量炮射程"
+		&"combat.weapon_cooldown":
+			return "新兵能量炮冷却中"
+		&"combat.insufficient_working_energy":
+			return "当前能量不足"
+		&"combat.target_already_dead":
+			return "目标已经被击败"
+		_:
+			return "本次攻击未被权威战斗系统接受"
 
 
 ## 在短促炮口动作结束后恢复开火前的移动状态。
@@ -388,6 +434,12 @@ func _build_world() -> void:
 		push_error(
 			"Unable to configure weapon attack visuals: %s" % error_string(attack_visual_error)
 		)
+	monster_world_controller = MonsterWorldControllerScript.new()
+	monster_world_controller.name = "MonsterWorldController"
+	add_child(monster_world_controller)
+	var monster_error := monster_world_controller.configure(sortable_world, combat_manifest)
+	if monster_error != OK:
+		push_error("Unable to configure monster world presentation: %s" % error_string(monster_error))
 
 	local_player_controller = LocalPlayerControllerScript.new()
 	local_player_controller.name = "LocalPlayerController"
@@ -455,6 +507,8 @@ func _build_multiplayer_presentation() -> void:
 	)
 	multiplayer_presenter.map_joined.connect(_on_authoritative_map_joined)
 	multiplayer_presenter.map_change_failed.connect(_on_authoritative_map_change_failed)
+	multiplayer_presenter.combat_snapshot_received.connect(_on_combat_snapshot_received)
+	multiplayer_presenter.combat_event_received.connect(_on_combat_event_received)
 	add_child(multiplayer_presenter)
 	var start_error: Error = multiplayer_presenter.start({
 		"offline_debug_enabled": multiplayer_offline_debug_enabled,
@@ -471,6 +525,13 @@ func _build_multiplayer_presentation() -> void:
 	if start_error != OK:
 		push_warning("Unable to start hall multiplayer presentation: %s" % error_string(start_error))
 	local_player_controller.set_multiplayer_presenter(multiplayer_presenter)
+	if multiplayer_offline_debug_enabled:
+		offline_combat_bridge = OfflineCombatAuthorityBridgeScript.new()
+		offline_combat_bridge.name = "OfflineCombatAuthorityBridge"
+		offline_combat_bridge.combat_snapshot_ready.connect(_on_combat_snapshot_received)
+		offline_combat_bridge.combat_event_ready.connect(_on_combat_event_received)
+		add_child(offline_combat_bridge)
+		_configure_offline_combat_for_active_map()
 
 
 ## 读取受控地图目录的 `definitions` 映射，格式错误时返回仅包含当前大厅的安全目录。
@@ -494,6 +555,8 @@ func _on_multiplayer_local_character_state_applied(state: Dictionary) -> void:
 ## 在控制器采用 [param _position] 后同步摄像机和小地图投影。
 func _on_local_player_position_changed(_position: Vector2) -> void:
 	_sync_player_nodes()
+	if offline_combat_bridge != null:
+		offline_combat_bridge.update_player_position(_position)
 
 
 ## 在本地路线自然完成后检查脚点附近是否存在地图出口。
@@ -516,6 +579,8 @@ func _on_active_world_will_replace() -> void:
 	selected_transition_id = &""
 	if combat_attack_controller != null:
 		combat_attack_controller.clear_effects()
+	if monster_world_controller != null:
+		monster_world_controller.clear()
 
 
 ## 在玩家停步后查找触发半径内最近的内部出口，并先预载其目标地图。
@@ -692,7 +757,42 @@ func _commit_map_bundle(
 	map_commit_failure_locked = false
 	pending_map_transition.clear()
 	pending_map_bundle.clear()
+	_configure_offline_combat_for_active_map()
 	return true
+
+
+## Rebuilds the editor-only combat authority for the currently committed map.
+## Design: Production online mode never creates this bridge and consumes only dedicated-server snapshots.
+func _configure_offline_combat_for_active_map() -> void:
+	if offline_combat_bridge == null or map_definition == null or navigation == null:
+		return
+	var error := offline_combat_bridge.configure_map(
+		String(map_definition.map_id),
+		multiplayer_map_instance_id,
+		player.position,
+		navigation,
+	)
+	if error != OK:
+		push_error("Unable to configure offline combat authority: %s" % error_string(error))
+
+
+## Projects one validated authority [param snapshot] into monsters and local vehicle HUD state.
+## [param snapshot] Combat document emitted by either the dedicated server or offline authority adapter.
+func _on_combat_snapshot_received(snapshot: Dictionary) -> void:
+	monster_world_controller.apply_snapshot(snapshot)
+	var vehicle: Variant = snapshot.get("local_vehicle", {})
+	if vehicle is Dictionary:
+		hud.set_vehicle_combat_state(vehicle)
+
+
+## Shows concise feedback for one resolved authority [param event].
+## [param event] Successful combat result containing damage and current target health.
+func _on_combat_event_received(event: Dictionary) -> void:
+	if StringName(event.get("event_type", "")) == &"energy_cannon_hit":
+		hint_label.text = "命中目标，造成%d点伤害（剩余%d）" % [
+			int(event.get("damage", 0)),
+			int(event.get("target_health", 0)),
+		]
 
 
 ## 报告不可恢复的客户端地图提交 [param message] 并停止网络会话，避免在错误地图上发输入。
