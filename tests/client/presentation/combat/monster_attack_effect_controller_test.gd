@@ -61,6 +61,24 @@ func _run() -> void:
 	contact["combat_actor_id"] = "photosensitive_orb_standard"
 	_expect(not controller.present_attack(contact), "contact monster should use body attack without a projectile")
 	_expect(controller.active_projectile_count() == 0, "contact attack should leave no projectile")
+	_expect(
+		controller.present_contact_impact(contact, Vector2(25.0, 30.0)),
+		"resolved contact attack should create its vehicle overlay",
+	)
+	_expect(
+		not controller.present_contact_impact(contact, Vector2(25.0, 30.0)),
+		"replayed contact impact should be deduplicated",
+	)
+	var impact := world.get_node_or_null(
+		"MonsterContactImpact_monster_orb_attack_2"
+	) as Node2D
+	_expect(
+		impact != null and impact.position == Vector2(25.0, 30.0),
+		"contact impact should use the authoritative target position",
+	)
+	_expect(controller.active_contact_impact_count() == 1, "one contact impact should be active")
+	controller.advance(0.34)
+	_expect(controller.active_contact_impact_count() == 0, "five 66 ms frames should finish after 0.33 seconds")
 	controller.queue_free()
 	world.queue_free()
 	_finish()

@@ -569,6 +569,7 @@ func _resolve_monster_attack(attack: Dictionary) -> void:
 		"attacker_id": attack["attacker_id"],
 		"target_entity_id": target_id,
 		"attack_archetype": attack["attack_archetype"],
+		"combat_actor_id": attack["combat_actor_id"],
 		"damage": int(damage_result.value["applied_damage"]),
 		"target_health": int(damage_result.value["health"]),
 		"target_destroyed": bool(damage_result.value["destroyed"]),

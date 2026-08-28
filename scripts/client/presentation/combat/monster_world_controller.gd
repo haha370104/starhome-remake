@@ -146,6 +146,8 @@ func _apply_recent_events(combat_snapshot: Dictionary) -> void:
 			_attack_effects.present_attack(event)
 		if event_type in [&"energy_cannon_hit", &"monster_attack_resolved"]:
 			_present_damage(event, combat_snapshot)
+		if event_type == &"monster_attack_resolved":
+			_present_contact_impact(event, combat_snapshot)
 		if event_type == &"energy_cannon_hit":
 			_present_nested_death(event)
 
@@ -157,15 +159,39 @@ func _present_damage(event: Dictionary, combat_snapshot: Dictionary) -> void:
 	var damage := int(event.get("damage", 0))
 	if damage <= 0:
 		return
-	var target_entity_id := String(event.get("target_entity_id", ""))
-	var anchor: Node2D = _views.get(target_entity_id)
-	if anchor == null and target_entity_id == String(combat_snapshot.get("local_entity_id", "")):
-		anchor = _local_player
+	var anchor := _target_anchor(event, combat_snapshot)
 	if anchor == null:
 		return
 	var damage_float: Node2D = CombatDamageFloatScript.new()
 	anchor.add_child(damage_float)
 	damage_float.present(damage)
+
+
+## 在贴身攻击权威结算点播放受击覆盖效果。
+## [param event] 怪物攻击结算事件。
+## [param combat_snapshot] 用于识别本地玩家的快照。
+func _present_contact_impact(event: Dictionary, combat_snapshot: Dictionary) -> void:
+	if _attack_effects == null or StringName(event.get("attack_archetype", "")) != &"contact_melee":
+		return
+	var anchor := _target_anchor(event, combat_snapshot)
+	if anchor == null:
+		return
+	_attack_effects.present_contact_impact(
+		event,
+		_world_parent.to_local(anchor.global_position),
+	)
+
+
+## 查找伤害事件对应的场景锚点。
+## [param event] 权威伤害事件。
+## [param combat_snapshot] 用于识别本地玩家的快照。
+## 返回怪物视图或本地玩家节点。
+func _target_anchor(event: Dictionary, combat_snapshot: Dictionary) -> Node2D:
+	var target_entity_id := String(event.get("target_entity_id", ""))
+	var anchor: Node2D = _views.get(target_entity_id)
+	if anchor == null and target_entity_id == String(combat_snapshot.get("local_entity_id", "")):
+		anchor = _local_player
+	return anchor
 
 
 ## 从最后一击事件中提取独立 `monster_died` 生命周期事件并播放一次。

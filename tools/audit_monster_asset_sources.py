@@ -57,6 +57,9 @@ ALE = {
     "orb_shadow": "pic3/npc/Shadow/CHN_2005_06_28_18_48_10_910.ale",
     "orb_death": "pic3/npc/OnDie/CHN_2005_06_28_18_47_46_906.ale",
     "orb_projectile": "pic3/npc/bullet/CHN_2005_06_28_18_47_52_907.ale",
+    # Glory's global hit-effect table still names the retired ``pic/...908``
+    # path. This live Glory path is byte-identical (MD5) to that ALE.
+    "orb_impact": "pic3/npc/CHN_2005_06_28_18_45_00_878.ale",
     "gel_move": "pic3/npc/CHN_2005_06_28_18_50_00_928.ale",
     "gel_idle": "pic3/npc/CHN_2005_06_28_18_50_06_929.ale",
     "gel_death": "pic3/npc/OnDie/CHN_2005_06_28_18_49_41_925.ale",
@@ -112,6 +115,7 @@ ASSETS: dict[str, tuple[str, str | None]] = {
     "om_larva/variants/toxic/idle": ("larva_idle", "larva_toxic"),
     "om_larva/variants/toxic/move": ("larva_move", "larva_toxic"),
     "photosensitive_orb/shared/effects/death": ("orb_death", None),
+    "photosensitive_orb/shared/effects/impact": ("orb_impact", None),
     "photosensitive_orb/shared/effects/projectile": ("orb_projectile", None),
     "photosensitive_orb/shared/shadow": ("orb_shadow", None),
     "photosensitive_orb/variants/standard/move_attack": ("orb_standard_move", None),
@@ -141,7 +145,6 @@ REMOVED = {
     "photosensitive_orb/shared/effects/energy_pulse_dark": "not referenced; duplicates the shadow under a misleading role",
     "photosensitive_orb/shared/effects/energy_pulse_orange": "not referenced and absent from the Glory package",
     "photosensitive_orb/shared/effects/energy_pulse_yellow": "not referenced and absent from the Glory package",
-    "photosensitive_orb/shared/effects/impact": "not referenced by the runtime catalog; no Glory business mapping",
     "photosensitive_orb/variants/unidentified/idle": "free-version-only unidentified fourth variant",
     "photosensitive_orb/variants/unidentified/move_attack": "free-version-only unidentified fourth variant",
     "toxic_gel/shared/effects/impact": "not referenced by the runtime catalog; no Glory business mapping",
@@ -436,6 +439,14 @@ def export_asset(target_relative: str, ale_key: str, palette_key: str | None, de
         "godot_scene": res_path(preview_path),
         "frames": frame_rows,
     }
+    if ale_key == "orb_impact":
+        metadata["source_evidence"].extend(
+            [
+                "荣耀版 global/golbalstring.fcc m_szNPCBulletAvi[0] names the legacy 908 hit effect",
+                "荣耀版 mainclient_me.fcc OnNpcmyattack creates laserblast at the damaged vehicle",
+                "Selected live Glory ALE is byte-identical to legacy CHN_2005_06_28_18_47_58_908.ale (MD5 5038ceae69659a9979fa38af07512bc4)",
+            ]
+        )
     if palette_source and palette_logical:
         metadata.update(
             {
@@ -512,6 +523,8 @@ def migrate() -> None:
             "evidence": [
                 "starhome_lz_ry_full_parsed/ftc_resources/expanded/loadfile/npcinfo_xc/npcinfo_xc.tab.cab",
                 "starhome_lz_ry_full_parsed/ftc_resources/expanded/npcclt1/npcclt1.fcc.cab",
+                "starhome_lz_ry_fcc_source/global/golbalstring.fcc",
+                "starhome_lz_ry_fcc_source/mainclient_me.fcc",
             ],
             "animations": rows,
             "palettes": palette_rows,

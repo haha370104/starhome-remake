@@ -208,6 +208,7 @@ func _test_monster_projectile_timing() -> void:
 	definition["position"] = Vector2(100.0, 0.0)
 	definition["attack_range"] = 120.0
 	definition["attack_archetype"] = &"ranged_projectile"
+	definition["combat_actor_id"] = "om_adult_standard"
 	definition["runtime_projectile_speed"] = 100.0
 	module.register_monster(definition)
 	module.advance_ticks(1)
@@ -224,6 +225,10 @@ func _test_monster_projectile_timing() -> void:
 	module.advance_ticks(1)
 	_expect(module.vehicle_state_for("player.projectile").health == 67, "monster projectile should apply damage exactly on arrival")
 	_expect(StringName(module.combat_events[-1]["event_type"]) == &"monster_attack_resolved", "arrival should emit the damage event")
+	_expect(
+		String(module.combat_events[-1].get("combat_actor_id", "")) == "om_adult_standard",
+		"resolved attack should retain the monster visual identity",
+	)
 
 
 ## 执行 `new_module` 对应的模块操作。

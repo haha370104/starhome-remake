@@ -46,6 +46,20 @@ func _run() -> void:
 	_expect(effects.active_effect_count() == 2, "new death generation should play independently")
 	effects.advance(0.71)
 	_expect(effects.active_effect_count() == 0, "seven frames at ten fps should finish after 0.7 seconds")
+	local_player.position = Vector2(300.0, 180.0)
+	controller.apply_snapshot(_snapshot(true, 60, [_contact_hit_event(3)]))
+	var attack_effects := controller.get_node_or_null("MonsterAttackEffects")
+	_expect(
+		attack_effects != null and attack_effects.active_contact_impact_count() == 1,
+		"contact damage event should create one vehicle overlay",
+	)
+	var contact_impact := world.get_node_or_null(
+		"MonsterContactImpact_monster_orb_attack_1"
+	) as Node2D
+	_expect(
+		contact_impact != null and contact_impact.position == local_player.position,
+		"contact overlay should appear at the local vehicle position",
+	)
 	controller.clear()
 	controller.queue_free()
 	world.queue_free()
@@ -93,6 +107,22 @@ func _death_hit_event(event_id: int, generation: int) -> Dictionary:
 			"death_generation": generation,
 			"position": [140.0, 220.0],
 		},
+	}
+
+
+## 构造感光质贴身攻击的权威伤害事件。
+## [param event_id] 战斗事件序号。
+## 返回事件字典。
+func _contact_hit_event(event_id: int) -> Dictionary:
+	return {
+		"event_id": event_id,
+		"event_type": "monster_attack_resolved",
+		"attack_id": "monster.orb.attack.1",
+		"attacker_id": "monster.orb",
+		"target_entity_id": "player.local",
+		"attack_archetype": "contact_melee",
+		"combat_actor_id": "photosensitive_orb_standard",
+		"damage": 3,
 	}
 
 

@@ -109,7 +109,8 @@
       "shared_effects": {
         "shadow": "res://assets/monsters/photosensitive_orb/shared/shadow/animation_frames.tres",
         "death": "res://assets/monsters/photosensitive_orb/shared/effects/death/animation_frames.tres",
-        "projectile": "res://assets/monsters/photosensitive_orb/shared/effects/projectile/animation_frames.tres"
+        "contact_impact": "res://assets/monsters/photosensitive_orb/shared/effects/impact/animation_frames.tres",
+        "legacy_declared_projectile_unused": "res://assets/monsters/photosensitive_orb/shared/effects/projectile/animation_frames.tres"
       },
       "variants": {
         "感光质": {"class": "NpcLightBall1", "move_attack": "res://assets/monsters/photosensitive_orb/variants/standard/move_attack/animation_frames.tres", "stand": "res://assets/monsters/photosensitive_orb/variants/standard/idle/animation_frames.tres"},
