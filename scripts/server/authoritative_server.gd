@@ -11,6 +11,10 @@ const MapJoinedContract := preload("res://scripts/network/contracts/map_joined.g
 const MapTransitionIntentContract := preload("res://scripts/network/contracts/map_transition_intent.gd")
 const TransportEndpointScript := preload("res://scripts/network/transport/network_transport_endpoint.gd")
 const CombatCatalogScript := preload("res://scripts/domain/combat/combat_definition_catalog.gd")
+const PlayerStateRecordScript := preload("res://scripts/server/persistence/player_state_record.gd")
+const FilePlayerStateRepositoryScript := preload("res://scripts/server/persistence/file_player_state_repository.gd")
+const AutosaveServiceScript := preload("res://scripts/server/persistence/authoritative_autosave_service.gd")
+const DomainResultScript := preload("res://scripts/core/domain_result.gd")
 
 signal snapshot_generated(snapshot: Dictionary)
 signal command_rejected(peer_id: int, code: StringName)
@@ -27,10 +31,12 @@ var _next_entity_number := 1
 var _network_started := false
 var _transport_endpoint: NetworkTransportEndpoint
 var _combat_catalog
+var player_state_repository: PlayerStateRepository
+var autosave_service: AuthoritativeAutosaveService
 
 
-## Initializes node dependencies after the node enters the scene tree.
-## Design: Runs within the authoritative server boundary; clients must not override the resulting state.
+## 节点进入场景树后初始化运行依赖。
+## 设计：该函数位于权威服务器边界，客户端不得覆盖其计算结果。
 func _ready() -> void:
 	if config == null:
 		config = ConfigScript.from_command_line(OS.get_cmdline_user_args())
@@ -62,14 +68,16 @@ func _ready() -> void:
 		call_deferred("_finish_smoke_test")
 
 
-## Initializes the subsystem and returns its startup result.
-## [param requested_config] Configuration data that controls the operation.
-## [param injected_map_instances] Optional fully loaded fixture/production instances admitted as one registry.
-## Returns Structured result data produced by the operation.
-## Design: Runs within the authoritative server boundary; clients must not override the resulting state.
+## 配置并初始化 `initialize` 对应的模块状态。
+## [param requested_config] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param injected_map_instances] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param injected_repository] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数位于权威服务器边界，客户端不得覆盖其计算结果。
 func initialize(
 	requested_config: DedicatedServerConfig,
 	injected_map_instances: Array[AuthoritativeMapInstance] = [],
+	injected_repository: PlayerStateRepository = null,
 ) -> Dictionary:
 	config = requested_config
 	var errors := config.validation_errors()
@@ -93,13 +101,16 @@ func initialize(
 		map_instance = injected_map_instances[0]
 	sessions = SessionRegistryScript.new()
 	sessions.configure(config.reconnect_grace_seconds)
+	var persistence_result := _initialize_persistence(injected_repository)
+	if not persistence_result.ok:
+		return persistence_result
 	_ticks_per_snapshot = config.simulation_hz / config.snapshot_hz
 	return _success(map_instance.definition.map_id)
 
 
-## Performs the `start_network` operation.
-## Returns Structured result data produced by the operation.
-## Design: Runs within the authoritative server boundary; clients must not override the resulting state.
+## 执行 `start_network` 对应的模块操作。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数位于权威服务器边界，客户端不得覆盖其计算结果。
 func start_network() -> Dictionary:
 	if _network_started:
 		return _failure(&"network_already_started", "ENet server is already listening")
@@ -113,17 +124,18 @@ func start_network() -> Dictionary:
 	return _success(config.port)
 
 
-## Performs the `stop_network` operation.
-## Design: Runs within the authoritative server boundary; clients must not override the resulting state.
+## 执行 `stop_network` 对应的模块操作。
+## 设计：该函数位于权威服务器边界，客户端不得覆盖其计算结果。
 func stop_network() -> void:
+	_save_all_persistent_players()
 	if not _network_started:
 		return
 	_transport_endpoint.close()
 	_network_started = false
 
 
-## Installs and binds the process-wide endpoint at the protocol's stable root NodePath.
-## Design: Server and client executables have different scene roots, so RPCs live on a fixed sibling node.
+## 执行 `ensure_transport_endpoint` 对应的模块操作。
+## 设计：该函数位于权威服务器边界，客户端不得覆盖其计算结果。
 func _ensure_transport_endpoint() -> void:
 	if _transport_endpoint != null:
 		return
@@ -141,17 +153,17 @@ func _ensure_transport_endpoint() -> void:
 	_transport_endpoint.peer_disconnected.connect(_on_peer_disconnected)
 
 
-## Advances fixed-step simulation state.
-## [param delta] Elapsed time in seconds for this update.
-## Design: Runs within the authoritative server boundary; clients must not override the resulting state.
+## 按物理帧推进当前节点的确定性状态。
+## [param delta] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 设计：该函数位于权威服务器边界，客户端不得覆盖其计算结果。
 func _physics_process(delta: float) -> void:
 	advance_simulation(delta, Time.get_ticks_msec())
 
 
-## Advances the managed state using the supplied update.
-## [param elapsed_seconds] Elapsed time in seconds for this update.
-## [param now_msec] Input value consumed by the operation.
-## Design: Runs within the authoritative server boundary; clients must not override the resulting state.
+## 推进并更新 `advance_simulation` 对应的模块状态。
+## [param elapsed_seconds] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param now_msec] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 设计：该函数位于权威服务器边界，客户端不得覆盖其计算结果。
 func advance_simulation(elapsed_seconds: float, now_msec := -1) -> void:
 	if map_instance == null or elapsed_seconds <= 0.0:
 		return
@@ -164,17 +176,39 @@ func advance_simulation(elapsed_seconds: float, now_msec := -1) -> void:
 			registered_instance.simulate(fixed_delta)
 		if server_tick % _ticks_per_snapshot == 0:
 			_emit_snapshot()
+	if autosave_service != null:
+		var autosave_result := autosave_service.advance(
+			elapsed_seconds,
+			Callable(self, "_capture_persistent_player_state"),
+		)
+		if not autosave_result.is_ok:
+			push_error("Authoritative autosave failed [%s]: %s" % [
+				autosave_result.error_code, autosave_result.error_message,
+			])
 	var cleanup_time := now_msec if now_msec >= 0 else Time.get_ticks_msec()
+	if autosave_service != null:
+		for expiring_session: ServerSession in sessions.all_sessions():
+			if (
+				not expiring_session.has_active_peer()
+				and expiring_session.expires_at_msec >= 0
+				and cleanup_time > expiring_session.expires_at_msec
+			):
+				autosave_service.save_player(
+					expiring_session.entity_id,
+					Callable(self, "_capture_persistent_player_state"),
+				)
 	for entity_id in sessions.cleanup_expired(cleanup_time):
+		if autosave_service != null:
+			autosave_service.unregister_player(entity_id)
 		_remove_entity_from_registered_map(entity_id)
 
 
-## Processes the requested protocol or gameplay operation.
-## [param peer_id] Stable identifier of the target value.
-## [param request] Serialized input received at the subsystem boundary.
-## [param now_msec] Input value consumed by the operation.
-## Returns Structured result data produced by the operation.
-## Design: Runs within the authoritative server boundary; clients must not override the resulting state.
+## 执行 `open_session` 对应的模块操作。
+## [param peer_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param request] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param now_msec] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数位于权威服务器边界，客户端不得覆盖其计算结果。
 func open_session(peer_id: int, request: Dictionary, now_msec := -1) -> Dictionary:
 	if map_instance == null:
 		return _failure(&"server_not_initialized", "server has no active map")
@@ -198,29 +232,40 @@ func open_session(peer_id: int, request: Dictionary, now_msec := -1) -> Dictiona
 	)
 	if not spawn_result.ok:
 		return spawn_result
+	var persistence_state_result = _register_persistent_player(
+		spawn_result.value,
+		map_instance,
+	)
+	if not persistence_state_result.is_ok:
+		map_instance.remove_entity(entity_id)
+		return _failure(persistence_state_result.error_code, persistence_state_result.error_message)
 	var session_result := sessions.create(peer_id, entity_id, current_time)
 	if not session_result.ok:
 		map_instance.remove_entity(entity_id)
+		if autosave_service != null:
+			autosave_service.unregister_player(entity_id)
 		return session_result
 	session_result.value.map_instance_id = map_instance.instance_id
+	if persistence_state_result.value is PlayerStateRecord:
+		_restore_persistent_player_state(session_result.value, persistence_state_result.value)
 	return _session_response(session_result.value, false)
 
 
-## Processes the requested protocol or gameplay operation.
-## [param peer_id] Stable identifier of the target value.
-## [param now_msec] Input value consumed by the operation.
-## Returns Structured result data produced by the operation.
-## Design: Runs within the authoritative server boundary; clients must not override the resulting state.
+## 执行 `disconnect_session` 对应的模块操作。
+## [param peer_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param now_msec] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数位于权威服务器边界，客户端不得覆盖其计算结果。
 func disconnect_session(peer_id: int, now_msec := -1) -> Dictionary:
 	var current_time := now_msec if now_msec >= 0 else Time.get_ticks_msec()
 	return sessions.mark_disconnected(peer_id, current_time)
 
 
-## Processes the requested protocol or gameplay operation.
-## [param peer_id] Stable identifier of the target value.
-## [param intent] Serialized input received at the subsystem boundary.
-## Returns Structured result data produced by the operation.
-## Design: Runs within the authoritative server boundary; clients must not override the resulting state.
+## 校验并处理 `handle_peer_move` 对应的模块状态。
+## [param peer_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param intent] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数位于权威服务器边界，客户端不得覆盖其计算结果。
 func handle_peer_move(peer_id: int, intent: Dictionary) -> Dictionary:
 	var session: ServerSession = sessions.session_for_peer(peer_id)
 	if session == null:
@@ -234,10 +279,10 @@ func handle_peer_move(peer_id: int, intent: Dictionary) -> Dictionary:
 	return result
 
 
-## Validates and resolves one authenticated ability [param intent] from [param peer_id].
-## [param peer_id] ENet identity already associated with a server session.
-## [param intent] Untrusted shared ability payload containing only map, ability, target and sequence.
-## Returns server-owned energy, cooldown, damage and death results or a stable rejection.
+## 执行 `handle_peer_use_ability` 对应的模块操作。
+## [param peer_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param intent] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func handle_peer_use_ability(peer_id: int, intent: Dictionary) -> Dictionary:
 	var session: ServerSession = sessions.session_for_peer(peer_id)
 	if session == null:
@@ -251,11 +296,11 @@ func handle_peer_use_ability(peer_id: int, intent: Dictionary) -> Dictionary:
 	return result
 
 
-## Validates and atomically applies one map transition requested by [param peer_id].
-## [param peer_id] Authenticated ENet peer that owns the transitioning entity.
-## [param raw_intent] Untrusted `MapTransitionIntent` dictionary from the shared protocol boundary.
-## Returns a success containing `map_joined`, target-only snapshot, and acknowledged transition sequence.
-## Design: Source removal happens only after destination spawn succeeds, so failure retains the old map state.
+## 执行 `handle_peer_map_transition` 对应的模块操作。
+## [param peer_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param raw_intent] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数位于权威服务器边界，客户端不得覆盖其计算结果。
 func handle_peer_map_transition(peer_id: int, raw_intent: Variant) -> Dictionary:
 	var session: ServerSession = sessions.session_for_peer(peer_id)
 	if session == null:
@@ -368,10 +413,10 @@ func handle_peer_map_transition(peer_id: int, raw_intent: Variant) -> Dictionary
 	})
 
 
-## Builds the current map-scoped world snapshot visible to [param peer_id].
-## [param peer_id] Active authenticated peer whose session determines the interest map.
-## Returns an empty dictionary for unknown/unavailable sessions, otherwise only that map's entities.
-## Design: This is the single interest-filter seam used by tests and network publication.
+## 执行 `snapshot_for_peer` 对应的模块操作。
+## [param peer_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数位于权威服务器边界，客户端不得覆盖其计算结果。
 func snapshot_for_peer(peer_id: int) -> Dictionary:
 	var session: ServerSession = sessions.session_for_peer(peer_id)
 	if session == null:
@@ -384,16 +429,16 @@ func snapshot_for_peer(peer_id: int) -> Dictionary:
 	)
 
 
-## Handles the signal callback for `on_peer_disconnected`.
-## [param peer_id] Stable identifier of the target value.
-## Design: Runs within the authoritative server boundary; clients must not override the resulting state.
+## 处理 `_on_peer_disconnected` 对应的信号回调。
+## [param peer_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 设计：该函数位于权威服务器边界，客户端不得覆盖其计算结果。
 func _on_peer_disconnected(peer_id: int) -> void:
 	disconnect_session(peer_id)
 
 
-## Handles a transport-authenticated session [param request] from [param peer_id].
-## [param peer_id] ENet sender identity supplied by MultiplayerAPI.
-## [param request] Versioned open/resume session payload.
+## 处理 `_on_transport_session_request` 对应的信号回调。
+## [param peer_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param request] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _on_transport_session_request(peer_id: int, request: Dictionary) -> void:
 	var result := open_session(peer_id, request)
 	_send_reliable(peer_id, {
@@ -402,18 +447,18 @@ func _on_transport_session_request(peer_id: int, request: Dictionary) -> void:
 	})
 
 
-## Handles a transport-authenticated movement [param intent] from [param peer_id].
-## [param peer_id] ENet sender identity supplied by MultiplayerAPI.
-## [param intent] Untrusted movement payload for authority validation.
+## 处理 `_on_transport_move_intent` 对应的信号回调。
+## [param peer_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param intent] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _on_transport_move_intent(peer_id: int, intent: Dictionary) -> void:
 	var result := handle_peer_move(peer_id, intent)
 	if not result.ok:
 		_send_reliable(peer_id, {"type": "command_rejected", "result": _wire_result(result)})
 
 
-## Resolves one authenticated ability [param intent] received from [param peer_id].
-## [param peer_id] ENet sender identity supplied by MultiplayerAPI.
-## [param intent] Strict client command that contains no damage or coordinate authority.
+## 处理 `_on_transport_use_ability_intent` 对应的信号回调。
+## [param peer_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param intent] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _on_transport_use_ability_intent(peer_id: int, intent: Dictionary) -> void:
 	var result := handle_peer_use_ability(peer_id, intent)
 	_send_reliable(peer_id, {
@@ -422,10 +467,10 @@ func _on_transport_use_ability_intent(peer_id: int, intent: Dictionary) -> void:
 	})
 
 
-## Handles an authenticated map-transition [param intent] from [param peer_id].
-## [param peer_id] ENet sender identity supplied by MultiplayerAPI.
-## [param intent] Untrusted shared `MapTransitionIntent` payload.
-## Design: Both success and rejection are reliable control messages correlated by transition sequence.
+## 处理 `_on_transport_map_transition_intent` 对应的信号回调。
+## [param peer_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param intent] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 设计：该函数位于权威服务器边界，客户端不得覆盖其计算结果。
 func _on_transport_map_transition_intent(peer_id: int, intent: Dictionary) -> void:
 	var result := handle_peer_map_transition(peer_id, intent)
 	if result.ok:
@@ -439,8 +484,8 @@ func _on_transport_map_transition_intent(peer_id: int, intent: Dictionary) -> vo
 	_send_reliable(peer_id, {"type": "command_rejected", "result": wire_result})
 
 
-## Publishes the current state to subscribed consumers.
-## Design: Runs within the authoritative server boundary; clients must not override the resulting state.
+## 发布 `emit_snapshot` 对应的模块状态。
+## 设计：该函数位于权威服务器边界，客户端不得覆盖其计算结果。
 func _emit_snapshot() -> void:
 	emitted_snapshot_count += 1
 	for registered_instance: AuthoritativeMapInstance in map_registry.all_instances():
@@ -455,20 +500,20 @@ func _emit_snapshot() -> void:
 				_transport_endpoint.send_world_snapshot(session.peer_id, session_snapshot)
 
 
-## Processes the requested protocol or gameplay operation.
-## [param peer_id] Stable identifier of the target value.
-## [param message] Serialized input received at the subsystem boundary.
-## Design: Runs within the authoritative server boundary; clients must not override the resulting state.
+## 执行 `send_reliable` 对应的模块操作。
+## [param peer_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param message] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 设计：该函数位于权威服务器边界，客户端不得覆盖其计算结果。
 func _send_reliable(peer_id: int, message: Dictionary) -> void:
 	if _network_started and peer_id > 0:
 		_transport_endpoint.send_server_message(peer_id, message)
 
 
-## Performs the `session_response` operation.
-## [param session] Input value consumed by the operation.
-## [param resumed] Whether the corresponding behavior is enabled.
-## Returns Structured result data produced by the operation.
-## Design: Runs within the authoritative server boundary; clients must not override the resulting state.
+## 执行 `session_response` 对应的模块操作。
+## [param session] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param resumed] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数位于权威服务器边界，客户端不得覆盖其计算结果。
 func _session_response(session: ServerSession, resumed: bool) -> Dictionary:
 	var session_map := map_registry.instance_by_id(session.map_instance_id)
 	if session_map == null:
@@ -494,10 +539,10 @@ func _session_response(session: ServerSession, resumed: bool) -> Dictionary:
 	})
 
 
-## Performs the `wire_result` operation.
-## [param result] Input value consumed by the operation.
-## Returns Structured result data produced by the operation.
-## Design: Runs within the authoritative server boundary; clients must not override the resulting state.
+## 执行 `wire_result` 对应的模块操作。
+## [param result] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数位于权威服务器边界，客户端不得覆盖其计算结果。
 func _wire_result(result: Dictionary) -> Dictionary:
 	var wire := result.duplicate(true)
 	wire["code"] = String(result.get("code", &"unknown"))
@@ -507,17 +552,198 @@ func _wire_result(result: Dictionary) -> Dictionary:
 	return wire
 
 
-## Performs the `finish_smoke_test` operation.
-## Design: Runs within the authoritative server boundary; clients must not override the resulting state.
+## 执行 `finish_smoke_test` 对应的模块操作。
+## 设计：该函数位于权威服务器边界，客户端不得覆盖其计算结果。
 func _finish_smoke_test() -> void:
 	print("STARHOME_SERVER_SMOKE_OK")
 	stop_network()
 	get_tree().quit(0)
 
 
-## Loads every server-admitted map listed by the configured world catalog.
-## Returns a success containing the primary map instance, or an atomic startup failure.
-## Design: The catalog is deployment configuration; clients can never request arbitrary resource paths.
+## 初始化可注入仓储，并建立配置化的权威自动存档服务。
+## [param injected_repository] 测试或部署注入的仓储；为空时使用配置指定的文件替身。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：服务器应用层拥有定时和状态采集，仓储实现只承担事务化存储。
+func _initialize_persistence(injected_repository: PlayerStateRepository) -> Dictionary:
+	player_state_repository = null
+	autosave_service = null
+	if not config.persistence_enabled:
+		return _success(false)
+	player_state_repository = injected_repository
+	if player_state_repository == null:
+		player_state_repository = FilePlayerStateRepositoryScript.new(
+			config.player_state_store_path
+		)
+	var repository_result = player_state_repository.initialize()
+	if not repository_result.is_ok:
+		return _failure(repository_result.error_code, repository_result.error_message)
+	autosave_service = AutosaveServiceScript.new()
+	var autosave_result = autosave_service.configure(
+		player_state_repository,
+		config.autosave_interval_seconds,
+	)
+	if not autosave_result.is_ok:
+		return _failure(autosave_result.error_code, autosave_result.error_message)
+	return _success(true)
+
+
+## 为新权威实体构造首次聚合，或载入仓储中同角色的既有聚合。
+## [param entity] 刚由服务器接纳的角色实体。
+## [param instance] 当前拥有该实体的权威地图实例。
+func _register_persistent_player(
+	entity: AuthoritativeEntity,
+	instance: AuthoritativeMapInstance,
+):
+	if autosave_service == null:
+		return DomainResultScript.ok()
+	var vehicle_state := instance.vehicle_combat_state_for(entity.entity_id)
+	var state_result = PlayerStateRecordScript.from_dictionary({
+		"schema_version": PlayerStateRecord.CURRENT_SCHEMA_VERSION,
+		"account_id": "account.%s" % entity.entity_id,
+		"account_name": entity.entity_id,
+		"account_status": "active",
+		"character_id": entity.entity_id,
+		"display_name": entity.entity_id,
+		"revision": 0,
+		"inventory_revision": 0,
+		"inventory_capacity": 40,
+		"inventory_stacks": [],
+		"equipment_slots": [{
+			"owner_kind": "vehicle",
+			"slot_id": "primary_weapon",
+			"item_instance_id": "equipment.%s.primary_weapon" % entity.entity_id,
+			"item_definition_id": "recruit_energy_cannon",
+			"max_durability": 900,
+			"durability": 900,
+			"upgrade_level": 0,
+		}],
+		"character_max_health": 100,
+		"character_health": 100,
+		"character_experience": 0,
+		"vehicle_id": "vehicle.%s" % entity.entity_id,
+		"vehicle_definition_id": "recruit_tank",
+		"vehicle_max_health": vehicle_state.max_health if vehicle_state != null else 70,
+		"vehicle_health": vehicle_state.health if vehicle_state != null else 70,
+		"reserve_energy_capacity": vehicle_state.reserve_energy_capacity if vehicle_state != null else 10000.0,
+		"reserve_energy": vehicle_state.reserve_energy if vehicle_state != null else 10000.0,
+		"working_energy_capacity": vehicle_state.working_energy_capacity if vehicle_state != null else 100.0,
+		"working_energy": vehicle_state.working_energy if vehicle_state != null else 100.0,
+		"output_power": vehicle_state.power_output if vehicle_state != null else 21.0,
+		"map_id": String(instance.definition.map_id),
+		"map_instance_id": instance.instance_id,
+		"position": [entity.position.x, entity.position.y],
+		"facing_direction": entity.facing_index,
+		"checkpoint_id": "%s.autosave" % instance.definition.map_id,
+	})
+	if not state_result.is_ok:
+		return state_result
+	return autosave_service.register_player(state_result.value)
+
+
+## 从会话所属地图采集最新位置、朝向和战车资源到候选聚合。
+## [param state] 自动存档服务持有的隔离聚合副本。
+func _capture_persistent_player_state(state: PlayerStateRecord):
+	var session: ServerSession = sessions.session_for_entity(state.character_id)
+	if session == null:
+		return DomainResultScript.failure(
+			&"persistence.autosave_session_missing",
+			"registered autosave character has no authoritative session",
+		)
+	var instance := map_registry.instance_by_id(session.map_instance_id)
+	var entity: AuthoritativeEntity = instance.entities.get(session.entity_id) if instance != null else null
+	if entity == null:
+		return DomainResultScript.failure(
+			&"persistence.autosave_entity_missing",
+			"registered autosave character has no authoritative entity",
+		)
+	state.map_id = String(instance.definition.map_id)
+	state.map_instance_id = instance.instance_id
+	state.position = entity.position
+	state.facing_direction = entity.facing_index
+	state.checkpoint_id = "%s.autosave" % instance.definition.map_id
+	var vehicle_state := instance.vehicle_combat_state_for(entity.entity_id)
+	if vehicle_state != null:
+		state.vehicle_max_health = vehicle_state.max_health
+		state.vehicle_health = vehicle_state.health
+		state.reserve_energy_capacity = vehicle_state.reserve_energy_capacity
+		state.reserve_energy = vehicle_state.reserve_energy
+		state.working_energy_capacity = vehicle_state.working_energy_capacity
+		state.working_energy = vehicle_state.working_energy
+		state.output_power = vehicle_state.power_output
+	var validation = state.validate()
+	return DomainResultScript.ok(state) if validation.is_ok else validation
+
+
+## 将已载入聚合恢复到会话拥有的权威实体和地图实例。
+## [param session] 已建立但尚未向客户端发布的服务器会话。
+## [param state] 仓储返回且已完成结构校验的玩家聚合。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：存档提供资源当前值和上次位置，地图定义仍决定可达性、容量与功率上限。
+func _restore_persistent_player_state(
+	session: ServerSession,
+	state: PlayerStateRecord,
+) -> bool:
+	var source := map_registry.instance_by_id(session.map_instance_id)
+	var target := map_registry.instance_by_id(state.map_instance_id)
+	if target == null:
+		target = map_registry.instance_by_map_id(state.map_id)
+	if source == null or target == null:
+		return false
+	var source_entity: AuthoritativeEntity = source.entities.get(session.entity_id)
+	if source_entity == null:
+		return false
+	var restored_position := target.admitted_spawn_position(
+		state.position,
+		StringName(session.entity_id) if target == source else &"",
+	)
+	if not restored_position.is_finite():
+		return false
+	var restored_entity := source_entity
+	if target != source:
+		var spawn_result := target.spawn_entity(
+			session.entity_id,
+			restored_position,
+			source_entity.movement_speed,
+		)
+		if not spawn_result.ok:
+			return false
+		restored_entity = spawn_result.value
+		if not source.remove_entity(session.entity_id):
+			target.remove_entity(session.entity_id)
+			return false
+		session.map_instance_id = target.instance_id
+	restored_entity.position = restored_position
+	restored_entity.target_position = restored_position
+	restored_entity.path = PackedVector2Array([restored_position])
+	restored_entity.path_index = restored_entity.path.size()
+	restored_entity.facing_index = state.facing_direction
+	restored_entity.action = &"idle"
+	if target.vehicle_combat_state_for(session.entity_id) != null:
+		var combat_restore := target.restore_vehicle_combat_state(session.entity_id, state)
+		if not combat_restore.ok:
+			return false
+	return true
+
+
+## 立即提交全部已登记角色，未启用持久化时安全忽略。
+func _save_all_persistent_players() -> void:
+	if autosave_service == null:
+		return
+	var result := autosave_service.save_all(Callable(self, "_capture_persistent_player_state"))
+	if not result.is_ok:
+		push_error("Authoritative persistence flush failed [%s]: %s" % [
+			result.error_code, result.error_message,
+		])
+
+
+## 在服务器节点退出场景树前执行最后一次权威存档。
+func _exit_tree() -> void:
+	_save_all_persistent_players()
+
+
+## 加载并校验 `load_configured_map_instances` 对应的模块状态。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数位于权威服务器边界，客户端不得覆盖其计算结果。
 func _load_configured_map_instances() -> Dictionary:
 	var definition_paths := PackedStringArray([config.map_config_path])
 	if FileAccess.file_exists(config.map_catalog_path):
@@ -573,18 +799,18 @@ func _load_configured_map_instances() -> Dictionary:
 	return _success(map_instance)
 
 
-## Applies validated server collision settings to one [param instance].
-## [param instance] Loaded or injectable authoritative map instance being admitted.
-## Design: Injected fixtures and file-backed production maps receive identical authority policy.
+## 执行 `configure_map_instance` 对应的模块操作。
+## [param instance] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 设计：该函数位于权威服务器边界，客户端不得覆盖其计算结果。
 func _configure_map_instance(instance: AuthoritativeMapInstance) -> void:
 	instance.dynamic_blocking_enabled = config.dynamic_blocking_enabled
 	instance.dynamic_blocking_radius = config.dynamic_blocking_radius
 
 
-## Copies persistent authority state from [param source] into a newly spawned [param destination].
-## [param source] Entity still owned by the source map before atomic commit.
-## [param destination] Target-map entity that already passed spawn admission.
-## Design: Map transfer resets motion but preserves input ordering, facing, speed, and monotonic revision.
+## 执行 `copy_transitioned_entity_state` 对应的模块操作。
+## [param source] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param destination] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 设计：该函数位于权威服务器边界，客户端不得覆盖其计算结果。
 func _copy_transitioned_entity_state(
 	source: AuthoritativeEntity,
 	destination: AuthoritativeEntity,
@@ -599,11 +825,11 @@ func _copy_transitioned_entity_state(
 	destination.target_position = destination.position
 
 
-## Repositions [param entity] for a transition that remains inside [param destination_instance].
-## [param entity] Existing entity reused by a same-instance portal.
-## [param destination_instance] Authoritative instance that owns both portal endpoints.
-## [param spawn_position] Server-resolved and walkable destination foot point.
-## Design: Same-map portals avoid duplicate-ID spawning while retaining the same atomic state semantics.
+## 执行 `place_transitioned_entity` 对应的模块操作。
+## [param entity] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param destination_instance] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param spawn_position] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 设计：该函数位于权威服务器边界，客户端不得覆盖其计算结果。
 func _place_transitioned_entity(
 	entity: AuthoritativeEntity,
 	destination_instance: AuthoritativeMapInstance,
@@ -618,10 +844,10 @@ func _place_transitioned_entity(
 	entity.state_revision += 1
 
 
-## Removes [param entity_id] from whichever registered map currently owns it.
-## [param entity_id] Session entity removed after reconnect grace expiration.
-## Returns true when a registered map contained and removed the entity.
-## Design: Cleanup remains correct after map transfers even though the expired session index is gone.
+## 执行 `remove_entity_from_registered_map` 对应的模块操作。
+## [param entity_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数位于权威服务器边界，客户端不得覆盖其计算结果。
 func _remove_entity_from_registered_map(entity_id: String) -> bool:
 	for registered_instance: AuthoritativeMapInstance in map_registry.all_instances():
 		if registered_instance.remove_entity(entity_id):
@@ -629,18 +855,18 @@ func _remove_entity_from_registered_map(entity_id: String) -> bool:
 	return false
 
 
-## Performs the `success` operation.
-## [param value] New value requested by the caller.
-## Returns Structured result data produced by the operation.
-## Design: Runs within the authoritative server boundary; clients must not override the resulting state.
+## 执行 `success` 对应的模块操作。
+## [param value] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数位于权威服务器边界，客户端不得覆盖其计算结果。
 func _success(value: Variant) -> Dictionary:
 	return {"ok": true, "code": &"ok", "value": value}
 
 
-## Performs the `failure` operation.
-## [param code] Stable identifier of the target value.
-## [param message] Serialized input received at the subsystem boundary.
-## Returns Structured result data produced by the operation.
-## Design: Runs within the authoritative server boundary; clients must not override the resulting state.
+## 执行 `failure` 对应的模块操作。
+## [param code] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param message] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数位于权威服务器边界，客户端不得覆盖其计算结果。
 func _failure(code: StringName, message: String) -> Dictionary:
 	return {"ok": false, "code": code, "message": message}

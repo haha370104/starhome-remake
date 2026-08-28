@@ -8,10 +8,10 @@ var _by_map_id: Dictionary = {}
 var _by_legacy_code: Dictionary = {}
 
 
-## Registers one fully loaded authoritative [param instance] under its business and legacy identifiers.
-## [param instance] Loaded map instance whose definition and navigation are ready for simulation.
-## Returns a success result containing the instance, or a duplicate/invalid identifier failure.
-## Design: Registration is the admission boundary; unresolved map files never become transition targets.
+## 执行 `register_instance` 对应的模块操作。
+## [param instance] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数位于权威服务器边界，客户端不得覆盖其计算结果。
 func register_instance(instance: AuthoritativeMapInstance) -> Dictionary:
 	if instance == null or instance.definition == null or instance.navigation == null:
 		return _failure(&"map_registry.invalid_instance", "map instance is not fully loaded")
@@ -34,17 +34,24 @@ func register_instance(instance: AuthoritativeMapInstance) -> Dictionary:
 	return _success(instance)
 
 
-## Retrieves the authoritative instance identified by [param instance_id].
-## [param instance_id] Stable map-instance identifier carried by commands and sessions.
-## Returns the registered instance, or `null` when it is unknown.
+## 执行 `instance_by_id` 对应的模块操作。
+## [param instance_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func instance_by_id(instance_id: String) -> AuthoritativeMapInstance:
 	return _by_instance_id.get(instance_id)
 
 
-## Resolves the server-admitted target for [param transition].
-## [param transition] Source-map transition containing a business map ID and/or legacy code.
-## Returns the registered target instance, or `null` for missing and external-only targets.
-## Design: Runtime transfer resolution never reads arbitrary paths supplied by a client.
+## 按业务地图标识查询当前服务器登记的运行实例。
+## [param map_id] 不含运行实例后缀的稳定业务地图标识。
+## 返回该函数计算、查询或操作得到的结果。
+func instance_by_map_id(map_id: String) -> AuthoritativeMapInstance:
+	return _by_map_id.get(map_id)
+
+
+## 执行 `resolve_transition_target` 对应的模块操作。
+## [param transition] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数位于权威服务器边界，客户端不得覆盖其计算结果。
 func resolve_transition_target(transition: MapTransition) -> AuthoritativeMapInstance:
 	if not transition.destination_map_id.is_empty():
 		var by_id: AuthoritativeMapInstance = _by_map_id.get(String(transition.destination_map_id))
@@ -55,8 +62,8 @@ func resolve_transition_target(transition: MapTransition) -> AuthoritativeMapIns
 	return null
 
 
-## Retrieves every registered instance in deterministic instance-ID order.
-## Returns a typed array used by fixed-step simulation and snapshot publication.
+## 执行 `all_instances` 对应的模块操作。
+## 返回该函数计算、查询或操作得到的结果。
 func all_instances() -> Array[AuthoritativeMapInstance]:
 	var keys := _by_instance_id.keys()
 	keys.sort()
@@ -66,16 +73,16 @@ func all_instances() -> Array[AuthoritativeMapInstance]:
 	return result
 
 
-## Builds a conventional successful server operation result for [param value].
-## [param value] Value returned to the registry caller.
-## Returns a dictionary with stable `ok`, `code`, and `value` fields.
+## 执行 `success` 对应的模块操作。
+## [param value] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func _success(value: Variant) -> Dictionary:
 	return {"ok": true, "code": &"ok", "value": value}
 
 
-## Builds a conventional failed server operation result.
-## [param code] Stable machine-readable failure code.
-## [param message] Human-readable diagnostic message.
-## Returns a dictionary with stable `ok`, `code`, and `message` fields.
+## 执行 `failure` 对应的模块操作。
+## [param code] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param message] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func _failure(code: StringName, message: String) -> Dictionary:
 	return {"ok": false, "code": code, "message": message}

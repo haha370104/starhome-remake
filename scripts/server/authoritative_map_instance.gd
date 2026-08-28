@@ -21,10 +21,10 @@ var _combat_assembly: Dictionary = {}
 var _combat_weapons: Dictionary = {}
 
 
-## Loads and validates the requested resource data.
-## [param map_config_path] Resource or movement path consumed by the operation.
-## Returns Structured result data produced by the operation.
-## Design: Runs within the authoritative server boundary; clients must not override the resulting state.
+## 加载并校验 `load_map` 对应的模块状态。
+## [param map_config_path] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数位于权威服务器边界，客户端不得覆盖其计算结果。
 func load_map(map_config_path: String) -> Dictionary:
 	var loader = MapDefinitionLoaderScript.new()
 	definition = loader.load_file(map_config_path)
@@ -42,11 +42,11 @@ func load_map(map_config_path: String) -> Dictionary:
 	return _success(definition)
 
 
-## Configures optional map-scoped combat from [param catalog] at [param simulation_hz].
-## [param catalog] Validated gameplay definition catalog owned by the server process.
-## [param simulation_hz] Fixed authority frequency used for cooldown, AI and respawn timing.
-## Returns success with the monster count, including zero for maps without an encounter.
-## Design: Map instances own combat populations so spawn rules and interest snapshots remain map-scoped.
+## 执行 `configure_combat` 对应的模块操作。
+## [param catalog] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param simulation_hz] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数位于权威服务器边界，客户端不得覆盖其计算结果。
 func configure_combat(catalog, simulation_hz: int) -> Dictionary:
 	if definition == null or navigation == null:
 		return _failure(&"combat.map_not_loaded", "load map navigation before combat")
@@ -88,12 +88,12 @@ func configure_combat(catalog, simulation_hz: int) -> Dictionary:
 	return _success(combat_module.monsters.size())
 
 
-## Builds the requested runtime object from configuration data.
-## [param entity_id] Stable identifier of the target value.
-## [param requested_position] World-space position used by the operation.
-## [param movement_speed] Input value consumed by the operation.
-## Returns Structured result data produced by the operation.
-## Design: Runs within the authoritative server boundary; clients must not override the resulting state.
+## 创建 `spawn_entity` 对应的模块状态。
+## [param entity_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param requested_position] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param movement_speed] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数位于权威服务器边界，客户端不得覆盖其计算结果。
 func spawn_entity(entity_id: String, requested_position: Vector2, movement_speed: float) -> Dictionary:
 	if definition == null or navigation == null:
 		return _failure(&"map_not_loaded", "load a map before spawning entities")
@@ -121,11 +121,11 @@ func spawn_entity(entity_id: String, requested_position: Vector2, movement_speed
 	return _success(entity)
 
 
-## Resolves an admitted spawn near [param requested_position] while excluding [param entity_id].
-## [param requested_position] Server-owned entry or initial spawn coordinate.
-## [param entity_id] Existing entity ignored for same-instance portal admission, or a new entity ID.
-## Returns the nearest statically and dynamically available point, or [constant Vector2.INF].
-## Design: Initial spawn and map transfer share one target-admission policy without mutating navigation.
+## 执行 `admitted_spawn_position` 对应的模块操作。
+## [param requested_position] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param entity_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数位于权威服务器边界，客户端不得覆盖其计算结果。
 func admitted_spawn_position(
 	requested_position: Vector2,
 	entity_id: StringName = &"",
@@ -140,20 +140,19 @@ func admitted_spawn_position(
 	return spawn_position
 
 
-## Mutates the managed collection for the requested value.
-## [param entity_id] Stable identifier of the target value.
-## Returns Whether the operation completed or the queried condition is satisfied.
-## Design: Runs within the authoritative server boundary; clients must not override the resulting state.
+## 移除并清理 `remove_entity` 对应的模块状态。
+## [param entity_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数位于权威服务器边界，客户端不得覆盖其计算结果。
 func remove_entity(entity_id: String) -> bool:
 	if combat_module != null:
 		combat_module.unregister_vehicle(entity_id)
 	return entities.erase(entity_id)
 
 
-## Resolves an authenticated ability [param raw_intent] for [param entity_id] inside this map authority.
-## [param entity_id] Session-owned vehicle entity selected by the server transport layer.
-## [param raw_intent] Untrusted shared ability contract from the network boundary.
-## Returns the authoritative combat result without accepting damage, energy or position from the client.
+## 执行 `handle_use_ability` 对应的模块操作。
+## [param entity_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param raw_intent] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func handle_use_ability(entity_id: String, raw_intent: Variant):
 	if combat_module == null:
 		return _failure(&"combat.not_available", "this map has no configured combat encounter")
@@ -161,11 +160,11 @@ func handle_use_ability(entity_id: String, raw_intent: Variant):
 	return _success(result.value) if result.is_ok else _failure(result.error_code, result.error_message)
 
 
-## Processes the requested protocol or gameplay operation.
-## [param entity_id] Stable identifier of the target value.
-## [param raw_intent] Serialized input received at the subsystem boundary.
-## Returns Structured result data produced by the operation.
-## Design: Runs within the authoritative server boundary; clients must not override the resulting state.
+## 校验并处理 `handle_move_intent` 对应的模块状态。
+## [param entity_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param raw_intent] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数位于权威服务器边界，客户端不得覆盖其计算结果。
 func handle_move_intent(entity_id: String, raw_intent: Variant) -> Dictionary:
 	var entity: AuthoritativeEntity = entities.get(entity_id)
 	if entity == null:
@@ -209,9 +208,9 @@ func handle_move_intent(entity_id: String, raw_intent: Variant) -> Dictionary:
 	})
 
 
-## Advances the managed state using the supplied update.
-## [param delta] Elapsed time in seconds for this update.
-## Design: Runs within the authoritative server boundary; clients must not override the resulting state.
+## 推进并更新 `simulate` 对应的模块状态。
+## [param delta] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 设计：该函数位于权威服务器边界，客户端不得覆盖其计算结果。
 func simulate(delta: float) -> void:
 	var entity_ids := entities.keys()
 	entity_ids.sort()
@@ -236,11 +235,11 @@ func simulate(delta: float) -> void:
 		combat_module.advance_ticks(1)
 
 
-## Finds the nearest static navigation point that clears every other entity foot point and reserved destination.
-## [param requested_position] Preferred world-space target or spawn position.
-## [param excluded_entity_id] Entity omitted from clearance checks, or an empty name during spawning.
-## Returns the nearest available navigation point, or [constant Vector2.INF] when no point qualifies.
-## Design: Dynamic occupancy is layered over immutable map navigation and never mutates static walkability data.
+## 执行 `closest_dynamically_available_position` 对应的模块操作。
+## [param requested_position] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param excluded_entity_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数位于权威服务器边界，客户端不得覆盖其计算结果。
 func _closest_dynamically_available_position(
 	requested_position: Vector2,
 	excluded_entity_id: StringName,
@@ -260,12 +259,12 @@ func _closest_dynamically_available_position(
 	return best_position
 
 
-## Reports whether [param candidate] respects the configured clearance from other current and optionally reserved foot points.
-## [param candidate] World-space position being considered for an entity.
-## [param excluded_entity_id] Entity whose own position and reservation are ignored.
-## [param include_reserved_targets] Whether moving entities' terminal destinations also reserve clearance.
-## Returns true when no relevant entity point is closer than [member dynamic_blocking_radius].
-## Design: The radius is the minimum centre-to-centre foot-point distance, not a per-entity radius to be doubled.
+## 执行 `position_has_dynamic_clearance` 对应的模块操作。
+## [param candidate] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param excluded_entity_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param include_reserved_targets] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数位于权威服务器边界，客户端不得覆盖其计算结果。
 func _position_has_dynamic_clearance(
 	candidate: Vector2,
 	excluded_entity_id: StringName,
@@ -287,12 +286,12 @@ func _position_has_dynamic_clearance(
 	return true
 
 
-## Builds a static-map path while temporarily excluding navigation nodes occupied by other entities.
-## [param entity_id] Moving entity omitted from dynamic blockers.
-## [param from_position] Current authoritative foot point.
-## [param to_position] Already validated authoritative destination.
-## Returns an unsimplified path that cannot reintroduce disabled nodes through line-of-sight shortening.
-## Design: Point disabling is scoped to this synchronous query and restored immediately, preserving shared static navigation.
+## 查询并返回 `find_authoritative_path` 对应的模块状态。
+## [param entity_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param from_position] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param to_position] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数位于权威服务器边界，客户端不得覆盖其计算结果。
 func _find_authoritative_path(
 	entity_id: String,
 	from_position: Vector2,
@@ -321,10 +320,10 @@ func _find_authoritative_path(
 	return path
 
 
-## Captures the fields mutated by one entity simulation step so a dynamically blocked step can be rolled back atomically.
-## [param entity] Authoritative entity about to be simulated.
-## Returns a private motion-state snapshot used only within the current server tick.
-## Design: Rollback retains the entity's path command while preventing partial waypoint or facing advancement.
+## 执行 `capture_motion_state` 对应的模块操作。
+## [param entity] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数位于权威服务器边界，客户端不得覆盖其计算结果。
 func _capture_motion_state(entity: AuthoritativeEntity) -> Dictionary:
 	return {
 		"position": entity.position,
@@ -335,10 +334,10 @@ func _capture_motion_state(entity: AuthoritativeEntity) -> Dictionary:
 	}
 
 
-## Restores [param entity] from a private [param motion_state] after dynamic collision rejection.
-## [param entity] Entity whose attempted step was blocked.
-## [param motion_state] State captured immediately before simulation.
-## Design: A blocked entity remains idle for the snapshot but keeps its route for a later tick when space clears.
+## 执行 `restore_motion_state` 对应的模块操作。
+## [param entity] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param motion_state] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 设计：该函数位于权威服务器边界，客户端不得覆盖其计算结果。
 func _restore_motion_state(entity: AuthoritativeEntity, motion_state: Dictionary) -> void:
 	entity.position = motion_state.position
 	entity.path_index = motion_state.path_index
@@ -347,12 +346,12 @@ func _restore_motion_state(entity: AuthoritativeEntity, motion_state: Dictionary
 	entity.state_revision = int(motion_state.state_revision) + 1
 
 
-## Reports whether a proposed foot-point segment enters another entity's configured blocking radius.
-## [param entity_id] Moving entity omitted from the blocker set.
-## [param from_position] Start of the proposed authoritative step.
-## [param to_position] End of the proposed authoritative step.
-## Returns true when the segment would overlap another current foot point.
-## Design: Segment clearance prevents high-speed tunnelling and deterministic entity-order swaps during one server tick.
+## 执行 `movement_intersects_dynamic_blocker` 对应的模块操作。
+## [param entity_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param from_position] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param to_position] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数位于权威服务器边界，客户端不得覆盖其计算结果。
 func _movement_intersects_dynamic_blocker(
 	entity_id: String,
 	from_position: Vector2,
@@ -371,11 +370,11 @@ func _movement_intersects_dynamic_blocker(
 	return false
 
 
-## Projects [param point] onto the finite segment from [param segment_start] to [param segment_end].
-## [param point] World-space point tested against the movement segment.
-## [param segment_start] First segment endpoint.
-## [param segment_end] Second segment endpoint.
-## Returns the closest point on the finite segment.
+## 执行 `closest_point_on_segment` 对应的模块操作。
+## [param point] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param segment_start] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param segment_end] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func _closest_point_on_segment(
 	point: Vector2,
 	segment_start: Vector2,
@@ -389,11 +388,11 @@ func _closest_point_on_segment(
 	return segment_start + segment * weight
 
 
-## Serializes the current state into a transport-safe dictionary.
-## [param server_tick] Sequence, tick, or index value used by the operation.
-## [param server_time_seconds] Elapsed time in seconds for this update.
-## Returns Structured result data produced by the operation.
-## Design: Runs within the authoritative server boundary; clients must not override the resulting state.
+## 执行 `snapshot` 对应的模块操作。
+## [param server_tick] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param server_time_seconds] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数位于权威服务器边界，客户端不得覆盖其计算结果。
 func snapshot(server_tick: int, server_time_seconds: float) -> Dictionary:
 	var entity_snapshots: Array[Dictionary] = []
 	var entity_ids := entities.keys()
@@ -407,11 +406,11 @@ func snapshot(server_tick: int, server_time_seconds: float) -> Dictionary:
 	}
 
 
-## Serializes the world plus private combat state visible to [param actor_id].
-## [param server_tick] Current fixed authority tick.
-## [param server_time_seconds] Current simulation time in seconds.
-## [param actor_id] Authenticated recipient entity whose vehicle resources may be disclosed.
-## Returns the ordinary world snapshot with an optional `combat` document.
+## 执行 `snapshot_for_actor` 对应的模块操作。
+## [param server_tick] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param server_time_seconds] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param actor_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func snapshot_for_actor(server_tick: int, server_time_seconds: float, actor_id: String) -> Dictionary:
 	var result := snapshot(server_tick, server_time_seconds)
 	if combat_module != null:
@@ -419,9 +418,45 @@ func snapshot_for_actor(server_tick: int, server_time_seconds: float, actor_id: 
 	return result
 
 
-## Registers [param entity_id] with the already configured starter vehicle combat definition.
-## [param entity_id] Existing movement entity entering this combat-enabled map instance.
-## Returns a map-style success/failure result while all mutable resources remain server-owned.
+## 查询当前地图内指定实体的权威战车资源状态。
+## [param entity_id] 已在本地图登记的玩家战车实体标识。
+## 返回该函数计算、查询或操作得到的结果。
+func vehicle_combat_state_for(entity_id: String) -> VehicleCombatState:
+	if combat_module == null:
+		return null
+	var actor_value: Variant = combat_module.actors.get(entity_id)
+	if not actor_value is Dictionary:
+		return null
+	return (actor_value as Dictionary).get("vehicle_state") as VehicleCombatState
+
+
+## 从存档恢复指定战车的可消耗资源当前值。
+## [param entity_id] 已在本地图登记的玩家战车实体标识。
+## [param persisted_state] 已通过仓储校验的玩家完整聚合。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：装备定义仍决定容量与功率，存档只能恢复生命、储备能量和当前能量，不能改写配置上限。
+func restore_vehicle_combat_state(entity_id: String, persisted_state: PlayerStateRecord) -> Dictionary:
+	var vehicle_state := vehicle_combat_state_for(entity_id)
+	if vehicle_state == null or persisted_state == null:
+		return _failure(&"persistence.vehicle_state_unavailable", "map does not own this vehicle combat state")
+	if (
+		persisted_state.vehicle_health < 0
+		or persisted_state.vehicle_health > vehicle_state.max_health
+		or persisted_state.reserve_energy < 0.0
+		or persisted_state.reserve_energy > vehicle_state.reserve_energy_capacity
+		or persisted_state.working_energy < 0.0
+		or persisted_state.working_energy > vehicle_state.working_energy_capacity
+	):
+		return _failure(&"persistence.vehicle_state_out_of_range", "persisted vehicle resources exceed current definitions")
+	vehicle_state.health = persisted_state.vehicle_health
+	vehicle_state.reserve_energy = persisted_state.reserve_energy
+	vehicle_state.working_energy = persisted_state.working_energy
+	return _success(vehicle_state)
+
+
+## 执行 `register_vehicle_combat` 对应的模块操作。
+## [param entity_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func _register_vehicle_combat(entity_id: String) -> Dictionary:
 	var entity: AuthoritativeEntity = entities.get(entity_id)
 	if entity == null or combat_module == null:
@@ -432,12 +467,12 @@ func _register_vehicle_combat(entity_id: String) -> Dictionary:
 	return _success(result.value) if result.is_ok else _failure(result.error_code, result.error_message)
 
 
-## Admits one monster step from [param current_position] toward [param requested_position].
-## [param monster_id] Stable monster identity retained for future dynamic avoidance policies.
-## [param current_position] Current server lifecycle foot point.
-## [param requested_position] AI-selected next fixed-step position.
-## Returns a walkable next position, or the unchanged current point when static navigation rejects the step.
-## Design: Combat AI cannot bypass the same immutable navigation authority used by players.
+## 执行 `resolve_monster_position` 对应的模块操作。
+## [param monster_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param current_position] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param requested_position] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数位于权威服务器边界，客户端不得覆盖其计算结果。
 func _resolve_monster_position(
 	monster_id: String,
 	current_position: Vector2,
@@ -451,18 +486,18 @@ func _resolve_monster_position(
 	return fallback if fallback.is_finite() else current_position
 
 
-## Performs the `success` operation.
-## [param value] New value requested by the caller.
-## Returns Structured result data produced by the operation.
-## Design: Runs within the authoritative server boundary; clients must not override the resulting state.
+## 执行 `success` 对应的模块操作。
+## [param value] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数位于权威服务器边界，客户端不得覆盖其计算结果。
 func _success(value: Variant) -> Dictionary:
 	return {"ok": true, "code": &"ok", "value": value}
 
 
-## Performs the `failure` operation.
-## [param code] Stable identifier of the target value.
-## [param message] Serialized input received at the subsystem boundary.
-## Returns Structured result data produced by the operation.
-## Design: Runs within the authoritative server boundary; clients must not override the resulting state.
+## 执行 `failure` 对应的模块操作。
+## [param code] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param message] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数位于权威服务器边界，客户端不得覆盖其计算结果。
 func _failure(code: StringName, message: String) -> Dictionary:
 	return {"ok": false, "code": code, "message": message}
