@@ -6,6 +6,7 @@ const ProjectileSweep := preload("res://scripts/domain/combat/projectile_sweep.g
 const WorldCombatStatusBarScript := preload("res://scripts/client/presentation/combat/world_combat_status_bar.gd")
 
 var entity_id := ""
+var combat_actor_id := ""
 var presenter: CombatVisualPresenter
 var name_label: Label
 var health_bar: WorldCombatStatusBar
@@ -19,12 +20,13 @@ var visual_collision_radius := 24.0
 ## 返回该函数计算、查询或操作得到的结果。
 func configure(manifest: Dictionary, snapshot: Dictionary) -> Error:
 	entity_id = String(snapshot["entity_id"])
+	combat_actor_id = String(snapshot["combat_actor_id"])
 	presenter = CombatVisualPresenterScript.new()
 	add_child(presenter)
 	var error := presenter.configure(manifest)
 	if error != OK:
 		return error
-	error = presenter.present_actor(StringName(snapshot["combat_actor_id"]))
+	error = presenter.present_actor(StringName(combat_actor_id))
 	if error != OK:
 		return error
 	var actor_value: Variant = (manifest.get("actors", {}) as Dictionary).get(

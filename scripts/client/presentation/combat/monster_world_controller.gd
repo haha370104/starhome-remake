@@ -3,12 +3,16 @@ extends Node
 
 const MonsterWorldViewScript := preload("res://scripts/client/presentation/combat/monster_world_view.gd")
 const CombatDamageFloatScript := preload("res://scripts/client/presentation/combat/combat_damage_float.gd")
+const MonsterDeathEffectControllerScript := preload(
+	"res://scripts/client/presentation/combat/monster_death_effect_controller.gd"
+)
 
 var _world_parent: Node2D
 var _manifest: Dictionary = {}
 var _views: Dictionary = {}
 var _local_player: Node2D
 var _last_event_id := 0
+var _death_effects: MonsterDeathEffectController
 
 
 ## 执行 `configure` 对应的模块操作。
@@ -22,6 +26,14 @@ func configure(world_parent: Node2D, manifest: Dictionary, local_player: Node2D)
 	_world_parent = world_parent
 	_manifest = manifest.duplicate(true)
 	_local_player = local_player
+	_death_effects = MonsterDeathEffectControllerScript.new()
+	_death_effects.name = "MonsterDeathEffects"
+	add_child(_death_effects)
+	var effect_error := _death_effects.configure(_manifest, _world_parent)
+	if effect_error != OK:
+		_death_effects.queue_free()
+		_death_effects = null
+		return effect_error
 	return OK
 
 
@@ -96,6 +108,8 @@ func clear() -> void:
 		view.queue_free()
 	_views.clear()
 	_last_event_id = 0
+	if _death_effects != null:
+		_death_effects.clear()
 
 
 ## 执行 `apply_recent_events` 对应的模块操作。
@@ -114,17 +128,51 @@ func _apply_recent_events(combat_snapshot: Dictionary) -> void:
 			continue
 		_last_event_id = event_id
 		var event_type := StringName(event.get("event_type", ""))
-		if event_type not in [&"energy_cannon_hit", &"monster_attack_resolved"]:
-			continue
-		var damage := int(event.get("damage", 0))
-		if damage <= 0:
-			continue
-		var target_entity_id := String(event.get("target_entity_id", ""))
-		var anchor: Node2D = _views.get(target_entity_id)
-		if anchor == null and target_entity_id == String(combat_snapshot.get("local_entity_id", "")):
-			anchor = _local_player
-		if anchor == null:
-			continue
-		var damage_float: Node2D = CombatDamageFloatScript.new()
-		anchor.add_child(damage_float)
-		damage_float.present(damage)
+		if event_type in [&"energy_cannon_hit", &"monster_attack_resolved"]:
+			_present_damage(event, combat_snapshot)
+		if event_type == &"energy_cannon_hit":
+			_present_nested_death(event)
+
+
+## 表现一次权威伤害事件的飘字。
+## [param event] 权威战斗事件。
+## [param combat_snapshot] 用于识别本地玩家的快照。
+func _present_damage(event: Dictionary, combat_snapshot: Dictionary) -> void:
+	var damage := int(event.get("damage", 0))
+	if damage <= 0:
+		return
+	var target_entity_id := String(event.get("target_entity_id", ""))
+	var anchor: Node2D = _views.get(target_entity_id)
+	if anchor == null and target_entity_id == String(combat_snapshot.get("local_entity_id", "")):
+		anchor = _local_player
+	if anchor == null:
+		return
+	var damage_float: Node2D = CombatDamageFloatScript.new()
+	anchor.add_child(damage_float)
+	damage_float.present(damage)
+
+
+## 从最后一击事件中提取独立 `monster_died` 生命周期事件并播放一次。
+## [param event] 可能携带 `death` 子事件的能量炮命中事件。
+func _present_nested_death(event: Dictionary) -> void:
+	if _death_effects == null:
+		return
+	var death_value: Variant = event.get("death", {})
+	if not death_value is Dictionary:
+		return
+	var death: Dictionary = death_value
+	if StringName(death.get("event_type", "")) != &"monster_died":
+		return
+	var monster_id := String(death.get("monster_id", ""))
+	var view: MonsterWorldView = _views.get(monster_id)
+	if view == null:
+		return
+	var raw_position: Variant = death.get("position", [])
+	if not raw_position is Array or (raw_position as Array).size() != 2:
+		return
+	_death_effects.present_death(
+		monster_id,
+		view.combat_actor_id,
+		Vector2(float(raw_position[0]), float(raw_position[1])),
+		int(death.get("death_generation", 0)),
+	)
