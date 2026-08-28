@@ -54,6 +54,7 @@ func present_attack(event: Dictionary) -> bool:
 	var wrapper := Node2D.new()
 	wrapper.name = "MonsterProjectile_%s" % attack_id.replace(".", "_")
 	wrapper.position = origin
+	wrapper.rotation = origin.angle_to_point(target)
 	var sprite := AnimatedSprite2D.new()
 	sprite.name = "Sprite"
 	sprite.sprite_frames = frames

@@ -42,6 +42,19 @@ func _run() -> void:
 	_expect(projectile != null and projectile.position.is_equal_approx(Vector2(50.0, 0.0)), "projectile should interpolate by authoritative speed")
 	controller.advance(0.5)
 	_expect(controller.active_projectile_count() == 0, "projectile should end at its target time")
+	var diagonal := ranged.duplicate(true)
+	diagonal["attack_id"] = "monster.om.attack.diagonal"
+	diagonal["target_position"] = [100.0, 100.0]
+	_expect(controller.present_attack(diagonal), "diagonal attack should create its mapped projectile")
+	var diagonal_projectile := world.get_node_or_null(
+		"MonsterProjectile_monster_om_attack_diagonal"
+	) as Node2D
+	_expect(
+		diagonal_projectile != null
+		and is_equal_approx(diagonal_projectile.rotation, PI / 4.0),
+		"projectile should rotate its east-facing source frame onto the flight vector",
+	)
+	controller.advance(2.0)
 	var contact := ranged.duplicate(true)
 	contact["attack_id"] = "monster.orb.attack.2"
 	contact["attack_archetype"] = "contact_melee"
