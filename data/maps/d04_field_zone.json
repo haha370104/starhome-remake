@@ -159,29 +159,29 @@
         "source_line": 551
       },
       "presentation": {
-        "asset_id": "maps/exploration/d04_field_zone/transitions/exit_to_c03_field",
+        "asset_id": "maps/shared/directional_transitions/south_west",
         "kind": "animated_sprite",
-        "resource": "res://assets/maps/exploration/d04_field_zone/transitions/exit_to_c03_field/animation_frames.tres",
+        "resource": "res://assets/maps/shared/directional_transitions/south_west/animation_frames.tres",
         "animation": "active",
         "anchor": [
           67,
           53
         ],
         "offset": [
-          -52,
-          -38
+          0,
+          0
         ],
         "centered": false,
         "interaction_rect": [
           0,
           0,
-          108,
-          71
+          78,
+          41
         ],
         "interaction_space": "asset_local_fixed_bounds",
         "sort_baseline": 53,
-        "frame_count": 4,
-        "frame_duration_ms": 125,
+        "frame_count": 9,
+        "frame_duration_ms": 100,
         "loop": true,
         "activation": "enabled_transition"
       }
@@ -211,29 +211,29 @@
         "source_line": 553
       },
       "presentation": {
-        "asset_id": "maps/exploration/d04_field_zone/transitions/exit_to_c04_field",
+        "asset_id": "maps/shared/directional_transitions/west",
         "kind": "animated_sprite",
-        "resource": "res://assets/maps/exploration/d04_field_zone/transitions/exit_to_c04_field/animation_frames.tres",
+        "resource": "res://assets/maps/shared/directional_transitions/west/animation_frames.tres",
         "animation": "active",
         "anchor": [
           52,
           2558
         ],
         "offset": [
-          -62,
-          -38
+          -1,
+          0
         ],
         "centered": false,
         "interaction_rect": [
           0,
           0,
-          114,
-          75
+          84,
+          30
         ],
         "interaction_space": "asset_local_fixed_bounds",
         "sort_baseline": 2558,
-        "frame_count": 4,
-        "frame_duration_ms": 125,
+        "frame_count": 10,
+        "frame_duration_ms": 100,
         "loop": true,
         "activation": "enabled_transition"
       }
@@ -263,29 +263,29 @@
         "source_line": 559
       },
       "presentation": {
-        "asset_id": "maps/exploration/d04_field_zone/transitions/exit_to_c05_field",
+        "asset_id": "maps/shared/directional_transitions/north_west",
         "kind": "animated_sprite",
-        "resource": "res://assets/maps/exploration/d04_field_zone/transitions/exit_to_c05_field/animation_frames.tres",
+        "resource": "res://assets/maps/shared/directional_transitions/north_west/animation_frames.tres",
         "animation": "active",
         "anchor": [
           64,
           4707
         ],
         "offset": [
-          -52,
-          -37
+          0,
+          0
         ],
         "centered": false,
         "interaction_rect": [
           0,
           0,
-          101,
-          76
+          78,
+          42
         ],
         "interaction_space": "asset_local_fixed_bounds",
         "sort_baseline": 4707,
-        "frame_count": 4,
-        "frame_duration_ms": 125,
+        "frame_count": 10,
+        "frame_duration_ms": 100,
         "loop": true,
         "activation": "enabled_transition"
       }
@@ -316,29 +316,29 @@
         "source_line": 555
       },
       "presentation": {
-        "asset_id": "maps/exploration/d04_field_zone/transitions/enter_city_via_northwest_gate",
+        "asset_id": "maps/shared/directional_transitions/north_east",
         "kind": "animated_sprite",
-        "resource": "res://assets/maps/exploration/d04_field_zone/transitions/enter_city_via_northwest_gate/animation_frames.tres",
+        "resource": "res://assets/maps/shared/directional_transitions/north_east/animation_frames.tres",
         "animation": "active",
         "anchor": [
           1270,
           2572
         ],
         "offset": [
-          -58,
-          -44
+          0,
+          0
         ],
         "centered": false,
         "interaction_rect": [
           0,
           0,
-          122,
-          82
+          78,
+          42
         ],
         "interaction_space": "asset_local_fixed_bounds",
         "sort_baseline": 2572,
-        "frame_count": 4,
-        "frame_duration_ms": 125,
+        "frame_count": 9,
+        "frame_duration_ms": 100,
         "loop": true,
         "activation": "enabled_transition"
       }
@@ -369,29 +369,29 @@
         "source_line": 557
       },
       "presentation": {
-        "asset_id": "maps/exploration/d04_field_zone/transitions/enter_city_via_southwest_gate",
+        "asset_id": "maps/shared/directional_transitions/south_east",
         "kind": "animated_sprite",
-        "resource": "res://assets/maps/exploration/d04_field_zone/transitions/enter_city_via_southwest_gate/animation_frames.tres",
+        "resource": "res://assets/maps/shared/directional_transitions/south_east/animation_frames.tres",
         "animation": "active",
         "anchor": [
           1259,
           2972
         ],
         "offset": [
-          -61,
-          -39
+          0,
+          0
         ],
         "centered": false,
         "interaction_rect": [
           0,
           0,
-          116,
-          74
+          78,
+          41
         ],
         "interaction_space": "asset_local_fixed_bounds",
         "sort_baseline": 2972,
-        "frame_count": 4,
-        "frame_duration_ms": 125,
+        "frame_count": 10,
+        "frame_duration_ms": 100,
         "loop": true,
         "activation": "enabled_transition"
       }
@@ -422,29 +422,29 @@
         "source_line": 558
       },
       "presentation": {
-        "asset_id": "maps/exploration/d04_field_zone/transitions/enter_city_via_southeast_gate",
+        "asset_id": "maps/shared/directional_transitions/south_west",
         "kind": "animated_sprite",
-        "resource": "res://assets/maps/exploration/d04_field_zone/transitions/enter_city_via_southeast_gate/animation_frames.tres",
+        "resource": "res://assets/maps/shared/directional_transitions/south_west/animation_frames.tres",
         "animation": "active",
         "anchor": [
           1914,
           2996
         ],
         "offset": [
-          -52,
-          -38
+          0,
+          0
         ],
         "centered": false,
         "interaction_rect": [
           0,
           0,
-          108,
-          71
+          78,
+          41
         ],
         "interaction_space": "asset_local_fixed_bounds",
         "sort_baseline": 2996,
-        "frame_count": 4,
-        "frame_duration_ms": 125,
+        "frame_count": 9,
+        "frame_duration_ms": 100,
         "loop": true,
         "activation": "enabled_transition"
       }
@@ -475,29 +475,29 @@
         "source_line": 556
       },
       "presentation": {
-        "asset_id": "maps/exploration/d04_field_zone/transitions/enter_city_via_northeast_gate",
+        "asset_id": "maps/shared/directional_transitions/north_west",
         "kind": "animated_sprite",
-        "resource": "res://assets/maps/exploration/d04_field_zone/transitions/enter_city_via_northeast_gate/animation_frames.tres",
+        "resource": "res://assets/maps/shared/directional_transitions/north_west/animation_frames.tres",
         "animation": "active",
         "anchor": [
           1903,
           2590
         ],
         "offset": [
-          -52,
-          -37
+          0,
+          0
         ],
         "centered": false,
         "interaction_rect": [
           0,
           0,
-          101,
-          76
+          78,
+          42
         ],
         "interaction_space": "asset_local_fixed_bounds",
         "sort_baseline": 2590,
-        "frame_count": 4,
-        "frame_duration_ms": 125,
+        "frame_count": 10,
+        "frame_duration_ms": 100,
         "loop": true,
         "activation": "enabled_transition"
       }
@@ -527,29 +527,29 @@
         "source_line": 550
       },
       "presentation": {
-        "asset_id": "maps/exploration/d04_field_zone/transitions/exit_to_d03_field",
+        "asset_id": "maps/shared/directional_transitions/south",
         "kind": "animated_sprite",
-        "resource": "res://assets/maps/exploration/d04_field_zone/transitions/exit_to_d03_field/animation_frames.tres",
+        "resource": "res://assets/maps/shared/directional_transitions/south/animation_frames.tres",
         "animation": "active",
         "anchor": [
           2479,
           46
         ],
         "offset": [
-          -48,
-          -39
+          0,
+          -1
         ],
         "centered": false,
         "interaction_rect": [
           0,
           0,
-          96,
-          75
+          56,
+          44
         ],
         "interaction_space": "asset_local_fixed_bounds",
         "sort_baseline": 46,
-        "frame_count": 4,
-        "frame_duration_ms": 125,
+        "frame_count": 10,
+        "frame_duration_ms": 100,
         "loop": true,
         "activation": "enabled_transition"
       }
@@ -579,29 +579,29 @@
         "source_line": 560
       },
       "presentation": {
-        "asset_id": "maps/exploration/d04_field_zone/transitions/exit_to_d05_field",
+        "asset_id": "maps/shared/directional_transitions/north",
         "kind": "animated_sprite",
-        "resource": "res://assets/maps/exploration/d04_field_zone/transitions/exit_to_d05_field/animation_frames.tres",
+        "resource": "res://assets/maps/shared/directional_transitions/north/animation_frames.tres",
         "animation": "active",
         "anchor": [
           2502,
           4714
         ],
         "offset": [
-          -58,
-          -44
+          0,
+          0
         ],
         "centered": false,
         "interaction_rect": [
           0,
           0,
-          122,
-          82
+          56,
+          44
         ],
         "interaction_space": "asset_local_fixed_bounds",
         "sort_baseline": 4714,
-        "frame_count": 4,
-        "frame_duration_ms": 125,
+        "frame_count": 10,
+        "frame_duration_ms": 100,
         "loop": true,
         "activation": "enabled_transition"
       }
@@ -631,29 +631,29 @@
         "source_line": 552
       },
       "presentation": {
-        "asset_id": "maps/exploration/d04_field_zone/transitions/exit_to_e03_field",
+        "asset_id": "maps/shared/directional_transitions/south_east",
         "kind": "animated_sprite",
-        "resource": "res://assets/maps/exploration/d04_field_zone/transitions/exit_to_e03_field/animation_frames.tres",
+        "resource": "res://assets/maps/shared/directional_transitions/south_east/animation_frames.tres",
         "animation": "active",
         "anchor": [
           4687,
           61
         ],
         "offset": [
-          -61,
-          -39
+          0,
+          0
         ],
         "centered": false,
         "interaction_rect": [
           0,
           0,
-          116,
-          74
+          78,
+          41
         ],
         "interaction_space": "asset_local_fixed_bounds",
         "sort_baseline": 61,
-        "frame_count": 4,
-        "frame_duration_ms": 125,
+        "frame_count": 10,
+        "frame_duration_ms": 100,
         "loop": true,
         "activation": "enabled_transition"
       }
@@ -683,29 +683,29 @@
         "source_line": 554
       },
       "presentation": {
-        "asset_id": "maps/exploration/d04_field_zone/transitions/exit_to_e04_field",
+        "asset_id": "maps/shared/directional_transitions/east",
         "kind": "animated_sprite",
-        "resource": "res://assets/maps/exploration/d04_field_zone/transitions/exit_to_e04_field/animation_frames.tres",
+        "resource": "res://assets/maps/shared/directional_transitions/east/animation_frames.tres",
         "animation": "active",
         "anchor": [
           4688,
           2561
         ],
         "offset": [
-          -56,
-          -36
+          0,
+          0
         ],
         "centered": false,
         "interaction_rect": [
           0,
           0,
-          108,
-          71
+          83,
+          30
         ],
         "interaction_space": "asset_local_fixed_bounds",
         "sort_baseline": 2561,
-        "frame_count": 4,
-        "frame_duration_ms": 125,
+        "frame_count": 9,
+        "frame_duration_ms": 100,
         "loop": true,
         "activation": "enabled_transition"
       }
@@ -735,29 +735,29 @@
         "source_line": 561
       },
       "presentation": {
-        "asset_id": "maps/exploration/d04_field_zone/transitions/exit_to_e05_field",
+        "asset_id": "maps/shared/directional_transitions/north_east",
         "kind": "animated_sprite",
-        "resource": "res://assets/maps/exploration/d04_field_zone/transitions/exit_to_e05_field/animation_frames.tres",
+        "resource": "res://assets/maps/shared/directional_transitions/north_east/animation_frames.tres",
         "animation": "active",
         "anchor": [
           4694,
           4717
         ],
         "offset": [
-          -58,
-          -44
+          0,
+          0
         ],
         "centered": false,
         "interaction_rect": [
           0,
           0,
-          122,
-          82
+          78,
+          42
         ],
         "interaction_space": "asset_local_fixed_bounds",
         "sort_baseline": 4717,
-        "frame_count": 4,
-        "frame_duration_ms": 125,
+        "frame_count": 9,
+        "frame_duration_ms": 100,
         "loop": true,
         "activation": "enabled_transition"
       }

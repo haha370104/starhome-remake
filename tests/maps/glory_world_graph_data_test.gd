@@ -24,7 +24,7 @@ var assertions := 0
 
 
 ## 验证阶段 2 荣耀版地图目录、真实拓扑、出生点证据和导航文件完整性。
-## Design: 网络只交换 map_id；本测试确保 map_id 到本地资源路径的映射只来自受控目录。
+## 设计：网络只交换 map_id；本测试确保 map_id 到本地资源路径的映射只来自受控目录。
 func _initialize() -> void:
 	var directory := _read_json_object(DIRECTORY_PATH)
 	var graph := _read_json_object(WORLD_GRAPH_PATH)
@@ -40,7 +40,8 @@ func _initialize() -> void:
 	quit(1)
 
 
-## 验证 [param directory] 精确列出允许加载的四个业务地图定义。
+## 执行 `test_directory` 对应的模块操作。
+## [param directory] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _test_directory(directory: Dictionary) -> void:
 	_expect(int(directory.get("schema_version", 0)) == 1, "地图目录 schema 版本错误")
 	var definitions: Variant = directory.get("definitions", {})
@@ -56,7 +57,8 @@ func _test_directory(directory: Dictionary) -> void:
 		_expect(FileAccess.file_exists(EXPECTED_DEFINITIONS[map_id]), "地图定义不存在：%s" % map_id)
 
 
-## 验证 [param graph] 保存大厅经城市到 D04 的真实路线及 G08 五出口审计声明。
+## 执行 `test_world_graph` 对应的模块操作。
+## [param graph] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _test_world_graph(graph: Dictionary) -> void:
 	var slice: Dictionary = graph.get("vertical_slice", {})
 	_expect(
@@ -73,7 +75,8 @@ func _test_world_graph(graph: Dictionary) -> void:
 	_expect(gaps.size() >= 5, "缺失落点、场景素材和延后出口必须结构化记录")
 
 
-## 加载 [param directory] 中所有定义，验证内部边、入口出生点与导航字节证据。
+## 执行 `test_definitions` 对应的模块操作。
+## [param directory] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _test_definitions(directory: Dictionary) -> void:
 	var catalog = CatalogScript.new()
 	var definitions_by_id := {}
@@ -106,7 +109,17 @@ func _test_definitions(directory: Dictionary) -> void:
 	_expect(d04.transitions.size() == 12, "D04 的 12 条荣耀版有效出口必须全部保留")
 	for transition: MapTransition in d04.transitions:
 		_expect(not transition.presentation.is_empty(), "D04 每个出口都必须恢复可见传送点")
-		_expect(int(transition.presentation.get("frame_count", 0)) == 4, "D04 传送点必须是四帧闪烁动画")
+		_expect(
+			int(transition.presentation.get("frame_count", 0)) in [9, 10],
+			"D04 传送点必须保留荣耀版方向素材的全部 9 或 10 帧",
+		)
+		_expect(int(transition.presentation.get("frame_duration_ms", 0)) == 100, "D04 传送点必须复原 100 毫秒源播放间隔")
+		_expect(
+			String(transition.presentation.get("resource", "")).begins_with(
+				"res://assets/maps/shared/directional_transitions/"
+			),
+			"同方向传送点必须复用业务化共享动画资源",
+		)
 		_expect(
 			ResourceLoader.exists(String(transition.presentation.get("resource", ""))),
 			"D04 传送动画资源必须可加载：%s" % transition.transition_id,
@@ -116,7 +129,8 @@ func _test_definitions(directory: Dictionary) -> void:
 	_test_g08_transitions(definitions_by_id["g08_field_zone"])
 
 
-## 验证 [param definition] 的导航文件尺寸、SHA-256 与配置网格完全一致。
+## 执行 `test_navigation` 对应的模块操作。
+## [param definition] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _test_navigation(definition) -> void:
 	var path: String = String(definition.navigation_data_path)
 	_expect(FileAccess.file_exists(path), "导航文件不存在：%s" % path)
@@ -137,7 +151,8 @@ func _test_navigation(definition) -> void:
 	)
 
 
-## 验证 [param definition] 的每个已启用出生点都位于其荣耀版导航可走格。
+## 执行 `test_spawns` 对应的模块操作。
+## [param definition] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _test_spawns(definition) -> void:
 	_expect(not definition.spawn_points.is_empty(), "正式地图缺少出生点：%s" % definition.map_id)
 	_expect(definition.spawn_by_id(definition.default_spawn_id) != null, "默认出生点无法解析")
@@ -156,7 +171,8 @@ func _test_spawns(definition) -> void:
 			)
 
 
-## 验证 [param definition] 精确保留 G08 的五个已确认目的地，且未解析目标显式 external。
+## 执行 `test_g08_transitions` 对应的模块操作。
+## [param definition] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _test_g08_transitions(definition) -> void:
 	_expect(definition.transitions.size() == 5, "G08 必须保留五条已确认出口")
 	var actual_codes: PackedStringArray = []
@@ -167,8 +183,9 @@ func _test_g08_transitions(definition) -> void:
 	_expect(actual_codes == PackedStringArray(["f07", "f08", "g07", "h07", "h08"]), "G08 目的地集合错误")
 
 
-## 读取 [param path] 的 UTF-8 JSON object；文件缺失或格式错误时记录测试失败。
-## Returns 解析后的字典；失败时返回空字典。
+## 执行 `read_json_object` 对应的模块操作。
+## [param path] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func _read_json_object(path: String) -> Dictionary:
 	if not FileAccess.file_exists(path):
 		_expect(false, "JSON 文件不存在：%s" % path)
@@ -180,7 +197,9 @@ func _read_json_object(path: String) -> Dictionary:
 	return parsed
 
 
-## 在 [param condition] 不成立时记录 [param message]，并累计断言数。
+## 执行 `expect` 对应的模块操作。
+## [param condition] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param message] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _expect(condition: bool, message: String) -> void:
 	assertions += 1
 	if not condition:
