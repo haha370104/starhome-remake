@@ -109,6 +109,8 @@ func _expect(condition: bool, message: String) -> void:
 
 
 ## 判断物品专属材质当前是否处于悬停状态。
+## [param visual] 待检查材质参数的物品表现节点。
+## 返回悬停强度为 1 时为 true。
 func _is_item_highlighted(visual: CanvasItem) -> bool:
 	var material := visual.material as ShaderMaterial
 	return material != null \

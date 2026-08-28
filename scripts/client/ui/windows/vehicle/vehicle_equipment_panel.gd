@@ -99,6 +99,8 @@ func _build_slot_labels() -> void:
 
 
 ## 切换固定槽位文字的原版式黄色悬停反馈。
+## [param label] 需要更新字体颜色的槽位标签。
+## [param hovered] 当前鼠标是否位于标签范围内。
 func _set_slot_label_hover(label: Label, hovered: bool) -> void:
 	label.add_theme_color_override("font_color", SLOT_HOVER_COLOR if hovered else TEXT_COLOR)
 
