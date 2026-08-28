@@ -176,6 +176,7 @@ func monster_lifecycles_for_map(map_id: String, map_instance_id: String) -> Doma
 				"spawn_index": spawn_index,
 				"max_health": int(stats["max_health"]),
 				"base_attack": int(stats["base_attack"]),
+				"attack_archetype": String(combat["attack_archetype"]),
 				"behavior_profile": String(combat["behavior_profile"]),
 				"engagement_policy": String(combat["engagement_policy"]),
 				"runtime_move_speed": float(combat["runtime_move_speed"]),
@@ -184,6 +185,7 @@ func monster_lifecycles_for_map(map_id: String, map_instance_id: String) -> Doma
 				"leash_distance": float(combat["leash_distance"]),
 				"wander_radius": float(combat["wander_radius"]),
 				"attack_interval_seconds": float(combat["attack_interval_seconds"]),
+				"runtime_projectile_speed": combat["runtime_projectile_speed"],
 				"projectile_hitbox": (combat["projectile_hitbox"] as Dictionary).duplicate(true),
 				"display_name": String(species["display_name"]),
 				"combat_actor_id": String(species["combat_actor_id"]),
@@ -289,6 +291,15 @@ func _validate_runtime_links() -> DomainResult:
 			&"unresponsive", &"retaliatory", &"aggressive"
 		]:
 			return DomainResult.failure(&"combat.invalid_catalog", "monster engagement policy is invalid")
+		var attack_archetype := StringName(combat.get("attack_archetype", ""))
+		if attack_archetype not in [&"ranged_projectile", &"corrosive_projectile", &"contact_melee"]:
+			return DomainResult.failure(&"combat.invalid_catalog", "monster attack archetype is invalid")
+		var projectile_speed: Variant = combat.get("runtime_projectile_speed")
+		if attack_archetype == &"contact_melee":
+			if projectile_speed != null:
+				return DomainResult.failure(&"combat.invalid_catalog", "contact monster must not define projectile speed")
+		elif typeof(projectile_speed) not in [TYPE_INT, TYPE_FLOAT] or float(projectile_speed) <= 0.0:
+			return DomainResult.failure(&"combat.invalid_catalog", "ranged monster projectile speed is invalid")
 		var projectile_hitbox: Variant = combat.get("projectile_hitbox")
 		if not projectile_hitbox is Dictionary:
 			return DomainResult.failure(&"combat.invalid_catalog", "monster projectile hitbox is missing")

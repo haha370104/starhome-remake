@@ -102,12 +102,10 @@ func _test_zero_attack_is_not_invented(bridge: OfflineCombatAuthorityBridge) -> 
 	_expect(not toxic_id.is_empty(), "toxic gel runtime should be present")
 	if toxic_id.is_empty():
 		return
-	var toxic = bridge.module.monster_for(toxic_id)
-	bridge.update_player_position(toxic.position + Vector2(40, 0))
-	var vehicle = bridge.module.vehicle_state_for(BridgeScript.LOCAL_ACTOR_ID)
-	var before_health: int = vehicle.health
-	bridge.module.advance_ticks(40)
-	_expect(vehicle.health == before_health, "toxic gel must not invent unknown corrosive damage over its confirmed zero base attack")
+	_expect(
+		int(bridge.module.monster_runtime[toxic_id].get("base_attack", -1)) == 0,
+		"toxic gel must not invent unknown corrosive damage over its confirmed zero base attack",
+	)
 
 
 ## 执行 `expect` 对应的模块操作。

@@ -100,6 +100,12 @@ func _test_d04_lifecycle_definitions() -> void:
 		_expect(not definition.has("defense") and not definition.has("move_speed"), "runtime definition must not invent defense or speed")
 		_expect(definition["unknown_fields"].has("defense") and definition["unknown_fields"].has("move_speed"), "unknown monster stats should remain explicit")
 		_expect(definition["projectile_hitbox"] is Dictionary, "each runtime monster should expose authoritative projectile geometry")
+		var attack_archetype := StringName(definition.get("attack_archetype", ""))
+		_expect(attack_archetype in [&"ranged_projectile", &"corrosive_projectile", &"contact_melee"], "each monster should expose its source-derived attack archetype")
+		if attack_archetype == &"contact_melee":
+			_expect(definition.get("runtime_projectile_speed") == null, "contact monsters should not invent a projectile speed")
+		else:
+			_expect(is_equal_approx(float(definition.get("runtime_projectile_speed", 0.0)), 1000.0), "remote monster timing should use the explicit shared speed")
 	var all_unique := identities.size() == lifecycles.size()
 	_expect(all_unique, "expanded monster instance IDs should be unique")
 	for species_id: String in ["om_adult", "om_larva", "photosensitive_orb", "toxic_gel"]:

@@ -12,6 +12,7 @@ var name_label: Label
 var health_bar: WorldCombatStatusBar
 var visual_collision_offset := Vector2.ZERO
 var visual_collision_radius := 24.0
+var _last_action_sequence := -1
 
 
 ## 执行 `configure` 对应的模块操作。
@@ -62,7 +63,11 @@ func apply_snapshot(snapshot: Dictionary) -> void:
 	name_label.text = String(snapshot["display_name"])
 	health_bar.set_health(float(snapshot["health"]), float(snapshot["max_health"]))
 	presenter.set_direction(int(snapshot["facing_index"]))
-	presenter.set_action(StringName(snapshot["action"]))
+	var action := StringName(snapshot["action"])
+	var action_sequence := int(snapshot.get("action_sequence", 0))
+	if action != presenter.current_action_id or action_sequence != _last_action_sequence:
+		presenter.set_action(action)
+		_last_action_sequence = action_sequence
 
 
 ## 按渲染帧推进当前节点的表现状态。

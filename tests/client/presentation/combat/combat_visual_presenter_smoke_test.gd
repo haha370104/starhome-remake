@@ -136,6 +136,8 @@ func _expect_all_resources_load(manifest: Dictionary) -> void:
 	for effect_set_value: Variant in monster_effects.values():
 		var effect_set: Dictionary = effect_set_value
 		_expect_action_resource_load(effect_set.get("death", {}))
+		if effect_set.has("projectile"):
+			_expect_action_resource_load(effect_set.get("projectile", {}))
 
 
 ## 执行 `expect_action_resource_load` 对应的模块操作。

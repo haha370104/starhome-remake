@@ -6,6 +6,9 @@ const CombatDamageFloatScript := preload("res://scripts/client/presentation/comb
 const MonsterDeathEffectControllerScript := preload(
 	"res://scripts/client/presentation/combat/monster_death_effect_controller.gd"
 )
+const MonsterAttackEffectControllerScript := preload(
+	"res://scripts/client/presentation/combat/monster_attack_effect_controller.gd"
+)
 
 var _world_parent: Node2D
 var _manifest: Dictionary = {}
@@ -13,6 +16,7 @@ var _views: Dictionary = {}
 var _local_player: Node2D
 var _last_event_id := 0
 var _death_effects: MonsterDeathEffectController
+var _attack_effects: MonsterAttackEffectController
 
 
 ## 执行 `configure` 对应的模块操作。
@@ -34,6 +38,14 @@ func configure(world_parent: Node2D, manifest: Dictionary, local_player: Node2D)
 		_death_effects.queue_free()
 		_death_effects = null
 		return effect_error
+	_attack_effects = MonsterAttackEffectControllerScript.new()
+	_attack_effects.name = "MonsterAttackEffects"
+	add_child(_attack_effects)
+	var attack_effect_error := _attack_effects.configure(_manifest, _world_parent)
+	if attack_effect_error != OK:
+		_attack_effects.queue_free()
+		_attack_effects = null
+		return attack_effect_error
 	return OK
 
 
@@ -110,6 +122,8 @@ func clear() -> void:
 	_last_event_id = 0
 	if _death_effects != null:
 		_death_effects.clear()
+	if _attack_effects != null:
+		_attack_effects.clear()
 
 
 ## 执行 `apply_recent_events` 对应的模块操作。
@@ -128,6 +142,8 @@ func _apply_recent_events(combat_snapshot: Dictionary) -> void:
 			continue
 		_last_event_id = event_id
 		var event_type := StringName(event.get("event_type", ""))
+		if event_type == &"monster_attack_started" and _attack_effects != null:
+			_attack_effects.present_attack(event)
 		if event_type in [&"energy_cannon_hit", &"monster_attack_resolved"]:
 			_present_damage(event, combat_snapshot)
 		if event_type == &"energy_cannon_hit":

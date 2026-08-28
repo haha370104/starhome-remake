@@ -18,6 +18,7 @@
         "aggro_radius": 400,
         "leash_distance": 600,
         "attack_interval_seconds": 1.5,
+        "runtime_projectile_speed": 1000,
         "respawn_seconds": 30,
         "projectile_hitbox": {"offset": [0, -30], "radius": 34}
       },
@@ -44,6 +45,7 @@
         "combat.aggro_radius": {"status": "reconstructed_default", "reason": "First vertical-slice remote-monster default."},
         "combat.leash_distance": {"status": "reconstructed_default", "reason": "First vertical-slice server AI default."},
         "combat.attack_interval_seconds": {"status": "reconstructed_default", "reason": "First vertical-slice normal-monster default."},
+        "combat.runtime_projectile_speed": {"status": "reconstructed_default", "reason": "The Glory client renders this monster projectile at 1000 px/s; the retired server timing constant is unavailable, so the remake shares that confirmed visual speed for authority."},
         "combat.respawn_seconds": {"status": "reconstructed_default", "reason": "First vertical-slice normal-monster default."},
         "combat.projectile_hitbox": {"status": "reconstructed_default", "reason": "Promoted from the current Godot visual collision footprint so client prediction and server sweep use one geometry."},
         "drops": {"status": "unknown", "reason": "A client-side candidate expression exists, but its probability grammar and retired server authority are unverified; it is intentionally excluded from runtime data."},
@@ -77,6 +79,7 @@
         "aggro_radius": 400,
         "leash_distance": 600,
         "attack_interval_seconds": 1.5,
+        "runtime_projectile_speed": 1000,
         "respawn_seconds": 30,
         "projectile_hitbox": {"offset": [0, -22], "radius": 26}
       },
@@ -103,6 +106,7 @@
         "combat.aggro_radius": {"status": "reconstructed_default", "reason": "First vertical-slice remote-monster default."},
         "combat.leash_distance": {"status": "reconstructed_default", "reason": "First vertical-slice server AI default."},
         "combat.attack_interval_seconds": {"status": "reconstructed_default", "reason": "First vertical-slice normal-monster default."},
+        "combat.runtime_projectile_speed": {"status": "reconstructed_default", "reason": "The Glory client renders this monster projectile at 1000 px/s; the retired server timing constant is unavailable, so the remake shares that confirmed visual speed for authority."},
         "combat.respawn_seconds": {"status": "reconstructed_default", "reason": "First vertical-slice normal-monster default."},
         "combat.projectile_hitbox": {"status": "reconstructed_default", "reason": "Promoted from the current Godot visual collision footprint so client prediction and server sweep use one geometry."},
         "drops": {"status": "unknown", "reason": "A client-side candidate expression exists, but its probability grammar and retired server authority are unverified; it is intentionally excluded from runtime data."},
@@ -136,6 +140,7 @@
         "aggro_radius": 300,
         "leash_distance": 600,
         "attack_interval_seconds": 1.5,
+        "runtime_projectile_speed": null,
         "respawn_seconds": 30,
         "projectile_hitbox": {"offset": [0, -30], "radius": 28}
       },
@@ -160,6 +165,7 @@
         "combat.aggro_radius": {"status": "reconstructed_default", "reason": "First vertical-slice melee-monster default."},
         "combat.leash_distance": {"status": "reconstructed_default", "reason": "First vertical-slice server AI default."},
         "combat.attack_interval_seconds": {"status": "reconstructed_default", "reason": "First vertical-slice normal-monster default."},
+        "combat.runtime_projectile_speed": {"status": "not_applicable", "reason": "Glory classifies this family as contact melee and creates no ordinary ranged projectile."},
         "combat.respawn_seconds": {"status": "reconstructed_default", "reason": "First vertical-slice normal-monster default."},
         "combat.projectile_hitbox": {"status": "reconstructed_default", "reason": "Promoted from the current Godot visual collision footprint so client prediction and server sweep use one geometry."},
         "drops": {"status": "unknown", "reason": "A client-side candidate expression exists, but its probability grammar and retired server authority are unverified; it is intentionally excluded from runtime data."},
@@ -193,6 +199,7 @@
         "aggro_radius": 400,
         "leash_distance": 600,
         "attack_interval_seconds": 1.5,
+        "runtime_projectile_speed": 1000,
         "respawn_seconds": 30,
         "projectile_hitbox": {"offset": [0, -22], "radius": 28},
         "persistent_damage": null
@@ -219,6 +226,7 @@
         "combat.aggro_radius": {"status": "reconstructed_default", "reason": "First vertical-slice remote-monster default."},
         "combat.leash_distance": {"status": "reconstructed_default", "reason": "First vertical-slice server AI default."},
         "combat.attack_interval_seconds": {"status": "reconstructed_default", "reason": "First vertical-slice normal-monster default."},
+        "combat.runtime_projectile_speed": {"status": "reconstructed_default", "reason": "The Glory client renders this corrosive projectile at 1000 px/s; the retired server timing constant is unavailable, so the remake shares that confirmed visual speed for authority."},
         "combat.respawn_seconds": {"status": "reconstructed_default", "reason": "First vertical-slice normal-monster default."},
         "combat.projectile_hitbox": {"status": "reconstructed_default", "reason": "Promoted from the current Godot visual collision footprint so client prediction and server sweep use one geometry."},
         "combat.persistent_damage": {"status": "unknown", "reason": "The client confirms corrosive presentation, but damage amount, tick interval, and duration were server-controlled."},

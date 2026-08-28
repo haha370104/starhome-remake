@@ -19,6 +19,7 @@ func _initialize() -> void:
 	_test_single_death_and_thirty_second_respawn()
 	_test_seeded_damage_is_reproducible()
 	_test_three_engagement_policies()
+	_test_monster_projectile_timing()
 	if failures.is_empty():
 		print("AUTHORITATIVE_COMBAT_MODULE_OK (%d assertions)" % assertions)
 		quit(0)
@@ -195,7 +196,34 @@ func _test_three_engagement_policies() -> void:
 	_expect(aggressive.vehicle_state_for("player.policy").health == 67, "aggressive monster initiates inside aggro radius")
 	var snapshot: Dictionary = aggressive.snapshot_for_actor("player.policy")
 	_expect(String(snapshot.get("local_entity_id", "")) == "player.policy", "snapshot identifies local damage target")
-	_expect((snapshot.get("recent_events", []) as Array).size() == 1, "snapshot includes one deduplicatable damage event")
+	_expect((snapshot.get("recent_events", []) as Array).size() == 2, "snapshot includes deduplicatable attack-start and damage events")
+
+
+## 验证远程怪物只在权威弹体到达时扣除玩家生命。
+func _test_monster_projectile_timing() -> void:
+	var module := _new_module(104)
+	var assembly: Dictionary = _assembly_result().value
+	module.register_vehicle("player.projectile", MAP_INSTANCE_ID, Vector2.ZERO, assembly, {ABILITY_ID: _fixed_damage_weapon(1)})
+	var definition := _behavior_monster_definition("monster.projectile", &"aggressive")
+	definition["position"] = Vector2(100.0, 0.0)
+	definition["attack_range"] = 120.0
+	definition["attack_archetype"] = &"ranged_projectile"
+	definition["runtime_projectile_speed"] = 100.0
+	module.register_monster(definition)
+	module.advance_ticks(1)
+	_expect(module.vehicle_state_for("player.projectile").health == 70, "remote attack must not deduct health when fired")
+	_expect(module.pending_monster_attacks.size() == 1, "remote attack should reserve one authoritative projectile")
+	var attack: Dictionary = module.pending_monster_attacks[0]
+	_expect(int(attack["impact_tick"]) > module.current_tick, "monster projectile should expose a future impact tick")
+	var snapshot := module.snapshot_for_actor("player.projectile")
+	var monster_snapshot: Dictionary = (snapshot["monsters"] as Array)[0]
+	_expect(int(monster_snapshot["action_sequence"]) == 1, "attack start should advance the body-animation sequence")
+	var ticks_until_impact := int(attack["impact_tick"]) - module.current_tick
+	module.advance_ticks(ticks_until_impact - 1)
+	_expect(module.vehicle_state_for("player.projectile").health == 70, "health should remain unchanged before monster projectile arrival")
+	module.advance_ticks(1)
+	_expect(module.vehicle_state_for("player.projectile").health == 67, "monster projectile should apply damage exactly on arrival")
+	_expect(StringName(module.combat_events[-1]["event_type"]) == &"monster_attack_resolved", "arrival should emit the damage event")
 
 
 ## 执行 `new_module` 对应的模块操作。

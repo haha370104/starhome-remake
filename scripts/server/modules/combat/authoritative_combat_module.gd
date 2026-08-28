@@ -18,9 +18,11 @@ var combat_events: Array[Dictionary] = []
 var death_events: Array[Dictionary] = []
 var respawn_events: Array[Dictionary] = []
 var pending_projectiles: Array[Dictionary] = []
+var pending_monster_attacks: Array[Dictionary] = []
 var _random := RandomNumberGenerator.new()
 var _monster_position_resolver := Callable()
 var _shot_sequence := 0
+var _monster_attack_sequence := 0
 
 
 ## 配置并初始化 `configure` 对应的模块状态。
@@ -39,6 +41,7 @@ func configure(
 	current_tick = 0
 	event_sequence = 0
 	_shot_sequence = 0
+	_monster_attack_sequence = 0
 	working_energy_regen_factor = regen_factor
 	_random.seed = random_seed
 	actors.clear()
@@ -48,6 +51,7 @@ func configure(
 	death_events.clear()
 	respawn_events.clear()
 	pending_projectiles.clear()
+	pending_monster_attacks.clear()
 	return DomainResult.ok(self)
 
 
@@ -111,11 +115,15 @@ func register_monster(definition: Dictionary) -> DomainResult:
 		return result
 	if monsters.has(lifecycle.monster_id):
 		return DomainResult.failure(&"combat.duplicate_monster", "monster identity is already registered")
+	var projectile_speed_value: Variant = definition.get("runtime_projectile_speed")
+	var projectile_speed := 0.0 if projectile_speed_value == null else maxf(0.0, float(projectile_speed_value))
 	monsters[lifecycle.monster_id] = lifecycle
 	monster_runtime[lifecycle.monster_id] = {
 		"species_id": String(definition.get("species_id", "")),
 		"display_name": String(definition.get("display_name", lifecycle.monster_id)),
 		"combat_actor_id": String(definition.get("combat_actor_id", "")),
+		"attack_archetype": StringName(definition.get("attack_archetype", "contact_melee")),
+		"projectile_speed": projectile_speed,
 		"projectile_hitbox": _normalize_projectile_hitbox(definition.get("projectile_hitbox", {})),
 		"home_position": lifecycle.position,
 		"behavior_profile": StringName(definition.get("behavior_profile", "idle")),
@@ -132,6 +140,7 @@ func register_monster(definition: Dictionary) -> DomainResult:
 		"wander_target": lifecycle.position,
 		"next_wander_tick": posmod(hash(lifecycle.monster_id), simulation_hz * 2) + simulation_hz,
 		"action": &"idle",
+		"action_sequence": 0,
 		"facing_index": 6,
 	}
 	return DomainResult.ok(lifecycle)
@@ -380,6 +389,7 @@ func advance_ticks(tick_count: int) -> DomainResult:
 			var vehicle_state: VehicleCombatState = actors[actor_id]["vehicle_state"]
 			vehicle_state.regenerate_working_energy(fixed_delta, working_energy_regen_factor)
 		_settle_due_projectiles()
+		_settle_due_monster_attacks()
 		for monster_id: String in monsters:
 			var monster: MonsterLifecycle = monsters[monster_id]
 			var lifecycle_result := monster.advance_to_tick(current_tick)
@@ -430,6 +440,7 @@ func snapshot_for_actor(actor_id: String) -> Dictionary:
 			"max_health": monster.max_health,
 			"alive": monster.is_alive(),
 			"action": String(runtime["action"]),
+			"action_sequence": int(runtime["action_sequence"]),
 			"facing_index": int(runtime["facing_index"]),
 		})
 	return {
@@ -453,7 +464,6 @@ func _simulate_monster_tick(monster_id: String, fixed_delta: float) -> void:
 		_simulate_unengaged_monster(monster_id, fixed_delta)
 		return
 	var actor: Dictionary = actors[target_id]
-	var vehicle_state: VehicleCombatState = actor["vehicle_state"]
 	var target_position: Vector2 = actor["position"]
 	var home_position: Vector2 = runtime["home_position"]
 	if monster.position.distance_to(home_position) > float(runtime["leash_distance"]):
@@ -469,15 +479,96 @@ func _simulate_monster_tick(monster_id: String, fixed_delta: float) -> void:
 	if current_tick < int(runtime["attack_ready_tick"]):
 		return
 	runtime["attack_ready_tick"] = current_tick + int(runtime["attack_interval_ticks"])
-	var damage := int(runtime["base_attack"])
-	var damage_result := vehicle_state.apply_damage(damage)
+	runtime["action_sequence"] = int(runtime["action_sequence"]) + 1
+	_begin_monster_attack(monster_id, target_id, target_position)
+
+
+## 创建一次怪物攻击；远程弹体预约到达结算，贴身攻击在当前 tick 结算。
+## [param monster_id] 权威攻击者实体 ID。
+## [param target_id] 权威目标玩家 ID。
+## [param target_position] 发起攻击时冻结的目标脚点。
+func _begin_monster_attack(monster_id: String, target_id: String, target_position: Vector2) -> void:
+	var monster: MonsterLifecycle = monsters[monster_id]
+	var runtime: Dictionary = monster_runtime[monster_id]
+	var attack_archetype := StringName(runtime["attack_archetype"])
+	var origin := monster.position + Vector2(0.0, -24.0)
+	var endpoint := target_position + Vector2(0.0, -16.0)
+	var impact_tick := current_tick
+	if attack_archetype != &"contact_melee":
+		var projectile_speed := float(runtime["projectile_speed"])
+		if projectile_speed <= 0.0:
+			return
+		impact_tick += maxi(
+			1,
+			ceili(origin.distance_to(endpoint) / projectile_speed * float(simulation_hz)),
+		)
+	_monster_attack_sequence += 1
+	var attack_id := "%s.attack.%d" % [monster_id, _monster_attack_sequence]
+	var attack := {
+		"attack_id": attack_id,
+		"impact_tick": impact_tick,
+		"attacker_id": monster_id,
+		"target_entity_id": target_id,
+		"map_instance_id": monster.map_instance_id,
+		"damage": int(runtime["base_attack"]),
+		"attack_archetype": attack_archetype,
+		"combat_actor_id": String(runtime["combat_actor_id"]),
+		"projectile_speed": float(runtime["projectile_speed"]),
+		"origin": origin,
+		"target_position": endpoint,
+	}
+	_record_combat_event({
+		"event_type": &"monster_attack_started",
+		"server_tick": current_tick,
+		"impact_tick": impact_tick,
+		"attack_id": attack_id,
+		"attacker_id": monster_id,
+		"target_entity_id": target_id,
+		"attack_archetype": attack_archetype,
+		"combat_actor_id": String(runtime["combat_actor_id"]),
+		"projectile_speed": float(runtime["projectile_speed"]),
+		"origin": [origin.x, origin.y],
+		"target_position": [endpoint.x, endpoint.y],
+	})
+	if impact_tick == current_tick:
+		_resolve_monster_attack(attack)
+	else:
+		pending_monster_attacks.append(attack)
+
+
+## 结算所有已到达的怪物远程弹体。
+func _settle_due_monster_attacks() -> void:
+	for index in range(pending_monster_attacks.size() - 1, -1, -1):
+		var attack: Dictionary = pending_monster_attacks[index]
+		if int(attack["impact_tick"]) > current_tick:
+			continue
+		pending_monster_attacks.remove_at(index)
+		_resolve_monster_attack(attack)
+
+
+## 在权威到达 tick 对仍有效的玩家目标应用怪物伤害。
+## [param attack] 发起攻击时冻结的权威预约。
+func _resolve_monster_attack(attack: Dictionary) -> void:
+	var target_id := String(attack["target_entity_id"])
+	if not actors.has(target_id):
+		return
+	var actor: Dictionary = actors[target_id]
+	if String(actor["map_instance_id"]) != String(attack["map_instance_id"]):
+		return
+	var vehicle_state: VehicleCombatState = actor["vehicle_state"]
+	if vehicle_state.health <= 0:
+		return
+	var damage_result := vehicle_state.apply_damage(int(attack["damage"]))
 	if not damage_result.is_ok:
 		return
 	_record_combat_event({
 		"event_type": &"monster_attack_resolved",
 		"server_tick": current_tick,
-		"attacker_id": monster_id,
+		"impact_tick": current_tick,
+		"attack_id": attack["attack_id"],
+		"attacker_id": attack["attacker_id"],
 		"target_entity_id": target_id,
+		"attack_archetype": attack["attack_archetype"],
 		"damage": int(damage_result.value["applied_damage"]),
 		"target_health": int(damage_result.value["health"]),
 		"target_destroyed": bool(damage_result.value["destroyed"]),
