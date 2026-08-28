@@ -466,7 +466,8 @@ func _build_world() -> void:
 	camera = Camera2D.new()
 	camera.name = "PlayerCamera"
 	camera.position = player.position
-	camera.zoom = Vector2(0.82, 0.82)
+	# 原客户端按 ALE 与地图像素 1:1 绘制；窗口变大只扩大视野，不缩放世界内容。
+	camera.zoom = Vector2.ONE
 	camera.limit_left = 0
 	camera.limit_top = 0
 	camera.limit_right = 0

@@ -20,6 +20,7 @@ func _run() -> void:
 	await process_frame
 	await process_frame
 	var player: Node2D = hall.player
+	_expect(hall.camera.zoom == Vector2.ONE, "世界摄像机必须保持原客户端 1:1 像素比例")
 	_expect(player.presentation_kind == &"character", "大厅出生必须保持人形玩家")
 	_expect(player.human_character.visible, "大厅必须显示人形合成层")
 	_expect(not player.combat_presenter.visible, "大厅不得提前显示战车")
