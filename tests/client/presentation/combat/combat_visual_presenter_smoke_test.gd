@@ -20,9 +20,9 @@ func _init() -> void:
 func _run() -> void:
 	var runtime := _read_json(RUNTIME_MANIFEST)
 	var source := _read_json(SOURCE_MANIFEST)
-	_expect_equal(int(runtime.get("schema_version", 0)), 1, "runtime schema is versioned")
+	_expect_equal(int(runtime.get("schema_version", 0)), 2, "runtime schema is versioned")
 	_expect_equal((runtime.get("direction_order", []) as Array).size(), 8, "runtime declares eight directions")
-	_expect_equal((source.get("assets", []) as Array).size(), 3, "three starter components are audited")
+	_expect_equal((source.get("assets", []) as Array).size(), 5, "starter components and cannon effects are audited")
 	_expect_equal(String(source.get("source_version", "")), "starhome_lz_ry", "Glory is canonical source")
 	var components: Dictionary = runtime.get("components", {})
 	_expect_equal(String((components["beginner_engine"] as Dictionary).get("render_policy", "")), "installed_only", "engine is configured but not drawn")
@@ -75,7 +75,7 @@ func _expect_runtime_names_are_semantic(manifest: Dictionary) -> void:
 	_expect_true(expression.search(serialized) == null, "runtime manifest contains business names only")
 
 
-## 验证 [param source] 中三个装备部件的帧数、方向策略与世界可见性证据。
+## 验证 [param source] 中装备部件及开火特效的帧数、方向策略与来源证据。
 func _expect_source_components(source: Dictionary) -> void:
 	var by_id: Dictionary = {}
 	for entry_value: Variant in source.get("assets", []):
@@ -87,6 +87,16 @@ func _expect_source_components(source: Dictionary) -> void:
 	_expect_equal(int(engine.get("frame_count", 0)), 1, "engine source is a shared single frame")
 	_expect_equal(String(engine.get("direction_mode", "")), "shared", "engine does not invent directions")
 	_expect_true(not bool(engine.get("world_visible", true)), "engine is not a world composite layer")
+	_expect_equal(
+		int((by_id["recruit_energy_cannon_projectile"] as Dictionary).get("frame_count", 0)),
+		1,
+		"starter cannon projectile is a single-frame effect",
+	)
+	_expect_equal(
+		int((by_id["recruit_energy_cannon_impact_candidate"] as Dictionary).get("frame_count", 0)),
+		8,
+		"starter cannon impact candidate has eight frames",
+	)
 	for entry_value: Variant in by_id.values():
 		var entry: Dictionary = entry_value
 		_expect_equal(String(entry.get("source_sha256", "")).length(), 64, "raw source SHA-256 is retained")
@@ -98,6 +108,11 @@ func _expect_all_resources_load(manifest: Dictionary) -> void:
 	for component_value: Variant in components.values():
 		var component: Dictionary = component_value
 		_expect_action_resource_load(component.get("action", {}))
+	var weapons: Dictionary = manifest.get("weapons", {})
+	for weapon_value: Variant in weapons.values():
+		var weapon: Dictionary = weapon_value
+		_expect_action_resource_load(weapon.get("projectile", {}))
+		_expect_action_resource_load(weapon.get("impact", {}))
 	var actors: Dictionary = manifest.get("actors", {})
 	for actor_value: Variant in actors.values():
 		var actor: Dictionary = actor_value
