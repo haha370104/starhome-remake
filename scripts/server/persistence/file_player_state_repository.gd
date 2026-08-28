@@ -10,15 +10,15 @@ var _players: Dictionary = {}
 var _initialized := false
 
 
-## Configures the explicit development substitute at [param requested_database_path].
-## [param requested_database_path] Writable JSON path; it is not an SQLite database.
-## Design: This adapter exists for no-dependency tests and local recovery only, not production concurrency.
+## 使用调用方参数初始化当前实例。
+## [param requested_database_path] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 设计：该函数位于权威服务器边界，客户端不得覆盖其计算结果。
 func _init(requested_database_path: String = "") -> void:
 	database_path = requested_database_path
 
 
-## Loads or creates the file store and applies deterministic document migrations.
-## Returns success only after a migrated snapshot is durably materialized.
+## 配置并初始化 `initialize` 对应的模块状态。
+## 返回该函数计算、查询或操作得到的结果。
 func initialize() -> DomainResult:
 	if database_path.is_empty():
 		return DomainResult.failure(&"persistence.invalid_database_path", "file repository path is empty")
@@ -48,9 +48,9 @@ func initialize() -> DomainResult:
 	return DomainResult.ok(self)
 
 
-## Creates one new [param state] through an atomic whole-document commit.
-## [param state] Validated player aggregate whose character ID must be unique.
-## Returns committed revision-zero state or a conflict/storage failure.
+## 执行 `create_player` 对应的模块操作。
+## [param state] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func create_player(state: PlayerStateRecord) -> DomainResult:
 	var ready := _require_initialized()
 	if not ready.is_ok:
@@ -67,9 +67,9 @@ func create_player(state: PlayerStateRecord) -> DomainResult:
 	return _commit_candidate(candidate, state.character_id)
 
 
-## Loads the isolated aggregate identified by [param character_id].
-## [param character_id] Existing stable character identity.
-## Returns a defensive typed copy or a stable not-found failure.
+## 执行 `load_player` 对应的模块操作。
+## [param character_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func load_player(character_id: String) -> DomainResult:
 	var ready := _require_initialized()
 	if not ready.is_ok:
@@ -79,10 +79,10 @@ func load_player(character_id: String) -> DomainResult:
 	return DomainResult.ok((_players[character_id] as PlayerStateRecord).duplicate_record())
 
 
-## Saves [param state] when persisted revision equals [param expected_revision].
-## [param state] Complete aggregate candidate; repository owns the revision increment.
-## [param expected_revision] Caller-observed aggregate revision.
-## Returns an isolated committed state or a conflict/storage failure.
+## 执行 `save_player` 对应的模块操作。
+## [param state] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param expected_revision] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func save_player(state: PlayerStateRecord, expected_revision: int) -> DomainResult:
 	var ready := _require_initialized()
 	if not ready.is_ok:
@@ -102,11 +102,11 @@ func save_player(state: PlayerStateRecord, expected_revision: int) -> DomainResu
 	return _commit_candidate(candidate, state.character_id)
 
 
-## Runs [param operation] against an isolated [param character_id] aggregate and commits once.
-## [param character_id] Existing character loaded at its current revision.
-## [param operation] Callable returning `DomainResult`; failures roll back every mutation.
-## Returns committed state with one revision increment or the unmodified callback/storage failure.
-## Design: Callback code never receives the repository-owned instance.
+## 执行 `transact_player` 对应的模块操作。
+## [param character_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param operation] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数位于权威服务器边界，客户端不得覆盖其计算结果。
 func transact_player(character_id: String, operation: Callable) -> DomainResult:
 	if not operation.is_valid():
 		return DomainResult.failure(&"persistence.invalid_transaction", "transaction callback is invalid")
@@ -123,16 +123,16 @@ func transact_player(character_id: String, operation: Callable) -> DomainResult:
 	return save_player(working, expected_revision)
 
 
-## Reports the materialized schema version.
-## Returns zero before initialization or the applied version afterward.
+## 执行 `current_schema_version` 对应的模块操作。
+## 返回该函数计算、查询或操作得到的结果。
 func current_schema_version() -> int:
 	return _schema_version
 
 
-## Persists [param candidate] before publishing it as repository state.
-## [param candidate] Fully isolated player index for the next database snapshot.
-## [param committed_character_id] Character whose defensive committed copy is returned.
-## Returns committed state or a storage error without changing `_players`.
+## 执行 `commit_candidate` 对应的模块操作。
+## [param candidate] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param committed_character_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func _commit_candidate(candidate: Dictionary, committed_character_id: String) -> DomainResult:
 	var document := _encode_document(candidate)
 	var persisted := _persist_document(document)
@@ -142,10 +142,10 @@ func _commit_candidate(candidate: Dictionary, committed_character_id: String) ->
 	return DomainResult.ok((_players[committed_character_id] as PlayerStateRecord).duplicate_record())
 
 
-## Writes [param document] with a recoverable temp/backup rename protocol.
-## [param document] Complete JSON-compatible database snapshot.
-## Returns success after replacement or a stable I/O failure.
-## Design: This best-effort file protocol is a development substitute; SQLite must provide production ACID.
+## 执行 `persist_document` 对应的模块操作。
+## [param document] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数位于权威服务器边界，客户端不得覆盖其计算结果。
 func _persist_document(document: Dictionary) -> DomainResult:
 	var absolute_directory := ProjectSettings.globalize_path(database_path.get_base_dir())
 	var make_error := DirAccess.make_dir_recursive_absolute(absolute_directory)
@@ -179,8 +179,8 @@ func _persist_document(document: Dictionary) -> DomainResult:
 	return DomainResult.ok()
 
 
-## Recovers a staged backup when a prior file replacement was interrupted.
-## Returns success when the main file is present or restoration succeeds.
+## 执行 `recover_interrupted_commit` 对应的模块操作。
+## 返回该函数计算、查询或操作得到的结果。
 func _recover_interrupted_commit() -> DomainResult:
 	var backup_path := database_path + ".bak"
 	if FileAccess.file_exists(database_path) or not FileAccess.file_exists(backup_path):
@@ -191,9 +191,9 @@ func _recover_interrupted_commit() -> DomainResult:
 	return DomainResult.ok()
 
 
-## Decodes typed player aggregates from persistence [param raw_players].
-## [param raw_players] Schema-one dictionary keyed by character ID.
-## Returns a typed index or the first aggregate validation failure.
+## 执行 `decode_players` 对应的模块操作。
+## [param raw_players] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func _decode_players(raw_players: Variant) -> DomainResult:
 	if not raw_players is Dictionary:
 		return DomainResult.failure(&"persistence.invalid_database", "players root must be a dictionary")
@@ -209,9 +209,9 @@ func _decode_players(raw_players: Variant) -> DomainResult:
 	return DomainResult.ok(decoded)
 
 
-## Serializes the complete typed [param players] index.
-## [param players] Candidate aggregate dictionary owned by this repository.
-## Returns a schema-one JSON-compatible database document.
+## 执行 `encode_document` 对应的模块操作。
+## [param players] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func _encode_document(players: Dictionary) -> Dictionary:
 	var serialized: Dictionary = {}
 	for character_id: String in players:
@@ -223,9 +223,9 @@ func _encode_document(players: Dictionary) -> Dictionary:
 	}
 
 
-## Creates isolated copies of every aggregate in [param source].
-## [param source] Current or candidate player index.
-## Returns a new dictionary with no shared player-state objects.
+## 执行 `duplicate_player_index` 对应的模块操作。
+## [param source] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func _duplicate_player_index(source: Dictionary) -> Dictionary:
 	var duplicate: Dictionary = {}
 	for character_id: String in source:
@@ -233,8 +233,8 @@ func _duplicate_player_index(source: Dictionary) -> Dictionary:
 	return duplicate
 
 
-## Rejects repository calls made before initialization.
-## Returns success only when the backing snapshot was loaded and migrated.
+## 执行 `require_initialized` 对应的模块操作。
+## 返回该函数计算、查询或操作得到的结果。
 func _require_initialized() -> DomainResult:
 	return DomainResult.ok() if _initialized else DomainResult.failure(
 		&"persistence.repository_not_initialized", "repository must be initialized first"

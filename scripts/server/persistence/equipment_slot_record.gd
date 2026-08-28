@@ -12,9 +12,9 @@ var durability := 0
 var upgrade_level := 0
 
 
-## Builds a validated equipped-item record from persistence-boundary [param raw].
-## [param raw] Dictionary identifying the character/vehicle slot and concrete item instance.
-## Returns a typed record or a stable validation failure.
+## 执行 `from_dictionary` 对应的模块操作。
+## [param raw] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 static func from_dictionary(raw: Variant) -> DomainResult:
 	if not raw is Dictionary:
 		return DomainResult.failure(&"persistence.invalid_equipment_slot", "equipment slot must be a dictionary")
@@ -35,8 +35,8 @@ static func from_dictionary(raw: Variant) -> DomainResult:
 	return DomainResult.ok(slot)
 
 
-## Serializes this equipped item for the repository trust boundary.
-## Returns a JSON-compatible dictionary.
+## 序列化或保存 `to_dictionary` 对应的模块状态。
+## 返回该函数计算、查询或操作得到的结果。
 func to_dictionary() -> Dictionary:
 	return {
 		"owner_kind": owner_kind,
@@ -49,7 +49,7 @@ func to_dictionary() -> Dictionary:
 	}
 
 
-## Creates an independent copy for transaction isolation.
-## Returns a typed slot that shares no mutable state with this record.
+## 执行 `duplicate_record` 对应的模块操作。
+## 返回该函数计算、查询或操作得到的结果。
 func duplicate_record() -> EquipmentSlotRecord:
 	return EquipmentSlotRecord.from_dictionary(to_dictionary()).value

@@ -20,11 +20,11 @@ var _random := RandomNumberGenerator.new()
 var _monster_position_resolver := Callable()
 
 
-## Configures deterministic tick and random state for the authoritative combat world.
-## [param requested_simulation_hz] Fixed ticks per second used by cooldown and respawn timing.
-## [param random_seed] Explicit seed ensuring repeatable damage rolls in simulation tests.
-## [param regen_factor] Working-energy restoration per available output-power unit per second.
-## Returns this module on success or a validation failure.
+## 配置并初始化 `configure` 对应的模块状态。
+## [param requested_simulation_hz] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param random_seed] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param regen_factor] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func configure(
 	requested_simulation_hz: int,
 	random_seed: int,
@@ -46,20 +46,20 @@ func configure(
 	return DomainResult.ok(self)
 
 
-## Installs an authority-owned [param resolver] for static-map monster movement admission.
-## [param resolver] Callable receiving monster ID, current position and requested position, then returning an admitted `Vector2`.
-## Design: AI owns intent and speed while the map/navigation module remains the sole walkability authority.
+## 执行 `set_monster_position_resolver` 对应的模块操作。
+## [param resolver] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 设计：该函数位于权威服务器边界，客户端不得覆盖其计算结果。
 func set_monster_position_resolver(resolver: Callable) -> void:
 	_monster_position_resolver = resolver
 
 
-## Registers one server-owned vehicle combatant in [param map_instance_id] at [param position].
-## [param actor_id] Authenticated entity identity supplied by the server session layer.
-## [param map_instance_id] Current authoritative map instance used to scope ability targets.
-## [param position] Current authoritative foot point used for range validation.
-## [param assembly] Calculated vehicle statistics used to initialize mutable resources.
-## [param weapons_by_ability] Injected energy-cannon definitions keyed by stable ability ID.
-## Returns the initialized `VehicleCombatState` or a validation failure.
+## 执行 `register_vehicle` 对应的模块操作。
+## [param actor_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param map_instance_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param position] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param assembly] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param weapons_by_ability] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func register_vehicle(
 	actor_id: String,
 	map_instance_id: String,
@@ -93,9 +93,9 @@ func register_vehicle(
 	return DomainResult.ok(vehicle_state)
 
 
-## Registers one injected monster [param definition] under server lifecycle control.
-## [param definition] Monster identity, position, combat health and respawn-seconds fixture/definition.
-## Returns the initialized `MonsterLifecycle` or a validation failure.
+## 执行 `register_monster` 对应的模块操作。
+## [param definition] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func register_monster(definition: Dictionary) -> DomainResult:
 	var engagement_policy := StringName(definition.get("engagement_policy", "unresponsive"))
 	if engagement_policy not in [&"unresponsive", &"retaliatory", &"aggressive"]:
@@ -131,17 +131,17 @@ func register_monster(definition: Dictionary) -> DomainResult:
 	return DomainResult.ok(lifecycle)
 
 
-## Removes the vehicle owned by [param actor_id] from this map-scoped combat world.
-## [param actor_id] Authenticated entity leaving the map instance or expiring its session.
-## Returns true when an actor existed and was removed.
+## 执行 `unregister_vehicle` 对应的模块操作。
+## [param actor_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func unregister_vehicle(actor_id: String) -> bool:
 	return actors.erase(actor_id)
 
 
-## Updates authoritative [param actor_id] position without accepting a client coordinate in attack payloads.
-## [param actor_id] Registered server-owned vehicle entity.
-## [param position] Position already validated by the movement/map module.
-## Returns success after mutation or an actor/position validation failure.
+## 执行 `update_actor_position` 对应的模块操作。
+## [param actor_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param position] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func update_actor_position(actor_id: String, position: Vector2) -> DomainResult:
 	if not actors.has(actor_id):
 		return DomainResult.failure(&"combat.unknown_actor", "actor is not registered")
@@ -151,11 +151,11 @@ func update_actor_position(actor_id: String, position: Vector2) -> DomainResult:
 	return DomainResult.ok(position)
 
 
-## Validates and resolves one energy-cannon attack from authenticated [param actor_id].
-## [param actor_id] Server-authenticated attacker; this identity is absent from client-controlled intent.
-## [param raw_intent] Shared `UseAbilityIntent` shape: map, ability, target and monotonic sequence.
-## Returns authoritative energy, cooldown, damage and optional death facts.
-## Design: Damage, range, position, energy and hit outcome never come from the client payload.
+## 执行 `handle_energy_cannon_attack` 对应的模块操作。
+## [param actor_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param raw_intent] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数位于权威服务器边界，客户端不得覆盖其计算结果。
 func handle_energy_cannon_attack(actor_id: String, raw_intent: Variant) -> DomainResult:
 	if not actors.has(actor_id):
 		return DomainResult.failure(&"combat.unknown_actor", "authenticated actor is not registered")
@@ -230,9 +230,9 @@ func handle_energy_cannon_attack(actor_id: String, raw_intent: Variant) -> Domai
 	return DomainResult.ok(event)
 
 
-## Advances the authoritative combat world by [param tick_count] fixed ticks.
-## [param tick_count] Number of simulation ticks to process deterministically.
-## Returns newly emitted respawn events, or a validation failure.
+## 执行 `advance_ticks` 对应的模块操作。
+## [param tick_count] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func advance_ticks(tick_count: int) -> DomainResult:
 	if tick_count < 0:
 		return DomainResult.failure(&"combat.invalid_tick_count", "tick count cannot be negative")
@@ -266,10 +266,10 @@ func advance_ticks(tick_count: int) -> DomainResult:
 	return DomainResult.ok(emitted_respawns)
 
 
-## Builds a client-safe combat snapshot scoped to [param actor_id]'s map instance.
-## [param actor_id] Authenticated local vehicle whose private resource state is included.
-## Returns local vehicle resources plus public monster presentation/combat facts, or an empty dictionary for unknown actors.
-## Design: Definitions and random rolls remain server-side; clients receive only current authoritative results.
+## 执行 `snapshot_for_actor` 对应的模块操作。
+## [param actor_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数位于权威服务器边界，客户端不得覆盖其计算结果。
 func snapshot_for_actor(actor_id: String) -> Dictionary:
 	if not actors.has(actor_id):
 		return {}
@@ -304,10 +304,10 @@ func snapshot_for_actor(actor_id: String) -> Dictionary:
 	}
 
 
-## Advances one configured monster [param monster_id] by [param fixed_delta] under server authority.
-## [param monster_id] Registered lifecycle and behavior identity.
-## [param fixed_delta] One fixed simulation interval in seconds.
-## Design: Target selection, movement, cooldown and vehicle damage are never accepted from client payloads.
+## 执行 `simulate_monster_tick` 对应的模块操作。
+## [param monster_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param fixed_delta] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 设计：该函数位于权威服务器边界，客户端不得覆盖其计算结果。
 func _simulate_monster_tick(monster_id: String, fixed_delta: float) -> void:
 	var monster: MonsterLifecycle = monsters[monster_id]
 	var runtime: Dictionary = monster_runtime[monster_id]
@@ -347,9 +347,10 @@ func _simulate_monster_tick(monster_id: String, fixed_delta: float) -> void:
 	})
 
 
-## 依据 [param monster] 的三态接战策略解析当前目标。
-## Returns 不还击时恒为空；反击型只保留受击目标；主动型可自行搜索最近玩家。
-## Design: `npcinfo.attr_10` 的 0/1/2 在数据层转换为枚举，运行时不依赖怪物名称。
+## 执行 `engaged_actor_id` 对应的模块操作。
+## [param monster] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：`npcinfo.attr_10` 的 0/1/2 在数据层转换为枚举，运行时不依赖怪物名称。
 func _engaged_actor_id(monster: MonsterLifecycle) -> String:
 	var runtime: Dictionary = monster_runtime[monster.monster_id]
 	var current_target := String(runtime["target_actor_id"])
@@ -361,8 +362,10 @@ func _engaged_actor_id(monster: MonsterLifecycle) -> String:
 	return ""
 
 
-## 验证 [param actor_id] 是否仍是 [param monster] 同地图上的存活目标。
-## Returns 身份、地图与载具生命都有效时返回 `true`。
+## 执行 `is_valid_actor_target` 对应的模块操作。
+## [param monster] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param actor_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func _is_valid_actor_target(monster: MonsterLifecycle, actor_id: String) -> bool:
 	if not actors.has(actor_id):
 		return false
@@ -371,9 +374,10 @@ func _is_valid_actor_target(monster: MonsterLifecycle, actor_id: String) -> bool
 	return state.health > 0 and String(actor["map_instance_id"]) == monster.map_instance_id
 
 
-## 为 [param event] 分配单调事件号、写入有界重放窗口并返回记录副本。
-## Returns 包含 `event_id` 的权威事件。
-## Design: 快照携带短事件窗口以容忍 UDP/快照丢包，客户端按事件号去重。
+## 执行 `record_combat_event` 对应的模块操作。
+## [param event] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：快照携带短事件窗口以容忍 UDP/快照丢包，客户端按事件号去重。
 func _record_combat_event(event: Dictionary) -> Dictionary:
 	event_sequence += 1
 	var recorded := event.duplicate(true)
@@ -384,9 +388,9 @@ func _record_combat_event(event: Dictionary) -> Dictionary:
 	return recorded
 
 
-## Finds the nearest living actor that [param monster] can aggro on its own map.
-## [param monster] Server-owned monster lifecycle used for map and range filtering.
-## Returns an actor ID or an empty string when no eligible vehicle is within aggro range.
+## 执行 `nearest_alive_actor` 对应的模块操作。
+## [param monster] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func _nearest_alive_actor(monster: MonsterLifecycle) -> String:
 	var runtime: Dictionary = monster_runtime[monster.monster_id]
 	var best_id := ""
@@ -403,9 +407,9 @@ func _nearest_alive_actor(monster: MonsterLifecycle) -> String:
 	return best_id
 
 
-## Moves [param monster_id] toward its configured home point by one [param fixed_delta].
-## [param monster_id] Registered monster returning after losing or leashing a target.
-## [param fixed_delta] One fixed simulation interval in seconds.
+## 执行 `move_monster_towards_home` 对应的模块操作。
+## [param monster_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param fixed_delta] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _move_monster_towards_home(monster_id: String, fixed_delta: float) -> void:
 	var monster: MonsterLifecycle = monsters[monster_id]
 	var runtime: Dictionary = monster_runtime[monster_id]
@@ -417,10 +421,10 @@ func _move_monster_towards_home(monster_id: String, fixed_delta: float) -> void:
 	_move_monster(monster_id, home_position, fixed_delta)
 
 
-## Simulates deterministic idle roaming for [param monster_id] by [param fixed_delta].
-## [param monster_id] Registered monster without an eligible aggro target.
-## [param fixed_delta] One fixed simulation interval controlling admitted displacement.
-## Design: The authority selects reproducible patrol points inside configured wander radius; clients never randomize monster position.
+## 执行 `simulate_unengaged_monster` 对应的模块操作。
+## [param monster_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param fixed_delta] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 设计：该函数位于权威服务器边界，客户端不得覆盖其计算结果。
 func _simulate_unengaged_monster(monster_id: String, fixed_delta: float) -> void:
 	var monster: MonsterLifecycle = monsters[monster_id]
 	var runtime: Dictionary = monster_runtime[monster_id]
@@ -443,10 +447,10 @@ func _simulate_unengaged_monster(monster_id: String, fixed_delta: float) -> void
 	_move_monster(monster_id, wander_target, fixed_delta)
 
 
-## Requests one authority-admitted movement step for [param monster_id] toward [param target_position].
-## [param monster_id] Registered monster whose lifecycle position will change.
-## [param target_position] Server-selected target or home coordinate.
-## [param fixed_delta] One fixed simulation interval controlling maximum displacement.
+## 执行 `move_monster` 对应的模块操作。
+## [param monster_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param target_position] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param fixed_delta] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _move_monster(monster_id: String, target_position: Vector2, fixed_delta: float) -> void:
 	var monster: MonsterLifecycle = monsters[monster_id]
 	var runtime: Dictionary = monster_runtime[monster_id]
@@ -466,34 +470,34 @@ func _move_monster(monster_id: String, target_position: Vector2, fixed_delta: fl
 		_update_monster_facing(runtime, delta)
 
 
-## Quantizes [param direction] into the shared eight-direction index on [param runtime].
-## [param runtime] Mutable server presentation state for one monster.
-## [param direction] Intended world-space motion or aim vector.
+## 执行 `update_monster_facing` 对应的模块操作。
+## [param runtime] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param direction] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _update_monster_facing(runtime: Dictionary, direction: Vector2) -> void:
 	if direction.is_zero_approx():
 		return
 	runtime["facing_index"] = posmod(-roundi(direction.angle() / (PI / 4.0)), 8)
 
 
-## Retrieves the mutable vehicle state owned by [param actor_id] for server inspection.
-## [param actor_id] Registered authenticated actor identity.
-## Returns the vehicle state or `null` when the actor is unknown.
+## 执行 `vehicle_state_for` 对应的模块操作。
+## [param actor_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func vehicle_state_for(actor_id: String) -> VehicleCombatState:
 	if not actors.has(actor_id):
 		return null
 	return actors[actor_id]["vehicle_state"]
 
 
-## Retrieves the monster lifecycle owned by [param monster_id].
-## [param monster_id] Registered monster identity.
-## Returns the lifecycle or `null` when absent.
+## 执行 `monster_for` 对应的模块操作。
+## [param monster_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func monster_for(monster_id: String) -> MonsterLifecycle:
 	return monsters.get(monster_id)
 
 
-## Validates and normalizes one injected energy-cannon [param definition].
-## [param definition] Server definition containing damage, energy, power, range and cooldown values.
-## Returns a normalized dictionary or a stable definition failure.
+## 执行 `normalize_energy_cannon` 对应的模块操作。
+## [param definition] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func _normalize_energy_cannon(definition: Dictionary) -> DomainResult:
 	var weapon_id := String(definition.get("weapon_id", ""))
 	var minimum_damage := int(definition.get("minimum_damage", -1))

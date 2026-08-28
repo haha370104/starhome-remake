@@ -11,16 +11,16 @@ var disconnected_at_msec := -1
 var expires_at_msec := -1
 
 
-## Reports whether the requested condition is satisfied.
-## Returns Whether the operation completed or the queried condition is satisfied.
-## Design: Runs within the authoritative server boundary; clients must not override the resulting state.
+## 判断 `has_active_peer` 对应的模块状态。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数位于权威服务器边界，客户端不得覆盖其计算结果。
 func has_active_peer() -> bool:
 	return peer_id > 0
 
 
-## Serializes the current state into a transport-safe dictionary.
-## Returns Structured result data produced by the operation.
-## Design: Runs within the authoritative server boundary; clients must not override the resulting state.
+## 执行 `snapshot` 对应的模块操作。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数位于权威服务器边界，客户端不得覆盖其计算结果。
 func snapshot() -> Dictionary:
 	return {
 		"session_id": session_id,

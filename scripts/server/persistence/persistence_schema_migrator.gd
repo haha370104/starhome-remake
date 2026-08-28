@@ -5,10 +5,10 @@ const DomainResult := preload("res://scripts/core/domain_result.gd")
 const CURRENT_SCHEMA_VERSION := 1
 
 
-## Migrates persistence [param document] through every supported version in order.
-## [param document] JSON-compatible database root copied before any mutation.
-## Returns a migrated copy or a stable unsupported/malformed schema failure.
-## Design: Migrations are deterministic and never mutate the caller's document.
+## 执行 `migrate_document` 对应的模块操作。
+## [param document] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数位于权威服务器边界，客户端不得覆盖其计算结果。
 static func migrate_document(document: Dictionary) -> DomainResult:
 	var working := document.duplicate(true)
 	var version := int(working.get("schema_version", -1))
@@ -29,9 +29,9 @@ static func migrate_document(document: Dictionary) -> DomainResult:
 	return DomainResult.ok(working)
 
 
-## Converts the legacy [param document] from schema zero to normalized schema one.
-## [param document] Schema-zero root using the legacy `characters` aggregate key.
-## Returns a new schema-one document or a validation failure.
+## 执行 `migrate_zero_to_one` 对应的模块操作。
+## [param document] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 static func _migrate_zero_to_one(document: Dictionary) -> DomainResult:
 	var legacy_players: Variant = document.get("characters", {})
 	if not legacy_players is Dictionary:

@@ -16,11 +16,11 @@ var path := PackedVector2Array()
 var path_index := 0
 
 
-## Updates the managed state with the supplied value.
-## [param new_path] Resource or movement path consumed by the operation.
-## [param target] World-space position used by the operation.
-## [param input_sequence] Sequence, tick, or index value used by the operation.
-## Design: Runs within the authoritative server boundary; clients must not override the resulting state.
+## 设置或恢复 `set_path` 对应的模块状态。
+## [param new_path] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param target] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param input_sequence] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 设计：该函数位于权威服务器边界，客户端不得覆盖其计算结果。
 func set_path(new_path: PackedVector2Array, target: Vector2, input_sequence: int) -> void:
 	path = new_path
 	path_index = 1 if path.size() > 1 else path.size()
@@ -31,9 +31,9 @@ func set_path(new_path: PackedVector2Array, target: Vector2, input_sequence: int
 	_update_facing_to_next_point()
 
 
-## Advances the managed state using the supplied update.
-## [param delta] Elapsed time in seconds for this update.
-## Design: Runs within the authoritative server boundary; clients must not override the resulting state.
+## 推进并更新 `simulate` 对应的模块状态。
+## [param delta] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 设计：该函数位于权威服务器边界，客户端不得覆盖其计算结果。
 func simulate(delta: float) -> void:
 	if delta <= 0.0 or path_index >= path.size():
 		action = &"idle"
@@ -59,10 +59,10 @@ func simulate(delta: float) -> void:
 	state_revision += 1
 
 
-## Serializes the current state into a transport-safe dictionary.
-## [param server_tick] Sequence, tick, or index value used by the operation.
-## Returns Structured result data produced by the operation.
-## Design: Runs within the authoritative server boundary; clients must not override the resulting state.
+## 执行 `snapshot` 对应的模块操作。
+## [param server_tick] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数位于权威服务器边界，客户端不得覆盖其计算结果。
 func snapshot(server_tick: int) -> Dictionary:
 	var contract = EntitySnapshotContract.new(
 		entity_id,
@@ -77,8 +77,8 @@ func snapshot(server_tick: int) -> Dictionary:
 	return contract.to_dictionary()
 
 
-## Advances the managed state using the supplied update.
-## Design: Runs within the authoritative server boundary; clients must not override the resulting state.
+## 推进并更新 `update_facing_to_next_point` 对应的模块状态。
+## 设计：该函数位于权威服务器边界，客户端不得覆盖其计算结果。
 func _update_facing_to_next_point() -> void:
 	if path_index >= path.size():
 		return

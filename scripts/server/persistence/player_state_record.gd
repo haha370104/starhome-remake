@@ -35,10 +35,10 @@ var facing_direction := 0
 var checkpoint_id := ""
 
 
-## Builds a validated player aggregate from persistence-boundary [param raw].
-## [param raw] JSON-compatible account, character, inventory, equipment, vehicle and location state.
-## Returns a typed aggregate or a stable validation failure.
-## Design: This is the only free-form dictionary boundary used by repositories for player state.
+## 执行 `from_dictionary` 对应的模块操作。
+## [param raw] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数位于权威服务器边界，客户端不得覆盖其计算结果。
 static func from_dictionary(raw: Variant) -> DomainResult:
 	if not raw is Dictionary:
 		return DomainResult.failure(&"persistence.invalid_player_state", "player state must be a dictionary")
@@ -83,8 +83,8 @@ static func from_dictionary(raw: Variant) -> DomainResult:
 	return DomainResult.ok(record) if validation.is_ok else validation
 
 
-## Validates all aggregate invariants before a repository commit.
-## Returns success or a stable error without mutating the aggregate.
+## 校验 `validate` 对应的模块状态。
+## 返回该函数计算、查询或操作得到的结果。
 func validate() -> DomainResult:
 	if account_id.is_empty() or account_name.is_empty() or account_status.is_empty() \
 		or character_id.is_empty() or display_name.is_empty():
@@ -125,8 +125,8 @@ func validate() -> DomainResult:
 	return DomainResult.ok()
 
 
-## Serializes this aggregate for one repository commit.
-## Returns a JSON-compatible dictionary with explicit schema version.
+## 序列化或保存 `to_dictionary` 对应的模块状态。
+## 返回该函数计算、查询或操作得到的结果。
 func to_dictionary() -> Dictionary:
 	var serialized_stacks: Array[Dictionary] = []
 	for stack: InventoryStackRecord in inventory_stacks:
@@ -166,15 +166,15 @@ func to_dictionary() -> Dictionary:
 	}
 
 
-## Creates an independent aggregate copy for transaction isolation.
-## Returns a validated player record that shares no stack or equipment objects.
+## 执行 `duplicate_record` 对应的模块操作。
+## 返回该函数计算、查询或操作得到的结果。
 func duplicate_record() -> PlayerStateRecord:
 	return PlayerStateRecord.from_dictionary(to_dictionary()).value
 
 
-## Parses typed inventory records from [param raw_stacks].
-## [param raw_stacks] Persistence-boundary array of stack dictionaries.
-## Returns success or the first stack validation failure.
+## 执行 `load_inventory` 对应的模块操作。
+## [param raw_stacks] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func _load_inventory(raw_stacks: Variant) -> DomainResult:
 	if not raw_stacks is Array:
 		return DomainResult.failure(&"persistence.invalid_player_state", "inventory stacks must be an array")
@@ -186,9 +186,9 @@ func _load_inventory(raw_stacks: Variant) -> DomainResult:
 	return DomainResult.ok()
 
 
-## Parses typed equipment records from [param raw_equipment].
-## [param raw_equipment] Persistence-boundary array of equipped-item dictionaries.
-## Returns success or the first equipment validation failure.
+## 执行 `load_equipment` 对应的模块操作。
+## [param raw_equipment] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func _load_equipment(raw_equipment: Variant) -> DomainResult:
 	if not raw_equipment is Array:
 		return DomainResult.failure(&"persistence.invalid_player_state", "equipment slots must be an array")

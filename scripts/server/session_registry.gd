@@ -10,19 +10,19 @@ var _sessions_by_token: Dictionary = {}
 var _sessions_by_entity: Dictionary = {}
 
 
-## Configures the instance from validated runtime inputs.
-## [param reconnect_grace_seconds] Elapsed time in seconds for this update.
-## Design: Runs within the authoritative server boundary; clients must not override the resulting state.
+## 配置并初始化 `configure` 对应的模块状态。
+## [param reconnect_grace_seconds] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 设计：该函数位于权威服务器边界，客户端不得覆盖其计算结果。
 func configure(reconnect_grace_seconds: float) -> void:
 	reconnect_grace_msec = maxi(0, roundi(reconnect_grace_seconds * 1000.0))
 
 
-## Builds the requested runtime object from configuration data.
-## [param peer_id] Stable identifier of the target value.
-## [param entity_id] Stable identifier of the target value.
-## [param now_msec] Input value consumed by the operation.
-## Returns Structured result data produced by the operation.
-## Design: Runs within the authoritative server boundary; clients must not override the resulting state.
+## 执行 `create` 对应的模块操作。
+## [param peer_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param entity_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param now_msec] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数位于权威服务器边界，客户端不得覆盖其计算结果。
 func create(peer_id: int, entity_id: String, now_msec: int) -> Dictionary:
 	if peer_id <= 0:
 		return _failure(&"invalid_peer", "peer_id must be positive")
@@ -44,11 +44,11 @@ func create(peer_id: int, entity_id: String, now_msec: int) -> Dictionary:
 	return _success(session)
 
 
-## Updates the managed state with the supplied value.
-## [param peer_id] Stable identifier of the target value.
-## [param now_msec] Input value consumed by the operation.
-## Returns Structured result data produced by the operation.
-## Design: Runs within the authoritative server boundary; clients must not override the resulting state.
+## 执行 `mark_disconnected` 对应的模块操作。
+## [param peer_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param now_msec] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数位于权威服务器边界，客户端不得覆盖其计算结果。
 func mark_disconnected(peer_id: int, now_msec: int) -> Dictionary:
 	var session: ServerSession = _sessions_by_peer.get(peer_id)
 	if session == null:
@@ -60,12 +60,12 @@ func mark_disconnected(peer_id: int, now_msec: int) -> Dictionary:
 	return _success(session)
 
 
-## Performs the `reconnect` operation.
-## [param peer_id] Stable identifier of the target value.
-## [param reconnect_token] Input value consumed by the operation.
-## [param now_msec] Input value consumed by the operation.
-## Returns Structured result data produced by the operation.
-## Design: Runs within the authoritative server boundary; clients must not override the resulting state.
+## 执行 `reconnect` 对应的模块操作。
+## [param peer_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param reconnect_token] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param now_msec] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数位于权威服务器边界，客户端不得覆盖其计算结果。
 func reconnect(peer_id: int, reconnect_token: String, now_msec: int) -> Dictionary:
 	if peer_id <= 0:
 		return _failure(&"invalid_peer", "peer_id must be positive")
@@ -86,10 +86,10 @@ func reconnect(peer_id: int, reconnect_token: String, now_msec: int) -> Dictiona
 	return _success(session)
 
 
-## Performs the `cleanup_expired` operation.
-## [param now_msec] Input value consumed by the operation.
-## Returns the resulting string collection.
-## Design: Runs within the authoritative server boundary; clients must not override the resulting state.
+## 移除并清理 `cleanup_expired` 对应的模块状态。
+## [param now_msec] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数位于权威服务器边界，客户端不得覆盖其计算结果。
 func cleanup_expired(now_msec: int) -> PackedStringArray:
 	var removed_entities := PackedStringArray()
 	for token in _sessions_by_token.keys():
@@ -104,25 +104,25 @@ func cleanup_expired(now_msec: int) -> PackedStringArray:
 	return removed_entities
 
 
-## Retrieves the requested value from the managed state.
-## [param peer_id] Stable identifier of the target value.
-## Returns the result produced by the operation.
-## Design: Runs within the authoritative server boundary; clients must not override the resulting state.
+## 执行 `session_for_peer` 对应的模块操作。
+## [param peer_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数位于权威服务器边界，客户端不得覆盖其计算结果。
 func session_for_peer(peer_id: int) -> ServerSession:
 	return _sessions_by_peer.get(peer_id)
 
 
-## Retrieves the requested value from the managed state.
-## [param entity_id] Stable identifier of the target value.
-## Returns the result produced by the operation.
-## Design: Runs within the authoritative server boundary; clients must not override the resulting state.
+## 执行 `session_for_entity` 对应的模块操作。
+## [param entity_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数位于权威服务器边界，客户端不得覆盖其计算结果。
 func session_for_entity(entity_id: String) -> ServerSession:
 	return _sessions_by_entity.get(entity_id)
 
 
-## Performs the `active_sessions` operation.
-## Returns the resulting collection.
-## Design: Runs within the authoritative server boundary; clients must not override the resulting state.
+## 执行 `active_sessions` 对应的模块操作。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数位于权威服务器边界，客户端不得覆盖其计算结果。
 func active_sessions() -> Array[ServerSession]:
 	var result: Array[ServerSession] = []
 	for session in _sessions_by_peer.values():
@@ -130,9 +130,9 @@ func active_sessions() -> Array[ServerSession]:
 	return result
 
 
-## Performs the `all_sessions` operation.
-## Returns the resulting collection.
-## Design: Runs within the authoritative server boundary; clients must not override the resulting state.
+## 执行 `all_sessions` 对应的模块操作。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数位于权威服务器边界，客户端不得覆盖其计算结果。
 func all_sessions() -> Array[ServerSession]:
 	var result: Array[ServerSession] = []
 	for session in _sessions_by_token.values():
@@ -140,9 +140,9 @@ func all_sessions() -> Array[ServerSession]:
 	return result
 
 
-## Mutates the managed collection for the requested value.
-## [param session] Input value consumed by the operation.
-## Design: Runs within the authoritative server boundary; clients must not override the resulting state.
+## 移除并清理 `remove_session` 对应的模块状态。
+## [param session] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 设计：该函数位于权威服务器边界，客户端不得覆盖其计算结果。
 func _remove_session(session: ServerSession) -> void:
 	if session.peer_id > 0:
 		_sessions_by_peer.erase(session.peer_id)
@@ -150,29 +150,29 @@ func _remove_session(session: ServerSession) -> void:
 	_sessions_by_entity.erase(session.entity_id)
 
 
-## Builds the requested runtime object from configuration data.
-## [param peer_id] Stable identifier of the target value.
-## [param entity_id] Stable identifier of the target value.
-## [param now_msec] Input value consumed by the operation.
-## Returns the resolved string value.
-## Design: Runs within the authoritative server boundary; clients must not override the resulting state.
+## 执行 `new_token` 对应的模块操作。
+## [param peer_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param entity_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param now_msec] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数位于权威服务器边界，客户端不得覆盖其计算结果。
 func _new_token(peer_id: int, entity_id: String, now_msec: int) -> String:
 	var random_bytes := Crypto.new().generate_random_bytes(24)
 	return "%s-%s" % [random_bytes.hex_encode(), str(hash([peer_id, entity_id, now_msec]))]
 
 
-## Performs the `success` operation.
-## [param value] New value requested by the caller.
-## Returns Structured result data produced by the operation.
-## Design: Runs within the authoritative server boundary; clients must not override the resulting state.
+## 执行 `success` 对应的模块操作。
+## [param value] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数位于权威服务器边界，客户端不得覆盖其计算结果。
 func _success(value: Variant) -> Dictionary:
 	return {"ok": true, "code": &"ok", "value": value}
 
 
-## Performs the `failure` operation.
-## [param code] Stable identifier of the target value.
-## [param message] Serialized input received at the subsystem boundary.
-## Returns Structured result data produced by the operation.
-## Design: Runs within the authoritative server boundary; clients must not override the resulting state.
+## 执行 `failure` 对应的模块操作。
+## [param code] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param message] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数位于权威服务器边界，客户端不得覆盖其计算结果。
 func _failure(code: StringName, message: String) -> Dictionary:
 	return {"ok": false, "code": code, "message": message}
