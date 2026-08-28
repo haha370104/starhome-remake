@@ -12,6 +12,7 @@ import argparse
 import csv
 import html
 import json
+import shutil
 from collections import Counter, defaultdict
 from pathlib import Path
 from typing import Any
@@ -23,10 +24,14 @@ Image.MAX_IMAGE_PIXELS = None
 
 
 def read_json(path: Path) -> Any:
+    """Read and decode one UTF-8 JSON document from ``path``."""
+
     return json.loads(path.read_text(encoding="utf-8"))
 
 
 def write_json(path: Path, value: Any) -> None:
+    """Serialize ``value`` as indented UTF-8 JSON at ``path``."""
+
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(
         json.dumps(value, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
@@ -34,10 +39,14 @@ def write_json(path: Path, value: Any) -> None:
 
 
 def rel_url(path: Path, base: Path) -> str:
+    """Return a POSIX relative URL for ``path`` rooted below ``base``."""
+
     return path.resolve().relative_to(base.resolve()).as_posix()
 
 
 def marker_color(kinds: set[str]) -> tuple[int, int, int, int]:
+    """Return the audit marker color for the unresolved placement ``kinds``."""
+
     if kinds == {"AddImgEx"}:
         return (255, 190, 0, 255)
     if kinds == {"AddImg"}:
@@ -52,6 +61,8 @@ def draw_marker(
     radius: int,
     color: tuple[int, int, int, int],
 ) -> None:
+    """Draw one crosshair marker centered at ``x``/``y`` on ``draw``."""
+
     # A dark halo keeps the marker readable over bright floor tiles.
     draw.ellipse(
         (x - radius - 2, y - radius - 2, x + radius + 2, y + radius + 2),
@@ -70,6 +81,8 @@ def draw_marker(
 def render_map(
     map_record: dict[str, Any], maps_root: Path, review_root: Path
 ) -> dict[str, Any]:
+    """Render and describe one map's currently unresolved scene placements."""
+
     output = map_record["output"]
     source_dir = maps_root / output
     scene_path = source_dir / "scene_objects.json"
@@ -152,6 +165,8 @@ def render_map(
 
 
 def write_csv_report(path: Path, records: list[dict[str, Any]]) -> None:
+    """Write a spreadsheet-friendly summary of unresolved map records."""
+
     fields = [
         "map_code",
         "map_name",
@@ -190,7 +205,14 @@ def write_csv_report(path: Path, records: list[dict[str, Any]]) -> None:
             )
 
 
-def write_html(path: Path, maps_root: Path, records: list[dict[str, Any]], summary: dict[str, Any]) -> None:
+def write_html(
+    path: Path,
+    maps_root: Path,
+    records: list[dict[str, Any]],
+    summary: dict[str, Any],
+) -> None:
+    """Write the searchable visual audit index for ``records``."""
+
     cards = []
     for record in records:
         stats = record["scene_objects"]
@@ -245,7 +267,88 @@ q.addEventListener('input',()=>{{const s=q.value.trim().toLowerCase();cards.forE
     )
 
 
+def clean_generated_map_outputs(review_root: Path) -> dict[str, int]:
+    """Remove only a previously generated and schema-verified ``maps`` subtree.
+
+    Args:
+        review_root: Root directory of the missing-scene review package.
+
+    Returns:
+        Counts of stale map directories and marked images removed.
+
+    Raises:
+        ValueError: If the target escapes ``review_root`` or existing output does
+            not carry the expected review-package schema marker.
+
+    Design:
+        Cleanup deliberately refuses arbitrary directories.  Following symlinks
+        during ``resolve`` also makes an externally redirected ``maps`` path fail
+        the direct-child check before any recursive deletion occurs.
+    """
+
+    resolved_root = review_root.resolve()
+    if resolved_root.parent == resolved_root:
+        raise ValueError("review_root must not be a filesystem root")
+    target = (resolved_root / "maps").resolve()
+    if target.parent != resolved_root or target.name != "maps":
+        raise ValueError("generated maps target escaped review_root")
+    if not target.exists():
+        return {"map_directories": 0, "marked_images": 0}
+    if not target.is_dir():
+        raise ValueError("generated maps target exists but is not a directory")
+
+    package_path = resolved_root / "missing_scene_review.json"
+    package = read_json(package_path) if package_path.is_file() else {}
+    if package.get("schema") != "starhome_remake_missing_scene_review_v1":
+        raise ValueError("refusing to clean maps without the expected review schema")
+
+    counts = {
+        "map_directories": sum(1 for path in target.iterdir() if path.is_dir()),
+        "marked_images": sum(1 for _ in target.rglob("missing_marked.png")),
+    }
+    shutil.rmtree(target)
+    return counts
+
+
+def write_markdown_report(
+    path: Path,
+    records: list[dict[str, Any]],
+    summary: dict[str, Any],
+) -> None:
+    """Write a compact human-readable list of every currently affected map."""
+
+    lines = [
+        "# 当前缺失场景素材的地图",
+        "",
+        (
+            f"当前共 **{summary['maps_with_missing_scene_objects']}** 个地图输出仍有 "
+            f"**{summary['missing_placements']}** 个缺失摆放，涉及 "
+            f"**{summary['globally_unique_missing_resources']}** 种原始 ALE。"
+        ),
+        "",
+        "该清单由当前 `unique_maps.json` 全量重建；旧版已恢复或已不再缺失的标记目录已清除。",
+        "",
+        "| 地图编号 | 地图名称 | 来源分支 | 输出 | 缺失摆放 | 缺失 ALE | 标记图 |",
+        "| --- | --- | --- | --- | ---: | ---: | --- |",
+    ]
+    for record in records:
+        stats = record["scene_objects"]
+        cells = [
+            str(record.get("map_code") or ""),
+            str(record.get("map_name") or "未命名"),
+            "、".join(record.get("source_branches", [])),
+            str(record["output"]),
+            str(stats["missing"]),
+            str(stats["unique_missing_resources"]),
+            f"[查看]({record['files']['missing_marked']})",
+        ]
+        lines.append("| " + " | ".join(cell.replace("|", "\\|") for cell in cells) + " |")
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
 def main() -> int:
+    """Build a clean missing-scene review package from reconstructed maps."""
+
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("maps_root", type=Path)
     parser.add_argument("review_root", type=Path)
@@ -255,6 +358,7 @@ def main() -> int:
     review_root = args.review_root.resolve()
     review_root.mkdir(parents=True, exist_ok=True)
     unique_maps = read_json(maps_root / "unique_maps.json")
+    stale_counts = clean_generated_map_outputs(review_root)
     candidates = [
         record
         for record in unique_maps
@@ -289,6 +393,7 @@ def main() -> int:
         "globally_unique_missing_resources": len(all_resources),
         "out_of_bounds_placements": sum(record["scene_objects"]["out_of_bounds_placements"] for record in records),
         "errors": len(errors),
+        "stale_outputs_removed": stale_counts,
         "marker_legend": {
             "AddImg": "red",
             "AddImgEx": "amber",
@@ -303,6 +408,7 @@ def main() -> int:
     }
     write_json(review_root / "missing_scene_review.json", package)
     write_csv_report(review_root / "missing_scene_review.csv", records)
+    write_markdown_report(review_root / "missing_scene_review.md", records, summary)
     write_html(review_root / "index.html", maps_root, records, summary)
     print(json.dumps(summary, ensure_ascii=False, indent=2))
     return 1 if errors else 0
