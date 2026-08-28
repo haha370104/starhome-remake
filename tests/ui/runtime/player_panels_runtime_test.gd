@@ -40,18 +40,32 @@ func _run() -> void:
 	_expect(manager.character_panel._skill_button.text == "查看技能", "人物资料区应提供查看技能入口")
 	_expect(manager.character_panel._skill_rows_root.get_child_count() == 12,
 		"技能弹层应呈现十二项权威技能")
+	var inventory_item := manager.inventory_panel._item_canvas.get_child(0) as InventoryItemView
+	var inventory_icon := inventory_item.get_node("Icon") as TextureRect
+	inventory_item.mouse_entered.emit()
+	_expect(_is_item_highlighted(inventory_icon), "背包物品悬停应启用原版绿色发光")
+	_expect(is_equal_approx(inventory_item.modulate.a, 1.0),
+		"悬停材质不得覆盖背包拖拽透明度状态")
+	inventory_item.mouse_exited.emit()
+	_expect(not _is_item_highlighted(inventory_icon), "背包物品离开后应清除发光")
 	manager.inventory_panel._request_character_equip("inventory.training_shirt", "upper_body")
 	await process_frame
 	var shirt := manager.character_panel._equipment_layers.get_child(0) as TextureRect
 	_expect(shirt.position == Vector2(54, 93), "衣服应按 WearInDlg 锚点与 ALE origin 叠加")
 	_expect("服装等级：35" in shirt.tooltip_text and "耐久：64 / 64" in shirt.tooltip_text,
 		"悬浮衣服应显示逆向所得等级和耐久")
+	shirt.mouse_entered.emit()
+	_expect(_is_item_highlighted(shirt), "人物面板穿着物品应使用同一绿色发光")
+	shirt.mouse_exited.emit()
 	var chassis_visual := manager.vehicle_panel._slot_root.get_node("Location_0_recruit_tank") as TextureRect
 	var weapon_visual := manager.vehicle_panel._slot_root.get_node("Location_1_recruit_energy_cannon") as TextureRect
 	var engine_visual := manager.vehicle_panel._slot_root.get_node("Location_3_beginner_engine") as TextureRect
 	_expect(chassis_visual.position == Vector2(93, 208), "底盘应使用旧客户端对话框坐标")
 	_expect(weapon_visual.position == Vector2(138, 184), "主武器应叠在底盘对应锚点")
 	_expect(engine_visual.position == Vector2(97, 370), "推进器应落在原版底部装备槽")
+	weapon_visual.mouse_entered.emit()
+	_expect(_is_item_highlighted(weapon_visual), "战车装备应使用同一物品悬停发光")
+	weapon_visual.mouse_exited.emit()
 	_expect(manager.vehicle_panel._stat_labels.max_health.text == "最大生命：70",
 		"右侧最大生命应消费权威聚合值")
 	_expect(manager.vehicle_panel._stat_labels.armor_values.text == "0 / 0 / 0 / 0",
@@ -92,3 +106,10 @@ func _expect(condition: bool, message: String) -> void:
 	assertions += 1
 	if not condition:
 		failures.append(message)
+
+
+## 判断物品专属材质当前是否处于悬停状态。
+func _is_item_highlighted(visual: CanvasItem) -> bool:
+	var material := visual.material as ShaderMaterial
+	return material != null \
+		and is_equal_approx(float(material.get_shader_parameter("hover_amount")), 1.0)

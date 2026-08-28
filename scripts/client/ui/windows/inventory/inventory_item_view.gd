@@ -5,9 +5,15 @@ signal move_requested(instance_id: String, position_px: Vector2i)
 signal equip_requested(instance_id: String, location: int)
 signal character_equip_requested(instance_id: String, slot_id: String)
 
+const ItemHoverHighlightScript := preload(
+	"res://scripts/client/ui/windows/item_hover_highlight.gd"
+)
+
 var item_snapshot: Dictionary = {}
 var _dragging := false
 var _drag_offset := Vector2.ZERO
+var _icon: TextureRect
+var _hover_material: ShaderMaterial
 
 
 ## 使用权威物品快照配置一个可拖动背包视图。
@@ -24,15 +30,16 @@ func configure(snapshot: Dictionary) -> void:
 	]
 	gui_input.connect(_on_gui_input)
 
-	var icon := TextureRect.new()
-	icon.name = "Icon"
+	_icon = TextureRect.new()
+	_icon.name = "Icon"
 	var icon_path := String(snapshot.get("icon", ""))
-	icon.texture = load(icon_path) as Texture2D if ResourceLoader.exists(icon_path) else null
-	icon.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(icon)
+	_icon.texture = load(icon_path) as Texture2D if ResourceLoader.exists(icon_path) else null
+	_icon.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_icon)
+	_hover_material = ItemHoverHighlightScript.bind(self, _icon)
 
 	var amount := int(snapshot.get("amount", 1))
 	if amount > 1:

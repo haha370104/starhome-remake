@@ -4,6 +4,9 @@ extends DraggableGameWindow
 signal command_requested(command: Dictionary)
 
 const TooltipFormatter := preload("res://scripts/client/ui/windows/equipment_tooltip_formatter.gd")
+const ItemHoverHighlightScript := preload(
+	"res://scripts/client/ui/windows/item_hover_highlight.gd"
+)
 const BACKGROUND := preload("res://assets/ui/windows/vehicle/background.png")
 const LEGACY_PANEL_FONT := preload("res://assets/ui/fonts/legacy_panel_font.tres")
 const TEXT_COLOR := Color("f6f3e8")
@@ -168,6 +171,7 @@ func _add_equipment_visual(equipment: Dictionary) -> void:
 	visual.tooltip_text = TooltipFormatter.format(equipment)
 	visual.gui_input.connect(_on_equipment_gui_input.bind(int(equipment.get("location", -1))))
 	_slot_root.add_child(visual)
+	ItemHoverHighlightScript.bind(visual, visual)
 
 
 ## 处理装备表现双击并提交卸载意图。

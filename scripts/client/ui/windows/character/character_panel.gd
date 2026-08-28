@@ -4,6 +4,9 @@ extends DraggableGameWindow
 signal command_requested(command: Dictionary)
 
 const TooltipFormatter := preload("res://scripts/client/ui/windows/equipment_tooltip_formatter.gd")
+const ItemHoverHighlightScript := preload(
+	"res://scripts/client/ui/windows/item_hover_highlight.gd"
+)
 const BACKGROUND := preload("res://assets/ui/windows/character/background.png")
 const PORTRAIT_BACKGROUND := preload("res://assets/ui/windows/character/portrait_background.jpg")
 const BODY_MALE := preload("res://assets/ui/windows/character/body_male.png")
@@ -191,6 +194,7 @@ func _add_equipment_layer(equipment: Dictionary) -> void:
 	layer.tooltip_text = TooltipFormatter.format(equipment)
 	layer.gui_input.connect(_on_worn_gui_input.bind(String(equipment.get("slot_id", "upper_body"))))
 	_equipment_layers.add_child(layer)
+	ItemHoverHighlightScript.bind(layer, layer)
 
 
 ## 处理服装叠层双击并提交卸装命令。
