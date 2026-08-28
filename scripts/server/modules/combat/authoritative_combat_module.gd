@@ -6,6 +6,8 @@ const MonsterLifecycleScript := preload("res://scripts/domain/combat/monster_lif
 const ProjectileSweep := preload("res://scripts/domain/combat/projectile_sweep.gd")
 const VehicleCombatStateScript := preload("res://scripts/domain/combat/vehicle_combat_state.gd")
 const UseAbilityIntentContract := preload("res://scripts/network/contracts/use_ability_intent.gd")
+const ACTOR_PROJECTILE_HITBOX_OFFSET := Vector2(0.0, -16.0)
+const ACTOR_PROJECTILE_HITBOX_RADIUS := 18.0
 
 var simulation_hz := 20
 var current_tick := 0
@@ -94,6 +96,8 @@ func register_vehicle(
 	actors[actor_id] = {
 		"map_instance_id": map_instance_id,
 		"position": position,
+		"previous_position": position,
+		"position_sample_tick": -1,
 		"vehicle_state": vehicle_state,
 		"weapons": normalized_weapons,
 		"cooldown_ready_ticks": {},
@@ -162,7 +166,11 @@ func update_actor_position(actor_id: String, position: Vector2) -> DomainResult:
 		return DomainResult.failure(&"combat.unknown_actor", "actor is not registered")
 	if not position.is_finite():
 		return DomainResult.failure(&"combat.invalid_position", "actor position must be finite")
-	actors[actor_id]["position"] = position
+	var actor: Dictionary = actors[actor_id]
+	if int(actor["position_sample_tick"]) != current_tick:
+		actor["previous_position"] = actor["position"]
+		actor["position_sample_tick"] = current_tick
+	actor["position"] = position
 	return DomainResult.ok(position)
 
 
@@ -390,6 +398,7 @@ func advance_ticks(tick_count: int) -> DomainResult:
 			vehicle_state.regenerate_working_energy(fixed_delta, working_energy_regen_factor)
 		_settle_due_projectiles()
 		_settle_due_monster_attacks()
+		_commit_actor_position_samples()
 		for monster_id: String in monsters:
 			var monster: MonsterLifecycle = monsters[monster_id]
 			var lifecycle_result := monster.advance_to_tick(current_tick)
@@ -483,7 +492,7 @@ func _simulate_monster_tick(monster_id: String, fixed_delta: float) -> void:
 	_begin_monster_attack(monster_id, target_id, target_position)
 
 
-## 创建一次怪物攻击；远程弹体预约到达结算，贴身攻击在当前 tick 结算。
+## 创建一次怪物攻击；远程弹体固定方向飞行，贴身攻击在当前 tick 结算。
 ## [param monster_id] 权威攻击者实体 ID。
 ## [param target_id] 权威目标玩家 ID。
 ## [param target_position] 发起攻击时冻结的目标脚点。
@@ -516,6 +525,7 @@ func _begin_monster_attack(monster_id: String, target_id: String, target_positio
 		"projectile_speed": float(runtime["projectile_speed"]),
 		"origin": origin,
 		"target_position": endpoint,
+		"current_position": origin,
 	}
 	_record_combat_event({
 		"event_type": &"monster_attack_started",
@@ -536,14 +546,64 @@ func _begin_monster_attack(monster_id: String, target_id: String, target_positio
 		pending_monster_attacks.append(attack)
 
 
-## 结算所有已到达的怪物远程弹体。
+## 按固定 tick 推进怪物远程弹体，并对玩家本 tick 的移动线段做连续碰撞。
 func _settle_due_monster_attacks() -> void:
 	for index in range(pending_monster_attacks.size() - 1, -1, -1):
 		var attack: Dictionary = pending_monster_attacks[index]
-		if int(attack["impact_tick"]) > current_tick:
+		var current_position: Vector2 = attack["current_position"]
+		var target_position: Vector2 = attack["target_position"]
+		var tick_distance := float(attack["projectile_speed"]) / float(simulation_hz)
+		var next_position := current_position.move_toward(target_position, tick_distance)
+		var collision := _first_actor_projectile_collision(
+			String(attack["map_instance_id"]), current_position, next_position
+		)
+		if bool(collision.get("hit", false)):
+			pending_monster_attacks.remove_at(index)
+			attack["target_entity_id"] = String(collision["target_entity_id"])
+			attack["impact_position"] = collision["position"]
+			_resolve_monster_attack(attack)
 			continue
-		pending_monster_attacks.remove_at(index)
-		_resolve_monster_attack(attack)
+		attack["current_position"] = next_position
+		if next_position.is_equal_approx(target_position) or int(attack["impact_tick"]) <= current_tick:
+			pending_monster_attacks.remove_at(index)
+			_record_monster_attack_expired(attack, next_position)
+
+
+## 查找当前逻辑 tick 内最先接住怪物弹体的存活玩家。
+## 玩家与弹体都可能在 tick 内移动，因此在相对坐标中扫掠两条线段，避免穿透或躲开后仍命中。
+func _first_actor_projectile_collision(
+	map_instance_id: String,
+	segment_start: Vector2,
+	segment_end: Vector2,
+) -> Dictionary:
+	var best := {"hit": false, "t": INF}
+	var actor_ids := actors.keys()
+	actor_ids.sort()
+	for actor_id: String in actor_ids:
+		var actor: Dictionary = actors[actor_id]
+		var vehicle_state: VehicleCombatState = actor["vehicle_state"]
+		if String(actor["map_instance_id"]) != map_instance_id or vehicle_state.health <= 0:
+			continue
+		var previous_center: Vector2 = actor["previous_position"] + ACTOR_PROJECTILE_HITBOX_OFFSET
+		var current_center: Vector2 = actor["position"] + ACTOR_PROJECTILE_HITBOX_OFFSET
+		var relative_start := segment_start - previous_center
+		var relative_end := segment_end - current_center
+		var candidate: Dictionary
+		if relative_start.length_squared() <= ACTOR_PROJECTILE_HITBOX_RADIUS * ACTOR_PROJECTILE_HITBOX_RADIUS:
+			candidate = {"hit": true, "t": 0.0}
+		else:
+			candidate = ProjectileSweep.segment_circle_intersection(
+				relative_start,
+				relative_end,
+				Vector2.ZERO,
+				ACTOR_PROJECTILE_HITBOX_RADIUS,
+			)
+		if not bool(candidate.get("hit", false)) or float(candidate["t"]) >= float(best["t"]):
+			continue
+		best = candidate
+		best["position"] = segment_start.lerp(segment_end, float(candidate["t"]))
+		best["target_entity_id"] = actor_id
+	return best
 
 
 ## 在权威到达 tick 对仍有效的玩家目标应用怪物伤害。
@@ -561,6 +621,9 @@ func _resolve_monster_attack(attack: Dictionary) -> void:
 	var damage_result := vehicle_state.apply_damage(int(attack["damage"]))
 	if not damage_result.is_ok:
 		return
+	var impact_position := Vector2(
+		attack.get("impact_position", actor["position"] + ACTOR_PROJECTILE_HITBOX_OFFSET)
+	)
 	_record_combat_event({
 		"event_type": &"monster_attack_resolved",
 		"server_tick": current_tick,
@@ -570,10 +633,33 @@ func _resolve_monster_attack(attack: Dictionary) -> void:
 		"target_entity_id": target_id,
 		"attack_archetype": attack["attack_archetype"],
 		"combat_actor_id": attack["combat_actor_id"],
+		"impact_position": [impact_position.x, impact_position.y],
 		"damage": int(damage_result.value["applied_damage"]),
 		"target_health": int(damage_result.value["health"]),
 		"target_destroyed": bool(damage_result.value["destroyed"]),
 	})
+
+
+## 记录怪物弹体抵达原始瞄准点但没有碰到任何玩家。
+func _record_monster_attack_expired(attack: Dictionary, impact_position: Vector2) -> void:
+	_record_combat_event({
+		"event_type": &"monster_attack_expired",
+		"server_tick": current_tick,
+		"impact_tick": current_tick,
+		"attack_id": attack["attack_id"],
+		"attacker_id": attack["attacker_id"],
+		"target_entity_id": "",
+		"attack_archetype": attack["attack_archetype"],
+		"combat_actor_id": attack["combat_actor_id"],
+		"impact_position": [impact_position.x, impact_position.y],
+		"damage": 0,
+	})
+
+
+## 在一次权威 tick 结束前确认玩家位置样本，下一 tick 未移动时不重复扫掠旧路径。
+func _commit_actor_position_samples() -> void:
+	for actor_id: String in actors:
+		actors[actor_id]["previous_position"] = actors[actor_id]["position"]
 
 
 ## 执行 `engaged_actor_id` 对应的模块操作。

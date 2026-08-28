@@ -20,6 +20,7 @@ func _initialize() -> void:
 	_test_seeded_damage_is_reproducible()
 	_test_three_engagement_policies()
 	_test_monster_projectile_timing()
+	_test_monster_projectile_can_be_dodged()
 	if failures.is_empty():
 		print("AUTHORITATIVE_COMBAT_MODULE_OK (%d assertions)" % assertions)
 		quit(0)
@@ -199,7 +200,7 @@ func _test_three_engagement_policies() -> void:
 	_expect((snapshot.get("recent_events", []) as Array).size() == 2, "snapshot includes deduplicatable attack-start and damage events")
 
 
-## 验证远程怪物只在权威弹体到达时扣除玩家生命。
+## 验证远程怪物只在权威弹体首次接触玩家受击圆时扣除生命。
 func _test_monster_projectile_timing() -> void:
 	var module := _new_module(104)
 	var assembly: Dictionary = _assembly_result().value
@@ -220,15 +221,47 @@ func _test_monster_projectile_timing() -> void:
 	var monster_snapshot: Dictionary = (snapshot["monsters"] as Array)[0]
 	_expect(int(monster_snapshot["action_sequence"]) == 1, "attack start should advance the body-animation sequence")
 	var ticks_until_impact := int(attack["impact_tick"]) - module.current_tick
-	module.advance_ticks(ticks_until_impact - 1)
-	_expect(module.vehicle_state_for("player.projectile").health == 70, "health should remain unchanged before monster projectile arrival")
-	module.advance_ticks(1)
-	_expect(module.vehicle_state_for("player.projectile").health == 67, "monster projectile should apply damage exactly on arrival")
+	for unused_tick: int in range(ticks_until_impact):
+		if module.pending_monster_attacks.is_empty():
+			break
+		module.advance_ticks(1)
+	_expect(module.vehicle_state_for("player.projectile").health == 67, "monster projectile should apply damage on first swept contact")
+	_expect(module.current_tick <= int(attack["impact_tick"]), "hitbox contact must not settle after the original endpoint tick")
 	_expect(StringName(module.combat_events[-1]["event_type"]) == &"monster_attack_resolved", "arrival should emit the damage event")
 	_expect(
 		String(module.combat_events[-1].get("combat_actor_id", "")) == "om_adult_standard",
 		"resolved attack should retain the monster visual identity",
 	)
+
+
+## 验证玩家在弹体抵达前横向离开初始瞄准线后不会受到预约伤害。
+func _test_monster_projectile_can_be_dodged() -> void:
+	var module := _new_module(105)
+	var assembly: Dictionary = _assembly_result().value
+	module.register_vehicle(
+		"player.dodge",
+		MAP_INSTANCE_ID,
+		Vector2.ZERO,
+		assembly,
+		{ABILITY_ID: _fixed_damage_weapon(1)},
+	)
+	var definition := _behavior_monster_definition("monster.dodge", &"aggressive")
+	definition["position"] = Vector2(100.0, 0.0)
+	definition["attack_range"] = 120.0
+	definition["attack_archetype"] = &"ranged_projectile"
+	definition["combat_actor_id"] = "om_adult_standard"
+	definition["runtime_projectile_speed"] = 100.0
+	definition["attack_interval_seconds"] = 10.0
+	module.register_monster(definition)
+	module.advance_ticks(1)
+	var attack: Dictionary = module.pending_monster_attacks[0]
+	module.advance_ticks(8)
+	module.update_actor_position("player.dodge", Vector2(0.0, 80.0))
+	module.advance_ticks(int(attack["impact_tick"]) - module.current_tick)
+	_expect(module.vehicle_state_for("player.dodge").health == 70, "leaving the projectile path before contact should avoid damage")
+	_expect(module.pending_monster_attacks.is_empty(), "missed monster projectile should leave no pending reservation")
+	_expect(StringName(module.combat_events[-1]["event_type"]) == &"monster_attack_expired", "a dodged projectile should emit a no-damage expiry event")
+	_expect(String(module.combat_events[-1]["attack_id"]) == String(attack["attack_id"]), "expiry should identify the dodged projectile")
 
 
 ## 执行 `new_module` 对应的模块操作。
