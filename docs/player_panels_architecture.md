@@ -20,11 +20,12 @@
 
 ## 2. 权威状态链路
 
-> **重点 Review：当前人物全局投影。** `GameWindowManager.current_player` 是当前登录人物在
-> 客户端场景中的唯一共享对象，具体类型为 `CurrentPlayerState`。它同时保存同一事务版本的
-> `character`、`inventory`、`vehicle` 三份防御性快照，并发出 `changed` 信号。它不是第二套
-> 角色模型：不聚合装备属性、不扣血、不换装，也不写存档；所有变化必须先由权威服务器确认。
-> 后续 HUD、世界角色外观和其他人物相关 UI 应订阅该对象，避免各模块复制一份“当前人物”。
+> **重点 Review：当前人物全局对象。** `GameWindowManager.current_player` 是当前登录人物在
+> 客户端场景中的唯一共享对象，具体类型为 `CurrentPlayer extends Player`。网络 DTO 到达后，
+> 它会重建 `Inventory`、`CharacterEquipment`、`PlayerVehicle/VehicleLoadout` 和 `SkillBook`；
+> 客户端不再长期保存三份可变 `Dictionary`。面板需要旧协议格式时从这个对象即时投影，世界
+> 服装层直接读取同一个 `CharacterEquipment`。客户端实例不写存档，所有变化仍须先由权威
+> 服务器确认。
 
 ```text
 底栏 / 面板手势
@@ -32,8 +33,9 @@
   -> ClientMultiplayerSession
   -> reliable panel command RPC
   -> peer 绑定的 ServerSession
-  -> AuthoritativePlayerPanelService
-  -> InventoryLayout / EquipmentSlotRegistry
+  -> AuthoritativePlayerPanelService（只编排命令）
+  -> Player / Inventory / CharacterEquipment / PlayerVehicle
+  -> PlayerStateMapper / PlayerPanelProjector
   -> AuthoritativeAutosaveService.commit_player_state
   -> PlayerStateRepository
   -> 一次性 player_panels 三快照回包
@@ -50,6 +52,24 @@
 装备事务同时携带 `inventory_revision` 与 `loadout_revision`；人物穿装携带
 `inventory_revision` 与玩家聚合 `state_revision`。任一过期即整体拒绝。成功回包总是包含人物、
 背包和战车三份来自同一提交版本的快照，避免物品在两个面板同时存在或同时消失。
+
+## 2.1 充血领域模型
+
+- `GameItem` 只包含所有物品共有的身份、名称、描述、数量和背包几何；具体业务类型由
+  `Clothing`、`VehicleChassis`、`VehicleEngine`、`VehicleWeapon` 等类表达。同名不同数值的
+  物品不增加子类，而由版本化定义表创建同一类型的不同实例。
+- `Equipment` 自己实现磨损、修复和耐久上限下降；`Clothing` 自己校验性别与人物槽位；战车
+  装备自己声明稳定 Location 和数值贡献。
+- `Inventory` 封装物品数组、像素布局、容量、货币和 revision。外部只能得到数组副本；移动、
+  整理及装备转移通过方法完成。
+- `CharacterEquipment` 是头、上衣、下装、手、鞋的固定槽对象，不是自由数组；其服装实例同时
+  驱动人物面板 dialog 层和世界八方向服装层。
+- `PlayerVehicle` 持有固定 `VehicleLoadout`、生命和两类能量，并在 `calculate_stats()` 内汇总
+  底盘、引擎、武器和护甲。UI 不再理解 `base_attack`、`drive` 等原始字段。
+- `Player` 是上述对象的一致性边界。换装会先检查 revision、类型、槽位和背包空间，再原子转移
+  同一个物品实例；失败不会吞物品或留下半完成装配。
+- `PlayerStateRecord` 仍是 SQLite/文件仓储使用的序列化 DTO，不承载业务行为；
+  `PlayerStateMapper` 是 DTO 与领域模型之间唯一映射边界。
 
 ## 3. 背包几何规则
 
@@ -75,6 +95,8 @@
 
 - `player_panel_service_test.gd`：像素吸附、过期 revision、战车原子换装、人物服装槽位、技能
   快照、战车聚合值和四向护甲语义。
+- `player_rich_model_test.gd`：具体物品类型、同实例转移、失败事务不变、战车对象属性汇总，以及
+  客户端 `CurrentPlayer` 的完整重建。
 - `authoritative_autosave_test.gd`：真实 `AuthoritativeServer` 面板命令立即提交，并在新服务器
   实例中恢复像素布局。
 - `player_panels_runtime_test.gd`：三窗口原始尺寸、显隐、当前人物投影、裸体/服装坐标、技能入口、

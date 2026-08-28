@@ -53,8 +53,9 @@
 5. HUD 对外只暴露 `show_movement_status`、`show_network_notice`、
    `show_npc_interaction`、`set_map` 等语义 API 与业务信号；调用方不得持有或改写
    `Label`、弹窗、玩家点等内部控件。
-6. NPC 后续拆为视图、客户端环境表现和服务端交互用例；商店/任务是 action service 或能力，
-   不继续通过角色节点子类承载领域业务。服务端保持权威，客户端 NPC 巡逻仅是过渡表现。
+6. NPC 已拆为 `NpcBase` 领域对象与 `NpcWorldView` 场景表现；商店/任务节点子类只选择对应领域
+   子类，不得自行保存商品、任务进度或经济状态。后续有状态交互继续调用权威 action service；
+   客户端 NPC 巡逻仍只是环境表现。
 7. `AuthoritativeServer` 暂时保留兼容 facade，依次抽出地图迁移、会话、模拟循环和命令路由；
    RPC 适配、进程入口和领域事务不能继续汇入同一个类。
 
@@ -65,7 +66,10 @@
 截至 2026-08-28，R0 的提交/LFS/函数文档门禁、R1 的客户端组合回归、R2 的
 `LocalPlayerController` 单写入者和 R3 的 `ActiveWorldController` 原子地图切换已经完成；
 D04 通过共享 `PlayerWorldAvatar` 投影为荣耀版新兵战车。服务端持久化已建立类型化聚合、仓储
-接口、迁移 SQL 与开发文件实现，但生产 SQLite 适配器仍不得标记为完成。
+接口、迁移 SQL 与开发文件实现，但生产 SQLite 适配器仍不得标记为完成。人物/背包/战车已
+迁移为 `Player` 充血聚合，客户端 `CurrentPlayer` 与世界服装层共享同一
+`CharacterEquipment`；怪物索敌、攻击、掉落及 AI 状态也已收回 `MonsterLifecycle`，禁止重新
+引入平行的 `monster_runtime` 字典。
 
 提交前必须同时检查 `git diff --cached --name-only` 与 `git diff --cached --numstat`；素材批量
 导入、离线解析产物、运行时代码和架构重构不得混入同一提交。
