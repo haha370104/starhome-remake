@@ -26,6 +26,9 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 OUTPUTS_ROOT = PROJECT_ROOT.parent
 PARSED_MAP_ROOT = OUTPUTS_ROOT / "starhome_lz_ry_maps_parsed" / "maps"
 ALE_ROOT = OUTPUTS_ROOT / "starhome_lz_ry_full_parsed" / "ale_sprites"
+OFFICIAL_CACHE_ROOT = OUTPUTS_ROOT / "starhome_lz_ry_full_parsed" / "official_lazy_cache"
+UNINDEXED_ALE_ROOT = OFFICIAL_CACHE_ROOT / "ale_sprites"
+UNINDEXED_RAW_ROOT = OFFICIAL_CACHE_ROOT / "raw"
 CHUNK_SIZE = 256
 ATLAS_WIDTH = 2048
 ATLAS_PADDING = 1
@@ -72,11 +75,62 @@ def sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
-def load_first_frame(logical_path: str, cache: dict[str, Image.Image]) -> Image.Image:
-    """Load and cache the first decoded frame for one logical Glory ALE path."""
-    if logical_path in cache:
-        return cache[logical_path]
+def md5(path: Path) -> str:
+    """Return the MD5 digest needed to compare an unindexed HTTP recovery probe."""
+    digest = hashlib.md5(usedforsecurity=False)
+    with path.open("rb") as handle:
+        for block in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(block)
+    return digest.hexdigest()
+
+
+def normalize_source_reference(source_ale: str) -> str:
+    """Normalize one FCC-relative ALE reference to a source-root relative stem."""
+    normalized = source_ale.replace("\\", "/").strip()
+    while normalized.startswith("../"):
+        normalized = normalized[3:]
+    if normalized.lower().endswith(".ale"):
+        normalized = normalized[:-4]
+    return normalized
+
+
+def resolve_frame_source(item: dict[str, Any]) -> dict[str, Any] | None:
+    """Resolve an indexed Glory frame or a verified same-release unindexed overlay."""
+    direct_logical = normalize_source_reference(str(item.get("source_ale", "")))
+    direct_dir = UNINDEXED_ALE_ROOT / Path(direct_logical)
+    direct_raw = UNINDEXED_RAW_ROOT / Path(direct_logical + ".ale")
+    if (direct_dir / "frames.json").is_file() and direct_raw.is_file():
+        return {
+            "logical_path": direct_logical,
+            "source_dir": direct_dir,
+            "raw_path": direct_raw,
+            "resolution": "official_exact_path_lazy_recovery",
+        }
+    if item.get("status") != "ok":
+        return None
+    logical_path = str(item.get("resolved_ale", ""))
+    if logical_path.startswith("@"):
+        return None
     source_dir = ALE_ROOT / Path(logical_path)
+    if not (source_dir / "frames.json").is_file():
+        return None
+    return {
+        "logical_path": logical_path,
+        "source_dir": source_dir,
+        "raw_path": None,
+        "resolution": "indexed_glory_manifest",
+    }
+
+
+def load_first_frame(
+    source: dict[str, Any],
+    cache: dict[str, tuple[Image.Image, dict[str, Any]]],
+) -> tuple[Image.Image, dict[str, Any]]:
+    """Load and cache the first decoded frame and its origin metadata."""
+    cache_key = str(source["source_dir"])
+    if cache_key in cache:
+        return cache[cache_key]
+    source_dir: Path = source["source_dir"]
     metadata = read_json(source_dir / "frames.json")
     frame = metadata["frames"][0]
     page_path = source_dir / metadata["pages"][frame["page"]]
@@ -89,8 +143,9 @@ def load_first_frame(logical_path: str, cache: dict[str, Image.Image]) -> Image.
                 int(frame["y"] + frame["height"]),
             )
         )
-    cache[logical_path] = image
-    return image
+    result = (image, frame)
+    cache[cache_key] = result
+    return result
 
 
 def paste_owner(
@@ -117,41 +172,51 @@ def build_scene_ownership(
     background: Image.Image,
     scene: dict[str, Any],
     asset_prefix: str,
-) -> tuple[Image.Image, np.ndarray, list[dict[str, Any]], list[dict[str, Any]]]:
+) -> tuple[
+    Image.Image,
+    np.ndarray,
+    list[dict[str, Any]],
+    list[dict[str, Any]],
+    int,
+]:
     """Composite resolved placements and return final color/owner/audit values."""
     canvas_size = background.size
     scene_color = Image.new("RGBA", canvas_size, (0, 0, 0, 0))
     owner = np.full((canvas_size[1], canvas_size[0]), -1, dtype=np.int32)
     owners: list[dict[str, Any]] = []
     missing: list[dict[str, Any]] = []
-    frame_cache: dict[str, Image.Image] = {}
+    frame_cache: dict[str, tuple[Image.Image, dict[str, Any]]] = {}
+    recovered_placements = 0
 
     for source_index, item in enumerate(scene.get("objects", [])):
-        if item.get("status") != "ok":
+        source = resolve_frame_source(item)
+        if source is None:
+            rejected_resolution = str(item.get("resolved_ale", ""))
+            reason = item.get("resolution", "missing")
+            if rejected_resolution.startswith("@"):
+                reason = "excluded_non_glory_fallback"
             missing.append(
                 {
                     "source_index": source_index,
                     "source_resource": item.get("source_ale", ""),
                     "anchor": item.get("anchor", [0, 0]),
-                    "reason": item.get("resolution", "missing"),
+                    "reason": reason,
+                    "rejected_resolution": rejected_resolution,
                 }
             )
             continue
-        logical_path = str(item["resolved_ale"])
-        source_frames = ALE_ROOT / Path(logical_path) / "frames.json"
-        if logical_path.startswith("@") or not source_frames.is_file():
-            missing.append(
-                {
-                    "source_index": source_index,
-                    "source_resource": item.get("source_ale", ""),
-                    "anchor": item.get("anchor", [0, 0]),
-                    "reason": "excluded_non_glory_fallback",
-                    "rejected_resolution": logical_path,
-                }
+        logical_path = str(source["logical_path"])
+        source_image, frame = load_first_frame(source, frame_cache)
+        anchor = item.get("anchor", [0, 0])
+        if "top_left" in item:
+            top_left = (int(item["top_left"][0]), int(item["top_left"][1]))
+        else:
+            top_left = (
+                int(anchor[0]) + int(frame.get("origin_x", 0)),
+                int(anchor[1]) + int(frame.get("origin_y", 0)),
             )
-            continue
-        source_image = load_first_frame(logical_path, frame_cache)
-        top_left = (int(item["top_left"][0]), int(item["top_left"][1]))
+        if source["resolution"] == "official_exact_path_lazy_recovery":
+            recovered_placements += 1
         scene_color.alpha_composite(source_image, top_left)
         owner_id = len(owners)
         paste_owner(
@@ -160,24 +225,35 @@ def build_scene_ownership(
             top_left,
             owner_id,
         )
+        source_audit = {
+            "source_release": "starhome_lz_ry",
+            "source_logical_asset": logical_path + ".ale",
+            "source_resolution": source["resolution"],
+            "placement_kind": item.get("kind", "AddImg"),
+            "anchor": anchor,
+        }
+        raw_path = source.get("raw_path")
+        if isinstance(raw_path, Path):
+            source_audit.update(
+                {
+                    "download_md5": md5(raw_path),
+                    "download_sha256": sha256(raw_path),
+                    "download_bytes": raw_path.stat().st_size,
+                }
+            )
         owners.append(
             {
                 "owner_id": owner_id,
                 "source_index": source_index,
                 "asset_id": f"{asset_prefix}/placement_{source_index + 1:04d}",
                 "sort_baseline": int(item["anchor"][1]),
-                "source_audit": {
-                    "source_release": "starhome_lz_ry",
-                    "source_logical_asset": logical_path + ".ale",
-                    "placement_kind": item.get("kind", "AddImg"),
-                    "anchor": item.get("anchor", [0, 0]),
-                },
+                "source_audit": source_audit,
             }
         )
 
     scene_pixels = np.asarray(scene_color, dtype=np.uint8)
     owner[scene_pixels[:, :, 3] == 0] = -1
-    return scene_color, owner, owners, missing
+    return scene_color, owner, owners, missing, recovered_placements
 
 
 def build_chunks(
@@ -292,7 +368,7 @@ def import_map(map_id: str, config: dict[str, str]) -> dict[str, Any]:
         background = image.convert("RGBA")
     with Image.open(source / "composite.png") as image:
         source_composite = image.convert("RGBA")
-    scene_color, owner, owners, missing = build_scene_ownership(
+    scene_color, owner, owners, missing, recovered_placements = build_scene_ownership(
         background, scene, config["asset_prefix"]
     )
     chunks = build_chunks(scene_color, owner, owners)
@@ -318,6 +394,23 @@ def import_map(map_id: str, config: dict[str, str]) -> dict[str, Any]:
     atlas.save(atlas_path, compress_level=3)
 
     owner_lookup = {int(item["owner_id"]): item for item in owners}
+    recovered_assets_by_path: dict[str, dict[str, Any]] = {}
+    for owner_entry in owners:
+        audit = owner_entry["source_audit"]
+        if audit.get("source_resolution") != "official_exact_path_lazy_recovery":
+            continue
+        logical_asset = str(audit["source_logical_asset"])
+        if logical_asset not in recovered_assets_by_path:
+            recovered_assets_by_path[logical_asset] = {
+                "source_logical_asset": logical_asset,
+                "source_release": "starhome_lz_ry",
+                "resolution": "official_exact_path_lazy_recovery",
+                "download_md5": audit["download_md5"],
+                "download_sha256": audit["download_sha256"],
+                "download_bytes": audit["download_bytes"],
+                "placement_count": 0,
+            }
+        recovered_assets_by_path[logical_asset]["placement_count"] += 1
     layers: list[dict[str, Any]] = []
     atlas_resource = "res://" + str(atlas_path.relative_to(PROJECT_ROOT)).replace("\\", "/")
     for layer_index, item in enumerate(
@@ -365,6 +458,7 @@ def import_map(map_id: str, config: dict[str, str]) -> dict[str, Any]:
                 "semantic_reconstruction_exact": True,
                 "parsed_composite_matches_glory_only": source_composite_matches,
                 "excluded_non_glory_fallbacks": excluded_non_glory,
+                "recovered_same_release_unindexed_placements": recovered_placements,
             },
         },
         "source_audit": {
@@ -374,6 +468,11 @@ def import_map(map_id: str, config: dict[str, str]) -> dict[str, Any]:
             "source_scene_objects_sha256": sha256(source / "scene_objects.json"),
             "resolved_placements": len(owners),
             "missing_placements": len(missing),
+            "recovered_same_release_unindexed_placements": recovered_placements,
+            "recovered_same_release_unindexed_assets": sorted(
+                recovered_assets_by_path.values(),
+                key=lambda value: value["source_logical_asset"].lower(),
+            ),
             "runtime_asset_naming": "business_map_path_plus_placement_sequence",
         },
     }
@@ -382,6 +481,7 @@ def import_map(map_id: str, config: dict[str, str]) -> dict[str, Any]:
         "map_id": map_id,
         "resolved": len(owners),
         "missing": len(missing),
+        "recovered_same_release_unindexed": recovered_placements,
         "semantic_layers": len(layers),
         "atlas_size": list(atlas.size),
         "composite_sha256": composite_sha,

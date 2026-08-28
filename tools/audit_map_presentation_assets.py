@@ -14,12 +14,18 @@ EXPECTED = {
     "yian_harbor_city": {
         "directory": PROJECT_ROOT / "assets/maps/yian_harbor/city",
         "minimum_layers": 700,
-        "excluded_non_glory_fallbacks": 2,
+        "excluded_non_glory_fallbacks": 0,
+        "recovered_same_release_unindexed_placements": 31,
+        "recovered_same_release_unindexed_assets": 19,
+        "missing_placements": 0,
     },
     "d04_field_zone": {
         "directory": PROJECT_ROOT / "assets/maps/exploration/d04_field_zone",
         "minimum_layers": 50,
         "excluded_non_glory_fallbacks": 0,
+        "recovered_same_release_unindexed_placements": 10,
+        "recovered_same_release_unindexed_assets": 6,
+        "missing_placements": 16,
     },
 }
 
@@ -50,6 +56,29 @@ def main() -> int:
             errors.append(f"{map_id}: importer did not prove exact semantic reconstruction")
         if validation.get("excluded_non_glory_fallbacks") != expected["excluded_non_glory_fallbacks"]:
             errors.append(f"{map_id}: unexpected cross-version fallback count")
+        if (
+            validation.get("recovered_same_release_unindexed_placements", 0)
+            != expected["recovered_same_release_unindexed_placements"]
+        ):
+            errors.append(f"{map_id}: unexpected same-release recovery count")
+        if len(composition.get("missing_dependencies", [])) != expected["missing_placements"]:
+            errors.append(f"{map_id}: unexpected missing placement count")
+        recovered_assets = manifest.get("source_audit", {}).get(
+            "recovered_same_release_unindexed_assets", []
+        )
+        if len(recovered_assets) != expected["recovered_same_release_unindexed_assets"]:
+            errors.append(f"{map_id}: unexpected recovered asset count")
+        for recovered in recovered_assets:
+            if (
+                recovered.get("source_release") != "starhome_lz_ry"
+                or recovered.get("resolution") != "official_exact_path_lazy_recovery"
+                or len(str(recovered.get("download_md5", ""))) != 32
+                or len(str(recovered.get("download_sha256", ""))) != 64
+                or int(recovered.get("download_bytes", 0)) <= 0
+                or int(recovered.get("placement_count", 0)) <= 0
+            ):
+                errors.append(f"{map_id}: invalid recovered asset evidence")
+                break
         if len(layers) < expected["minimum_layers"]:
             errors.append(f"{map_id}: semantic layer count is unexpectedly low")
         with Image.open(directory / "semantic_layer_atlas.png") as atlas:
