@@ -6,23 +6,21 @@ const Protocol = preload("res://scripts/network/contracts/network_protocol.gd")
 const Result = preload("res://scripts/core/domain_result.gd")
 
 
-## Performs the `require_dictionary` operation.
-## [param value] New value requested by the caller.
-## [param context] Input value consumed by the operation.
-## Returns the result produced by the operation.
-## Design: Defines or validates data at the network trust boundary before domain code consumes it.
+## 执行 `require_dictionary` 对应的模块操作。
+## [param value] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param context] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 设计：该函数只处理协议边界，不信任未经校验的外部状态。
 static func require_dictionary(value: Variant, context: String):
 	if typeof(value) != TYPE_DICTIONARY:
 		return Result.failure(ErrorCodes.INVALID_PAYLOAD, "%s must be a Dictionary" % context)
 	return Result.ok(value)
 
 
-## Rejects fields outside [param allowed_fields] in the untrusted [param payload].
-## [param payload] Dictionary received at a protocol boundary.
-## [param allowed_fields] Complete allowlist for the contract object.
-## [param context] Human-readable contract name used in validation errors.
-## Returns a successful result when every supplied key is allowlisted, otherwise an invalid-payload result.
-## Design: Network input uses an explicit allowlist so forged authority fields cannot be silently ignored.
+## 执行 `require_only_fields` 对应的模块操作。
+## [param payload] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param allowed_fields] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param context] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 设计：该函数只处理协议边界，不信任未经校验的外部状态。
 static func require_only_fields(
 	payload: Dictionary,
 	allowed_fields: Array[StringName],
@@ -43,24 +41,22 @@ static func require_only_fields(
 	return Result.ok(payload)
 
 
-## Performs the `require_field` operation.
-## [param payload] Serialized input received at the subsystem boundary.
-## [param field_name] Input value consumed by the operation.
-## Returns the result produced by the operation.
-## Design: Defines or validates data at the network trust boundary before domain code consumes it.
+## 执行 `require_field` 对应的模块操作。
+## [param payload] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param field_name] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 设计：该函数只处理协议边界，不信任未经校验的外部状态。
 static func require_field(payload: Dictionary, field_name: StringName):
 	if not payload.has(field_name):
 		return Result.failure(ErrorCodes.MISSING_FIELD, "Missing field: %s" % field_name)
 	return Result.ok(payload[field_name])
 
 
-## Performs the `require_integer` operation.
-## [param payload] Serialized input received at the subsystem boundary.
-## [param field_name] Input value consumed by the operation.
-## [param minimum] Input value consumed by the operation.
-## [param maximum] Input value consumed by the operation.
-## Returns the result produced by the operation.
-## Design: Defines or validates data at the network trust boundary before domain code consumes it.
+## 执行 `require_integer` 对应的模块操作。
+## [param payload] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param field_name] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param minimum] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param maximum] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 设计：该函数只处理协议边界，不信任未经校验的外部状态。
 static func require_integer(payload: Dictionary, field_name: StringName, minimum: int, maximum: int):
 	var field_result = require_field(payload, field_name)
 	if not field_result.is_ok:
@@ -73,13 +69,12 @@ static func require_integer(payload: Dictionary, field_name: StringName, minimum
 	return Result.ok(value)
 
 
-## Performs the `require_number` operation.
-## [param payload] Serialized input received at the subsystem boundary.
-## [param field_name] Input value consumed by the operation.
-## [param minimum] Input value consumed by the operation.
-## [param maximum] Input value consumed by the operation.
-## Returns the result produced by the operation.
-## Design: Defines or validates data at the network trust boundary before domain code consumes it.
+## 执行 `require_number` 对应的模块操作。
+## [param payload] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param field_name] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param minimum] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param maximum] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 设计：该函数只处理协议边界，不信任未经校验的外部状态。
 static func require_number(payload: Dictionary, field_name: StringName, minimum: float, maximum: float):
 	var field_result = require_field(payload, field_name)
 	if not field_result.is_ok:
@@ -93,11 +88,10 @@ static func require_number(payload: Dictionary, field_name: StringName, minimum:
 	return Result.ok(value)
 
 
-## Performs the `require_identifier` operation.
-## [param payload] Serialized input received at the subsystem boundary.
-## [param field_name] Input value consumed by the operation.
-## Returns the result produced by the operation.
-## Design: Defines or validates data at the network trust boundary before domain code consumes it.
+## 执行 `require_identifier` 对应的模块操作。
+## [param payload] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param field_name] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 设计：该函数只处理协议边界，不信任未经校验的外部状态。
 static func require_identifier(payload: Dictionary, field_name: StringName):
 	var field_result = require_field(payload, field_name)
 	if not field_result.is_ok:
@@ -120,13 +114,12 @@ static func require_identifier(payload: Dictionary, field_name: StringName):
 	return Result.ok(value)
 
 
-## Performs the `require_string` operation.
-## [param payload] Serialized input received at the subsystem boundary.
-## [param field_name] Input value consumed by the operation.
-## [param minimum_length] Input value consumed by the operation.
-## [param maximum_length] Input value consumed by the operation.
-## Returns the result produced by the operation.
-## Design: Defines or validates data at the network trust boundary before domain code consumes it.
+## 执行 `require_string` 对应的模块操作。
+## [param payload] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param field_name] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param minimum_length] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param maximum_length] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 设计：该函数只处理协议边界，不信任未经校验的外部状态。
 static func require_string(
 	payload: Dictionary,
 	field_name: StringName,
@@ -144,11 +137,10 @@ static func require_string(
 	return Result.ok(value)
 
 
-## Performs the `require_vector2` operation.
-## [param payload] Serialized input received at the subsystem boundary.
-## [param field_name] Input value consumed by the operation.
-## Returns the result produced by the operation.
-## Design: Defines or validates data at the network trust boundary before domain code consumes it.
+## 执行 `require_vector2` 对应的模块操作。
+## [param payload] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param field_name] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 设计：该函数只处理协议边界，不信任未经校验的外部状态。
 static func require_vector2(payload: Dictionary, field_name: StringName):
 	var field_result = require_field(payload, field_name)
 	if not field_result.is_ok:
@@ -178,9 +170,9 @@ static func require_vector2(payload: Dictionary, field_name: StringName):
 	return Result.ok(Vector2(float(x_result.value), float(y_result.value)))
 
 
-## Performs the `vector2_to_dictionary` operation.
-## [param value] New value requested by the caller.
-## Returns Structured result data produced by the operation.
-## Design: Defines or validates data at the network trust boundary before domain code consumes it.
+## 执行 `vector2_to_dictionary` 对应的模块操作。
+## [param value] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数只处理协议边界，不信任未经校验的外部状态。
 static func vector2_to_dictionary(value: Vector2) -> Dictionary:
 	return {"x": value.x, "y": value.y}

@@ -18,11 +18,11 @@ var input_sequence: int
 
 
 ## 创建一个只表达技能选择与目标实体的客户端意图。
-## [param requested_map_instance_id] 客户端当前观察到的权威地图实例。
-## [param requested_ability_id] 由服务端装备状态解析的业务技能标识。
-## [param requested_target_entity_id] 客户端选中的目标实体标识。
-## [param requested_input_sequence] 技能命令流的单调递增序号。
-## Design: 攻击力、射程、能耗、命中与伤害均不进入客户端意图，由服务端状态推导。
+## [param requested_map_instance_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param requested_ability_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param requested_target_entity_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param requested_input_sequence] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 设计：攻击力、射程、能耗、命中与伤害均不进入客户端意图，由服务端状态推导。
 func _init(
 	requested_map_instance_id: String,
 	requested_ability_id: String,
@@ -36,14 +36,13 @@ func _init(
 
 
 ## 使用网络信任边界的同一规则验证当前实例。
-## Returns 成功时返回当前实例，否则返回稳定的共享网络错误。
 func validate():
 	var result = from_dictionary(to_dictionary())
 	return Result.ok(self) if result.is_ok else result
 
 
 ## 将技能意图序列化为严格的四字段字典。
-## Returns 不包含任何客户端自报战斗数值的传输字典。
+## 返回该函数计算、查询或操作得到的结果。
 func to_dictionary() -> Dictionary:
 	return {
 		"map_instance_id": map_instance_id,
@@ -53,10 +52,9 @@ func to_dictionary() -> Dictionary:
 	}
 
 
-## 从不可信的 [param raw] 载荷构造技能意图。
-## [param raw] 网络边界收到的任意序列化值。
-## Returns 成功时包含 `UseAbilityIntent`，失败时包含稳定校验错误。
-## Design: 精确字段白名单会拒绝客户端夹带伤害、坐标、射程、能耗或冷却。
+## 执行 `from_dictionary` 对应的模块操作。
+## [param raw] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 设计：精确字段白名单会拒绝客户端夹带伤害、坐标、射程、能耗或冷却。
 static func from_dictionary(raw: Variant):
 	var dictionary_result = Validation.require_dictionary(raw, "use ability intent")
 	if not dictionary_result.is_ok:

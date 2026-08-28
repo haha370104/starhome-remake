@@ -8,11 +8,10 @@ const Result = preload("res://scripts/core/domain_result.gd")
 var _last_accepted_by_stream: Dictionary = {}
 
 
-## Performs the `accept` operation.
-## [param stream_id] Stable identifier of the target value.
-## [param sequence] Sequence, tick, or index value used by the operation.
-## Returns the result produced by the operation.
-## Design: Defines or validates data at the network trust boundary before domain code consumes it.
+## 执行 `accept` 对应的模块操作。
+## [param stream_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param sequence] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 设计：该函数只处理协议边界，不信任未经校验的外部状态。
 func accept(stream_id: StringName, sequence: int):
 	if stream_id.is_empty():
 		return Result.failure(ErrorCodes.INVALID_IDENTIFIER, "Sequence stream ID cannot be empty")
@@ -27,33 +26,33 @@ func accept(stream_id: StringName, sequence: int):
 	return Result.ok(sequence)
 
 
-## Reports whether the requested condition is satisfied.
-## [param stream_id] Stable identifier of the target value.
-## [param sequence] Sequence, tick, or index value used by the operation.
-## Returns Whether the operation completed or the queried condition is satisfied.
-## Design: Defines or validates data at the network trust boundary before domain code consumes it.
+## 执行 `would_accept` 对应的模块操作。
+## [param stream_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param sequence] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数只处理协议边界，不信任未经校验的外部状态。
 func would_accept(stream_id: StringName, sequence: int) -> bool:
 	if stream_id.is_empty() or sequence < Protocol.MIN_SEQUENCE or sequence > Protocol.MAX_SEQUENCE:
 		return false
 	return not _last_accepted_by_stream.has(stream_id) or sequence > int(_last_accepted_by_stream[stream_id])
 
 
-## Performs the `last_accepted` operation.
-## [param stream_id] Stable identifier of the target value.
-## Returns the computed integer value.
-## Design: Defines or validates data at the network trust boundary before domain code consumes it.
+## 执行 `last_accepted` 对应的模块操作。
+## [param stream_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数只处理协议边界，不信任未经校验的外部状态。
 func last_accepted(stream_id: StringName) -> int:
 	return int(_last_accepted_by_stream.get(stream_id, -1))
 
 
-## Resets the managed state to its initial value.
-## [param stream_id] Stable identifier of the target value.
-## Design: Defines or validates data at the network trust boundary before domain code consumes it.
+## 执行 `reset` 对应的模块操作。
+## [param stream_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 设计：该函数只处理协议边界，不信任未经校验的外部状态。
 func reset(stream_id: StringName) -> void:
 	_last_accepted_by_stream.erase(stream_id)
 
 
-## Resets the managed state to its initial value.
-## Design: Defines or validates data at the network trust boundary before domain code consumes it.
+## 执行 `reset_all` 对应的模块操作。
+## 设计：该函数只处理协议边界，不信任未经校验的外部状态。
 func reset_all() -> void:
 	_last_accepted_by_stream.clear()

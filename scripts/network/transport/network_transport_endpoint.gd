@@ -17,8 +17,8 @@ const SERVER_PEER_ID := 1
 const CHANNEL_COUNT := 3
 
 
-## Connects MultiplayerAPI lifecycle events to transport-level signals.
-## Design: Every executable installs this node at the fixed `/root/StarhomeNetworkTransport` path.
+## 节点进入场景树后初始化运行依赖。
+## 设计：该函数只处理协议边界，不信任未经校验的外部状态。
 func _ready() -> void:
 	if not multiplayer.connected_to_server.is_connected(connected_to_server.emit):
 		multiplayer.connected_to_server.connect(connected_to_server.emit)
@@ -30,11 +30,11 @@ func _ready() -> void:
 		multiplayer.peer_disconnected.connect(peer_disconnected.emit)
 
 
-## Starts an ENet authority on [param listen_address]/[param port] for [param max_clients] peers.
-## [param listen_address] Local interface address or `*` wildcard to bind.
-## [param port] UDP listen port shared by the server configuration and client default.
-## [param max_clients] Maximum simultaneously connected remote peers.
-## Returns A Godot error code from ENet peer creation.
+## 执行 `start_server` 对应的模块操作。
+## [param listen_address] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param port] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param max_clients] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func start_server(listen_address: String, port: int, max_clients: int) -> Error:
 	var peer := ENetMultiplayerPeer.new()
 	peer.set_bind_ip(listen_address)
@@ -46,10 +46,10 @@ func start_server(listen_address: String, port: int, max_clients: int) -> Error:
 	return OK
 
 
-## Starts an ENet connection to [param host] and [param port].
-## [param host] DNS name or IP address of the authoritative server.
-## [param port] UDP port exposed by the authoritative server.
-## Returns A Godot error code from ENet peer creation.
+## 执行 `connect_client` 对应的模块操作。
+## [param host] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param port] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func connect_client(host: String, port: int) -> Error:
 	var peer := ENetMultiplayerPeer.new()
 	var error := peer.create_client(host, port, CHANNEL_COUNT)
@@ -60,73 +60,73 @@ func connect_client(host: String, port: int) -> Error:
 	return OK
 
 
-## Closes the active peer while preserving the endpoint and its stable RPC path.
+## 执行 `close` 对应的模块操作。
 func close() -> void:
 	if multiplayer.multiplayer_peer != null:
 		multiplayer.multiplayer_peer.close()
 	multiplayer.multiplayer_peer = OfflineMultiplayerPeer.new()
 
 
-## Sends a versioned [param request] to open or resume a server session.
-## [param request] Protocol/content versions plus an optional reconnect token.
+## 执行 `request_session` 对应的模块操作。
+## [param request] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func request_session(request: Dictionary) -> void:
 	rpc_open_session.rpc_id(SERVER_PEER_ID, request)
 
 
-## Sends one client movement [param intent] to server authority.
-## [param intent] Untrusted movement payload validated by the authoritative server.
+## 执行 `send_move_intent` 对应的模块操作。
+## [param intent] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func send_move_intent(intent: Dictionary) -> void:
 	rpc_submit_move_intent.rpc_id(SERVER_PEER_ID, intent)
 
 
-## Sends one reliable map-transition [param intent] to server authority.
-## [param intent] Current instance, transition ID, destination entry number, and command sequence.
-## Design: Destination map and landing coordinates are resolved exclusively by the server.
+## 执行 `send_map_transition_intent` 对应的模块操作。
+## [param intent] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 设计：该函数只处理协议边界，不信任未经校验的外部状态。
 func send_map_transition_intent(intent: Dictionary) -> void:
 	rpc_submit_map_transition_intent.rpc_id(SERVER_PEER_ID, intent)
 
 
-## 通过可靠命令通道发送一个 [param intent] 技能使用意图。
-## [param intent] 当前地图、技能、目标实体和命令序号，不包含任何战斗结算数值。
-## Design: 技能命令与移动快照分离；命中、能耗与伤害仍由服务端领域层裁决。
+## 执行 `send_use_ability_intent` 对应的模块操作。
+## [param intent] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 设计：技能命令与移动快照分离；命中、能耗与伤害仍由服务端领域层裁决。
 func send_use_ability_intent(intent: Dictionary) -> void:
 	rpc_submit_use_ability_intent.rpc_id(SERVER_PEER_ID, intent)
 
 
-## Sends one reliable control [param message] to [param peer_id].
-## [param peer_id] Destination ENet peer ID.
-## [param message] Session or rejection envelope.
+## 执行 `send_server_message` 对应的模块操作。
+## [param peer_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param message] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func send_server_message(peer_id: int, message: Dictionary) -> void:
 	rpc_receive_server_message.rpc_id(peer_id, message)
 
 
-## Sends one ordered but lossy world [param snapshot] to [param peer_id].
-## [param peer_id] Destination ENet peer ID.
-## [param snapshot] Complete authoritative world state for one server tick.
+## 执行 `send_world_snapshot` 对应的模块操作。
+## [param peer_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param snapshot] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func send_world_snapshot(peer_id: int, snapshot: Dictionary) -> void:
 	rpc_receive_world_snapshot.rpc_id(peer_id, snapshot)
 
 
 @rpc("any_peer", "call_remote", "reliable", 0)
-## Accepts a remote [param request] and exposes it with the authenticated sender peer ID.
-## [param request] Versioned open/resume-session payload.
-## Design: The transport never trusts caller-supplied peer IDs; MultiplayerAPI supplies identity.
+## 执行 `rpc_open_session` 对应的模块操作。
+## [param request] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 设计：该函数只处理协议边界，不信任未经校验的外部状态。
 func rpc_open_session(request: Dictionary) -> void:
 	session_request_received.emit(multiplayer.get_remote_sender_id(), request.duplicate(true))
 
 
 @rpc("any_peer", "call_remote", "reliable", 1)
-## Accepts a remote [param intent] and exposes it with the authenticated sender peer ID.
-## [param intent] Untrusted movement payload for domain validation.
-## Design: Gameplay mutation remains outside this transport-only node.
+## 执行 `rpc_submit_move_intent` 对应的模块操作。
+## [param intent] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 设计：该函数只处理协议边界，不信任未经校验的外部状态。
 func rpc_submit_move_intent(intent: Dictionary) -> void:
 	move_intent_received.emit(multiplayer.get_remote_sender_id(), intent.duplicate(true))
 
 
 @rpc("any_peer", "call_remote", "reliable", 1)
-## Accepts a remote map-transition [param intent] with its authenticated sender peer ID.
-## [param intent] Untrusted transition payload validated by server authority.
-## Design: Sharing the reliable command channel preserves ordering without granting client map authority.
+## 执行 `rpc_submit_map_transition_intent` 对应的模块操作。
+## [param intent] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 设计：该函数只处理协议边界，不信任未经校验的外部状态。
 func rpc_submit_map_transition_intent(intent: Dictionary) -> void:
 	map_transition_intent_received.emit(
 		multiplayer.get_remote_sender_id(), intent.duplicate(true)
@@ -134,9 +134,9 @@ func rpc_submit_map_transition_intent(intent: Dictionary) -> void:
 
 
 @rpc("any_peer", "call_remote", "reliable", 1)
-## 接收远端 [param intent] 技能命令并绑定 MultiplayerAPI 提供的真实 peer ID。
-## [param intent] 交给服务端契约层校验的不可信技能载荷。
-## Design: 传输层不解释技能，也不接受载荷中的身份、伤害或命中声明。
+## 执行 `rpc_submit_use_ability_intent` 对应的模块操作。
+## [param intent] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 设计：传输层不解释技能，也不接受载荷中的身份、伤害或命中声明。
 func rpc_submit_use_ability_intent(intent: Dictionary) -> void:
 	use_ability_intent_received.emit(
 		multiplayer.get_remote_sender_id(), intent.duplicate(true)
@@ -144,14 +144,14 @@ func rpc_submit_use_ability_intent(intent: Dictionary) -> void:
 
 
 @rpc("authority", "call_remote", "reliable", 0)
-## Receives reliable server [param message] envelopes on clients.
-## [param message] Session-opened or command-rejected envelope.
+## 执行 `rpc_receive_server_message` 对应的模块操作。
+## [param message] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func rpc_receive_server_message(message: Dictionary) -> void:
 	server_message_received.emit(message.duplicate(true))
 
 
 @rpc("authority", "call_remote", "unreliable_ordered", 2)
-## Receives ordered authoritative [param snapshot] packets on clients.
-## [param snapshot] Complete world snapshot for one server tick.
+## 执行 `rpc_receive_world_snapshot` 对应的模块操作。
+## [param snapshot] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func rpc_receive_world_snapshot(snapshot: Dictionary) -> void:
 	world_snapshot_received.emit(snapshot.duplicate(true))

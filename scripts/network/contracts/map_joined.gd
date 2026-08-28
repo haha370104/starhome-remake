@@ -21,14 +21,14 @@ var definition_version: int
 var server_tick: int
 
 
-## Initializes a new instance with its required state.
-## [param requested_map_id] Stable identifier of the target value.
-## [param requested_map_instance_id] Stable identifier of the target value.
-## [param requested_entity_id] Entity identity retained across the atomic map transfer.
-## [param requested_spawn_position] World-space position used by the operation.
-## [param requested_definition_version] Configuration data that controls the operation.
-## [param requested_server_tick] Sequence, tick, or index value used by the operation.
-## Design: Defines or validates data at the network trust boundary before domain code consumes it.
+## 使用调用方参数初始化当前实例。
+## [param requested_map_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param requested_map_instance_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param requested_entity_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param requested_spawn_position] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param requested_definition_version] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param requested_server_tick] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 设计：该函数只处理协议边界，不信任未经校验的外部状态。
 func _init(
 	requested_map_id: String,
 	requested_map_instance_id: String,
@@ -45,17 +45,16 @@ func _init(
 	server_tick = requested_server_tick
 
 
-## Validates the supplied state against the domain invariants.
-## Returns the result produced by the operation.
-## Design: Defines or validates data at the network trust boundary before domain code consumes it.
+## 校验 `validate` 对应的模块状态。
+## 设计：该函数只处理协议边界，不信任未经校验的外部状态。
 func validate():
 	var result = from_dictionary(to_dictionary())
 	return Result.ok(self) if result.is_ok else result
 
 
-## Serializes the current state into a transport-safe dictionary.
-## Returns Structured result data produced by the operation.
-## Design: Defines or validates data at the network trust boundary before domain code consumes it.
+## 序列化或保存 `to_dictionary` 对应的模块状态。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数只处理协议边界，不信任未经校验的外部状态。
 func to_dictionary() -> Dictionary:
 	return {
 		"map_id": map_id,
@@ -67,10 +66,9 @@ func to_dictionary() -> Dictionary:
 	}
 
 
-## Builds a typed value from a serialized dictionary.
-## [param raw] Serialized input received at the subsystem boundary.
-## Returns the result produced by the operation.
-## Design: Defines or validates data at the network trust boundary before domain code consumes it.
+## 加载并校验 `from_dictionary` 对应的模块状态。
+## [param raw] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 设计：该函数只处理协议边界，不信任未经校验的外部状态。
 static func from_dictionary(raw: Variant):
 	var dictionary_result = Validation.require_dictionary(raw, "map joined")
 	if not dictionary_result.is_ok:

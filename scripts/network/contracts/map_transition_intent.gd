@@ -17,12 +17,12 @@ var destination_entry_number: int
 var input_sequence: int
 
 
-## Initializes a map-transfer request using only identifiers the server can verify.
-## [param requested_map_instance_id] Current authoritative map instance observed by the client.
-## [param requested_transition_id] Business transition identifier selected by the client.
-## [param requested_destination_entry_number] Entry number declared by the selected transition.
-## [param requested_input_sequence] Monotonic sequence for the map-transition command stream.
-## Design: The client never supplies a destination map or spawn coordinate; both remain server-owned.
+## 使用调用方参数初始化当前实例。
+## [param requested_map_instance_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param requested_transition_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param requested_destination_entry_number] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param requested_input_sequence] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 设计：该函数只处理协议边界，不信任未经校验的外部状态。
 func _init(
 	requested_map_instance_id: String,
 	requested_transition_id: String,
@@ -35,17 +35,16 @@ func _init(
 	input_sequence = requested_input_sequence
 
 
-## Validates this typed transition request through the same untrusted wire boundary.
-## Returns a successful result containing this instance, or a shared network validation error.
-## Design: Constructor use does not bypass the protocol allowlist or range checks.
+## 校验 `validate` 对应的模块状态。
+## 设计：该函数只处理协议边界，不信任未经校验的外部状态。
 func validate():
 	var result = from_dictionary(to_dictionary())
 	return Result.ok(self) if result.is_ok else result
 
 
-## Serializes the request into its stable transport representation.
-## Returns a dictionary containing exactly the four public transition-intent fields.
-## Design: Destination map and landing coordinates are intentionally absent authority-owned fields.
+## 序列化或保存 `to_dictionary` 对应的模块状态。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数只处理协议边界，不信任未经校验的外部状态。
 func to_dictionary() -> Dictionary:
 	return {
 		"map_instance_id": map_instance_id,
@@ -55,10 +54,9 @@ func to_dictionary() -> Dictionary:
 	}
 
 
-## Builds a typed transition intent from an untrusted [param raw] payload.
-## [param raw] Serialized value received at the network boundary.
-## Returns a result containing `MapTransitionIntent`, or a stable shared validation error.
-## Design: Unknown fields are rejected so clients cannot smuggle destination or spawn authority.
+## 执行 `from_dictionary` 对应的模块操作。
+## [param raw] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 设计：该函数只处理协议边界，不信任未经校验的外部状态。
 static func from_dictionary(raw: Variant):
 	var dictionary_result = Validation.require_dictionary(raw, "map transition intent")
 	if not dictionary_result.is_ok:

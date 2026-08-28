@@ -19,9 +19,9 @@ const MAP_TRANSITION_ENTRY_MISMATCH: StringName = &"map_transition.entry_mismatc
 const MAP_TRANSITION_DESTINATION_BLOCKED: StringName = &"map_transition.destination_blocked"
 
 
-## Performs the `all` operation.
-## Returns the resulting collection.
-## Design: Defines or validates data at the network trust boundary before domain code consumes it.
+## 执行 `all` 对应的模块操作。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数只处理协议边界，不信任未经校验的外部状态。
 static func all() -> Array[StringName]:
 	return [
 		INVALID_PAYLOAD,

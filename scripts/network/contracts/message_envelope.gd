@@ -13,13 +13,13 @@ var sequence: int
 var payload: Dictionary
 
 
-## Initializes a new instance with its required state.
-## [param requested_message_type] New value requested by the caller.
-## [param requested_sequence] Sequence, tick, or index value used by the operation.
-## [param requested_payload] Serialized input received at the subsystem boundary.
-## [param requested_protocol_version] New value requested by the caller.
-## [param requested_content_version] New value requested by the caller.
-## Design: Defines or validates data at the network trust boundary before domain code consumes it.
+## 使用调用方参数初始化当前实例。
+## [param requested_message_type] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param requested_sequence] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param requested_payload] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param requested_protocol_version] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param requested_content_version] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 设计：该函数只处理协议边界，不信任未经校验的外部状态。
 func _init(
 	requested_message_type: StringName,
 	requested_sequence: int,
@@ -34,9 +34,8 @@ func _init(
 	content_version = requested_content_version
 
 
-## Validates the supplied state against the domain invariants.
-## Returns the result produced by the operation.
-## Design: Defines or validates data at the network trust boundary before domain code consumes it.
+## 校验 `validate` 对应的模块状态。
+## 设计：该函数只处理协议边界，不信任未经校验的外部状态。
 func validate():
 	var version_result = Protocol.validate_versions(protocol_version, content_version)
 	if not version_result.is_ok:
@@ -48,9 +47,9 @@ func validate():
 	return Result.ok(self)
 
 
-## Serializes the current state into a transport-safe dictionary.
-## Returns Structured result data produced by the operation.
-## Design: Defines or validates data at the network trust boundary before domain code consumes it.
+## 序列化或保存 `to_dictionary` 对应的模块状态。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数只处理协议边界，不信任未经校验的外部状态。
 func to_dictionary() -> Dictionary:
 	return {
 		"protocol_version": protocol_version,
@@ -61,10 +60,9 @@ func to_dictionary() -> Dictionary:
 	}
 
 
-## Builds a typed value from a serialized dictionary.
-## [param raw] Serialized input received at the subsystem boundary.
-## Returns the result produced by the operation.
-## Design: Defines or validates data at the network trust boundary before domain code consumes it.
+## 加载并校验 `from_dictionary` 对应的模块状态。
+## [param raw] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 设计：该函数只处理协议边界，不信任未经校验的外部状态。
 static func from_dictionary(raw: Variant):
 	var dictionary_result = Validation.require_dictionary(raw, "message envelope")
 	if not dictionary_result.is_ok:

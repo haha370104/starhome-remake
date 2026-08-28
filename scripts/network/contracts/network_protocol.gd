@@ -22,9 +22,9 @@ const MAP_JOINED: StringName = &"map_joined"
 const POSITION_CORRECTION: StringName = &"position_correction"
 
 
-## Performs the `supported_message_types` operation.
-## Returns the resulting collection.
-## Design: Defines or validates data at the network trust boundary before domain code consumes it.
+## 执行 `supported_message_types` 对应的模块操作。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数只处理协议边界，不信任未经校验的外部状态。
 static func supported_message_types() -> Array[StringName]:
 	return [
 		MOVE_INTENT,
@@ -36,11 +36,10 @@ static func supported_message_types() -> Array[StringName]:
 	]
 
 
-## Validates the supplied state against the domain invariants.
-## [param protocol_version] Input value consumed by the operation.
-## [param content_version] Input value consumed by the operation.
-## Returns the result produced by the operation.
-## Design: Defines or validates data at the network trust boundary before domain code consumes it.
+## 校验 `validate_versions` 对应的模块状态。
+## [param protocol_version] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param content_version] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 设计：该函数只处理协议边界，不信任未经校验的外部状态。
 static func validate_versions(protocol_version: int, content_version: int):
 	if protocol_version != PROTOCOL_VERSION:
 		return Result.failure(
@@ -55,9 +54,9 @@ static func validate_versions(protocol_version: int, content_version: int):
 	return Result.ok()
 
 
-## Reports whether the requested condition is satisfied.
-## [param message_type] Input value consumed by the operation.
-## Returns Whether the operation completed or the queried condition is satisfied.
-## Design: Defines or validates data at the network trust boundary before domain code consumes it.
+## 判断 `is_supported_message_type` 对应的模块状态。
+## [param message_type] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
+## 设计：该函数只处理协议边界，不信任未经校验的外部状态。
 static func is_supported_message_type(message_type: StringName) -> bool:
 	return message_type in supported_message_types()
