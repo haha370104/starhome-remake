@@ -20,8 +20,8 @@ var snapshots_after_join: Array[Dictionary] = []
 var transition_committed := false
 
 
-## Parses process arguments and schedules the real-ENet map-transition role.
-## Design: Separate Godot processes exercise production RPC paths instead of in-process signal injection.
+## 使用调用方参数初始化当前实例。
+## 设计：该测试以隔离夹具验证公开契约，不依赖未声明的全局状态。
 func _init() -> void:
 	for argument in OS.get_cmdline_user_args():
 		if argument.begins_with("--role="):
@@ -33,7 +33,7 @@ func _init() -> void:
 	call_deferred("_run")
 
 
-## Dispatches the worker to the authoritative server or single-client scenario.
+## 执行 `run` 对应的模块操作。
 func _run() -> void:
 	match role:
 		"server":
@@ -45,13 +45,14 @@ func _run() -> void:
 			_finish({})
 
 
-## Hosts RoomSvr1 and City1Svr and verifies authoritative entity ownership changes atomically.
-## Design: The initial server spawn is placed at the audited RoomSvr1 exit to isolate transfer behavior.
+## 执行 `run_server` 对应的模块操作。
+## 设计：该测试以隔离夹具验证公开契约，不依赖未声明的全局状态。
 func _run_server() -> void:
 	var server = ServerScript.new()
 	server.name = "AuthoritativeServer"
 	var config := ConfigScript.new()
 	config.network_enabled = false
+	config.persistence_enabled = false
 	config.port = port
 	config.default_spawn = Vector2(480.0, 370.0)
 	server.config = config
@@ -129,8 +130,8 @@ func _run_server() -> void:
 	})
 
 
-## Connects one production client session and performs the real RoomSvr1-to-City1Svr command.
-## Design: Map state changes only through `request_map_change` and the reliable `MapJoined` response.
+## 执行 `run_client` 对应的模块操作。
+## 设计：该测试以隔离夹具验证公开契约，不依赖未声明的全局状态。
 func _run_client() -> void:
 	var session: ClientMultiplayerSession = SessionScript.new()
 	session.name = "ClientMultiplayerSession"
@@ -213,24 +214,24 @@ func _run_client() -> void:
 	})
 
 
-## Captures one successful explicit map-transition [param result] for strict contract assertions.
-## [param result] Reliable server result carrying `map_joined`, snapshot, and transition sequence.
+## 处理 `_on_map_joined_result` 对应的信号回调。
+## [param result] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _on_map_joined_result(result: Dictionary) -> void:
 	joined_results.append(result.duplicate(true))
 	transition_committed = true
 
 
-## Captures authoritative [param snapshot] packets delivered after explicit MapJoined observation.
-## [param snapshot] Complete map-scoped world snapshot received through real ENet channel 2.
+## 处理 `_on_snapshot_received` 对应的信号回调。
+## [param snapshot] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _on_snapshot_received(snapshot: Dictionary) -> void:
 	if transition_committed:
 		snapshots_after_join.append(snapshot.duplicate(true))
 
 
-## Waits until [param predicate] succeeds or [param timeout_seconds] elapses.
-## [param predicate] Zero-argument callable describing the awaited network state.
-## [param timeout_seconds] Maximum real elapsed time before failure.
-## Returns true when the predicate succeeds within the deadline.
+## 执行 `wait_until` 对应的模块操作。
+## [param predicate] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param timeout_seconds] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func _wait_until(predicate: Callable, timeout_seconds: float) -> bool:
 	var deadline := Time.get_ticks_msec() + roundi(timeout_seconds * 1000.0)
 	while Time.get_ticks_msec() < deadline:
@@ -240,10 +241,10 @@ func _wait_until(predicate: Callable, timeout_seconds: float) -> bool:
 	return bool(predicate.call())
 
 
-## Reports whether [param snapshot] contains [param entity_id].
-## [param snapshot] Serialized map-scoped world snapshot.
-## [param entity_id] Server-assigned entity identity being searched.
-## Returns true when the target entity is present.
+## 执行 `snapshot_has_entity` 对应的模块操作。
+## [param snapshot] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param entity_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func _snapshot_has_entity(snapshot: Dictionary, entity_id: String) -> bool:
 	for entity: Dictionary in snapshot.get("entities", []):
 		if String(entity.get("entity_id", "")) == entity_id:
@@ -251,10 +252,10 @@ func _snapshot_has_entity(snapshot: Dictionary, entity_id: String) -> bool:
 	return false
 
 
-## Reports whether [param snapshot] leaks any entity other than [param entity_id].
-## [param snapshot] Serialized map-scoped world snapshot.
-## [param entity_id] Only entity allowed in this single-client integration scenario.
-## Returns true when a foreign-map or unexpected entity is present.
+## 执行 `snapshot_has_foreign_entity` 对应的模块操作。
+## [param snapshot] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param entity_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func _snapshot_has_foreign_entity(snapshot: Dictionary, entity_id: String) -> bool:
 	for entity: Dictionary in snapshot.get("entities", []):
 		if String(entity.get("entity_id", "")) != entity_id:
@@ -262,14 +263,14 @@ func _snapshot_has_foreign_entity(snapshot: Dictionary, entity_id: String) -> bo
 	return false
 
 
-## Appends one assertion failure [param message] to this worker result.
-## [param message] Diagnostic context reported by the PowerShell orchestrator.
+## 执行 `fail` 对应的模块操作。
+## [param message] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _fail(message: String) -> void:
 	failures.append(message)
 
 
-## Writes the role result with [param payload] and exits using a deterministic status code.
-## [param payload] Successful observations merged with common role and failure fields.
+## 执行 `finish` 对应的模块操作。
+## [param payload] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _finish(payload: Dictionary) -> void:
 	payload["role"] = role
 	payload["ok"] = failures.is_empty()
@@ -284,9 +285,9 @@ func _finish(payload: Dictionary) -> void:
 	quit(1)
 
 
-## Serializes [param payload] as [param file_name] in the orchestrator result directory.
-## [param file_name] Result or readiness marker name.
-## [param payload] JSON-safe diagnostic dictionary.
+## 执行 `write_json` 对应的模块操作。
+## [param file_name] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param payload] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _write_json(file_name: String, payload: Dictionary) -> void:
 	if result_dir.is_empty():
 		return

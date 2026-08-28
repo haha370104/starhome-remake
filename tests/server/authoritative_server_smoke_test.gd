@@ -15,7 +15,7 @@ var assertions := 0
 
 
 ## 依次运行权威移动、重连清理和固定帧率服务器冒烟测试并汇总退出码。
-## Design: 该入口作为无测试框架的独立夹具，失败信息统一累积后输出。
+## 设计：该入口作为无测试框架的独立夹具，失败信息统一累积后输出。
 func _initialize() -> void:
 	_test_authoritative_movement()
 	_test_dynamic_entity_blocking()
@@ -32,11 +32,10 @@ func _initialize() -> void:
 
 
 ## 创建禁用真实网络的权威服务器夹具，并配置重连及动态实体阻挡策略。
-## [param reconnect_seconds] 断线实体继续保留的秒数。
-## [param dynamic_blocking_enabled] 是否启用实体脚点动态阻挡。
-## [param dynamic_blocking_radius] 实体脚点之间必须保持的最小距离。
-## Returns 初始化完成且已通过大厅资源校验的服务器实例。
-## Design: 默认配置与阶段1生产验收一致，用例仅显式覆盖所需策略参数。
+## [param reconnect_seconds] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param dynamic_blocking_enabled] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param dynamic_blocking_radius] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 设计：默认配置与阶段1生产验收一致，用例仅显式覆盖所需策略参数。
 func _new_server(
 	reconnect_seconds := 30.0,
 	dynamic_blocking_enabled := true,
@@ -44,6 +43,7 @@ func _new_server(
 ):
 	var config := ConfigScript.new()
 	config.network_enabled = false
+	config.persistence_enabled = false
 	config.reconnect_grace_seconds = reconnect_seconds
 	config.dynamic_blocking_enabled = dynamic_blocking_enabled
 	config.dynamic_blocking_radius = dynamic_blocking_radius
@@ -54,7 +54,7 @@ func _new_server(
 
 
 ## 验证会话建立、移动意图排序、服务器裁决和快照确认的完整链路。
-## Design: 该用例覆盖客户端意图到权威状态的协议边界，客户端坐标从不直接成为最终状态。
+## 设计：该用例覆盖客户端意图到权威状态的协议边界，客户端坐标从不直接成为最终状态。
 func _test_authoritative_movement() -> void:
 	var server = _new_server()
 	var opened := server.open_session(11, _handshake(), 1000)
@@ -142,7 +142,7 @@ func _test_authoritative_movement() -> void:
 
 
 ## 验证默认动态阻挡、目标预约、逐 tick 防穿透及显式关闭策略。
-## Design: 静态地图寻路保持原样；动态阻挡只在权威实例层叠加实体脚点占用。
+## 设计：静态地图寻路保持原样；动态阻挡只在权威实例层叠加实体脚点占用。
 func _test_dynamic_entity_blocking() -> void:
 	var blocking_radius := 24.0
 	var server = _new_server(30.0, true, blocking_radius)
@@ -197,7 +197,7 @@ func _test_dynamic_entity_blocking() -> void:
 
 
 ## 验证断线宽限期内重连、超期实体清理与过期令牌拒绝规则。
-## Design: 用显式时间戳驱动会话生命周期，避免测试依赖真实时钟。
+## 设计：用显式时间戳驱动会话生命周期，避免测试依赖真实时钟。
 func _test_session_reconnect_and_cleanup() -> void:
 	var server = _new_server(0.5)
 	var opened := server.open_session(21, _handshake(), 1000)
@@ -221,10 +221,11 @@ func _test_session_reconnect_and_cleanup() -> void:
 
 
 ## 验证出口距离、入口号、未解析目标、原子迁移和逐地图快照隔离。
-## Design: 两张地图均由测试注入且复用已验证导航，不依赖阶段2尚未落地的真实第二张地图文件。
+## 设计：两张地图均由测试注入且复用已验证导航，不依赖阶段2尚未落地的真实第二张地图文件。
 func _test_authoritative_map_transition() -> void:
 	var config := ConfigScript.new()
 	config.network_enabled = false
+	config.persistence_enabled = false
 	config.dynamic_blocking_enabled = false
 	var source: AuthoritativeMapInstance = MapInstanceScript.new()
 	var destination: AuthoritativeMapInstance = MapInstanceScript.new()
@@ -329,7 +330,7 @@ func _test_authoritative_map_transition() -> void:
 
 
 ## 验证固定模拟 tick、快照频率、协议版本拒绝和快照字段契约。
-## Design: 通过一次确定性的时间推进同时检查模拟时钟与网络发布节奏。
+## 设计：通过一次确定性的时间推进同时检查模拟时钟与网络发布节奏。
 func _test_fixed_tick_and_snapshot_rate() -> void:
 	var server = _new_server()
 	server.advance_simulation(0.5, 1000)
@@ -366,10 +367,10 @@ func _test_fixed_tick_and_snapshot_rate() -> void:
 	server.free()
 
 
-## Reports whether [param snapshot] contains an entity matching [param entity_id].
-## [param snapshot] Map-scoped world snapshot produced by server authority.
-## [param entity_id] Stable entity identifier searched in the snapshot.
-## Returns true when exactly the requested entity is visible in this map snapshot.
+## 执行 `snapshot_has_entity` 对应的模块操作。
+## [param snapshot] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param entity_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func _snapshot_has_entity(snapshot: Dictionary, entity_id: String) -> bool:
 	for entity: Dictionary in snapshot.get("entities", []):
 		if String(entity.get("entity_id", "")) == entity_id:
@@ -378,7 +379,7 @@ func _snapshot_has_entity(snapshot: Dictionary, entity_id: String) -> bool:
 
 
 ## 构造与当前公开内容版本匹配的客户端握手载荷。
-## Returns 可直接提交给服务器会话入口的握手字典。
+## 返回该函数计算、查询或操作得到的结果。
 func _handshake() -> Dictionary:
 	return {
 		"protocol_version": Protocol.PROTOCOL_VERSION,
@@ -386,7 +387,9 @@ func _handshake() -> Dictionary:
 	}
 
 
-## 统计一条断言，并在 [param condition] 失败时记录 [param message]。
+## 执行 `expect` 对应的模块操作。
+## [param condition] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param message] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _expect(condition: bool, message: String) -> void:
 	assertions += 1
 	if not condition:

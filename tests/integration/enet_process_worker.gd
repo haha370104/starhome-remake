@@ -14,8 +14,8 @@ var session_results: Array[Dictionary] = []
 var client
 
 
-## Parses process-role arguments and schedules the selected real-ENet worker.
-## Design: PowerShell launches one Godot process per network peer to match production topology.
+## 使用调用方参数初始化当前实例。
+## 设计：该测试以隔离夹具验证公开契约，不依赖未声明的全局状态。
 func _init() -> void:
 	for argument in OS.get_cmdline_user_args():
 		if argument.begins_with("--role="):
@@ -27,7 +27,7 @@ func _init() -> void:
 	call_deferred("_run")
 
 
-## Dispatches this process to the server, active-client, or observing-client scenario.
+## 执行 `run` 对应的模块操作。
 func _run() -> void:
 	match role:
 		"server":
@@ -41,12 +41,13 @@ func _run() -> void:
 			_finish({})
 
 
-## Hosts one authoritative server through two clients, A's reconnect, and A's final grace-period cleanup.
+## 执行 `run_server` 对应的模块操作。
 func _run_server() -> void:
 	var server = ServerScript.new()
 	server.name = "AuthoritativeServer"
 	var config := ConfigScript.new()
 	config.network_enabled = false
+	config.persistence_enabled = false
 	config.port = port
 	config.reconnect_grace_seconds = 1.0
 	server.config = config
@@ -108,7 +109,7 @@ func _run_server() -> void:
 	})
 
 
-## Runs the moving client, verifies rejection scoping, then reconnects with its issued token.
+## 执行 `run_client_a` 对应的模块操作。
 func _run_client_a() -> void:
 	client = _new_client()
 	root.add_child(client)
@@ -171,7 +172,7 @@ func _run_client_a() -> void:
 	})
 
 
-## Runs the passive client and proves it sees A continuously, receives no foreign rejection, then observes A's cleanup.
+## 执行 `run_client_b` 对应的模块操作。
 func _run_client_b() -> void:
 	client = _new_client()
 	root.add_child(client)
@@ -232,8 +233,7 @@ func _run_client_b() -> void:
 	})
 
 
-## Creates a client adapter and captures every public transport output for assertions.
-## Returns A configured but disconnected client adapter.
+## 执行 `new_client` 对应的模块操作。
 func _new_client():
 	var adapter = AdapterScript.new()
 	adapter.authoritative_snapshot_received.connect(
@@ -249,10 +249,10 @@ func _new_client():
 	return adapter
 
 
-## Waits for [param predicate] until [param timeout_seconds] expires.
-## [param predicate] Zero-argument callable returning the desired condition.
-## [param timeout_seconds] Maximum real elapsed wait.
-## Returns True when the condition succeeds before timeout.
+## 执行 `wait_until` 对应的模块操作。
+## [param predicate] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param timeout_seconds] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func _wait_until(predicate: Callable, timeout_seconds: float) -> bool:
 	var deadline := Time.get_ticks_msec() + roundi(timeout_seconds * 1000.0)
 	while Time.get_ticks_msec() < deadline:
@@ -262,9 +262,9 @@ func _wait_until(predicate: Callable, timeout_seconds: float) -> bool:
 	return bool(predicate.call())
 
 
-## Finds the newest remote entity ID distinct from [param own_entity_id].
-## [param own_entity_id] Entity assigned to the observing client.
-## Returns The remote ID or an empty string when absent.
+## 执行 `latest_remote_entity_id` 对应的模块操作。
+## [param own_entity_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func _latest_remote_entity_id(own_entity_id: String) -> String:
 	if snapshots.is_empty():
 		return ""
@@ -275,9 +275,9 @@ func _latest_remote_entity_id(own_entity_id: String) -> String:
 	return ""
 
 
-## Reads the newest position for [param entity_id] from captured snapshots.
-## [param entity_id] Server-assigned entity identifier.
-## Returns The decoded world position or a non-finite sentinel when absent.
+## 执行 `latest_entity_position` 对应的模块操作。
+## [param entity_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func _latest_entity_position(entity_id: String) -> Vector2:
 	for snapshot_index in range(snapshots.size() - 1, -1, -1):
 		for entity in snapshots[snapshot_index].get("entities", []):
@@ -287,9 +287,9 @@ func _latest_entity_position(entity_id: String) -> Vector2:
 	return Vector2(INF, INF)
 
 
-## Reads the newest acknowledged input sequence for [param entity_id].
-## [param entity_id] Server-assigned entity identifier.
-## Returns The latest acknowledgement, or -1 when absent.
+## 执行 `latest_entity_ack` 对应的模块操作。
+## [param entity_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func _latest_entity_ack(entity_id: String) -> int:
 	for snapshot_index in range(snapshots.size() - 1, -1, -1):
 		for entity in snapshots[snapshot_index].get("entities", []):
@@ -298,9 +298,9 @@ func _latest_entity_ack(entity_id: String) -> int:
 	return -1
 
 
-## Counts unique ticks containing [param entity_id] in captured snapshots.
-## [param entity_id] Server-assigned entity identifier.
-## Returns The number of distinct observed server ticks.
+## 执行 `entity_tick_count` 对应的模块操作。
+## [param entity_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回该函数计算、查询或操作得到的结果。
 func _entity_tick_count(entity_id: String) -> int:
 	var ticks: Dictionary = {}
 	for snapshot in snapshots:
@@ -310,14 +310,14 @@ func _entity_tick_count(entity_id: String) -> int:
 	return ticks.size()
 
 
-## Appends one worker failure [param message].
-## [param message] Assertion context written to stderr and the result JSON.
+## 执行 `fail` 对应的模块操作。
+## [param message] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _fail(message: String) -> void:
 	failures.append(message)
 
 
-## Writes [param payload] to the role-specific result file and exits deterministically.
-## [param payload] Successful observations to merge with failure metadata.
+## 执行 `finish` 对应的模块操作。
+## [param payload] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _finish(payload: Dictionary) -> void:
 	payload["role"] = role
 	payload["ok"] = failures.is_empty()
@@ -332,9 +332,9 @@ func _finish(payload: Dictionary) -> void:
 	quit(1)
 
 
-## Serializes [param payload] as [param file_name] under the orchestrator result directory.
-## [param file_name] Result or readiness marker file name.
-## [param payload] JSON-safe diagnostic dictionary.
+## 执行 `write_json` 对应的模块操作。
+## [param file_name] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param payload] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _write_json(file_name: String, payload: Dictionary) -> void:
 	if result_dir.is_empty():
 		return

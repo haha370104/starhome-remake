@@ -6,7 +6,7 @@
 探测结果为 `classes=[]`、`singleton=false`。因此当前工程不能宣称已具备 SQLite 落盘能力，
 也不能用 JSON 文件冒充生产数据库。
 
-本轮交付分为三个明确边界：
+本轮交付分为四个明确边界：
 
 1. `PlayerStateRepository` 是服务端应用层可依赖的仓储接口，领域与网络层都不接触 SQL。
 2. `SqliteDriverPort` 定义未来真实驱动必须提供的参数化执行、查询和事务能力；
@@ -14,6 +14,8 @@
 3. `FilePlayerStateRepository` 是无外部依赖的开发/测试替身，用于验证迁移、聚合事务、revision
    冲突和断线重载。它使用可恢复的临时文件替换协议，但不具备 SQLite 的并发、WAL 或完整
    ACID 保证，禁止作为生产多人服存档。
+4. `AuthoritativeAutosaveService` 每 3 秒从在线会话所属地图实例采集位置、朝向及战车资源，
+   再通过仓储接口提交完整聚合；客户端只能发送意图，不能把生命、能量或坐标写进存档。
 
 ## 2. 状态所有权与依赖方向
 
@@ -34,6 +36,8 @@ SqliteDriverPort -> approved GDExtension adapter
 - 领域模块只计算状态；应用用例在一次仓储事务中加载、调用领域规则并提交完整聚合。
 - 适配器负责序列化、迁移、乐观 revision 和持久提交，不在数据库触发器中隐藏玩法规则。
 - 重连以 `character_id` 加载最后一次已提交聚合；未提交的内存修改不会进入恢复结果。
+- 自动存档计时属于服务器应用层，默认间隔为 3 秒；断线宽限期结束和服务器退出前还会立即
+  刷新一次。仓储不拥有计时器，也不会自行从表现节点读取状态。
 
 ## 3. 最小聚合模型
 
@@ -94,3 +98,16 @@ JSON 只存在于文件替身的信任边界。读取后立即转换为 `PlayerS
 测试在工作区创建唯一 `.tmp` 数据库快照并在结束时删除，覆盖：运行时 SQLite 能力声明、SQL
 schema 表集合、schema 0 到 1 迁移、事务成功、回调回滚、过期 revision 拒绝，以及新仓储实
 例重新打开后恢复背包、装备、战车和地图位置。
+
+另一个端到端夹具验证权威服务器接线：2.99 秒时 revision 保持不变，满 3 秒后 revision 只
+递增一次，并在新服务器实例中恢复 D04 位置、八向朝向、战车生命、储备能量和当前能量：
+
+```powershell
+& 'C:\Users\tomato\Downloads\Godot_v4.7.2-stable_win64_console.exe' `
+  --headless --path . `
+  --script res://tests/server/persistence/authoritative_autosave_test.gd
+```
+
+目前未接入正式登录账号，临时会话仍以服务器分配的 `player.N` 作为角色标识；这只足以验证
+单机和同一进程顺序重建。正式多人认证落地时，`open_session` 必须改为使用鉴权服务返回的稳定
+`character_id`，自动存档与仓储接口无需随之改变。
