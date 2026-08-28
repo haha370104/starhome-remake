@@ -31,10 +31,13 @@ function Wait-MapTransitionWorker(
     [int]$TimeoutMsec
 ) {
     if (-not $Process.WaitForExit($TimeoutMsec)) {
-        $Process.Kill($true)
+        $Process.Kill()
         throw "ENet map-transition $Role worker timed out. Logs: $resultDir"
     }
-    if ($Process.ExitCode -ne 0) {
+    # Windows PowerShell 5.1 需要无参等待完成重定向流刷新，之后才能读取 ExitCode。
+    $Process.WaitForExit()
+    $Process.Refresh()
+    if ($null -ne $Process.ExitCode -and $Process.ExitCode -ne 0) {
         throw "ENet map-transition $Role worker failed with exit code $($Process.ExitCode). Logs: $resultDir"
     }
     $resultPath = Join-Path $resultDir "${Role}_result.json"
@@ -77,7 +80,7 @@ try {
 finally {
     foreach ($process in @($client, $server)) {
         if ($null -ne $process -and -not $process.HasExited) {
-            $process.Kill($true)
+            $process.Kill()
         }
     }
 }
