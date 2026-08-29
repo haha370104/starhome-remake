@@ -1,6 +1,7 @@
 class_name AuthoritativeCombatModule
 extends RefCounted
 
+const CombatTraceLogger := preload("res://scripts/core/combat_trace_logger.gd")
 const DomainResult := preload("res://scripts/core/domain_result.gd")
 const MonsterLifecycleScript := preload("res://scripts/domain/combat/monster_lifecycle.gd")
 const ProjectileSweep := preload("res://scripts/domain/combat/projectile_sweep.gd")
@@ -210,6 +211,15 @@ func handle_weapon_attack(actor_id: String, raw_intent: Variant) -> DomainResult
 	var requested_aim := intent.aim_world_position
 	var command_sequence := intent.input_sequence
 	var actor: Dictionary = actors[actor_id]
+	CombatTraceLogger.record(&"server", &"weapon_intent_received", {
+		"combat_tick": current_tick,
+		"actor_id": actor_id,
+		"map_instance_id": map_instance_id,
+		"ability_id": ability_id,
+		"input_sequence": command_sequence,
+		"aim_world_position": requested_aim,
+		"actor_authoritative_position": actor.get("position", Vector2.ZERO),
+	})
 	if command_sequence < 0 or command_sequence <= int(actor["last_command_sequence"]):
 		return DomainResult.failure(&"combat.stale_command", "attack command sequence is stale")
 	actor["last_command_sequence"] = command_sequence
@@ -262,6 +272,7 @@ func handle_weapon_attack(actor_id: String, raw_intent: Variant) -> DomainResult
 	var target_id := String(collision.get("target_entity_id", ""))
 	pending_projectiles.append({
 		"shot_id": shot_id,
+		"input_sequence": command_sequence,
 		"impact_tick": current_tick + travel_ticks,
 		"attacker_id": actor_id,
 		"target_entity_id": target_id,
@@ -275,6 +286,7 @@ func handle_weapon_attack(actor_id: String, raw_intent: Variant) -> DomainResult
 		"server_tick": current_tick,
 		"impact_tick": current_tick + travel_ticks,
 		"shot_id": shot_id,
+		"input_sequence": command_sequence,
 		"attacker_id": actor_id,
 		"target_entity_id": target_id,
 		"weapon_id": weapon["weapon_id"],
@@ -287,6 +299,24 @@ func handle_weapon_attack(actor_id: String, raw_intent: Variant) -> DomainResult
 		"damage": 0,
 		"working_energy": vehicle_state.working_energy,
 		"cooldown_ready_tick": actor["cooldown_ready_ticks"][ability_id],
+	})
+	CombatTraceLogger.record(&"server", &"authoritative_projectile_scheduled", {
+		"combat_tick": current_tick,
+		"impact_tick": current_tick + travel_ticks,
+		"shot_id": shot_id,
+		"input_sequence": command_sequence,
+		"actor_id": actor_id,
+		"ability_id": ability_id,
+		"attack_mode": attack_mode,
+		"actor_authoritative_position": actor_position,
+		"requested_aim_position": requested_aim,
+		"projectile_origin": origin,
+		"projectile_endpoint": endpoint,
+		"collision_hit": bool(collision.get("hit", false)),
+		"target_entity_id": target_id,
+		"impact_position": impact_position,
+		"travel_ticks": travel_ticks,
+		"nearby_monster_geometry": _projectile_collision_audit(map_instance_id, origin, endpoint),
 	})
 	return DomainResult.ok(event)
 
@@ -432,6 +462,46 @@ func _first_projectile_collision(
 	return best
 
 
+## 收集距离权威弹道最近的怪物碰撞圆，供命中差异离线诊断。
+## [param map_instance_id] 当前权威地图实例。
+## [param origin] 服务端使用的弹体起点。
+## [param endpoint] 服务端使用的弹道终点。
+## 返回按圆表面到弹道距离排序的至多八条几何记录。
+## 设计：该数据只写诊断日志，不参与命中或任何服务端裁决。
+func _projectile_collision_audit(
+	map_instance_id: String,
+	origin: Vector2,
+	endpoint: Vector2,
+) -> Array[Dictionary]:
+	if not CombatTraceLogger.is_enabled():
+		return []
+	var candidates: Array[Dictionary] = []
+	for monster_id: String in monsters:
+		var monster: MonsterLifecycle = monsters[monster_id]
+		if monster.map_instance_id != map_instance_id or not monster.is_alive():
+			continue
+		var center: Vector2 = monster.position + monster.attack_mode.projectile_hitbox_offset
+		var closest: Vector2 = Geometry2D.get_closest_point_to_segment(center, origin, endpoint)
+		var surface_distance := maxf(
+			0.0,
+			center.distance_to(closest) - monster.attack_mode.projectile_hitbox_radius,
+		)
+		candidates.append({
+			"entity_id": monster_id,
+			"monster_position": monster.position,
+			"collision_center": center,
+			"collision_radius": monster.attack_mode.projectile_hitbox_radius,
+			"closest_segment_point": closest,
+			"surface_distance_to_segment": surface_distance,
+		})
+	candidates.sort_custom(func(left: Dictionary, right: Dictionary) -> bool:
+		return float(left["surface_distance_to_segment"]) \
+			< float(right["surface_distance_to_segment"])
+	)
+	candidates.resize(mini(8, candidates.size()))
+	return candidates
+
+
 ## 在当前权威 tick 结算所有已经飞抵预计算交点的炮弹。
 ## 设计：弹体不逐帧推进；命中对象在发射时确定，扣血只在 `impact_tick` 发生。
 func _settle_due_projectiles() -> void:
@@ -453,12 +523,15 @@ func _settle_projectile(projectile: Dictionary) -> void:
 		return
 	var target_id := String(projectile["target_entity_id"])
 	var impact_position: Vector2 = projectile["impact_position"]
-	if target_id.is_empty() or not monsters.has(target_id):
-		_record_projectile_expired(projectile, impact_position)
+	if target_id.is_empty():
+		_record_projectile_expired(projectile, impact_position, &"no_target_at_fire_tick")
+		return
+	if not monsters.has(target_id):
+		_record_projectile_expired(projectile, impact_position, &"target_missing_at_impact_tick")
 		return
 	var monster: MonsterLifecycle = monsters[target_id]
 	if not monster.is_alive():
-		_record_projectile_expired(projectile, impact_position)
+		_record_projectile_expired(projectile, impact_position, &"target_dead_at_impact_tick")
 		return
 	if StringName(projectile.get("attack_mode", &"")) == &"homing_missile":
 		impact_position = monster.position
@@ -467,13 +540,14 @@ func _settle_projectile(projectile: Dictionary) -> void:
 	var damage := _random.randi_range(int(weapon["minimum_damage"]), int(weapon["maximum_damage"]))
 	var damage_result := monster.apply_damage(damage, attacker_id, current_tick)
 	if not damage_result.is_ok:
-		_record_projectile_expired(projectile, impact_position)
+		_record_projectile_expired(projectile, impact_position, &"damage_rejected_at_impact_tick")
 		return
 	var event := _record_combat_event({
 		"event_type": StringName("%s_hit" % String(weapon.get("skill_id", "energy_cannon"))),
 		"server_tick": current_tick,
 		"impact_tick": current_tick,
 		"shot_id": projectile["shot_id"],
+		"input_sequence": int(projectile.get("input_sequence", -1)),
 		"attacker_id": attacker_id,
 		"target_entity_id": target_id,
 		"weapon_id": weapon["weapon_id"],
@@ -523,6 +597,7 @@ func _settle_rocket_projectile(projectile: Dictionary) -> void:
 			"server_tick": current_tick,
 			"impact_tick": current_tick,
 			"shot_id": projectile["shot_id"],
+			"input_sequence": int(projectile.get("input_sequence", -1)),
 			"attacker_id": projectile["attacker_id"],
 			"target_entity_id": monster_id,
 			"weapon_id": weapon["weapon_id"],
@@ -547,13 +622,18 @@ func _settle_rocket_projectile(projectile: Dictionary) -> void:
 			death_events.append(death_event)
 			event["death"] = death_event.duplicate(true)
 	if not hit_any:
-		_record_projectile_expired(projectile, impact_position)
+		_record_projectile_expired(projectile, impact_position, &"no_aoe_target_at_impact_tick")
 
 
 ## 记录飞满射程或预定目标已消失的无伤害结束事件。
 ## [param projectile] 发射时冻结的权威弹体预约。
 ## [param impact_position] 客户端应结束权威弹体的世界坐标。
-func _record_projectile_expired(projectile: Dictionary, impact_position: Vector2) -> void:
+## [param reason] 本次权威弹体没有造成伤害的稳定诊断原因。
+func _record_projectile_expired(
+	projectile: Dictionary,
+	impact_position: Vector2,
+	reason: StringName,
+) -> void:
 	var weapon: Dictionary = projectile["weapon"]
 	var skill_id := String(weapon.get("skill_id", "energy_cannon"))
 	_record_combat_event({
@@ -561,10 +641,12 @@ func _record_projectile_expired(projectile: Dictionary, impact_position: Vector2
 		"server_tick": current_tick,
 		"impact_tick": current_tick,
 		"shot_id": projectile["shot_id"],
+		"input_sequence": int(projectile.get("input_sequence", -1)),
 		"attacker_id": projectile["attacker_id"],
 		"skill_id": skill_id,
 		"target_entity_id": "",
 		"impact_position": [impact_position.x, impact_position.y],
+		"expiration_reason": reason,
 		"damage": 0,
 	})
 
@@ -1044,6 +1126,8 @@ func _record_combat_event(event: Dictionary) -> Dictionary:
 	combat_events.append(recorded)
 	if combat_events.size() > 64:
 		combat_events.pop_front()
+	if recorded.has("shot_id"):
+		CombatTraceLogger.record(&"server", &"authoritative_projectile_event_recorded", recorded)
 	return recorded
 
 

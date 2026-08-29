@@ -99,4 +99,7 @@ func visual_segment_collision(segment_start: Vector2, segment_end: Vector2) -> D
 	)
 	if bool(result.get("hit", false)):
 		result["entity_id"] = entity_id
+		result["monster_view_position"] = position
+		result["collision_center"] = center
+		result["collision_radius"] = visual_collision_radius
 	return result

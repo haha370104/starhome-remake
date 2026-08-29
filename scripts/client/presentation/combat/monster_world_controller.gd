@@ -1,6 +1,7 @@
 class_name MonsterWorldController
 extends Node
 
+const CombatTraceLogger := preload("res://scripts/core/combat_trace_logger.gd")
 const MonsterWorldViewScript := preload("res://scripts/client/presentation/combat/monster_world_view.gd")
 const CombatDamageFloatScript := preload("res://scripts/client/presentation/combat/combat_damage_float.gd")
 const MonsterDeathEffectControllerScript := preload(
@@ -142,6 +143,8 @@ func _apply_recent_events(combat_snapshot: Dictionary) -> void:
 			continue
 		_last_event_id = event_id
 		var event_type := StringName(event.get("event_type", ""))
+		if event.has("shot_id"):
+			CombatTraceLogger.record(&"client", &"authoritative_projectile_event_observed", event)
 		if event_type == &"monster_attack_started" and _attack_effects != null:
 			_attack_effects.present_attack(event)
 		if event_type in [&"energy_cannon_hit", &"monster_attack_resolved"]:

@@ -1,6 +1,7 @@
 class_name ClientMultiplayerSession
 extends Node
 
+const CombatTraceLogger := preload("res://scripts/core/combat_trace_logger.gd")
 const EntitySnapshotContract := preload("res://scripts/network/contracts/entity_snapshot.gd")
 const MapJoinedContract := preload("res://scripts/network/contracts/map_joined.gd")
 const MapTransitionIntentContract := preload("res://scripts/network/contracts/map_transition_intent.gd")
@@ -509,11 +510,14 @@ func _on_server_message_received(message: Dictionary) -> void:
 	if message_type == &"combat_event":
 		var combat_result: Dictionary = message.get("result", {})
 		if bool(combat_result.get("ok", false)) and combat_result.get("value") is Dictionary:
-			combat_event_received.emit((combat_result["value"] as Dictionary).duplicate(true))
+			var event: Dictionary = (combat_result["value"] as Dictionary).duplicate(true)
+			CombatTraceLogger.record(&"client", &"authoritative_combat_event_received", event)
+			combat_event_received.emit(event)
 		return
 	if message_type != &"command_rejected":
 		return
 	var result: Dictionary = message.get("result", {})
+	CombatTraceLogger.record(&"client", &"command_rejected_received", result)
 	var context: Dictionary = result.get("value", {}) if result.get("value") is Dictionary else {}
 	if StringName(context.get("command_type", "")) == Protocol.VEHICLE_RECOVERY_INTENT \
 			and not _pending_vehicle_recovery.is_empty() \

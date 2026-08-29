@@ -38,6 +38,8 @@ func _initialize() -> void:
 func _test_fire_lifecycle(controller: Node) -> void:
 	var first: Dictionary = controller.request_fire(Vector2(100, 100), Vector2(600, 100))
 	_expect(bool(first.get("ok", false)), "first field shot should start")
+	_expect(not String(first.get("visual_shot_id", "")).is_empty(),
+		"accepted visual shot should expose a stable diagnostic correlation id")
 	_expect(bool(first.get("range_clamped", false)), "shot beyond 250 pixels should clamp")
 	_expect(
 		Vector2(first.get("resolved_target", Vector2.ZERO)).is_equal_approx(Vector2(350, 100)),

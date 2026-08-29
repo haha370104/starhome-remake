@@ -51,6 +51,7 @@ if ($LASTEXITCODE -ne 0) {
 Assert-NoRuntimeLoadErrors $importLog
 
 $testScripts = @(
+	"res://tests/core/combat_trace_logger_test.gd",
     "res://tests/domain/run_domain_smoke_tests.gd",
     "res://tests/network/contracts/run_network_contract_tests.gd",
     "res://tests/client/network/client_network_smoke_test.gd",

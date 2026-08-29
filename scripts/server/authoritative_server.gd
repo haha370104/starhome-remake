@@ -23,6 +23,7 @@ const FilePlayerStateRepositoryScript := preload("res://scripts/server/persisten
 const AutosaveServiceScript := preload("res://scripts/server/persistence/authoritative_autosave_service.gd")
 const PlayerPanelServiceScript := preload("res://scripts/server/player_panels/authoritative_player_panel_service.gd")
 const DomainResultScript := preload("res://scripts/core/domain_result.gd")
+const CombatTraceLogger := preload("res://scripts/core/combat_trace_logger.gd")
 
 signal snapshot_generated(snapshot: Dictionary)
 signal command_rejected(peer_id: int, code: StringName)
@@ -328,10 +329,14 @@ func handle_peer_move(peer_id: int, intent: Dictionary) -> Dictionary:
 func handle_peer_use_ability(peer_id: int, intent: Dictionary) -> Dictionary:
 	var session: ServerSession = sessions.session_for_peer(peer_id)
 	if session == null:
-		return _failure(&"unauthenticated_peer", "open a session before using abilities")
+		var authentication_failure := _failure(&"unauthenticated_peer", "open a session before using abilities")
+		_trace_ability_command_result(peer_id, "", intent, authentication_failure)
+		return authentication_failure
 	var current_instance := map_registry.instance_by_id(session.map_instance_id)
 	if current_instance == null:
-		return _failure(&"session_map_unavailable", "session map is not registered")
+		var map_failure := _failure(&"session_map_unavailable", "session map is not registered")
+		_trace_ability_command_result(peer_id, session.entity_id, intent, map_failure)
+		return map_failure
 	var authoritative_context: Dictionary = {}
 	var ability_id := String(intent.get("ability_id", ""))
 	if ability_id in [AuthoritativeCombatModule.SELF_REPAIR_ABILITY_ID, MiningModuleScript.COLLECT_ABILITY_ID]:
@@ -351,9 +356,37 @@ func handle_peer_use_ability(peer_id: int, intent: Dictionary) -> Dictionary:
 	var result: Dictionary = current_instance.handle_use_ability(
 		session.entity_id, intent, authoritative_context
 	)
+	_trace_ability_command_result(peer_id, session.entity_id, intent, result)
 	if not result.ok:
 		command_rejected.emit(peer_id, result.code)
 	return result
+
+
+## 记录能力命令跨过权威入口后的接受或拒绝结果。
+## [param peer_id] 传输层认证的客户端连接标识。
+## [param entity_id] 会话绑定的玩家实体；未认证时为空。
+## [param intent] 客户端提交的原始能力意图。
+## [param result] 权威地图实例返回的领域结果。
+## 设计：此处统一覆盖冷却、地图、能量和协议拒绝，便于与客户端视觉弹体关联。
+func _trace_ability_command_result(
+	peer_id: int,
+	entity_id: String,
+	intent: Dictionary,
+	result: Dictionary,
+) -> void:
+	CombatTraceLogger.record(&"server", &"ability_command_result", {
+		"server_tick": server_tick,
+		"peer_id": peer_id,
+		"entity_id": entity_id,
+		"map_instance_id": String(intent.get("map_instance_id", "")),
+		"ability_id": String(intent.get("ability_id", "")),
+		"input_sequence": int(intent.get("input_sequence", -1)),
+		"aim_world_position": intent.get("aim_world_position", {}),
+		"accepted": bool(result.get("ok", false)),
+		"result_code": String(result.get("code", "")),
+		"result_message": String(result.get("message", "")),
+		"result_value": result.get("value"),
+	})
 
 
 ## 执行 `handle_peer_map_transition` 对应的模块操作。

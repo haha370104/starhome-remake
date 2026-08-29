@@ -101,6 +101,8 @@ func _test_energy_cannon_authority_state_machine() -> void:
 	_expect(module.monster_for("monster.front").health == before_health, "forged damage should mutate no target health")
 	var first_shot := module.handle_energy_cannon_attack("player.a", _attack_intent(Vector2(250.0, 0.0), 1))
 	_expect(first_shot.is_ok, "valid coordinate-only energy-cannon attack should spawn")
+	_expect(int(first_shot.value.get("input_sequence", -1)) == 1,
+		"spawn event should retain the client input sequence for cross-process diagnostics")
 	_expect(String(first_shot.value["target_entity_id"]) == "monster.front", "first intersecting monster should catch the shot")
 	_expect(int(first_shot.value["impact_tick"]) > module.current_tick, "spawn should schedule a future impact tick")
 	_expect(module.monster_for("monster.front").health == before_health, "firing must not deduct health before projectile arrival")
@@ -117,11 +119,15 @@ func _test_energy_cannon_authority_state_machine() -> void:
 	_expect(module.monster_for("monster.back").health == 30, "monster behind the first collision should remain untouched")
 	var last_event: Dictionary = module.combat_events[-1]
 	_expect(StringName(last_event["event_type"]) == &"energy_cannon_hit", "arrival should emit the authoritative hit event")
+	_expect(int(last_event.get("input_sequence", -1)) == 1,
+		"authoritative hit should retain the originating input sequence")
 	module.advance_ticks(20 - module.current_tick)
 	var empty_shot := module.handle_energy_cannon_attack("player.a", _attack_intent(Vector2(0.0, 250.0), 3))
 	_expect(empty_shot.is_ok and String(empty_shot.value["target_entity_id"]).is_empty(), "shooting empty space should still create a clamped projectile")
 	_settle_all_projectiles(module)
 	_expect(StringName(module.combat_events[-1]["event_type"]) == &"energy_cannon_projectile_expired", "empty shot should expire without damage")
+	_expect(StringName(module.combat_events[-1].get("expiration_reason", &"")) == &"no_target_at_fire_tick",
+		"empty projectile should expose why the server applied no damage")
 	state_a.working_energy = 5.0
 	module.advance_ticks(20)
 	var insufficient := module.handle_energy_cannon_attack("player.a", _attack_intent(Vector2(250.0, 0.0), 4))

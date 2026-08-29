@@ -1,6 +1,7 @@
 class_name WeaponAttackVisualController
 extends Node
 
+const CombatTraceLogger := preload("res://scripts/core/combat_trace_logger.gd")
 const RAW_ANIMATION := &"raw"
 const MINIMUM_SHOT_DISTANCE := 2.0
 const MUZZLE_FORWARD_OFFSET := 28.0
@@ -16,6 +17,7 @@ var _projectiles: Array[Dictionary] = []
 var _impacts: Array[Dictionary] = []
 var _muzzles: Array[Dictionary] = []
 var _visual_collision_resolver := Callable()
+var _visual_shot_sequence := 0
 
 
 ## 执行 `configure` 对应的模块操作。
@@ -38,6 +40,7 @@ func configure(
 	_muzzle_frames = null
 	_visual_collision_resolver = Callable()
 	_cooldown_remaining = 0.0
+	_visual_shot_sequence = 0
 	if _world_parent == null or _weapon_id == &"":
 		return ERR_INVALID_PARAMETER
 	var weapons_value: Variant = manifest.get("weapons", {})
@@ -103,11 +106,36 @@ func request_fire(
 	var muzzle_offset := Vector2(float(muzzle_values[0]), float(muzzle_values[1]))
 	var forward_offset := minf(MUZZLE_FORWARD_OFFSET, resolved_distance * 0.5)
 	var muzzle_position := origin + muzzle_offset + direction * forward_offset
+	_visual_shot_sequence += 1
+	var visual_shot_id := "%s.visual.%d.%d.%d" % [
+		String(_weapon_id),
+		OS.get_process_id(),
+		Time.get_ticks_usec(),
+		_visual_shot_sequence,
+	]
 	_spawn_muzzle(muzzle_position)
-	_spawn_projectile(muzzle_position, resolved_target, tracking_target_resolver)
+	_spawn_projectile(
+		muzzle_position,
+		resolved_target,
+		tracking_target_resolver,
+		visual_shot_id,
+	)
 	_cooldown_remaining = float(_weapon["cooldown_seconds"])
+	CombatTraceLogger.record(&"client", &"visual_projectile_spawned", {
+		"visual_shot_id": visual_shot_id,
+		"weapon_id": String(_weapon_id),
+		"actor_view_position": origin,
+		"requested_target": requested_target,
+		"resolved_target": resolved_target,
+		"muzzle_position": muzzle_position,
+		"direction": direction,
+		"maximum_visual_range": maximum_range,
+		"range_clamped": aim.length() > maximum_range,
+		"projectile_speed": float((_weapon["projectile"] as Dictionary)["travel_pixels_per_second"]),
+	})
 	return {
 		"ok": true,
+		"visual_shot_id": visual_shot_id,
 		"resolved_target": resolved_target,
 		"direction": direction,
 		"range_clamped": aim.length() > maximum_range,
@@ -233,16 +261,19 @@ func _load_frames(resource_path: String) -> SpriteFrames:
 ## [param origin] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## [param target] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## [param tracking_target_resolver] 导弹飞行期间用于刷新目标坐标的解析器。
+## [param visual_shot_id] 客户端本地视觉弹体的诊断关联标识。
 func _spawn_projectile(
 	origin: Vector2,
 	target: Vector2,
 	tracking_target_resolver: Callable,
+	visual_shot_id: String,
 ) -> void:
 	var wrapper := _create_effect_node("WeaponProjectile", origin, _projectile_frames)
 	var projectile: Dictionary = _weapon["projectile"]
 	var duration := origin.distance_to(target) / float(projectile["travel_pixels_per_second"])
 	wrapper.rotation = (target - origin).angle()
 	_projectiles.append({
+		"visual_shot_id": visual_shot_id,
 		"node": wrapper,
 		"origin": origin,
 		"position": origin,
@@ -313,6 +344,14 @@ func _advance_projectiles(delta_seconds: float) -> void:
 		var next_position := Vector2(state["origin"]).lerp(Vector2(state["target"]), progress)
 		var collision := _resolve_visual_collision(previous_position, next_position)
 		if bool(collision.get("hit", false)):
+			CombatTraceLogger.record(&"client", &"visual_projectile_collision", {
+				"visual_shot_id": String(state.get("visual_shot_id", "")),
+				"weapon_id": String(_weapon_id),
+				"segment_start": previous_position,
+				"segment_end": next_position,
+				"visual_collision": collision,
+				"elapsed_seconds": float(state["elapsed"]),
+			})
 			_free_state_node(state)
 			_spawn_impact(Vector2(collision.get("position", next_position)))
 			_projectiles.remove_at(index)
@@ -323,6 +362,12 @@ func _advance_projectiles(delta_seconds: float) -> void:
 			wrapper.rotation = (next_position - previous_position).angle()
 		if progress < 1.0:
 			continue
+		CombatTraceLogger.record(&"client", &"visual_projectile_range_end", {
+			"visual_shot_id": String(state.get("visual_shot_id", "")),
+			"weapon_id": String(_weapon_id),
+			"impact_position": Vector2(state["target"]),
+			"elapsed_seconds": float(state["elapsed"]),
+		})
 		_free_state_node(state)
 		_spawn_impact(Vector2(state["target"]))
 		_projectiles.remove_at(index)
@@ -353,6 +398,13 @@ func _advance_homing_projectile(index: int, state: Dictionary, delta_seconds: fl
 	if next_position.distance_to(target) > 1.0 \
 			and float(state["elapsed"]) < float(state["maximum_lifetime"]):
 		return
+	CombatTraceLogger.record(&"client", &"visual_homing_projectile_end", {
+		"visual_shot_id": String(state.get("visual_shot_id", "")),
+		"weapon_id": String(_weapon_id),
+		"impact_position": target,
+		"elapsed_seconds": float(state["elapsed"]),
+		"maximum_lifetime_seconds": float(state["maximum_lifetime"]),
+	})
 	_free_state_node(state)
 	_spawn_impact(target)
 	_projectiles.remove_at(index)

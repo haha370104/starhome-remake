@@ -53,6 +53,7 @@ const ItemCatalogScript := preload("res://scripts/domain/items/item_catalog.gd")
 const SkillLevelMessageFormatter := preload(
 	"res://scripts/client/presentation/skill_level_message_formatter.gd"
 )
+const CombatTraceLogger := preload("res://scripts/core/combat_trace_logger.gd")
 const WEAPON_MODES := {
 	"energy_cannon": {
 		"weapon_id": &"recruit_energy_cannon",
@@ -359,11 +360,26 @@ func _handle_world_combat_left_click(world_position: Vector2) -> void:
 			hint_label.text = "当前无法开火"
 		return
 	var resolved_target: Vector2 = result["resolved_target"]
-	var submitted: bool = not multiplayer_presenter.request_use_ability(
+	var ability_payload: Dictionary = multiplayer_presenter.request_use_ability(
 		String(mode["ability_id"]), resolved_target
-	).is_empty()
-	if not submitted:
+	)
+	var trace_fields := {
+		"visual_shot_id": String(result.get("visual_shot_id", "")),
+		"input_sequence": int(ability_payload.get("input_sequence", -1)),
+		"ability_id": String(mode["ability_id"]),
+		"weapon_mode": selected_mode,
+		"map_instance_id": multiplayer_map_instance_id,
+		"actor_view_position": player.position,
+		"clicked_world_position": world_position,
+		"submitted_aim_position": resolved_target,
+		"client_selected_target_entity_id": target_entity_id,
+		"client_selected_target_position": authoritative_target,
+		"moving_during_fire": local_player_controller.has_active_route(),
+	}
+	if ability_payload.is_empty():
+		CombatTraceLogger.record(&"client", &"ability_intent_not_submitted", trace_fields)
 		return
+	CombatTraceLogger.record(&"client", &"ability_intent_submitted", trace_fields)
 	var was_moving: bool = local_player_controller.has_active_route()
 	var direction: Vector2 = result["direction"]
 	var weapon_direction := _direction_index(direction)
