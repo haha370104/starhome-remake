@@ -50,6 +50,16 @@ func _run() -> void:
 			controller.loot_at(Vector2(65.0, 175.0)).is_empty(),
 			"click outside the original frame rectangle should not select the loot",
 		)
+		view.set_hovered(true)
+		_expect(
+			view.is_hover_background_visible(),
+			"hover should show the original-client green background layer",
+		)
+		view.set_hovered(false)
+		_expect(
+			not view.is_hover_background_visible(),
+			"leaving loot should hide the background without tinting the source icon",
+		)
 	controller.apply_snapshot(_snapshot([_loot(
 		"loot.biosilicon.1", "low_grade_biosilicon", 3, Vector2(140.0, 220.0)
 	)]))
