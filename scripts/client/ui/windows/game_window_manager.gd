@@ -64,6 +64,7 @@ func configure(dispatcher: Callable, offline_debug_enabled: bool) -> bool:
 
 
 ## 在 GUI 分发前处理右键关闭，避免物品控件的 STOP 过滤吞掉事件。
+## [param event] 视口派发的鼠标或键盘输入事件。
 ## 设计：窗口管理器只关闭鼠标命中的最上层窗口，并标记事件已处理，防止同时触发地图移动。
 func _input(event: InputEvent) -> void:
 	if not event is InputEventMouseButton:
@@ -132,6 +133,20 @@ func grant_offline_loot(loot: Dictionary):
 	var result = _offline_authority.grant_loot(loot)
 	if result.is_ok:
 		apply_bundle(result.value)
+	return result
+
+
+## 在显式离线调试中把权威玩法事件交给正式技能成长规则。
+## [param progression_event] 离线战斗桥接器产生的可信移动或伤害事件。
+## 返回成长结果；整数经验或等级变化时立即刷新人物面板。
+func grant_offline_skill_progression(progression_event: Dictionary):
+	if _offline_authority == null:
+		return DomainResult.failure(&"progression.offline_unavailable", "offline panel authority is unavailable")
+	var result = _offline_authority.grant_skill_progression(progression_event)
+	if result.is_ok:
+		var value: Dictionary = result.value
+		if bool(value["progression"].get("visible_progress_changed", false)):
+			apply_bundle(value["panel_bundle"])
 	return result
 
 

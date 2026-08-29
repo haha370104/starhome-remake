@@ -54,7 +54,7 @@ func apply_snapshot(snapshot: Dictionary) -> void:
 	_portrait_body.texture = BODY_FEMALE if sex == "female" else BODY_MALE
 	_portrait_body.position = Vector2(52, 73) if sex == "female" else Vector2(56, 64)
 	_set_field("display_name", "姓名：%s" % String(snapshot.get("display_name", "未知")))
-	_set_field("level", "等级：%d" % int(snapshot.get("level", 1)))
+	_set_field("level", "综合等级：%d" % int(snapshot.get("level", 10)))
 	_set_field("profession", "职业：%s" % String(snapshot.get("profession", "未知")))
 	_set_field("faction", "阵营：%s" % String(snapshot.get("faction", "未知")))
 	_set_field("residence", "居所：%s" % String(snapshot.get("residence", "未知")))
@@ -250,7 +250,14 @@ func _replace_skill_rows(skills_value: Variant) -> void:
 		]
 		row.add_theme_font_override("font", LEGACY_PANEL_FONT)
 		row.add_theme_font_size_override("font_size", 12)
-		row.tooltip_text = "当前经验：%d" % int(raw_skill.get("experience", 0))
+		var current_exp := int(raw_skill.get("experience", 0))
+		var threshold := int(raw_skill.get("next_level_experience", 0))
+		row.tooltip_text = "已达到最高等级" if bool(raw_skill.get("maximum_level", false)) \
+			else "当前经验：%d / %d（%.1f%%）" % [
+				current_exp,
+				threshold,
+				float(raw_skill.get("progress_ratio", 0.0)) * 100.0,
+			]
 		_skill_rows_root.add_child(row)
 
 

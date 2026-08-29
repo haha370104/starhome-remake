@@ -52,6 +52,8 @@ static func set_hovered(material: ShaderMaterial, hovered: bool) -> void:
 
 
 ## 立即显示并定位原版式复杂说明窗。
+## [param target] 当前接收悬停输入的物品控件。
+## [param text] 待显示的多行物品说明。
 static func _show_tooltip(target: Control, text: String) -> void:
 	if text.is_empty() or target.get_tree() == null:
 		return
@@ -73,6 +75,7 @@ static func _show_tooltip(target: Control, text: String) -> void:
 
 
 ## 把说明窗放在鼠标右 10、上 20，并限制在当前视口内。
+## [param target] 用于取得鼠标和视口坐标的物品控件。
 static func _place_tooltip(target: Control) -> void:
 	var viewport_size := target.get_viewport_rect().size
 	var tooltip_size: Vector2 = _active_tooltip.get_combined_minimum_size()
@@ -84,6 +87,8 @@ static func _place_tooltip(target: Control) -> void:
 
 
 ## 查找与面板相同的 CanvasLayer，确保说明窗不会被 HUD 遮住。
+## [param target] 当前物品控件。
+## 返回承载全局说明窗的最近 CanvasLayer；不存在时返回场景根节点。
 static func _tooltip_host(target: Control) -> Node:
 	var ancestor: Node = target.get_parent()
 	while ancestor != null:
@@ -94,6 +99,7 @@ static func _tooltip_host(target: Control) -> Node:
 
 
 ## 离开物品后保留 100ms，允许鼠标跨入说明窗。
+## [param target] 刚离开悬停状态的物品控件。
 static func _schedule_hide(target: Control) -> void:
 	if target.get_tree() == null:
 		_hide_for_target(target)
@@ -120,6 +126,7 @@ static func _schedule_tooltip_hide() -> void:
 
 
 ## 当鼠标既不在物品也不在说明窗时隐藏说明。
+## [param target] 需要复核鼠标命中的原物品控件。
 static func _hide_if_pointer_left(target: Control) -> void:
 	if _active_target != target or _active_tooltip == null \
 			or not is_instance_valid(_active_tooltip):
@@ -132,6 +139,7 @@ static func _hide_if_pointer_left(target: Control) -> void:
 
 
 ## 目标销毁时关闭属于它的说明窗。
+## [param target] 即将离开场景树的物品控件。
 static func _hide_for_target(target: Control) -> void:
 	if _active_target == target:
 		_hide_active()
@@ -146,5 +154,6 @@ static func _hide_active() -> void:
 
 
 ## 提供给运行时测试的当前说明窗只读引用。
+## 返回当前有效说明窗；不存在或已释放时返回 null。
 static func active_tooltip() -> Control:
 	return _active_tooltip if _active_tooltip != null and is_instance_valid(_active_tooltip) else null

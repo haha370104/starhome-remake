@@ -61,6 +61,7 @@ func set_content(text: String) -> void:
 
 
 ## 构造荣耀小窗的深蓝底、青蓝细边和轻阴影。
+## 返回已配置边框、内边距与阴影的面板样式。
 func _panel_style() -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
 	style.bg_color = Color("00182de8")

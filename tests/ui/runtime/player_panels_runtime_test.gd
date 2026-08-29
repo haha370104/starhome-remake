@@ -58,8 +58,8 @@ func _run() -> void:
 	_expect(manager.character_panel._portrait_body.position == Vector2(56, 64),
 		"男性裸体底模应包含人物预览子窗口偏移")
 	_expect(manager.character_panel._skill_button.text == "查看技能", "人物资料区应提供查看技能入口")
-	_expect(manager.character_panel._skill_rows_root.get_child_count() == 12,
-		"技能弹层应呈现十二项权威技能")
+	_expect(manager.character_panel._skill_rows_root.get_child_count() == 13,
+		"技能弹层应呈现十三项权威技能")
 	var inventory_item := manager.inventory_panel._item_canvas.get_child(0) as InventoryItemView
 	var inventory_icon := inventory_item.get_node("Icon") as TextureRect
 	inventory_item.mouse_entered.emit()
@@ -123,6 +123,7 @@ func _run() -> void:
 
 
 ## 验证右键只关闭命中位置的最上层面板，并覆盖物品子控件区域。
+## [param manager] 本次运行时测试创建的窗口管理器。
 func _test_right_click_close(manager: Control) -> void:
 	manager.character_panel.position = Vector2(100, 100)
 	manager.inventory_panel.position = Vector2(100, 100)
@@ -146,6 +147,8 @@ func _test_right_click_close(manager: Control) -> void:
 
 
 ## 创建一次右键按下输入。
+## [param viewport_position] 右键事件在视口内的位置。
+## 返回已设置为按下状态的鼠标右键事件。
 func _right_click(viewport_position: Vector2) -> InputEventMouseButton:
 	var event := InputEventMouseButton.new()
 	event.button_index = MOUSE_BUTTON_RIGHT

@@ -44,7 +44,8 @@ SqliteDriverPort -> approved GDExtension adapter
 `PlayerStateRecord` 当前覆盖首个经济纵切所需的最小状态：
 
 - 账户：稳定 ID、显示账户名、状态；认证密钥不进入该聚合。
-- 角色：稳定 ID、显示名、聚合 revision、生命、经验和按稳定技能 ID 保存的基础技能等级。
+- 角色：稳定 ID、显示名、聚合 revision、生命、综合等级，以及按稳定技能 ID 保存的基础等级、
+  当前等级经验和小数经验余量。
 - 背包：容量、独立 inventory revision、稳定实例 ID、定义 ID、数量、容器、像素位置、占用矩形、
   锁定/绑定和耐久；旧 `slot_index` 只用于 schema 1 向后兼容。
 - 装备：角色/战车 owner、业务槽位、荣耀客户端 Location、实例 ID、定义 ID、耐久和强化等级。
@@ -76,7 +77,8 @@ JSON 只存在于文件替身的信任边界。读取后立即转换为 `PlayerS
 
 ## 5. Migration 策略
 
-- 文件替身当前 schema 为 1，并有确定性的 `0 -> 1` 文档迁移；不支持的未来版本会拒绝启动。
+- 文件替身当前 schema 为 2，并有确定性的 `0 -> 1 -> 2` 文档迁移；第二步把整数技能等级升级为
+  完整成长状态，并把旧角色的综合等级下限规范为 10。不支持的未来版本会拒绝启动。
 - SQLite migration 使用递增的 `data/server/persistence/migrations/NNN_name.sql` 文件，并在
   `schema_migrations` 表记录已应用版本。
 - 真实 SQLite 适配器必须在 `BEGIN IMMEDIATE` 内逐个应用缺失 migration，成功后提交；失败
@@ -102,7 +104,7 @@ JSON 只存在于文件替身的信任边界。读取后立即转换为 `PlayerS
 ```
 
 测试在工作区创建唯一 `.tmp` 数据库快照并在结束时删除，覆盖：运行时 SQLite 能力声明、SQL
-schema 表集合、schema 0 到 1 迁移、事务成功、回调回滚、过期 revision 拒绝，以及新仓储实
+schema 表集合、schema 0 到 2 迁移、事务成功、回调回滚、过期 revision 拒绝，以及新仓储实
 例重新打开后恢复背包、装备、战车和地图位置。
 
 另一个端到端夹具验证权威服务器接线：2.99 秒时 revision 保持不变，满 3 秒后 revision 只

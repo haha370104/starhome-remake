@@ -603,6 +603,9 @@ func _build_multiplayer_presentation() -> void:
 		offline_combat_bridge.name = "OfflineCombatAuthorityBridge"
 		offline_combat_bridge.combat_snapshot_ready.connect(_on_combat_snapshot_received)
 		offline_combat_bridge.combat_event_ready.connect(_on_combat_event_received)
+		offline_combat_bridge.skill_progression_event_ready.connect(
+			_on_offline_skill_progression_event
+		)
 		add_child(offline_combat_bridge)
 		_configure_offline_combat_for_active_map()
 
@@ -658,6 +661,19 @@ func _on_local_player_position_changed(_position: Vector2) -> void:
 	_sync_player_nodes()
 	if offline_combat_bridge != null:
 		offline_combat_bridge.update_player_position(_position)
+
+
+## 将离线战斗桥接器产生的技能事件交给离线面板权威处理。
+## [param progression_event] 含技能、来源及权威客观数值的内部事件。
+## 设计：正式联机不会调用该入口；线上经验只由 AuthoritativeServer 处理。
+func _on_offline_skill_progression_event(progression_event: Dictionary) -> void:
+	if game_window_manager == null:
+		return
+	var result = game_window_manager.grant_offline_skill_progression(progression_event)
+	if not result.is_ok and result.error_code != &"progression.no_experience":
+		push_warning("Offline skill progression rejected [%s]: %s" % [
+			result.error_code, result.error_message,
+		])
 
 
 ## 在本地路线自然完成后检查脚点附近是否存在地图出口。
