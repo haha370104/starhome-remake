@@ -135,9 +135,12 @@ func grant_skill_progression(
 		return mapped
 	var player: Player = mapped.value
 	var value: Dictionary = converted.value
-	var before_exp := player.skills.current_experience(String(value["skill_id"]))
+	var skill_id := String(value["skill_id"])
+	var before_percent := player.skills.displayed_progress_percent(
+		skill_id, _skill_progression_config
+	)
 	var granted := player.grant_skill_experience(
-		String(value["skill_id"]), float(value["amount"]), _skill_progression_config
+		skill_id, float(value["amount"]), _skill_progression_config
 	)
 	if not granted.is_ok:
 		return granted
@@ -147,8 +150,10 @@ func grant_skill_progression(
 	var progression: Dictionary = granted.value
 	progression["source"] = String(progression_event.get("source", ""))
 	progression["granted_experience"] = float(value["amount"])
-	progression["visible_progress_changed"] = before_exp != int(progression.get("current_exp", 0)) \
+	var after_percent := player.skills.displayed_progress_percent(skill_id, _skill_progression_config)
+	progression["visible_progress_changed"] = before_percent != after_percent \
 		or bool(progression.get("upgraded", false))
+	progression["progress_percent"] = after_percent
 	return DomainResult.ok({
 		"candidate": persisted.value,
 		"progression": progression,

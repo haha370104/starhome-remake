@@ -15,14 +15,17 @@ var _skill_progression_config: Dictionary = {}
 
 
 ## 初始化客户端唯一的“自己”玩家聚合和本地配置目录。
+## [param shared_catalog] 可由场景注入、供地面和背包共同组装物品的已初始化目录。
 ## 设计：网络 DTO 只在 apply_bundle 边界出现；面板与场景随后共享这个 Player 实例。
-func _init() -> void:
+func _init(shared_catalog: ItemCatalog = null) -> void:
 	super({})
-	_catalog = ItemCatalogScript.new()
-	var initialized := _catalog.initialize()
-	if not initialized.is_ok:
-		push_error("Current player item catalog failed: %s" % initialized.error_message)
-		return
+	_catalog = shared_catalog
+	if _catalog == null:
+		_catalog = ItemCatalogScript.new()
+		var initialized := _catalog.initialize()
+		if not initialized.is_ok:
+			push_error("Current player item catalog failed: %s" % initialized.error_message)
+			return
 	var skill_config_result := JsonConfigLoader.load_dictionary(
 		"res://data/gameplay/skill_progression.json"
 	)

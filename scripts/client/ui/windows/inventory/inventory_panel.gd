@@ -41,24 +41,25 @@ func _ready() -> void:
 	content_root.add_child(arrange_button)
 
 
-## 应用权威 InventorySnapshot 并重建物品视图。
-## [param snapshot] 服务端返回的布局、数量、货币和 revision。
-func apply_snapshot(snapshot: Dictionary) -> void:
-	_revision = int(snapshot.get("revision", -1))
+## 从当前玩家聚合的背包对象重建物品视图。
+## [param inventory] 已由权威快照还原的领域背包，内部保留具体 GameItem 实例。
+## 设计：背包和地面表现消费同一种物品类型；本面板不再渲染第二套物品字典。
+func apply_inventory(inventory: Inventory) -> void:
+	if inventory == null:
+		return
+	_revision = inventory.revision
+	var items := inventory.items()
 	_count_label.text = "物品：%d / %d" % [
-		int(snapshot.get("item_count", 0)), int(snapshot.get("capacity", 40)),
+		items.size(), inventory.capacity,
 	]
-	_currency_label.text = "金币：%d" % int(snapshot.get("currency", 0))
+	_currency_label.text = "金币：%d" % inventory.currency
 	for child in _item_canvas.get_children():
 		child.queue_free()
-	for raw_item: Variant in snapshot.get("items", []):
-		if not raw_item is Dictionary:
-			continue
+	for domain_item: GameItem in items:
 		var item := ItemViewScript.new()
-		item.name = "Item_%s" % String(raw_item.get("instance_id", "unknown")).validate_node_name()
-		item.configure(raw_item)
-		var position_value: Array = raw_item.get("position_px", [0, 0])
-		item.position = Vector2(float(position_value[0]), float(position_value[1]))
+		item.name = "Item_%s" % domain_item.instance_id.validate_node_name()
+		item.configure(domain_item)
+		item.position = Vector2(domain_item.position_px)
 		item.move_requested.connect(_request_move)
 		item.equip_requested.connect(_request_equip)
 		item.character_equip_requested.connect(_request_character_equip)

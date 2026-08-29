@@ -10,6 +10,7 @@ const ItemHoverHighlightScript := preload(
 )
 
 var item_snapshot: Dictionary = {}
+var item: GameItem
 var _dragging := false
 var _drag_offset := Vector2.ZERO
 var _icon: TextureRect
@@ -17,22 +18,22 @@ var _hover_material: ShaderMaterial
 
 
 ## 使用权威物品快照配置一个可拖动背包视图。
-## [param snapshot] 单个物品的显示与布局快照。
+## [param domain_item] 当前玩家背包内的具体领域物品实例。
 ## 设计：拖动只移动本地幽灵节点，释放后提交意图；下一次权威快照决定最终位置。
-func configure(snapshot: Dictionary) -> void:
-	item_snapshot = snapshot.duplicate(true)
-	var footprint_value: Array = snapshot.get("footprint_px", [30, 30])
-	size = Vector2(float(footprint_value[0]), float(footprint_value[1]))
+func configure(domain_item: GameItem) -> void:
+	item = domain_item
+	item_snapshot = item.to_view_dictionary()
+	size = Vector2(item.footprint_px)
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	var item_tooltip := "%s\n%s" % [
-		String(snapshot.get("display_name", snapshot.get("definition_id", "物品"))),
-		String(snapshot.get("description", "")),
+		item.display_name,
+		item.description,
 	]
 	gui_input.connect(_on_gui_input)
 
 	_icon = TextureRect.new()
 	_icon.name = "Icon"
-	var icon_path := String(snapshot.get("icon", ""))
+	var icon_path := item.icon_path
 	_icon.texture = load(icon_path) as Texture2D if ResourceLoader.exists(icon_path) else null
 	_icon.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
@@ -41,7 +42,7 @@ func configure(snapshot: Dictionary) -> void:
 	add_child(_icon)
 	_hover_material = ItemHoverHighlightScript.bind(self, _icon, item_tooltip)
 
-	var amount := int(snapshot.get("amount", 1))
+	var amount := item.quantity
 	if amount > 1:
 		var amount_label := Label.new()
 		amount_label.text = str(amount)
@@ -55,7 +56,7 @@ func configure(snapshot: Dictionary) -> void:
 		amount_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		add_child(amount_label)
 
-	if bool(snapshot.get("locked", false)):
+	if item.locked:
 		modulate = Color(0.65, 0.65, 0.65)
 
 
@@ -74,7 +75,7 @@ func _on_gui_input(event: InputEvent) -> void:
 				)
 			accept_event()
 			return
-		if event.pressed and not bool(item_snapshot.get("locked", false)):
+		if event.pressed and not item.locked:
 			_dragging = true
 			_drag_offset = event.position
 			modulate.a = 0.65

@@ -24,6 +24,7 @@ func _run() -> void:
 	_expect(not manager.character_panel.visible, "人物面板初始应隐藏")
 	_expect(not manager.inventory_panel.visible, "背包面板初始应隐藏")
 	_expect(not manager.vehicle_panel.visible, "战车面板初始应隐藏")
+	_expect(not manager.skill_panel.visible, "技能面板初始应隐藏")
 	_expect(manager.toggle("character") and manager.character_panel.visible, "人物按钮应切换单例窗口")
 	_expect(manager.toggle("inventory") and manager.inventory_panel.visible, "背包按钮应切换单例窗口")
 	_expect(manager.toggle("vehicle_equipment") and manager.vehicle_panel.visible, "战车按钮应切换单例窗口")
@@ -58,8 +59,57 @@ func _run() -> void:
 	_expect(manager.character_panel._portrait_body.position == Vector2(56, 64),
 		"男性裸体底模应包含人物预览子窗口偏移")
 	_expect(manager.character_panel._skill_button.text == "查看技能", "人物资料区应提供查看技能入口")
-	_expect(manager.character_panel._skill_rows_root.get_child_count() == 13,
-		"技能弹层应呈现十三项权威技能")
+	manager.character_panel.skill_panel_requested.emit()
+	await process_frame
+	_expect(manager.skill_panel.visible and manager.skill_panel.size == Vector2(240, 375),
+		"查看技能应打开原尺寸非模态游戏窗口")
+	_expect(manager.skill_panel._rows.size() == 13,
+		"技能窗口应呈现十三项权威技能")
+	var energy_row: Dictionary = manager.skill_panel._rows[0]
+	_expect((energy_row["experience"] as Label).text == "0%",
+		"技能第三列应显示当前经验百分比")
+	var material_grant = manager.grant_offline_loot({
+		"loot_id": "monster.loot.runtime.material",
+		"item_definition_id": "low_grade_energy_pack",
+		"quantity": 2,
+	})
+	_expect(material_grant.is_ok, "地面材料应以同一领域物品进入背包")
+	await process_frame
+	var material_view: InventoryItemView = null
+	for raw_view: Node in manager.inventory_panel._item_canvas.get_children():
+		var candidate := raw_view as InventoryItemView
+		if candidate != null and candidate.item != null \
+				and candidate.item.instance_id == "monster.loot.runtime.material":
+			material_view = candidate
+			break
+	_expect(material_view != null and material_view.item is GameItem,
+		"背包应直接消费拾取后的 GameItem 实例")
+	if material_view != null:
+		var material_icon := material_view.get_node("Icon") as TextureRect
+		_expect(material_icon.texture != null,
+			"低级能量包进入背包后应使用 inventory 表现素材")
+	var damage_progress = manager.grant_offline_skill_progression({
+		"entity_id": "player.local",
+		"source": "effective_damage",
+		"skill_id": "energy_cannon",
+		"damage": 7,
+	})
+	_expect(damage_progress.is_ok, "能量炮有效命中应进入权威技能成长链路")
+	await process_frame
+	_expect((energy_row["experience"] as Label).text == "3%",
+		"七点有效伤害应立即刷新能量炮经验百分比")
+	var driving_progress = manager.grant_offline_skill_progression({
+		"entity_id": "player.local",
+		"source": "accepted_driving_movement",
+		"skill_id": "driving",
+		"distance": 2000.0,
+		"vehicle_weight": 140.0,
+	})
+	_expect(driving_progress.is_ok, "服务器接受的驾驶距离应进入驾驶成长链路")
+	await process_frame
+	var driving_row: Dictionary = manager.skill_panel._rows[2]
+	_expect((driving_row["experience"] as Label).text == "1%",
+		"驾驶经验达到一个可见百分点时应立即刷新")
 	var inventory_item := manager.inventory_panel._item_canvas.get_child(0) as InventoryItemView
 	var inventory_icon := inventory_item.get_node("Icon") as TextureRect
 	inventory_item.mouse_entered.emit()
@@ -142,6 +192,7 @@ func _test_right_click_close(manager: Control) -> void:
 		"右键命中背包物品子控件时也应关闭所属面板")
 
 	manager.vehicle_panel.visible = true
+	manager.skill_panel.visible = false
 	manager._input(_right_click(Vector2(1275, 715)))
 	_expect(manager.vehicle_panel.visible, "面板外右键不得关闭任何窗口")
 

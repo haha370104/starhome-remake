@@ -9,7 +9,10 @@ const GAMEPLAY_PATHS := [
 	"res://data/gameplay/character_items_v1.json",
 	"res://data/gameplay/material_items_v1.json",
 ]
-const PRESENTATION_PATH := "res://data/presentation/player_equipment_v1.json"
+const PRESENTATION_PATHS := [
+	"res://data/presentation/player_equipment_v1.json",
+	"res://data/presentation/ground_loot_v1.json",
+]
 
 var _definitions: Dictionary = {}
 
@@ -23,14 +26,19 @@ func initialize() -> DomainResult:
 		var loaded := _load_gameplay_file(path)
 		if not loaded.is_ok:
 			return loaded
-	var presentation_result := _load_presentation_file(PRESENTATION_PATH)
-	if not presentation_result.is_ok:
-		return presentation_result
-	for definition_id: Variant in presentation_result.value:
-		if not _definitions.has(String(definition_id)):
-			return DomainResult.failure(&"items.presentation_orphan", "presentation references unknown item")
-		_definitions[String(definition_id)]["presentation"] = \
-			presentation_result.value[definition_id].duplicate(true)
+	for path: String in PRESENTATION_PATHS:
+		var presentation_result := _load_presentation_file(path)
+		if not presentation_result.is_ok:
+			return presentation_result
+		for definition_id: Variant in presentation_result.value:
+			var item_id := String(definition_id)
+			if not _definitions.has(item_id):
+				return DomainResult.failure(
+					&"items.presentation_orphan", "presentation references unknown item"
+				)
+			var current: Dictionary = _definitions[item_id].get("presentation", {})
+			current.merge(presentation_result.value[definition_id], true)
+			_definitions[item_id]["presentation"] = current
 	return DomainResult.ok(self)
 
 

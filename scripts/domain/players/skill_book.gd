@@ -58,6 +58,25 @@ func current_experience(skill_id: String) -> int:
 	return state.current_exp if state != null else 0
 
 
+## 计算旧客户端技能窗可见的当前经验百分比。
+## [param skill_id] 技能稳定标识。
+## [param progression_config] 技能升级门槛配置。
+## 返回 0 到 100 的整数百分比；未满级最多显示 99%。
+func displayed_progress_percent(skill_id: String, progression_config: Dictionary) -> int:
+	var state := _state_for(skill_id)
+	var maximum_level := int(progression_config.get("maximum_level", 700))
+	if state.level >= maximum_level:
+		return 100
+	var threshold_result := SkillProgressionScript.get_need_points(
+		StringName(skill_id), state.level, progression_config
+	)
+	if not threshold_result.is_ok or int(threshold_result.value) <= 0:
+		return 0
+	var ratio := (float(state.current_exp) + state.fractional_exp) \
+		/ float(threshold_result.value)
+	return mini(99, floori(clampf(ratio, 0.0, 1.0) * 100.0))
+
+
 ## 计算包含人物服装加成的最终技能等级。
 ## [param skill_id] 技能稳定标识。
 ## [param character_equipment] 当前人物穿着对象。
@@ -153,6 +172,8 @@ func to_view_array(
 			)
 			if threshold_result.is_ok:
 				threshold = int(threshold_result.value)
+		var progress_percent := displayed_progress_percent(skill_id, progression_config) \
+			if not progression_config.is_empty() else 0
 		result.append({
 			"id": skill_id,
 			"display_name": String(DISPLAY_NAMES[skill_id]),
@@ -164,6 +185,7 @@ func to_view_array(
 			"progress_ratio": clampf(
 				(float(state.current_exp) + state.fractional_exp) / float(threshold), 0.0, 1.0
 			) if threshold > 0 else 1.0,
+			"progress_percent": progress_percent,
 			"maximum_level": state.level >= maximum_level,
 		})
 	return result

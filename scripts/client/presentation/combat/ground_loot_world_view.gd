@@ -4,6 +4,7 @@ extends Node2D
 var loot_id := ""
 var item_definition_id := ""
 var quantity := 0
+var item: GameItem
 var _hover_background: Panel
 var _sprite: Sprite2D
 var _tooltip: Label
@@ -11,11 +12,15 @@ var _local_hit_rect := Rect2()
 
 
 ## 使用权威掉落快照与业务表现定义创建地面物品视图。
-## [param presentation] 含语义化纹理、ALE 原始尺寸与原点的表现定义。
+## [param ground_item] 与背包共用类型的领域物品实例。
 ## [param snapshot] 含 loot_id、物品定义、数量与世界坐标的权威快照。
 ## 返回配置是否成功；未知纹理或非法尺寸返回对应 Error。
 ## 设计：节点脚点等于权威世界坐标，纹理严格按原客户端 ALE 原点以 1:1 像素绘制。
-func configure(presentation: Dictionary, snapshot: Dictionary) -> Error:
+func configure(ground_item: GameItem, snapshot: Dictionary) -> Error:
+	if ground_item == null:
+		return ERR_INVALID_PARAMETER
+	item = ground_item
+	var presentation := item.presentation_for("world")
 	var texture_path := String(presentation.get("texture", ""))
 	var native_size_value: Variant = presentation.get("native_size", [])
 	var origin_value: Variant = presentation.get("origin", [])
@@ -62,22 +67,23 @@ func configure(presentation: Dictionary, snapshot: Dictionary) -> Error:
 	_tooltip.add_theme_constant_override("shadow_offset_x", 1)
 	_tooltip.add_theme_constant_override("shadow_offset_y", 1)
 	add_child(_tooltip)
-	apply_snapshot(snapshot, String(presentation.get("display_name", item_definition_id)))
+	apply_snapshot(item, snapshot)
 	return OK
 
 
 ## 应用同一掉落实例的最新权威位置、数量和提示文字。
-## [param snapshot] 服务端地面掉落 DTO。
-## [param display_name] 客户端语义目录提供的中文名称。
-func apply_snapshot(snapshot: Dictionary, display_name: String) -> void:
+## [param ground_item] 持有稳定实例身份、数量与显示名的领域物品。
+## [param snapshot] 服务端地面掉落 DTO，仅提供世界实体状态。
+func apply_snapshot(ground_item: GameItem, snapshot: Dictionary) -> void:
+	item = ground_item
 	loot_id = String(snapshot.get("loot_id", loot_id))
-	item_definition_id = String(snapshot.get("item_definition_id", item_definition_id))
-	quantity = maxi(1, int(snapshot.get("quantity", quantity)))
+	item_definition_id = item.definition_id
+	quantity = item.quantity
 	var point_value: Variant = snapshot.get("position", [])
 	if point_value is Array and (point_value as Array).size() == 2:
 		position = Vector2(float(point_value[0]), float(point_value[1]))
 	if _tooltip != null:
-		_tooltip.text = "%s × %d" % [display_name, quantity]
+		_tooltip.text = "%s × %d" % [item.display_name, quantity]
 
 
 ## 判断一个世界坐标是否落在原始 ALE 帧的真实矩形内。

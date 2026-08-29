@@ -82,9 +82,17 @@ func _test_population_and_resources(bridge: OfflineCombatAuthorityBridge) -> voi
 ## 执行 `test_authoritative_player_attack` 对应的模块操作。
 ## [param bridge] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _test_authoritative_player_attack(bridge: OfflineCombatAuthorityBridge) -> void:
+	var progression_events: Array[Dictionary] = []
+	bridge.skill_progression_event_ready.connect(func(event: Dictionary) -> void:
+		progression_events.append(event.duplicate(true))
+	)
 	var target_id: String = bridge.module.monsters.keys()[0]
 	var target = bridge.module.monster_for(target_id)
 	bridge.update_player_position(target.position + Vector2(100, 0))
+	_expect(progression_events.any(func(event: Dictionary) -> bool:
+		return String(event.get("skill_id", "")) == "driving" \
+			and float(event.get("distance", 0.0)) > 0.0
+	), "accepted D04 vehicle movement should emit authoritative driving progression")
 	var before_health: int = target.health
 	var result := bridge.request_attack(target.position)
 	_expect(result.ok, "nearby configured monster should accept a coordinate-only attack")
@@ -94,6 +102,11 @@ func _test_authoritative_player_attack(bridge: OfflineCombatAuthorityBridge) -> 
 	var impact_tick := int(result.value["impact_tick"])
 	bridge.module.advance_ticks(impact_tick - bridge.module.current_tick)
 	_expect(target.health == before_health - 7, "new recruit cannon should apply its server-owned base attack 7 on arrival")
+	bridge._emit_combat_progression_events()
+	_expect(progression_events.any(func(event: Dictionary) -> bool:
+		return String(event.get("skill_id", "")) == "energy_cannon" \
+			and int(event.get("damage", 0)) == 7
+	), "resolved D04 energy-cannon hits should emit authoritative weapon progression")
 
 
 ## 执行 `test_zero_attack_is_not_invented` 对应的模块操作。

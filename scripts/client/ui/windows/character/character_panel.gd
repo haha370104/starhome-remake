@@ -2,6 +2,7 @@ class_name CharacterPanel
 extends DraggableGameWindow
 
 signal command_requested(command: Dictionary)
+signal skill_panel_requested
 
 const TooltipFormatter := preload("res://scripts/client/ui/windows/equipment_tooltip_formatter.gd")
 const ItemHoverHighlightScript := preload(
@@ -21,8 +22,6 @@ var _description_label: Label
 var _buff_root: GridContainer
 var _equipment_layers: Control
 var _skill_button: Button
-var _skill_popup: PopupPanel
-var _skill_rows_root: VBoxContainer
 var _inventory_revision := -1
 var _state_revision := -1
 
@@ -33,7 +32,6 @@ func _ready() -> void:
 	configure(Vector2(355, 450), BACKGROUND, Vector2(327, 39))
 	_build_portrait()
 	_build_identity_fields()
-	_build_skill_popup()
 	_description_label = _create_label(Vector2(30, 310), Vector2(295, 58), 12)
 	_description_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_buff_root = GridContainer.new()
@@ -65,7 +63,6 @@ func apply_snapshot(snapshot: Dictionary) -> void:
 	_description_label.text = String(snapshot.get("description", ""))
 	_replace_equipment_layers(snapshot.get("worn_items", []))
 	_replace_buffs(snapshot.get("buffs", []))
-	_replace_skill_rows(snapshot.get("skills", []))
 
 
 ## 同步背包 revision，使人物卸装命令可进行乐观锁校验。
@@ -119,40 +116,8 @@ func _build_identity_fields() -> void:
 	_skill_button.add_theme_font_size_override("font_size", TEXT_FONT_SIZE)
 	_skill_button.add_theme_color_override("font_color", TEXT_COLOR)
 	_skill_button.add_theme_color_override("font_hover_color", Color("ffd6df"))
-	_skill_button.pressed.connect(_toggle_skill_popup)
+	_skill_button.pressed.connect(func() -> void: skill_panel_requested.emit())
 	content_root.add_child(_skill_button)
-
-
-## 创建旧客户端“查看技能”对应的独立弹层。
-func _build_skill_popup() -> void:
-	_skill_popup = PopupPanel.new()
-	_skill_popup.name = "SkillLevelPopup"
-	add_child(_skill_popup)
-	var margin := MarginContainer.new()
-	margin.add_theme_constant_override("margin_left", 14)
-	margin.add_theme_constant_override("margin_top", 12)
-	margin.add_theme_constant_override("margin_right", 14)
-	margin.add_theme_constant_override("margin_bottom", 12)
-	_skill_popup.add_child(margin)
-	var root := VBoxContainer.new()
-	root.custom_minimum_size = Vector2(230, 286)
-	margin.add_child(root)
-	var title := Label.new()
-	title.text = "技能名称        等级  加成"
-	title.add_theme_font_override("font", LEGACY_PANEL_FONT)
-	title.add_theme_font_size_override("font_size", 12)
-	root.add_child(title)
-	_skill_rows_root = VBoxContainer.new()
-	_skill_rows_root.add_theme_constant_override("separation", 2)
-	root.add_child(_skill_rows_root)
-
-
-## 显示或关闭技能等级弹层。
-func _toggle_skill_popup() -> void:
-	if _skill_popup.visible:
-		_skill_popup.hide()
-	else:
-		_skill_popup.popup_centered(Vector2i(258, 320))
 
 
 ## 按权威穿着快照重建服装叠层。
@@ -232,33 +197,6 @@ func _replace_buffs(buffs_value: Variant) -> void:
 		_buff_root.add_child(buff)
 
 
-## 用权威技能快照刷新弹层的稳定行序。
-## [param skills_value] 技能数组。
-func _replace_skill_rows(skills_value: Variant) -> void:
-	for child in _skill_rows_root.get_children():
-		child.queue_free()
-	if not skills_value is Array:
-		return
-	for raw_skill: Variant in skills_value:
-		if not raw_skill is Dictionary:
-			continue
-		var row := Label.new()
-		row.text = "%-12s %4d  %+3d" % [
-			String(raw_skill.get("display_name", "未知")),
-			int(raw_skill.get("base_level", 0)),
-			int(raw_skill.get("equipment_bonus", 0)),
-		]
-		row.add_theme_font_override("font", LEGACY_PANEL_FONT)
-		row.add_theme_font_size_override("font_size", 12)
-		var current_exp := int(raw_skill.get("experience", 0))
-		var threshold := int(raw_skill.get("next_level_experience", 0))
-		row.tooltip_text = "已达到最高等级" if bool(raw_skill.get("maximum_level", false)) \
-			else "当前经验：%d / %d（%.1f%%）" % [
-				current_exp,
-				threshold,
-				float(raw_skill.get("progress_ratio", 0.0)) * 100.0,
-			]
-		_skill_rows_root.add_child(row)
 
 
 ## 设置一个已创建资料字段的文本。

@@ -3,7 +3,7 @@ extends SceneTree
 const ControllerScript := preload(
 	"res://scripts/client/presentation/combat/ground_loot_world_controller.gd"
 )
-const CATALOG_PATH := "res://data/presentation/ground_loot_v1.json"
+const ItemCatalogScript := preload("res://scripts/domain/items/item_catalog.gd")
 
 var assertions := 0
 var failures: Array[String] = []
@@ -16,9 +16,10 @@ func _init() -> void:
 
 ## 验证荣耀原尺寸、ALE 原点命中、快照更新及已拾取清理。
 func _run() -> void:
-	var catalog_value: Variant = JSON.parse_string(FileAccess.get_file_as_string(CATALOG_PATH))
-	_expect(catalog_value is Dictionary, "ground loot catalog should parse")
-	if not catalog_value is Dictionary:
+	var catalog: ItemCatalog = ItemCatalogScript.new()
+	var initialized := catalog.initialize()
+	_expect(initialized.is_ok, "shared item catalog should parse")
+	if not initialized.is_ok:
 		_finish()
 		return
 	var world := Node2D.new()
@@ -28,7 +29,7 @@ func _run() -> void:
 	var controller = ControllerScript.new()
 	root.add_child(controller)
 	_expect(
-		controller.configure(world, catalog_value["definitions"]) == OK,
+		controller.configure(world, catalog) == OK,
 		"ground loot controller should configure",
 	)
 	controller.apply_snapshot(_snapshot([_loot(
@@ -38,6 +39,10 @@ func _run() -> void:
 	var view = controller.view_for_loot("loot.biosilicon.1")
 	_expect(view != null, "loot view should be indexed by authoritative loot id")
 	if view != null:
+		_expect(
+			view.item is GameItem and view.item.instance_id == "loot.biosilicon.1",
+			"ground presentation should retain a domain item with the authoritative identity",
+		)
 		_expect(
 			view.local_hit_rect() == Rect2(-34.0, -26.0, 50.0, 42.0),
 			"biosilicon should retain the original 50x42 frame and ALE origin",

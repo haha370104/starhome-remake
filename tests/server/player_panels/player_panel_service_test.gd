@@ -93,6 +93,9 @@ func _initialize() -> void:
 				and int(item.get("amount", 0)) == 3
 		)
 		_expect(matches.size() == 1, "面板快照应立即包含权威结算的三份低级生物硅")
+		if not matches.is_empty():
+			_expect(String(matches[0].get("icon", "")).ends_with("/inventory_icon.png"),
+				"材料领域物品的背包投影应选择 inventory 表现")
 	var damage_progress := authority.grant_skill_progression({
 		"entity_id": "player.local",
 		"source": "effective_damage",
@@ -104,6 +107,9 @@ func _initialize() -> void:
 		var damage_bundle: Dictionary = damage_progress.value.panel_bundle
 		_expect(damage_bundle.character.skills[0].experience == 7,
 			"七点最终有效伤害应按默认倍率产生七点经验")
+		_expect(damage_progress.value.progression.visible_progress_changed \
+				and damage_progress.value.progression.progress_percent == 3,
+			"能量炮命中跨越可见百分点时应触发面板刷新")
 	var driving_progress := authority.grant_skill_progression({
 		"entity_id": "player.local",
 		"source": "accepted_driving_movement",

@@ -35,7 +35,21 @@ func _init(definition: Dictionary = {}, state: Dictionary = {}) -> void:
 	var item_presentation: Variant = definition.get("presentation", {})
 	presentation = (item_presentation as Dictionary).duplicate(true) \
 		if item_presentation is Dictionary else {}
-	icon_path = String(presentation.get("icon", ""))
+	var inventory_presentation := presentation_for("inventory")
+	icon_path = String(inventory_presentation.get(
+		"icon", presentation.get("icon", presentation_for("world").get("texture", ""))
+	))
+
+
+## 按使用场景读取当前物品的表现配置。
+## [param mode] inventory、world 或未来的 dialog 等业务表现模式。
+## 返回该模式的防御性配置副本；旧平铺配置仅作为兼容回退。
+## 设计：同一个物品实例持有一份业务定义，各视图只选择表现模式，不再维护独立物品目录。
+func presentation_for(mode: String) -> Dictionary:
+	var mode_value: Variant = presentation.get(mode, {})
+	if mode_value is Dictionary and not (mode_value as Dictionary).is_empty():
+		return (mode_value as Dictionary).duplicate(true)
+	return presentation.duplicate(true)
 
 
 ## 导出背包布局规则需要的最小字典。

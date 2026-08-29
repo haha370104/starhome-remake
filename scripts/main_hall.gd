@@ -42,10 +42,10 @@ const SelfRepairVisualControllerScript := preload(
 const GameWindowManagerScript := preload(
 	"res://scripts/client/ui/windows/game_window_manager.gd"
 )
+const ItemCatalogScript := preload("res://scripts/domain/items/item_catalog.gd")
 const STARTER_WEAPON_ID := &"recruit_energy_cannon"
 const STARTER_ABILITY_ID := "energy_cannon.primary"
 const SELF_REPAIR_ABILITY_ID := "self_repair"
-const GROUND_LOOT_PRESENTATION_PATH := "res://data/presentation/ground_loot_v1.json"
 
 # Player tuning is intentionally local to the player. NPC patrol motion has its
 # own configuration and must not inherit these values when player progression,
@@ -144,6 +144,7 @@ var ground_loot_world_controller: GroundLootWorldController
 var offline_combat_bridge: OfflineCombatAuthorityBridge
 var self_repair_visual_controller: SelfRepairVisualController
 var game_window_manager: GameWindowManager
+var item_catalog: ItemCatalog
 
 
 ## 节点进入场景树后初始化运行依赖。
@@ -537,21 +538,20 @@ func _build_world() -> void:
 		combat_attack_controller.set_visual_collision_resolver(
 			monster_world_controller.first_visual_collision
 		)
-	var loot_catalog_value: Variant = JSON.parse_string(
-		FileAccess.get_file_as_string(GROUND_LOOT_PRESENTATION_PATH)
-	)
-	if loot_catalog_value is Dictionary and loot_catalog_value.get("definitions") is Dictionary:
+	item_catalog = ItemCatalogScript.new()
+	var item_catalog_result := item_catalog.initialize()
+	if item_catalog_result.is_ok:
 		ground_loot_world_controller = GroundLootWorldControllerScript.new()
 		ground_loot_world_controller.name = "GroundLootWorldController"
 		add_child(ground_loot_world_controller)
 		var loot_error := ground_loot_world_controller.configure(
 			sortable_world,
-			(loot_catalog_value["definitions"] as Dictionary),
+			item_catalog,
 		)
 		if loot_error != OK:
 			push_error("Unable to configure ground loot presentation: %s" % error_string(loot_error))
 	else:
-		push_error("Unable to load ground loot presentation catalog")
+		push_error("Unable to load shared item catalog: %s" % item_catalog_result.error_message)
 
 	local_player_controller = LocalPlayerControllerScript.new()
 	local_player_controller.name = "LocalPlayerController"
@@ -669,6 +669,7 @@ func _build_game_windows() -> void:
 	game_window_manager.configure(
 		Callable(multiplayer_presenter, "request_player_panel_command"),
 		multiplayer_offline_debug_enabled,
+		item_catalog,
 	)
 	multiplayer_presenter.player_panel_bundle_received.connect(
 		game_window_manager.apply_bundle

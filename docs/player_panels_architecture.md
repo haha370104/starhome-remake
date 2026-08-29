@@ -60,6 +60,10 @@
 - `GameItem` 只包含所有物品共有的身份、名称、描述、数量和背包几何；具体业务类型由
   `Clothing`、`VehicleChassis`、`VehicleEngine`、`VehicleWeapon` 等类表达。同名不同数值的
   物品不增加子类，而由版本化定义表创建同一类型的不同实例。
+- 地面掉落、拾取交易和背包格子不定义三种物品。`GameItem` 持有稳定 `instance_id` 和
+  同一业务定义，`presentation_for("world")` 与 `presentation_for("inventory")` 只切换展示模式。
+  服务器拾取时用掉落 ID 组装真实物品并交给 `Player.receive_loot()`；客户端地图和背包
+  也都消费 `GameItem`，不再把快照字典当成第二套物品模型。
 - `Equipment` 自己实现磨损、修复和耐久上限下降；`Clothing` 自己校验性别与人物槽位；战车
   装备自己声明稳定 Location 和数值贡献。
 - `Inventory` 封装物品数组、像素布局、容量、货币和 revision。外部只能得到数组副本；移动、
@@ -101,7 +105,7 @@
   客户端 `CurrentPlayer` 的完整重建。
 - `authoritative_autosave_test.gd`：真实 `AuthoritativeServer` 面板命令立即提交，并在新服务器
   实例中恢复像素布局。
-- `player_panels_runtime_test.gd`：三窗口原始尺寸、显隐、当前人物投影、裸体/服装坐标、技能入口、
+- `player_panels_runtime_test.gd`：游戏窗口原始尺寸、显隐、当前人物投影、裸体/服装坐标、非模态技能窗口、
   战车三层坐标、右侧属性文本、权威物品/槽位投影及视口约束。
 
 完整工程门禁通过 `tools/run_project_checks.ps1` 统一运行上述测试、旧回归、真实 ENet 和素材审计。

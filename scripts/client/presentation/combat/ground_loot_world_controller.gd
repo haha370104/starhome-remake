@@ -6,20 +6,21 @@ const GroundLootWorldViewScript := preload(
 )
 
 var _world_parent: Node2D
-var _definitions: Dictionary = {}
+var _catalog: ItemCatalog
+var _items: Dictionary = {}
 var _views: Dictionary = {}
 var _hovered_loot_id := ""
 
 
 ## 绑定世界父节点并载入地面物品业务表现目录。
 ## [param world_parent] 与人物、怪物共享 Y 排序的活动世界节点。
-## [param presentation_catalog] definition_id 到语义化纹理配置的字典。
+## [param item_catalog] 同时为地面与背包组装物品实例的共享领域目录。
 ## 返回目录可用性；空世界或空目录返回 ERR_INVALID_PARAMETER。
-func configure(world_parent: Node2D, presentation_catalog: Dictionary) -> Error:
-	if world_parent == null or presentation_catalog.is_empty():
+func configure(world_parent: Node2D, item_catalog: ItemCatalog) -> Error:
+	if world_parent == null or item_catalog == null:
 		return ERR_INVALID_PARAMETER
 	_world_parent = world_parent
-	_definitions = presentation_catalog.duplicate(true)
+	_catalog = item_catalog
 	set_process(true)
 	return OK
 
@@ -37,27 +38,38 @@ func apply_snapshot(combat_snapshot: Dictionary) -> void:
 		var loot: Dictionary = raw_loot
 		var loot_id := String(loot.get("loot_id", ""))
 		var definition_id := String(loot.get("item_definition_id", ""))
-		var presentation_value: Variant = _definitions.get(definition_id)
-		if loot_id.is_empty() or not presentation_value is Dictionary:
+		if loot_id.is_empty() or definition_id.is_empty():
 			continue
 		observed[loot_id] = true
 		var view: GroundLootWorldView = _views.get(loot_id)
 		if view == null:
+			var created := _catalog.create(definition_id, {
+				"instance_id": loot_id,
+				"quantity": int(loot.get("quantity", 1)),
+			})
+			if not created.is_ok:
+				continue
+			var item: GameItem = created.value
 			view = GroundLootWorldViewScript.new()
 			view.name = "GroundLoot_%s" % loot_id.replace(".", "_")
 			_world_parent.add_child(view)
-			if view.configure(presentation_value, loot) != OK:
+			if view.configure(item, loot) != OK:
 				view.queue_free()
 				continue
+			_items[loot_id] = item
 			_views[loot_id] = view
 		else:
-			view.apply_snapshot(loot, String(presentation_value.get("display_name", definition_id)))
+			var item: GameItem = _items.get(loot_id)
+			if item != null:
+				item.quantity = maxi(1, int(loot.get("quantity", item.quantity)))
+				view.apply_snapshot(item, loot)
 	for existing_id: String in _views.keys():
 		if observed.has(existing_id):
 			continue
 		var stale: GroundLootWorldView = _views[existing_id]
 		stale.queue_free()
 		_views.erase(existing_id)
+		_items.erase(existing_id)
 		if _hovered_loot_id == existing_id:
 			_hovered_loot_id = ""
 
@@ -84,6 +96,7 @@ func remove_loot(loot_id: String) -> void:
 		return
 	view.queue_free()
 	_views.erase(loot_id)
+	_items.erase(loot_id)
 	if _hovered_loot_id == loot_id:
 		_hovered_loot_id = ""
 
@@ -93,6 +106,7 @@ func clear() -> void:
 	for view: GroundLootWorldView in _views.values():
 		view.queue_free()
 	_views.clear()
+	_items.clear()
 	_hovered_loot_id = ""
 
 
