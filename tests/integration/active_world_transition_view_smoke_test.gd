@@ -27,6 +27,7 @@ func _initialize() -> void:
 ## 驱动传送表现命中、接近点路线和失败 bundle 隔离组合回归。
 func _run() -> void:
 	var hall: Node2D = MainHallScene.instantiate()
+	hall.multiplayer_connect_automatically = false
 	root.add_child(hall)
 	await process_frame
 	await process_frame

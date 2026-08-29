@@ -1,9 +1,11 @@
 extends SceneTree
 
 const MainHallScene := preload("res://scenes/main_hall.tscn")
+const ServerConfigScript := preload("res://scripts/server/server_config.gd")
 
 var failures: PackedStringArray = []
 var assertions := 0
+var transition_events: Array[String] = []
 
 
 ## 延迟运行完整场景切图测试，等待大厅、HUD 和离线会话完成 `_ready`。
@@ -14,9 +16,27 @@ func _initialize() -> void:
 ## 驱动真实大厅出口与城市西北门，验证 RoomSvr1→City1Svr→D04 原子表现切换。
 func _run() -> void:
 	var hall: Node2D = MainHallScene.instantiate()
+	hall.multiplayer_connect_automatically = false
 	root.add_child(hall)
 	await process_frame
 	await process_frame
+	var server_config := ServerConfigScript.new()
+	server_config.network_enabled = false
+	server_config.persistence_enabled = false
+	hall.multiplayer_presenter.session.network_adapter.configure_in_process_server(server_config)
+	_expect(
+		hall.multiplayer_presenter.session.connect_to_server("in-process", 0) == OK,
+		"场景测试应成功启动隔离的进程内权威服务器",
+	)
+	await _wait_for_session(hall)
+	hall.multiplayer_presenter.session.map_joined.connect(
+		func(map_id: StringName, _instance_id: String, _position: Vector2, _version: int) -> void:
+			transition_events.append("joined:%s" % map_id)
+	)
+	hall.multiplayer_presenter.session.map_change_failed.connect(
+		func(transition_id: StringName, code: StringName, message: String) -> void:
+			transition_events.append("failed:%s:%s:%s" % [transition_id, code, message])
+	)
 	_expect(hall.map_definition.map_id == &"yian_harbor_hall_floor_1", "测试必须从荣耀版大厅开始")
 	var initial_sequence: int = hall.multiplayer_presenter.session.local_predictor.next_input_sequence
 	hall.pending_map_transition = {"transition_id": &"exit_to_city"}
@@ -52,7 +72,7 @@ func _run() -> void:
 	_expect(hall.player.position == held_position, "资源提交前旧地图必须保持原角色位置")
 	hall.pending_authoritative_join.clear()
 
-	hall.player.position = Vector2(480, 370)
+	_place_authoritative_player(hall, Vector2(480, 370))
 	hall.call("_try_begin_nearby_map_transition")
 	await _wait_for_map(hall, &"yian_harbor_city")
 	_expect(hall.map_definition.map_id == &"yian_harbor_city", "大厅出口必须进入真实 City1Svr 业务图")
@@ -62,7 +82,7 @@ func _run() -> void:
 	_expect(hall.npc_instances.is_empty(), "大厅 NPC 不得泄漏到城市")
 	_expect(hall.hud.minimap_dock.map_name_label.text == "易安港城区", "HUD 必须原子更新城市名")
 
-	hall.player.position = Vector2(78, 170)
+	_place_authoritative_player(hall, Vector2(78, 170))
 	hall.call("_try_begin_nearby_map_transition")
 	await _wait_for_map(hall, &"d04_field_zone")
 	_expect(hall.map_definition.map_id == &"d04_field_zone", "城市西北门必须进入 D04")
@@ -99,7 +119,44 @@ func _wait_for_map(hall: Node2D, expected_map_id: StringName) -> void:
 		if hall.map_definition.map_id == expected_map_id:
 			return
 		await process_frame
-	_fail("等待地图提交超时：%s" % expected_map_id)
+	_fail(
+		"等待地图提交超时：%s；提示=%s；待提交=%s；待权威提交=%s；预载包=%s；会话待确认=%s；事件=%s"
+		% [
+			expected_map_id,
+			hall.hint_label.text,
+			hall.pending_map_transition,
+			hall.pending_authoritative_join,
+			hall.pending_map_bundle.keys(),
+			hall.multiplayer_presenter.session._pending_map_change,
+			transition_events,
+		]
+	)
+
+
+## 等待进程内传输完成与正式权威服务器相同的异步握手。
+## [param hall] 正在启动本地权威会话的大厅场景。
+func _wait_for_session(hall: Node2D) -> void:
+	for _frame in range(120):
+		if hall.multiplayer_presenter.session.network_adapter.session_ready:
+			return
+		await process_frame
+	_fail("等待进程内权威会话握手超时")
+
+
+## 将场景测试的客户端与权威实体同时摆放到待测出口，避免用数秒寻路污染切图断言。
+## [param hall] 持有进程内传输和玩家表现的大厅场景。
+## [param position] 本次切图需要测试的出口接近点。
+## 设计：该辅助函数只准备测试前置状态；切图请求、校验、落点和回包仍完整经过正式服务器。
+func _place_authoritative_player(hall: Node2D, position: Vector2) -> void:
+	var transport: Node = hall.multiplayer_presenter.session.network_adapter._transport_endpoint
+	var server: AuthoritativeServer = transport.authoritative_server
+	var session: ServerSession = server.sessions.session_for_peer(transport.LOCAL_PEER_ID)
+	var instance: AuthoritativeMapInstance = server.map_registry.instance_by_id(session.map_instance_id)
+	var entity: AuthoritativeEntity = instance.entities[session.entity_id]
+	entity.position = position
+	entity.set_path(PackedVector2Array([position]), position, entity.last_input_sequence)
+	hall.multiplayer_presenter.session.initialize_local_player(position)
+	hall.local_player_controller.set_position(position)
 
 
 ## 执行 `expect` 对应的模块操作。

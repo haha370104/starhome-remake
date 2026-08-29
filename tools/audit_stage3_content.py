@@ -19,6 +19,7 @@ ALLOWED_EVIDENCE_STATUSES = {
     "client_confirmed",
     "client_derived",
     "not_applicable",
+    "remake_rule",
     "reconstructed_default",
     "unknown",
 }
@@ -228,7 +229,9 @@ def audit_equipment(document: dict[str, Any]) -> tuple[int, int]:
         Tuple containing evidence-entry and source-asset counts.
     """
 
-    expected_ids = {"recruit_tank", "beginner_engine", "recruit_energy_cannon"}
+    catalog_audited_ids = {"recruit_tank", "beginner_engine", "recruit_energy_cannon"}
+    secondary_weapon_ids = {"starter_rocket_launcher", "starter_missile"}
+    expected_ids = catalog_audited_ids | secondary_weapon_ids
     definitions = document.get("definitions", [])
     assert_equal({item.get("id") for item in definitions}, expected_ids, "starter ids")
     evidence_count = 0
@@ -236,6 +239,21 @@ def audit_equipment(document: dict[str, Any]) -> tuple[int, int]:
     for definition in definitions:
         if not SEMANTIC_ID_RE.fullmatch(definition["id"]):
             raise AuditFailure(f"non-semantic equipment id: {definition['id']!r}")
+        if definition["id"] in secondary_weapon_ids:
+            if not definition.get("stats"):
+                raise AuditFailure(f"secondary weapon has no runtime stats: {definition['id']}")
+            resources = definition.get("presentation", {}).get("resources", {})
+            if not resources:
+                raise AuditFailure(f"secondary weapon has no presentation resources: {definition['id']}")
+            for resource in resources.values():
+                if not resolve_project_reference(str(resource)).is_file():
+                    raise AuditFailure(
+                        f"secondary weapon presentation resource is missing: {resource}"
+                    )
+            audit = definition.get("source_audit", {})
+            if audit.get("source_release") != "starhome_lz_ry" or not audit.get("source_file"):
+                raise AuditFailure(f"secondary weapon source audit is incomplete: {definition['id']}")
+            continue
         required_evidence = [f"stats.{key}" for key in definition["stats"]]
         required_evidence.extend(f"unknowns.{key}" for key in definition["unknowns"])
         required_evidence.append("presentation.resources")
@@ -322,7 +340,7 @@ def world_to_cell(position: list[int], cell_size: tuple[float, float]) -> tuple[
 
 
 def audit_encounters(document: dict[str, Any], monster_ids: set[str]) -> int:
-    """Audit reconstructed D04 spawn anchors against the Glory navigation grid.
+    """Audit reconstructed D04 spawn policy against the Glory navigation grid.
 
     Args:
         document: Parsed D04 encounter definition.
@@ -342,9 +360,22 @@ def audit_encounters(document: dict[str, Any], monster_ids: set[str]) -> int:
     navigation = navigation_path.read_bytes()
     grid_width, grid_height = 101, 800
     assert_equal(len(navigation), grid_width * grid_height, "D04 navigation size")
+    policy = document.get("population_policy", {})
+    distribution = policy.get("spawn_distribution", "fixed_anchors")
+    if distribution == "full_walkable_map":
+        if not any(navigation):
+            raise AuditFailure("full-map spawn policy requires walkable navigation cells")
+        if int(policy.get("maximum_population", 0)) <= 0:
+            raise AuditFailure("full-map spawn policy requires a positive population cap")
+        if float(policy.get("minimum_spawn_separation", 0.0)) <= 0.0:
+            raise AuditFailure("full-map spawn policy requires a positive entity separation")
     for group in document["spawn_groups"]:
         if group["monster_id"] not in monster_ids:
             raise AuditFailure(f"unknown encounter monster id: {group['monster_id']}")
+        if distribution == "full_walkable_map":
+            if float(group.get("weight", 0.0)) <= 0.0:
+                raise AuditFailure(f"full-map spawn group requires a positive weight: {group['group_id']}")
+            continue
         cell_x, cell_y = world_to_cell(group["anchor"], (48.0, 12.0))
         for neighbor_y in range(cell_y - 4, cell_y + 5):
             for neighbor_x in range(cell_x - 4, cell_x + 5):
@@ -401,7 +432,7 @@ def main() -> int:
 
     print(
         "STAGE3 AUDIT PASSED: "
-        f"equipment=3 source_assets={equipment_assets} equipment_evidence={equipment_evidence} "
+        f"equipment=5 source_assets={equipment_assets} equipment_evidence={equipment_evidence} "
         f"monsters=4 monster_resources={monster_resources} monster_evidence={monster_evidence} "
         f"encounter_groups={encounter_groups} runtime_strings={runtime_strings} "
         f"runtime_drops={runtime_drops} source_drop_grammar_imported=0"

@@ -16,6 +16,7 @@ func _initialize() -> void:
 ## 依次提交真实地图 bundle，验证 D04 只显示荣耀版八向新兵战车。
 func _run() -> void:
 	var hall: Node2D = MainHallScene.instantiate()
+	hall.multiplayer_connect_automatically = false
 	root.add_child(hall)
 	await process_frame
 	await process_frame
@@ -62,9 +63,9 @@ func _run() -> void:
 	_expect(player.combat_presenter.get_child_count() == 5, "战车应预载三种武器层并只显示当前模式")
 	_expect(player.combat_presenter._layers[&"primary_weapon"].visible, "默认应显示能量炮层")
 	_expect(not player.combat_presenter._layers[&"missile_weapon"].visible, "未选择时应隐藏导弹层")
-	hall.hud.state.set_selected_action_slot("missile")
+	hall.call("_on_weapon_slot_selected", "missile")
 	_expect(player.combat_presenter._layers[&"missile_weapon"].visible, "选择导弹后应切换场景装备层")
-	hall.hud.state.set_selected_action_slot("energy_cannon")
+	hall.call("_on_weapon_slot_selected", "energy_cannon")
 	_expect(player.combat_status_bar.position == Vector2(0, 45), "战车状态条应复原原客户端脚点下方 45 像素锚点")
 	_expect(is_equal_approx(player.combat_status_bar._bar_width, 50.0), "战车状态条应复原原客户端 50 像素宽度")
 	_expect(is_equal_approx(player.combat_status_bar._energy_offset_y, 4.0), "能量条应紧接生命条下方四像素")

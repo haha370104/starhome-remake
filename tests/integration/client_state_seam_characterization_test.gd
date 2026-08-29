@@ -137,6 +137,7 @@ func _test_post_authority_preload_failure_locks_old_world() -> void:
 ## 返回该函数计算、查询或操作得到的结果。
 func _create_hall() -> Node2D:
 	var hall: Node2D = MainHallScene.instantiate()
+	hall.multiplayer_connect_automatically = false
 	root.add_child(hall)
 	await process_frame
 	await process_frame
