@@ -191,10 +191,10 @@ func _add_equipment_layer(equipment: Dictionary) -> void:
 	layer.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	layer.stretch_mode = TextureRect.STRETCH_KEEP
 	layer.mouse_filter = Control.MOUSE_FILTER_STOP
-	layer.tooltip_text = TooltipFormatter.format(equipment)
+	var tooltip_text := TooltipFormatter.format(equipment)
 	layer.gui_input.connect(_on_worn_gui_input.bind(String(equipment.get("slot_id", "upper_body"))))
 	_equipment_layers.add_child(layer)
-	ItemHoverHighlightScript.bind(layer, layer)
+	ItemHoverHighlightScript.bind(layer, layer, tooltip_text)
 
 
 ## 处理服装叠层双击并提交卸装命令。

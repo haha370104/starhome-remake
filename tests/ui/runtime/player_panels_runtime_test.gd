@@ -1,6 +1,9 @@
 extends SceneTree
 
 const ManagerScript := preload("res://scripts/client/ui/windows/game_window_manager.gd")
+const ItemHoverHighlightScript := preload(
+	"res://scripts/client/ui/windows/item_hover_highlight.gd"
+)
 
 var failures: PackedStringArray = []
 var assertions := 0
@@ -44,18 +47,34 @@ func _run() -> void:
 	var inventory_icon := inventory_item.get_node("Icon") as TextureRect
 	inventory_item.mouse_entered.emit()
 	_expect(_is_item_highlighted(inventory_icon), "背包物品悬停应启用原版绿色发光")
+	var legacy_tooltip := ItemHoverHighlightScript.active_tooltip()
+	_expect(legacy_tooltip != null and legacy_tooltip.visible,
+		"物品复杂说明应在 mouse_entered 当次立即显示")
+	var tooltip_title := legacy_tooltip.get_node("Content/Title") as Label
+	var tooltip_body := legacy_tooltip.get_node("Content/Body") as Label
+	_expect(tooltip_title.get_theme_font_size("font_size") == 12 \
+		and tooltip_body.get_theme_font_size("font_size") == 12,
+		"物品说明标题和正文应使用原版宋体 12px 高度")
+	_expect((tooltip_title.get_theme_font("font") as SystemFont).font_weight == 800,
+		"物品说明标题应使用 SETFONT2 对应的粗体字重")
 	_expect(is_equal_approx(inventory_item.modulate.a, 1.0),
 		"悬停材质不得覆盖背包拖拽透明度状态")
 	inventory_item.mouse_exited.emit()
 	_expect(not _is_item_highlighted(inventory_icon), "背包物品离开后应清除发光")
+	_expect(legacy_tooltip.visible, "离开物品后应保留短暂时间供鼠标进入说明窗")
+	await create_timer(0.12).timeout
+	_expect(not legacy_tooltip.visible, "鼠标未进入说明窗时应在 100ms 检查后隐藏")
 	manager.inventory_panel._request_character_equip("inventory.training_shirt", "upper_body")
 	await process_frame
 	var shirt := manager.character_panel._equipment_layers.get_child(0) as TextureRect
 	_expect(shirt.position == Vector2(54, 93), "衣服应按 WearInDlg 锚点与 ALE origin 叠加")
-	_expect("服装等级：35" in shirt.tooltip_text and "耐久：64 / 64" in shirt.tooltip_text,
-		"悬浮衣服应显示逆向所得等级和耐久")
 	shirt.mouse_entered.emit()
 	_expect(_is_item_highlighted(shirt), "人物面板穿着物品应使用同一绿色发光")
+	legacy_tooltip = ItemHoverHighlightScript.active_tooltip()
+	tooltip_body = legacy_tooltip.get_node("Content/Body") as Label
+	_expect("服装等级：35" in tooltip_body.text and "耐久：64 / 64" in tooltip_body.text,
+		"悬浮衣服应在原版式复杂说明窗显示等级和耐久")
+	_expect(shirt.tooltip_text.is_empty(), "人物物品不得再触发 Godot 延迟 tooltip")
 	shirt.mouse_exited.emit()
 	var chassis_visual := manager.vehicle_panel._slot_root.get_node("Location_0_recruit_tank") as TextureRect
 	var weapon_visual := manager.vehicle_panel._slot_root.get_node("Location_1_recruit_energy_cannon") as TextureRect

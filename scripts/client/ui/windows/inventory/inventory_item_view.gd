@@ -24,7 +24,7 @@ func configure(snapshot: Dictionary) -> void:
 	var footprint_value: Array = snapshot.get("footprint_px", [30, 30])
 	size = Vector2(float(footprint_value[0]), float(footprint_value[1]))
 	mouse_filter = Control.MOUSE_FILTER_STOP
-	tooltip_text = "%s\n%s" % [
+	var item_tooltip := "%s\n%s" % [
 		String(snapshot.get("display_name", snapshot.get("definition_id", "物品"))),
 		String(snapshot.get("description", "")),
 	]
@@ -39,7 +39,7 @@ func configure(snapshot: Dictionary) -> void:
 	_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_icon)
-	_hover_material = ItemHoverHighlightScript.bind(self, _icon)
+	_hover_material = ItemHoverHighlightScript.bind(self, _icon, item_tooltip)
 
 	var amount := int(snapshot.get("amount", 1))
 	if amount > 1:
