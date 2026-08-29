@@ -118,7 +118,40 @@ func _run() -> void:
 	manager.character_panel.position = Vector2(5000, 5000)
 	manager.character_panel.clamp_to_viewport(Vector2(1280, 720))
 	_expect(manager.character_panel.position == Vector2(925, 270), "拖动窗口必须限制在当前视口")
+	_test_right_click_close(manager)
 	_finish(manager)
+
+
+## 验证右键只关闭命中位置的最上层面板，并覆盖物品子控件区域。
+func _test_right_click_close(manager: Control) -> void:
+	manager.character_panel.position = Vector2(100, 100)
+	manager.inventory_panel.position = Vector2(100, 100)
+	manager.character_panel.visible = true
+	manager.inventory_panel.visible = true
+	manager.inventory_panel.move_to_front()
+	manager._input(_right_click(Vector2(150, 150)))
+	_expect(not manager.inventory_panel.visible and manager.character_panel.visible,
+		"重叠窗口右键应只关闭绘制顺序最上层的一扇")
+
+	manager.inventory_panel.visible = true
+	manager.inventory_panel.move_to_front()
+	var first_item := manager.inventory_panel._item_canvas.get_child(0) as Control
+	manager._input(_right_click(first_item.get_global_rect().get_center()))
+	_expect(not manager.inventory_panel.visible,
+		"右键命中背包物品子控件时也应关闭所属面板")
+
+	manager.vehicle_panel.visible = true
+	manager._input(_right_click(Vector2(1275, 715)))
+	_expect(manager.vehicle_panel.visible, "面板外右键不得关闭任何窗口")
+
+
+## 创建一次右键按下输入。
+func _right_click(viewport_position: Vector2) -> InputEventMouseButton:
+	var event := InputEventMouseButton.new()
+	event.button_index = MOUSE_BUTTON_RIGHT
+	event.pressed = true
+	event.position = viewport_position
+	return event
 
 
 ## 汇总测试结果并释放窗口管理器。

@@ -34,6 +34,7 @@ func configure(dispatcher: Callable, offline_debug_enabled: bool) -> bool:
 	current_player = CurrentPlayerScript.new()
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	set_process_input(true)
 	resized.connect(_clamp_windows)
 
 	character_panel = CharacterPanelScript.new()
@@ -60,6 +61,33 @@ func configure(dispatcher: Callable, offline_debug_enabled: bool) -> bool:
 			return false
 		_dispatch({"type": "query"})
 	return true
+
+
+## 在 GUI 分发前处理右键关闭，避免物品控件的 STOP 过滤吞掉事件。
+## 设计：窗口管理器只关闭鼠标命中的最上层窗口，并标记事件已处理，防止同时触发地图移动。
+func _input(event: InputEvent) -> void:
+	if not event is InputEventMouseButton:
+		return
+	var mouse_event := event as InputEventMouseButton
+	if mouse_event.button_index != MOUSE_BUTTON_RIGHT or not mouse_event.pressed:
+		return
+	var window := _topmost_window_at(mouse_event.position)
+	if window == null:
+		return
+	window.request_close()
+	get_viewport().set_input_as_handled()
+
+
+## 按当前子节点绘制顺序查找命中点的最上层游戏窗口。
+## [param viewport_position] 鼠标在视口中的位置。
+## 返回命中的窗口；面板外返回 null。
+func _topmost_window_at(viewport_position: Vector2) -> DraggableGameWindow:
+	for index in range(get_child_count() - 1, -1, -1):
+		var child := get_child(index)
+		if child is DraggableGameWindow and child.is_visible_in_tree() \
+				and child.get_global_rect().has_point(viewport_position):
+			return child as DraggableGameWindow
+	return null
 
 
 ## 按底栏 action_id 切换对应窗口，并在打开时拉取权威快照。

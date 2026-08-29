@@ -48,8 +48,14 @@ func configure(window_size: Vector2, background_texture: Texture2D, close_positi
 	close_button.size = Vector2(17, 17)
 	close_button.ignore_texture_size = true
 	close_button.tooltip_text = "关闭"
-	close_button.pressed.connect(close_requested.emit)
+	close_button.pressed.connect(request_close)
 	add_child(close_button)
+
+
+## 通过统一关闭意图结束窗口，供关闭按钮和窗口管理器复用。
+func request_close() -> void:
+	if visible:
+		close_requested.emit()
 
 
 ## 将窗口中心限制在当前 HUD 可见区域内。
