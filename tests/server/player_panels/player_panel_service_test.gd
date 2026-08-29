@@ -1,6 +1,6 @@
 extends SceneTree
 
-const OfflineAuthorityScript := preload("res://scripts/client/debug/offline_player_panel_authority.gd")
+const PanelFixtureScript := preload("res://tests/fixtures/player_panel_service_fixture.gd")
 
 var failures: PackedStringArray = []
 var assertions := 0
@@ -8,7 +8,7 @@ var assertions := 0
 
 ## 验证三面板查询、像素移动、revision 冲突和原子换装。
 func _initialize() -> void:
-	var authority = OfflineAuthorityScript.new()
+	var authority = PanelFixtureScript.new()
 	var initialized := authority.initialize()
 	_expect(initialized.is_ok, "离线权威夹具应完成初始化")
 	if not initialized.is_ok:

@@ -3,15 +3,12 @@ extends Control
 
 signal command_dispatched(command: Dictionary)
 signal current_player_changed(player: Player)
-signal skill_level_up(event: Dictionary)
 
 const CharacterPanelScript := preload("res://scripts/client/ui/windows/character/character_panel.gd")
 const InventoryPanelScript := preload("res://scripts/client/ui/windows/inventory/inventory_panel.gd")
 const VehiclePanelScript := preload("res://scripts/client/ui/windows/vehicle/vehicle_equipment_panel.gd")
 const SkillLevelPanelScript := preload("res://scripts/client/ui/windows/skills/skill_level_panel.gd")
-const OfflineAuthorityScript := preload("res://scripts/client/debug/offline_player_panel_authority.gd")
 const CurrentPlayerScript := preload("res://scripts/client/state/current_player.gd")
-const DomainResult := preload("res://scripts/core/domain_result.gd")
 
 var character_panel: CharacterPanel
 var inventory_panel: InventoryPanel
@@ -23,19 +20,16 @@ var skill_panel: SkillLevelPanel
 var current_player: CurrentPlayer
 
 var _dispatcher: Callable
-var _offline_authority: OfflinePlayerPanelAuthority
 var _bundle: Dictionary = {}
 
 
-## 创建三个单例窗口并绑定真实网络或显式离线调试边界。
-## [param dispatcher] 正式模式下向客户端会话提交命令的回调。
-## [param offline_debug_enabled] 是否使用复用服务端规则的内存调试权威。
+## 创建三个单例窗口并绑定统一客户端会话。
+## [param dispatcher] 向客户端会话提交命令的回调。
 ## [param item_catalog] 可选的共享物品目录；场景与背包借此消费同一套定义。
 ## 返回初始化是否成功。
-## 设计：管理器只负责窗口生命周期和成组快照，不实现背包或装备规则。
+## 设计：管理器只负责窗口生命周期和成组快照，不感知 ENet 或进程内传输。
 func configure(
 	dispatcher: Callable,
-	offline_debug_enabled: bool,
 	item_catalog: ItemCatalog = null,
 ) -> bool:
 	_dispatcher = dispatcher
@@ -66,13 +60,6 @@ func configure(
 	skill_panel.position = Vector2(445, 70)
 	_add_window(skill_panel)
 
-	if offline_debug_enabled:
-		_offline_authority = OfflineAuthorityScript.new()
-		var initialized := _offline_authority.initialize()
-		if not initialized.is_ok:
-			push_error("Offline player panel authority failed: %s" % initialized.error_message)
-			return false
-		_dispatch({"type": "query"})
 	return true
 
 
@@ -147,39 +134,6 @@ func _toggle_skill_panel() -> void:
 		_dispatch({"type": "query"})
 
 
-## 在显式离线调试中把战斗掉落交给正式面板权威规则入包。
-## [param loot] 离线战斗模块预检通过的掉落 DTO。
-## 返回入包后的三面板快照或容量、布局、目录错误。
-## 设计：线上流程不会调用该入口；正式服务器仍在单一服务端事务内完成入包和持久化。
-func grant_offline_loot(loot: Dictionary):
-	if _offline_authority == null:
-		return DomainResult.failure(&"loot.offline_unavailable", "offline panel authority is unavailable")
-	var result = _offline_authority.grant_loot(loot)
-	if result.is_ok:
-		apply_bundle(result.value)
-	return result
-
-
-## 在显式离线调试中把权威玩法事件交给正式技能成长规则。
-## [param progression_event] 离线战斗桥接器产生的可信移动或伤害事件。
-## 返回成长结果；整数经验或等级变化时立即刷新人物面板。
-func grant_offline_skill_progression(progression_event: Dictionary):
-	if _offline_authority == null:
-		return DomainResult.failure(&"progression.offline_unavailable", "offline panel authority is unavailable")
-	var result = _offline_authority.grant_skill_progression(progression_event)
-	if result.is_ok:
-		var value: Dictionary = result.value
-		var progression: Dictionary = value["progression"]
-		if bool(progression.get("upgraded", false)):
-			skill_level_up.emit({
-				"skill_id": String(progression.get("skill_id", "")),
-				"new_level": int(progression.get("new_level", 0)),
-			})
-		if bool(progression.get("visible_progress_changed", false)):
-			apply_bundle(value["panel_bundle"])
-	return result
-
-
 ## 将面板命令补全双 revision 后发送到所选权威边界。
 ## [param command] 面板产生的纯操作意图。
 func _dispatch(command: Dictionary) -> void:
@@ -189,15 +143,6 @@ func _dispatch(command: Dictionary) -> void:
 	if payload.erase("requires_state_revision"):
 		payload["state_revision"] = int(_bundle.get("transaction_revision", -1))
 	command_dispatched.emit(payload.duplicate(true))
-	if _offline_authority != null:
-		var offline_result := _offline_authority.execute(payload)
-		if offline_result.is_ok:
-			apply_bundle(offline_result.value)
-		else:
-			push_warning("Offline panel command rejected [%s]: %s" % [
-				offline_result.error_code, offline_result.error_message,
-			])
-		return
 	if _dispatcher.is_valid():
 		_dispatcher.call(payload)
 

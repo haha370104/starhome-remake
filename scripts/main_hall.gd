@@ -33,9 +33,6 @@ const MonsterWorldControllerScript := preload(
 const GroundLootWorldControllerScript := preload(
 	"res://scripts/client/presentation/combat/ground_loot_world_controller.gd"
 )
-const OfflineCombatAuthorityBridgeScript := preload(
-	"res://scripts/client/debug/offline_combat_authority_bridge.gd"
-)
 const SelfRepairVisualControllerScript := preload(
 	"res://scripts/client/presentation/combat/self_repair_visual_controller.gd"
 )
@@ -167,7 +164,6 @@ var combat_attack_controller: Node
 var combat_attack_controllers: Dictionary = {}
 var monster_world_controller: MonsterWorldController
 var ground_loot_world_controller: GroundLootWorldController
-var offline_combat_bridge: OfflineCombatAuthorityBridge
 var self_repair_visual_controller: SelfRepairVisualController
 var game_window_manager: GameWindowManager
 var item_catalog: ItemCatalog
@@ -309,18 +305,9 @@ func _handle_world_combat_left_click(world_position: Vector2) -> void:
 			hint_label.text = "当前无法开火"
 		return
 	var resolved_target: Vector2 = result["resolved_target"]
-	var submitted := false
-	if multiplayer_offline_debug_enabled and offline_combat_bridge != null:
-		var authority_result := offline_combat_bridge.request_attack(
-			resolved_target, String(mode["ability_id"])
-		)
-		submitted = bool(authority_result.get("ok", false))
-		if not submitted:
-			hint_label.text = _combat_rejection_text(StringName(authority_result.get("code", &"")))
-	else:
-		submitted = not multiplayer_presenter.request_use_ability(
-			String(mode["ability_id"]), resolved_target
-		).is_empty()
+	var submitted: bool = not multiplayer_presenter.request_use_ability(
+		String(mode["ability_id"]), resolved_target
+	).is_empty()
 	if not submitted:
 		return
 	var was_moving: bool = local_player_controller.has_active_route()
@@ -351,22 +338,6 @@ func _combat_target_position(target_entity_id: String) -> Vector2:
 ## [param loot_id] 鼠标命中的掉落实例标识。
 ## 设计：客户端只选择目标；距离、背包容量、入账和地面实体删除均由权威规则决定。
 func _request_ground_loot_pickup(loot_id: String) -> void:
-	if multiplayer_offline_debug_enabled:
-		if offline_combat_bridge == null or game_window_manager == null:
-			hint_label.text = "离线拾取权威尚未初始化"
-			return
-		var prepared = offline_combat_bridge.prepare_loot_pickup(loot_id)
-		if not prepared.is_ok:
-			hint_label.text = _loot_rejection_text(prepared.error_code)
-			return
-		var granted = game_window_manager.grant_offline_loot(prepared.value)
-		if not granted.is_ok:
-			hint_label.text = _loot_rejection_text(granted.error_code)
-			return
-		var committed = offline_combat_bridge.commit_loot_pickup(loot_id)
-		if not committed.is_ok:
-			hint_label.text = _loot_rejection_text(committed.error_code)
-		return
 	if multiplayer_presenter.request_loot_pickup(loot_id).is_empty():
 		hint_label.text = "拾取请求发送失败"
 
@@ -411,21 +382,9 @@ func _request_self_repair() -> void:
 	if _world_input_locked() or player == null or not player.is_combat_actor_active():
 		hint_label.text = "当前地图不能使用自维修"
 		return
-	var submitted := false
-	if multiplayer_offline_debug_enabled:
-		var repair_skill_level := 10
-		if game_window_manager != null and game_window_manager.current_player != null:
-			repair_skill_level = game_window_manager.current_player.skills.base_level("repair")
-		var authority_result := offline_combat_bridge.request_self_repair(repair_skill_level) \
-			if offline_combat_bridge != null else {"ok": false, "code": &"combat.not_available"}
-		submitted = bool(authority_result.get("ok", false))
-		if not submitted:
-			hint_label.text = _combat_rejection_text(StringName(authority_result.get("code", &"")))
-			return
-	else:
-		submitted = not multiplayer_presenter.request_use_ability(
-			SELF_REPAIR_ABILITY_ID, player.position
-		).is_empty()
+	var submitted: bool = not multiplayer_presenter.request_use_ability(
+		SELF_REPAIR_ABILITY_ID, player.position
+	).is_empty()
 	if submitted:
 		hint_label.text = "已开始自维修：每3秒恢复一次生命"
 
@@ -698,20 +657,10 @@ func _build_multiplayer_presentation() -> void:
 		push_warning("Unable to start hall multiplayer presentation: %s" % error_string(start_error))
 	local_player_controller.set_multiplayer_presenter(multiplayer_presenter)
 	_build_game_windows()
-	if multiplayer_offline_debug_enabled:
-		offline_combat_bridge = OfflineCombatAuthorityBridgeScript.new()
-		offline_combat_bridge.name = "OfflineCombatAuthorityBridge"
-		offline_combat_bridge.combat_snapshot_ready.connect(_on_combat_snapshot_received)
-		offline_combat_bridge.combat_event_ready.connect(_on_combat_event_received)
-		offline_combat_bridge.skill_progression_event_ready.connect(
-			_on_offline_skill_progression_event
-		)
-		add_child(offline_combat_bridge)
-		_configure_offline_combat_for_active_map()
 
 
-## 创建人物、背包和战车单例窗口并接入客户端会话。
-## 设计：正式模式只通过表现器发送意图；离线模式显式使用复用服务端规则的调试权威。
+## 创建人物、背包和战车单例窗口并接入唯一客户端会话。
+## 设计：窗口不知道底层是 ENet 还是进程内传输，只消费相同的权威面板消息。
 func _build_game_windows() -> void:
 	game_window_manager = GameWindowManagerScript.new()
 	game_window_manager.name = "GameWindowManager"
@@ -719,14 +668,12 @@ func _build_game_windows() -> void:
 	game_window_manager.current_player_changed.connect(_on_current_player_changed)
 	game_window_manager.configure(
 		Callable(multiplayer_presenter, "request_player_panel_command"),
-		multiplayer_offline_debug_enabled,
 		item_catalog,
 	)
 	multiplayer_presenter.player_panel_bundle_received.connect(
 		game_window_manager.apply_bundle
 	)
 	multiplayer_presenter.skill_level_up_received.connect(_on_skill_level_up)
-	game_window_manager.skill_level_up.connect(_on_skill_level_up)
 
 
 ## 将线上或离线权威升级事件格式化为荣耀版原句式并交给 HUD 排队。
@@ -778,21 +725,6 @@ func _on_multiplayer_local_character_state_applied(state: Dictionary) -> void:
 ## [param _position] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _on_local_player_position_changed(_position: Vector2) -> void:
 	_sync_player_nodes()
-	if offline_combat_bridge != null:
-		offline_combat_bridge.update_player_position(_position)
-
-
-## 将离线战斗桥接器产生的技能事件交给离线面板权威处理。
-## [param progression_event] 含技能、来源及权威客观数值的内部事件。
-## 设计：正式联机不会调用该入口；线上经验只由 AuthoritativeServer 处理。
-func _on_offline_skill_progression_event(progression_event: Dictionary) -> void:
-	if game_window_manager == null:
-		return
-	var result = game_window_manager.grant_offline_skill_progression(progression_event)
-	if not result.is_ok and result.error_code != &"progression.no_experience":
-		push_warning("Offline skill progression rejected [%s]: %s" % [
-			result.error_code, result.error_message,
-		])
 
 
 ## 在本地路线自然完成后检查脚点附近是否存在地图出口。
@@ -880,22 +812,6 @@ func _on_map_preload_ready(map_id: StringName, bundle: Dictionary) -> void:
 	):
 		return
 	pending_map_bundle = bundle
-	if multiplayer_offline_debug_enabled:
-		var definition: MapDefinition = bundle["definition"]
-		var spawn_point: MapSpawnPoint = definition.spawn_for_entry(
-			int(pending_map_transition["destination_entry_number"])
-		)
-		if spawn_point == null:
-			_on_map_preload_failed(map_id, "目标地图没有可用入口")
-			return
-		var instance_id := "%s.instance.1" % definition.map_id
-		if _commit_map_bundle(bundle, spawn_point.position, instance_id):
-			multiplayer_presenter.session.current_map_id = definition.map_id
-			multiplayer_presenter.session.configure_map_instance(instance_id)
-			multiplayer_presenter.session.initialize_local_player(spawn_point.position)
-			pending_map_transition.clear()
-			pending_map_bundle.clear()
-		return
 	var request: Dictionary = multiplayer_presenter.request_map_change(
 		StringName(pending_map_transition["transition_id"]),
 		int(pending_map_transition["destination_entry_number"]),
@@ -1006,23 +922,7 @@ func _commit_map_bundle(
 	map_commit_failure_locked = false
 	pending_map_transition.clear()
 	pending_map_bundle.clear()
-	_configure_offline_combat_for_active_map()
 	return true
-
-
-## 配置并初始化 `configure_offline_combat_for_active_map` 对应的模块状态。
-## 设计：该函数遵循所在模块的职责边界。
-func _configure_offline_combat_for_active_map() -> void:
-	if offline_combat_bridge == null or map_definition == null or navigation == null:
-		return
-	var error := offline_combat_bridge.configure_map(
-		String(map_definition.map_id),
-		multiplayer_map_instance_id,
-		player.position,
-		navigation,
-	)
-	if error != OK:
-		push_error("Unable to configure offline combat authority: %s" % error_string(error))
 
 
 ## 处理 `_on_combat_snapshot_received` 对应的信号回调。
@@ -1070,7 +970,7 @@ func _handle_map_commit_failure(message: String) -> void:
 	pending_map_transition.clear()
 	pending_map_bundle.clear()
 	pending_authoritative_join.clear()
-	if not multiplayer_offline_debug_enabled and multiplayer_presenter:
+	if multiplayer_presenter:
 		multiplayer_presenter.stop()
 
 

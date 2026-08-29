@@ -4,9 +4,11 @@ const ManagerScript := preload("res://scripts/client/ui/windows/game_window_mana
 const ItemHoverHighlightScript := preload(
 	"res://scripts/client/ui/windows/item_hover_highlight.gd"
 )
+const PanelFixtureScript := preload("res://tests/fixtures/player_panel_service_fixture.gd")
 
 var failures: PackedStringArray = []
 var assertions := 0
+var panel_fixture
 
 
 ## 延迟运行人物、背包和战车面板运行时测试。
@@ -14,12 +16,16 @@ func _initialize() -> void:
 	call_deferred("_run")
 
 
-## 实例化显式离线权威，验证窗口布局、拖动命令和换装快照联动。
+## 以测试夹具提供权威面板回包，验证窗口布局、拖动命令和换装快照联动。
 func _run() -> void:
 	root.size = Vector2i(1280, 720)
 	var manager = ManagerScript.new()
 	root.add_child(manager)
-	_expect(manager.configure(Callable(), true), "离线三面板管理器应初始化")
+	panel_fixture = PanelFixtureScript.new()
+	_expect(panel_fixture.initialize().is_ok, "测试面板权威夹具应初始化")
+	_expect(manager.configure(Callable(self, "_dispatch_panel_command").bind(manager)),
+		"三面板管理器应只依赖统一命令分发器")
+	manager._dispatch({"type": "query"})
 	await process_frame
 	_expect(not manager.character_panel.visible, "人物面板初始应隐藏")
 	_expect(not manager.inventory_panel.visible, "背包面板初始应隐藏")
@@ -68,12 +74,14 @@ func _run() -> void:
 	var energy_row: Dictionary = manager.skill_panel._rows[0]
 	_expect((energy_row["experience"] as Label).text == "0%",
 		"技能第三列应显示当前经验百分比")
-	var material_grant = manager.grant_offline_loot({
+	var material_grant = panel_fixture.grant_loot({
 		"loot_id": "monster.loot.runtime.material",
 		"item_definition_id": "low_grade_biosilicon",
 		"quantity": 2,
 	})
 	_expect(material_grant.is_ok, "地面材料应以同一领域物品进入背包")
+	if material_grant.is_ok:
+		manager.apply_bundle(material_grant.value)
 	await process_frame
 	var material_view: InventoryItemView = null
 	for raw_view: Node in manager.inventory_panel._item_canvas.get_children():
@@ -91,17 +99,19 @@ func _run() -> void:
 		_expect(material_view.size == Vector2(50, 42) \
 				and material_icon.size == Vector2(50, 42),
 			"低级生物硅应与地面表现一样按 50×42 原尺寸绘制")
-	var damage_progress = manager.grant_offline_skill_progression({
+	var damage_progress = panel_fixture.grant_skill_progression({
 		"entity_id": "player.local",
 		"source": "effective_damage",
 		"skill_id": "energy_cannon",
 		"damage": 7,
 	})
 	_expect(damage_progress.is_ok, "能量炮有效命中应进入权威技能成长链路")
+	if damage_progress.is_ok:
+		manager.apply_bundle(damage_progress.value.panel_bundle)
 	await process_frame
 	_expect((energy_row["experience"] as Label).text == "3%",
 		"七点有效伤害应立即刷新能量炮经验百分比")
-	var driving_progress = manager.grant_offline_skill_progression({
+	var driving_progress = panel_fixture.grant_skill_progression({
 		"entity_id": "player.local",
 		"source": "accepted_driving_movement",
 		"skill_id": "driving",
@@ -109,10 +119,12 @@ func _run() -> void:
 		"vehicle_weight": 140.0,
 	})
 	_expect(driving_progress.is_ok, "服务器接受的驾驶距离应进入驾驶成长链路")
+	if driving_progress.is_ok:
+		manager.apply_bundle(driving_progress.value.panel_bundle)
 	await process_frame
 	var driving_row: Dictionary = manager.skill_panel._rows[2]
-	_expect((driving_row["experience"] as Label).text == "1%",
-		"驾驶经验达到一个可见百分点时应立即刷新")
+	_expect((driving_row["experience"] as Label).text == "11%",
+		"驾驶经验提速后应立即刷新为当前十一级可见进度")
 	var inventory_item := manager.inventory_panel._item_canvas.get_child(0) as InventoryItemView
 	var inventory_icon := inventory_item.get_node("Icon") as TextureRect
 	_expect(inventory_item.item.definition_id == "beginner_engine" \
@@ -177,6 +189,17 @@ func _run() -> void:
 	_expect(manager.character_panel.position == Vector2(925, 270), "拖动窗口必须限制在当前视口")
 	_test_right_click_close(manager)
 	_finish(manager)
+
+
+## 将窗口命令交给测试夹具并像客户端会话一样应用完整权威回包。
+## [param command] 窗口生成的面板命令。
+## [param manager] 消费权威面板快照的窗口管理器。
+func _dispatch_panel_command(command: Dictionary, manager: GameWindowManager) -> void:
+	var result = panel_fixture.execute(command)
+	if result.is_ok:
+		manager.apply_bundle(result.value)
+	else:
+		failures.append("面板命令被测试权威拒绝：%s" % result.error_message)
 
 
 ## 验证右键只关闭命中位置的最上层面板，并覆盖物品子控件区域。

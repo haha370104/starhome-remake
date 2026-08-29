@@ -95,11 +95,12 @@
 背包物品直接设置 ALE `src`，因此 `InventoryItemView` 必须使用 `presentation.inventory.native_size`
 以 1:1 像素绘制。例如低级生物硅是 `50×42`，初级引擎是 `36×32`，前者在背包中本就应该更大。
 
-## 4. 离线调试边界
+## 4. 进程内调试边界
 
-编辑器默认离线模式使用 `OfflinePlayerPanelAuthority`。它只保存在内存中，但复用同一个
-`AuthoritativePlayerPanelService` 和聚合校验，不在 UI 脚本内维护第二套背包/换装规则。
-正式联网模式不会实例化该桥接器。
+编辑器默认模式通过 `InProcessAuthoritativeTransport` 启动真正的 `AuthoritativeServer`。
+面板查询、拖动、换装、掉落入包和存档都与联机模式一样经过客户端会话、传输命令、服务器
+会话身份与 `AuthoritativePlayerPanelService`；`GameWindowManager` 不再选择或持有离线面板
+权威。`PlayerPanelServiceFixture` 只存在于测试目录，用于隔离验证服务和 UI 投影，不会进入游戏。
 
 ## 5. 自动验证
 

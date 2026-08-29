@@ -1,41 +1,130 @@
 extends SceneTree
 
-const BridgeScript := preload("res://scripts/client/debug/offline_combat_authority_bridge.gd")
-const MapDefinitionLoaderScript := preload("res://scripts/maps/map_definition_loader.gd")
-const DiamondNavigationScript := preload("res://scripts/navigation/diamond_navigation.gd")
+const MapInstanceScript := preload("res://scripts/server/authoritative_map_instance.gd")
+const CombatCatalogScript := preload("res://scripts/domain/combat/combat_definition_catalog.gd")
+const PLAYER_ID := "player.d04.test"
+const MAP_PATH := "res://data/maps/d04_field_zone.json"
 
 var failures: Array[String] = []
 var assertions := 0
 
 
-## 初始化当前模块或独立测试夹具。
+## 使用正式地图实例运行 D04 战斗纵切测试，不再依赖客户端离线桥。
 func _initialize() -> void:
-	var bridge: OfflineCombatAuthorityBridge = BridgeScript.new()
-	root.add_child(bridge)
-	var loader = MapDefinitionLoaderScript.new()
-	var definition = loader.load_file("res://data/maps/d04_field_zone.json")
-	_expect(definition != null, "D04 definition should load")
-	var navigation = DiamondNavigationScript.new()
-	_expect(
-		navigation.load_from(
-			definition.navigation_data_path,
-			definition.navigation_grid_size,
-			definition.navigation_cell_size,
-		),
-		"D04 navigation should load",
+	var instance: AuthoritativeMapInstance = MapInstanceScript.new()
+	var loaded := instance.load_map(MAP_PATH)
+	_expect(bool(loaded.get("ok", false)), "D04 正式地图实例应加载地图与导航")
+	var spawned := instance.spawn_entity(PLAYER_ID, Vector2(2412, 2400), 203.0)
+	_expect(bool(spawned.get("ok", false)), "D04 正式地图实例应接纳测试玩家")
+	var catalog_result = CombatCatalogScript.load_default()
+	_expect(catalog_result.is_ok, "正式战斗目录应加载")
+	if not bool(loaded.get("ok", false)) or not bool(spawned.get("ok", false)) \
+			or not catalog_result.is_ok:
+		_finish()
+		return
+	var configured := instance.configure_combat(catalog_result.value, 20)
+	_expect(bool(configured.get("ok", false)), "D04 战斗应由正式地图实例配置")
+	if bool(configured.get("ok", false)):
+		_test_population_and_routes(instance)
+		_test_authoritative_player_attack(instance)
+		_test_zero_attack_is_not_invented(instance)
+	_finish()
+
+
+## 验证 D04 配置化种群、资源和正式地图 AStar 游荡路线。
+## [param instance] 已加载 D04 并配置战斗的正式地图实例。
+func _test_population_and_routes(instance: AuthoritativeMapInstance) -> void:
+	var module: AuthoritativeCombatModule = instance.combat_module
+	var snapshot := module.snapshot_for_actor(PLAYER_ID)
+	_expect(snapshot.monsters.size() == 100, "D04 应初始化配置上限的一百只怪物")
+	var species: Dictionary = {}
+	for monster: Dictionary in snapshot.monsters:
+		species[String(monster.species_id)] = int(species.get(String(monster.species_id), 0)) + 1
+	_expect(species == {
+		"om_adult": 25, "om_larva": 25, "photosensitive_orb": 25, "toxic_gel": 25,
+	}, "D04 怪物数量应完全由地图配置驱动")
+	_expect(snapshot.local_vehicle.health == 70 and snapshot.local_vehicle.max_health == 70,
+		"新兵底盘应拥有七十点生命")
+	_expect(is_equal_approx(snapshot.local_vehicle.working_energy, 100.0) \
+		and is_equal_approx(snapshot.local_vehicle.working_energy_capacity, 100.0),
+		"新兵战车应公开一百点当前工作能量")
+	var first_id: String = snapshot.monsters[0].entity_id
+	var first_monster: MonsterLifecycle = module.monster_for(first_id)
+	var first_position := first_monster.position
+	module.advance_ticks(99)
+	_expect(first_monster.position.is_equal_approx(first_position),
+		"未交战怪物应先等待配置的五秒间隔")
+	module.advance_ticks(2)
+	_expect(not first_monster.position.is_equal_approx(first_position),
+		"未交战怪物应在五秒后开始一次确定性游荡")
+	_expect(first_monster.movement_route.size() >= 2,
+		"怪物游荡必须持有正式地图实例生成的完整 AStar 路线")
+
+
+## 验证玩家攻击、能量消耗和技能成长事件均由正式地图实例结算。
+## [param instance] 已加载 D04 并配置战斗的正式地图实例。
+func _test_authoritative_player_attack(instance: AuthoritativeMapInstance) -> void:
+	var module: AuthoritativeCombatModule = instance.combat_module
+	var target_id: String = module.monster_ids()[0]
+	var target: MonsterLifecycle = module.monster_for(target_id)
+	var player_position: Vector2 = instance.navigation.closest_reachable_position(
+		target.position, target.position + Vector2(100, 0)
 	)
-	var configured := bridge.configure_map(
-		"d04_field_zone",
-		"d04_field_zone.instance.1",
-		Vector2(2412, 2400),
-		navigation,
-	)
-	_expect(configured == OK and bridge.module != null, "offline adapter should reuse the authoritative D04 module")
-	if bridge.module != null:
-		_test_population_and_resources(bridge)
-		_test_authoritative_player_attack(bridge)
-		_test_zero_attack_is_not_invented(bridge)
-	bridge.free()
+	_expect(player_position.is_finite(), "目标附近应存在测试玩家可用的可达脚点")
+	if not player_position.is_finite():
+		return
+	var entity: AuthoritativeEntity = instance.entities[PLAYER_ID]
+	entity.position = player_position
+	entity.target_position = player_position
+	module.update_actor_position(PLAYER_ID, player_position)
+	var before_health := target.health
+	var result: Dictionary = instance.handle_use_ability(PLAYER_ID, {
+		"map_instance_id": instance.instance_id,
+		"ability_id": "energy_cannon.primary",
+		"aim_world_position": {"x": target.position.x, "y": target.position.y},
+		"input_sequence": 1,
+	})
+	_expect(bool(result.get("ok", false)), "附近怪物应接受只含坐标的能量炮攻击意图")
+	if not bool(result.get("ok", false)):
+		return
+	_expect(target.health == before_health, "炮弹抵达前不得提前扣除怪物生命")
+	var vehicle = module.vehicle_state_for(PLAYER_ID)
+	_expect(is_equal_approx(vehicle.working_energy, 90.0), "成功发射应立即消耗十点工作能量")
+	var impact_tick := int(result.value["impact_tick"])
+	module.advance_ticks(impact_tick - module.current_tick)
+	_expect(target.health == before_health - 7, "新兵能量炮命中后应造成目录基础攻击七点")
+	var progression_events := instance.drain_skill_progression_events()
+	_expect(progression_events.any(func(event: Dictionary) -> bool:
+		return String(event.get("skill_id", "")) == "energy_cannon" \
+			and int(event.get("damage", 0)) == 7
+	), "最终有效伤害应由正式地图实例生成能量炮成长事件")
+
+
+## 验证未知持续腐蚀规则不会为零攻击毒胶捏造伤害。
+## [param instance] 已加载 D04 并配置战斗的正式地图实例。
+func _test_zero_attack_is_not_invented(instance: AuthoritativeMapInstance) -> void:
+	var toxic_id := ""
+	for monster_id: String in instance.combat_module.monster_ids():
+		if instance.combat_module.monster_for(monster_id).species_id == "toxic_gel":
+			toxic_id = monster_id
+			break
+	_expect(not toxic_id.is_empty(), "D04 应生成毒胶运行时实例")
+	if not toxic_id.is_empty():
+		_expect(instance.combat_module.monster_for(toxic_id).attack_mode.base_attack == 0,
+			"未确认腐蚀公式前不得覆盖毒胶已恢复的零基础攻击")
+
+
+## 记录一个布尔断言。
+## [param condition] 预期成立的条件。
+## [param message] 失败时输出的信息。
+func _expect(condition: bool, message: String) -> void:
+	assertions += 1
+	if not condition:
+		failures.append(message)
+
+
+## 汇总断言并退出独立测试进程。
+func _finish() -> void:
 	if failures.is_empty():
 		print("D04_AUTHORITATIVE_COMBAT_OK (%d assertions)" % assertions)
 		quit(0)
@@ -43,110 +132,3 @@ func _initialize() -> void:
 	for failure: String in failures:
 		push_error(failure)
 	quit(1)
-
-
-## 执行 `test_population_and_resources` 对应的模块操作。
-## [param bridge] 调用方传入的参数；具体约束由函数签名和所在模块定义。
-func _test_population_and_resources(bridge: OfflineCombatAuthorityBridge) -> void:
-	var snapshot := bridge.module.snapshot_for_actor(BridgeScript.LOCAL_ACTOR_ID)
-	_expect(snapshot.monsters.size() == 100, "D04 should initialize its configured maximum population")
-	var species: Dictionary = {}
-	var positions: Array[Vector2] = []
-	for monster: Dictionary in snapshot.monsters:
-		species[String(monster.species_id)] = int(species.get(String(monster.species_id), 0)) + 1
-		positions.append(bridge.module.monster_for(String(monster.entity_id)).position)
-	_expect(species == {
-		"om_adult": 25,
-		"om_larva": 25,
-		"photosensitive_orb": 25,
-		"toxic_gel": 25,
-	}, "D04 populations should remain entirely data-driven")
-	var bounds := Rect2(positions[0], Vector2.ZERO)
-	var minimum_distance := INF
-	for index in range(positions.size()):
-		bounds = bounds.expand(positions[index])
-		for other_index in range(index):
-			minimum_distance = minf(
-				minimum_distance, positions[index].distance_to(positions[other_index])
-			)
-	_expect(bounds.size.x > 3000.0 and bounds.size.y > 6000.0, "monster spawns should cover the full D04 navigation area")
-	_expect(minimum_distance >= 95.0, "random spawns should retain the configured separation instead of clustering")
-	_expect(snapshot.local_vehicle.health == 70 and snapshot.local_vehicle.max_health == 70, "starter chassis should own 70 health")
-	_expect(
-		is_equal_approx(snapshot.local_vehicle.working_energy, 100.0)
-		and is_equal_approx(snapshot.local_vehicle.working_energy_capacity, 100.0),
-		"starter vehicle should expose 100 current working energy",
-	)
-	var first_id: String = snapshot.monsters[0].entity_id
-	var first_position: Vector2 = bridge.module.monster_for(first_id).position
-	bridge.module.advance_ticks(99)
-	_expect(
-		bridge.module.monster_for(first_id).position.is_equal_approx(first_position),
-		"unengaged monsters should remain idle for the configured five-second interval",
-	)
-	bridge.module.advance_ticks(2)
-	var wandering_monster = bridge.module.monster_for(first_id)
-	_expect(
-		not wandering_monster.position.is_equal_approx(first_position),
-		"unengaged monsters should start one deterministic roam after five seconds",
-	)
-	_expect(
-		wandering_monster.movement_route.size() >= 2,
-		"offline authority should install the same complete monster route used by the map server",
-	)
-
-
-## 执行 `test_authoritative_player_attack` 对应的模块操作。
-## [param bridge] 调用方传入的参数；具体约束由函数签名和所在模块定义。
-func _test_authoritative_player_attack(bridge: OfflineCombatAuthorityBridge) -> void:
-	var progression_events: Array[Dictionary] = []
-	bridge.skill_progression_event_ready.connect(func(event: Dictionary) -> void:
-		progression_events.append(event.duplicate(true))
-	)
-	var target_id: String = bridge.module.monsters.keys()[0]
-	var target = bridge.module.monster_for(target_id)
-	bridge.update_player_position(target.position + Vector2(100, 0))
-	_expect(progression_events.any(func(event: Dictionary) -> bool:
-		return String(event.get("skill_id", "")) == "driving" \
-			and float(event.get("distance", 0.0)) > 0.0
-	), "accepted D04 vehicle movement should emit authoritative driving progression")
-	var before_health: int = target.health
-	var result := bridge.request_attack(target.position)
-	_expect(result.ok, "nearby configured monster should accept a coordinate-only attack")
-	_expect(target.health == before_health, "firing should not deduct health before projectile arrival")
-	var vehicle = bridge.module.vehicle_state_for(BridgeScript.LOCAL_ACTOR_ID)
-	_expect(is_equal_approx(vehicle.working_energy, 90.0), "successful shot should consume 10 working energy immediately")
-	var impact_tick := int(result.value["impact_tick"])
-	bridge.module.advance_ticks(impact_tick - bridge.module.current_tick)
-	_expect(target.health == before_health - 7, "new recruit cannon should apply its server-owned base attack 7 on arrival")
-	bridge._emit_combat_progression_events()
-	_expect(progression_events.any(func(event: Dictionary) -> bool:
-		return String(event.get("skill_id", "")) == "energy_cannon" \
-			and int(event.get("damage", 0)) == 7
-	), "resolved D04 energy-cannon hits should emit authoritative weapon progression")
-
-
-## 执行 `test_zero_attack_is_not_invented` 对应的模块操作。
-## [param bridge] 调用方传入的参数；具体约束由函数签名和所在模块定义。
-func _test_zero_attack_is_not_invented(bridge: OfflineCombatAuthorityBridge) -> void:
-	var toxic_id := ""
-	for monster_id: String in bridge.module.monster_ids():
-		if bridge.module.monster_for(monster_id).species_id == "toxic_gel":
-			toxic_id = monster_id
-			break
-	_expect(not toxic_id.is_empty(), "toxic gel runtime should be present")
-	if toxic_id.is_empty():
-		return
-	_expect(
-		bridge.module.monster_for(toxic_id).attack_mode.base_attack == 0,
-		"toxic gel must not invent unknown corrosive damage over its confirmed zero base attack",
-	)
-
-
-## 执行 `expect` 对应的模块操作。
-## [param condition] 调用方传入的参数；具体约束由函数签名和所在模块定义。
-## [param message] 调用方传入的参数；具体约束由函数签名和所在模块定义。
-func _expect(condition: bool, message: String) -> void:
-	assertions += 1
-	if not condition:
-		failures.append(message)

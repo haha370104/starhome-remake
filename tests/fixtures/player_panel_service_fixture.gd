@@ -1,4 +1,4 @@
-class_name OfflinePlayerPanelAuthority
+class_name PlayerPanelServiceFixture
 extends RefCounted
 
 const DomainResult := preload("res://scripts/core/domain_result.gd")
@@ -9,9 +9,9 @@ var _service: AuthoritativePlayerPanelService
 var _state: PlayerStateRecord
 
 
-## 创建仅用于显式离线调试的内存权威状态。
+## 创建仅用于服务端面板单元测试的内存状态夹具。
 ## 返回初始化成功的桥接器或目录/聚合错误。
-## 设计：正式联机永不调用本桥接器；它复用服务端领域服务以保证调试 UI 行为一致。
+## 设计：该类不属于运行时代码，只为服务端服务和 UI 投影测试构造稳定聚合。
 func initialize() -> DomainResult:
 	_service = PanelServiceScript.new()
 	var service_result := _service.initialize()
@@ -34,7 +34,7 @@ func initialize() -> DomainResult:
 		"character_profession": "殖民战士",
 		"character_faction": "易安港",
 		"character_residence": "基地大厅一层",
-		"character_description": "荣耀版复刻工程的离线调试角色。",
+		"character_description": "荣耀版复刻工程的面板测试角色。",
 		"inventory_stacks": [{
 			"stack_id": "inventory.spare_engine",
 			"item_definition_id": "beginner_engine",
@@ -79,7 +79,7 @@ func initialize() -> DomainResult:
 		"working_energy": 100.0,
 		"output_power": 21.0,
 		"map_id": "yian_harbor_hall_floor_1",
-		"map_instance_id": "offline.instance.1",
+		"map_instance_id": "test.instance.1",
 		"position": [720.0, 540.0],
 		"facing_direction": 6,
 		"checkpoint_id": "offline.debug",
