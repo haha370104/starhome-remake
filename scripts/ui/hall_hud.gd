@@ -11,6 +11,9 @@ const TopMenuScript := preload("res://scripts/ui/free_top_menu.gd")
 const BottomMainBarScript := preload("res://scripts/ui/free_bottom_main_bar.gd")
 const ShortcutBarScript := preload("res://scripts/ui/free_shortcut_bar.gd")
 const MinimapDockScript := preload("res://scripts/ui/free_minimap_dock.gd")
+const CentralSystemMessageFeedScript := preload(
+	"res://scripts/ui/central_system_message_feed.gd"
+)
 
 var root_control: Control
 var hint_label: Label
@@ -25,9 +28,7 @@ var shortcut_bar: Control
 var bottom_main_bar: Control
 var state: HudState
 var asset_manifest: Dictionary = {}
-var system_message_label: Label
-var _system_message_timer: Timer
-var _system_message_queue: Array[String] = []
+var system_message_feed: CentralSystemMessageFeed
 
 
 ## 执行 `configure` 对应的模块操作。
@@ -88,42 +89,16 @@ func configure(world_map_size: Vector2, minimap_texture: Texture2D, map_name := 
 
 
 ## 将系统提示加入顺序队列；每次技能升级都获得完整展示时间。
+## [param message] 待展示的非空本地化系统消息。
 func show_system_message(message: String) -> void:
-	if message.is_empty():
-		return
-	_system_message_queue.append(message)
-	if not _system_message_timer.is_stopped():
-		return
-	_show_next_system_message()
+	system_message_feed.show_message(message)
 
 
+## 创建中央系统消息表现器；队列、停留、上浮和淡出均由组件独立负责。
 func _build_system_message_feed() -> void:
-	system_message_label = Label.new()
-	system_message_label.name = "SystemMessageLabel"
-	system_message_label.position = Vector2(12, 29)
-	system_message_label.add_theme_font_size_override("font_size", 17)
-	system_message_label.add_theme_color_override("font_color", Color("fff36b"))
-	system_message_label.add_theme_color_override("font_shadow_color", Color.BLACK)
-	system_message_label.add_theme_constant_override("shadow_offset_x", 2)
-	system_message_label.add_theme_constant_override("shadow_offset_y", 2)
-	system_message_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	system_message_label.visible = false
-	root_control.add_child(system_message_label)
-	_system_message_timer = Timer.new()
-	_system_message_timer.name = "SystemMessageTimer"
-	_system_message_timer.one_shot = true
-	_system_message_timer.timeout.connect(_show_next_system_message)
-	add_child(_system_message_timer)
-
-
-func _show_next_system_message() -> void:
-	if _system_message_queue.is_empty():
-		system_message_label.visible = false
-		system_message_label.text = ""
-		return
-	system_message_label.text = _system_message_queue.pop_front()
-	system_message_label.visible = true
-	_system_message_timer.start(4.0)
+	system_message_feed = CentralSystemMessageFeedScript.new()
+	system_message_feed.configure()
+	root_control.add_child(system_message_feed)
 
 
 ## 执行 `update_player_dot` 对应的模块操作。
