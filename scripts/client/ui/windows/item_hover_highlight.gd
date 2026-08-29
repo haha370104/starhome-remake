@@ -55,7 +55,8 @@ static func set_hovered(material: ShaderMaterial, hovered: bool) -> void:
 ## [param target] 当前接收悬停输入的物品控件。
 ## [param text] 待显示的多行物品说明。
 static func _show_tooltip(target: Control, text: String) -> void:
-	if text.is_empty() or target.get_tree() == null:
+	if text.is_empty() or target == null or not is_instance_valid(target) \
+			or not target.is_inside_tree() or target.get_tree() == null:
 		return
 	_hide_revision += 1
 	var host := _tooltip_host(target)
@@ -77,10 +78,18 @@ static func _show_tooltip(target: Control, text: String) -> void:
 ## 把说明窗放在鼠标右 10、上 20，并限制在当前视口内。
 ## [param target] 用于取得鼠标和视口坐标的物品控件。
 static func _place_tooltip(target: Control) -> void:
+	if target == null or not is_instance_valid(target) or not target.is_inside_tree() \
+			or _active_tooltip == null or not is_instance_valid(_active_tooltip):
+		_hide_active()
+		return
+	var viewport := target.get_viewport()
+	if viewport == null:
+		_hide_active()
+		return
 	var viewport_size := target.get_viewport_rect().size
 	var tooltip_size: Vector2 = _active_tooltip.get_combined_minimum_size()
 	_active_tooltip.size = tooltip_size
-	var desired := target.get_viewport().get_mouse_position() + TOOLTIP_OFFSET
+	var desired := viewport.get_mouse_position() + TOOLTIP_OFFSET
 	desired.x = clampf(desired.x, 0.0, maxf(0.0, viewport_size.x - tooltip_size.x))
 	desired.y = clampf(desired.y, 0.0, maxf(0.0, viewport_size.y - tooltip_size.y))
 	_active_tooltip.position = desired
@@ -101,14 +110,16 @@ static func _tooltip_host(target: Control) -> Node:
 ## 离开物品后保留 100ms，允许鼠标跨入说明窗。
 ## [param target] 刚离开悬停状态的物品控件。
 static func _schedule_hide(target: Control) -> void:
-	if target.get_tree() == null:
+	if target == null or not is_instance_valid(target) or not target.is_inside_tree() \
+			or target.get_tree() == null:
 		_hide_for_target(target)
 		return
 	_hide_revision += 1
 	var expected_revision := _hide_revision
+	var target_reference: WeakRef = weakref(target)
 	target.get_tree().create_timer(EXIT_GRACE_SECONDS).timeout.connect(func() -> void:
 		if expected_revision == _hide_revision:
-			_hide_if_pointer_left(target)
+			_hide_if_pointer_left(target_reference.get_ref() as Control)
 	)
 
 
@@ -128,10 +139,18 @@ static func _schedule_tooltip_hide() -> void:
 ## 当鼠标既不在物品也不在说明窗时隐藏说明。
 ## [param target] 需要复核鼠标命中的原物品控件。
 static func _hide_if_pointer_left(target: Control) -> void:
+	# 权威换装回包会重建背包控件；100ms 定时器捕获的旧 Control 此时会变成 null。
+	if target == null or not is_instance_valid(target) or not target.is_inside_tree():
+		_hide_active()
+		return
 	if _active_target != target or _active_tooltip == null \
 			or not is_instance_valid(_active_tooltip):
 		return
-	var mouse_position := target.get_viewport().get_mouse_position()
+	var viewport := target.get_viewport()
+	if viewport == null:
+		_hide_active()
+		return
+	var mouse_position := viewport.get_mouse_position()
 	if target.get_global_rect().has_point(mouse_position) \
 			or _active_tooltip.get_global_rect().has_point(mouse_position):
 		return

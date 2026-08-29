@@ -150,8 +150,23 @@ func _run() -> void:
 	_expect(legacy_tooltip.visible, "离开物品后应保留短暂时间供鼠标进入说明窗")
 	await create_timer(0.12).timeout
 	_expect(not legacy_tooltip.visible, "鼠标未进入说明窗时应在 100ms 检查后隐藏")
+	var wearable_view: InventoryItemView
+	for raw_view: Node in manager.inventory_panel._item_canvas.get_children():
+		var candidate := raw_view as InventoryItemView
+		if candidate != null and candidate.item != null \
+				and candidate.item.instance_id == "inventory.training_shirt":
+			wearable_view = candidate
+			break
+	_expect(wearable_view != null, "穿戴回归夹具应找到训练衫背包控件")
+	if wearable_view != null:
+		wearable_view.mouse_entered.emit()
+		wearable_view.mouse_exited.emit()
 	manager.inventory_panel._request_character_equip("inventory.training_shirt", "upper_body")
 	await process_frame
+	await create_timer(0.12).timeout
+	legacy_tooltip = ItemHoverHighlightScript.active_tooltip()
+	_expect(legacy_tooltip == null or not legacy_tooltip.visible,
+		"换装重建悬浮目标后，旧延迟回调应安全关闭说明窗")
 	var shirt := manager.character_panel._equipment_layers.get_child(0) as TextureRect
 	_expect(shirt.position == Vector2(54, 93), "衣服应按 WearInDlg 锚点与 ALE origin 叠加")
 	shirt.mouse_entered.emit()
