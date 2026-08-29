@@ -292,6 +292,8 @@ func _on_session_opened(result: Dictionary) -> void:
 	if not _commit_map_joined(value, false):
 		connection_failed.emit("Server handshake contained an invalid initial map join")
 		network_adapter.disconnect_from_server()
+		return
+	request_player_panel_command({"type": "query"})
 
 
 ## 处理 `_on_map_joined_received` 对应的信号回调。

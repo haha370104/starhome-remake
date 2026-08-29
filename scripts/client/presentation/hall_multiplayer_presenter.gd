@@ -92,17 +92,16 @@ func start(settings: Dictionary) -> Error:
 	add_child(session)
 	session.initialize_local_player(Vector2(settings.get("initial_position", _local_character.position)))
 
-	if session.offline_debug_enabled:
-		_show_temporary_status("离线调试模式", 1.5)
-		return OK
 	if not bool(settings.get("connect_automatically", true)):
-		_show_temporary_status("联机会话尚未连接", 1.5)
+		_show_temporary_status("权威会话尚未连接", 1.5)
 		return OK
 	var host := String(settings.get("server_host", "127.0.0.1"))
 	var port := int(settings.get("server_port", ClientNetworkAdapter.DEFAULT_PORT))
 	var connection_error := session.connect_to_server(host, port)
 	if connection_error != OK:
 		_show_temporary_status("连接失败：%s" % error_string(connection_error), 4.0)
+	elif session.offline_debug_enabled:
+		_show_temporary_status("正在启动进程内权威服务器…", 1.5)
 	return connection_error
 
 

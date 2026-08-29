@@ -19,6 +19,11 @@ const DomainResultScript := preload("res://scripts/core/domain_result.gd")
 
 signal snapshot_generated(snapshot: Dictionary)
 signal command_rejected(peer_id: int, code: StringName)
+signal server_message_generated(peer_id: int, message: Dictionary)
+signal peer_snapshot_generated(peer_id: int, snapshot: Dictionary)
+
+const TRANSPORT_SESSION_REQUEST := &"session_request"
+const TRANSPORT_PLAYER_PANEL_COMMAND := &"player_panel_command"
 
 var config: DedicatedServerConfig
 var map_instance: AuthoritativeMapInstance
@@ -565,6 +570,70 @@ func handle_peer_loot_pickup(peer_id: int, intent: Dictionary) -> Dictionary:
 	})
 
 
+## 通过唯一入口分派来自任意传输实现的客户端命令。
+## [param peer_id] 由 ENet 或进程内传输提供、客户端无法伪造的会话标识。
+## [param command_type] 会话、移动、切图、能力、拾取或面板命令类型。
+## [param payload] 已跨过传输复制边界但仍不可信的客户端载荷。
+## 设计：传输实现只能改变数据如何抵达，不能选择不同的业务处理器或返回格式。
+func dispatch_transport_command(
+	peer_id: int,
+	command_type: StringName,
+	payload: Dictionary,
+) -> void:
+	match command_type:
+		TRANSPORT_SESSION_REQUEST:
+			var result := open_session(peer_id, payload)
+			_send_reliable(peer_id, {
+				"type": "session_opened" if result.ok else "command_rejected",
+				"result": _wire_result(result),
+			})
+		Protocol.MOVE_INTENT:
+			var result := handle_peer_move(peer_id, payload)
+			if not result.ok:
+				_send_reliable(peer_id, {
+					"type": "command_rejected", "result": _wire_result(result),
+				})
+		Protocol.USE_ABILITY_INTENT:
+			var result := handle_peer_use_ability(peer_id, payload)
+			_send_reliable(peer_id, {
+				"type": "combat_event" if result.ok else "command_rejected",
+				"result": _wire_result(result),
+			})
+		Protocol.PICKUP_LOOT_INTENT:
+			var result := handle_peer_loot_pickup(peer_id, payload)
+			_send_reliable(peer_id, {
+				"type": "loot_picked_up" if result.ok else "command_rejected",
+				"result": _wire_result(result),
+			})
+		TRANSPORT_PLAYER_PANEL_COMMAND:
+			var result := handle_peer_player_panel_command(peer_id, payload)
+			_send_reliable(peer_id, {
+				"type": "player_panels" if result.ok else "command_rejected",
+				"result": _wire_result(result),
+			})
+		Protocol.MAP_TRANSITION_INTENT:
+			var result := handle_peer_map_transition(peer_id, payload)
+			if result.ok:
+				_send_reliable(peer_id, {
+					"type": "map_joined", "result": _wire_result(result),
+				})
+				return
+			var wire_result := _wire_result(result)
+			wire_result["value"] = {
+				"command_type": String(Protocol.MAP_TRANSITION_INTENT),
+				"transition_sequence": int(payload.get("input_sequence", -1)),
+			}
+			_send_reliable(peer_id, {"type": "command_rejected", "result": wire_result})
+		_:
+			_send_reliable(peer_id, {
+				"type": "command_rejected",
+				"result": _wire_result(_failure(
+					&"network.unsupported_command",
+					"transport command type is not supported",
+				)),
+			})
+
+
 ## 处理 `_on_peer_disconnected` 对应的信号回调。
 ## [param peer_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## 设计：该函数位于权威服务器边界，客户端不得覆盖其计算结果。
@@ -576,53 +645,35 @@ func _on_peer_disconnected(peer_id: int) -> void:
 ## [param peer_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## [param request] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _on_transport_session_request(peer_id: int, request: Dictionary) -> void:
-	var result := open_session(peer_id, request)
-	_send_reliable(peer_id, {
-		"type": "session_opened" if result.ok else "command_rejected",
-		"result": _wire_result(result),
-	})
+	dispatch_transport_command(peer_id, TRANSPORT_SESSION_REQUEST, request)
 
 
 ## 处理 `_on_transport_move_intent` 对应的信号回调。
 ## [param peer_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## [param intent] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _on_transport_move_intent(peer_id: int, intent: Dictionary) -> void:
-	var result := handle_peer_move(peer_id, intent)
-	if not result.ok:
-		_send_reliable(peer_id, {"type": "command_rejected", "result": _wire_result(result)})
+	dispatch_transport_command(peer_id, Protocol.MOVE_INTENT, intent)
 
 
 ## 处理 `_on_transport_use_ability_intent` 对应的信号回调。
 ## [param peer_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## [param intent] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _on_transport_use_ability_intent(peer_id: int, intent: Dictionary) -> void:
-	var result := handle_peer_use_ability(peer_id, intent)
-	_send_reliable(peer_id, {
-		"type": "combat_event" if result.ok else "command_rejected",
-		"result": _wire_result(result),
-	})
+	dispatch_transport_command(peer_id, Protocol.USE_ABILITY_INTENT, intent)
 
 
 ## 处理可靠通道收到的地面掉落拾取意图。
 ## [param peer_id] 发送命令的远端 peer。
 ## [param intent] 仅含 loot_id 的拾取目标。
 func _on_transport_pickup_loot_intent(peer_id: int, intent: Dictionary) -> void:
-	var result := handle_peer_loot_pickup(peer_id, intent)
-	_send_reliable(peer_id, {
-		"type": "loot_picked_up" if result.ok else "command_rejected",
-		"result": _wire_result(result),
-	})
+	dispatch_transport_command(peer_id, Protocol.PICKUP_LOOT_INTENT, intent)
 
 
 ## 处理可靠通道收到的面板命令并回传完整权威快照。
 ## [param peer_id] 发送命令的远端 peer。
 ## [param command] 客户端面板操作意图。
 func _on_transport_player_panel_command(peer_id: int, command: Dictionary) -> void:
-	var result := handle_peer_player_panel_command(peer_id, command)
-	_send_reliable(peer_id, {
-		"type": "player_panels" if result.ok else "command_rejected",
-		"result": _wire_result(result),
-	})
+	dispatch_transport_command(peer_id, TRANSPORT_PLAYER_PANEL_COMMAND, command)
 
 
 ## 处理 `_on_transport_map_transition_intent` 对应的信号回调。
@@ -630,16 +681,7 @@ func _on_transport_player_panel_command(peer_id: int, command: Dictionary) -> vo
 ## [param intent] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## 设计：该函数位于权威服务器边界，客户端不得覆盖其计算结果。
 func _on_transport_map_transition_intent(peer_id: int, intent: Dictionary) -> void:
-	var result := handle_peer_map_transition(peer_id, intent)
-	if result.ok:
-		_send_reliable(peer_id, {"type": "map_joined", "result": _wire_result(result)})
-		return
-	var wire_result := _wire_result(result)
-	wire_result["value"] = {
-		"command_type": String(Protocol.MAP_TRANSITION_INTENT),
-		"transition_sequence": int(intent.get("input_sequence", -1)),
-	}
-	_send_reliable(peer_id, {"type": "command_rejected", "result": wire_result})
+	dispatch_transport_command(peer_id, Protocol.MAP_TRANSITION_INTENT, intent)
 
 
 ## 发布 `emit_snapshot` 对应的模块状态。
@@ -651,10 +693,11 @@ func _emit_snapshot() -> void:
 			server_tick, float(server_tick) / float(config.simulation_hz)
 		)
 		snapshot_generated.emit(snapshot)
-	if _network_started:
-		for session: ServerSession in sessions.active_sessions():
-			var session_snapshot := snapshot_for_peer(session.peer_id)
-			if not session_snapshot.is_empty():
+	for session: ServerSession in sessions.active_sessions():
+		var session_snapshot := snapshot_for_peer(session.peer_id)
+		if not session_snapshot.is_empty():
+			peer_snapshot_generated.emit(session.peer_id, session_snapshot.duplicate(true))
+			if _network_started:
 				_transport_endpoint.send_world_snapshot(session.peer_id, session_snapshot)
 
 
@@ -663,6 +706,8 @@ func _emit_snapshot() -> void:
 ## [param message] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## 设计：该函数位于权威服务器边界，客户端不得覆盖其计算结果。
 func _send_reliable(peer_id: int, message: Dictionary) -> void:
+	if peer_id > 0:
+		server_message_generated.emit(peer_id, message.duplicate(true))
 	if _network_started and peer_id > 0:
 		_transport_endpoint.send_server_message(peer_id, message)
 

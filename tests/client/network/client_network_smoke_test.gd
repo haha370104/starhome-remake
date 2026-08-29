@@ -6,9 +6,11 @@ const Predictor = preload("res://scripts/client/network/local_movement_predictor
 const Interpolator = preload("res://scripts/client/network/remote_entity_interpolator.gd")
 const Session = preload("res://scripts/client/network/client_multiplayer_session.gd")
 const MapTransitionIntentContract = preload("res://scripts/network/contracts/map_transition_intent.gd")
+const ServerConfigScript = preload("res://scripts/server/server_config.gd")
 
 var assertions := 0
 var failures: Array[String] = []
+var session_database_path := ""
 
 
 ## 启动客户端网络冒烟用例，并将需要 SceneTree 的会话集成测试延迟执行。
@@ -20,62 +22,21 @@ func _init() -> void:
 	call_deferred("_test_session_integration")
 
 
-## 验证离线调试适配器的连接状态、意图观察和断开行为。
+## 验证进程内模式在显式连接前不会吞掉或伪装已发送命令。
 func _test_offline_adapter() -> void:
 	var adapter := Adapter.new()
 	root.add_child(adapter)
 	adapter.configure_offline_debug(true)
-	_expect_equal(adapter.connection_state, Adapter.ConnectionState.CONNECTED, "offline connects")
+	_expect_equal(adapter.connection_state, Adapter.ConnectionState.DISCONNECTED,
+		"进程内传输也必须经历显式连接和会话握手")
 	var sent: Array[Dictionary] = []
 	adapter.move_intent_sent.connect(func(payload: Dictionary) -> void: sent.append(payload))
-	_expect_equal(adapter.send_move_intent({"input_sequence": 1}), OK, "offline send succeeds")
-	_expect_equal(sent.size(), 1, "offline observes outgoing intent")
-	var map_intents: Array[Dictionary] = []
-	adapter.map_transition_intent_sent.connect(
-		func(payload: Dictionary) -> void: map_intents.append(payload)
-	)
 	_expect_equal(
-		adapter.send_map_transition_intent({"transition_id": "north_exit"}),
-		OK,
-		"offline map transition send succeeds",
+		adapter.send_move_intent({"input_sequence": 1}),
+		ERR_UNCONFIGURED,
+		"未连接的进程内传输必须拒绝移动意图",
 	)
-	_expect_equal(map_intents.size(), 1, "offline observes outgoing map transition intent")
-	var ability_intents: Array[Dictionary] = []
-	adapter.use_ability_intent_sent.connect(
-		func(payload: Dictionary) -> void: ability_intents.append(payload)
-	)
-	_expect_equal(
-		adapter.send_use_ability_intent({"ability_id": "energy_cannon.primary"}),
-		OK,
-		"offline ability intent send succeeds",
-	)
-	_expect_equal(ability_intents.size(), 1, "offline observes outgoing ability intent")
-	var handshake_snapshots: Array[Dictionary] = []
-	adapter.authoritative_snapshot_received.connect(
-		func(snapshot: Dictionary) -> void: handshake_snapshots.append(snapshot)
-	)
-	adapter.receive_server_message({
-		"type": "session_opened",
-		"result": {
-			"ok": true,
-			"value": {
-				"session": {"entity_id": "player.handshake", "reconnect_token": "token"},
-				"map_joined": {
-					"map_id": "yian_harbor_hall_floor_1",
-					"map_instance_id": "hall.instance.handshake",
-					"entity_id": "player.handshake",
-					"spawn_position": {"x": 10.0, "y": 20.0},
-					"definition_version": 1,
-					"server_tick": 1,
-				},
-				"snapshot": _snapshot(1, [_entity("player.handshake", 10.0, 2, 0, 1)]),
-			},
-		},
-	})
-	_expect_true(adapter.session_ready, "handshake marks adapter session ready")
-	_expect_equal(adapter.map_id, "yian_harbor_hall_floor_1", "handshake adopts map ID")
-	_expect_equal(adapter.map_instance_id, "hall.instance.handshake", "handshake adopts map instance")
-	_expect_equal(handshake_snapshots.size(), 1, "handshake routes sibling initial snapshot")
+	_expect_equal(sent.size(), 0, "被拒绝的命令不得伪造发送观察事件")
 	adapter.disconnect_from_server()
 	_expect_equal(adapter.connection_state, Adapter.ConnectionState.DISCONNECTED, "disconnect state")
 	adapter.queue_free()
@@ -156,36 +117,51 @@ func _test_remote_interpolation() -> void:
 func _test_session_integration() -> void:
 	var session := Session.new()
 	session.offline_debug_enabled = true
-	session.local_entity_id = &"player.me"
-	session.current_map_id = &"hall"
-	session.current_map_instance_id = "hall.instance.7"
 	root.add_child(session)
 	await process_frame
-	_expect_equal(session.network_adapter.connection_state, Adapter.ConnectionState.CONNECTED, "session offline connected")
-	session.initialize_local_player(Vector2.ZERO)
+	session_database_path = "res://client_network_session_%d.tmp" % Time.get_ticks_usec()
+	var local_server_config := ServerConfigScript.new()
+	local_server_config.network_enabled = false
+	local_server_config.player_state_store_path = session_database_path
+	_expect_true(session.network_adapter.configure_in_process_server(local_server_config),
+		"测试应在连接前注入临时正式服务器存档")
+	var panel_bundles: Array[Dictionary] = []
+	session.player_panel_bundle_received.connect(
+		func(bundle: Dictionary) -> void: panel_bundles.append(bundle.duplicate(true))
+	)
+	_expect_equal(session.connect_to_server("ignored", 0), OK, "进程内会话应启动正式服务器")
+	for _frame in range(6):
+		await process_frame
+	_expect_equal(session.network_adapter.connection_state, Adapter.ConnectionState.CONNECTED,
+		"进程内会话应完成异步连接")
+	_expect_true(session.network_adapter.session_ready, "进程内会话必须完成正式握手")
+	_expect_true(not session.current_map_instance_id.is_empty(), "正式握手必须分配地图实例")
+	_expect_equal(panel_bundles.size(), 1, "握手后应自动查询正式服务器面板聚合")
 	var sent_payloads: Array[Dictionary] = []
 	session.network_adapter.move_intent_sent.connect(
 		func(payload: Dictionary) -> void: sent_payloads.append(payload)
 	)
-	var intent := session.request_move(Vector2(50.0, 0.0))
+	var start_position: Vector2 = session.local_presentation_state()["position"]
+	var intent := session.request_move(start_position + Vector2(24.0, 0.0))
 	_expect_equal(intent["input_sequence"], 1, "session creates sequenced intent")
-	_expect_equal(intent["map_instance_id"], "hall.instance.7", "session uses configured map instance")
-	_expect_equal(intent["requested_world_point"], {"x": 50.0, "y": 0.0}, "session emits contract point")
+	_expect_equal(intent["map_instance_id"], session.current_map_instance_id,
+		"session uses server-assigned map instance")
 	_expect_equal(sent_payloads.size(), 1, "session sends one contract payload")
 	_expect_true(MoveIntentContract.from_dictionary(sent_payloads[0]).is_ok, "sent payload round trips through contract")
 	_expect_true(session.record_local_predicted_delta(1, Vector2(20.0, 0.0)), "session records prediction")
+	var injected_tick := int(session.local_presentation_state()["last_server_tick"]) + 1
 	session.inject_offline_snapshot({
-		"server_tick": 1,
-		"server_time_seconds": 0.1,
+		"server_tick": injected_tick,
+		"server_time_seconds": float(injected_tick) / 10.0,
 		"entities": [
-			_entity("player.me", 20.0, 2, 1, 1),
-			_entity("player.other", 100.0, 6, 0, 1),
+			_entity(String(session.local_entity_id), start_position.x + 20.0, 2, 1, injected_tick),
+			_entity("player.other", 100.0, 6, 0, injected_tick),
 		],
 	})
-	_expect_equal(session.local_presentation_state()["last_server_tick"], 1, "session routes authority")
+	_expect_equal(session.local_presentation_state()["last_server_tick"], injected_tick,
+		"session routes authority")
 	_expect_equal(session.remote_interpolator.tracked_entity_count(), 1, "session routes remotes")
 	_expect_true(session.remote_presentation_states().has(&"player.other"), "remote state exposed")
-	_test_map_change_session(session)
 	var invalid_session := Session.new()
 	invalid_session.offline_debug_enabled = true
 	root.add_child(invalid_session)
@@ -214,7 +190,15 @@ func _test_session_integration() -> void:
 		"invalid initial map join closes the client session",
 	)
 	invalid_session.queue_free()
+	session.disconnect_from_server()
 	session.queue_free()
+	for path: String in [
+		session_database_path,
+		session_database_path + ".tmp",
+		session_database_path + ".bak",
+	]:
+		if FileAccess.file_exists(path):
+			DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
 	_finish()
 
 

@@ -73,6 +73,7 @@ $testScripts = @(
 	"res://tests/integration/client_state_seam_characterization_test.gd",
 	"res://tests/integration/d04_player_vehicle_presentation_test.gd",
 	"res://tests/integration/d04_authoritative_combat_test.gd",
+	"res://tests/integration/in_process_authoritative_transport_test.gd",
 	"res://tests/ui/runtime/hud_runtime_smoke_test.gd",
 	"res://tests/ui/runtime/player_panels_runtime_test.gd",
     "res://tests/maps/map_runtime_smoke_test.gd",

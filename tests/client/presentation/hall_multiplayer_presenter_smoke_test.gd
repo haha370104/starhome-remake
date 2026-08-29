@@ -44,17 +44,20 @@ func _run() -> void:
 	root.add_child(presenter)
 	var start_error: Error = presenter.start({
 		"offline_debug_enabled": true,
+		"connect_automatically": false,
 		"local_entity_id": &"player.me",
 		"map_id": &"yian_harbor_hall_floor_1",
 		"map_instance_id": "yian_harbor_hall_floor_1.instance.1",
 		"initial_position": local_character.position,
 		"remote_appearance": "player",
 	})
-	_expect_equal(start_error, OK, "offline presenter starts")
+	_expect_equal(start_error, OK, "presenter starts without owning a transport fixture")
+	presenter.session.network_adapter._ensure_transport_endpoint()
+	presenter.session.network_adapter._set_connection_state(AdapterScript.ConnectionState.CONNECTED)
 	_expect_equal(
 		presenter.session.network_adapter.connection_state,
 		AdapterScript.ConnectionState.CONNECTED,
-		"offline session reports connected",
+		"synthetic presentation fixture can inject the connected protocol state",
 	)
 
 	var intent: Dictionary = presenter.request_move(Vector2(50.0, 20.0))

@@ -1,9 +1,6 @@
 class_name NetworkTransportEndpoint
-extends Node
+extends "res://scripts/network/transport/client_transport_endpoint.gd"
 
-signal connected_to_server
-signal connection_failed
-signal server_disconnected
 signal peer_disconnected(peer_id: int)
 signal session_request_received(peer_id: int, request: Dictionary)
 signal move_intent_received(peer_id: int, intent: Dictionary)
@@ -11,8 +8,6 @@ signal map_transition_intent_received(peer_id: int, intent: Dictionary)
 signal use_ability_intent_received(peer_id: int, intent: Dictionary)
 signal pickup_loot_intent_received(peer_id: int, intent: Dictionary)
 signal player_panel_command_received(peer_id: int, command: Dictionary)
-signal server_message_received(message: Dictionary)
-signal world_snapshot_received(snapshot: Dictionary)
 
 const ROOT_NODE_NAME := "StarhomeNetworkTransport"
 const SERVER_PEER_ID := 1

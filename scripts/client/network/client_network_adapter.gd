@@ -24,6 +24,9 @@ enum ConnectionState {
 const DEFAULT_PORT := 24680
 const Protocol := preload("res://scripts/network/contracts/network_protocol.gd")
 const TransportEndpointScript := preload("res://scripts/network/transport/network_transport_endpoint.gd")
+const InProcessTransportScript := preload(
+	"res://scripts/network/transport/in_process_authoritative_transport.gd"
+)
 
 var offline_debug_enabled := false
 var connection_state: ConnectionState = ConnectionState.DISCONNECTED
@@ -32,7 +35,9 @@ var reconnect_token := ""
 var entity_id := ""
 var map_id := ""
 var map_instance_id := ""
-var _transport_endpoint: NetworkTransportEndpoint
+var _transport_endpoint: Node
+var _in_process_server_config
+var _in_process_repository
 
 
 ## 节点进入场景树后初始化运行依赖。
@@ -47,10 +52,22 @@ func _ready() -> void:
 ## 设计：该函数位于客户端交互或表现边界，最终状态以服务器权威结果为准。
 func configure_offline_debug(enabled: bool) -> void:
 	offline_debug_enabled = enabled
-	if enabled:
-		_set_connection_state(ConnectionState.CONNECTED)
-	elif multiplayer.multiplayer_peer == null:
+	if connection_state != ConnectionState.DISCONNECTED:
+		disconnect_from_server()
+	elif not enabled and multiplayer.multiplayer_peer == null:
 		_set_connection_state(ConnectionState.DISCONNECTED)
+
+
+## 在建立进程内连接前注入权威服务器配置和可选仓储。
+## [param server_config] 与独立服务器共用的配置对象。
+## [param repository] 测试或宿主提供的仓储；为空时使用配置路径。
+## 返回当前适配器是否尚未创建传输、可以安全接收配置。
+func configure_in_process_server(server_config, repository = null) -> bool:
+	if _transport_endpoint != null or server_config == null:
+		return false
+	_in_process_server_config = server_config
+	_in_process_repository = repository
+	return true
 
 
 ## 执行 `connect_to_server` 对应的模块操作。
@@ -59,14 +76,11 @@ func configure_offline_debug(enabled: bool) -> void:
 ## 返回该函数计算、查询或操作得到的结果。
 ## 设计：该函数位于客户端交互或表现边界，最终状态以服务器权威结果为准。
 func connect_to_server(host: String, port: int = DEFAULT_PORT) -> Error:
-	if offline_debug_enabled:
-		_set_connection_state(ConnectionState.CONNECTED)
-		return OK
-	if host.strip_edges().is_empty() or port < 1 or port > 65535:
+	if not offline_debug_enabled and (host.strip_edges().is_empty() or port < 1 or port > 65535):
 		return ERR_INVALID_PARAMETER
 
 	_ensure_transport_endpoint()
-	var error := _transport_endpoint.connect_client(host, port)
+	var error: Error = _transport_endpoint.call("connect_client", host, port)
 	if error != OK:
 		connection_failed.emit(error_string(error))
 		return error
@@ -77,9 +91,11 @@ func connect_to_server(host: String, port: int = DEFAULT_PORT) -> Error:
 ## 执行 `disconnect_from_server` 对应的模块操作。
 ## 设计：该函数位于客户端交互或表现边界，最终状态以服务器权威结果为准。
 func disconnect_from_server() -> void:
-	# Offline adapters deliberately have no MultiplayerAPI peer.
-	if not offline_debug_enabled and _transport_endpoint != null:
+	if _transport_endpoint != null:
 		_transport_endpoint.close()
+		if _transport_endpoint.get_parent() == self:
+			_transport_endpoint.queue_free()
+			_transport_endpoint = null
 	session_ready = false
 	_set_connection_state(ConnectionState.DISCONNECTED)
 
@@ -92,8 +108,6 @@ func send_move_intent(payload: Dictionary) -> Error:
 	if connection_state != ConnectionState.CONNECTED:
 		return ERR_UNCONFIGURED
 	move_intent_sent.emit(payload.duplicate(true))
-	if offline_debug_enabled:
-		return OK
 	_transport_endpoint.send_move_intent(payload)
 	return OK
 
@@ -106,8 +120,6 @@ func send_map_transition_intent(payload: Dictionary) -> Error:
 	if connection_state != ConnectionState.CONNECTED:
 		return ERR_UNCONFIGURED
 	map_transition_intent_sent.emit(payload.duplicate(true))
-	if offline_debug_enabled:
-		return OK
 	_transport_endpoint.send_map_transition_intent(payload)
 	return OK
 
@@ -120,8 +132,6 @@ func send_use_ability_intent(payload: Dictionary) -> Error:
 	if connection_state != ConnectionState.CONNECTED:
 		return ERR_UNCONFIGURED
 	use_ability_intent_sent.emit(payload.duplicate(true))
-	if offline_debug_enabled:
-		return OK
 	_transport_endpoint.send_use_ability_intent(payload)
 	return OK
 
@@ -133,8 +143,6 @@ func send_pickup_loot_intent(payload: Dictionary) -> Error:
 	if connection_state != ConnectionState.CONNECTED:
 		return ERR_UNCONFIGURED
 	pickup_loot_intent_sent.emit(payload.duplicate(true))
-	if offline_debug_enabled:
-		return OK
 	_transport_endpoint.send_pickup_loot_intent(payload)
 	return OK
 
@@ -147,8 +155,6 @@ func send_player_panel_command(payload: Dictionary) -> Error:
 	if connection_state != ConnectionState.CONNECTED:
 		return ERR_UNCONFIGURED
 	player_panel_command_sent.emit(payload.duplicate(true))
-	if offline_debug_enabled:
-		return OK
 	_transport_endpoint.send_player_panel_command(payload)
 	return OK
 
@@ -247,18 +253,38 @@ func _set_connection_state(next_state: ConnectionState) -> void:
 func _ensure_transport_endpoint() -> void:
 	if _transport_endpoint != null:
 		return
-	var existing := get_tree().root.get_node_or_null(TransportEndpointScript.ROOT_NODE_NAME)
-	if existing != null:
-		_transport_endpoint = existing
+	if offline_debug_enabled:
+		_transport_endpoint = InProcessTransportScript.new()
+		_transport_endpoint.name = "StarhomeInProcessTransport"
+		add_child(_transport_endpoint)
+		if _in_process_server_config != null:
+			_transport_endpoint.call(
+				"configure_server", _in_process_server_config, _in_process_repository
+			)
 	else:
-		_transport_endpoint = TransportEndpointScript.new()
-		_transport_endpoint.name = TransportEndpointScript.ROOT_NODE_NAME
-		get_tree().root.add_child(_transport_endpoint)
-	_transport_endpoint.connected_to_server.connect(_on_connected_to_server)
-	_transport_endpoint.connection_failed.connect(_on_connection_failed)
-	_transport_endpoint.server_disconnected.connect(_on_server_disconnected)
-	_transport_endpoint.server_message_received.connect(receive_server_message)
-	_transport_endpoint.world_snapshot_received.connect(receive_world_snapshot)
+		var existing := get_tree().root.get_node_or_null(TransportEndpointScript.ROOT_NODE_NAME)
+		if existing != null:
+			_transport_endpoint = existing
+		else:
+			_transport_endpoint = TransportEndpointScript.new()
+			_transport_endpoint.name = TransportEndpointScript.ROOT_NODE_NAME
+			get_tree().root.add_child(_transport_endpoint)
+	_connect_transport_signal(&"connected_to_server", _on_connected_to_server)
+	_connect_transport_signal(&"connection_failed", _on_connection_failed)
+	_connect_transport_signal(&"server_disconnected", _on_server_disconnected)
+	_connect_transport_signal(&"server_message_received", receive_server_message)
+	_connect_transport_signal(&"world_snapshot_received", receive_world_snapshot)
+
+
+## 将传输端点信号与客户端回调绑定，并保证重连或复用根节点时不会重复绑定。
+## [param signal_name] 传输端点公开的信号名称。
+## [param callback] 接收该信号的客户端回调。
+## 无返回值。
+## 设计：网络端点常驻 SceneTree 根节点以承载断线重连；绑定必须具备幂等性。
+func _connect_transport_signal(signal_name: StringName, callback: Callable) -> void:
+	if _transport_endpoint.is_connected(signal_name, callback):
+		return
+	_transport_endpoint.connect(signal_name, callback)
 
 
 ## 设置或恢复 `apply_session_opened` 对应的模块状态。
