@@ -57,6 +57,11 @@ func _test_population_and_routes(instance: AuthoritativeMapInstance) -> void:
 	module.advance_ticks(2)
 	_expect(not first_monster.position.is_equal_approx(first_position),
 		"未交战怪物应在五秒后开始一次确定性游荡")
+	var first_roaming_position := first_monster.position
+	module.advance_ticks(3)
+	_expect(first_monster.action == &"move" \
+		and not first_monster.position.is_equal_approx(first_roaming_position),
+		"D04 怪物开始游荡后必须连续推进，不能每五秒只抽动一帧")
 	_expect(first_monster.movement_route.size() >= 2,
 		"怪物游荡必须持有正式地图实例生成的完整 AStar 路线")
 

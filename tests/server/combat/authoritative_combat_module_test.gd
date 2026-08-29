@@ -221,6 +221,10 @@ func _test_five_second_wander_interval() -> void:
 	_expect(monster.position.is_equal_approx(initial_position), "monster should remain idle before five seconds")
 	module.advance_ticks(1)
 	_expect(not monster.position.is_equal_approx(initial_position), "monster should begin roaming on the fifth second")
+	var first_roaming_position := monster.position
+	module.advance_ticks(1)
+	_expect(monster.action == &"move" and not monster.position.is_equal_approx(first_roaming_position),
+		"monster should keep advancing the active route instead of pausing after one tick")
 	var safety_ticks := 400
 	while monster.action == &"move" and safety_ticks > 0:
 		module.advance_ticks(1)

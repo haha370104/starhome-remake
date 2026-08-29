@@ -20,6 +20,7 @@ func _init() -> void:
 	_test_local_prediction_and_reconciliation()
 	_test_destination_prediction_does_not_rewind_on_ack()
 	_test_remote_interpolation()
+	_test_heterogeneous_combat_events_do_not_drop_world_state()
 	call_deferred("_test_session_integration")
 
 
@@ -159,6 +160,34 @@ func _test_remote_interpolation() -> void:
 	_expect_equal(interpolator.tracked_entity_count(), 1, "one remote tracked")
 	interpolator.remove_entity(&"remote.one")
 	_expect_equal(interpolator.tracked_entity_count(), 0, "remote removal")
+
+
+## 验证自维修、拾取等非伤害事件不会让客户端丢弃同一快照中的怪物位置和生命状态。
+## 设计：recent_events 是异构领域事件窗口，只有 event_id/type 为公共字段。
+func _test_heterogeneous_combat_events_do_not_drop_world_state() -> void:
+	var session := Session.new()
+	var combat_snapshot := {
+		"server_tick": 20,
+		"local_entity_id": "player.test",
+		"local_vehicle": {},
+		"monsters": [{
+			"entity_id": "monster.test",
+			"species_id": "om_larva",
+			"combat_actor_id": "om_larva_standard",
+			"position": [100.0, 200.0],
+			"health": 35,
+			"max_health": 42,
+			"alive": true,
+		}],
+		"ground_loot": [],
+		"recent_events": [
+			{"event_id": 1, "event_type": &"self_repair_started", "actor_id": "player.test"},
+			{"event_id": 2, "event_type": &"loot_picked_up", "loot_id": "loot.test"},
+		],
+	}
+	_expect_true(session.call("_is_valid_combat_snapshot", combat_snapshot),
+		"合法非伤害事件不得毒化整份战斗快照")
+	session.free()
 
 
 ## 验证离线会话节点对本地预测、远端快照和生命周期信号的集成。

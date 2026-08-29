@@ -476,9 +476,7 @@ func _is_valid_combat_snapshot(snapshot: Dictionary) -> bool:
 		var event: Dictionary = raw_event
 		var event_type_kind := typeof(event.get("event_type"))
 		if typeof(event.get("event_id")) != TYPE_INT \
-			or event_type_kind not in [TYPE_STRING, TYPE_STRING_NAME] \
-			or typeof(event.get("target_entity_id")) != TYPE_STRING \
-			or typeof(event.get("damage")) != TYPE_INT:
+			or event_type_kind not in [TYPE_STRING, TYPE_STRING_NAME]:
 			return false
 	return true
 
