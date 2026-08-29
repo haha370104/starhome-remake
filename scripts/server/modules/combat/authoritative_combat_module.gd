@@ -136,6 +136,20 @@ func register_monster(definition: Dictionary) -> DomainResult:
 	return DomainResult.ok(lifecycle)
 
 
+## 移除地图级种群调度中已经死亡的怪物实例。
+## 返回被移除的稳定实例 ID，存活怪物绝不会被此入口删除。
+func remove_dead_monsters(map_instance_id: String) -> Array[String]:
+	var removed: Array[String] = []
+	var monster_ids := monsters.keys()
+	monster_ids.sort()
+	for monster_id: String in monster_ids:
+		var monster: MonsterLifecycle = monsters[monster_id]
+		if monster.map_instance_id == map_instance_id and not monster.is_alive():
+			monsters.erase(monster_id)
+			removed.append(monster_id)
+	return removed
+
+
 ## 执行 `unregister_vehicle` 对应的模块操作。
 ## [param actor_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## 返回该函数计算、查询或操作得到的结果。

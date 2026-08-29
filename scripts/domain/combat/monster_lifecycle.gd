@@ -35,6 +35,7 @@ var action := &"idle"
 var action_sequence := 0
 var respawn_delay_ticks := 0
 var respawn_at_tick := -1
+var population_managed := false
 var death_generation := 0
 var last_killer_id := ""
 
@@ -89,6 +90,7 @@ func configure(definition: Dictionary, simulation_hz: int) -> DomainResult:
 	wander_radius = maxf(0.0, float(definition.get("wander_radius", 0.0)))
 	wander_interval_ticks = roundi(requested_wander_interval_seconds * float(simulation_hz))
 	respawn_delay_ticks = roundi(requested_respawn_seconds * float(simulation_hz))
+	population_managed = bool(definition.get("population_managed", false))
 	respawn_at_tick = -1
 	death_generation = 0
 	last_killer_id = ""
@@ -137,7 +139,7 @@ func advance_to_tick(current_tick: int) -> DomainResult:
 	if current_tick < 0:
 		return DomainResult.failure(&"combat.invalid_tick", "tick cannot be negative")
 	var respawned := false
-	if health == 0 and respawn_at_tick >= 0 and current_tick >= respawn_at_tick:
+	if not population_managed and health == 0 and respawn_at_tick >= 0 and current_tick >= respawn_at_tick:
 		health = max_health
 		respawn_at_tick = -1
 		last_killer_id = ""
@@ -205,6 +207,7 @@ func to_dictionary() -> Dictionary:
 		"wander_interval_ticks": wander_interval_ticks,
 		"respawn_delay_ticks": respawn_delay_ticks,
 		"respawn_at_tick": respawn_at_tick,
+		"population_managed": population_managed,
 		"death_generation": death_generation,
 		"last_killer_id": last_killer_id,
 	}

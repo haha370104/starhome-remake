@@ -22,6 +22,9 @@ var _combat_assembly: Dictionary = {}
 var _combat_weapons: Dictionary = {}
 var _accepted_movement_distance: Dictionary = {}
 var _last_progression_combat_event_id := 0
+var _monster_population_policy: Dictionary = {}
+var _next_monster_replenishment_tick := -1
+var _monster_spawn_sequence := 0
 
 
 ## 加载并校验 `load_map` 对应的模块状态。
@@ -68,6 +71,7 @@ func configure_combat(catalog, simulation_hz: int) -> Dictionary:
 	if not assembly_result.is_ok or not weapon_result.is_ok:
 		return _failure(&"combat.definition_invalid", "starter vehicle combat definitions are invalid")
 	_combat_catalog = catalog
+	_monster_population_policy = catalog.monster_population_policy_for_map(String(definition.map_id))
 	_combat_assembly = assembly_result.value
 	_combat_weapons = {"energy_cannon.primary": weapon_result.value}
 	combat_module = CombatModuleScript.new()
@@ -86,6 +90,10 @@ func configure_combat(catalog, simulation_hz: int) -> Dictionary:
 		var registration = combat_module.register_monster(monster_definition)
 		if not registration.is_ok:
 			return _failure(registration.error_code, registration.error_message)
+	_monster_spawn_sequence = lifecycle_result.value.size()
+	_next_monster_replenishment_tick = roundi(
+		float(_monster_population_policy.get("replenish_interval_seconds", 60.0)) * simulation_hz
+	)
 	for entity_id: String in entities:
 		var registration := _register_vehicle_combat(entity_id)
 		if not registration.ok:
@@ -274,6 +282,50 @@ func simulate(delta: float) -> void:
 		for entity_id: String in entities:
 			combat_module.update_actor_position(entity_id, entities[entity_id].position)
 		combat_module.advance_ticks(1)
+		_replenish_monster_population_if_due()
+
+
+## 每分钟按地图策略补充怪物；死亡实例在补量时统一回收，不再逐只原地复活。
+func _replenish_monster_population_if_due() -> void:
+	if combat_module == null or _next_monster_replenishment_tick < 0 \
+		or combat_module.current_tick < _next_monster_replenishment_tick:
+		return
+	var interval_ticks := maxi(1, roundi(
+		float(_monster_population_policy.get("replenish_interval_seconds", 60.0))
+		* combat_module.simulation_hz
+	))
+	_next_monster_replenishment_tick += interval_ticks
+	var alive_by_species: Dictionary = {}
+	var alive_count := 0
+	for monster: MonsterLifecycle in combat_module.monsters.values():
+		if monster.map_instance_id == instance_id and monster.is_alive():
+			alive_count += 1
+			alive_by_species[monster.species_id] = int(
+				alive_by_species.get(monster.species_id, 0)
+			) + 1
+	var replenish_count: int = _combat_catalog.monster_replenishment_count(
+		String(definition.map_id), alive_count
+	)
+	combat_module.remove_dead_monsters(instance_id)
+	if replenish_count <= 0:
+		return
+	var generated = _combat_catalog.monster_replenishment_for_map(
+		String(definition.map_id), instance_id, alive_by_species,
+		_monster_spawn_sequence, replenish_count,
+	)
+	if not generated.is_ok:
+		push_error("Monster replenishment failed: %s" % generated.error_message)
+		return
+	for raw_definition: Variant in generated.value:
+		var monster_definition: Dictionary = raw_definition.duplicate(true)
+		var position: Vector2 = monster_definition["position"]
+		if not navigation.is_walkable(position):
+			position = navigation.closest_walkable_position(position)
+		if not position.is_finite():
+			continue
+		monster_definition["position"] = position
+		combat_module.register_monster(monster_definition)
+	_monster_spawn_sequence += generated.value.size()
 
 
 ## 提取自上次调用后产生的技能成长事件，并清空已消费的移动累计。

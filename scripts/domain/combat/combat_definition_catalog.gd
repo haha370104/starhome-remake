@@ -154,28 +154,95 @@ func monster_lifecycles_for_map(map_id: String, map_instance_id: String) -> Doma
 		return DomainResult.ok([])
 	if not bool(_d04_encounter["enabled"]):
 		return DomainResult.ok([])
+	var policy := monster_population_policy_for_map(map_id)
+	return monster_replenishment_for_map(
+		map_id, map_instance_id, {}, 0, int(policy.get("maximum_population", 0))
+	)
+
+
+## 返回地图级怪物种群策略的只读副本。
+func monster_population_policy_for_map(map_id: String) -> Dictionary:
+	if map_id != String(_d04_encounter.get("map_id", "")) or not bool(_d04_encounter.get("enabled", false)):
+		return {}
+	return (_d04_encounter.get("population_policy", {}) as Dictionary).duplicate(true)
+
+
+## 计算本轮应补数量；阈值采用严格小于，结果始终受地图上限钳制。
+func monster_replenishment_count(map_id: String, alive_count: int) -> int:
+	var policy := monster_population_policy_for_map(map_id)
+	if policy.is_empty():
+		return 0
+	var maximum := int(policy["maximum_population"])
+	var admitted_alive := clampi(alive_count, 0, maximum)
+	var ratio := float(admitted_alive) / float(maximum)
+	var replenish_ratio := float(policy["normal_replenish_ratio"])
+	if ratio < float(policy["critical_threshold_ratio"]):
+		replenish_ratio = float(policy["critical_replenish_ratio"])
+	elif ratio < float(policy["low_threshold_ratio"]):
+		replenish_ratio = float(policy["low_replenish_ratio"])
+	return mini(maximum - admitted_alive, roundi(float(maximum) * replenish_ratio))
+
+
+## 按配置权重与当前物种缺口生成一批新的怪物生命周期定义。
+## 每次选择 `(现存+本批)/权重` 最小的物种，使长期比例逼近配置权重。
+func monster_replenishment_for_map(
+	map_id: String,
+	map_instance_id: String,
+	alive_by_species: Dictionary,
+	first_sequence: int,
+	requested_count: int,
+) -> DomainResult:
+	if map_instance_id.is_empty() or first_sequence < 0 or requested_count < 0:
+		return DomainResult.failure(&"combat.invalid_population_request", "monster replenishment request is invalid")
+	if map_id != String(_d04_encounter.get("map_id", "")) or not bool(_d04_encounter.get("enabled", false)):
+		return DomainResult.ok([])
+	var groups: Array = _d04_encounter["spawn_groups"]
+	var working_counts := alive_by_species.duplicate()
 	var result: Array[Dictionary] = []
-	for raw_group: Variant in _d04_encounter["spawn_groups"]:
-		var group: Dictionary = raw_group
-		var species_id := String(group["monster_id"])
-		var species: Dictionary = _monsters_by_id[species_id]
-		var stats: Dictionary = species["stats"]
-		var combat: Dictionary = species["combat"]
-		var anchor_values: Array = group["anchor"]
-		var anchor := Vector2(float(anchor_values[0]), float(anchor_values[1]))
-		var population := int(group["population"])
-		for spawn_index: int in range(int(group["population"])):
-			var angle := float(spawn_index) * 2.399963229728653
-			var radius := float(group["spawn_radius"]) * sqrt(float(spawn_index + 1) / float(population))
-			var spawn_position := anchor + Vector2(cos(angle), sin(angle)) * radius
-			result.append({
-				"monster_id": "%s.%s.%d" % [_d04_encounter["encounter_id"], group["group_id"], spawn_index],
+	for batch_index: int in range(requested_count):
+		var selected_group: Dictionary = groups[0]
+		var selected_score := INF
+		for raw_group: Variant in groups:
+			var candidate: Dictionary = raw_group
+			var candidate_species := String(candidate["monster_id"])
+			var score := float(working_counts.get(candidate_species, 0)) / float(candidate["weight"])
+			if score < selected_score:
+				selected_score = score
+				selected_group = candidate
+		var species_id := String(selected_group["monster_id"])
+		var species_count := int(working_counts.get(species_id, 0))
+		var sequence := first_sequence + batch_index
+		result.append(_monster_lifecycle_definition(
+			selected_group, map_instance_id, sequence, species_count
+		))
+		working_counts[species_id] = species_count + 1
+	return DomainResult.ok(result)
+
+
+func _monster_lifecycle_definition(
+	group: Dictionary,
+	map_instance_id: String,
+	sequence: int,
+	species_count: int,
+) -> Dictionary:
+	var species_id := String(group["monster_id"])
+	var species: Dictionary = _monsters_by_id[species_id]
+	var stats: Dictionary = species["stats"]
+	var combat: Dictionary = species["combat"]
+	var anchor_values: Array = group["anchor"]
+	var anchor := Vector2(float(anchor_values[0]), float(anchor_values[1]))
+	var angle := float(species_count) * 2.399963229728653
+	var normalized_ring := sqrt(float(posmod(species_count, 25) + 1) / 25.0)
+	var spawn_position := anchor + Vector2(cos(angle), sin(angle)) \
+		* float(group["spawn_radius"]) * normalized_ring
+	return {
+				"monster_id": "%s.population.%d" % [_d04_encounter["encounter_id"], sequence],
 				"species_id": species_id,
 				"map_instance_id": map_instance_id,
 				"position": spawn_position,
 				"spawn_anchor": anchor,
 				"spawn_radius": float(group["spawn_radius"]),
-				"spawn_index": spawn_index,
+				"spawn_index": sequence,
 				"max_health": int(stats["max_health"]),
 				"base_attack": int(stats["base_attack"]),
 				"attack_archetype": String(combat["attack_archetype"]),
@@ -193,11 +260,11 @@ func monster_lifecycles_for_map(map_id: String, map_instance_id: String) -> Doma
 				"display_name": String(species["display_name"]),
 				"combat_actor_id": String(species["combat_actor_id"]),
 				"respawn_seconds": float(combat["respawn_seconds"]),
+				"population_managed": true,
 				"drops": (species.get("drops") as Array).duplicate(true)
 					if species.get("drops") is Array else null,
 				"unknown_fields": _unknown_monster_fields(stats),
-			})
-	return DomainResult.ok(result)
+			}
 
 
 ## 执行 `equipment_definition` 对应的模块操作。
@@ -275,8 +342,12 @@ func _validate_runtime_links() -> DomainResult:
 		if not _equipment_by_id.has(String(raw_id)):
 			return DomainResult.failure(&"combat.invalid_catalog", "starter equipment reference is unresolved")
 	var groups: Variant = _d04_encounter.get("spawn_groups")
+	var policy: Variant = _d04_encounter.get("population_policy")
 	if String(_d04_encounter.get("map_id", "")) != "d04_field_zone" or not groups is Array:
 		return DomainResult.failure(&"combat.invalid_catalog", "D04 encounter identity or spawn groups are invalid")
+	if not policy is Dictionary or int(policy.get("maximum_population", 0)) <= 0 \
+		or float(policy.get("replenish_interval_seconds", 0.0)) <= 0.0:
+		return DomainResult.failure(&"combat.invalid_catalog", "D04 population policy is invalid")
 	for raw_group: Variant in groups:
 		if not raw_group is Dictionary:
 			return DomainResult.failure(&"combat.invalid_catalog", "D04 spawn group must be a dictionary")
@@ -284,7 +355,7 @@ func _validate_runtime_links() -> DomainResult:
 		var anchor: Variant = group.get("anchor")
 		if not _monsters_by_id.has(String(group.get("monster_id", ""))) \
 			or not anchor is Array or anchor.size() != 2 \
-			or int(group.get("population", 0)) <= 0 or float(group.get("spawn_radius", -1.0)) < 0.0:
+			or float(group.get("weight", 0.0)) <= 0.0 or float(group.get("spawn_radius", -1.0)) < 0.0:
 			return DomainResult.failure(&"combat.invalid_catalog", "D04 spawn group contains unresolved or invalid data")
 	for species: Dictionary in _monsters_by_id.values():
 		var stats: Dictionary = species["stats"]

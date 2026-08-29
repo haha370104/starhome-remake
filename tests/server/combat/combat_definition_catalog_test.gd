@@ -88,7 +88,7 @@ func _test_d04_lifecycle_definitions() -> void:
 	if not lifecycle_result.is_ok:
 		return
 	var lifecycles: Array = lifecycle_result.value
-	_expect(lifecycles.size() == 16, "four D04 groups of four should produce sixteen lifecycle inputs")
+	_expect(lifecycles.size() == 100, "D04 should start at its configured population cap")
 	var identities: Dictionary = {}
 	var population_by_species: Dictionary = {}
 	for raw_definition: Variant in lifecycles:
@@ -119,7 +119,16 @@ func _test_d04_lifecycle_definitions() -> void:
 	var all_unique := identities.size() == lifecycles.size()
 	_expect(all_unique, "expanded monster instance IDs should be unique")
 	for species_id: String in ["om_adult", "om_larva", "photosensitive_orb", "toxic_gel"]:
-		_expect(int(population_by_species.get(species_id, 0)) == 4, "D04 should preserve population four for %s" % species_id)
+		_expect(int(population_by_species.get(species_id, 0)) == 25, "equal weights should start with twenty-five %s" % species_id)
+	var replenish: Variant = catalog.monster_replenishment_for_map(
+		"d04_field_zone", MAP_INSTANCE_ID, {"om_adult": 24, "om_larva": 25, "photosensitive_orb": 25, "toxic_gel": 25}, 100, 1
+	)
+	_expect(replenish.is_ok and String(replenish.value[0]["species_id"]) == "om_adult", "replenishment should fill the largest weighted deficit first")
+	_expect(catalog.monster_replenishment_count("d04_field_zone", 49) == 20, "below fifty percent should add twenty percent")
+	_expect(catalog.monster_replenishment_count("d04_field_zone", 50) == 10, "exactly fifty percent should use the ten-percent tier")
+	_expect(catalog.monster_replenishment_count("d04_field_zone", 79) == 10, "below eighty percent should add ten percent")
+	_expect(catalog.monster_replenishment_count("d04_field_zone", 80) == 5, "exactly eighty percent should use the five-percent tier")
+	_expect(catalog.monster_replenishment_count("d04_field_zone", 98) == 2, "replenishment must not exceed the map cap")
 	var lifecycle: MonsterLifecycle = MonsterLifecycleScript.new()
 	_expect(lifecycle.configure(lifecycles[0], 20).is_ok, "formal D04 definition should initialize MonsterLifecycle directly")
 	_expect(lifecycle.max_health == int(lifecycles[0]["max_health"]), "monster lifecycle should preserve formal health semantics")
