@@ -52,6 +52,14 @@ func presentation_for(mode: String) -> Dictionary:
 	return presentation.duplicate(true)
 
 
+## 查询指定表现模式在原客户端中的原生像素尺寸。
+## [param mode] inventory、world 或其他业务表现模式。
+## 返回表现目录声明的宽高；缺少证据时回退到物品布局占位尺寸。
+## 设计：原生绘制尺寸与背包碰撞占位是两个概念，调用方不得用 footprint 缩放贴图。
+func visual_size_for(mode: String) -> Vector2i:
+	return _vector2i(presentation_for(mode).get("native_size", []), footprint_px)
+
+
 ## 导出背包布局规则需要的最小字典。
 ## 返回可交给 InventoryLayout 校验器的布局记录。
 func to_layout_dictionary() -> Dictionary:

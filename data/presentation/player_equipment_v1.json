@@ -3,6 +3,7 @@
   "definitions": {
     "recruit_tank": {
       "icon": "res://assets/ui/windows/inventory/items/recruit_tank.png",
+      "native_size": [67, 46],
       "dialog_texture": "res://assets/ui/windows/vehicle/preview/chassis.png",
       "dialog_anchor": [170, 200],
       "dialog_origin": [-77, 8],
@@ -10,6 +11,7 @@
     },
     "beginner_engine": {
       "icon": "res://assets/ui/windows/inventory/items/beginner_engine.png",
+      "native_size": [36, 32],
       "dialog_texture": "res://assets/ui/windows/vehicle/preview/engine.png",
       "dialog_anchor": [130, 385],
       "dialog_origin": [-33, -15],
@@ -17,6 +19,7 @@
     },
     "recruit_energy_cannon": {
       "icon": "res://assets/ui/windows/inventory/items/recruit_energy_cannon.png",
+      "native_size": [40, 21],
       "dialog_texture": "res://assets/ui/windows/vehicle/preview/primary_weapon.png",
       "dialog_anchor": [170, 200],
       "dialog_origin": [-32, -16],
@@ -24,6 +27,7 @@
     },
     "male_sleeveless_shirt": {
       "icon": "res://assets/ui/windows/inventory/items/male_sleeveless_shirt.png",
+      "native_size": [40, 28],
       "dialog_texture": "res://assets/ui/windows/character/equipment/male_sleeveless_shirt.png",
       "dialog_anchor": [91, 274],
       "dialog_origin": [-37, -181],

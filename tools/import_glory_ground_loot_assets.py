@@ -103,6 +103,7 @@ def import_one(item_id: str, spec: dict[str, str]) -> tuple[dict[str, Any], dict
         },
         "inventory": {
             "icon": f"res://assets/items/materials/{item_id}/inventory_icon.png",
+            "native_size": [crop.width, crop.height],
         },
     }
     audit = {

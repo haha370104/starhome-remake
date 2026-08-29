@@ -91,6 +91,10 @@
 
 客户端可用相同规则绘制预览，但释放鼠标后仍等待服务器快照，不会直接确认位置。
 
+背包的 `footprint_px` 只用于权威布局、拖动和重叠校验，不得当成图标缩放目标。旧客户端对
+背包物品直接设置 ALE `src`，因此 `InventoryItemView` 必须使用 `presentation.inventory.native_size`
+以 1:1 像素绘制。例如低级生物硅是 `50×42`，初级引擎是 `36×32`，前者在背包中本就应该更大。
+
 ## 4. 离线调试边界
 
 编辑器默认离线模式使用 `OfflinePlayerPanelAuthority`。它只保存在内存中，但复用同一个

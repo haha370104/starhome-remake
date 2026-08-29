@@ -23,7 +23,8 @@ var _hover_material: ShaderMaterial
 func configure(domain_item: GameItem) -> void:
 	item = domain_item
 	item_snapshot = item.to_view_dictionary()
-	size = Vector2(item.footprint_px)
+	var native_size := item.visual_size_for("inventory")
+	size = Vector2(native_size)
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	var item_tooltip := "%s\n%s" % [
 		item.display_name,
@@ -35,9 +36,10 @@ func configure(domain_item: GameItem) -> void:
 	_icon.name = "Icon"
 	var icon_path := item.icon_path
 	_icon.texture = load(icon_path) as Texture2D if ResourceLoader.exists(icon_path) else null
-	_icon.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_icon.position = Vector2.ZERO
+	_icon.size = Vector2(native_size)
 	_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	_icon.stretch_mode = TextureRect.STRETCH_KEEP
 	_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_icon)
 	_hover_material = ItemHoverHighlightScript.bind(self, _icon, item_tooltip)

@@ -15,7 +15,11 @@
         ]
       },
       "inventory": {
-        "icon": "res://assets/items/materials/low_grade_gel/inventory_icon.png"
+        "icon": "res://assets/items/materials/low_grade_gel/inventory_icon.png",
+        "native_size": [
+          49,
+          31
+        ]
       }
     },
     "low_grade_energy_pack": {
@@ -32,7 +36,11 @@
         ]
       },
       "inventory": {
-        "icon": "res://assets/items/materials/low_grade_energy_pack/inventory_icon.png"
+        "icon": "res://assets/items/materials/low_grade_energy_pack/inventory_icon.png",
+        "native_size": [
+          47,
+          36
+        ]
       }
     },
     "low_grade_energy_catalyst": {
@@ -49,7 +57,11 @@
         ]
       },
       "inventory": {
-        "icon": "res://assets/items/materials/low_grade_energy_catalyst/inventory_icon.png"
+        "icon": "res://assets/items/materials/low_grade_energy_catalyst/inventory_icon.png",
+        "native_size": [
+          42,
+          27
+        ]
       }
     },
     "low_grade_biosilicon": {
@@ -66,7 +78,11 @@
         ]
       },
       "inventory": {
-        "icon": "res://assets/items/materials/low_grade_biosilicon/inventory_icon.png"
+        "icon": "res://assets/items/materials/low_grade_biosilicon/inventory_icon.png",
+        "native_size": [
+          50,
+          42
+        ]
       }
     },
     "low_grade_quadruped_shell": {
@@ -83,7 +99,11 @@
         ]
       },
       "inventory": {
-        "icon": "res://assets/items/materials/low_grade_quadruped_shell/inventory_icon.png"
+        "icon": "res://assets/items/materials/low_grade_quadruped_shell/inventory_icon.png",
+        "native_size": [
+          38,
+          31
+        ]
       }
     }
   }

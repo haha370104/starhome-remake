@@ -70,7 +70,7 @@ func _run() -> void:
 		"技能第三列应显示当前经验百分比")
 	var material_grant = manager.grant_offline_loot({
 		"loot_id": "monster.loot.runtime.material",
-		"item_definition_id": "low_grade_energy_pack",
+		"item_definition_id": "low_grade_biosilicon",
 		"quantity": 2,
 	})
 	_expect(material_grant.is_ok, "地面材料应以同一领域物品进入背包")
@@ -87,7 +87,10 @@ func _run() -> void:
 	if material_view != null:
 		var material_icon := material_view.get_node("Icon") as TextureRect
 		_expect(material_icon.texture != null,
-			"低级能量包进入背包后应使用 inventory 表现素材")
+			"低级生物硅进入背包后应使用 inventory 表现素材")
+		_expect(material_view.size == Vector2(50, 42) \
+				and material_icon.size == Vector2(50, 42),
+			"低级生物硅应与地面表现一样按 50×42 原尺寸绘制")
 	var damage_progress = manager.grant_offline_skill_progression({
 		"entity_id": "player.local",
 		"source": "effective_damage",
@@ -112,6 +115,10 @@ func _run() -> void:
 		"驾驶经验达到一个可见百分点时应立即刷新")
 	var inventory_item := manager.inventory_panel._item_canvas.get_child(0) as InventoryItemView
 	var inventory_icon := inventory_item.get_node("Icon") as TextureRect
+	_expect(inventory_item.item.definition_id == "beginner_engine" \
+			and inventory_item.size == Vector2(36, 32) \
+			and inventory_icon.size == Vector2(36, 32),
+		"初级引擎应按原客户端 ALE 帧 36×32 原尺寸绘制")
 	inventory_item.mouse_entered.emit()
 	_expect(_is_item_highlighted(inventory_icon), "背包物品悬停应启用原版绿色发光")
 	var legacy_tooltip := ItemHoverHighlightScript.active_tooltip()
