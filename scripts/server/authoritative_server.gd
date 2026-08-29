@@ -430,6 +430,7 @@ func handle_peer_map_transition(peer_id: int, raw_intent: Variant) -> Dictionary
 			)
 		committed_entity = destination_spawn_result.value
 		_copy_transitioned_entity_state(entity, committed_entity)
+		_copy_transitioned_vehicle_state(source_instance, destination_instance, session.entity_id)
 		if not source_instance.remove_entity(session.entity_id):
 			destination_instance.remove_entity(session.entity_id)
 			return _failure(&"map_transition.atomic_commit_failed", "source entity disappeared during commit")
@@ -489,6 +490,7 @@ func handle_peer_vehicle_recovery(peer_id: int, raw_intent: Variant) -> Dictiona
 		"server_tick": server_tick,
 		"complete_at_tick": complete_at_tick,
 		"delay_seconds": VEHICLE_RECOVERY_DELAY_SECONDS,
+		"input_sequence": intent.input_sequence,
 	})
 
 
@@ -542,6 +544,7 @@ func _recover_destroyed_vehicle_to_base(entity_id: String, pending: Dictionary) 
 			return _failure(&"vehicle_recovery.spawn_blocked", "base rejected rescue spawn")
 		recovered_entity = spawned.value
 		_copy_transitioned_entity_state(source_entity, recovered_entity)
+		_copy_transitioned_vehicle_state(source, destination, entity_id)
 		if not source.remove_entity(entity_id):
 			destination.remove_entity(entity_id)
 			return _failure(&"vehicle_recovery.atomic_commit_failed", "source entity disappeared")
@@ -732,10 +735,17 @@ func dispatch_transport_command(
 			})
 		Protocol.VEHICLE_RECOVERY_INTENT:
 			var result := handle_peer_vehicle_recovery(peer_id, payload)
-			_send_reliable(peer_id, {
-				"type": "vehicle_recovery_scheduled" if result.ok else "command_rejected",
-				"result": _wire_result(result),
-			})
+			if result.ok:
+				_send_reliable(peer_id, {
+					"type": "vehicle_recovery_scheduled", "result": _wire_result(result),
+				})
+				return
+			var wire_result := _wire_result(result)
+			wire_result["value"] = {
+				"command_type": String(Protocol.VEHICLE_RECOVERY_INTENT),
+				"input_sequence": int(payload.get("input_sequence", -1)),
+			}
+			_send_reliable(peer_id, {"type": "command_rejected", "result": wire_result})
 		TRANSPORT_PLAYER_PANEL_COMMAND:
 			var result := handle_peer_player_panel_command(peer_id, payload)
 			_send_reliable(peer_id, {
@@ -1235,6 +1245,25 @@ func _copy_transitioned_entity_state(
 	destination.path = PackedVector2Array([destination.position])
 	destination.path_index = destination.path.size()
 	destination.target_position = destination.position
+
+
+## 跨地图复制服务器拥有的战车当前资源，避免回城后的 10% 生命在下一次切图时重置。
+func _copy_transitioned_vehicle_state(
+	source_instance: AuthoritativeMapInstance,
+	destination_instance: AuthoritativeMapInstance,
+	entity_id: String,
+) -> void:
+	var source_state := source_instance.vehicle_combat_state_for(entity_id)
+	var destination_state := destination_instance.vehicle_combat_state_for(entity_id)
+	if source_state == null or destination_state == null:
+		return
+	destination_state.health = clampi(source_state.health, 0, destination_state.max_health)
+	destination_state.reserve_energy = clampf(
+		source_state.reserve_energy, 0.0, destination_state.reserve_energy_capacity
+	)
+	destination_state.working_energy = clampf(
+		source_state.working_energy, 0.0, destination_state.working_energy_capacity
+	)
 
 
 ## 执行 `place_transitioned_entity` 对应的模块操作。

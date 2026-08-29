@@ -16,6 +16,8 @@ signal combat_snapshot_received(snapshot: Dictionary)
 signal combat_event_received(event: Dictionary)
 signal player_panel_bundle_received(bundle: Dictionary)
 signal skill_level_up_received(event: Dictionary)
+signal vehicle_recovery_scheduled(delay_seconds: float)
+signal vehicle_recovery_failed(code: StringName, message: String)
 signal connection_failed(message: String)
 
 const SessionScript := preload("res://scripts/client/network/client_multiplayer_session.gd")
@@ -90,6 +92,8 @@ func start(settings: Dictionary) -> Error:
 	session.loot_picked_up.connect(_on_loot_picked_up)
 	session.player_panel_bundle_received.connect(player_panel_bundle_received.emit)
 	session.skill_level_up_received.connect(skill_level_up_received.emit)
+	session.vehicle_recovery_scheduled.connect(vehicle_recovery_scheduled.emit)
+	session.vehicle_recovery_failed.connect(vehicle_recovery_failed.emit)
 	add_child(session)
 	session.initialize_local_player(Vector2(settings.get("initial_position", _local_character.position)))
 
@@ -132,6 +136,13 @@ func request_use_ability(ability_id: String, aim_world_position: Vector2) -> Dic
 	if session == null:
 		return {}
 	return session.request_use_ability(ability_id, aim_world_position)
+
+
+## 将击毁后回基地的选择交给客户端会话与权威服务器。
+func request_vehicle_recovery() -> Dictionary:
+	if session == null:
+		return {}
+	return session.request_vehicle_recovery()
 
 
 ## 将地面掉落拾取意图转交客户端会话。

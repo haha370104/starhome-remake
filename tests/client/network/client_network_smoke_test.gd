@@ -215,6 +215,33 @@ func _test_session_integration() -> void:
 	_expect_true(session.network_adapter.session_ready, "进程内会话必须完成正式握手")
 	_expect_true(not session.current_map_instance_id.is_empty(), "正式握手必须分配地图实例")
 	_expect_equal(panel_bundles.size(), 1, "握手后应自动查询正式服务器面板聚合")
+	var recovery_schedules: Array[float] = []
+	session.vehicle_recovery_scheduled.connect(
+		func(delay: float) -> void: recovery_schedules.append(delay)
+	)
+	var transport = session.network_adapter.get("_transport_endpoint")
+	var server = transport.authoritative_server
+	var server_session: ServerSession = server.sessions.session_for_peer(
+		transport.LOCAL_PEER_ID
+	)
+	var current_instance: AuthoritativeMapInstance = server.map_registry.instance_by_id(
+		server_session.map_instance_id
+	)
+	var vehicle_state = current_instance.vehicle_combat_state_for(server_session.entity_id)
+	vehicle_state.apply_damage(vehicle_state.max_health)
+	var recovery_payload := session.request_vehicle_recovery()
+	_expect_equal(recovery_payload.get("action"), "return_to_base",
+		"客户端恢复意图只能选择回基地")
+	_expect_false(recovery_payload.has("map_id"), "客户端恢复意图不得指定目的地图")
+	_expect_false(recovery_payload.has("health"), "客户端恢复意图不得指定回血值")
+	await process_frame
+	_expect_equal(recovery_schedules, [3.0], "服务器应确认三秒基地救援")
+	transport.advance_simulation(3.0)
+	await process_frame
+	_expect_false(session.is_vehicle_recovery_pending(), "权威回城完成后应释放恢复闩锁")
+	var recovered_state = current_instance.vehicle_combat_state_for(server_session.entity_id)
+	_expect_true(recovered_state != null and recovered_state.health == 7,
+		"同地图基地救援也应恢复最大生命的 10%")
 	var sent_payloads: Array[Dictionary] = []
 	session.network_adapter.move_intent_sent.connect(
 		func(payload: Dictionary) -> void: sent_payloads.append(payload)

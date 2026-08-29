@@ -27,6 +27,7 @@ var _current_action := &"stand"
 var _current_direction := 6
 var _animation_speed_scale := 1.0
 var _combat_weapon_layer := &"primary_weapon"
+var _vehicle_destroyed := false
 
 
 ## 构建共享人形角色与按需隐藏的战斗载具表现。
@@ -213,6 +214,13 @@ func apply_character_equipment(
 	)
 	human_character.set_equipment_set(character_set)
 	return true
+
+
+## 按荣耀版死亡表现降低战车本体透明度；名称和状态条保持可读。
+func set_vehicle_destroyed(destroyed: bool) -> void:
+	_vehicle_destroyed = destroyed
+	if combat_presenter != null:
+		combat_presenter.modulate.a = 0.5 if destroyed else 1.0
 
 
 ## 报告当前地图是否正在使用战斗载具外观。

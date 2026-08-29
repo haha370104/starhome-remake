@@ -6,6 +6,7 @@ signal connection_failed(message: String)
 signal move_intent_sent(payload: Dictionary)
 signal map_transition_intent_sent(payload: Dictionary)
 signal use_ability_intent_sent(payload: Dictionary)
+signal vehicle_recovery_intent_sent(payload: Dictionary)
 signal pickup_loot_intent_sent(payload: Dictionary)
 signal player_panel_command_sent(payload: Dictionary)
 signal authoritative_snapshot_received(snapshot: Dictionary)
@@ -133,6 +134,15 @@ func send_use_ability_intent(payload: Dictionary) -> Error:
 		return ERR_UNCONFIGURED
 	use_ability_intent_sent.emit(payload.duplicate(true))
 	_transport_endpoint.send_use_ability_intent(payload)
+	return OK
+
+
+## 将击毁后回基地的选择发送给权威服务器。
+func send_vehicle_recovery_intent(payload: Dictionary) -> Error:
+	if connection_state != ConnectionState.CONNECTED:
+		return ERR_UNCONFIGURED
+	vehicle_recovery_intent_sent.emit(payload.duplicate(true))
+	_transport_endpoint.send_vehicle_recovery_intent(payload)
 	return OK
 
 

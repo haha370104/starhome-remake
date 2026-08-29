@@ -10,6 +10,9 @@ const PositionCorrectionContract = preload("res://scripts/network/contracts/posi
 const Protocol = preload("res://scripts/network/contracts/network_protocol.gd")
 const SequenceGateContract = preload("res://scripts/network/contracts/sequence_gate.gd")
 const UseAbilityIntentContract = preload("res://scripts/network/contracts/use_ability_intent.gd")
+const VehicleRecoveryIntentContract = preload(
+	"res://scripts/network/contracts/vehicle_recovery_intent.gd"
+)
 
 var _passed := 0
 var _failed := 0
@@ -23,6 +26,7 @@ func _initialize() -> void:
 	_test_move_intent()
 	_test_map_transition_intent()
 	_test_use_ability_intent()
+	_test_vehicle_recovery_intent()
 	_test_entity_snapshot()
 	_test_map_joined()
 	_test_position_correction()
@@ -194,6 +198,25 @@ func _test_use_ability_intent() -> void:
 		ErrorCodes.VALUE_OUT_OF_RANGE,
 		"use ability intent rejects non-finite aim coordinates",
 	)
+
+
+## 验证击毁恢复意图不能夹带目的地图、坐标或恢复数值。
+func _test_vehicle_recovery_intent() -> void:
+	var intent := VehicleRecoveryIntentContract.new(
+		"d04_field_zone.instance.1", VehicleRecoveryIntentContract.RETURN_TO_BASE, 4
+	)
+	_expect_true(intent.validate().is_ok, "vehicle recovery constructor is valid")
+	var restored = VehicleRecoveryIntentContract.from_dictionary(intent.to_dictionary())
+	_expect_true(restored.is_ok, "vehicle recovery intent round trip succeeds")
+	_expect_equal(restored.value.action, "return_to_base", "recovery action round trips")
+	for forbidden_field in [&"map_id", &"spawn_position", &"health", &"delay_seconds"]:
+		var forged := intent.to_dictionary()
+		forged[forbidden_field] = 999
+		_expect_error(
+			VehicleRecoveryIntentContract.from_dictionary(forged),
+			ErrorCodes.INVALID_PAYLOAD,
+			"vehicle recovery rejects authority field %s" % forbidden_field,
+		)
 
 
 ## 验证实体快照的必填状态、方向动作字段和输入确认序号契约。

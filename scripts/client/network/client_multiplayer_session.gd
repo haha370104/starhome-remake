@@ -7,6 +7,9 @@ const MapTransitionIntentContract := preload("res://scripts/network/contracts/ma
 const NetworkErrorCodes := preload("res://scripts/network/contracts/network_error_codes.gd")
 const Protocol := preload("res://scripts/network/contracts/network_protocol.gd")
 const UseAbilityIntentContract := preload("res://scripts/network/contracts/use_ability_intent.gd")
+const VehicleRecoveryIntentContract := preload(
+	"res://scripts/network/contracts/vehicle_recovery_intent.gd"
+)
 
 signal connection_state_changed(state: ClientNetworkAdapter.ConnectionState)
 signal connection_failed(message: String)
@@ -28,6 +31,8 @@ signal combat_event_received(event: Dictionary)
 signal player_panel_bundle_received(bundle: Dictionary)
 signal loot_picked_up(event: Dictionary, panel_bundle: Dictionary)
 signal skill_level_up_received(event: Dictionary)
+signal vehicle_recovery_scheduled(delay_seconds: float)
+signal vehicle_recovery_failed(code: StringName, message: String)
 
 @export var offline_debug_enabled := false
 @export var local_entity_id: StringName = &"player.local"
@@ -44,6 +49,8 @@ var _minimum_snapshot_server_tick := -1
 var _suppress_local_presentation_signal := false
 var _next_ability_sequence := 1
 var _next_panel_command_sequence := 1
+var _next_recovery_sequence := 1
+var _pending_vehicle_recovery: Dictionary = {}
 
 
 ## 节点进入场景树后初始化运行依赖。
@@ -85,6 +92,7 @@ func connect_to_server(host: String, port: int = ClientNetworkAdapter.DEFAULT_PO
 ## 设计：该函数位于客户端交互或表现边界，最终状态以服务器权威结果为准。
 func disconnect_from_server() -> void:
 	network_adapter.disconnect_from_server()
+	_pending_vehicle_recovery.clear()
 	_clear_remote_entities()
 
 
@@ -130,6 +138,32 @@ func request_use_ability(ability_id: String, aim_world_position: Vector2) -> Dic
 		return {}
 	_next_ability_sequence += 1
 	return payload
+
+
+## 请求权威服务器在战车击毁后安排返回基地；地图、坐标和回血值不由客户端提供。
+func request_vehicle_recovery() -> Dictionary:
+	if network_adapter == null or current_map_instance_id.is_empty() \
+			or not _pending_vehicle_recovery.is_empty():
+		return {}
+	var contract := VehicleRecoveryIntentContract.new(
+		current_map_instance_id,
+		VehicleRecoveryIntentContract.RETURN_TO_BASE,
+		_next_recovery_sequence,
+	)
+	var validation = contract.validate()
+	if not validation.is_ok:
+		return {}
+	var payload: Dictionary = contract.to_dictionary()
+	if network_adapter.send_vehicle_recovery_intent(payload) != OK:
+		return {}
+	_pending_vehicle_recovery = payload.duplicate(true)
+	_next_recovery_sequence += 1
+	return payload
+
+
+## 返回当前是否正在等待权威基地救援完成。
+func is_vehicle_recovery_pending() -> bool:
+	return not _pending_vehicle_recovery.is_empty()
 
 
 ## 请求拾取权威快照中可见的一件地面掉落物。
@@ -401,13 +435,33 @@ func _on_command_rejected(code: StringName, message: String) -> void:
 ## [param message] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## 设计：该函数位于客户端交互或表现边界，最终状态以服务器权威结果为准。
 func _on_server_message_received(message: Dictionary) -> void:
-	if StringName(message.get("type", "")) == &"skill_level_up":
+	var message_type := StringName(message.get("type", ""))
+	if message_type == &"vehicle_recovery_scheduled":
+		var scheduled_result: Dictionary = message.get("result", {})
+		var scheduled_value: Variant = scheduled_result.get("value")
+		if bool(scheduled_result.get("ok", false)) and scheduled_value is Dictionary \
+				and not _pending_vehicle_recovery.is_empty() \
+				and int(scheduled_value.get("input_sequence", -1)) \
+				== int(_pending_vehicle_recovery["input_sequence"]):
+			vehicle_recovery_scheduled.emit(float(scheduled_value.get("delay_seconds", 3.0)))
+		return
+	if message_type == &"vehicle_recovery_completed":
+		var completed_result: Dictionary = message.get("result", {})
+		var completed_value: Variant = completed_result.get("value")
+		if bool(completed_result.get("ok", false)) and completed_value is Dictionary \
+				and not _pending_vehicle_recovery.is_empty() \
+				and int(completed_value.get("input_sequence", -1)) \
+				== int(_pending_vehicle_recovery["input_sequence"]):
+			if _commit_map_joined(completed_value, true):
+				_pending_vehicle_recovery.clear()
+		return
+	if message_type == &"skill_level_up":
 		var skill_result: Dictionary = message.get("result", {})
 		var skill_value: Variant = skill_result.get("value")
 		if bool(skill_result.get("ok", false)) and skill_value is Dictionary:
 			skill_level_up_received.emit((skill_value as Dictionary).duplicate(true))
 		return
-	if StringName(message.get("type", "")) == &"loot_picked_up":
+	if message_type == &"loot_picked_up":
 		var loot_result: Dictionary = message.get("result", {})
 		var loot_value: Variant = loot_result.get("value")
 		if bool(loot_result.get("ok", false)) and loot_value is Dictionary:
@@ -417,23 +471,33 @@ func _on_server_message_received(message: Dictionary) -> void:
 				(value.get("panel_bundle", {}) as Dictionary).duplicate(true),
 			)
 		return
-	if StringName(message.get("type", "")) == &"player_panels":
+	if message_type == &"player_panels":
 		var panels_result: Dictionary = message.get("result", {})
 		var panels_value: Variant = panels_result.get("value")
 		if bool(panels_result.get("ok", false)) and panels_value is Dictionary:
 			player_panel_bundle_received.emit((panels_value as Dictionary).duplicate(true))
 		return
-	if StringName(message.get("type", "")) == &"combat_event":
+	if message_type == &"combat_event":
 		var combat_result: Dictionary = message.get("result", {})
 		if bool(combat_result.get("ok", false)) and combat_result.get("value") is Dictionary:
 			combat_event_received.emit((combat_result["value"] as Dictionary).duplicate(true))
 		return
-	if StringName(message.get("type", "")) != &"command_rejected":
-		return
-	if _pending_map_change.is_empty():
+	if message_type != &"command_rejected":
 		return
 	var result: Dictionary = message.get("result", {})
 	var context: Dictionary = result.get("value", {}) if result.get("value") is Dictionary else {}
+	if StringName(context.get("command_type", "")) == Protocol.VEHICLE_RECOVERY_INTENT \
+			and not _pending_vehicle_recovery.is_empty() \
+			and int(context.get("input_sequence", -1)) \
+			== int(_pending_vehicle_recovery["input_sequence"]):
+		_pending_vehicle_recovery.clear()
+		vehicle_recovery_failed.emit(
+			StringName(result.get("code", NetworkErrorCodes.INVALID_PAYLOAD)),
+			String(result.get("message", "Server rejected vehicle recovery")),
+		)
+		return
+	if _pending_map_change.is_empty():
+		return
 	if StringName(context.get("command_type", "")) != Protocol.MAP_TRANSITION_INTENT:
 		return
 	if int(context.get("transition_sequence", -1)) != int(_pending_map_change["input_sequence"]):

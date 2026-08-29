@@ -42,6 +42,9 @@ const GameWindowManagerScript := preload(
 const InitialLoadingScreenScript := preload(
 	"res://scripts/client/ui/initial_loading_screen.gd"
 )
+const VehicleDestroyedDialogScript := preload(
+	"res://scripts/ui/vehicle_destroyed_dialog.gd"
+)
 const ItemCatalogScript := preload("res://scripts/domain/items/item_catalog.gd")
 const SkillLevelMessageFormatter := preload(
 	"res://scripts/client/presentation/skill_level_message_formatter.gd"
@@ -171,6 +174,8 @@ var self_repair_visual_controller: SelfRepairVisualController
 var game_window_manager: GameWindowManager
 var item_catalog: ItemCatalog
 var initial_loading_screen: CanvasLayer
+var vehicle_destroyed_dialog: VehicleDestroyedDialog
+var _vehicle_destroyed := false
 var _initial_authoritative_world_ready := false
 
 
@@ -648,6 +653,11 @@ func _build_hud(initial_bundle: Dictionary) -> void:
 	hud.hud_action_requested.connect(_on_hud_action_requested)
 	hud.state.selected_action_slot_changed.connect(_on_weapon_slot_selected)
 	_on_weapon_slot_selected(hud.state.selected_action_slot)
+	vehicle_destroyed_dialog = VehicleDestroyedDialogScript.new()
+	vehicle_destroyed_dialog.configure()
+	vehicle_destroyed_dialog.wait_selected.connect(_on_destroyed_wait_selected)
+	vehicle_destroyed_dialog.return_to_base_requested.connect(_request_vehicle_recovery)
+	hud.root_control.add_child(vehicle_destroyed_dialog)
 
 
 ## 创建大厅客户端会话表现器，并以显式配置选择离线调试或真实网络入口。
@@ -678,6 +688,10 @@ func _build_multiplayer_presentation() -> void:
 	multiplayer_presenter.map_change_failed.connect(_on_authoritative_map_change_failed)
 	multiplayer_presenter.combat_snapshot_received.connect(_on_combat_snapshot_received)
 	multiplayer_presenter.combat_event_received.connect(_on_combat_event_received)
+	multiplayer_presenter.vehicle_recovery_scheduled.connect(
+		_on_vehicle_recovery_scheduled
+	)
+	multiplayer_presenter.vehicle_recovery_failed.connect(_on_vehicle_recovery_failed)
 	add_child(multiplayer_presenter)
 	var start_error: Error = multiplayer_presenter.start({
 		"offline_debug_enabled": multiplayer_offline_debug_enabled,
@@ -976,8 +990,40 @@ func _on_combat_snapshot_received(snapshot: Dictionary) -> void:
 	if vehicle is Dictionary:
 		player.set_combat_status(vehicle)
 		hud.set_vehicle_combat_state(vehicle)
+		var destroyed := int(vehicle.get("health", 0)) <= 0
+		player.set_vehicle_destroyed(destroyed)
+		if destroyed and not _vehicle_destroyed:
+			_vehicle_destroyed = true
+			_stop_moving("战车已被击毁")
+			vehicle_destroyed_dialog.show_destroyed()
+		elif not destroyed and _vehicle_destroyed:
+			_vehicle_destroyed = false
+			vehicle_destroyed_dialog.hide_dialog()
 		if self_repair_visual_controller != null:
 			self_repair_visual_controller.apply_snapshot(vehicle)
+
+
+## 提交击毁后的回基地选择；目的地图、三秒等待和回血比例均由服务器决定。
+func _request_vehicle_recovery() -> void:
+	if not _vehicle_destroyed or multiplayer_presenter == null:
+		return
+	if multiplayer_presenter.request_vehicle_recovery().is_empty():
+		vehicle_destroyed_dialog.show_recovery_failed("基地救援请求发送失败")
+
+
+## 显示服务器确认的基地救援等待时间。
+func _on_vehicle_recovery_scheduled(delay_seconds: float) -> void:
+	vehicle_destroyed_dialog.show_recovery_scheduled(delay_seconds)
+
+
+## 恢复被服务器拒绝的死亡窗选择。
+func _on_vehicle_recovery_failed(_code: StringName, _message: String) -> void:
+	vehicle_destroyed_dialog.show_recovery_failed("基地救援请求被拒绝，请重试")
+
+
+## 原地等待只关闭选择窗，不解除击毁状态或恢复输入。
+func _on_destroyed_wait_selected() -> void:
+	hint_label.text = "正在原地等待其他玩家营救"
 
 
 ## 处理 `_on_combat_event_received` 对应的信号回调。
@@ -1020,6 +1066,8 @@ func _handle_map_commit_failure(message: String) -> void:
 ## 设计：闸门只冻结本地世界交互；服务端拒绝会清空 pending 并恢复旧地图输入。
 func _world_input_locked() -> bool:
 	if map_commit_failure_locked:
+		return true
+	if _vehicle_destroyed:
 		return true
 	if (
 		not pending_map_transition.is_empty()
@@ -1074,6 +1122,9 @@ func _on_npc_action_requested(action_id: String) -> void:
 ## 将底栏人物、背包和战车按钮交给窗口管理器，其余动作保持 HUD 原有提示。
 ## [param action_id] 免费版底栏发出的业务动作标识。
 func _on_hud_action_requested(action_id: String) -> void:
+	if action_id == "return_base" and _vehicle_destroyed:
+		_request_vehicle_recovery()
+		return
 	if action_id == SELF_REPAIR_ABILITY_ID:
 		_request_self_repair()
 		return
