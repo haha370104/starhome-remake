@@ -4,6 +4,7 @@ extends Node
 const CombatCatalogScript := preload("res://scripts/domain/combat/combat_definition_catalog.gd")
 const CombatModuleScript := preload("res://scripts/server/modules/combat/authoritative_combat_module.gd")
 const UseAbilityIntentScript := preload("res://scripts/network/contracts/use_ability_intent.gd")
+const MonsterRoutePlannerScript := preload("res://scripts/navigation/monster_route_planner.gd")
 
 signal combat_snapshot_ready(snapshot: Dictionary)
 signal combat_event_ready(event: Dictionary)
@@ -69,6 +70,7 @@ func configure_map(
 	if not module.configure(SIMULATION_HZ, hash(map_instance_id), 1.0).is_ok:
 		return ERR_INVALID_DATA
 	module.set_monster_position_resolver(_resolve_monster_position)
+	module.set_monster_route_resolver(_resolve_monster_route)
 	var weapons := {ABILITY_ID: weapon_result.value}
 	weapons.merge(secondary_result.value)
 	if not module.register_vehicle(
@@ -238,6 +240,25 @@ func _resolve_monster_position(
 		return requested_position
 	var fallback: Vector2 = navigation.closest_reachable_position(current_position, requested_position)
 	return fallback if fallback.is_finite() else current_position
+
+
+## 使用与正式地图服务器相同的规划器生成怪物完整移动路线。
+## [param monster_id] 请求路线的怪物标识。
+## [param current_position] 怪物当前权威脚点。
+## [param requested_position] 游荡、追击或返巢期望终点。
+## 返回含实际可达终点和 AStar 路径的字典；没有路线时返回空字典。
+## 设计：离线调试桥仍是权威模拟入口，不得退化为逐 tick 直线碰撞吸附。
+func _resolve_monster_route(
+	monster_id: String,
+	current_position: Vector2,
+	requested_position: Vector2,
+) -> Dictionary:
+	return MonsterRoutePlannerScript.resolve(
+		navigation,
+		monster_id,
+		current_position,
+		requested_position,
+	)
 
 
 ## 执行 `walkable_position` 对应的模块操作。

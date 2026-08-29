@@ -3,6 +3,7 @@ extends RefCounted
 
 const MapDefinitionLoaderScript := preload("res://scripts/maps/map_definition_loader.gd")
 const DiamondNavigationScript := preload("res://scripts/navigation/diamond_navigation.gd")
+const MonsterRoutePlannerScript := preload("res://scripts/navigation/monster_route_planner.gd")
 const EntityScript := preload("res://scripts/server/authoritative_entity.gd")
 const MoveIntentContract := preload("res://scripts/network/contracts/move_intent.gd")
 const ErrorCodes := preload("res://scripts/network/contracts/network_error_codes.gd")
@@ -641,24 +642,12 @@ func _resolve_monster_route(
 	current_position: Vector2,
 	requested_position: Vector2,
 ) -> Dictionary:
-	if monster_id.is_empty() or navigation == null \
-		or not current_position.is_finite() or not requested_position.is_finite():
-		return {}
-	var authoritative_target := requested_position
-	if not navigation.is_walkable(authoritative_target):
-		authoritative_target = navigation.closest_reachable_position(
-			current_position,
-			requested_position,
-		)
-	if not authoritative_target.is_finite():
-		return {}
-	var path: PackedVector2Array = navigation.find_path(
+	return MonsterRoutePlannerScript.resolve(
+		navigation,
+		monster_id,
 		current_position,
-		authoritative_target,
+		requested_position,
 	)
-	if path.size() < 2:
-		return {}
-	return {"target": authoritative_target, "path": path}
 
 
 ## 执行 `success` 对应的模块操作。

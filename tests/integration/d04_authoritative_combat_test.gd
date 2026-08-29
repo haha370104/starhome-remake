@@ -73,9 +73,14 @@ func _test_population_and_resources(bridge: OfflineCombatAuthorityBridge) -> voi
 		"unengaged monsters should remain idle for the configured five-second interval",
 	)
 	bridge.module.advance_ticks(2)
+	var wandering_monster = bridge.module.monster_for(first_id)
 	_expect(
-		not bridge.module.monster_for(first_id).position.is_equal_approx(first_position),
+		not wandering_monster.position.is_equal_approx(first_position),
 		"unengaged monsters should start one deterministic roam after five seconds",
+	)
+	_expect(
+		wandering_monster.movement_route.size() >= 2,
+		"offline authority should install the same complete monster route used by the map server",
 	)
 
 
