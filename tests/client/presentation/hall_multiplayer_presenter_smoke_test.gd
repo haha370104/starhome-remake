@@ -87,6 +87,8 @@ func _run() -> void:
 	_expect_equal(presenter.remote_character_count(), 0, "absent remote entity is removed")
 	presenter.session.network_adapter.command_rejected.emit(&"unreachable_target", "目标不可到达")
 	_expect_equal(status_label.text, "请求被拒绝：目标不可到达", "rejection reason is visible")
+	var loot_payload: Dictionary = presenter.request_loot_pickup("loot.test.1")
+	_expect_equal(loot_payload.get("loot_id", ""), "loot.test.1", "presenter forwards loot pickup intent")
 
 	var requested_transitions: Array[Dictionary] = []
 	var joined_maps: Array[StringName] = []

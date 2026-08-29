@@ -30,6 +30,9 @@ const WeaponAttackVisualControllerScript := preload(
 const MonsterWorldControllerScript := preload(
 	"res://scripts/client/presentation/combat/monster_world_controller.gd"
 )
+const GroundLootWorldControllerScript := preload(
+	"res://scripts/client/presentation/combat/ground_loot_world_controller.gd"
+)
 const OfflineCombatAuthorityBridgeScript := preload(
 	"res://scripts/client/debug/offline_combat_authority_bridge.gd"
 )
@@ -38,6 +41,7 @@ const GameWindowManagerScript := preload(
 )
 const STARTER_WEAPON_ID := &"recruit_energy_cannon"
 const STARTER_ABILITY_ID := "energy_cannon.primary"
+const GROUND_LOOT_PRESENTATION_PATH := "res://data/presentation/ground_loot_v1.json"
 
 # Player tuning is intentionally local to the player. NPC patrol motion has its
 # own configuration and must not inherit these values when player progression,
@@ -132,6 +136,7 @@ var map_commit_failure_locked := false
 var selected_transition_id: StringName = &""
 var combat_attack_controller: Node
 var monster_world_controller: MonsterWorldController
+var ground_loot_world_controller: GroundLootWorldController
 var offline_combat_bridge: OfflineCombatAuthorityBridge
 var game_window_manager: GameWindowManager
 
@@ -229,6 +234,11 @@ func _unhandled_input(event: InputEvent) -> void:
 ## [param world_position] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## 设计：当前切片立即反馈弹体与命中特效；伤害、能耗和真实命中仍只接受服务端事件。
 func _handle_world_combat_left_click(world_position: Vector2) -> void:
+	if ground_loot_world_controller != null:
+		var loot_id := ground_loot_world_controller.loot_at(world_position)
+		if not loot_id.is_empty():
+			_request_ground_loot_pickup(loot_id)
+			return
 	if combat_attack_controller == null:
 		hint_label.text = "武器表现尚未初始化"
 		return
@@ -277,6 +287,41 @@ func _handle_world_combat_left_click(world_position: Vector2) -> void:
 			roundi(resolved_target.y),
 		]
 	_restore_locomotion_after_attack(was_moving)
+
+
+## 向当前权威边界提交一次地面掉落拾取意图。
+## [param loot_id] 鼠标命中的掉落实例标识。
+## 设计：客户端只选择目标；距离、背包容量、入账和地面实体删除均由权威规则决定。
+func _request_ground_loot_pickup(loot_id: String) -> void:
+	if multiplayer_offline_debug_enabled:
+		if offline_combat_bridge == null or game_window_manager == null:
+			hint_label.text = "离线拾取权威尚未初始化"
+			return
+		var prepared = offline_combat_bridge.prepare_loot_pickup(loot_id)
+		if not prepared.is_ok:
+			hint_label.text = _loot_rejection_text(prepared.error_code)
+			return
+		var granted = game_window_manager.grant_offline_loot(prepared.value)
+		if not granted.is_ok:
+			hint_label.text = _loot_rejection_text(granted.error_code)
+			return
+		var committed = offline_combat_bridge.commit_loot_pickup(loot_id)
+		if not committed.is_ok:
+			hint_label.text = _loot_rejection_text(committed.error_code)
+		return
+	if multiplayer_presenter.request_loot_pickup(loot_id).is_empty():
+		hint_label.text = "拾取请求发送失败"
+
+
+## 将拾取领域错误转换为玩家可理解的状态文字。
+## [param code] 服务端或离线权威返回的稳定错误码。
+## 返回简短中文提示。
+func _loot_rejection_text(code: StringName) -> String:
+	match code:
+		&"loot.out_of_range": return "距离物品太远，无法拾取"
+		&"inventory.full", &"inventory.no_space": return "背包空间不足"
+		&"loot.not_found": return "物品已被其他玩家拾取"
+		_: return "当前无法拾取该物品"
 
 
 ## 执行 `combat_rejection_text` 对应的模块操作。
@@ -450,6 +495,21 @@ func _build_world() -> void:
 		combat_attack_controller.set_visual_collision_resolver(
 			monster_world_controller.first_visual_collision
 		)
+	var loot_catalog_value: Variant = JSON.parse_string(
+		FileAccess.get_file_as_string(GROUND_LOOT_PRESENTATION_PATH)
+	)
+	if loot_catalog_value is Dictionary and loot_catalog_value.get("definitions") is Dictionary:
+		ground_loot_world_controller = GroundLootWorldControllerScript.new()
+		ground_loot_world_controller.name = "GroundLootWorldController"
+		add_child(ground_loot_world_controller)
+		var loot_error := ground_loot_world_controller.configure(
+			sortable_world,
+			(loot_catalog_value["definitions"] as Dictionary),
+		)
+		if loot_error != OK:
+			push_error("Unable to configure ground loot presentation: %s" % error_string(loot_error))
+	else:
+		push_error("Unable to load ground loot presentation catalog")
 
 	local_player_controller = LocalPlayerControllerScript.new()
 	local_player_controller.name = "LocalPlayerController"
@@ -834,6 +894,8 @@ func _configure_offline_combat_for_active_map() -> void:
 ## [param snapshot] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _on_combat_snapshot_received(snapshot: Dictionary) -> void:
 	monster_world_controller.apply_snapshot(snapshot)
+	if ground_loot_world_controller != null:
+		ground_loot_world_controller.apply_snapshot(snapshot)
 	var vehicle: Variant = snapshot.get("local_vehicle", {})
 	if vehicle is Dictionary:
 		player.set_combat_status(vehicle)
@@ -843,7 +905,12 @@ func _on_combat_snapshot_received(snapshot: Dictionary) -> void:
 ## 处理 `_on_combat_event_received` 对应的信号回调。
 ## [param event] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _on_combat_event_received(event: Dictionary) -> void:
-	if StringName(event.get("event_type", "")) == &"energy_cannon_hit":
+	var event_type := StringName(event.get("event_type", ""))
+	if event_type == &"loot_picked_up":
+		if ground_loot_world_controller != null:
+			ground_loot_world_controller.remove_loot(String(event.get("loot_id", "")))
+		hint_label.text = "拾取了 %d 个物品" % int(event.get("quantity", 1))
+	elif event_type == &"energy_cannon_hit":
 		hint_label.text = "命中目标，造成%d点伤害（剩余%d）" % [
 			int(event.get("damage", 0)),
 			int(event.get("target_health", 0)),

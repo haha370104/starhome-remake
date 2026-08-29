@@ -60,6 +60,7 @@ $testScripts = @(
 	"res://tests/client/presentation/combat/weapon_attack_visual_controller_test.gd",
 	"res://tests/client/presentation/combat/monster_death_effect_controller_test.gd",
 	"res://tests/client/presentation/combat/monster_attack_effect_controller_test.gd",
+	"res://tests/client/presentation/combat/ground_loot_world_controller_test.gd",
 	"res://tests/server/authoritative_server_smoke_test.gd",
 	"res://tests/server/combat/authoritative_combat_module_test.gd",
 	"res://tests/server/combat/combat_definition_catalog_test.gd",
@@ -157,6 +158,12 @@ Write-Output "Auditing Stage-3 Glory combat presentation assets"
 & python (Join-Path $PSScriptRoot "import_glory_starter_combat_assets.py")
 if ($LASTEXITCODE -ne 0) {
     throw "Stage-3 combat presentation asset audit failed"
+}
+
+Write-Output "Auditing Glory ground-loot presentation assets"
+& python (Join-Path $PSScriptRoot "import_glory_ground_loot_assets.py")
+if ($LASTEXITCODE -ne 0) {
+    throw "Ground-loot presentation asset audit failed"
 }
 
 Write-Output "All project checks passed."

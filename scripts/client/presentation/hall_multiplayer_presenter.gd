@@ -85,6 +85,7 @@ func start(settings: Dictionary) -> Error:
 	session.map_change_failed.connect(_on_map_change_failed)
 	session.combat_snapshot_received.connect(combat_snapshot_received.emit)
 	session.combat_event_received.connect(combat_event_received.emit)
+	session.loot_picked_up.connect(_on_loot_picked_up)
 	session.player_panel_bundle_received.connect(player_panel_bundle_received.emit)
 	add_child(session)
 	session.initialize_local_player(Vector2(settings.get("initial_position", _local_character.position)))
@@ -129,6 +130,15 @@ func request_use_ability(ability_id: String, aim_world_position: Vector2) -> Dic
 	if session == null:
 		return {}
 	return session.request_use_ability(ability_id, aim_world_position)
+
+
+## 将地面掉落拾取意图转交客户端会话。
+## [param loot_id] 权威快照发布的掉落实例标识。
+## 返回已发送的最小载荷；会话未建立时返回空字典。
+func request_loot_pickup(loot_id: String) -> Dictionary:
+	if session == null:
+		return {}
+	return session.request_loot_pickup(loot_id)
 
 
 ## 将面板操作意图转交客户端会话。
@@ -215,6 +225,15 @@ func _on_remote_presentation_state_changed(entity_id: StringName, state: Diction
 ## [param entity_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _on_remote_entity_removed(entity_id: StringName) -> void:
 	_remove_remote_character(entity_id)
+
+
+## 将拾取成功回包拆分为世界事件和同事务面板快照。
+## [param event] 服务端提交地面实体移除后生成的权威事件。
+## [param panel_bundle] 完成入包和持久化后的三面板快照。
+## 设计：世界表现和面板各消费自己的投影，但共享一次服务端事务结果。
+func _on_loot_picked_up(event: Dictionary, panel_bundle: Dictionary) -> void:
+	combat_event_received.emit(event.duplicate(true))
+	player_panel_bundle_received.emit(panel_bundle.duplicate(true))
 
 
 ## 处理 `_on_connection_state_changed` 对应的信号回调。

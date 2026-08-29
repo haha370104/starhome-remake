@@ -104,6 +104,29 @@ func request_attack(aim_world_position: Vector2) -> Dictionary:
 	return {"ok": false, "code": result.error_code, "message": result.error_message}
 
 
+## 预检离线调试玩家是否可以拾取指定地面掉落。
+## [param loot_id] 权威战斗模块生成的掉落实例标识。
+## 返回可交给正式背包入账规则的掉落 DTO 或领域拒绝。
+func prepare_loot_pickup(loot_id: String):
+	if module == null:
+		return DomainResult.failure(&"loot.offline_unavailable", "offline combat authority is unavailable")
+	return module.prepare_loot_pickup(LOCAL_ACTOR_ID, loot_id)
+
+
+## 在离线背包入账成功后提交地面掉落移除并发布新快照。
+## [param loot_id] 已完成入包的掉落实例标识。
+## 返回拾取事件或并发、距离拒绝。
+## 设计：保持与正式服务器相同的“先入包、后删地面实体”提交顺序。
+func commit_loot_pickup(loot_id: String):
+	if module == null:
+		return DomainResult.failure(&"loot.offline_unavailable", "offline combat authority is unavailable")
+	var result = module.commit_loot_pickup(LOCAL_ACTOR_ID, loot_id)
+	if result.is_ok:
+		combat_event_ready.emit((result.value as Dictionary).duplicate(true))
+		_emit_snapshot()
+	return result
+
+
 ## 按渲染帧推进当前节点的表现状态。
 ## [param delta] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _process(delta: float) -> void:

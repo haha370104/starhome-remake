@@ -8,7 +8,7 @@ const VehicleCombatStateScript := preload("res://scripts/domain/combat/vehicle_c
 const UseAbilityIntentContract := preload("res://scripts/network/contracts/use_ability_intent.gd")
 const ACTOR_PROJECTILE_HITBOX_OFFSET := Vector2(0.0, -16.0)
 const ACTOR_PROJECTILE_HITBOX_RADIUS := 18.0
-const LOOT_PICKUP_RADIUS := 96.0
+const LOOT_PICKUP_RADIUS := 125.0
 
 var simulation_hz := 20
 var current_tick := 0

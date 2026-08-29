@@ -9,6 +9,7 @@ const InventoryPanelScript := preload("res://scripts/client/ui/windows/inventory
 const VehiclePanelScript := preload("res://scripts/client/ui/windows/vehicle/vehicle_equipment_panel.gd")
 const OfflineAuthorityScript := preload("res://scripts/client/debug/offline_player_panel_authority.gd")
 const CurrentPlayerScript := preload("res://scripts/client/state/current_player.gd")
+const DomainResult := preload("res://scripts/core/domain_result.gd")
 
 var character_panel: CharacterPanel
 var inventory_panel: InventoryPanel
@@ -91,6 +92,19 @@ func apply_bundle(bundle: Dictionary) -> void:
 	vehicle_panel.set_inventory_revision(int(_bundle["inventory"].get("revision", -1)))
 	vehicle_panel.apply_snapshot(_bundle["vehicle"])
 	current_player_changed.emit(current_player)
+
+
+## 在显式离线调试中把战斗掉落交给正式面板权威规则入包。
+## [param loot] 离线战斗模块预检通过的掉落 DTO。
+## 返回入包后的三面板快照或容量、布局、目录错误。
+## 设计：线上流程不会调用该入口；正式服务器仍在单一服务端事务内完成入包和持久化。
+func grant_offline_loot(loot: Dictionary):
+	if _offline_authority == null:
+		return DomainResult.failure(&"loot.offline_unavailable", "offline panel authority is unavailable")
+	var result = _offline_authority.grant_loot(loot)
+	if result.is_ok:
+		apply_bundle(result.value)
+	return result
 
 
 ## 将面板命令补全双 revision 后发送到所选权威边界。

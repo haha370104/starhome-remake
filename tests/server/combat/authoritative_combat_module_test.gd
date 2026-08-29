@@ -254,6 +254,17 @@ func _test_authoritative_ground_loot_lifecycle() -> void:
 	_expect(loot.item_definition_id == "low_grade_gel" and loot.quantity == 2, "drop definition and rolled quantity should remain server-owned")
 	var prepared := module.prepare_loot_pickup("player.loot", String(loot.loot_id))
 	_expect(prepared.is_ok, "nearby authenticated player should pass pickup preflight")
+	module.update_actor_position("player.loot", Vector2(165.0, 0.0))
+	_expect(
+		module.prepare_loot_pickup("player.loot", String(loot.loot_id)).is_ok,
+		"original-client 125-pixel pickup boundary should remain inclusive",
+	)
+	module.update_actor_position("player.loot", Vector2(165.1, 0.0))
+	_expect(
+		not module.prepare_loot_pickup("player.loot", String(loot.loot_id)).is_ok,
+		"pickup should be rejected immediately beyond the original 125-pixel boundary",
+	)
+	module.update_actor_position("player.loot", Vector2.ZERO)
 	var committed := module.commit_loot_pickup("player.loot", String(loot.loot_id))
 	_expect(committed.is_ok and module.ground_loot.is_empty(), "committed pickup should remove the ground entity")
 	_expect(not module.commit_loot_pickup("player.loot", String(loot.loot_id)).is_ok, "the same drop must not be picked up twice")
