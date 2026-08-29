@@ -1,0 +1,65 @@
+{
+  "schema_version": 1,
+  "content_version": "starhome-remake-mining-v1",
+  "defaults": {
+    "maximum_sources": 20,
+    "source_capacity": 50,
+    "replenish_interval_seconds": 300,
+    "collection_interval_seconds": 3,
+    "minimum_collection_distance": 20,
+    "maximum_collection_distance": 70,
+    "selection_radius": 68,
+    "minimum_spawn_separation": 96,
+    "yield_per_cycle": 1,
+    "iron_equivalent_per_level": 25
+  },
+  "minerals": [
+    {
+      "id": "iron_ore",
+      "display_name": "铁矿",
+      "item_definition_id": "iron_ore",
+      "required_mining_level": 10,
+      "experience_coefficient": 1.0,
+      "world_presentation_id": "common_ore_iron"
+    },
+    {
+      "id": "silicon_ore",
+      "display_name": "硅矿",
+      "item_definition_id": "silicon_ore",
+      "required_mining_level": 100,
+      "experience_coefficient": 1.5,
+      "world_presentation_id": "common_ore_silicon"
+    },
+    {
+      "id": "graphite_ore",
+      "display_name": "石墨矿",
+      "item_definition_id": "graphite_ore",
+      "required_mining_level": 150,
+      "experience_coefficient": 1.75,
+      "world_presentation_id": "common_ore_graphite"
+    }
+  ],
+  "maps": {
+    "d04_field_zone": {
+      "enabled": true,
+      "mineral_pool": [
+        {"mineral_id": "iron_ore", "weight": 1.0}
+      ],
+      "evidence": "D04 is the first playable field; iron is a reconstructed beginner-map default because the retired server spawn table was not recovered."
+    },
+    "g08_field_zone": {
+      "enabled": true,
+      "mineral_pool": [
+        {"mineral_id": "silicon_ore", "weight": 1.0},
+        {"mineral_id": "graphite_ore", "weight": 1.0}
+      ],
+      "evidence": "Glory client map comments list silicon and graphite candidates on NFT_BL/NFT_BT G08; coordinates are intentionally not reused as server spawns."
+    }
+  },
+  "source_audit": {
+    "source_release": "starhome_lz_ry",
+    "catalog": "../starhome_lz_ry_full_parsed/catalogs/mines/glory_ore_catalog.json",
+    "runtime_authority": "remake server",
+    "notes": "Source capacity, map population, replenish cadence and collection cadence are user-confirmed remake rules."
+  }
+}
