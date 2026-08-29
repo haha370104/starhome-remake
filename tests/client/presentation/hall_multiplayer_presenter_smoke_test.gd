@@ -75,7 +75,8 @@ func _run() -> void:
 	]))
 	presenter.session.local_predictor.advance(0.15)
 	presenter.session.remote_interpolator.advance(0.1)
-	_expect_vector(Vector2(local_states[-1]["position"]), Vector2(12.0, 20.0), "authority reconciliation is published")
+	_expect_vector(Vector2(local_states[-1]["position"]), Vector2(20.0, 20.0),
+		"已确认目的地仍在执行时应保留连续的本地表现位置")
 	_expect_equal(presenter.remote_character_count(), 1, "remote character is created")
 	var remote_character: Node2D = presenter.remote_character(&"player.other")
 	_expect_true(remote_character != null, "remote character is indexed by entity ID")

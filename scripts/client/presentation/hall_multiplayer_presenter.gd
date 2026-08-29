@@ -16,6 +16,7 @@ signal combat_snapshot_received(snapshot: Dictionary)
 signal combat_event_received(event: Dictionary)
 signal player_panel_bundle_received(bundle: Dictionary)
 signal skill_level_up_received(event: Dictionary)
+signal connection_failed(message: String)
 
 const SessionScript := preload("res://scripts/client/network/client_multiplayer_session.gd")
 const CharacterFactoryScript := preload("res://scripts/characters/character_factory.gd")
@@ -176,6 +177,15 @@ func record_local_predicted_delta(input_sequence: int, displacement: Vector2) ->
 	return session.record_local_predicted_delta(input_sequence, displacement)
 
 
+## 通知客户端会话当前本地路线已走完，保留终点直到权威路线完成。
+## [param input_sequence] 本次目的地命令的输入序号。
+## 返回该序号是否仍属于当前活动预测路线。
+func finish_local_predicted_route(input_sequence: int) -> bool:
+	if session == null or input_sequence <= 0:
+		return false
+	return session.finish_local_predicted_route(input_sequence)
+
+
 ## 执行 `show_rejection` 对应的模块操作。
 ## [param code] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## [param message] 调用方传入的参数；具体约束由函数签名和所在模块定义。
@@ -253,6 +263,7 @@ func _on_connection_state_changed(state: ClientNetworkAdapter.ConnectionState) -
 ## [param message] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _on_connection_failed(message: String) -> void:
 	_show_temporary_status("连接失败：%s" % message, 4.0)
+	connection_failed.emit(message)
 
 
 ## 处理 `_on_command_rejected` 对应的信号回调。

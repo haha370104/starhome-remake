@@ -18,6 +18,7 @@ var session_database_path := ""
 func _init() -> void:
 	_test_offline_adapter()
 	_test_local_prediction_and_reconciliation()
+	_test_destination_prediction_does_not_rewind_on_ack()
 	_test_remote_interpolation()
 	call_deferred("_test_session_integration")
 
@@ -62,18 +63,18 @@ func _test_local_prediction_and_reconciliation() -> void:
 	_expect_vector(predictor.predicted_position, Vector2(50.0, 20.0), "prediction advances")
 	_expect_equal(predictor.pending_intent_count(), 2, "two pending")
 
-	# Ack the first intent. Authoritative 35 plus the second unacked delta targets 45.
+	# 确认旧目的地时，新目的地仍在可靠传输途中；旧快照不得回拽新路线表现。
 	_expect_true(predictor.apply_authoritative_snapshot(10, 1, Vector2(35.0, 20.0)), "fresh snapshot accepted")
 	_expect_equal(predictor.pending_intent_count(), 1, "acked input discarded")
-	_expect_equal(predictor.correction_mode, Predictor.CORRECTION_SMOOTH, "small error smooths")
+	_expect_equal(predictor.correction_mode, Predictor.CORRECTION_NONE, "in-flight destination does not rewind")
 	predictor.advance(0.075)
-	_expect_vector(predictor.predicted_position, Vector2(47.5, 20.0), "smooth correction midpoint")
+	_expect_vector(predictor.predicted_position, Vector2(50.0, 20.0), "prediction remains continuous")
 	predictor.advance(0.075)
-	_expect_vector(predictor.predicted_position, Vector2(45.0, 20.0), "smooth correction finishes")
-	_expect_equal(predictor.correction_mode, Predictor.CORRECTION_NONE, "smooth mode clears")
+	_expect_vector(predictor.predicted_position, Vector2(50.0, 20.0), "old snapshot never becomes a delayed correction")
+	_expect_equal(predictor.correction_mode, Predictor.CORRECTION_NONE, "no deferred correction remains")
 
 	_expect_false(predictor.apply_authoritative_snapshot(10, 2, Vector2.ZERO), "old tick rejected")
-	_expect_vector(predictor.predicted_position, Vector2(45.0, 20.0), "stale snapshot cannot mutate")
+	_expect_vector(predictor.predicted_position, Vector2(50.0, 20.0), "stale snapshot cannot mutate")
 	_expect_true(predictor.apply_authoritative_snapshot(11, 2, Vector2(300.0, 20.0)), "forced snapshot accepted")
 	_expect_vector(predictor.predicted_position, Vector2(300.0, 20.0), "96px error snaps")
 	_expect_equal(predictor.pending_intent_count(), 0, "all intents acknowledged")
@@ -93,6 +94,54 @@ func _test_local_prediction_and_reconciliation() -> void:
 	boundary_predictor.reset(Vector2.ZERO)
 	_expect_true(boundary_predictor.apply_authoritative_snapshot(1, 0, Vector2(96.0, 0.0)), "96px snapshot accepted")
 	_expect_vector(boundary_predictor.predicted_position, Vector2(96.0, 0.0), "96px forces immediate correction")
+
+
+## 验证目的地命令被服务器确认后，本地路线仍可逐帧连续前进且不会被中途快照回拽。
+## 设计：约 200ms 的正常预测领先量应在双方抵达同一终点后自然收敛，而非逐帧插值抵消。
+func _test_destination_prediction_does_not_rewind_on_ack() -> void:
+	var predictor := Predictor.new()
+	predictor.reset(Vector2.ZERO)
+	var intent := predictor.create_move_intent("hall.instance.1", Vector2(50.0, 0.0))
+	var sequence := int(intent["input_sequence"])
+	_expect_true(predictor.apply_predicted_delta(sequence, Vector2(40.0, 0.0)),
+		"确认前应接受约 200ms 的本地领先位移")
+	_expect_true(predictor.apply_authoritative_snapshot(
+		1, sequence, Vector2(10.0, 0.0), &"walking"
+	), "服务器确认目的地并开始行走")
+	_expect_vector(predictor.predicted_position, Vector2(40.0, 0.0),
+		"确认只代表收到命令，不得把表现位置拉回服务器旧坐标")
+	_expect_equal(predictor.correction_mode, Predictor.CORRECTION_NONE,
+		"正常网络领先期间不得启动平滑回拽")
+	_expect_true(predictor.apply_predicted_delta(sequence, Vector2(10.0, 0.0)),
+		"路线确认后仍应继续记录本地逐帧位移")
+	_expect_vector(predictor.predicted_position, Vector2(50.0, 0.0),
+		"本地表现应连续抵达目标")
+	_expect_true(predictor.finish_local_route(sequence), "本地路线应进入等待权威收敛阶段")
+	_expect_true(predictor.apply_authoritative_snapshot(
+		2, sequence, Vector2(35.0, 0.0), &"walking"
+	), "服务器尚在追赶终点")
+	_expect_vector(predictor.predicted_position, Vector2(50.0, 0.0),
+		"本地抵达后不得因服务器仍在路上而倒退")
+	_expect_true(predictor.apply_authoritative_snapshot(
+		3, sequence, Vector2(50.0, 0.0), &"idle"
+	), "双方抵达同一终点后完成权威收敛")
+	_expect_vector(predictor.predicted_position, Vector2(50.0, 0.0),
+		"最终权威收敛不应产生可见跳动")
+	_expect_equal(predictor.pending_intent_count(), 0, "完成的目的地意图应被释放")
+
+	var rapid_predictor := Predictor.new()
+	rapid_predictor.reset(Vector2.ZERO)
+	var old_intent := rapid_predictor.create_move_intent("hall.instance.1", Vector2(80.0, 0.0))
+	rapid_predictor.apply_predicted_delta(int(old_intent["input_sequence"]), Vector2(20.0, 0.0))
+	var replacement := rapid_predictor.create_move_intent("hall.instance.1", Vector2(80.0, 40.0))
+	rapid_predictor.apply_predicted_delta(int(replacement["input_sequence"]), Vector2(5.0, 5.0))
+	_expect_true(rapid_predictor.apply_authoritative_snapshot(
+		1, int(old_intent["input_sequence"]), Vector2(8.0, 0.0), &"walking"
+	), "新目的地仍在传输时可能先收到旧路线快照")
+	_expect_vector(rapid_predictor.predicted_position, Vector2(25.0, 5.0),
+		"快速连续点地期间不得被旧路线快照回拽")
+	_expect_equal(rapid_predictor.correction_mode, Predictor.CORRECTION_NONE,
+		"等待新命令确认期间不应产生插值顿挫")
 
 
 ## 验证远端实体在 10 Hz 快照间的插值、状态投影和移除流程。

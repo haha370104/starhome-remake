@@ -221,11 +221,14 @@ func _begin_current_segment() -> void:
 
 ## 完成路线并通知场景层检查地图出口。
 func _complete_route() -> void:
+	var completed_input_sequence := active_movement_input_sequence
 	path_points = PackedVector2Array()
 	path_index = 0
 	active_movement_input_sequence = 0
 	_has_target = false
 	_set_character_action(&"stand")
+	if _multiplayer_presenter != null and completed_input_sequence > 0:
+		_multiplayer_presenter.finish_local_predicted_route(completed_input_sequence)
 	route_finished.emit()
 
 

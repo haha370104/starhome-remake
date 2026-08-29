@@ -213,6 +213,13 @@ func record_local_predicted_delta(input_sequence: int, displacement: Vector2) ->
 	return local_predictor.apply_predicted_delta(input_sequence, displacement)
 
 
+## 通知预测器本地路线已走完，并等待服务器权威实体抵达相同终点。
+## [param input_sequence] 本次路线对应的移动输入序号。
+## 返回该序号是否仍属于当前活动预测路线。
+func finish_local_predicted_route(input_sequence: int) -> bool:
+	return local_predictor.finish_local_route(input_sequence)
+
+
 ## 执行 `local_presentation_state` 对应的模块操作。
 ## 返回该函数计算、查询或操作得到的结果。
 ## 设计：该函数位于客户端交互或表现边界，最终状态以服务器权威结果为准。
@@ -265,6 +272,7 @@ func _on_world_snapshot(snapshot: Dictionary) -> void:
 				server_tick,
 				entity.acknowledged_input_sequence,
 				entity.position,
+				entity.action_id,
 			)
 		else:
 			remote_entities.append(entity.to_dictionary())

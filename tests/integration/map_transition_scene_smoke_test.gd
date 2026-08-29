@@ -20,6 +20,9 @@ func _run() -> void:
 	root.add_child(hall)
 	await process_frame
 	await process_frame
+	_expect(hall.initial_loading_screen != null, "主场景必须创建覆盖错误初始地图的加载画面")
+	_expect(not hall.initial_loading_screen.visible,
+		"显式关闭自动连接的场景夹具应在本地初始地图就绪后关闭加载画面")
 	var server_config := ServerConfigScript.new()
 	server_config.network_enabled = false
 	server_config.persistence_enabled = false

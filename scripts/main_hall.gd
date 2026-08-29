@@ -39,6 +39,9 @@ const SelfRepairVisualControllerScript := preload(
 const GameWindowManagerScript := preload(
 	"res://scripts/client/ui/windows/game_window_manager.gd"
 )
+const InitialLoadingScreenScript := preload(
+	"res://scripts/client/ui/initial_loading_screen.gd"
+)
 const ItemCatalogScript := preload("res://scripts/domain/items/item_catalog.gd")
 const SkillLevelMessageFormatter := preload(
 	"res://scripts/client/presentation/skill_level_message_formatter.gd"
@@ -167,11 +170,14 @@ var ground_loot_world_controller: GroundLootWorldController
 var self_repair_visual_controller: SelfRepairVisualController
 var game_window_manager: GameWindowManager
 var item_catalog: ItemCatalog
+var initial_loading_screen: CanvasLayer
+var _initial_authoritative_world_ready := false
 
 
 ## 节点进入场景树后初始化运行依赖。
 func _ready() -> void:
 	_apply_multiplayer_command_line(OS.get_cmdline_user_args())
+	_build_initial_loading_screen()
 	character_catalog = JSON.parse_string(FileAccess.get_file_as_string(CHARACTER_CATALOG_PATH))
 	npc_catalog = JSON.parse_string(FileAccess.get_file_as_string(NPC_CONFIG_PATH))
 	active_world_controller = ActiveWorldControllerScript.new()
@@ -206,6 +212,33 @@ func _ready() -> void:
 	_build_multiplayer_presentation()
 	_set_player_action("stand")
 	_sync_player_nodes()
+	if not multiplayer_connect_automatically:
+		_finish_initial_loading()
+
+
+## 创建启动遮罩，阻止默认大厅在持久化角色地图尚未恢复时提前露出。
+func _build_initial_loading_screen() -> void:
+	initial_loading_screen = InitialLoadingScreenScript.new()
+	initial_loading_screen.name = "InitialLoadingScreen"
+	add_child(initial_loading_screen)
+	initial_loading_screen.show_loading("正在读取角色与地图数据")
+
+
+## 在首份权威地图完成原子提交后移除启动遮罩；重复调用不会影响后续地图切换。
+func _finish_initial_loading() -> void:
+	if _initial_authoritative_world_ready:
+		return
+	_initial_authoritative_world_ready = true
+	if initial_loading_screen != null:
+		initial_loading_screen.finish_loading()
+
+
+## 在初始权威会话失败时保留遮罩并展示可读错误，避免回退到并非玩家存档位置的大厅。
+## [param message] 传输层或权威握手返回的失败原因。
+func _on_initial_connection_failed(message: String) -> void:
+	if _initial_authoritative_world_ready or initial_loading_screen == null:
+		return
+	initial_loading_screen.set_status("连接服务器失败：%s" % message)
 
 
 ## 执行 `apply_multiplayer_command_line` 对应的模块操作。
@@ -641,6 +674,7 @@ func _build_multiplayer_presentation() -> void:
 		_on_multiplayer_local_character_state_applied
 	)
 	multiplayer_presenter.map_joined.connect(_on_authoritative_map_joined)
+	multiplayer_presenter.connection_failed.connect(_on_initial_connection_failed)
 	multiplayer_presenter.map_change_failed.connect(_on_authoritative_map_change_failed)
 	multiplayer_presenter.combat_snapshot_received.connect(_on_combat_snapshot_received)
 	multiplayer_presenter.combat_event_received.connect(_on_combat_event_received)
@@ -659,6 +693,7 @@ func _build_multiplayer_presentation() -> void:
 	})
 	if start_error != OK:
 		push_warning("Unable to start hall multiplayer presentation: %s" % error_string(start_error))
+		_on_initial_connection_failed(error_string(start_error))
 	local_player_controller.set_multiplayer_presenter(multiplayer_presenter)
 	_build_game_windows()
 
@@ -858,6 +893,7 @@ func _on_authoritative_map_joined(
 		_stop_moving("已进入%s" % map_definition.display_name)
 		pending_map_transition.clear()
 		pending_map_bundle.clear()
+		_finish_initial_loading()
 		return
 	if (
 		not pending_map_bundle.is_empty()
@@ -926,6 +962,7 @@ func _commit_map_bundle(
 	map_commit_failure_locked = false
 	pending_map_transition.clear()
 	pending_map_bundle.clear()
+	_finish_initial_loading()
 	return true
 
 
