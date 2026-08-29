@@ -78,6 +78,14 @@ func _test_formal_starter_definitions() -> void:
 	_expect(is_equal_approx(float(weapon["projectile_speed"]), 520.0), "server and client should share the reconstructed projectile speed")
 	_expect(weapon["muzzle_offset"] == [0.0, -16.0], "authoritative sweep should share the visual muzzle offset")
 	_expect(weapon["activation_power"] == null and weapon["unknown_fields"].has("activation_power"), "missing activation power must remain explicit unknown")
+	var secondary: Dictionary = catalog.starter_secondary_weapons(20).value
+	var rocket: Dictionary = secondary["rocket_launcher.primary"]
+	_expect(int(rocket["minimum_damage"]) == 24 and int(rocket["cooldown_ticks"]) == 60, "Glory starter rocket should preserve attack and three-second cadence")
+	_expect(float(rocket["minimum_range"]) == 150.0 and float(rocket["range"]) == 350.0, "Glory starter rocket should preserve its dead zone and maximum range")
+	_expect(float(rocket["area_radius"]) == 36.0, "rocket area radius should be the provisional two vehicle hitbox radii")
+	var missile: Dictionary = secondary["missile.primary"]
+	_expect(int(missile["minimum_damage"]) == 17 and int(missile["cooldown_ticks"]) == 40, "Glory starter missile should preserve attack and two-second cadence")
+	_expect(float(missile["projectile_speed"]) == 600.0 and float(missile["range"]) == 400.0, "Glory missile should preserve client flight speed and lock range")
 
 
 ## 执行 `test_d04_lifecycle_definitions` 对应的模块操作。

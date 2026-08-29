@@ -214,6 +214,77 @@
           {"path": "pic3/effect/gun01bz.ale", "sha256": "91c506d6835f5bb836d4c61c538eb61a66e76d2345c8fd9f2b37c3c7fcea4d7f"}
         ]
       }
+    },
+    {
+      "id": "starter_rocket_launcher",
+      "kind": "rocket_weapon",
+      "display_name": "初级火箭",
+      "description": "一种可以对局部造成伤害的初级火箭。",
+      "stats": {
+        "required_skill_level": 10,
+        "purchase_value": 2000,
+        "sell_value": 1000,
+        "weight": 20,
+        "base_attack": 24,
+        "attack_limit": 24,
+        "working_energy_per_shot": 5,
+        "minimum_range": 150,
+        "range": 350,
+        "max_durability": 900,
+        "attack_interval_seconds": 3.0,
+        "runtime_projectile_speed": 1000,
+        "runtime_muzzle_offset": [0, -16],
+        "runtime_muzzle_forward_offset": 28,
+        "runtime_area_radius": 36
+      },
+      "presentation": {
+        "resources": {
+          "world_animation": "res://assets/equipment_world/starter_secondary_weapons/rocket/equipment/aiming/animation_frames.tres",
+          "projectile": "res://assets/equipment_world/starter_secondary_weapons/rocket/projectile/flight/animation_frames.tres",
+          "muzzle_effect": "res://assets/equipment_world/starter_secondary_weapons/rocket/impact/smoke/animation_frames.tres",
+          "impact_effect": "res://assets/equipment_world/starter_secondary_weapons/rocket/impact/explosion/animation_frames.tres"
+        }
+      },
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_file": "cltobj/fireguncltclass.fcc",
+        "source_line": 1,
+        "runtime_area_radius": {"status": "remake_default", "reason": "暂定为当前战车弹体判定半径的两倍。"}
+      }
+    },
+    {
+      "id": "starter_missile",
+      "kind": "missile_weapon",
+      "display_name": "初级导弹",
+      "description": "跟踪目标并爆炸，必击中！",
+      "stats": {
+        "required_skill_level": 20,
+        "purchase_value": 4000,
+        "sell_value": 2000,
+        "weight": 20,
+        "base_attack": 17,
+        "attack_limit": 24,
+        "working_energy_per_shot": 10,
+        "lock_range": 400,
+        "max_durability": 900,
+        "attack_interval_seconds": 2.0,
+        "runtime_projectile_speed": 600,
+        "runtime_muzzle_offset": [0, -16],
+        "runtime_muzzle_forward_offset": 28,
+        "runtime_target_selection_radius": 55
+      },
+      "presentation": {
+        "resources": {
+          "world_animation": "res://assets/equipment_world/starter_secondary_weapons/missile/equipment/aiming/animation_frames.tres",
+          "projectile": "res://assets/equipment_world/starter_secondary_weapons/missile/projectile/flight/animation_frames.tres",
+          "impact_effect": "res://assets/equipment_world/starter_secondary_weapons/missile/impact/explosion/animation_frames.tres"
+        }
+      },
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_file": "cltobj/appendequipcltclass.fcc",
+        "source_line": 706
+      }
     }
   ]
 }

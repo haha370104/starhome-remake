@@ -147,6 +147,7 @@ func register_monster(definition: Dictionary) -> DomainResult:
 
 
 ## 移除地图级种群调度中已经死亡的怪物实例。
+## [param map_instance_id] 只回收该权威地图实例中的死亡怪物。
 ## 返回被移除的稳定实例 ID，存活怪物绝不会被此入口删除。
 func remove_dead_monsters(map_instance_id: String) -> Array[String]:
 	var removed: Array[String] = []
@@ -190,6 +191,11 @@ func update_actor_position(actor_id: String, position: Vector2) -> DomainResult:
 ## 返回该函数计算、查询或操作得到的结果。
 ## 设计：客户端只提供瞄准坐标；服务端一次求出射线首个交点并延迟到弹体抵达时结算。
 func handle_energy_cannon_attack(actor_id: String, raw_intent: Variant) -> DomainResult:
+	return handle_weapon_attack(actor_id, raw_intent)
+
+
+## 处理能量炮、火箭炮与导弹的统一权威武器意图。
+func handle_weapon_attack(actor_id: String, raw_intent: Variant) -> DomainResult:
 	if not actors.has(actor_id):
 		return DomainResult.failure(&"combat.unknown_actor", "authenticated actor is not registered")
 	var intent_result = UseAbilityIntentContract.from_dictionary(raw_intent)
@@ -220,16 +226,28 @@ func handle_energy_cannon_attack(actor_id: String, raw_intent: Variant) -> Domai
 	if weapon["activation_power"] != null \
 		and not vehicle_state.supports_activation_power(float(weapon["activation_power"])):
 		return DomainResult.failure(&"combat.insufficient_power_output", "vehicle output budget cannot activate weapon")
+	var attack_mode := StringName(weapon.get("attack_mode", "line_projectile"))
+	var direction := aim.normalized()
+	var resolved_distance := minf(aim.length(), float(weapon["range"]))
+	if resolved_distance < float(weapon.get("minimum_range", 0.0)):
+		return DomainResult.failure(&"combat.target_too_close", "target is inside the weapon minimum range")
+	var endpoint := actor_position + direction * resolved_distance
+	var origin := _projectile_origin(actor_position, direction, resolved_distance, weapon)
+	var collision := {"hit": false, "position": endpoint, "target_entity_id": ""}
+	if attack_mode == &"line_projectile":
+		collision = _first_projectile_collision(map_instance_id, origin, endpoint)
+	elif attack_mode == &"homing_missile":
+		collision = _nearest_target_to_point(
+			map_instance_id, requested_aim, float(weapon.get("target_selection_radius", 55.0))
+		)
+		if not bool(collision.get("hit", false)):
+			return DomainResult.failure(&"combat.target_required", "missile requires a living locked target")
+		endpoint = Vector2(collision["position"])
 	var energy_result := vehicle_state.consume_working_energy(float(weapon["working_energy_cost"]))
 	if not energy_result.is_ok:
 		return energy_result
 	interrupt_self_repair(actor_id, &"attack")
 	actor["cooldown_ready_ticks"][ability_id] = current_tick + int(weapon["cooldown_ticks"])
-	var direction := aim.normalized()
-	var resolved_distance := minf(aim.length(), float(weapon["range"]))
-	var endpoint := actor_position + direction * resolved_distance
-	var origin := _projectile_origin(actor_position, direction, resolved_distance, weapon)
-	var collision := _first_projectile_collision(map_instance_id, origin, endpoint)
 	var impact_position := Vector2(collision.get("position", endpoint))
 	var travel_distance := origin.distance_to(impact_position)
 	var travel_ticks := maxi(
@@ -246,15 +264,19 @@ func handle_energy_cannon_attack(actor_id: String, raw_intent: Variant) -> Domai
 		"target_entity_id": target_id,
 		"weapon": weapon.duplicate(true),
 		"impact_position": impact_position,
+		"attack_mode": attack_mode,
 	})
+	var skill_id := String(weapon.get("skill_id", "energy_cannon"))
 	var event := _record_combat_event({
-		"event_type": &"energy_cannon_projectile_spawned",
+		"event_type": StringName("%s_projectile_spawned" % skill_id),
 		"server_tick": current_tick,
 		"impact_tick": current_tick + travel_ticks,
 		"shot_id": shot_id,
 		"attacker_id": actor_id,
 		"target_entity_id": target_id,
 		"weapon_id": weapon["weapon_id"],
+		"skill_id": skill_id,
+		"attack_mode": attack_mode,
 		"origin": [origin.x, origin.y],
 		"direction": [direction.x, direction.y],
 		"maximum_distance": resolved_distance,
@@ -264,6 +286,32 @@ func handle_energy_cannon_attack(actor_id: String, raw_intent: Variant) -> Domai
 		"cooldown_ready_tick": actor["cooldown_ready_ticks"][ability_id],
 	})
 	return DomainResult.ok(event)
+
+
+## 从点击点附近选择最近存活怪物，作为服务器认可的导弹锁定目标。
+func _nearest_target_to_point(
+	map_instance_id: String,
+	point: Vector2,
+	selection_radius: float,
+) -> Dictionary:
+	var best := {"hit": false, "distance_squared": INF}
+	var monster_ids := monsters.keys()
+	monster_ids.sort()
+	for monster_id: String in monster_ids:
+		var monster: MonsterLifecycle = monsters[monster_id]
+		if monster.map_instance_id != map_instance_id or not monster.is_alive():
+			continue
+		var distance_squared := monster.position.distance_squared_to(point)
+		if distance_squared > selection_radius * selection_radius \
+				or distance_squared >= float(best["distance_squared"]):
+			continue
+		best = {
+			"hit": true,
+			"distance_squared": distance_squared,
+			"target_entity_id": monster_id,
+			"position": monster.position,
+		}
+	return best
 
 
 ## 接收客户端“开始自维修”意图，并由服务器计算每周期恢复量与首次结算时刻。
@@ -393,6 +441,9 @@ func _settle_due_projectiles() -> void:
 ## 结算一颗到达交点的炮弹，并产生可去重的命中、失效及死亡事件。
 ## [param projectile] 发射时冻结的权威弹体预约。
 func _settle_projectile(projectile: Dictionary) -> void:
+	if StringName(projectile.get("attack_mode", &"")) == &"rocket_aoe":
+		_settle_rocket_projectile(projectile)
+		return
 	var target_id := String(projectile["target_entity_id"])
 	var impact_position: Vector2 = projectile["impact_position"]
 	if target_id.is_empty() or not monsters.has(target_id):
@@ -402,6 +453,8 @@ func _settle_projectile(projectile: Dictionary) -> void:
 	if not monster.is_alive():
 		_record_projectile_expired(projectile, impact_position)
 		return
+	if StringName(projectile.get("attack_mode", &"")) == &"homing_missile":
+		impact_position = monster.position
 	var weapon: Dictionary = projectile["weapon"]
 	var attacker_id := String(projectile["attacker_id"])
 	var damage := _random.randi_range(int(weapon["minimum_damage"]), int(weapon["maximum_damage"]))
@@ -410,13 +463,14 @@ func _settle_projectile(projectile: Dictionary) -> void:
 		_record_projectile_expired(projectile, impact_position)
 		return
 	var event := _record_combat_event({
-		"event_type": &"energy_cannon_hit",
+		"event_type": StringName("%s_hit" % String(weapon.get("skill_id", "energy_cannon"))),
 		"server_tick": current_tick,
 		"impact_tick": current_tick,
 		"shot_id": projectile["shot_id"],
 		"attacker_id": attacker_id,
 		"target_entity_id": target_id,
 		"weapon_id": weapon["weapon_id"],
+		"skill_id": String(weapon.get("skill_id", "energy_cannon")),
 		"impact_position": [impact_position.x, impact_position.y],
 		"damage": damage_result.value["applied_damage"],
 		"target_health": damage_result.value["health"],
@@ -437,16 +491,70 @@ func _settle_projectile(projectile: Dictionary) -> void:
 		event["death"] = death_event.duplicate(true)
 
 
+## 在火箭抵达落点时一次结算范围内的全部存活怪物。
+func _settle_rocket_projectile(projectile: Dictionary) -> void:
+	var weapon: Dictionary = projectile["weapon"]
+	var impact_position: Vector2 = projectile["impact_position"]
+	var radius := float(weapon.get("area_radius", ACTOR_PROJECTILE_HITBOX_RADIUS * 2.0))
+	var hit_any := false
+	var monster_ids := monsters.keys()
+	monster_ids.sort()
+	for monster_id: String in monster_ids:
+		var monster: MonsterLifecycle = monsters[monster_id]
+		if not monster.is_alive() or monster.map_instance_id != String(actors[projectile["attacker_id"]]["map_instance_id"]):
+			continue
+		if monster.position.distance_squared_to(impact_position) > radius * radius:
+			continue
+		hit_any = true
+		var damage := _random.randi_range(int(weapon["minimum_damage"]), int(weapon["maximum_damage"]))
+		var damage_result := monster.apply_damage(damage, String(projectile["attacker_id"]), current_tick)
+		if not damage_result.is_ok:
+			continue
+		var event := _record_combat_event({
+			"event_type": &"rocket_launcher_hit",
+			"server_tick": current_tick,
+			"impact_tick": current_tick,
+			"shot_id": projectile["shot_id"],
+			"attacker_id": projectile["attacker_id"],
+			"target_entity_id": monster_id,
+			"weapon_id": weapon["weapon_id"],
+			"skill_id": "rocket_launcher",
+			"impact_position": [impact_position.x, impact_position.y],
+			"area_radius": radius,
+			"damage": damage_result.value["applied_damage"],
+			"target_health": damage_result.value["health"],
+		})
+		if bool(damage_result.value["died"]):
+			var spawned_loot := _spawn_monster_loot(monster, String(projectile["attacker_id"]))
+			var death_event := {
+				"event_type": &"monster_died",
+				"server_tick": current_tick,
+				"monster_id": monster_id,
+				"killer_id": projectile["attacker_id"],
+				"death_generation": damage_result.value["death_generation"],
+				"respawn_at_tick": damage_result.value["respawn_at_tick"],
+				"position": [monster.position.x, monster.position.y],
+				"loot_drops": spawned_loot,
+			}
+			death_events.append(death_event)
+			event["death"] = death_event.duplicate(true)
+	if not hit_any:
+		_record_projectile_expired(projectile, impact_position)
+
+
 ## 记录飞满射程或预定目标已消失的无伤害结束事件。
 ## [param projectile] 发射时冻结的权威弹体预约。
 ## [param impact_position] 客户端应结束权威弹体的世界坐标。
 func _record_projectile_expired(projectile: Dictionary, impact_position: Vector2) -> void:
+	var weapon: Dictionary = projectile["weapon"]
+	var skill_id := String(weapon.get("skill_id", "energy_cannon"))
 	_record_combat_event({
-		"event_type": &"energy_cannon_projectile_expired",
+		"event_type": StringName("%s_projectile_expired" % skill_id),
 		"server_tick": current_tick,
 		"impact_tick": current_tick,
 		"shot_id": projectile["shot_id"],
 		"attacker_id": projectile["attacker_id"],
+		"skill_id": skill_id,
 		"target_entity_id": "",
 		"impact_position": [impact_position.x, impact_position.y],
 		"damage": 0,
@@ -515,6 +623,8 @@ func _stop_self_repair(actor_id: String, reason: StringName) -> void:
 
 
 ## 由权威移动或武器模块中断自维修；未处于维修状态时保持幂等。
+## [param actor_id] 待中断自维修的玩家战车标识。
+## [param reason] movement 或 attack 两种可信中断原因。
 ## 返回本次是否实际停止了维修。
 func interrupt_self_repair(actor_id: String, reason: StringName) -> bool:
 	if not actors.has(actor_id) or reason not in [&"movement", &"attack"]:
@@ -1121,6 +1231,8 @@ func monster_ids() -> Array:
 ## 返回该函数计算、查询或操作得到的结果。
 func _normalize_energy_cannon(definition: Dictionary) -> DomainResult:
 	var weapon_id := String(definition.get("weapon_id", ""))
+	var skill_id := String(definition.get("skill_id", "energy_cannon"))
+	var attack_mode := StringName(definition.get("attack_mode", "line_projectile"))
 	var minimum_damage := int(definition.get("minimum_damage", -1))
 	var maximum_damage := int(definition.get("maximum_damage", -1))
 	var working_energy_cost := float(definition.get("working_energy_cost", -1.0))
@@ -1136,15 +1248,25 @@ func _normalize_energy_cannon(definition: Dictionary) -> DomainResult:
 	var projectile_speed := float(definition.get("projectile_speed", 0.0))
 	var muzzle_offset_value: Variant = definition.get("muzzle_offset", [])
 	var muzzle_forward_offset := float(definition.get("muzzle_forward_offset", -1.0))
-	if weapon_id.is_empty() or minimum_damage < 0 or maximum_damage < minimum_damage:
+	var minimum_range := float(definition.get("minimum_range", 0.0))
+	var area_radius := float(definition.get("area_radius", 0.0))
+	var target_selection_radius := float(definition.get("target_selection_radius", 0.0))
+	if weapon_id.is_empty() or skill_id.is_empty() or minimum_damage < 0 or maximum_damage < minimum_damage \
+			or attack_mode not in [&"line_projectile", &"rocket_aoe", &"homing_missile"]:
 		return DomainResult.failure(&"combat.invalid_weapon_definition", "energy-cannon damage definition is invalid")
 	if working_energy_cost < 0.0 or (activation_power != null and float(activation_power) < 0.0) \
 		or attack_range <= 0.0 or upgrade_range_limit < attack_range or cooldown_ticks <= 0 \
-		or projectile_speed <= 0.0 or muzzle_forward_offset < 0.0 \
+		or projectile_speed <= 0.0 or muzzle_forward_offset < 0.0 or minimum_range < 0.0 \
+		or minimum_range >= attack_range \
 		or not muzzle_offset_value is Array or muzzle_offset_value.size() != 2:
 		return DomainResult.failure(&"combat.invalid_weapon_definition", "energy-cannon resource or timing definition is invalid")
+	if (attack_mode == &"rocket_aoe" and area_radius <= 0.0) \
+			or (attack_mode == &"homing_missile" and target_selection_radius <= 0.0):
+		return DomainResult.failure(&"combat.invalid_weapon_definition", "secondary weapon targeting geometry is invalid")
 	return DomainResult.ok({
 		"weapon_id": weapon_id,
+		"skill_id": skill_id,
+		"attack_mode": attack_mode,
 		"minimum_damage": minimum_damage,
 		"maximum_damage": maximum_damage,
 		"working_energy_cost": working_energy_cost,
@@ -1155,4 +1277,7 @@ func _normalize_energy_cannon(definition: Dictionary) -> DomainResult:
 		"projectile_speed": projectile_speed,
 		"muzzle_offset": [float(muzzle_offset_value[0]), float(muzzle_offset_value[1])],
 		"muzzle_forward_offset": muzzle_forward_offset,
+		"minimum_range": minimum_range,
+		"area_radius": area_radius,
+		"target_selection_radius": target_selection_radius,
 	})

@@ -7,6 +7,8 @@ const DEFAULT_CATALOG_PATH := "res://data/gameplay/stage3/catalog_v1.json"
 const CONTROLLED_DATA_ROOT := "res://data/gameplay/stage3/"
 const SUPPORTED_SCHEMA_VERSION := 1
 const STARTER_ABILITY_ID := "energy_cannon.primary"
+const STARTER_ROCKET_ABILITY_ID := "rocket_launcher.primary"
+const STARTER_MISSILE_ABILITY_ID := "missile.primary"
 
 var content_version := ""
 var _starter_loadout: Dictionary = {}
@@ -119,6 +121,8 @@ func starter_energy_cannon(simulation_hz: int) -> DomainResult:
 	return DomainResult.ok({
 		"ability_id": STARTER_ABILITY_ID,
 		"weapon_id": String(equipment["id"]),
+		"skill_id": "energy_cannon",
+		"attack_mode": "line_projectile",
 		"minimum_damage": int(stats["base_attack"]),
 		"maximum_damage": int(stats["base_attack"]),
 		"working_energy_cost": float(stats["working_energy_per_shot"]),
@@ -132,6 +136,51 @@ func starter_energy_cannon(simulation_hz: int) -> DomainResult:
 		"damage_model": &"confirmed_base_attack_direct",
 		"unknown_fields": ["activation_power", "server_damage_formula", "original_server_projectile_speed"],
 	})
+
+
+## 规范化荣耀版初级火箭和初级导弹定义，供同一权威武器状态机消费。
+func starter_secondary_weapons(simulation_hz: int) -> DomainResult:
+	if simulation_hz <= 0:
+		return DomainResult.failure(&"combat.invalid_simulation_hz", "simulation frequency must be positive")
+	var result: Dictionary = {}
+	for specification: Dictionary in [
+		{
+			"equipment_id": "starter_rocket_launcher",
+			"ability_id": STARTER_ROCKET_ABILITY_ID,
+			"skill_id": "rocket_launcher",
+			"attack_mode": "rocket_aoe",
+			"range_field": "range",
+		},
+		{
+			"equipment_id": "starter_missile",
+			"ability_id": STARTER_MISSILE_ABILITY_ID,
+			"skill_id": "missile",
+			"attack_mode": "homing_missile",
+			"range_field": "lock_range",
+		},
+	]:
+		var equipment: Dictionary = _equipment_by_id[specification["equipment_id"]]
+		var stats: Dictionary = equipment["stats"]
+		var weapon := {
+			"ability_id": specification["ability_id"],
+			"weapon_id": specification["equipment_id"],
+			"skill_id": specification["skill_id"],
+			"attack_mode": specification["attack_mode"],
+			"minimum_damage": int(stats["base_attack"]),
+			"maximum_damage": int(stats["base_attack"]),
+			"working_energy_cost": float(stats["working_energy_per_shot"]),
+			"activation_power": null,
+			"range": float(stats[specification["range_field"]]),
+			"minimum_range": float(stats.get("minimum_range", 0.0)),
+			"cooldown_ticks": roundi(float(stats["attack_interval_seconds"]) * simulation_hz),
+			"projectile_speed": float(stats["runtime_projectile_speed"]),
+			"muzzle_offset": (stats["runtime_muzzle_offset"] as Array).duplicate(),
+			"muzzle_forward_offset": float(stats["runtime_muzzle_forward_offset"]),
+			"area_radius": float(stats.get("runtime_area_radius", 0.0)),
+			"target_selection_radius": float(stats.get("runtime_target_selection_radius", 0.0)),
+		}
+		result[String(weapon["ability_id"])] = weapon
+	return DomainResult.ok(result)
 
 
 ## 执行 `d04_monster_lifecycles` 对应的模块操作。
@@ -160,7 +209,10 @@ func monster_lifecycles_for_map(map_id: String, map_instance_id: String) -> Doma
 	)
 
 
-## 返回地图级怪物种群策略的只读副本。
+## 查询地图级怪物种群策略并隔离目录内部配置。
+## [param map_id] 待查询的业务地图标识。
+## 返回启用地图的种群策略副本；无配置时返回空字典。
+## 设计：调用方不得持有并修改目录内部配置。
 func monster_population_policy_for_map(map_id: String) -> Dictionary:
 	if map_id != String(_d04_encounter.get("map_id", "")) or not bool(_d04_encounter.get("enabled", false)):
 		return {}
@@ -168,6 +220,9 @@ func monster_population_policy_for_map(map_id: String) -> Dictionary:
 
 
 ## 计算本轮应补数量；阈值采用严格小于，结果始终受地图上限钳制。
+## [param map_id] 待计算补量的业务地图标识。
+## [param alive_count] 当前存活怪物总数。
+## 返回本轮允许生成且不超过地图上限的数量。
 func monster_replenishment_count(map_id: String, alive_count: int) -> int:
 	var policy := monster_population_policy_for_map(map_id)
 	if policy.is_empty():
@@ -185,6 +240,12 @@ func monster_replenishment_count(map_id: String, alive_count: int) -> int:
 
 ## 按配置权重与当前物种缺口生成一批新的怪物生命周期定义。
 ## 每次选择 `(现存+本批)/权重` 最小的物种，使长期比例逼近配置权重。
+## [param map_id] 待补充的业务地图标识。
+## [param map_instance_id] 接收新怪物的权威地图实例标识。
+## [param alive_by_species] 各物种当前存活数量。
+## [param first_sequence] 本批实例稳定序号的起点。
+## [param requested_count] 本轮期望生成数量。
+## 返回按权重生成的怪物定义数组或配置错误。
 func monster_replenishment_for_map(
 	map_id: String,
 	map_instance_id: String,
@@ -219,6 +280,13 @@ func monster_replenishment_for_map(
 	return DomainResult.ok(result)
 
 
+## 将一个种群组配置组装为可登记的怪物生命周期定义。
+## [param group] 含物种、锚点、半径和权重的生成组。
+## [param map_instance_id] 新怪物所属权威地图实例。
+## [param sequence] 新怪物的全局生成序号。
+## [param species_count] 该物种在生成本只前的数量。
+## 返回包含数值、AI、掉落和确定性生成位置的完整定义。
+## 设计：目录只生成领域数据，不直接创建运行时怪物对象。
 func _monster_lifecycle_definition(
 	group: Dictionary,
 	map_instance_id: String,
@@ -341,6 +409,9 @@ func _validate_runtime_links() -> DomainResult:
 	for raw_id: Variant in equipped:
 		if not _equipment_by_id.has(String(raw_id)):
 			return DomainResult.failure(&"combat.invalid_catalog", "starter equipment reference is unresolved")
+	for weapon_id: String in ["starter_rocket_launcher", "starter_missile"]:
+		if not _equipment_by_id.has(weapon_id):
+			return DomainResult.failure(&"combat.invalid_catalog", "starter secondary weapon is unresolved")
 	var groups: Variant = _d04_encounter.get("spawn_groups")
 	var policy: Variant = _d04_encounter.get("population_policy")
 	if String(_d04_encounter.get("map_id", "")) != "d04_field_zone" or not groups is Array:

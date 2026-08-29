@@ -61,19 +61,22 @@ func configure_map(
 		"base_speed_cap": 240.0,
 	})
 	var weapon_result = catalog.starter_energy_cannon(SIMULATION_HZ)
-	if not assembly_result.is_ok or not weapon_result.is_ok:
+	var secondary_result = catalog.starter_secondary_weapons(SIMULATION_HZ)
+	if not assembly_result.is_ok or not weapon_result.is_ok or not secondary_result.is_ok:
 		return ERR_INVALID_DATA
 	_vehicle_weight = float(assembly_result.value.get("total_weight", 0.0))
 	module = CombatModuleScript.new()
 	if not module.configure(SIMULATION_HZ, hash(map_instance_id), 1.0).is_ok:
 		return ERR_INVALID_DATA
 	module.set_monster_position_resolver(_resolve_monster_position)
+	var weapons := {ABILITY_ID: weapon_result.value}
+	weapons.merge(secondary_result.value)
 	if not module.register_vehicle(
 		LOCAL_ACTOR_ID,
 		map_instance_id,
 		player_position,
 		assembly_result.value,
-		{ABILITY_ID: weapon_result.value},
+		weapons,
 	).is_ok:
 		return ERR_INVALID_DATA
 	for raw_definition: Variant in monsters_result.value:
@@ -105,14 +108,14 @@ func update_player_position(position: Vector2) -> void:
 ## 执行 `request_attack` 对应的模块操作。
 ## [param aim_world_position] 瞄准世界坐标，只用于表达发射方向。
 ## 返回该函数计算、查询或操作得到的结果。
-func request_attack(aim_world_position: Vector2) -> Dictionary:
+func request_attack(aim_world_position: Vector2, ability_id: String = ABILITY_ID) -> Dictionary:
 	if module == null or not aim_world_position.is_finite():
 		return {"ok": false, "code": &"combat.invalid_aim"}
 	var intent := UseAbilityIntentScript.new(
-		map_instance_id, ABILITY_ID, aim_world_position, _next_command_sequence
+		map_instance_id, ability_id, aim_world_position, _next_command_sequence
 	)
 	_next_command_sequence += 1
-	var result = module.handle_energy_cannon_attack(LOCAL_ACTOR_ID, intent.to_dictionary())
+	var result = module.handle_weapon_attack(LOCAL_ACTOR_ID, intent.to_dictionary())
 	if result.is_ok:
 		combat_event_ready.emit(result.value.duplicate(true))
 		_emit_snapshot()
@@ -200,11 +203,12 @@ func _emit_combat_progression_events() -> void:
 			continue
 		_last_progression_combat_event_id = maxi(_last_progression_combat_event_id, event_id)
 		var event_type := StringName(combat_event.get("event_type", &""))
-		if event_type == &"energy_cannon_hit" and int(combat_event.get("damage", 0)) > 0:
+		if event_type in [&"energy_cannon_hit", &"rocket_launcher_hit", &"missile_hit"] \
+				and int(combat_event.get("damage", 0)) > 0:
 			skill_progression_event_ready.emit({
 				"entity_id": LOCAL_ACTOR_ID,
 				"source": "effective_damage",
-				"skill_id": "energy_cannon",
+				"skill_id": String(combat_event.get("skill_id", "energy_cannon")),
 				"damage": int(combat_event.get("damage", 0)),
 				"combat_event_id": event_id,
 			})

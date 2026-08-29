@@ -68,12 +68,14 @@ func configure_combat(catalog, simulation_hz: int) -> Dictionary:
 		"base_speed_cap": movement_speed_cap,
 	})
 	var weapon_result = catalog.starter_energy_cannon(simulation_hz)
-	if not assembly_result.is_ok or not weapon_result.is_ok:
+	var secondary_result = catalog.starter_secondary_weapons(simulation_hz)
+	if not assembly_result.is_ok or not weapon_result.is_ok or not secondary_result.is_ok:
 		return _failure(&"combat.definition_invalid", "starter vehicle combat definitions are invalid")
 	_combat_catalog = catalog
 	_monster_population_policy = catalog.monster_population_policy_for_map(String(definition.map_id))
 	_combat_assembly = assembly_result.value
 	_combat_weapons = {"energy_cannon.primary": weapon_result.value}
+	_combat_weapons.merge(secondary_result.value)
 	combat_module = CombatModuleScript.new()
 	var configured = combat_module.configure(simulation_hz, hash(instance_id), 1.0)
 	if not configured.is_ok:
@@ -182,7 +184,7 @@ func handle_use_ability(
 		raw_intent,
 		int(authoritative_context.get("repair_skill_level", -1)),
 	) if ability_id == AuthoritativeCombatModule.SELF_REPAIR_ABILITY_ID \
-	else combat_module.handle_energy_cannon_attack(entity_id, raw_intent)
+	else combat_module.handle_weapon_attack(entity_id, raw_intent)
 	return _success(result.value) if result.is_ok else _failure(result.error_code, result.error_message)
 
 
@@ -357,11 +359,12 @@ func drain_skill_progression_events() -> Array[Dictionary]:
 			continue
 		_last_progression_combat_event_id = maxi(_last_progression_combat_event_id, event_id)
 		var event_type := StringName(combat_event.get("event_type", &""))
-		if event_type == &"energy_cannon_hit" and int(combat_event.get("damage", 0)) > 0:
+		if event_type in [&"energy_cannon_hit", &"rocket_launcher_hit", &"missile_hit"] \
+				and int(combat_event.get("damage", 0)) > 0:
 			events.append({
 				"entity_id": String(combat_event.get("attacker_id", "")),
 				"source": "effective_damage",
-				"skill_id": "energy_cannon",
+				"skill_id": String(combat_event.get("skill_id", "energy_cannon")),
 				"damage": int(combat_event.get("damage", 0)),
 				"combat_event_id": event_id,
 			})

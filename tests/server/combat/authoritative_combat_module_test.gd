@@ -25,6 +25,7 @@ func _initialize() -> void:
 	_test_authoritative_self_repair_cycles()
 	_test_monster_projectile_timing()
 	_test_monster_projectile_can_be_dodged()
+	_test_secondary_weapon_modes()
 	if failures.is_empty():
 		print("AUTHORITATIVE_COMBAT_MODULE_OK (%d assertions)" % assertions)
 		quit(0)
@@ -494,6 +495,61 @@ func _test_monster_projectile_can_be_dodged() -> void:
 	_expect(module.pending_monster_attacks.is_empty(), "missed monster projectile should leave no pending reservation")
 	_expect(StringName(module.combat_events[-1]["event_type"]) == &"monster_attack_expired", "a dodged projectile should emit a no-damage expiry event")
 	_expect(String(module.combat_events[-1]["attack_id"]) == String(attack["attack_id"]), "expiry should identify the dodged projectile")
+
+
+## 验证导弹锁定与火箭范围伤害使用不同的服务器判定模式。
+func _test_secondary_weapon_modes() -> void:
+	var module := _new_module(110)
+	var weapons := {
+		"missile.primary": _secondary_weapon("missile", &"homing_missile", 17, 600.0),
+		"rocket_launcher.primary": _secondary_weapon("rocket_launcher", &"rocket_aoe", 24, 1000.0),
+	}
+	weapons["rocket_launcher.primary"]["minimum_range"] = 150.0
+	weapons["rocket_launcher.primary"]["area_radius"] = 36.0
+	module.register_vehicle("player.secondary", MAP_INSTANCE_ID, Vector2.ZERO, _assembly_result().value, weapons)
+	module.register_monster(_monster_definition("monster.locked", 50, Vector2(200.0, 0.0)))
+	module.register_monster(_monster_definition("monster.aoe", 50, Vector2(225.0, 0.0)))
+	var missile := module.handle_weapon_attack(
+		"player.secondary", _ability_intent("missile.primary", Vector2(200.0, 0.0), 1)
+	)
+	_expect(missile.is_ok and String(missile.value["target_entity_id"]) == "monster.locked", "missile should lock the nearest clicked monster")
+	module.monster_for("monster.locked").position = Vector2(240.0, 40.0)
+	module.advance_ticks(int(missile.value["impact_tick"]) - module.current_tick)
+	_expect(module.monster_for("monster.locked").health == 33, "homing missile should hit its living locked target after movement")
+	var no_lock := module.handle_weapon_attack(
+		"player.secondary", _ability_intent("missile.primary", Vector2(350.0, 350.0), 2)
+	)
+	_expect(not no_lock.is_ok and no_lock.error_code == &"combat.target_required", "missile should reject an empty lock point")
+	var rocket := module.handle_weapon_attack(
+		"player.secondary", _ability_intent("rocket_launcher.primary", Vector2(210.0, 0.0), 3)
+	)
+	_expect(rocket.is_ok, "rocket should accept a ground point outside its dead zone")
+	module.advance_ticks(int(rocket.value["impact_tick"]) - module.current_tick)
+	_expect(module.monster_for("monster.aoe").health == 26, "rocket should damage every monster inside the configured area")
+
+
+func _secondary_weapon(skill_id: String, mode: StringName, damage: int, speed: float) -> Dictionary:
+	return {
+		"ability_id": "%s.primary" % skill_id,
+		"weapon_id": "test.%s" % skill_id,
+		"skill_id": skill_id,
+		"attack_mode": mode,
+		"minimum_damage": damage,
+		"maximum_damage": damage,
+		"working_energy_cost": 0.0,
+		"activation_power": null,
+		"range": 400.0,
+		"minimum_range": 0.0,
+		"cooldown_ticks": 1,
+		"projectile_speed": speed,
+		"muzzle_offset": [0.0, -16.0],
+		"muzzle_forward_offset": 28.0,
+		"target_selection_radius": 55.0,
+	}
+
+
+func _ability_intent(ability_id: String, point: Vector2, sequence: int) -> Dictionary:
+	return UseAbilityIntentContract.new(MAP_INSTANCE_ID, ability_id, point, sequence).to_dictionary()
 
 
 ## 执行 `new_module` 对应的模块操作。
