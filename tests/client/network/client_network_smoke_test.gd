@@ -169,6 +169,7 @@ func _test_heterogeneous_combat_events_do_not_drop_world_state() -> void:
 	var combat_snapshot := {
 		"server_tick": 20,
 		"local_entity_id": "player.test",
+		"vehicle_combat_active": false,
 		"local_vehicle": {},
 		"monsters": [{
 			"entity_id": "monster.test",
@@ -187,6 +188,9 @@ func _test_heterogeneous_combat_events_do_not_drop_world_state() -> void:
 	}
 	_expect_true(session.call("_is_valid_combat_snapshot", combat_snapshot),
 		"合法非伤害事件不得毒化整份战斗快照")
+	combat_snapshot["vehicle_combat_active"] = "false"
+	_expect_false(session.call("_is_valid_combat_snapshot", combat_snapshot),
+		"地图战车激活标记必须是布尔值")
 	session.free()
 
 
@@ -224,10 +228,24 @@ func _test_session_integration() -> void:
 	var server_session: ServerSession = server.sessions.session_for_peer(
 		transport.LOCAL_PEER_ID
 	)
-	var current_instance: AuthoritativeMapInstance = server.map_registry.instance_by_id(
+	var hall_instance: AuthoritativeMapInstance = server.map_registry.instance_by_id(
 		server_session.map_instance_id
 	)
-	var vehicle_state = current_instance.vehicle_combat_state_for(server_session.entity_id)
+	var field_instance: AuthoritativeMapInstance = server.map_registry.instance_by_map_id(
+		"d04_field_zone"
+	)
+	var hall_entity: AuthoritativeEntity = hall_instance.entities[server_session.entity_id]
+	var field_spawn := field_instance.admitted_spawn_position(Vector2(2412, 2400))
+	var spawned = field_instance.spawn_entity(
+		server_session.entity_id, field_spawn, hall_entity.movement_speed
+	)
+	_expect_true(spawned.ok, "客户端恢复夹具应进入战斗地图")
+	server.call("_copy_transitioned_entity_state", hall_entity, spawned.value)
+	hall_instance.remove_entity(server_session.entity_id)
+	server_session.map_instance_id = field_instance.instance_id
+	session.current_map_id = &"d04_field_zone"
+	session.configure_map_instance(field_instance.instance_id)
+	var vehicle_state = field_instance.vehicle_combat_state_for(server_session.entity_id)
 	vehicle_state.apply_damage(vehicle_state.max_health)
 	var recovery_payload := session.request_vehicle_recovery()
 	_expect_equal(recovery_payload.get("action"), "return_to_base",
@@ -239,9 +257,9 @@ func _test_session_integration() -> void:
 	transport.advance_simulation(3.0)
 	await process_frame
 	_expect_false(session.is_vehicle_recovery_pending(), "权威回城完成后应释放恢复闩锁")
-	var recovered_state = current_instance.vehicle_combat_state_for(server_session.entity_id)
+	var recovered_state = hall_instance.vehicle_combat_state_for(server_session.entity_id)
 	_expect_true(recovered_state != null and recovered_state.health == 7,
-		"同地图基地救援也应恢复最大生命的 10%")
+		"战斗地图基地救援应恢复最大生命的 10%")
 	var sent_payloads: Array[Dictionary] = []
 	session.network_adapter.move_intent_sent.connect(
 		func(payload: Dictionary) -> void: sent_payloads.append(payload)
@@ -434,6 +452,7 @@ func _test_map_change_session(session) -> void:
 	_expect_true(session.is_map_change_pending(), "stale map join sequence is ignored")
 	_expect_equal(session.current_map_id, &"hall", "stale map join preserves old map")
 
+	var next_movement_sequence_before_join: int = session.local_predictor.next_input_sequence
 	session.network_adapter.receive_server_message(_map_joined_message(
 		third_sequence, 20, "g08.instance.2", Vector2(420.0, 520.0)
 	))
@@ -443,6 +462,17 @@ func _test_map_change_session(session) -> void:
 	_expect_equal(session.network_adapter.map_id, "g08", "adapter observes committed target map ID")
 	_expect_equal(session.network_adapter.map_instance_id, "g08.instance.2", "adapter observes committed target instance")
 	_expect_vector(session.local_presentation_state()["position"], Vector2(420.0, 520.0), "successful join resets prediction to spawn")
+	_expect_equal(
+		session.local_predictor.next_input_sequence,
+		next_movement_sequence_before_join,
+		"切图只清除旧预测路线，不得把会话移动序号重置为1",
+	)
+	var post_join_move: Dictionary = session.request_move(Vector2(444.0, 520.0))
+	_expect_equal(
+		int(post_join_move.get("input_sequence", -1)),
+		next_movement_sequence_before_join,
+		"新地图首个移动应继续使用服务端尚未确认的新序号",
+	)
 	_expect_equal(session.local_predictor.pending_intent_count(), 0, "successful join drops old-map prediction inputs")
 	_expect_true(&"player.other" in removed_entities, "successful join removes old-map remote entity")
 	_expect_false(session.remote_presentation_states().has(&"player.other"), "old-map remote track cannot survive transfer")

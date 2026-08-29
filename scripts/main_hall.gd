@@ -990,7 +990,11 @@ func _on_combat_snapshot_received(snapshot: Dictionary) -> void:
 	if vehicle is Dictionary:
 		player.set_combat_status(vehicle)
 		hud.set_vehicle_combat_state(vehicle)
-		var destroyed := int(vehicle.get("health", 0)) <= 0
+		# 非战斗地图仍同步战车资源供 HUD/面板消费，但人物移动不受停放战车生命值影响。
+		var combat_vehicle_active := bool(
+			snapshot.get("vehicle_combat_active", player.is_combat_actor_active())
+		)
+		var destroyed := combat_vehicle_active and int(vehicle.get("health", 0)) <= 0
 		player.set_vehicle_destroyed(destroyed)
 		if destroyed and not _vehicle_destroyed:
 			_vehicle_destroyed = true

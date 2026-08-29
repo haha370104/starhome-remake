@@ -41,6 +41,23 @@ func _run() -> void:
 			transition_events.append("failed:%s:%s:%s" % [transition_id, code, message])
 	)
 	_expect(hall.map_definition.map_id == &"yian_harbor_hall_floor_1", "测试必须从荣耀版大厅开始")
+	hall.call("_on_combat_snapshot_received", {
+		"vehicle_combat_active": false,
+		"local_vehicle": {
+			"health": 0,
+			"max_health": 70,
+			"working_energy": 0.0,
+			"working_energy_capacity": 100.0,
+			"reserve_energy": 0.0,
+			"reserve_energy_capacity": 1000.0,
+		},
+		"monsters": [],
+		"ground_loot": [],
+		"recent_events": [],
+	})
+	_expect(not hall._vehicle_destroyed, "大厅中的0血停放战车不得把人物标记为击毁")
+	_expect(not hall.call("_world_input_locked"), "大厅中的0血停放战车不得锁住人物移动")
+	_expect(not hall.vehicle_destroyed_dialog.visible, "非战斗地图不得弹出战车击毁选择")
 	var initial_sequence: int = hall.multiplayer_presenter.session.local_predictor.next_input_sequence
 	hall.pending_map_transition = {"transition_id": &"exit_to_city"}
 	hall.call("_move_to", Vector2(900, 1300))

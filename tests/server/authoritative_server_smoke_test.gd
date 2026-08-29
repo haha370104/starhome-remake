@@ -383,6 +383,15 @@ func _test_destroyed_vehicle_recovery() -> void:
 	)
 	var field: AuthoritativeMapInstance = server.map_registry.instance_by_map_id("d04_field_zone")
 	var source_entity: AuthoritativeEntity = hall.entities[entity_id]
+	var parked_state = hall.vehicle_combat_state_for(entity_id)
+	parked_state.apply_damage(parked_state.max_health)
+	var hall_move := hall.handle_move_intent(entity_id, MoveIntentContract.new(
+		hall.instance_id, source_entity.position + Vector2(48, 0), 1
+	).to_dictionary())
+	_expect(hall_move.ok, "非战斗地图停放战车为0血时，人物仍应能够移动")
+	var hall_snapshot: Dictionary = hall.snapshot_for_actor(0, 0.0, entity_id)
+	_expect(not bool(hall_snapshot.combat.vehicle_combat_active),
+		"大厅战车资源快照必须明确标记为非战斗状态")
 	var field_spawn := field.admitted_spawn_position(Vector2(2412, 2400))
 	var spawned := field.spawn_entity(entity_id, field_spawn, source_entity.movement_speed)
 	_expect(spawned.ok, "恢复测试实体应能进入战斗地图")
@@ -392,10 +401,13 @@ func _test_destroyed_vehicle_recovery() -> void:
 	var state = field.vehicle_combat_state_for(entity_id)
 	state.apply_damage(state.max_health)
 	var move_result := field.handle_move_intent(entity_id, MoveIntentContract.new(
-		field.instance_id, field_spawn + Vector2(48, 0), 1
+		field.instance_id, field_spawn + Vector2(48, 0), 2
 	).to_dictionary())
 	_expect(not move_result.ok and move_result.code == &"combat.vehicle_destroyed",
 		"击毁战车不得继续提交移动")
+	var field_snapshot: Dictionary = field.snapshot_for_actor(0, 0.0, entity_id)
+	_expect(bool(field_snapshot.combat.vehicle_combat_active),
+		"D04战车资源快照必须明确标记为战斗状态")
 	var request := VehicleRecoveryIntentContract.new(
 		field.instance_id, VehicleRecoveryIntentContract.RETURN_TO_BASE, 1
 	).to_dictionary()

@@ -472,6 +472,10 @@ func handle_peer_vehicle_recovery(peer_id: int, raw_intent: Variant) -> Dictiona
 	if _pending_vehicle_recoveries.has(session.entity_id):
 		return _failure(&"vehicle_recovery.already_pending", "base rescue is already pending")
 	var source := map_registry.instance_by_id(session.map_instance_id)
+	if source == null or not source.is_vehicle_combat_active():
+		return _failure(
+			&"vehicle_recovery.not_in_combat", "vehicle recovery is only available on combat maps"
+		)
 	var vehicle_state := source.vehicle_combat_state_for(session.entity_id) if source != null else null
 	if vehicle_state == null or vehicle_state.health > 0:
 		return _failure(&"vehicle_recovery.not_destroyed", "only a destroyed vehicle may return")

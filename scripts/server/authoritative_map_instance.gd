@@ -176,7 +176,7 @@ func handle_use_ability(
 	raw_intent: Variant,
 	authoritative_context: Dictionary = {},
 ):
-	if combat_module == null:
+	if combat_module == null or not is_vehicle_combat_active():
 		return _failure(&"combat.not_available", "this map has no configured combat encounter")
 	var ability_id := String(raw_intent.get("ability_id", "")) if raw_intent is Dictionary else ""
 	var result = combat_module.handle_self_repair(
@@ -218,7 +218,7 @@ func handle_move_intent(entity_id: String, raw_intent: Variant) -> Dictionary:
 	if entity == null:
 		return _failure(ErrorCodes.INVALID_IDENTIFIER, "entity is not present in this map instance")
 	var vehicle_state := vehicle_combat_state_for(entity_id)
-	if vehicle_state != null and vehicle_state.health <= 0:
+	if is_vehicle_combat_active() and vehicle_state != null and vehicle_state.health <= 0:
 		return _failure(&"combat.vehicle_destroyed", "destroyed vehicle cannot move")
 	var intent_result = MoveIntentContract.from_dictionary(raw_intent)
 	if not intent_result.is_ok:
@@ -586,8 +586,17 @@ func snapshot(server_tick: int, server_time_seconds: float) -> Dictionary:
 func snapshot_for_actor(server_tick: int, server_time_seconds: float, actor_id: String) -> Dictionary:
 	var result := snapshot(server_tick, server_time_seconds)
 	if combat_module != null:
-		result["combat"] = combat_module.snapshot_for_actor(actor_id)
+		var combat_snapshot: Dictionary = combat_module.snapshot_for_actor(actor_id)
+		combat_snapshot["vehicle_combat_active"] = is_vehicle_combat_active()
+		result["combat"] = combat_snapshot
 	return result
+
+
+## 当前地图是否把玩家表现为可战斗战车；资源状态可以存在于非战斗地图，但不能限制人物移动。
+func is_vehicle_combat_active() -> bool:
+	if definition == null:
+		return false
+	return StringName(definition.player_presentation.get("kind", &"character")) == &"combat_actor"
 
 
 ## 查询当前地图内指定实体的权威战车资源状态。

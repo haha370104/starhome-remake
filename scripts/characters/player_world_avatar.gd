@@ -108,6 +108,7 @@ func apply_map_presentation(presentation: Dictionary) -> Error:
 	if kind == CHARACTER_KIND:
 		presentation_kind = CHARACTER_KIND
 		combat_actor_id = &""
+		set_vehicle_destroyed(false)
 		human_character.visible = true
 		combat_presenter.visible = false
 		combat_name_label.visible = false

@@ -386,6 +386,11 @@ func _commit_map_joined(value: Dictionary, explicit_transition: bool) -> bool:
 		)
 		return false
 	snapshot = snapshot.duplicate(true)
+	# 移动序号属于同一认证会话的单调序列；map_instance_id 负责隔离地图。
+	# 切图只清除旧预测路线，不能把序号退回 1，否则服务端会将新地图首个输入判为重放。
+	var next_movement_sequence := _movement_sequence_after_join(
+		snapshot, StringName(joined.entity_id)
+	)
 
 	_suppress_local_presentation_signal = true
 	local_entity_id = StringName(joined.entity_id)
@@ -395,7 +400,7 @@ func _commit_map_joined(value: Dictionary, explicit_transition: bool) -> bool:
 	network_adapter.map_id = joined.map_id
 	network_adapter.map_instance_id = joined.map_instance_id
 	_minimum_snapshot_server_tick = joined.server_tick
-	local_predictor.reset(joined.spawn_position, 1, false)
+	local_predictor.reset(joined.spawn_position, next_movement_sequence, false)
 	_clear_remote_entities()
 	remote_interpolator.reset()
 	_pending_map_change.clear()
@@ -409,6 +414,19 @@ func _commit_map_joined(value: Dictionary, explicit_transition: bool) -> bool:
 	)
 	local_presentation_state_changed.emit(local_predictor.presentation_state())
 	return true
+
+
+## 保留本会话尚未使用的序号，并在重连时至少越过服务器已确认值。
+func _movement_sequence_after_join(snapshot: Dictionary, joined_entity_id: StringName) -> int:
+	var result := local_predictor.next_input_sequence
+	for raw_entity: Variant in snapshot.get("entities", []):
+		if not raw_entity is Dictionary:
+			continue
+		var entity: Dictionary = raw_entity
+		if StringName(entity.get("entity_id", &"")) != joined_entity_id:
+			continue
+		return maxi(result, int(entity.get("acknowledged_input_sequence", 0)) + 1)
+	return result
 
 
 ## 处理 `_on_local_predictor_presentation_changed` 对应的信号回调。
@@ -514,6 +532,9 @@ func _on_server_message_received(message: Dictionary) -> void:
 ## 设计：该函数位于客户端交互或表现边界，最终状态以服务器权威结果为准。
 func _is_valid_combat_snapshot(snapshot: Dictionary) -> bool:
 	if typeof(snapshot.get("server_tick")) != TYPE_INT:
+		return false
+	if snapshot.has("vehicle_combat_active") \
+			and typeof(snapshot["vehicle_combat_active"]) != TYPE_BOOL:
 		return false
 	if typeof(snapshot.get("local_entity_id")) != TYPE_STRING \
 		or not snapshot.get("local_vehicle") is Dictionary \
