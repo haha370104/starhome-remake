@@ -111,7 +111,6 @@ func register_vehicle(
 		),
 		"cooldown_ready_ticks": {},
 		"last_command_sequence": -1,
-		"last_damage_tick": -1000000000,
 		"self_repair": {
 			"active": false,
 			"next_cycle_tick": 0,
@@ -292,10 +291,7 @@ func handle_self_repair(
 	repair_state["health_per_cycle"] = base_strength + floori(
 		float(repair_skill_level) / float(SELF_REPAIR_SKILL_LEVELS_PER_BONUS)
 	)
-	repair_state["next_cycle_tick"] = maxi(
-		current_tick + interval_ticks,
-		int(actor["last_damage_tick"]) + interval_ticks,
-	)
+	repair_state["next_cycle_tick"] = current_tick + interval_ticks
 	return DomainResult.ok(_record_combat_event({
 		"event_type": &"self_repair_started",
 		"server_tick": current_tick,
@@ -450,10 +446,6 @@ func _settle_due_self_repairs() -> void:
 			_stop_self_repair(actor_id, &"full_health")
 			continue
 		var interval_ticks := maxi(1, roundi(SELF_REPAIR_INTERVAL_SECONDS * float(simulation_hz)))
-		var earliest_after_damage := int(actor["last_damage_tick"]) + interval_ticks
-		if current_tick < earliest_after_damage:
-			repair_state["next_cycle_tick"] = earliest_after_damage
-			continue
 		var energy_result := vehicle_state.consume_working_energy(
 			float(repair_state["working_energy_cost"])
 		)
@@ -495,22 +487,6 @@ func _stop_self_repair(actor_id: String, reason: StringName) -> void:
 		"actor_id": actor_id,
 		"reason": reason,
 	})
-
-
-## 记录战车在本 tick 受到的有效伤害，并延后正在运行的自维修周期。
-## [param actor_id] 实际承受伤害的玩家实体标识。
-## [param applied_damage] 领域状态最终确认的有效伤害值。
-func _mark_actor_damaged(actor_id: String, applied_damage: int) -> void:
-	if applied_damage <= 0 or not actors.has(actor_id):
-		return
-	var actor: Dictionary = actors[actor_id]
-	actor["last_damage_tick"] = current_tick
-	var repair_state: Dictionary = actor["self_repair"]
-	if bool(repair_state["active"]):
-		var interval_ticks := maxi(1, roundi(SELF_REPAIR_INTERVAL_SECONDS * float(simulation_hz)))
-		repair_state["next_cycle_tick"] = current_tick + interval_ticks
-
-
 ## 执行 `advance_ticks` 对应的模块操作。
 ## [param tick_count] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## 返回该函数计算、查询或操作得到的结果。
@@ -833,7 +809,6 @@ func _resolve_monster_attack(attack: Dictionary) -> void:
 	var damage_result := vehicle_state.apply_damage(int(attack["damage"]))
 	if not damage_result.is_ok:
 		return
-	_mark_actor_damaged(target_id, int(damage_result.value["applied_damage"]))
 	var impact_position := Vector2(
 		attack.get("impact_position", actor["position"] + ACTOR_PROJECTILE_HITBOX_OFFSET)
 	)

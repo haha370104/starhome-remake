@@ -301,11 +301,11 @@ func _test_authoritative_self_repair_cycles() -> void:
 	module.advance_ticks(1)
 	_expect(state.health == 56, "first three-second cycle should restore six health")
 	_expect(is_equal_approx(state.working_energy, 45.0), "successful cycle should consume five working energy")
-	module._mark_actor_damaged("player.repair", 1)
+	state.apply_damage(1)
 	module.advance_ticks(59)
-	_expect(state.health == 56, "damage should postpone the next repair until three quiet seconds")
+	_expect(state.health == 55, "incoming damage should not alter the fixed repair cadence")
 	module.advance_ticks(1)
-	_expect(state.health == 62, "repair should resume exactly three seconds after damage")
+	_expect(state.health == 61, "repair should resolve on schedule while the vehicle is under attack")
 	var snapshot := module.snapshot_for_actor("player.repair")
 	_expect(
 		bool(snapshot["local_vehicle"]["self_repair_active"]),
