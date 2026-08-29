@@ -57,13 +57,21 @@ func _run() -> void:
 		)
 		view.set_hovered(true)
 		_expect(
-			view.is_hover_background_visible(),
-			"hover should show the original-client green background layer",
+			view.is_hover_glow_enabled(),
+			"hover should enable the original-client texture glow",
+		)
+		_expect(
+			is_equal_approx(view.hover_glow_radius(), 4.0),
+			"ground loot glow should retain the original four-pixel radius",
+		)
+		_expect(
+			view.get_node_or_null("HoverBackground") == null,
+			"ground loot should not create the former rectangular hover background",
 		)
 		view.set_hovered(false)
 		_expect(
-			not view.is_hover_background_visible(),
-			"leaving loot should hide the background without tinting the source icon",
+			not view.is_hover_glow_enabled(),
+			"leaving loot should disable the glow without tinting the source icon",
 		)
 	controller.apply_snapshot(_snapshot([_loot(
 		"loot.biosilicon.1", "low_grade_biosilicon", 3, Vector2(140.0, 220.0)

@@ -1,11 +1,17 @@
 class_name GroundLootWorldView
 extends Node2D
 
+const HOVER_GLOW_SHADER := preload(
+	"res://scripts/client/presentation/combat/ground_loot_hover_glow.gdshader"
+)
+const HOVER_GLOW_COLOR := Color("33ff00")
+const HOVER_GLOW_RADIUS := 4.0
+
 var loot_id := ""
 var item_definition_id := ""
 var quantity := 0
 var item: GameItem
-var _hover_background: Panel
+var _hover_material: ShaderMaterial
 var _sprite: Sprite2D
 var _tooltip: Label
 var _local_hit_rect := Rect2()
@@ -37,23 +43,17 @@ func configure(ground_item: GameItem, snapshot: Dictionary) -> Error:
 	var origin := Vector2(float(origin_value[0]), float(origin_value[1]))
 	if native_size.x <= 0.0 or native_size.y <= 0.0:
 		return ERR_INVALID_DATA
-	_hover_background = Panel.new()
-	_hover_background.name = "HoverBackground"
-	_hover_background.position = origin - Vector2(2.0, 2.0)
-	_hover_background.size = native_size + Vector2(4.0, 4.0)
-	_hover_background.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_hover_background.visible = false
-	var hover_style := StyleBoxFlat.new()
-	hover_style.bg_color = Color(0.08, 0.34, 0.08, 0.48)
-	hover_style.border_color = Color("33ff00")
-	hover_style.set_border_width_all(1)
-	_hover_background.add_theme_stylebox_override("panel", hover_style)
-	add_child(_hover_background)
 	_sprite = Sprite2D.new()
 	_sprite.name = "WorldIcon"
 	_sprite.texture = load(texture_path)
 	_sprite.centered = false
 	_sprite.position = origin
+	_hover_material = ShaderMaterial.new()
+	_hover_material.shader = HOVER_GLOW_SHADER
+	_hover_material.set_shader_parameter("glow_color", HOVER_GLOW_COLOR)
+	_hover_material.set_shader_parameter("glow_radius", HOVER_GLOW_RADIUS)
+	_hover_material.set_shader_parameter("hover_amount", 0.0)
+	_sprite.material = _hover_material
 	add_child(_sprite)
 	_local_hit_rect = Rect2(origin, native_size)
 	_tooltip = Label.new()
@@ -96,16 +96,26 @@ func contains_world_point(world_position: Vector2) -> bool:
 ## 切换原客户端风格的地面物品悬浮反馈。
 ## [param hovered] 当前鼠标是否命中该掉落物。
 func set_hovered(hovered: bool) -> void:
-	if _hover_background != null:
-		_hover_background.visible = hovered
+	if _hover_material != null:
+		_hover_material.set_shader_parameter("hover_amount", 1.0 if hovered else 0.0)
 	if _tooltip != null:
 		_tooltip.visible = hovered
 
 
-## 查询原版绿色发光语义对应的悬浮背景是否可见，供表现回归测试使用。
-## 返回当前掉落物是否正在显示独立背景层。
-func is_hover_background_visible() -> bool:
-	return _hover_background != null and _hover_background.visible
+## 查询原版绿色晕染材质是否已启用，供表现回归测试使用。
+## 返回当前掉落物是否正在以完整强度显示发光。
+func is_hover_glow_enabled() -> bool:
+	if _hover_material == null:
+		return false
+	return is_equal_approx(float(_hover_material.get_shader_parameter("hover_amount")), 1.0)
+
+
+## 读取地面掉落悬浮晕染的外扩半径，供原版参数回归测试使用。
+## 返回着色器使用的像素半径。
+func hover_glow_radius() -> float:
+	if _hover_material == null:
+		return 0.0
+	return float(_hover_material.get_shader_parameter("glow_radius"))
 
 
 ## 读取 `local_hit_rect`，返回本视图使用的 ALE 原始本地命中矩形。
