@@ -311,6 +311,33 @@ func _test_authoritative_self_repair_cycles() -> void:
 		bool(snapshot["local_vehicle"]["self_repair_active"]),
 		"combat snapshot should expose active repair presentation state",
 	)
+	module.advance_ticks(20)
+	var attack := module.handle_energy_cannon_attack(
+		"player.repair", _attack_intent(Vector2(100.0, 0.0), 3)
+	)
+	_expect(attack.is_ok, "an equipped weapon attack should be accepted during self-repair")
+	_expect(
+		not bool(module.snapshot_for_actor("player.repair")["local_vehicle"]["self_repair_active"]),
+		"an accepted weapon attack should cancel self-repair",
+	)
+	_expect(
+		StringName(module.combat_events[-2]["event_type"]) == &"self_repair_stopped" \
+		and StringName(module.combat_events[-2]["reason"]) == &"attack",
+		"attack cancellation should expose a stable authoritative reason",
+	)
+	state.apply_damage(1)
+	var movement_started := module.handle_self_repair(
+		"player.repair", _self_repair_intent(4), 39
+	)
+	_expect(movement_started.is_ok, "repair should be restartable after attack cancellation")
+	_expect(
+		module.interrupt_self_repair("player.repair", &"movement"),
+		"accepted movement should interrupt active self-repair",
+	)
+	_expect(
+		StringName(module.combat_events[-1]["reason"]) == &"movement",
+		"movement cancellation should expose a stable authoritative reason",
+	)
 
 	var level_module := _new_module(109)
 	level_module.register_vehicle(

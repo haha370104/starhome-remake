@@ -244,6 +244,8 @@ func handle_move_intent(entity_id: String, raw_intent: Variant) -> Dictionary:
 	if authoritative_path.is_empty():
 		return _failure(&"unreachable_target", "no authoritative path exists")
 	entity.set_path(authoritative_path, authoritative_target, sequence)
+	if combat_module != null and not authoritative_target.is_equal_approx(entity.position):
+		combat_module.interrupt_self_repair(entity_id, &"movement")
 	return _success({
 		"sequence": sequence,
 		"requested_target": requested_position,

@@ -213,6 +213,7 @@ func handle_energy_cannon_attack(actor_id: String, raw_intent: Variant) -> Domai
 	var energy_result := vehicle_state.consume_working_energy(float(weapon["working_energy_cost"]))
 	if not energy_result.is_ok:
 		return energy_result
+	interrupt_self_repair(actor_id, &"attack")
 	actor["cooldown_ready_ticks"][ability_id] = current_tick + int(weapon["cooldown_ticks"])
 	var direction := aim.normalized()
 	var resolved_distance := minf(aim.length(), float(weapon["range"]))
@@ -501,6 +502,18 @@ func _stop_self_repair(actor_id: String, reason: StringName) -> void:
 		"actor_id": actor_id,
 		"reason": reason,
 	})
+
+
+## 由权威移动或武器模块中断自维修；未处于维修状态时保持幂等。
+## 返回本次是否实际停止了维修。
+func interrupt_self_repair(actor_id: String, reason: StringName) -> bool:
+	if not actors.has(actor_id) or reason not in [&"movement", &"attack"]:
+		return false
+	var repair_state: Dictionary = actors[actor_id]["self_repair"]
+	if not bool(repair_state["active"]):
+		return false
+	_stop_self_repair(actor_id, reason)
+	return true
 ## 执行 `advance_ticks` 对应的模块操作。
 ## [param tick_count] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## 返回该函数计算、查询或操作得到的结果。
