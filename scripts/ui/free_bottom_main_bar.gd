@@ -61,7 +61,7 @@ func configure(definition: Dictionary, shortcut_definition: Dictionary, state: H
 	var weapons: Dictionary = definition.get("weapons", {})
 	_build_weapon_button("energy_cannon", weapons.get("energy_cannon", {}), "")
 	_build_weapon_button("missile", weapons.get("missile", {}), "1700")
-	_build_weapon_button("third_action", weapons.get("third_action", {}), "")
+	_build_weapon_button("rocket_launcher", weapons.get("third_action", {}), "")
 
 	var buttons: Dictionary = definition.get("menu_buttons", {})
 	for action_id in MENU_BUTTONS:

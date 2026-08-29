@@ -46,8 +46,26 @@ const ItemCatalogScript := preload("res://scripts/domain/items/item_catalog.gd")
 const SkillLevelMessageFormatter := preload(
 	"res://scripts/client/presentation/skill_level_message_formatter.gd"
 )
-const STARTER_WEAPON_ID := &"recruit_energy_cannon"
-const STARTER_ABILITY_ID := "energy_cannon.primary"
+const WEAPON_MODES := {
+	"energy_cannon": {
+		"weapon_id": &"recruit_energy_cannon",
+		"ability_id": "energy_cannon.primary",
+		"layer_id": &"primary_weapon",
+		"display_name": "新兵能量炮",
+	},
+	"missile": {
+		"weapon_id": &"starter_missile",
+		"ability_id": "missile.primary",
+		"layer_id": &"missile_weapon",
+		"display_name": "初级导弹",
+	},
+	"rocket_launcher": {
+		"weapon_id": &"starter_rocket_launcher",
+		"ability_id": "rocket_launcher.primary",
+		"layer_id": &"rocket_weapon",
+		"display_name": "初级火箭",
+	},
+}
 const SELF_REPAIR_ABILITY_ID := "self_repair"
 
 # Player tuning is intentionally local to the player. NPC patrol motion has its
@@ -142,6 +160,7 @@ var pending_authoritative_join: Dictionary = {}
 var map_commit_failure_locked := false
 var selected_transition_id: StringName = &""
 var combat_attack_controller: Node
+var combat_attack_controllers: Dictionary = {}
 var monster_world_controller: MonsterWorldController
 var ground_loot_world_controller: GroundLootWorldController
 var offline_combat_bridge: OfflineCombatAuthorityBridge
@@ -254,21 +273,32 @@ func _handle_world_combat_left_click(world_position: Vector2) -> void:
 		if not loot_id.is_empty():
 			_request_ground_loot_pickup(loot_id)
 			return
-	if combat_attack_controller == null:
+	var selected_mode := String(hud.state.selected_action_slot)
+	var mode: Dictionary = WEAPON_MODES.get(selected_mode, {})
+	var attack_controller: Node = combat_attack_controllers.get(selected_mode)
+	if mode.is_empty() or attack_controller == null:
 		hint_label.text = "武器表现尚未初始化"
 		return
 	var target_entity_id := monster_world_controller.nearest_target(world_position)
+	if selected_mode == "missile" and target_entity_id.is_empty():
+		hint_label.text = "导弹需要锁定一个怪物"
+		return
 	var authoritative_target := world_position
 	if not target_entity_id.is_empty():
 		authoritative_target = monster_world_controller.target_position(target_entity_id)
 	if not authoritative_target.is_finite():
 		hint_label.text = "目标已离开当前地图"
 		return
-	var result: Dictionary = combat_attack_controller.request_fire(player.position, authoritative_target)
+	var tracking_resolver := Callable()
+	if selected_mode == "missile":
+		tracking_resolver = _combat_target_position.bind(target_entity_id)
+	var result: Dictionary = attack_controller.request_fire(
+		player.position, authoritative_target, tracking_resolver
+	)
 	if not bool(result.get("ok", false)):
 		var code := StringName(result.get("code", &""))
 		if code == &"cooldown":
-			hint_label.text = "新兵能量炮冷却中"
+			hint_label.text = "%s冷却中" % String(mode["display_name"])
 		elif code == &"target_too_close":
 			hint_label.text = "射击目标距离过近"
 		else:
@@ -277,20 +307,24 @@ func _handle_world_combat_left_click(world_position: Vector2) -> void:
 	var resolved_target: Vector2 = result["resolved_target"]
 	var submitted := false
 	if multiplayer_offline_debug_enabled and offline_combat_bridge != null:
-		var authority_result := offline_combat_bridge.request_attack(resolved_target)
+		var authority_result := offline_combat_bridge.request_attack(
+			resolved_target, String(mode["ability_id"])
+		)
 		submitted = bool(authority_result.get("ok", false))
 		if not submitted:
 			hint_label.text = _combat_rejection_text(StringName(authority_result.get("code", &"")))
 	else:
 		submitted = not multiplayer_presenter.request_use_ability(
-			STARTER_ABILITY_ID, resolved_target
+			String(mode["ability_id"]), resolved_target
 		).is_empty()
 	if not submitted:
 		return
 	var was_moving: bool = local_player_controller.has_active_route()
 	var direction: Vector2 = result["direction"]
 	var weapon_direction := _direction_index(direction)
-	player.set_combat_layer_pose(&"primary_weapon", &"attack", weapon_direction)
+	var layer_id := StringName(mode["layer_id"])
+	player.set_combat_weapon_layer(layer_id)
+	player.set_combat_layer_pose(layer_id, &"attack", weapon_direction)
 	if bool(result.get("range_clamped", false)):
 		hint_label.text = "目标超出射程，向极限点 %d, %d 开火" % [
 			roundi(resolved_target.x),
@@ -301,7 +335,12 @@ func _handle_world_combat_left_click(world_position: Vector2) -> void:
 			roundi(resolved_target.x),
 			roundi(resolved_target.y),
 		]
-	_restore_locomotion_after_attack(was_moving)
+	_restore_locomotion_after_attack(was_moving, layer_id)
+
+
+func _combat_target_position(target_entity_id: String) -> Vector2:
+	return monster_world_controller.target_position(target_entity_id) \
+		if monster_world_controller != null else Vector2.INF
 
 
 ## 向当前权威边界提交一次地面掉落拾取意图。
@@ -390,11 +429,11 @@ func _request_self_repair() -> void:
 ## 在短促炮口动作结束后恢复开火前的移动状态。
 ## [param was_moving] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## 设计：等待期间若路线自然结束则恢复站立；仍在移动时从当前路径段重算朝向。
-func _restore_locomotion_after_attack(was_moving: bool) -> void:
+func _restore_locomotion_after_attack(was_moving: bool, layer_id: StringName) -> void:
 	await get_tree().create_timer(0.16).timeout
 	if player == null or not player.is_combat_actor_active():
 		return
-	player.clear_combat_layer_action(&"primary_weapon")
+	player.clear_combat_layer_action(layer_id)
 	if was_moving and local_player_controller.has_active_route():
 		local_player_controller.refresh_route_direction()
 	else:
@@ -519,18 +558,22 @@ func _build_world() -> void:
 	player.set_animation_speed_scale(player_animation_speed_scale)
 	sortable_world.add_child(player)
 
-	combat_attack_controller = WeaponAttackVisualControllerScript.new()
-	combat_attack_controller.name = "WeaponAttackVisualController"
-	add_child(combat_attack_controller)
-	var attack_visual_error: Error = combat_attack_controller.configure(
-		combat_manifest,
-		sortable_world,
-		STARTER_WEAPON_ID,
-	)
-	if attack_visual_error != OK:
-		push_error(
-			"Unable to configure weapon attack visuals: %s" % error_string(attack_visual_error)
+	for mode_id: String in WEAPON_MODES:
+		var mode: Dictionary = WEAPON_MODES[mode_id]
+		var controller := WeaponAttackVisualControllerScript.new()
+		controller.name = "%sAttackVisualController" % mode_id.to_pascal_case()
+		add_child(controller)
+		var attack_visual_error: Error = controller.configure(
+			combat_manifest, sortable_world, StringName(mode["weapon_id"])
 		)
+		if attack_visual_error != OK:
+			push_error("Unable to configure %s visuals: %s" % [
+				mode_id, error_string(attack_visual_error),
+			])
+			controller.free()
+			continue
+		combat_attack_controllers[mode_id] = controller
+	combat_attack_controller = combat_attack_controllers.get("energy_cannon")
 	monster_world_controller = MonsterWorldControllerScript.new()
 	monster_world_controller.name = "MonsterWorldController"
 	add_child(monster_world_controller)
@@ -538,9 +581,8 @@ func _build_world() -> void:
 	if monster_error != OK:
 		push_error("Unable to configure monster world presentation: %s" % error_string(monster_error))
 	else:
-		combat_attack_controller.set_visual_collision_resolver(
-			monster_world_controller.first_visual_collision
-		)
+		for controller: Node in combat_attack_controllers.values():
+			controller.set_visual_collision_resolver(monster_world_controller.first_visual_collision)
 	item_catalog = ItemCatalogScript.new()
 	var item_catalog_result := item_catalog.initialize()
 	if item_catalog_result.is_ok:
@@ -604,6 +646,8 @@ func _build_hud(initial_bundle: Dictionary) -> void:
 	hud.popup_closed.connect(_on_npc_popup_closed)
 	hud.npc_action_requested.connect(_on_npc_action_requested)
 	hud.hud_action_requested.connect(_on_hud_action_requested)
+	hud.state.selected_action_slot_changed.connect(_on_weapon_slot_selected)
+	_on_weapon_slot_selected(hud.state.selected_action_slot)
 
 
 ## 创建大厅客户端会话表现器，并以显式配置选择离线调试或真实网络入口。
@@ -682,6 +726,7 @@ func _build_game_windows() -> void:
 
 
 ## 将线上或离线权威升级事件格式化为荣耀版原句式并交给 HUD 排队。
+## [param event] 含 skill_id 与 new_level 的权威升级事件。
 func _on_skill_level_up(event: Dictionary) -> void:
 	if hud == null:
 		return
@@ -761,8 +806,8 @@ func _on_active_world_will_replace() -> void:
 	selected_transition_id = &""
 	if movement_click_effects != null:
 		movement_click_effects.clear_effects()
-	if combat_attack_controller != null:
-		combat_attack_controller.clear_effects()
+	for controller: Node in combat_attack_controllers.values():
+		controller.clear_effects()
 	if monster_world_controller != null:
 		monster_world_controller.clear()
 
@@ -992,7 +1037,7 @@ func _on_combat_event_received(event: Dictionary) -> void:
 		if ground_loot_world_controller != null:
 			ground_loot_world_controller.remove_loot(String(event.get("loot_id", "")))
 		hint_label.text = "拾取了 %d 个物品" % int(event.get("quantity", 1))
-	elif event_type == &"energy_cannon_hit":
+	elif event_type in [&"energy_cannon_hit", &"rocket_launcher_hit", &"missile_hit"]:
 		hint_label.text = "命中目标，造成%d点伤害（剩余%d）" % [
 			int(event.get("damage", 0)),
 			int(event.get("target_health", 0)),
@@ -1087,6 +1132,12 @@ func _on_hud_action_requested(action_id: String) -> void:
 			"inventory": "背包",
 			"vehicle_equipment": "战车",
 		}.get(action_id, action_id)
+
+
+func _on_weapon_slot_selected(slot_id: String) -> void:
+	var mode: Dictionary = WEAPON_MODES.get(slot_id, {})
+	if player != null and not mode.is_empty():
+		player.set_combat_weapon_layer(StringName(mode["layer_id"]))
 
 
 ## 推进并更新 `update_minimap_dot` 对应的模块状态。

@@ -26,6 +26,7 @@ var _combat_manifest: Dictionary = {}
 var _current_action := &"stand"
 var _current_direction := 6
 var _animation_speed_scale := 1.0
+var _combat_weapon_layer := &"primary_weapon"
 
 
 ## 构建共享人形角色与按需隐藏的战斗载具表现。
@@ -124,6 +125,7 @@ func apply_map_presentation(presentation: Dictionary) -> Error:
 	combat_presenter.visible = true
 	combat_name_label.visible = true
 	combat_status_bar.visible = true
+	set_combat_weapon_layer(_combat_weapon_layer)
 	_apply_active_pose()
 	return OK
 
@@ -156,6 +158,14 @@ func set_combat_layer_pose(layer_id: StringName, action: StringName, direction: 
 func clear_combat_layer_action(layer_id: StringName) -> void:
 	if combat_presenter != null:
 		combat_presenter.clear_layer_action(layer_id)
+
+
+func set_combat_weapon_layer(layer_id: StringName) -> void:
+	_combat_weapon_layer = layer_id
+	if combat_presenter == null:
+		return
+	for candidate: StringName in [&"primary_weapon", &"rocket_weapon", &"missile_weapon"]:
+		combat_presenter.set_layer_visible(candidate, candidate == layer_id)
 
 
 ## 执行 `set_combat_status` 对应的模块操作。

@@ -13,6 +13,7 @@ var _layers: Dictionary = {}
 var _layer_configs: Dictionary = {}
 var _layer_action_overrides: Dictionary = {}
 var _layer_direction_overrides: Dictionary = {}
+var _layer_visibility_overrides: Dictionary = {}
 var _elapsed_seconds := 0.0
 
 
@@ -80,6 +81,7 @@ func clear_actor() -> void:
 	_layer_configs.clear()
 	_layer_action_overrides.clear()
 	_layer_direction_overrides.clear()
+	_layer_visibility_overrides.clear()
 	_actor.clear()
 	current_actor_id = &""
 	current_action_id = &""
@@ -146,6 +148,15 @@ func clear_layer_direction(layer_id: StringName) -> void:
 	_apply_pose()
 
 
+func set_layer_visible(layer_id: StringName, visible: bool) -> bool:
+	var sprite := _layers.get(layer_id) as AnimatedSprite2D
+	if sprite == null:
+		return false
+	_layer_visibility_overrides[layer_id] = visible
+	sprite.visible = visible
+	return true
+
+
 ## 执行 `advance` 对应的模块操作。
 ## [param delta_seconds] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func advance(delta_seconds: float) -> void:
@@ -206,6 +217,7 @@ func _apply_pose() -> Error:
 	for layer_id_value: Variant in _layers.keys():
 		var layer_id := StringName(layer_id_value)
 		var sprite := _layers[layer_id] as AnimatedSprite2D
+		sprite.visible = bool(_layer_visibility_overrides.get(layer_id, true))
 		var layer: Dictionary = _layer_configs[layer_id]
 		var action := _resolve_layer_action(layer_id, layer)
 		if action.is_empty():
