@@ -3,63 +3,88 @@
   "definitions": {
     "low_grade_gel": {
       "display_name": "低级类胶",
-      "texture": "res://assets/items/materials/low_grade_gel/world_icon.png",
-      "native_size": [
-        49,
-        31
-      ],
-      "origin": [
-        -23,
-        -15
-      ]
+      "world": {
+        "texture": "res://assets/items/materials/low_grade_gel/world_icon.png",
+        "native_size": [
+          49,
+          31
+        ],
+        "origin": [
+          -23,
+          -15
+        ]
+      },
+      "inventory": {
+        "icon": "res://assets/items/materials/low_grade_gel/inventory_icon.png"
+      }
     },
     "low_grade_energy_pack": {
       "display_name": "低级能量包",
-      "texture": "res://assets/items/materials/low_grade_energy_pack/world_icon.png",
-      "native_size": [
-        47,
-        36
-      ],
-      "origin": [
-        -30,
-        -16
-      ]
+      "world": {
+        "texture": "res://assets/items/materials/low_grade_energy_pack/world_icon.png",
+        "native_size": [
+          47,
+          36
+        ],
+        "origin": [
+          -30,
+          -16
+        ]
+      },
+      "inventory": {
+        "icon": "res://assets/items/materials/low_grade_energy_pack/inventory_icon.png"
+      }
     },
     "low_grade_energy_catalyst": {
       "display_name": "低级能量催化剂",
-      "texture": "res://assets/items/materials/low_grade_energy_catalyst/world_icon.png",
-      "native_size": [
-        42,
-        27
-      ],
-      "origin": [
-        -23,
-        -13
-      ]
+      "world": {
+        "texture": "res://assets/items/materials/low_grade_energy_catalyst/world_icon.png",
+        "native_size": [
+          42,
+          27
+        ],
+        "origin": [
+          -23,
+          -13
+        ]
+      },
+      "inventory": {
+        "icon": "res://assets/items/materials/low_grade_energy_catalyst/inventory_icon.png"
+      }
     },
     "low_grade_biosilicon": {
       "display_name": "低级生物硅",
-      "texture": "res://assets/items/materials/low_grade_biosilicon/world_icon.png",
-      "native_size": [
-        50,
-        42
-      ],
-      "origin": [
-        -34,
-        -26
-      ]
+      "world": {
+        "texture": "res://assets/items/materials/low_grade_biosilicon/world_icon.png",
+        "native_size": [
+          50,
+          42
+        ],
+        "origin": [
+          -34,
+          -26
+        ]
+      },
+      "inventory": {
+        "icon": "res://assets/items/materials/low_grade_biosilicon/inventory_icon.png"
+      }
     },
     "low_grade_quadruped_shell": {
       "display_name": "低级四足甲的壳",
-      "texture": "res://assets/items/materials/low_grade_quadruped_shell/world_icon.png",
-      "native_size": [
-        38,
-        31
-      ],
-      "origin": [
-        -22,
-        -17
-      ]
+      "world": {
+        "texture": "res://assets/items/materials/low_grade_quadruped_shell/world_icon.png",
+        "native_size": [
+          38,
+          31
+        ],
+        "origin": [
+          -22,
+          -17
+        ]
+      },
+      "inventory": {
+        "icon": "res://assets/items/materials/low_grade_quadruped_shell/inventory_icon.png"
+      }
     }
   }
 }

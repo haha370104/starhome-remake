@@ -89,14 +89,21 @@ def import_one(item_id: str, spec: dict[str, str]) -> tuple[dict[str, Any], dict
             int(frame["y"]) + int(frame["height"]),
         )
     )
-    target = TARGET_ROOT / item_id / "world_icon.png"
-    target.parent.mkdir(parents=True, exist_ok=True)
-    crop.save(target)
+    world_target = TARGET_ROOT / item_id / "world_icon.png"
+    inventory_target = TARGET_ROOT / item_id / "inventory_icon.png"
+    world_target.parent.mkdir(parents=True, exist_ok=True)
+    crop.save(world_target)
+    crop.save(inventory_target)
     runtime = {
         "display_name": spec["display_name"],
-        "texture": f"res://assets/items/materials/{item_id}/world_icon.png",
-        "native_size": [crop.width, crop.height],
-        "origin": [int(frame["origin_x"]), int(frame["origin_y"])],
+        "world": {
+            "texture": f"res://assets/items/materials/{item_id}/world_icon.png",
+            "native_size": [crop.width, crop.height],
+            "origin": [int(frame["origin_x"]), int(frame["origin_y"])],
+        },
+        "inventory": {
+            "icon": f"res://assets/items/materials/{item_id}/inventory_icon.png",
+        },
     }
     audit = {
         "item_definition_id": item_id,
@@ -104,11 +111,13 @@ def import_one(item_id: str, spec: dict[str, str]) -> tuple[dict[str, Any], dict
         "source_logical_path": source_logical.as_posix(),
         "source_raw_sha256": sha256(raw_path),
         "source_frames_sha256": sha256(frames_path),
-        "exported_texture": target.relative_to(PROJECT_ROOT).as_posix(),
-        "exported_texture_sha256": sha256(target),
+        "exported_world_texture": world_target.relative_to(PROJECT_ROOT).as_posix(),
+        "exported_world_texture_sha256": sha256(world_target),
+        "exported_inventory_texture": inventory_target.relative_to(PROJECT_ROOT).as_posix(),
+        "exported_inventory_texture_sha256": sha256(inventory_target),
         "frame_count": 1,
-        "native_size": runtime["native_size"],
-        "origin": runtime["origin"],
+        "native_size": runtime["world"]["native_size"],
+        "origin": runtime["world"]["origin"],
         "runtime_scale": 1.0,
     }
     return runtime, audit
