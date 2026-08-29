@@ -111,6 +111,10 @@ func _test_d04_lifecycle_definitions() -> void:
 		_expect(definition["unknown_fields"].has("defense") and definition["unknown_fields"].has("move_speed"), "unknown monster stats should remain explicit")
 		_expect(definition["projectile_hitbox"] is Dictionary, "each runtime monster should expose authoritative projectile geometry")
 		_expect(is_equal_approx(float(definition["wander_interval_seconds"]), 5.0), "each D04 monster should use the configured five-second idle interval")
+		_expect(
+			StringName(definition["engagement_policy"]) == &"retaliatory",
+			"each first-playable monster should chase its attacker after surviving a hit",
+		)
 		_expect(definition["drops"] is Array and not definition["drops"].is_empty(), "each D04 monster should expose a runtime drop table")
 		var attack_archetype := StringName(definition.get("attack_archetype", ""))
 		_expect(attack_archetype in [&"ranged_projectile", &"corrosive_projectile", &"contact_melee"], "each monster should expose its source-derived attack archetype")
