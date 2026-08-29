@@ -30,6 +30,10 @@ var target_actor_id := ""
 var wander_target := Vector2.ZERO
 var next_wander_tick := 0
 var wander_interval_ticks := 0
+var movement_route := PackedVector2Array()
+var movement_route_index := 0
+var movement_route_goal := Vector2.INF
+var movement_route_kind := &""
 var attack_ready_tick := 0
 var action := &"idle"
 var action_sequence := 0
@@ -71,6 +75,7 @@ func configure(definition: Dictionary, simulation_hz: int) -> DomainResult:
 	position = requested_position
 	home_position = position
 	wander_target = position
+	clear_movement_route()
 	movement_speed = maxf(0.0, float(definition.get("runtime_move_speed", 0.0)))
 	species_id = String(definition.get("species_id", ""))
 	display_name = String(definition.get("display_name", monster_id))
@@ -121,6 +126,7 @@ func apply_damage(amount: int, attacker_id: String, current_tick: int) -> Domain
 		last_killer_id = attacker_id
 		respawn_at_tick = current_tick + respawn_delay_ticks
 		target_actor_id = ""
+		clear_movement_route()
 	elif engagement_policy.retaliates_when_hit():
 		target_actor_id = attacker_id
 	return DomainResult.ok({
@@ -159,6 +165,7 @@ func reset_to_home(current_tick: int) -> void:
 	action = &"idle"
 	target_actor_id = ""
 	wander_target = home_position
+	clear_movement_route()
 	next_wander_tick = current_tick + wander_interval_ticks
 
 
@@ -171,6 +178,62 @@ func can_acquire_target() -> bool:
 ## 清除当前仇恨目标。
 func clear_target() -> void:
 	target_actor_id = ""
+
+
+## 接受地图权威导航生成的路线，并跳过与当前脚点重合的起始节点。
+## [param route] 从当前脚点到最终可达目标的有序世界坐标。
+## [param goal] 地图导航确认后的实际终点。
+## [param route_kind] wander、chase 或 home，用于识别 AI 状态切换。
+## 返回路线是否包含至少一个尚未到达的有效节点。
+## 设计：怪物领域对象持有移动进度；静态地图如何生成路线仍属于地图实例职责。
+func begin_movement_route(
+	route: PackedVector2Array,
+	goal: Vector2,
+	route_kind: StringName,
+) -> bool:
+	clear_movement_route()
+	if route.is_empty() or not goal.is_finite() or route_kind == &"":
+		return false
+	movement_route = route.duplicate()
+	movement_route_goal = goal
+	movement_route_kind = route_kind
+	while (
+		movement_route_index < movement_route.size()
+		and position.distance_to(movement_route[movement_route_index]) <= 0.5
+	):
+		movement_route_index += 1
+	return movement_route_index < movement_route.size()
+
+
+## 清除当前路线和终点，不改变怪物脚点或游荡计时。
+func clear_movement_route() -> void:
+	movement_route = PackedVector2Array()
+	movement_route_index = 0
+	movement_route_goal = Vector2.INF
+	movement_route_kind = &""
+
+
+## 判断当前路线是否仍有未消费的路径节点。
+## 返回存在下一路径节点时为 true。
+func has_active_movement_route() -> bool:
+	return movement_route_index < movement_route.size()
+
+
+## 读取当前应前往的路径节点。
+## 返回下一节点；路线已结束时返回非有限坐标。
+func next_movement_waypoint() -> Vector2:
+	return movement_route[movement_route_index] \
+		if has_active_movement_route() else Vector2.INF
+
+
+## 消费已经到达的连续路径节点。
+## [param arrival_radius] 判定路径节点抵达的世界像素半径。
+func advance_movement_route(arrival_radius: float = 0.5) -> void:
+	while (
+		movement_route_index < movement_route.size()
+		and position.distance_to(movement_route[movement_route_index]) <= arrival_radius
+	):
+		movement_route_index += 1
 
 
 ## 更新八方向朝向。

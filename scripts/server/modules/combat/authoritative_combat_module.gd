@@ -12,6 +12,8 @@ const LOOT_PICKUP_RADIUS := 125.0
 const SELF_REPAIR_ABILITY_ID := "self_repair"
 const SELF_REPAIR_INTERVAL_SECONDS := 3.0
 const SELF_REPAIR_SKILL_LEVELS_PER_BONUS := 20
+const MONSTER_ROUTE_REPLAN_DISTANCE := 24.0
+const MONSTER_MINIMUM_ACCEPTED_MOTION := 0.05
 
 var simulation_hz := 20
 var current_tick := 0
@@ -27,6 +29,7 @@ var pending_monster_attacks: Array[Dictionary] = []
 var ground_loot: Dictionary = {}
 var _random := RandomNumberGenerator.new()
 var _monster_position_resolver := Callable()
+var _monster_route_resolver := Callable()
 var _shot_sequence := 0
 var _monster_attack_sequence := 0
 var _loot_sequence := 0
@@ -68,6 +71,13 @@ func configure(
 ## 设计：该函数位于权威服务器边界，客户端不得覆盖其计算结果。
 func set_monster_position_resolver(resolver: Callable) -> void:
 	_monster_position_resolver = resolver
+
+
+## 注入地图实例拥有的怪物路线解析器。
+## [param resolver] 接收怪物标识、当前脚点和期望终点，并返回实际终点及完整路径。
+## 设计：战斗模块推进怪物状态，静态障碍和 AStar 图仍由地图实例统一维护。
+func set_monster_route_resolver(resolver: Callable) -> void:
+	_monster_route_resolver = resolver
 
 
 ## 执行 `register_vehicle` 对应的模块操作。
@@ -691,7 +701,7 @@ func _simulate_monster_tick(monster_id: String, fixed_delta: float) -> void:
 	monster.target_actor_id = target_id
 	var distance := monster.position.distance_to(target_position)
 	if distance > monster.attack_mode.attack_range:
-		_move_monster(monster_id, target_position, fixed_delta)
+		_move_monster(monster_id, target_position, fixed_delta, &"chase")
 		return
 	monster.action = &"attack"
 	monster.face(target_position - monster.position)
@@ -947,7 +957,7 @@ func _move_monster_towards_home(monster_id: String, fixed_delta: float) -> void:
 	if monster.position.distance_to(home_position) <= 1.0:
 		monster.action = &"idle"
 		return
-	_move_monster(monster_id, home_position, fixed_delta)
+	_move_monster(monster_id, home_position, fixed_delta, &"home")
 
 
 ## 执行 `simulate_unengaged_monster` 对应的模块操作。
@@ -968,12 +978,11 @@ func _simulate_unengaged_monster(monster_id: String, fixed_delta: float) -> void
 	var wander_target := monster.wander_target
 	var reached_target := monster.position.distance_to(wander_target) <= 2.0
 	if not reached_target:
-		_move_monster(monster_id, wander_target, fixed_delta)
+		if not _move_monster(monster_id, wander_target, fixed_delta, &"wander"):
+			_pause_monster_wander(monster)
 		return
 	if monster.action == &"move":
-		monster.action = &"idle"
-		monster.wander_target = monster.position
-		monster.next_wander_tick = current_tick + monster.wander_interval_ticks
+		_pause_monster_wander(monster)
 		return
 	if current_tick < monster.next_wander_tick:
 		monster.action = &"idle"
@@ -982,20 +991,88 @@ func _simulate_unengaged_monster(monster_id: String, fixed_delta: float) -> void
 		var phase_degrees := posmod(hash(monster_id) + current_tick * 47, 360)
 		var radius_factor := 0.35 + float(posmod(hash(monster_id) + current_tick, 60)) / 100.0
 		wander_target = home_position + Vector2.RIGHT.rotated(deg_to_rad(phase_degrees)) * wander_radius * radius_factor
-		monster.wander_target = wander_target
-	_move_monster(monster_id, wander_target, fixed_delta)
+		if not _begin_monster_route(monster, wander_target, &"wander"):
+			_pause_monster_wander(monster)
+			return
+		monster.wander_target = monster.movement_route_goal
+	if not _move_monster(monster_id, monster.wander_target, fixed_delta, &"wander"):
+		_pause_monster_wander(monster)
 
 
-## 执行 `move_monster` 对应的模块操作。
-## [param monster_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
-## [param target_position] 调用方传入的参数；具体约束由函数签名和所在模块定义。
-## [param fixed_delta] 调用方传入的参数；具体约束由函数签名和所在模块定义。
-func _move_monster(monster_id: String, target_position: Vector2, fixed_delta: float) -> void:
+## 结束一次失败或完成的随机游荡，并重新进入配置化停留间隔。
+## [param monster] 待重置为空闲状态的怪物领域对象。
+func _pause_monster_wander(monster: MonsterLifecycle) -> void:
+	monster.action = &"idle"
+	monster.wander_target = monster.position
+	monster.clear_movement_route()
+	monster.next_wander_tick = current_tick + monster.wander_interval_ticks
+
+
+## 向地图权威导航申请一条完整路线并写入怪物移动状态。
+## [param monster] 需要规划路线的怪物。
+## [param requested_target] AI 期望抵达的世界坐标。
+## [param route_kind] 本次路线所属的游荡、追击或返巢状态。
+## 返回地图是否给出了有限终点和至少一个未抵达路径节点。
+func _begin_monster_route(
+	monster: MonsterLifecycle,
+	requested_target: Vector2,
+	route_kind: StringName,
+) -> bool:
+	if not _monster_route_resolver.is_valid():
+		monster.clear_movement_route()
+		monster.movement_route_goal = requested_target
+		monster.movement_route_kind = route_kind
+		return requested_target.is_finite()
+	var resolved: Variant = _monster_route_resolver.call(
+		monster.monster_id,
+		monster.position,
+		requested_target,
+	)
+	if not resolved is Dictionary:
+		return false
+	var route_value: Variant = resolved.get("path", PackedVector2Array())
+	var target_value: Variant = resolved.get("target", Vector2.INF)
+	if not route_value is PackedVector2Array or not target_value is Vector2:
+		return false
+	return monster.begin_movement_route(route_value, target_value, route_kind)
+
+
+## 沿地图权威路线推进一个怪物，受阻时停止而不继续播放移动动作。
+## [param monster_id] 待移动怪物的稳定实例标识。
+## [param target_position] AI 当前期望抵达的世界坐标。
+## [param fixed_delta] 本次权威模拟步长，单位为秒。
+## [param route_kind] 当前移动属于游荡、追击或返巢。
+## 返回本 tick 是否抵达目标或产生了有效位移。
+func _move_monster(
+	monster_id: String,
+	target_position: Vector2,
+	fixed_delta: float,
+	route_kind: StringName,
+) -> bool:
 	var monster: MonsterLifecycle = monsters[monster_id]
-	var delta := target_position - monster.position
-	if delta.is_zero_approx():
+	if target_position.distance_to(monster.position) <= 0.5:
+		monster.clear_movement_route()
 		monster.action = &"idle"
-		return
+		return true
+	if _monster_route_resolver.is_valid() and (
+		not monster.has_active_movement_route()
+		or monster.movement_route_kind != route_kind
+		or not monster.movement_route_goal.is_finite()
+		or monster.movement_route_goal.distance_to(target_position) > MONSTER_ROUTE_REPLAN_DISTANCE
+	):
+		if not _begin_monster_route(monster, target_position, route_kind):
+			monster.action = &"idle"
+			return false
+	var movement_target := target_position
+	if _monster_route_resolver.is_valid():
+		movement_target = monster.next_movement_waypoint()
+		if not movement_target.is_finite():
+			monster.action = &"idle"
+			return false
+	var delta := movement_target - monster.position
+	if delta.is_zero_approx():
+		monster.advance_movement_route()
+		return true
 	var requested := monster.position + delta.normalized() * minf(
 		delta.length(), monster.movement_speed * fixed_delta
 	)
@@ -1004,10 +1081,17 @@ func _move_monster(monster_id: String, target_position: Vector2, fixed_delta: fl
 		var resolved: Variant = _monster_position_resolver.call(monster_id, monster.position, requested)
 		if resolved is Vector2:
 			admitted = resolved
-	if admitted.is_finite():
-		monster.position = admitted
-		monster.action = &"move"
-		monster.face(delta)
+	if not admitted.is_finite() \
+		or admitted.distance_to(monster.position) < MONSTER_MINIMUM_ACCEPTED_MOTION:
+		monster.clear_movement_route()
+		monster.action = &"idle"
+		return false
+	var accepted_motion := admitted - monster.position
+	monster.position = admitted
+	monster.action = &"move"
+	monster.face(accepted_motion)
+	monster.advance_movement_route()
+	return true
 
 
 ## 执行 `vehicle_state_for` 对应的模块操作。

@@ -20,6 +20,7 @@ func _initialize() -> void:
 	_test_seeded_damage_is_reproducible()
 	_test_three_engagement_policies()
 	_test_five_second_wander_interval()
+	_test_obstacle_aware_monster_wander()
 	_test_authoritative_ground_loot_lifecycle()
 	_test_authoritative_self_repair_cycles()
 	_test_monster_projectile_timing()
@@ -226,6 +227,75 @@ func _test_five_second_wander_interval() -> void:
 	var settled_position := monster.position
 	module.advance_ticks(99)
 	_expect(monster.position.is_equal_approx(settled_position), "completed roam should be followed by another five-second pause")
+
+
+## 验证怪物沿地图路线绕开障碍，并在无法产生位移时取消本次游荡。
+func _test_obstacle_aware_monster_wander() -> void:
+	var routed := _new_module(109)
+	routed.set_monster_route_resolver(Callable(self, "_detour_monster_route"))
+	var routed_definition := _monster_definition("monster.detour", 30, Vector2.ZERO)
+	routed_definition.merge({
+		"runtime_move_speed": 60.0,
+		"wander_radius": 80.0,
+		"wander_interval_seconds": 5.0,
+	}, true)
+	_expect(routed.register_monster(routed_definition).is_ok, "detour monster should register")
+	var routed_monster: MonsterLifecycle = routed.monster_for("monster.detour")
+	routed_monster.wander_target = Vector2(40.0, 0.0)
+	routed.advance_ticks(1)
+	_expect(
+		routed_monster.position.y > 0.0 and is_zero_approx(routed_monster.position.x),
+		"monster should follow the detour waypoint instead of walking into the direct obstacle",
+	)
+
+	var blocked := _new_module(110)
+	blocked.set_monster_position_resolver(Callable(self, "_reject_monster_motion"))
+	var blocked_definition := routed_definition.duplicate(true)
+	blocked_definition["monster_id"] = "monster.blocked"
+	_expect(blocked.register_monster(blocked_definition).is_ok, "blocked monster should register")
+	var blocked_monster: MonsterLifecycle = blocked.monster_for("monster.blocked")
+	blocked_monster.wander_target = Vector2(40.0, 0.0)
+	blocked.advance_ticks(1)
+	_expect(blocked_monster.position.is_equal_approx(Vector2.ZERO), "rejected motion should not move the monster")
+	_expect(blocked_monster.action == &"idle", "rejected motion should stop the movement animation")
+	_expect(
+		blocked_monster.wander_target.is_equal_approx(blocked_monster.position)
+		and blocked_monster.next_wander_tick == blocked.current_tick + blocked_monster.wander_interval_ticks,
+		"rejected wander should clear its target and wait for the next configured interval",
+	)
+
+
+## 构造一条先向下再转向目标的测试路线，模拟直线中间存在障碍。
+## [param _monster_id] 请求路线的怪物标识，本夹具不区分实例。
+## [param current_position] 路线起点。
+## [param requested_position] 路线最终目标。
+## 返回包含实际终点和折线路径的地图导航结果。
+func _detour_monster_route(
+	_monster_id: String,
+	current_position: Vector2,
+	requested_position: Vector2,
+) -> Dictionary:
+	return {
+		"target": requested_position,
+		"path": PackedVector2Array([
+			current_position,
+			current_position + Vector2(0.0, 20.0),
+			requested_position,
+		]),
+	}
+
+
+## 拒绝所有怪物位移，用于验证受阻后的状态收敛。
+## [param _monster_id] 请求移动的怪物标识。
+## [param current_position] 怪物当前脚点。
+## [param _requested_position] 本 tick 请求脚点。
+## 返回未发生变化的当前脚点。
+func _reject_monster_motion(
+	_monster_id: String,
+	current_position: Vector2,
+	_requested_position: Vector2,
+) -> Vector2:
+	return current_position
 
 
 ## 验证死亡结算生成地面掉落，并只允许附近玩家提交一次拾取。

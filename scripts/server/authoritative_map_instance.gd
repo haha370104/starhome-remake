@@ -79,6 +79,7 @@ func configure_combat(catalog, simulation_hz: int) -> Dictionary:
 	if not configured.is_ok:
 		return _failure(configured.error_code, configured.error_message)
 	combat_module.set_monster_position_resolver(_resolve_monster_position)
+	combat_module.set_monster_route_resolver(_resolve_monster_route)
 	for raw_definition: Variant in lifecycle_result.value:
 		var monster_definition: Dictionary = raw_definition.duplicate(true)
 		var requested_position: Vector2 = monster_definition["position"]
@@ -624,6 +625,37 @@ func _resolve_monster_position(
 		return requested_position
 	var fallback: Vector2 = navigation.closest_reachable_position(current_position, requested_position)
 	return fallback if fallback.is_finite() else current_position
+
+
+## 为怪物 AI 期望终点生成静态障碍安全的完整权威路线。
+## [param monster_id] 请求路线的怪物标识，仅用于拒绝空身份。
+## [param current_position] 怪物当前权威脚点。
+## [param requested_position] 游荡、追击或返巢期望终点。
+## 返回含实际可达终点和 AStar 路径的字典；没有路线时返回空字典。
+## 设计：导航图只属于地图实例，战斗模块与怪物领域对象不得读取地图资源。
+func _resolve_monster_route(
+	monster_id: String,
+	current_position: Vector2,
+	requested_position: Vector2,
+) -> Dictionary:
+	if monster_id.is_empty() or navigation == null \
+		or not current_position.is_finite() or not requested_position.is_finite():
+		return {}
+	var authoritative_target := requested_position
+	if not navigation.is_walkable(authoritative_target):
+		authoritative_target = navigation.closest_reachable_position(
+			current_position,
+			requested_position,
+		)
+	if not authoritative_target.is_finite():
+		return {}
+	var path: PackedVector2Array = navigation.find_path(
+		current_position,
+		authoritative_target,
+	)
+	if path.size() < 2:
+		return {}
+	return {"target": authoritative_target, "path": path}
 
 
 ## 执行 `success` 对应的模块操作。
