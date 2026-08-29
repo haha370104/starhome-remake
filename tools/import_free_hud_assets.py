@@ -292,12 +292,20 @@ def main() -> int:
         DESTINATION_ROOT / "bottom_main" / "weapon_modes" / "energy_cannon",
         ["normal.png", "selected.png"],
     )
-    missile = session.export_ale_frames(
-        "bottom_main.weapons.missile",
-        "pic/equipface/missile",
-        DESTINATION_ROOT / "bottom_main" / "weapon_modes" / "missile",
-        ["normal.png", "selected.png"],
-    )
+    tactical_modes: dict[str, Any] = {}
+    for action_id, source_name in {
+        "rocket_launcher": "firegun",
+        "missile": "missile",
+        "stealth": "tank_hermit",
+        "radar": "tank_radar",
+    }.items():
+        frames = session.export_ale_frames(
+            f"bottom_main.weapons.tactical.{action_id}",
+            f"pic/equipface/{source_name}",
+            DESTINATION_ROOT / "bottom_main" / "weapon_modes" / action_id,
+            ["normal.png", "selected.png"],
+        )
+        tactical_modes[action_id] = state_set(frames, ["normal", "selected"])
 
     shortcut_background = session.export_ale_frames(
         "general_shortcut.background",
@@ -411,10 +419,10 @@ def main() -> int:
                 "energy_cannon": positioned(
                     state_set(energy_cannon, ["normal", "selected"]), [178, 8]
                 ),
-                "missile": positioned(
-                    state_set(missile, ["normal", "selected"]), [206, 8]
-                ),
-                "third_action": {"available": False, "position": [234, 8]},
+                "tactical": {
+                    "position": [206, 8],
+                    "modes": tactical_modes,
+                },
             },
             "menu_buttons": bottom_buttons,
             "shortcut_visibility_button_position": [475, 2],

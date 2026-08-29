@@ -109,9 +109,17 @@ def main() -> int:
     }
     for button in bottom["menu_buttons"].values():
         assert_states(button, ["normal", "hover", "pressed"])
-    for weapon in ("energy_cannon", "missile"):
-        assert_states(bottom["weapons"][weapon], ["normal", "selected"])
-    assert bottom["weapons"]["third_action"]["available"] is False
+    assert_states(bottom["weapons"]["energy_cannon"], ["normal", "selected"])
+    tactical = bottom["weapons"]["tactical"]
+    assert tactical["position"] == [206, 8]
+    assert set(tactical["modes"]) == {
+        "rocket_launcher",
+        "missile",
+        "stealth",
+        "radar",
+    }
+    for mode in tactical["modes"].values():
+        assert_states(mode, ["normal", "selected"])
 
     shortcut = runtime["general_shortcut"]
     assert_single(shortcut["background"], (415, 40))
@@ -134,7 +142,7 @@ def main() -> int:
 
     assert sources["source_release"] == "starhome_lz_fr"
     assert sources["missing_assets"] == []
-    assert len(sources["sources"]) == 30
+    assert len(sources["sources"]) == 33
     expected_source_paths = {
         "pic2/topmenu/topmenuback_0.ale",
         "pic2/topmenu/btn_systemmsg.ale",
@@ -155,7 +163,10 @@ def main() -> int:
         "pic2/ctrlpad/btn_spacemap.ale",
         "pic2/ctrlpad/btn_system.ale",
         "pic/equipface/tank_gun.ale",
+        "pic/equipface/firegun.ale",
         "pic/equipface/missile.ale",
+        "pic/equipface/tank_hermit.ale",
+        "pic/equipface/tank_radar.ale",
         "pic/shortcutbar/generalbar.ale",
         "pic/shortcutbar/pageupbtn.ale",
         "pic/shortcutbar/pagedownbtn.ale",
@@ -180,7 +191,7 @@ def main() -> int:
         digest = source.get("source_ale_sha256", source.get("source_sha256", ""))
         assert len(digest) == 64
 
-    print("Free HUD asset audit passed: 30 allowlisted sources, no minimap JPG")
+    print("Free HUD asset audit passed: 33 allowlisted sources, no minimap JPG")
     return 0
 
 

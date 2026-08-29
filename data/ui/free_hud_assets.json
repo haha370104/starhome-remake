@@ -395,43 +395,121 @@
           8
         ]
       },
-      "missile": {
-        "available": true,
-        "states": {
-          "normal": "res://assets/ui/free_hud/bottom_main/weapon_modes/missile/normal.png",
-          "selected": "res://assets/ui/free_hud/bottom_main/weapon_modes/missile/selected.png"
-        },
-        "state_sizes": {
-          "normal": [
-            29,
-            22
-          ],
-          "selected": [
-            29,
-            22
-          ]
-        },
-        "state_origins": {
-          "normal": [
-            0,
-            0
-          ],
-          "selected": [
-            0,
-            0
-          ]
-        },
+      "tactical": {
         "position": [
           206,
           8
-        ]
-      },
-      "third_action": {
-        "available": false,
-        "position": [
-          234,
-          8
-        ]
+        ],
+        "modes": {
+          "rocket_launcher": {
+            "available": true,
+            "states": {
+              "normal": "res://assets/ui/free_hud/bottom_main/weapon_modes/rocket_launcher/normal.png",
+              "selected": "res://assets/ui/free_hud/bottom_main/weapon_modes/rocket_launcher/selected.png"
+            },
+            "state_sizes": {
+              "normal": [
+                29,
+                22
+              ],
+              "selected": [
+                29,
+                22
+              ]
+            },
+            "state_origins": {
+              "normal": [
+                0,
+                0
+              ],
+              "selected": [
+                0,
+                0
+              ]
+            }
+          },
+          "missile": {
+            "available": true,
+            "states": {
+              "normal": "res://assets/ui/free_hud/bottom_main/weapon_modes/missile/normal.png",
+              "selected": "res://assets/ui/free_hud/bottom_main/weapon_modes/missile/selected.png"
+            },
+            "state_sizes": {
+              "normal": [
+                29,
+                22
+              ],
+              "selected": [
+                29,
+                22
+              ]
+            },
+            "state_origins": {
+              "normal": [
+                0,
+                0
+              ],
+              "selected": [
+                0,
+                0
+              ]
+            }
+          },
+          "stealth": {
+            "available": true,
+            "states": {
+              "normal": "res://assets/ui/free_hud/bottom_main/weapon_modes/stealth/normal.png",
+              "selected": "res://assets/ui/free_hud/bottom_main/weapon_modes/stealth/selected.png"
+            },
+            "state_sizes": {
+              "normal": [
+                29,
+                22
+              ],
+              "selected": [
+                29,
+                22
+              ]
+            },
+            "state_origins": {
+              "normal": [
+                0,
+                0
+              ],
+              "selected": [
+                0,
+                0
+              ]
+            }
+          },
+          "radar": {
+            "available": true,
+            "states": {
+              "normal": "res://assets/ui/free_hud/bottom_main/weapon_modes/radar/normal.png",
+              "selected": "res://assets/ui/free_hud/bottom_main/weapon_modes/radar/selected.png"
+            },
+            "state_sizes": {
+              "normal": [
+                29,
+                22
+              ],
+              "selected": [
+                29,
+                22
+              ]
+            },
+            "state_origins": {
+              "normal": [
+                0,
+                0
+              ],
+              "selected": [
+                0,
+                0
+              ]
+            }
+          }
+        }
       }
     },
     "menu_buttons": {
