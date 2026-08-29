@@ -49,15 +49,15 @@ func _initialize() -> void:
 ## [param bridge] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _test_population_and_resources(bridge: OfflineCombatAuthorityBridge) -> void:
 	var snapshot := bridge.module.snapshot_for_actor(BridgeScript.LOCAL_ACTOR_ID)
-	_expect(snapshot.monsters.size() == 16, "D04 should spawn four configured members of each base species")
+	_expect(snapshot.monsters.size() == 100, "D04 should initialize its configured maximum population")
 	var species: Dictionary = {}
 	for monster: Dictionary in snapshot.monsters:
 		species[String(monster.species_id)] = int(species.get(String(monster.species_id), 0)) + 1
 	_expect(species == {
-		"om_adult": 4,
-		"om_larva": 4,
-		"photosensitive_orb": 4,
-		"toxic_gel": 4,
+		"om_adult": 25,
+		"om_larva": 25,
+		"photosensitive_orb": 25,
+		"toxic_gel": 25,
 	}, "D04 populations should remain entirely data-driven")
 	_expect(snapshot.local_vehicle.health == 70 and snapshot.local_vehicle.max_health == 70, "starter chassis should own 70 health")
 	_expect(
