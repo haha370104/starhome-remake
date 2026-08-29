@@ -127,6 +127,24 @@ func commit_player_state(character_id: String, candidate: PlayerStateRecord) -> 
 	return DomainResult.ok((committed.value as PlayerStateRecord).duplicate_record())
 
 
+## 替换尚待下一次自动存档提交的权威内存聚合。
+## [param character_id] 已登记角色标识。
+## [param candidate] 已由领域服务校验、但尚不需要立即落盘的候选聚合。
+## 返回隔离后的内存副本或身份、格式错误。
+## 设计：频繁的经验小数累计先进入自动存档内存；技能升级仍调用 commit_player_state 立即持久化。
+func update_runtime_state(character_id: String, candidate: PlayerStateRecord) -> DomainResult:
+	if not _states.has(character_id) or candidate == null \
+			or candidate.character_id != character_id:
+		return DomainResult.failure(&"persistence.autosave_character_unknown", "autosave character is not registered")
+	var validation := candidate.validate()
+	if not validation.is_ok:
+		return validation
+	var current: PlayerStateRecord = _states[character_id]
+	candidate.revision = current.revision
+	_states[character_id] = candidate.duplicate_record()
+	return DomainResult.ok(candidate.duplicate_record())
+
+
 ## 移除角色的内存登记，但保留仓储中最后一次提交的记录。
 ## [param character_id] 不再参与自动存档的角色标识。
 func unregister_player(character_id: String) -> void:

@@ -4,7 +4,7 @@ extends RefCounted
 const DomainResult := preload("res://scripts/core/domain_result.gd")
 const InventoryStackRecordScript := preload("res://scripts/server/persistence/inventory_stack_record.gd")
 const EquipmentSlotRecordScript := preload("res://scripts/server/persistence/equipment_slot_record.gd")
-const CURRENT_SCHEMA_VERSION := 1
+const CURRENT_SCHEMA_VERSION := 2
 
 var account_id := ""
 var account_name := ""
@@ -19,7 +19,7 @@ var inventory_stacks: Array[InventoryStackRecord] = []
 var equipment_slots: Array[EquipmentSlotRecord] = []
 var currency := 0
 var character_sex := "male"
-var character_level := 1
+var character_level := 10
 var character_profession := "新兵"
 var character_faction := "易安港"
 var character_residence := "易安港基地"
@@ -65,7 +65,7 @@ static func from_dictionary(raw: Variant) -> DomainResult:
 	record.inventory_capacity = int(raw.get("inventory_capacity", 0))
 	record.currency = int(raw.get("currency", 0))
 	record.character_sex = String(raw.get("character_sex", "male"))
-	record.character_level = int(raw.get("character_level", 1))
+	record.character_level = int(raw.get("character_level", 10))
 	record.character_profession = String(raw.get("character_profession", "新兵"))
 	record.character_faction = String(raw.get("character_faction", "易安港"))
 	record.character_residence = String(raw.get("character_residence", "易安港基地"))
@@ -121,7 +121,13 @@ func validate() -> DomainResult:
 			or character_experience < 0:
 		return DomainResult.failure(&"persistence.invalid_player_state", "character state is invalid")
 	for skill_id: Variant in character_skills:
-		if String(skill_id).is_empty() or int(character_skills[skill_id]) < 0:
+		var skill_state: Variant = character_skills[skill_id]
+		if String(skill_id).is_empty() or not skill_state is Dictionary \
+				or int(skill_state.get("level", -1)) < 0 \
+				or int(skill_state.get("current_exp", -1)) < 0 \
+				or not is_finite(float(skill_state.get("fractional_exp", -1.0))) \
+				or float(skill_state.get("fractional_exp", -1.0)) < 0.0 \
+				or float(skill_state.get("fractional_exp", -1.0)) >= 1.0:
 			return DomainResult.failure(&"persistence.invalid_player_state", "character skill state is invalid")
 	if vehicle_id.is_empty() or vehicle_definition_id.is_empty() or vehicle_max_health <= 0 \
 		or vehicle_health < 0 or vehicle_health > vehicle_max_health:

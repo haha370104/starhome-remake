@@ -4,12 +4,14 @@ extends Player
 signal changed(player: Player)
 
 const ItemCatalogScript := preload("res://scripts/domain/items/item_catalog.gd")
+const JsonConfigLoader := preload("res://scripts/core/json_config_loader.gd")
 const PlayerPanelProjectorScript := preload(
 	"res://scripts/server/player_panels/player_panel_projector.gd"
 )
 
 var _catalog: ItemCatalog
 var _projector: PlayerPanelProjector
+var _skill_progression_config: Dictionary = {}
 
 
 ## 初始化客户端唯一的“自己”玩家聚合和本地配置目录。
@@ -21,7 +23,14 @@ func _init() -> void:
 	if not initialized.is_ok:
 		push_error("Current player item catalog failed: %s" % initialized.error_message)
 		return
-	_projector = PlayerPanelProjectorScript.new(_catalog)
+	var skill_config_result := JsonConfigLoader.load_dictionary(
+		"res://data/gameplay/skill_progression.json"
+	)
+	if not skill_config_result.is_ok:
+		push_error("Current player skill config failed: %s" % skill_config_result.error_message)
+		return
+	_skill_progression_config = skill_config_result.value
+	_projector = PlayerPanelProjectorScript.new(_catalog, _skill_progression_config)
 
 
 ## 用同事务版本的权威快照重建当前玩家聚合。
@@ -36,14 +45,18 @@ func apply_bundle(bundle: Dictionary) -> bool:
 	var character: Dictionary = bundle["character"]
 	var inventory_snapshot: Dictionary = bundle["inventory"]
 	var vehicle_snapshot: Dictionary = bundle["vehicle"]
-	var skill_levels: Dictionary = {}
+	var skill_states: Dictionary = {}
 	for skill: Variant in character.get("skills", []):
 		if skill is Dictionary:
-			skill_levels[String(skill.get("id", ""))] = int(skill.get("base_level", 0))
+			skill_states[String(skill.get("id", ""))] = {
+				"level": int(skill.get("base_level", 0)),
+				"current_exp": int(skill.get("experience", 0)),
+				"fractional_exp": float(skill.get("fractional_experience", 0.0)),
+			}
 	entity_id = String(character.get("character_id", ""))
 	display_name = String(character.get("display_name", ""))
 	sex = String(character.get("sex", "male"))
-	level = maxi(1, int(character.get("level", 1)))
+	level = maxi(10, int(character.get("level", 10)))
 	profession = String(character.get("profession", "新兵"))
 	faction = String(character.get("faction", "易安港"))
 	residence = String(character.get("residence", "易安港基地"))
@@ -52,7 +65,7 @@ func apply_bundle(bundle: Dictionary) -> bool:
 	health = clampi(int(character.get("health", max_health)), 0, max_health)
 	experience = maxi(0, int(character.get("experience", 0)))
 	revision = maxi(0, int(bundle.get("transaction_revision", 0)))
-	skills = SkillBook.new(skill_levels)
+	skills = SkillBook.new(skill_states)
 	character_equipment = CharacterEquipment.new()
 	inventory = Inventory.new(
 		int(inventory_snapshot.get("capacity", 40)),

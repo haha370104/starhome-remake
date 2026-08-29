@@ -4,12 +4,15 @@ extends RefCounted
 const InventoryLayoutScript := preload("res://scripts/domain/inventory/inventory_layout.gd")
 
 var _catalog: ItemCatalog
+var _skill_progression_config: Dictionary
 
 
 ## 初始化领域玩家到网络面板 DTO 的投影器。
 ## [param catalog] 用于显示战车定义名称的物品目录。
-func _init(catalog: ItemCatalog) -> void:
+## [param skill_progression_config] 用于计算技能升级门槛的公开成长配置。
+func _init(catalog: ItemCatalog, skill_progression_config: Dictionary = {}) -> void:
 	_catalog = catalog
+	_skill_progression_config = skill_progression_config.duplicate(true)
 
 
 ## 从同一 Player 聚合构建人物、背包和战车三份一致快照。
@@ -45,7 +48,9 @@ func _character_snapshot(player: Player) -> Dictionary:
 		"health": player.health,
 		"max_health": player.max_health,
 		"description": player.description,
-		"skills": player.skills.to_view_array(player.character_equipment),
+		"skills": player.skills.to_view_array(
+			player.character_equipment, _skill_progression_config
+		),
 		"worn_items": worn_items,
 		"buffs": [],
 	}

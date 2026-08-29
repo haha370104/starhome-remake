@@ -68,20 +68,7 @@ func initialize() -> DomainResult:
 		"character_max_health": 100,
 		"character_health": 100,
 		"character_experience": 0,
-		"character_skills": {
-			"energy_cannon": 10,
-			"repair": 10,
-			"driving": 10,
-			"mining": 10,
-			"cooking": 0,
-			"tailoring": 0,
-			"refining": 0,
-			"manufacturing": 0,
-			"rocket_launcher": 0,
-			"missile": 0,
-			"stealth": 0,
-			"radar": 0,
-		},
+		"character_skills": _initial_skill_states(),
 		"vehicle_id": "vehicle.player.local",
 		"vehicle_definition_id": "recruit_tank",
 		"vehicle_max_health": 70,
@@ -135,6 +122,24 @@ func grant_loot(loot: Dictionary) -> DomainResult:
 	return DomainResult.ok(_service.build_bundle(_state))
 
 
+## 在显式离线调试中消费与正式服务器相同的技能成长事件。
+## [param progression_event] 离线战斗权威生成的移动或最终有效伤害事件。
+## 返回更新后的三面板快照或成长规则拒绝。
+## 设计：即使处于离线模式，经验换算和综合等级仍复用 AuthoritativePlayerPanelService。
+func grant_skill_progression(progression_event: Dictionary) -> DomainResult:
+	if _service == null or _state == null:
+		return DomainResult.failure(&"progression.offline_unavailable", "offline progression authority is unavailable")
+	var result := _service.grant_skill_progression(_state, progression_event)
+	if not result.is_ok:
+		return result
+	var value: Dictionary = result.value
+	_state = value["candidate"]
+	return DomainResult.ok({
+		"panel_bundle": _service.build_bundle(_state),
+		"progression": value["progression"],
+	})
+
+
 ## 创建离线初始装备记录字典。
 ## [param instance_id] 稳定装备实例标识。
 ## [param slot_id] 业务槽位名。
@@ -162,3 +167,21 @@ static func _equipment(
 		"durability": durability,
 		"upgrade_level": 0,
 	}
+
+
+## 创建离线调试角色的完整技能成长初始状态。
+## 返回技能标识到等级、当前经验和小数余量的映射。
+## 设计：离线权威与正式服务器共享相同存档契约，禁止使用仅供 UI 的简化等级表。
+static func _initial_skill_states() -> Dictionary:
+	var levels := {
+		"energy_cannon": 10, "repair": 10, "driving": 10, "mining": 10,
+		"cooking": 0, "tailoring": 0, "refining": 0, "manufacturing": 0,
+		"processing": 0, "rocket_launcher": 0, "missile": 0, "stealth": 0,
+		"radar": 0,
+	}
+	var states: Dictionary = {}
+	for skill_id: String in levels:
+		states[skill_id] = {
+			"level": levels[skill_id], "current_exp": 0, "fractional_exp": 0.0,
+		}
+	return states

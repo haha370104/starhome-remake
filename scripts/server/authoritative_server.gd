@@ -182,6 +182,8 @@ func advance_simulation(elapsed_seconds: float, now_msec := -1) -> void:
 		server_tick += 1
 		for registered_instance: AuthoritativeMapInstance in map_registry.all_instances():
 			registered_instance.simulate(fixed_delta)
+			for progression_event: Dictionary in registered_instance.drain_skill_progression_events():
+				_apply_skill_progression_event(progression_event)
 		if server_tick % _ticks_per_snapshot == 0:
 			_emit_snapshot()
 	if autosave_service != null:
@@ -463,6 +465,44 @@ func handle_peer_player_panel_command(peer_id: int, command: Dictionary) -> Dict
 	return _success(player_panel_service.build_bundle(committed.value))
 
 
+## 应用地图实例产出的权威技能成长事件，并按升级语义选择即时提交或自动存档。
+## [param progression_event] 含玩家实体、技能、来源及客观结算值的内部事件。
+## 设计：普通进度写入三秒自动存档内存；技能升级立即落盘并同步综合等级。
+func _apply_skill_progression_event(progression_event: Dictionary) -> void:
+	if autosave_service == null or player_panel_service == null:
+		return
+	var entity_id := String(progression_event.get("entity_id", ""))
+	if entity_id.is_empty():
+		return
+	var current := autosave_service.state_for(entity_id)
+	if current == null:
+		return
+	var granted := player_panel_service.grant_skill_progression(current, progression_event)
+	if not granted.is_ok:
+		if granted.error_code != &"progression.no_experience":
+			push_warning("Skill progression rejected [%s]: %s" % [
+				granted.error_code, granted.error_message,
+			])
+		return
+	var value: Dictionary = granted.value
+	var progression: Dictionary = value["progression"]
+	var stored := autosave_service.commit_player_state(entity_id, value["candidate"]) \
+		if bool(progression.get("upgraded", false)) \
+		else autosave_service.update_runtime_state(entity_id, value["candidate"])
+	if not stored.is_ok:
+		push_error("Skill progression persistence failed [%s]: %s" % [
+			stored.error_code, stored.error_message,
+		])
+		return
+	if bool(progression.get("visible_progress_changed", false)):
+		var session: ServerSession = sessions.session_for_entity(entity_id)
+		if session != null and session.has_active_peer():
+			_send_reliable(session.peer_id, {
+				"type": "player_panels",
+				"result": _wire_result(_success(player_panel_service.build_bundle(stored.value))),
+			})
+
+
 ## 处理玩家对地面掉落物的拾取请求并原子写入持久化背包。
 ## [param peer_id] 由传输层提供的不可伪造 peer 标识。
 ## [param intent] 仅包含 loot_id 的客户端意图。
@@ -707,7 +747,7 @@ func _register_persistent_player(
 		"inventory_capacity": 40,
 		"currency": 1000,
 		"character_sex": "male",
-		"character_level": 1,
+		"character_level": 10,
 		"character_profession": "新兵",
 		"character_faction": "易安港",
 		"character_residence": "易安港基地",
@@ -771,20 +811,7 @@ func _register_persistent_player(
 		"character_max_health": 100,
 		"character_health": 100,
 		"character_experience": 0,
-		"character_skills": {
-			"energy_cannon": 10,
-			"repair": 10,
-			"driving": 10,
-			"mining": 10,
-			"cooking": 0,
-			"tailoring": 0,
-			"refining": 0,
-			"manufacturing": 0,
-			"rocket_launcher": 0,
-			"missile": 0,
-			"stealth": 0,
-			"radar": 0,
-		},
+		"character_skills": _initial_skill_states(),
 		"vehicle_id": "vehicle.%s" % entity.entity_id,
 		"vehicle_definition_id": "recruit_tank",
 		"vehicle_max_health": vehicle_state.max_health if vehicle_state != null else 70,
@@ -803,6 +830,24 @@ func _register_persistent_player(
 	if not state_result.is_ok:
 		return state_result
 	return autosave_service.register_player(state_result.value)
+
+
+## 创建新角色的完整技能成长初始状态。
+## 返回技能标识到等级、当前经验和小数余量的映射。
+## 设计：新角色与迁移存档使用同一持久化形状，避免运行时继续传播旧整数格式。
+func _initial_skill_states() -> Dictionary:
+	var levels := {
+		"energy_cannon": 10, "repair": 10, "driving": 10, "mining": 10,
+		"cooking": 0, "tailoring": 0, "refining": 0, "manufacturing": 0,
+		"processing": 0, "rocket_launcher": 0, "missile": 0, "stealth": 0,
+		"radar": 0,
+	}
+	var states: Dictionary = {}
+	for skill_id: String in levels:
+		states[skill_id] = {
+			"level": levels[skill_id], "current_exp": 0, "fractional_exp": 0.0,
+		}
+	return states
 
 
 ## 从会话所属地图采集最新位置、朝向和战车资源到候选聚合。

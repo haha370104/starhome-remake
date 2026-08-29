@@ -20,6 +20,8 @@ var combat_module: AuthoritativeCombatModule
 var _combat_catalog
 var _combat_assembly: Dictionary = {}
 var _combat_weapons: Dictionary = {}
+var _accepted_movement_distance: Dictionary = {}
+var _last_progression_combat_event_id := 0
 
 
 ## 加载并校验 `load_map` 对应的模块状态。
@@ -51,6 +53,8 @@ func load_map(map_config_path: String) -> Dictionary:
 func configure_combat(catalog, simulation_hz: int) -> Dictionary:
 	if definition == null or navigation == null:
 		return _failure(&"combat.map_not_loaded", "load map navigation before combat")
+	_accepted_movement_distance.clear()
+	_last_progression_combat_event_id = 0
 	var lifecycle_result = catalog.monster_lifecycles_for_map(String(definition.map_id), instance_id)
 	if not lifecycle_result.is_ok:
 		return _failure(lifecycle_result.error_code, lifecycle_result.error_message)
@@ -148,6 +152,7 @@ func admitted_spawn_position(
 func remove_entity(entity_id: String) -> bool:
 	if combat_module != null:
 		combat_module.unregister_vehicle(entity_id)
+	_accepted_movement_distance.erase(entity_id)
 	return entities.erase(entity_id)
 
 
@@ -237,23 +242,65 @@ func simulate(delta: float) -> void:
 	entity_ids.sort()
 	for entity_id: String in entity_ids:
 		var entity: AuthoritativeEntity = entities[entity_id]
+		var previous_position: Vector2 = entity.position
 		if not dynamic_blocking_enabled or entities.size() <= 1:
 			entity.simulate(delta)
-			continue
-		var motion_state := _capture_motion_state(entity)
-		var previous_position: Vector2 = entity.position
-		entity.simulate(delta)
-		if (
-			not entity.position.is_equal_approx(previous_position)
-			and _movement_intersects_dynamic_blocker(
-				entity_id, previous_position, entity.position
-			)
-		):
-			_restore_motion_state(entity, motion_state)
+		else:
+			var motion_state := _capture_motion_state(entity)
+			entity.simulate(delta)
+			if (
+				not entity.position.is_equal_approx(previous_position)
+				and _movement_intersects_dynamic_blocker(
+					entity_id, previous_position, entity.position
+				)
+			):
+				_restore_motion_state(entity, motion_state)
+		if not entity.position.is_equal_approx(previous_position):
+			_accepted_movement_distance[entity_id] = float(
+				_accepted_movement_distance.get(entity_id, 0.0)
+			) + previous_position.distance_to(entity.position)
 	if combat_module != null:
 		for entity_id: String in entities:
 			combat_module.update_actor_position(entity_id, entities[entity_id].position)
 		combat_module.advance_ticks(1)
+
+
+## 提取自上次调用后产生的技能成长事件，并清空已消费的移动累计。
+## 返回按玩家拆分的正常驾驶位移与最终有效能量炮伤害事件。
+## 设计：只观察权威模拟结果；受阻回滚、传送和客户端声明的距离都不会进入事件。
+func drain_skill_progression_events() -> Array[Dictionary]:
+	var events: Array[Dictionary] = []
+	var entity_ids := _accepted_movement_distance.keys()
+	entity_ids.sort()
+	for entity_id: String in entity_ids:
+		var distance := float(_accepted_movement_distance[entity_id])
+		if distance > 0.0 and _combat_assembly.has("total_weight"):
+			events.append({
+				"entity_id": entity_id,
+				"source": "accepted_driving_movement",
+				"skill_id": "driving",
+				"distance": distance,
+				"vehicle_weight": float(_combat_assembly.get("total_weight", 0.0)),
+			})
+	_accepted_movement_distance.clear()
+	if combat_module == null:
+		return events
+	for combat_event: Dictionary in combat_module.combat_events:
+		var event_id := int(combat_event.get("event_id", 0))
+		if event_id <= _last_progression_combat_event_id:
+			continue
+		_last_progression_combat_event_id = maxi(_last_progression_combat_event_id, event_id)
+		if StringName(combat_event.get("event_type", &"")) != &"energy_cannon_hit" \
+				or int(combat_event.get("damage", 0)) <= 0:
+			continue
+		events.append({
+			"entity_id": String(combat_event.get("attacker_id", "")),
+			"source": "effective_damage",
+			"skill_id": "energy_cannon",
+			"damage": int(combat_event.get("damage", 0)),
+			"combat_event_id": event_id,
+		})
+	return events
 
 
 ## 执行 `closest_dynamically_available_position` 对应的模块操作。

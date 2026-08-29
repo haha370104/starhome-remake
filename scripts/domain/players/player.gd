@@ -41,7 +41,7 @@ func _init(state: Dictionary = {}) -> void:
 	account_status = String(state.get("account_status", "active"))
 	display_name = String(state.get("display_name", ""))
 	sex = String(state.get("sex", "male"))
-	level = maxi(1, int(state.get("level", 1)))
+	level = maxi(10, int(state.get("level", 10)))
 	profession = String(state.get("profession", "新兵"))
 	faction = String(state.get("faction", "易安港"))
 	residence = String(state.get("residence", "易安港基地"))
@@ -61,6 +61,30 @@ func _init(state: Dictionary = {}) -> void:
 	character_equipment = CharacterEquipment.new()
 	vehicle = PlayerVehicle.new(state.get("vehicle", {}))
 	skills = SkillBook.new(state.get("skills", {}))
+
+
+## 向指定技能发放一次权威经验，并在升级后同步重算综合等级。
+## [param skill_id] 接收经验的技能稳定标识。
+## [param amount] 已由服务器玩法规则换算出的本次经验。
+## [param progression_config] 技能阈值及综合等级权重配置。
+## 返回技能升级结果，并额外包含变化前后的综合等级。
+## 设计：技能与综合等级同属 Player 聚合，任何调用方都无法只升级技能而漏算综合等级。
+func grant_skill_experience(
+	skill_id: String,
+	amount: float,
+	progression_config: Dictionary,
+) -> DomainResult:
+	var previous_comprehensive_level := level
+	var granted := skills.grant_experience(skill_id, amount, progression_config)
+	if not granted.is_ok:
+		return granted
+	var value: Dictionary = granted.value
+	if bool(value.get("upgraded", false)):
+		level = skills.comprehensive_level(progression_config)
+	value["previous_comprehensive_level"] = previous_comprehensive_level
+	value["comprehensive_level"] = level
+	value["comprehensive_level_changed"] = level != previous_comprehensive_level
+	return DomainResult.ok(value)
 
 
 ## 移动背包物品并由背包维护自身 revision。

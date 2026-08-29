@@ -5,6 +5,7 @@ const PlayerStateRecordScript := preload("res://scripts/server/persistence/playe
 const FileRepositoryScript := preload("res://scripts/server/persistence/file_player_state_repository.gd")
 const SqliteDriverPortScript := preload("res://scripts/server/persistence/sqlite_driver_port.gd")
 const SQL_MIGRATION_PATH := "res://data/server/persistence/migrations/001_initial.sql"
+const SKILL_MIGRATION_PATH := "res://data/server/persistence/migrations/002_skill_progression.sql"
 const TEST_DIRECTORY := "res://"
 
 var failures: Array[String] = []
@@ -38,6 +39,7 @@ func _test_sqlite_runtime_and_schema_seam() -> void:
 	var unavailable := SqliteDriverPortScript.new().open_database("user://never-opened.sqlite3")
 	_expect(not unavailable.is_ok and unavailable.error_code == &"persistence.sqlite_driver_unavailable", "base SQLite port must fail explicitly")
 	_expect(FileAccess.file_exists(SQL_MIGRATION_PATH), "production SQLite schema migration should be versioned")
+	_expect(FileAccess.file_exists(SKILL_MIGRATION_PATH), "skill progression SQLite migration should be versioned")
 	var sql := FileAccess.get_file_as_string(SQL_MIGRATION_PATH)
 	for table_name: String in [
 		"accounts", "characters", "character_skills", "inventory_stacks", "equipment_slots", "vehicles",
@@ -63,11 +65,11 @@ func _test_schema_zero_migration() -> void:
 	var repository: FilePlayerStateRepository = FileRepositoryScript.new(migration_path)
 	var initialized := repository.initialize()
 	_expect(initialized.is_ok, "schema-zero file should migrate during initialization")
-	_expect(repository.current_schema_version() == 1, "repository should expose migrated schema one")
+	_expect(repository.current_schema_version() == 2, "repository should expose migrated schema two")
 	var loaded := repository.load_player(state.character_id)
 	_expect(loaded.is_ok and loaded.value.display_name == state.display_name, "migrated player aggregate should remain loadable")
 	var migrated_root: Variant = JSON.parse_string(FileAccess.get_file_as_string(migration_path))
-	_expect(migrated_root is Dictionary and int(migrated_root["schema_version"]) == 1, "migration should be materialized to disk")
+	_expect(migrated_root is Dictionary and int(migrated_root["schema_version"]) == 2, "migration should be materialized to disk")
 	_expect(migrated_root.has("players") and not migrated_root.has("characters"), "migration should replace the legacy aggregate key")
 
 
@@ -112,7 +114,7 @@ func _test_atomic_transaction_and_reload() -> void:
 	_expect(int(restored.value.vehicle_health) == 55, "reload should restore vehicle combat state")
 	_expect(int(restored.value.inventory_stacks[0].quantity) == 8, "reload should restore committed inventory stacks")
 	_expect(restored.value.equipment_slots[0].item_instance_id == "equipment.cannon.1", "reload should restore equipped item instances")
-	_expect(int(restored.value.character_skills.get("energy_cannon", 0)) == 10,
+	_expect(int(restored.value.character_skills.get("energy_cannon", {}).get("level", 0)) == 10,
 		"重载应恢复人物技能等级")
 
 
@@ -144,7 +146,7 @@ func _abort_after_mutation(state: PlayerStateRecord) -> DomainResult:
 ## 返回该函数计算、查询或操作得到的结果。
 func _fixture_state() -> PlayerStateRecord:
 	var result := PlayerStateRecordScript.from_dictionary({
-		"schema_version": 1,
+		"schema_version": PlayerStateRecord.CURRENT_SCHEMA_VERSION,
 		"account_id": "account.tomato",
 		"account_name": "tomato",
 		"account_status": "active",
@@ -171,7 +173,10 @@ func _fixture_state() -> PlayerStateRecord:
 		"character_max_health": 100,
 		"character_health": 100,
 		"character_experience": 0,
-		"character_skills": {"energy_cannon": 10, "driving": 10},
+		"character_skills": {
+			"energy_cannon": {"level": 10, "current_exp": 4, "fractional_exp": 0.5},
+			"driving": {"level": 10, "current_exp": 0, "fractional_exp": 0.0},
+		},
 		"vehicle_id": "vehicle.tomato.1",
 		"vehicle_definition_id": "recruit_tank",
 		"vehicle_max_health": 70,

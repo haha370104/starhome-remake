@@ -219,7 +219,7 @@ func _encode_document(players: Dictionary) -> Dictionary:
 	return {
 		"schema_version": Migrator.CURRENT_SCHEMA_VERSION,
 		"players": serialized,
-		"migration_history": [1],
+		"migration_history": [1, 2],
 	}
 
 

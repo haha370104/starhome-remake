@@ -5,6 +5,8 @@ const InventoryItem = preload("res://scripts/domain/inventory/inventory_item.gd"
 const JsonConfigLoader = preload("res://scripts/core/json_config_loader.gd")
 const SkillProgression = preload("res://scripts/domain/skills/skill_progression.gd")
 const SkillState = preload("res://scripts/domain/skills/skill_state.gd")
+const SkillBook = preload("res://scripts/domain/players/skill_book.gd")
+const PlayerScript = preload("res://scripts/domain/players/player.gd")
 const VehicleMovement = preload("res://scripts/domain/vehicles/vehicle_movement.gd")
 const SKILL_CONFIG_PATH := "res://data/gameplay/skill_progression.json"
 const VEHICLE_CONFIG_PATH := "res://data/gameplay/vehicle_movement.json"
@@ -36,6 +38,7 @@ func _run_all() -> void:
 		return
 	_test_skill_thresholds(skill_config)
 	_test_skill_grants(skill_config)
+	_test_skill_book_and_comprehensive_level(skill_config)
 	_test_vehicle_movement(vehicle_config)
 	_test_inventory(inventory_config)
 
@@ -74,6 +77,35 @@ func _test_skill_grants(config: Dictionary) -> void:
 
 	var max_state := SkillState.new(&"driving", int(config["maximum_level"]))
 	_expect_false(SkillProgression.apply_exp(max_state, 1.0, config).is_ok, "maximum level cannot upgrade")
+
+
+## 验证完整技能状态序列化、单次升级和综合等级加权规则。
+## [param config] 技能阈值、经验来源和综合等级权重配置。
+func _test_skill_book_and_comprehensive_level(config: Dictionary) -> void:
+	var book := SkillBook.new({
+		"energy_cannon": {"level": 12, "current_exp": 3, "fractional_exp": 0.5},
+		"driving": 11,
+	})
+	_expect_equal(book.base_level("energy_cannon"), 12, "skill book restores structured level")
+	_expect_equal(book.current_experience("energy_cannon"), 3, "skill book restores current experience")
+	_expect_equal(book.comprehensive_level(config), 11, "weighted comprehensive level floors the sum")
+	var serialized: Dictionary = book.to_dictionary()
+	_expect_equal(int(serialized["energy_cannon"]["current_exp"]), 3, "skill book persists current experience")
+	_expect_near(float(serialized["energy_cannon"]["fractional_exp"]), 0.5, "skill book persists fractional experience")
+
+	var player := PlayerScript.new({
+		"character_id": "skill.test",
+		"level": 10,
+		"skills": {"energy_cannon": 10, "driving": 10},
+	})
+	var threshold := int(SkillProgression.get_need_points(&"energy_cannon", 10, config).value)
+	var granted = player.grant_skill_experience("energy_cannon", threshold, config)
+	_expect_true(granted.is_ok and bool(granted.value["upgraded"]), "player grants one skill level")
+	_expect_equal(player.skills.base_level("energy_cannon"), 11, "player owns upgraded skill state")
+	_expect_equal(player.level, 10, "half-weight first skill level still floors comprehensive level")
+	var second_threshold := int(SkillProgression.get_need_points(&"driving", 10, config).value)
+	player.grant_skill_experience("driving", second_threshold, config)
+	_expect_equal(player.level, 11, "two half-weight skill levels raise comprehensive level")
 
 
 ## 执行 `test_vehicle_movement` 对应的模块操作。

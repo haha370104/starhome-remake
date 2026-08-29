@@ -7,6 +7,7 @@ const UseAbilityIntentScript := preload("res://scripts/network/contracts/use_abi
 
 signal combat_snapshot_ready(snapshot: Dictionary)
 signal combat_event_ready(event: Dictionary)
+signal skill_progression_event_ready(event: Dictionary)
 
 const SIMULATION_HZ := 20
 const SNAPSHOT_INTERVAL_TICKS := 2
@@ -19,6 +20,8 @@ var map_instance_id := ""
 var player_position := Vector2.ZERO
 var _accumulator := 0.0
 var _next_command_sequence := 1
+var _vehicle_weight := 0.0
+var _last_progression_combat_event_id := 0
 
 
 ## 执行 `configure_map` 对应的模块操作。
@@ -40,6 +43,8 @@ func configure_map(
 	player_position = requested_player_position
 	_accumulator = 0.0
 	_next_command_sequence = 1
+	_vehicle_weight = 0.0
+	_last_progression_combat_event_id = 0
 	var catalog_result = CombatCatalogScript.load_default()
 	if not catalog_result.is_ok:
 		return ERR_INVALID_DATA
@@ -57,6 +62,7 @@ func configure_map(
 	var weapon_result = catalog.starter_energy_cannon(SIMULATION_HZ)
 	if not assembly_result.is_ok or not weapon_result.is_ok:
 		return ERR_INVALID_DATA
+	_vehicle_weight = float(assembly_result.value.get("total_weight", 0.0))
 	module = CombatModuleScript.new()
 	if not module.configure(SIMULATION_HZ, hash(map_instance_id), 1.0).is_ok:
 		return ERR_INVALID_DATA
@@ -81,9 +87,18 @@ func configure_map(
 ## 执行 `update_player_position` 对应的模块操作。
 ## [param position] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func update_player_position(position: Vector2) -> void:
+	var accepted_distance := player_position.distance_to(position)
 	player_position = position
 	if module != null:
 		module.update_actor_position(LOCAL_ACTOR_ID, position)
+		if accepted_distance > 0.0 and _vehicle_weight > 0.0:
+			skill_progression_event_ready.emit({
+				"entity_id": LOCAL_ACTOR_ID,
+				"source": "accepted_driving_movement",
+				"skill_id": "driving",
+				"distance": accepted_distance,
+				"vehicle_weight": _vehicle_weight,
+			})
 
 
 ## 执行 `request_attack` 对应的模块操作。
@@ -138,6 +153,7 @@ func _process(delta: float) -> void:
 		_accumulator -= fixed_delta
 		module.update_actor_position(LOCAL_ACTOR_ID, player_position)
 		module.advance_ticks(1)
+		_emit_combat_progression_events()
 		if module.current_tick % SNAPSHOT_INTERVAL_TICKS == 0:
 			_emit_snapshot()
 
@@ -146,6 +162,28 @@ func _process(delta: float) -> void:
 func _emit_snapshot() -> void:
 	if module != null:
 		combat_snapshot_ready.emit(module.snapshot_for_actor(LOCAL_ACTOR_ID))
+
+
+## 把新产生的最终有效伤害转换为离线权威技能成长事件。
+## 设计：离线桥接只模拟正式服务器的内部事件，不会根据客户端发射动画直接授予经验。
+func _emit_combat_progression_events() -> void:
+	if module == null:
+		return
+	for combat_event: Dictionary in module.combat_events:
+		var event_id := int(combat_event.get("event_id", 0))
+		if event_id <= _last_progression_combat_event_id:
+			continue
+		_last_progression_combat_event_id = maxi(_last_progression_combat_event_id, event_id)
+		if StringName(combat_event.get("event_type", &"")) != &"energy_cannon_hit" \
+				or int(combat_event.get("damage", 0)) <= 0:
+			continue
+		skill_progression_event_ready.emit({
+			"entity_id": LOCAL_ACTOR_ID,
+			"source": "effective_damage",
+			"skill_id": "energy_cannon",
+			"damage": int(combat_event.get("damage", 0)),
+			"combat_event_id": event_id,
+		})
 
 
 ## 执行 `resolve_monster_position` 对应的模块操作。

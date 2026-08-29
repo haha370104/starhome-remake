@@ -2,6 +2,36 @@
   "schema_version": 1,
   "maximum_level": 700,
   "maximum_formula_level": 700,
+  "experience_sources": {
+    "weapon_damage_multiplier": {
+      "energy_cannon": 1.0,
+      "missile": 1.0,
+      "rocket_launcher": 1.0
+    },
+    "driving_experience_unit": 100000.0,
+    "driving_weight_cap": 1000.0
+  },
+  "comprehensive_level": {
+    "base_level": 10,
+    "skill_baseline": 10,
+    "weights": {
+      "driving": 0.5,
+      "energy_cannon": 0.5,
+      "missile": 0.35,
+      "rocket_launcher": 0.35,
+      "stealth": 0.25,
+      "radar": 0.25,
+      "mining": 0.3,
+      "repair": 0.3,
+      "processing": 0.2,
+      "refining": 0.2,
+      "tailoring": 0.2,
+      "cooking": 0.2,
+      "manufacturing": 0.0,
+      "airship": 0.0
+    },
+    "unconfirmed_weights": ["manufacturing", "airship"]
+  },
   "coefficient_bands": {
     "energy_cannon": [{"from_level": 0, "coefficient": 150}, {"from_level": 50, "coefficient": 200}, {"from_level": 100, "coefficient": 250}, {"from_level": 150, "coefficient": 300}, {"from_level": 200, "coefficient": 450}, {"from_level": 250, "coefficient": 550}, {"from_level": 300, "coefficient": 650}, {"from_level": 350, "coefficient": 800}, {"from_level": 400, "coefficient": 900}, {"from_level": 500, "coefficient": 1000}],
     "missile": [{"from_level": 0, "coefficient": 40}, {"from_level": 50, "coefficient": 50}, {"from_level": 100, "coefficient": 60}, {"from_level": 150, "coefficient": 70}, {"from_level": 200, "coefficient": 80}, {"from_level": 250, "coefficient": 90}, {"from_level": 300, "coefficient": 100}, {"from_level": 350, "coefficient": 110}, {"from_level": 400, "coefficient": 120}, {"from_level": 500, "coefficient": 130}],

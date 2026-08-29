@@ -3,6 +3,7 @@ extends RefCounted
 
 const DomainResult := preload("res://scripts/core/domain_result.gd")
 const ItemCatalogScript := preload("res://scripts/domain/items/item_catalog.gd")
+const JsonConfigLoader := preload("res://scripts/core/json_config_loader.gd")
 const PlayerStateMapperScript := preload("res://scripts/server/persistence/player_state_mapper.gd")
 const PlayerPanelProjectorScript := preload(
 	"res://scripts/server/player_panels/player_panel_projector.gd"
@@ -11,6 +12,7 @@ const PlayerPanelProjectorScript := preload(
 var _catalog: ItemCatalog
 var _mapper: PlayerStateMapper
 var _projector: PlayerPanelProjector
+var _skill_progression_config: Dictionary = {}
 
 
 ## 初始化物品目录、持久化映射器和网络 DTO 投影器。
@@ -21,8 +23,14 @@ func initialize() -> DomainResult:
 	var catalog_result := _catalog.initialize()
 	if not catalog_result.is_ok:
 		return catalog_result
+	var skill_config_result := JsonConfigLoader.load_dictionary(
+		"res://data/gameplay/skill_progression.json"
+	)
+	if not skill_config_result.is_ok:
+		return skill_config_result
+	_skill_progression_config = skill_config_result.value
 	_mapper = PlayerStateMapperScript.new(_catalog)
-	_projector = PlayerPanelProjectorScript.new(_catalog)
+	_projector = PlayerPanelProjectorScript.new(_catalog, _skill_progression_config)
 	return DomainResult.ok(self)
 
 
@@ -105,6 +113,80 @@ func grant_loot(state: PlayerStateRecord, loot: Dictionary) -> DomainResult:
 		"candidate": persisted.value,
 		"panel_bundle": _projector.build_bundle(player),
 	})
+
+
+## 消费一个服务器内部玩法事件并向对应技能发放经验。
+## [param state] 自动存档服务持有的当前玩家记录副本。
+## [param progression_event] 由权威移动或战斗模块生成的可信事件。
+## 返回候选聚合、成长结果及最新面板快照；无效来源或零收益返回领域错误。
+## 设计：客户端不能提交此事件；经验换算、升级与综合等级重算全部留在服务端应用边界。
+func grant_skill_progression(
+	state: PlayerStateRecord,
+	progression_event: Dictionary,
+) -> DomainResult:
+	if state == null or _mapper == null or _projector == null \
+			or _skill_progression_config.is_empty():
+		return DomainResult.failure(&"progression.service_unavailable", "skill progression service is unavailable")
+	var converted := _experience_from_event(progression_event)
+	if not converted.is_ok:
+		return converted
+	var mapped := _mapper.to_domain(state)
+	if not mapped.is_ok:
+		return mapped
+	var player: Player = mapped.value
+	var value: Dictionary = converted.value
+	var before_exp := player.skills.current_experience(String(value["skill_id"]))
+	var granted := player.grant_skill_experience(
+		String(value["skill_id"]), float(value["amount"]), _skill_progression_config
+	)
+	if not granted.is_ok:
+		return granted
+	var persisted := _mapper.to_record(player)
+	if not persisted.is_ok:
+		return persisted
+	var progression: Dictionary = granted.value
+	progression["source"] = String(progression_event.get("source", ""))
+	progression["granted_experience"] = float(value["amount"])
+	progression["visible_progress_changed"] = before_exp != int(progression.get("current_exp", 0)) \
+		or bool(progression.get("upgraded", false))
+	return DomainResult.ok({
+		"candidate": persisted.value,
+		"progression": progression,
+		"panel_bundle": _projector.build_bundle(player),
+	})
+
+
+## 把权威玩法事件换算为单次技能经验发放量。
+## [param progression_event] 移动、有效伤害或未来系统显式发放事件。
+## 返回 skill_id 与非负经验量；格式非法或不产生经验时返回错误。
+## 设计：所有倍率和驾驶计重参数均来自服务端配置，事件只携带已确认的客观结果。
+func _experience_from_event(progression_event: Dictionary) -> DomainResult:
+	var source := String(progression_event.get("source", ""))
+	var skill_id := String(progression_event.get("skill_id", ""))
+	var sources: Dictionary = _skill_progression_config.get("experience_sources", {})
+	var amount := 0.0
+	match source:
+		"effective_damage":
+			var multipliers: Dictionary = sources.get("weapon_damage_multiplier", {})
+			amount = float(progression_event.get("damage", 0)) \
+				* float(multipliers.get(skill_id, 0.0))
+		"accepted_driving_movement":
+			if skill_id != "driving":
+				return DomainResult.failure(&"progression.invalid_event", "driving event targets another skill")
+			var distance := float(progression_event.get("distance", 0.0))
+			var weight := float(progression_event.get("vehicle_weight", 0.0))
+			var weight_cap := float(sources.get("driving_weight_cap", 0.0))
+			var experience_unit := float(sources.get("driving_experience_unit", 0.0))
+			if distance < 0.0 or weight < 0.0 or weight_cap <= 0.0 or experience_unit <= 0.0:
+				return DomainResult.failure(&"progression.invalid_event", "driving event or configuration is invalid")
+			amount = distance * minf(weight, weight_cap) / experience_unit
+		"authoritative_action":
+			amount = float(progression_event.get("amount", 0.0))
+		_:
+			return DomainResult.failure(&"progression.invalid_event", "unknown progression event source")
+	if skill_id.is_empty() or not is_finite(amount) or amount <= 0.0:
+		return DomainResult.failure(&"progression.no_experience", "event produces no skill experience")
+	return DomainResult.ok({"skill_id": skill_id, "amount": amount})
 
 
 ## 将应用层命令路由到 Player 聚合的公开行为。
