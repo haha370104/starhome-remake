@@ -13,20 +13,20 @@ const TEXT_COLOR := Color("f6f3e8")
 const SLOT_HOVER_COLOR := Color("ffcc00")
 const TEXT_FONT_SIZE := 12
 const DISPLAY_LABELS := [
-	{"id": 0, "text": "装置0", "position": Vector2(30, 122), "tooltip": "前护甲"},
-	{"id": 1, "text": "装置1", "position": Vector2(101, 122), "tooltip": "战术设备"},
-	{"id": 2, "text": "装置2", "position": Vector2(172, 122), "tooltip": "共享扩展位 A"},
-	{"id": 3, "text": "装置3", "position": Vector2(243, 122), "tooltip": "共享扩展位 B"},
-	{"id": 4, "text": "装置4", "position": Vector2(314, 122), "tooltip": "发生器 / 副炮"},
-	{"id": 10, "text": "装置10", "position": Vector2(395, 123), "tooltip": "特殊装备第 1 行"},
-	{"id": 11, "text": "装置11", "position": Vector2(395, 222), "tooltip": "特殊装备第 2 行"},
-	{"id": 12, "text": "装置12", "position": Vector2(395, 318), "tooltip": "特殊装备第 3 行"},
-	{"id": 13, "text": "装置13", "position": Vector2(395, 343), "tooltip": "特殊装备第 4 行"},
-	{"id": 5, "text": "装置5", "position": Vector2(30, 342), "tooltip": "宏原子"},
-	{"id": 6, "text": "推进器", "position": Vector2(101, 342), "tooltip": "推进器"},
-	{"id": 7, "text": "装置7", "position": Vector2(172, 342), "tooltip": "左护甲"},
-	{"id": 8, "text": "装置8", "position": Vector2(243, 342), "tooltip": "右护甲"},
-	{"id": 9, "text": "装置9", "position": Vector2(314, 342), "tooltip": "后护甲"},
+	{"id": 0, "text": "装置0", "position": Vector2(30, 122)},
+	{"id": 1, "text": "装置1", "position": Vector2(101, 122), "hover_yellow": true},
+	{"id": 2, "text": "装置2", "position": Vector2(172, 122)},
+	{"id": 3, "text": "装置3", "position": Vector2(243, 122)},
+	{"id": 4, "text": "装置4", "position": Vector2(314, 122)},
+	{"id": 10, "text": "装置10", "position": Vector2(395, 123)},
+	{"id": 11, "text": "装置11", "position": Vector2(395, 222)},
+	{"id": 12, "text": "装置12", "position": Vector2(395, 318)},
+	{"id": 13, "text": "装置13", "position": Vector2(395, 343)},
+	{"id": 5, "text": "装置5", "position": Vector2(30, 342)},
+	{"id": 6, "text": "推进器", "position": Vector2(101, 342)},
+	{"id": 7, "text": "装置7", "position": Vector2(172, 342)},
+	{"id": 8, "text": "装置8", "position": Vector2(243, 342)},
+	{"id": 9, "text": "装置9", "position": Vector2(314, 342)},
 ]
 const STAT_ROWS := [
 	{"id": "max_health", "label": "最大生命", "y": 5},
@@ -82,27 +82,28 @@ func _build_slot_labels() -> void:
 		var label := Label.new()
 		label.name = "DisplaySlot_%d" % int(raw_definition["id"])
 		label.text = String(raw_definition["text"])
-		label.position = raw_definition["position"] - Vector2(29, 8)
-		label.size = Vector2(58, 18)
-		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		label.position = raw_definition["position"]
+		label.size = Vector2(68, 16)
+		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+		label.vertical_alignment = VERTICAL_ALIGNMENT_TOP
 		label.add_theme_font_override("font", LEGACY_PANEL_FONT)
 		label.add_theme_font_size_override("font_size", TEXT_FONT_SIZE)
 		label.add_theme_color_override("font_color", TEXT_COLOR)
-		label.add_theme_color_override("font_shadow_color", Color.BLACK)
-		label.add_theme_constant_override("shadow_offset_x", 1)
-		label.add_theme_constant_override("shadow_offset_y", 1)
-		label.tooltip_text = String(raw_definition["tooltip"])
 		label.mouse_filter = Control.MOUSE_FILTER_PASS
-		label.mouse_entered.connect(_set_slot_label_hover.bind(label, true))
-		label.mouse_exited.connect(_set_slot_label_hover.bind(label, false))
+		var hover_yellow := bool(raw_definition.get("hover_yellow", false))
+		label.mouse_entered.connect(_set_slot_label_hover.bind(label, true, hover_yellow))
+		label.mouse_exited.connect(_set_slot_label_hover.bind(label, false, hover_yellow))
 		_slot_label_root.add_child(label)
 
 
 ## 切换固定槽位文字的原版式黄色悬停反馈。
 ## [param label] 需要更新字体颜色的槽位标签。
 ## [param hovered] 当前鼠标是否位于标签范围内。
-func _set_slot_label_hover(label: Label, hovered: bool) -> void:
-	label.add_theme_color_override("font_color", SLOT_HOVER_COLOR if hovered else TEXT_COLOR)
+## [param hover_yellow] 原版是否为该条文字配置黄色进入色。
+func _set_slot_label_hover(label: Label, hovered: bool, hover_yellow: bool) -> void:
+	label.add_theme_color_override(
+		"font_color", SLOT_HOVER_COLOR if hovered and hover_yellow else TEXT_COLOR
+	)
 
 
 ## 应用权威 VehicleAssemblySnapshot 并按 z_layer 重建装备表现。

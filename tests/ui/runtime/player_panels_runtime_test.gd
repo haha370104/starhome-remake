@@ -37,6 +37,23 @@ func _run() -> void:
 		"战车面板应恢复十四条原版固定槽位文字")
 	_expect(manager.vehicle_panel._slot_label_root.get_node("DisplaySlot_6").text == "推进器",
 		"视觉槽 6 应沿用原版推进器文字而不是装置编号")
+	var slot_zero := manager.vehicle_panel._slot_label_root.get_node("DisplaySlot_0") as Label
+	var slot_one := manager.vehicle_panel._slot_label_root.get_node("DisplaySlot_1") as Label
+	_expect(slot_zero.position == Vector2(30, 122) and slot_one.position == Vector2(101, 122),
+		"ButtonText 源码坐标应作为文字左上角直接使用")
+	_expect(slot_zero.horizontal_alignment == HORIZONTAL_ALIGNMENT_LEFT \
+		and slot_zero.get_theme_font_size("font_size") == 12,
+		"槽位文字应为左对齐宋体 12px")
+	_expect((slot_zero.get_theme_font("font") as SystemFont).font_weight == 400 \
+		and not slot_zero.has_theme_constant_override("shadow_offset_x"),
+		"槽位文字应使用常规字重且不添加源码不存在的阴影")
+	slot_zero.mouse_entered.emit()
+	_expect(slot_zero.get_theme_color("font_color") == Color("f6f3e8"),
+		"装置0 等普通文字悬停后仍应保持白色")
+	slot_one.mouse_entered.emit()
+	_expect(slot_one.get_theme_color("font_color") == Color("ffcc00"),
+		"只有装置1 应复现源码中的黄色悬停差异")
+	slot_one.mouse_exited.emit()
 	_expect(manager.current_player.is_ready(), "窗口管理器应维护当前登录人物的同版本全局投影")
 	_expect(manager.character_panel._portrait_body.position == Vector2(56, 64),
 		"男性裸体底模应包含人物预览子窗口偏移")
