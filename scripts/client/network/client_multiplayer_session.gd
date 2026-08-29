@@ -27,6 +27,7 @@ signal combat_snapshot_received(snapshot: Dictionary)
 signal combat_event_received(event: Dictionary)
 signal player_panel_bundle_received(bundle: Dictionary)
 signal loot_picked_up(event: Dictionary, panel_bundle: Dictionary)
+signal skill_level_up_received(event: Dictionary)
 
 @export var offline_debug_enabled := false
 @export var local_entity_id: StringName = &"player.local"
@@ -390,6 +391,12 @@ func _on_command_rejected(code: StringName, message: String) -> void:
 ## [param message] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## 设计：该函数位于客户端交互或表现边界，最终状态以服务器权威结果为准。
 func _on_server_message_received(message: Dictionary) -> void:
+	if StringName(message.get("type", "")) == &"skill_level_up":
+		var skill_result: Dictionary = message.get("result", {})
+		var skill_value: Variant = skill_result.get("value")
+		if bool(skill_result.get("ok", false)) and skill_value is Dictionary:
+			skill_level_up_received.emit((skill_value as Dictionary).duplicate(true))
+		return
 	if StringName(message.get("type", "")) == &"loot_picked_up":
 		var loot_result: Dictionary = message.get("result", {})
 		var loot_value: Variant = loot_result.get("value")

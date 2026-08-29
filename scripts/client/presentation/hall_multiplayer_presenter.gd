@@ -15,6 +15,7 @@ signal map_change_failed(transition_id: StringName, code: StringName, message: S
 signal combat_snapshot_received(snapshot: Dictionary)
 signal combat_event_received(event: Dictionary)
 signal player_panel_bundle_received(bundle: Dictionary)
+signal skill_level_up_received(event: Dictionary)
 
 const SessionScript := preload("res://scripts/client/network/client_multiplayer_session.gd")
 const CharacterFactoryScript := preload("res://scripts/characters/character_factory.gd")
@@ -87,6 +88,7 @@ func start(settings: Dictionary) -> Error:
 	session.combat_event_received.connect(combat_event_received.emit)
 	session.loot_picked_up.connect(_on_loot_picked_up)
 	session.player_panel_bundle_received.connect(player_panel_bundle_received.emit)
+	session.skill_level_up_received.connect(skill_level_up_received.emit)
 	add_child(session)
 	session.initialize_local_player(Vector2(settings.get("initial_position", _local_character.position)))
 

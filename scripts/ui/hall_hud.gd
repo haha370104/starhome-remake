@@ -25,6 +25,9 @@ var shortcut_bar: Control
 var bottom_main_bar: Control
 var state: HudState
 var asset_manifest: Dictionary = {}
+var system_message_label: Label
+var _system_message_timer: Timer
+var _system_message_queue: Array[String] = []
 
 
 ## 执行 `configure` 对应的模块操作。
@@ -81,6 +84,46 @@ func configure(world_map_size: Vector2, minimap_texture: Texture2D, map_name := 
 
 	_build_popup()
 	_build_hint_label()
+	_build_system_message_feed()
+
+
+## 将系统提示加入顺序队列；每次技能升级都获得完整展示时间。
+func show_system_message(message: String) -> void:
+	if message.is_empty():
+		return
+	_system_message_queue.append(message)
+	if not _system_message_timer.is_stopped():
+		return
+	_show_next_system_message()
+
+
+func _build_system_message_feed() -> void:
+	system_message_label = Label.new()
+	system_message_label.name = "SystemMessageLabel"
+	system_message_label.position = Vector2(12, 29)
+	system_message_label.add_theme_font_size_override("font_size", 17)
+	system_message_label.add_theme_color_override("font_color", Color("fff36b"))
+	system_message_label.add_theme_color_override("font_shadow_color", Color.BLACK)
+	system_message_label.add_theme_constant_override("shadow_offset_x", 2)
+	system_message_label.add_theme_constant_override("shadow_offset_y", 2)
+	system_message_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	system_message_label.visible = false
+	root_control.add_child(system_message_label)
+	_system_message_timer = Timer.new()
+	_system_message_timer.name = "SystemMessageTimer"
+	_system_message_timer.one_shot = true
+	_system_message_timer.timeout.connect(_show_next_system_message)
+	add_child(_system_message_timer)
+
+
+func _show_next_system_message() -> void:
+	if _system_message_queue.is_empty():
+		system_message_label.visible = false
+		system_message_label.text = ""
+		return
+	system_message_label.text = _system_message_queue.pop_front()
+	system_message_label.visible = true
+	_system_message_timer.start(4.0)
 
 
 ## 执行 `update_player_dot` 对应的模块操作。

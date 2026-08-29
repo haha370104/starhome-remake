@@ -507,8 +507,16 @@ func _apply_skill_progression_event(progression_event: Dictionary) -> void:
 			stored.error_code, stored.error_message,
 		])
 		return
+	var session: ServerSession = sessions.session_for_entity(entity_id)
+	if bool(progression.get("upgraded", false)) and session != null and session.has_active_peer():
+		_send_reliable(session.peer_id, {
+			"type": "skill_level_up",
+			"result": _wire_result(_success({
+				"skill_id": String(progression.get("skill_id", "")),
+				"new_level": int(progression.get("new_level", 0)),
+			})),
+		})
 	if bool(progression.get("visible_progress_changed", false)):
-		var session: ServerSession = sessions.session_for_entity(entity_id)
 		if session != null and session.has_active_peer():
 			_send_reliable(session.peer_id, {
 				"type": "player_panels",

@@ -43,6 +43,9 @@ const GameWindowManagerScript := preload(
 	"res://scripts/client/ui/windows/game_window_manager.gd"
 )
 const ItemCatalogScript := preload("res://scripts/domain/items/item_catalog.gd")
+const SkillLevelMessageFormatter := preload(
+	"res://scripts/client/presentation/skill_level_message_formatter.gd"
+)
 const STARTER_WEAPON_ID := &"recruit_energy_cannon"
 const STARTER_ABILITY_ID := "energy_cannon.primary"
 const SELF_REPAIR_ABILITY_ID := "self_repair"
@@ -674,6 +677,17 @@ func _build_game_windows() -> void:
 	multiplayer_presenter.player_panel_bundle_received.connect(
 		game_window_manager.apply_bundle
 	)
+	multiplayer_presenter.skill_level_up_received.connect(_on_skill_level_up)
+	game_window_manager.skill_level_up.connect(_on_skill_level_up)
+
+
+## 将线上或离线权威升级事件格式化为荣耀版原句式并交给 HUD 排队。
+func _on_skill_level_up(event: Dictionary) -> void:
+	if hud == null:
+		return
+	hud.show_system_message(SkillLevelMessageFormatter.format(
+		String(event.get("skill_id", "")), int(event.get("new_level", 0))
+	))
 
 
 ## 将客户端唯一 CurrentPlayer 的服装对象同步到世界人物表现。

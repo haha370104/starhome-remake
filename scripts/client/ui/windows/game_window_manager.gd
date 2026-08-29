@@ -3,6 +3,7 @@ extends Control
 
 signal command_dispatched(command: Dictionary)
 signal current_player_changed(player: Player)
+signal skill_level_up(event: Dictionary)
 
 const CharacterPanelScript := preload("res://scripts/client/ui/windows/character/character_panel.gd")
 const InventoryPanelScript := preload("res://scripts/client/ui/windows/inventory/inventory_panel.gd")
@@ -168,7 +169,13 @@ func grant_offline_skill_progression(progression_event: Dictionary):
 	var result = _offline_authority.grant_skill_progression(progression_event)
 	if result.is_ok:
 		var value: Dictionary = result.value
-		if bool(value["progression"].get("visible_progress_changed", false)):
+		var progression: Dictionary = value["progression"]
+		if bool(progression.get("upgraded", false)):
+			skill_level_up.emit({
+				"skill_id": String(progression.get("skill_id", "")),
+				"new_level": int(progression.get("new_level", 0)),
+			})
+		if bool(progression.get("visible_progress_changed", false)):
 			apply_bundle(value["panel_bundle"])
 	return result
 
