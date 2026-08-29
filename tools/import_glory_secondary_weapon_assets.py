@@ -7,6 +7,16 @@ from import_glory_starter_combat_assets import _atomic_json, _export_asset
 
 
 SOURCES = {
+    "starter_rocket_launcher_world": {
+        "display_name": "初级火箭场景装备",
+        "source_logical_path": "pic3/equip/body/CHN_2005_06_28_19_11_48_1153.ale",
+        "target": "starter_secondary_weapons/rocket/equipment/aiming",
+        "expected_frames": 1,
+        "direction_mode": "shared",
+        "frames_per_direction": 1,
+        "world_visible": True,
+        "relationship_evidence": "client_confirmed_FireGun1_m_sMoveSrc",
+    },
     "starter_rocket_projectile": {
         "display_name": "初级火箭弹体",
         "source_logical_path": "pic3/bullet/daodan1.ale",
@@ -36,6 +46,16 @@ SOURCES = {
         "frames_per_direction": 1,
         "world_visible": True,
         "relationship_evidence": "client_confirmed_Missile1_m_sbulletfile",
+    },
+    "starter_missile_world": {
+        "display_name": "初级导弹场景装备",
+        "source_logical_path": "pic3/equip/body/CHN_2005_06_28_18_32_39_754.ale",
+        "target": "starter_secondary_weapons/missile/equipment/aiming",
+        "expected_frames": 1,
+        "direction_mode": "shared",
+        "frames_per_direction": 1,
+        "world_visible": True,
+        "relationship_evidence": "client_confirmed_Missile1_m_sMoveSrc",
     },
     "starter_missile_impact": {
         "display_name": "初级导弹爆炸",
