@@ -19,7 +19,8 @@ func configure() -> void:
 
 	message_label = Label.new()
 	message_label.name = "Message"
-	message_label.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	# 使用左上原点配合完整视口宽度计算，避免锚点偏移在窗口缩放后重复叠加。
+	message_label.set_anchors_preset(Control.PRESET_TOP_LEFT)
 	message_label.position = Vector2.ZERO
 	message_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	message_label.add_theme_font_size_override("font_size", 20)
@@ -29,6 +30,7 @@ func configure() -> void:
 	message_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	message_label.visible = false
 	add_child(message_label)
+	resized.connect(_on_feed_resized)
 	set_process(false)
 
 
@@ -95,11 +97,21 @@ func _begin_next_message() -> void:
 ## 根据归一化上浮进度更新标签位置和透明度。
 ## [param progress] 取值零到一的上浮淡出进度。
 func _apply_progress(progress: float) -> void:
-	var viewport_size := size
+	var viewport_size := size if size.x > 0.0 and size.y > 0.0 else get_viewport_rect().size
+	var label_height := message_label.get_minimum_size().y
 	message_label.position = Vector2(
-		-viewport_size.x * 0.5,
-		viewport_size.y * 0.5 - message_label.get_minimum_size().y * 0.5
+		0.0,
+		viewport_size.y * 0.5 - label_height * 0.5
 			- FLOAT_DISTANCE * progress,
 	)
-	message_label.size = Vector2(viewport_size.x, message_label.get_minimum_size().y)
+	message_label.size = Vector2(viewport_size.x, label_height)
 	message_label.modulate.a = 1.0 - progress
+
+
+## 在窗口尺寸变化后重新以屏幕正中心为基准排布当前系统提示。
+func _on_feed_resized() -> void:
+	if not _active:
+		return
+	var progress := clampf((_elapsed - HOLD_SECONDS) / FLOAT_SECONDS, 0.0, 1.0) \
+		if _elapsed > HOLD_SECONDS else 0.0
+	_apply_progress(progress)

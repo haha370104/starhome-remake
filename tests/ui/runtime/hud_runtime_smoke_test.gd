@@ -67,6 +67,10 @@ func _assert_1280_layout(hud: CanvasLayer) -> void:
 	_expect(not hud.bottom_main_bar.weapon_buttons.has("missile"), "未装导弹时不得显示导弹图标")
 	_expect(hud.shortcut_bar.size == Vector2(415, 40), "快捷栏必须保持 415×40 原始像素")
 	_expect(hud.shortcut_bar.position == Vector2(432.5, 651), "快捷栏应紧贴底部主栏上方居中")
+	hud.show_system_message("测试系统提示")
+	var message_center: Vector2 = hud.system_message_feed.message_label.get_global_rect().get_center()
+	_expect(message_center.is_equal_approx(Vector2(640, 360)),
+		"系统提示应以 1280×720 游戏画面的正中心为初始锚点")
 
 
 ## 执行 `assert_state_updates` 对应的模块操作。
@@ -149,6 +153,9 @@ func _assert_1600_layout(hud: CanvasLayer) -> void:
 	_expect(hud.bottom_main_bar.design_surface.size == Vector2(1024, 29), "窗口变大不得拉伸底栏中央素材")
 	_expect(hud.shortcut_bar.position == Vector2(592.5, 831), "窗口变大后快捷栏仍应吸底居中")
 	_expect(hud.shortcut_bar.size == Vector2(415, 40), "窗口变大不得缩放快捷栏")
+	var message_center: Vector2 = hud.system_message_feed.message_label.get_global_rect().get_center()
+	_expect(message_center.is_equal_approx(Vector2(800, 450)),
+		"窗口放大后系统提示仍应重新锚定屏幕正中心")
 
 
 ## 执行 `expect` 对应的模块操作。
