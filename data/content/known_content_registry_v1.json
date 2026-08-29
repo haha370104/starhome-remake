@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "content_version": "glory-known-content-v1",
+  "catalogs": {
+    "map": "res://data/content/known_maps_v1.json",
+    "monster": "res://data/content/known_monsters_v1.json",
+    "item": "res://data/content/known_items_v1.json"
+  },
+  "expected_counts": {
+    "map": {
+      "definitions": 814,
+      "worlds": 6,
+      "resource_groups": 497,
+      "runtime_ready_source_keys": 10,
+      "presentation_ready_source_keys": 8
+    },
+    "monster": {
+      "definitions": 139,
+      "npc_rows": 119,
+      "map_archetypes": 20,
+      "monster_map_relations": 85,
+      "runtime_ready_npc_rows": 4,
+      "npc_rows_with_source_presentation": 119
+    },
+    "item": {
+      "definitions": 1393,
+      "equipment_rows": 1012,
+      "material_names": 258,
+      "local_crafting_products": 123,
+      "runtime_item_ids": 14,
+      "runtime_item_ids_covered": 14
+    }
+  },
+  "semantics": {
+    "known": "Recovered client evidence exists for this registration.",
+    "runtime_ready": "A controlled remake definition can instantiate this content.",
+    "presentation_ready": "Business-named Godot presentation resources are available."
+  }
+}
