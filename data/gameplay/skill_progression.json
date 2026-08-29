@@ -8,7 +8,7 @@
       "missile": 1.0,
       "rocket_launcher": 1.0
     },
-    "driving_experience_unit": 100000.0,
+    "driving_experience_unit": 10000.0,
     "driving_weight_cap": 1000.0
   },
   "comprehensive_level": {

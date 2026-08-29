@@ -120,9 +120,9 @@ func _initialize() -> void:
 	_expect(driving_progress.is_ok, "碰撞校验后的驾驶距离应按整车重量换算经验")
 	if driving_progress.is_ok:
 		var driving_skill: Dictionary = driving_progress.value.panel_bundle.character.skills[2]
-		_expect(driving_skill.experience == 1, "一千像素乘 140 重量应形成一点整数驾驶经验")
-		_expect(absf(float(driving_skill.fractional_experience) - 0.4) < 0.0001,
-			"不足一点的驾驶经验应保留在当前等级小数余量")
+		_expect(driving_skill.experience == 14, "驾驶经验提速十倍后，一千像素乘 140 重量应形成十四点经验")
+		_expect(absf(float(driving_skill.fractional_experience)) < 0.0001,
+			"整除后的驾驶经验不应留下小数余量")
 	var upgraded := authority.grant_skill_progression({
 		"entity_id": "player.local",
 		"source": "authoritative_action",
