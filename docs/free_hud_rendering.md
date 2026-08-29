@@ -150,7 +150,9 @@ Y = 8
 
 装备以自身按钮 ALE 动态注册；选中帧为 1，未选中帧为 0，弹药数量用独立红色文字叠加。部分主序列格可拖动换位，当前选择原保存在 `CtrlPadConfig_fr.ini` 的 `CurWeapon`。
 
-【重建规则】首批保留能量炮、导弹和第三动作格；每个格子都是独立按钮，弹量文字独立绘制。不要从原游戏截图裁出一整段武器栏。
+【客户端确认】能量炮使用独立固定按钮。火箭炮、导弹、隐身器和雷达都声明为装备 `Location=13`，四者互斥；它们在 `EquipInDlg` 时调用控制栏 `AddWeapon`，卸装时由 `RemoveWeapon` 删除。因此第二格是一个由实际装备动态创建的战术槽，没有安装对应装备时必须为空，不能把导弹图标或数量写死在 HUD 中。弹量等数量文字是按钮上方的独立红色文本层。
+
+【素材对应】免费版战术按钮依次使用 `pic/equipface/firegun.ale`、`missile.ale`、`tank_hermit.ale`、`tank_radar.ale` 的普通/选中两帧。运行时清单只暴露 `rocket_launcher`、`missile`、`stealth`、`radar` 四个业务标识。
 
 ### 4.3 右半区：菜单按钮
 

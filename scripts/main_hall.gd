@@ -66,6 +66,10 @@ const WEAPON_MODES := {
 		"display_name": "初级火箭",
 	},
 }
+const TACTICAL_ACTION_BY_DEFINITION := {
+	"starter_rocket_launcher": "rocket_launcher",
+	"starter_missile": "missile",
+}
 const SELF_REPAIR_ABILITY_ID := "self_repair"
 
 # Player tuning is intentionally local to the player. NPC patrol motion has its
@@ -743,6 +747,12 @@ func _on_current_player_changed(current_player: Player) -> void:
 			current_player.character_equipment,
 			character_catalog,
 		)
+	if hud != null:
+		var tactical_equipment: VehicleEquipment = current_player.vehicle.loadout.at(13)
+		var action_id := "" if tactical_equipment == null else String(
+			TACTICAL_ACTION_BY_DEFINITION.get(tactical_equipment.definition_id, "")
+		)
+		hud.set_tactical_action(action_id)
 
 
 ## 读取受控地图目录的 `definitions` 映射，格式错误时返回仅包含当前大厅的安全目录。

@@ -25,6 +25,14 @@
       "dialog_origin": [-32, -16],
       "z_layer": 20
     },
+    "starter_rocket_launcher": {
+      "icon": "res://assets/ui/free_hud/bottom_main/weapon_modes/rocket_launcher/normal.png",
+      "native_size": [29, 22]
+    },
+    "starter_missile": {
+      "icon": "res://assets/ui/free_hud/bottom_main/weapon_modes/missile/normal.png",
+      "native_size": [29, 22]
+    },
     "male_sleeveless_shirt": {
       "icon": "res://assets/ui/windows/inventory/items/male_sleeveless_shirt.png",
       "native_size": [40, 28],

@@ -19,6 +19,8 @@ const WEAPON_TOOLTIPS := {
 	"energy_cannon": "能量炮",
 	"missile": "导弹",
 	"rocket_launcher": "火箭炮",
+	"stealth": "隐身器",
+	"radar": "雷达",
 }
 
 var hud_state: HudState
@@ -26,7 +28,9 @@ var design_surface: Control
 var reserve_energy_clip: Control
 var reserve_energy_fill: TextureRect
 var weapon_buttons: Dictionary = {}
-var weapon_fallback_labels: Dictionary = {}
+var tactical_definition: Dictionary = {}
+var tactical_button: Control
+var tactical_count_label: Label
 var shortcut_visibility_buttons: Dictionary = {}
 
 
@@ -65,9 +69,8 @@ func configure(definition: Dictionary, shortcut_definition: Dictionary, state: H
 
 	_build_reserve_energy(definition.get("reserve_energy", {}))
 	var weapons: Dictionary = definition.get("weapons", {})
-	_build_weapon_button("energy_cannon", weapons.get("energy_cannon", {}), "")
-	_build_weapon_button("missile", weapons.get("missile", {}), "1700")
-	_build_weapon_button("rocket_launcher", weapons.get("third_action", {}), "")
+	_build_weapon_button("energy_cannon", weapons.get("energy_cannon", {}))
+	tactical_definition = weapons.get("tactical", {})
 
 	var buttons: Dictionary = definition.get("menu_buttons", {})
 	for action_id in MENU_BUTTONS:
@@ -95,8 +98,10 @@ func configure(definition: Dictionary, shortcut_definition: Dictionary, state: H
 
 	hud_state.reserve_energy_changed.connect(_update_reserve_energy)
 	hud_state.selected_action_slot_changed.connect(_update_selected_weapon)
+	hud_state.tactical_action_changed.connect(_update_tactical_action)
 	hud_state.shortcut_visibility_changed.connect(_update_shortcut_visibility_button)
 	_update_reserve_energy(hud_state.reserve_energy, hud_state.reserve_energy_capacity)
+	_update_tactical_action(hud_state.tactical_action_id, hud_state.tactical_action_count)
 	_update_selected_weapon(hud_state.selected_action_slot)
 	_update_shortcut_visibility_button(hud_state.shortcut_visible)
 
@@ -127,41 +132,47 @@ func _build_reserve_energy(definition: Dictionary) -> void:
 ## 执行 `build_weapon_button` 对应的模块操作。
 ## [param action_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## [param definition] 调用方传入的参数；具体约束由函数签名和所在模块定义。
-## [param count_text] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _build_weapon_button(
 	action_id: String,
-	definition: Dictionary,
-	count_text: String,
-) -> void:
+	definition: Dictionary
+) -> Control:
 	var anchor := _vector_from_array(definition.get("position", []), Vector2.ZERO)
 	var button := _build_state_button(definition, action_id, WEAPON_TOOLTIPS.get(action_id, action_id))
 	button.place_at(anchor)
 	button.pressed.connect(hud_state.set_selected_action_slot.bind(action_id))
 	design_surface.add_child(button)
 	weapon_buttons[action_id] = button
-	if (definition.get("states", {}) as Dictionary).is_empty():
-		var fallback_label := Label.new()
-		fallback_label.name = "%sFallbackLabel" % action_id.to_pascal_case()
-		fallback_label.text = "火" if action_id == "rocket_launcher" else ""
-		fallback_label.position = anchor
-		fallback_label.size = Vector2(31, 22)
-		fallback_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		fallback_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		fallback_label.add_theme_font_size_override("font_size", 12)
-		fallback_label.add_theme_color_override("font_outline_color", Color.BLACK)
-		fallback_label.add_theme_constant_override("outline_size", 2)
-		fallback_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		design_surface.add_child(fallback_label)
-		weapon_fallback_labels[action_id] = fallback_label
-	if not count_text.is_empty():
-		var label := Label.new()
-		label.name = "%sAmmo" % action_id.to_pascal_case()
-		label.text = count_text
-		label.position = anchor + Vector2(2, 10)
-		label.add_theme_font_size_override("font_size", 10)
-		label.add_theme_color_override("font_color", Color.RED)
-		label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		design_surface.add_child(label)
+	return button
+
+
+## 依据 Location 13 的权威装备动态创建或清空唯一战术按钮。
+func _update_tactical_action(action_id: String, count: int) -> void:
+	if tactical_button != null:
+		weapon_buttons.erase(String(tactical_button.name).to_snake_case())
+		tactical_button.free()
+		tactical_button = null
+	if tactical_count_label != null:
+		tactical_count_label.free()
+		tactical_count_label = null
+	if action_id.is_empty():
+		_update_selected_weapon(hud_state.selected_action_slot)
+		return
+	var modes: Dictionary = tactical_definition.get("modes", {})
+	var mode_definition: Dictionary = (modes.get(action_id, {}) as Dictionary).duplicate(true)
+	if mode_definition.is_empty():
+		return
+	mode_definition["position"] = tactical_definition.get("position", [206, 8])
+	tactical_button = _build_weapon_button(action_id, mode_definition)
+	if count >= 0:
+		tactical_count_label = Label.new()
+		tactical_count_label.name = "TacticalCount"
+		tactical_count_label.text = str(count)
+		tactical_count_label.position = _vector_from_array(mode_definition["position"], Vector2.ZERO) + Vector2(2, 10)
+		tactical_count_label.add_theme_font_size_override("font_size", 10)
+		tactical_count_label.add_theme_color_override("font_color", Color.RED)
+		tactical_count_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		design_surface.add_child(tactical_count_label)
+	_update_selected_weapon(hud_state.selected_action_slot)
 
 
 ## 执行 `update_shortcut_visibility_button` 对应的模块操作。
@@ -186,11 +197,6 @@ func _update_selected_weapon(action_id: String) -> void:
 	for button_id in weapon_buttons:
 		var button: Control = weapon_buttons[button_id]
 		button.set_base_state("selected" if button_id == action_id else "normal")
-		if weapon_fallback_labels.has(button_id):
-			var label: Label = weapon_fallback_labels[button_id]
-			label.add_theme_color_override(
-				"font_color", Color(1.0, 0.9, 0.2) if button_id == action_id else Color(0.75, 0.9, 1.0)
-			)
 
 
 ## 执行 `build_state_button` 对应的模块操作。

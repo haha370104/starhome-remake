@@ -46,6 +46,8 @@ const DEFINITION_LOCATIONS := {
 	"recruit_tank": 0,
 	"recruit_energy_cannon": 1,
 	"beginner_engine": 3,
+	"starter_rocket_launcher": 13,
+	"starter_missile": 13,
 }
 
 

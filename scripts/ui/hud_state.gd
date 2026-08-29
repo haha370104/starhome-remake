@@ -12,11 +12,16 @@ signal reserve_energy_changed(current: float, capacity: float)
 signal vehicle_health_changed(current: int, capacity: int)
 signal working_energy_changed(current: float, capacity: float)
 signal selected_action_slot_changed(slot_id: String)
+signal tactical_action_changed(action_id: String, count: int)
+
+const TACTICAL_ACTIONS := ["rocket_launcher", "missile", "stealth", "radar"]
 
 var hud_visible := true
 var minimap_size := "small"
 var minimap_collapsed := false
 var selected_action_slot := "energy_cannon"
+var tactical_action_id := ""
+var tactical_action_count := -1
 var top_menu_expanded := true
 var function_bar_compact := false
 var item_shortcuts: Array[Dictionary] = [{}, {}, {}, {}, {}]
@@ -154,7 +159,25 @@ func set_working_energy(current: float, capacity: float) -> void:
 ## 执行 `set_selected_action_slot` 对应的模块操作。
 ## [param slot_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func set_selected_action_slot(slot_id: String) -> void:
+	if slot_id != "energy_cannon" and slot_id != tactical_action_id:
+		return
 	if selected_action_slot == slot_id:
 		return
 	selected_action_slot = slot_id
 	selected_action_slot_changed.emit(slot_id)
+
+
+## 用当前战车 Location 13 的实际装备替换唯一战术槽。
+## [param action_id] 火箭炮、导弹、隐身或雷达；空字符串表示未安装。
+## [param count] 可堆叠装备的剩余数量；负数表示不绘制数字。
+func set_tactical_action(action_id: String, count := -1) -> void:
+	var normalized := action_id if action_id in TACTICAL_ACTIONS else ""
+	var normalized_count := maxi(count, -1)
+	if tactical_action_id == normalized and tactical_action_count == normalized_count:
+		return
+	var previous := tactical_action_id
+	tactical_action_id = normalized
+	tactical_action_count = normalized_count
+	if selected_action_slot == previous and selected_action_slot != tactical_action_id:
+		set_selected_action_slot("energy_cannon")
+	tactical_action_changed.emit(tactical_action_id, tactical_action_count)

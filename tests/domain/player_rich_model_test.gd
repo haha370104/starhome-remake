@@ -63,6 +63,11 @@ func _initialize() -> void:
 		"充血装配模型应保留特殊装备系列与四行语义")
 	_expect(EquipmentSlotRegistryScript.display_name(18) == "宏原子",
 		"Location 18 应恢复为荣耀版宏原子槽")
+	_expect(
+		EquipmentSlotRegistryScript.location_for_definition("starter_rocket_launcher") == 13
+		and EquipmentSlotRegistryScript.location_for_definition("starter_missile") == 13,
+		"火箭炮与导弹必须竞争同一个 Location 13 战术槽",
+	)
 	var first_loot := catalog.create("low_grade_gel", {
 		"instance_id": "loot.first", "quantity": 2, "footprint_px": [30, 30],
 	})
