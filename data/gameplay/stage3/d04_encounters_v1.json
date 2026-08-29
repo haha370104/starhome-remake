@@ -11,17 +11,19 @@
     "low_threshold_ratio": 0.8,
     "critical_replenish_ratio": 0.2,
     "low_replenish_ratio": 0.1,
-    "normal_replenish_ratio": 0.05
+    "normal_replenish_ratio": 0.05,
+    "spawn_distribution": "full_walkable_map",
+    "minimum_spawn_separation": 96
   },
   "spawn_groups": [
-    {"group_id": "northwest_om_adults", "monster_id": "om_adult", "anchor": [1200, 1200], "spawn_radius": 360, "weight": 1.0},
-    {"group_id": "northeast_om_larvae", "monster_id": "om_larva", "anchor": [3600, 1200], "spawn_radius": 360, "weight": 1.0},
-    {"group_id": "southwest_photosensitive_orbs", "monster_id": "photosensitive_orb", "anchor": [1200, 3400], "spawn_radius": 360, "weight": 1.0},
-    {"group_id": "southeast_toxic_gels", "monster_id": "toxic_gel", "anchor": [3600, 3600], "spawn_radius": 360, "weight": 1.0}
+    {"group_id": "om_adults", "monster_id": "om_adult", "weight": 1.0},
+    {"group_id": "om_larvae", "monster_id": "om_larva", "weight": 1.0},
+    {"group_id": "photosensitive_orbs", "monster_id": "photosensitive_orb", "weight": 1.0},
+    {"group_id": "toxic_gels", "monster_id": "toxic_gel", "weight": 1.0}
   ],
   "evidence": {
     "map_id": {"status": "reconstructed_default", "reason": "D04 is the first runnable Glory field map in the RoomSvr1 to City1Svr to D04 vertical slice; no authoritative D04 monster spawn table was recovered."},
-    "spawn_groups": {"status": "reconstructed_default", "reason": "Anchors were selected from open D04 navigation areas and validated against the Glory navigation grid. Species, counts, radii, and quadrant allocation are remake defaults."},
+    "spawn_groups": {"status": "remake_rule", "reason": "Species weights are configured here; the authoritative map samples the complete walkable navigation graph instead of fixed anchors."},
     "authoritative_spawn_data": {"status": "unknown", "reason": "The client package does not expose active server spawn records for these four standard monsters on D04."}
   },
   "source_audit": {

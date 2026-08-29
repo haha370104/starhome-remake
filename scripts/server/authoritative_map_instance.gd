@@ -4,6 +4,9 @@ extends RefCounted
 const MapDefinitionLoaderScript := preload("res://scripts/maps/map_definition_loader.gd")
 const DiamondNavigationScript := preload("res://scripts/navigation/diamond_navigation.gd")
 const MonsterRoutePlannerScript := preload("res://scripts/navigation/monster_route_planner.gd")
+const RandomWalkableSpawnSamplerScript := preload(
+	"res://scripts/navigation/random_walkable_spawn_sampler.gd"
+)
 const EntityScript := preload("res://scripts/server/authoritative_entity.gd")
 const MoveIntentContract := preload("res://scripts/network/contracts/move_intent.gd")
 const ErrorCodes := preload("res://scripts/network/contracts/network_error_codes.gd")
@@ -85,9 +88,7 @@ func configure_combat(catalog, simulation_hz: int) -> Dictionary:
 	combat_module.set_monster_route_resolver(_resolve_monster_route)
 	for raw_definition: Variant in lifecycle_result.value:
 		var monster_definition: Dictionary = raw_definition.duplicate(true)
-		var requested_position: Vector2 = monster_definition["position"]
-		if not navigation.is_walkable(requested_position):
-			requested_position = navigation.closest_walkable_position(requested_position)
+		var requested_position := _random_monster_spawn_position(int(monster_definition["spawn_index"]))
 		if not requested_position.is_finite():
 			return _failure(&"combat.no_monster_spawn", "monster group has no walkable spawn")
 		monster_definition["position"] = requested_position
@@ -324,14 +325,29 @@ func _replenish_monster_population_if_due() -> void:
 		return
 	for raw_definition: Variant in generated.value:
 		var monster_definition: Dictionary = raw_definition.duplicate(true)
-		var position: Vector2 = monster_definition["position"]
-		if not navigation.is_walkable(position):
-			position = navigation.closest_walkable_position(position)
+		var position := _random_monster_spawn_position(int(monster_definition["spawn_index"]))
 		if not position.is_finite():
 			continue
 		monster_definition["position"] = position
 		combat_module.register_monster(monster_definition)
 	_monster_spawn_sequence += generated.value.size()
+
+
+func _random_monster_spawn_position(spawn_sequence: int) -> Vector2:
+	var occupied: Array[Vector2] = []
+	if combat_module != null:
+		for monster: MonsterLifecycle in combat_module.monsters.values():
+			if monster.map_instance_id == instance_id and monster.is_alive():
+				occupied.append(monster.position)
+	var minimum_separation := float(
+		_monster_population_policy.get("minimum_spawn_separation", 0.0)
+	)
+	return RandomWalkableSpawnSamplerScript.sample(
+		navigation,
+		hash("%s.monster.%d" % [instance_id, spawn_sequence]),
+		occupied,
+		minimum_separation,
+	)
 
 
 ## 提取自上次调用后产生的技能成长事件，并清空已消费的移动累计。

@@ -105,6 +105,8 @@ func _test_d04_lifecycle_definitions() -> void:
 		var species_id := String(definition["species_id"])
 		population_by_species[species_id] = int(population_by_species.get(species_id, 0)) + 1
 		_expect(String(definition["map_instance_id"]) == MAP_INSTANCE_ID, "each lifecycle should bind the requested map instance")
+		_expect(not Vector2(definition["position"]).is_finite(), "catalog should delegate spawn coordinates to map navigation")
+		_expect(definition["spawn_distribution"] == "full_walkable_map", "each monster should request full-map random placement")
 		_expect(not definition.has("defense") and not definition.has("move_speed"), "runtime definition must not invent defense or speed")
 		_expect(definition["unknown_fields"].has("defense") and definition["unknown_fields"].has("move_speed"), "unknown monster stats should remain explicit")
 		_expect(definition["projectile_hitbox"] is Dictionary, "each runtime monster should expose authoritative projectile geometry")
@@ -138,7 +140,9 @@ func _test_d04_lifecycle_definitions() -> void:
 	_expect(catalog.monster_replenishment_count("d04_field_zone", 80) == 5, "exactly eighty percent should use the five-percent tier")
 	_expect(catalog.monster_replenishment_count("d04_field_zone", 98) == 2, "replenishment must not exceed the map cap")
 	var lifecycle: MonsterLifecycle = MonsterLifecycleScript.new()
-	_expect(lifecycle.configure(lifecycles[0], 20).is_ok, "formal D04 definition should initialize MonsterLifecycle directly")
+	var admitted_definition: Dictionary = lifecycles[0].duplicate(true)
+	admitted_definition["position"] = Vector2(240, 240)
+	_expect(lifecycle.configure(admitted_definition, 20).is_ok, "map-admitted D04 definition should initialize MonsterLifecycle")
 	_expect(lifecycle.max_health == int(lifecycles[0]["max_health"]), "monster lifecycle should preserve formal health semantics")
 
 
@@ -150,6 +154,7 @@ func _test_catalog_to_authoritative_module_seam() -> void:
 	).value
 	var weapon: Dictionary = catalog.starter_energy_cannon(20).value
 	var monster: Dictionary = catalog.d04_monster_lifecycles(MAP_INSTANCE_ID).value[0]
+	monster["position"] = Vector2(240, 240)
 	var module: AuthoritativeCombatModule = CombatModuleScript.new()
 	_expect(module.configure(20, 24680, 0.0).is_ok, "formal combat module should configure")
 	_expect(module.register_vehicle("player.catalog", MAP_INSTANCE_ID, Vector2(monster["position"]) + Vector2(100.0, 0.0), assembly, {weapon["ability_id"]: weapon}).is_ok, "formal starter vehicle and cannon should register")

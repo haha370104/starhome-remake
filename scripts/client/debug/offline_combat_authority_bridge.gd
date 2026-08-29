@@ -5,6 +5,9 @@ const CombatCatalogScript := preload("res://scripts/domain/combat/combat_definit
 const CombatModuleScript := preload("res://scripts/server/modules/combat/authoritative_combat_module.gd")
 const UseAbilityIntentScript := preload("res://scripts/network/contracts/use_ability_intent.gd")
 const MonsterRoutePlannerScript := preload("res://scripts/navigation/monster_route_planner.gd")
+const RandomWalkableSpawnSamplerScript := preload(
+	"res://scripts/navigation/random_walkable_spawn_sampler.gd"
+)
 
 signal combat_snapshot_ready(snapshot: Dictionary)
 signal combat_event_ready(event: Dictionary)
@@ -83,7 +86,9 @@ func configure_map(
 		return ERR_INVALID_DATA
 	for raw_definition: Variant in monsters_result.value:
 		var definition: Dictionary = raw_definition.duplicate(true)
-		definition["position"] = _walkable_position(definition["position"])
+		definition["position"] = _random_monster_spawn_position(
+			int(definition["spawn_index"]), catalog.monster_population_policy_for_map(map_id)
+		)
 		if not module.register_monster(definition).is_ok:
 			return ERR_INVALID_DATA
 	_emit_snapshot()
@@ -264,7 +269,15 @@ func _resolve_monster_route(
 ## 执行 `walkable_position` 对应的模块操作。
 ## [param requested_position] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## 返回该函数计算、查询或操作得到的结果。
-func _walkable_position(requested_position: Vector2) -> Vector2:
-	if navigation == null or navigation.is_walkable(requested_position):
-		return requested_position
-	return navigation.closest_walkable_position(requested_position)
+func _random_monster_spawn_position(spawn_sequence: int, policy: Dictionary) -> Vector2:
+	var occupied: Array[Vector2] = []
+	if module != null:
+		for monster: MonsterLifecycle in module.monsters.values():
+			if monster.is_alive():
+				occupied.append(monster.position)
+	return RandomWalkableSpawnSamplerScript.sample(
+		navigation,
+		hash("%s.monster.%d" % [map_instance_id, spawn_sequence]),
+		occupied,
+		float(policy.get("minimum_spawn_separation", 0.0)),
+	)

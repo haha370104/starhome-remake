@@ -51,14 +51,26 @@ func _test_population_and_resources(bridge: OfflineCombatAuthorityBridge) -> voi
 	var snapshot := bridge.module.snapshot_for_actor(BridgeScript.LOCAL_ACTOR_ID)
 	_expect(snapshot.monsters.size() == 100, "D04 should initialize its configured maximum population")
 	var species: Dictionary = {}
+	var positions: Array[Vector2] = []
 	for monster: Dictionary in snapshot.monsters:
 		species[String(monster.species_id)] = int(species.get(String(monster.species_id), 0)) + 1
+		positions.append(bridge.module.monster_for(String(monster.entity_id)).position)
 	_expect(species == {
 		"om_adult": 25,
 		"om_larva": 25,
 		"photosensitive_orb": 25,
 		"toxic_gel": 25,
 	}, "D04 populations should remain entirely data-driven")
+	var bounds := Rect2(positions[0], Vector2.ZERO)
+	var minimum_distance := INF
+	for index in range(positions.size()):
+		bounds = bounds.expand(positions[index])
+		for other_index in range(index):
+			minimum_distance = minf(
+				minimum_distance, positions[index].distance_to(positions[other_index])
+			)
+	_expect(bounds.size.x > 3000.0 and bounds.size.y > 6000.0, "monster spawns should cover the full D04 navigation area")
+	_expect(minimum_distance >= 95.0, "random spawns should retain the configured separation instead of clustering")
 	_expect(snapshot.local_vehicle.health == 70 and snapshot.local_vehicle.max_health == 70, "starter chassis should own 70 health")
 	_expect(
 		is_equal_approx(snapshot.local_vehicle.working_energy, 100.0)
