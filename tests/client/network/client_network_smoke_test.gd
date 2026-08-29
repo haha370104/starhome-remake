@@ -21,6 +21,7 @@ func _init() -> void:
 	_test_destination_prediction_does_not_rewind_on_ack()
 	_test_remote_interpolation()
 	_test_heterogeneous_combat_events_do_not_drop_world_state()
+	_test_mining_wire_projection()
 	call_deferred("_test_session_integration")
 
 
@@ -181,6 +182,13 @@ func _test_heterogeneous_combat_events_do_not_drop_world_state() -> void:
 			"alive": true,
 		}],
 		"ground_loot": [],
+		"mine_sources": [{
+			"source_id": "field.mine.1",
+			"mineral_id": "iron_ore",
+			"position": [300.0, 400.0],
+			"remaining": 50,
+			"capacity": 50,
+		}],
 		"recent_events": [
 			{"event_id": 1, "event_type": &"self_repair_started", "actor_id": "player.test"},
 			{"event_id": 2, "event_type": &"loot_picked_up", "loot_id": "loot.test"},
@@ -191,6 +199,38 @@ func _test_heterogeneous_combat_events_do_not_drop_world_state() -> void:
 	combat_snapshot["vehicle_combat_active"] = "false"
 	_expect_false(session.call("_is_valid_combat_snapshot", combat_snapshot),
 		"地图战车激活标记必须是布尔值")
+	session.free()
+
+
+## 验证三秒采集结算会同时到达世界事件和背包面板投影。
+func _test_mining_wire_projection() -> void:
+	var session := Session.new()
+	var events: Array[Dictionary] = []
+	var bundles: Array[Dictionary] = []
+	session.mining_collected.connect(
+		func(event: Dictionary, bundle: Dictionary) -> void:
+			events.append(event)
+			bundles.append(bundle)
+	)
+	session.call("_on_server_message_received", {
+		"type": "mining_collected",
+		"result": {
+			"ok": true,
+			"value": {
+				"mining_event": {
+					"event_type": "mining_collected",
+					"source_id": "field.mine.1",
+					"item_definition_id": "iron_ore",
+					"quantity": 1,
+					"remaining": 49,
+				},
+				"panel_bundle": {"inventory": {"slots": []}},
+			},
+		},
+	})
+	_expect_equal(events.size(), 1, "采矿成功消息应投影一次世界事件")
+	_expect_equal(events[0].get("remaining"), 49, "采矿事件应保留权威剩余量")
+	_expect_equal(bundles.size(), 1, "采矿成功消息应同步一次背包面板")
 	session.free()
 
 

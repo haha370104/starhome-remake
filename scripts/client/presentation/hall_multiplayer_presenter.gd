@@ -90,6 +90,7 @@ func start(settings: Dictionary) -> Error:
 	session.combat_snapshot_received.connect(combat_snapshot_received.emit)
 	session.combat_event_received.connect(combat_event_received.emit)
 	session.loot_picked_up.connect(_on_loot_picked_up)
+	session.mining_collected.connect(_on_mining_collected)
 	session.player_panel_bundle_received.connect(player_panel_bundle_received.emit)
 	session.skill_level_up_received.connect(skill_level_up_received.emit)
 	session.vehicle_recovery_scheduled.connect(vehicle_recovery_scheduled.emit)
@@ -254,6 +255,12 @@ func _on_remote_entity_removed(entity_id: StringName) -> void:
 ## [param panel_bundle] 完成入包和持久化后的三面板快照。
 ## 设计：世界表现和面板各消费自己的投影，但共享一次服务端事务结果。
 func _on_loot_picked_up(event: Dictionary, panel_bundle: Dictionary) -> void:
+	combat_event_received.emit(event.duplicate(true))
+	player_panel_bundle_received.emit(panel_bundle.duplicate(true))
+
+
+## 将采集结算同时投影到世界提示与三面板背包快照。
+func _on_mining_collected(event: Dictionary, panel_bundle: Dictionary) -> void:
 	combat_event_received.emit(event.duplicate(true))
 	player_panel_bundle_received.emit(panel_bundle.duplicate(true))
 

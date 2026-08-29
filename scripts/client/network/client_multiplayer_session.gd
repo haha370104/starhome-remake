@@ -30,6 +30,7 @@ signal combat_snapshot_received(snapshot: Dictionary)
 signal combat_event_received(event: Dictionary)
 signal player_panel_bundle_received(bundle: Dictionary)
 signal loot_picked_up(event: Dictionary, panel_bundle: Dictionary)
+signal mining_collected(event: Dictionary, panel_bundle: Dictionary)
 signal skill_level_up_received(event: Dictionary)
 signal vehicle_recovery_scheduled(delay_seconds: float)
 signal vehicle_recovery_failed(code: StringName, message: String)
@@ -489,6 +490,16 @@ func _on_server_message_received(message: Dictionary) -> void:
 				(value.get("panel_bundle", {}) as Dictionary).duplicate(true),
 			)
 		return
+	if message_type == &"mining_collected":
+		var mining_result: Dictionary = message.get("result", {})
+		var mining_value: Variant = mining_result.get("value")
+		if bool(mining_result.get("ok", false)) and mining_value is Dictionary:
+			var value: Dictionary = mining_value
+			mining_collected.emit(
+				(value.get("mining_event", {}) as Dictionary).duplicate(true),
+				(value.get("panel_bundle", {}) as Dictionary).duplicate(true),
+			)
+		return
 	if message_type == &"player_panels":
 		var panels_result: Dictionary = message.get("result", {})
 		var panels_value: Variant = panels_result.get("value")
@@ -540,6 +551,7 @@ func _is_valid_combat_snapshot(snapshot: Dictionary) -> bool:
 		or not snapshot.get("local_vehicle") is Dictionary \
 		or not snapshot.get("monsters") is Array \
 		or not snapshot.get("ground_loot", []) is Array \
+		or not snapshot.get("mine_sources", []) is Array \
 		or not snapshot.get("recent_events") is Array:
 		return false
 	for raw_monster: Variant in snapshot["monsters"]:
@@ -561,7 +573,18 @@ func _is_valid_combat_snapshot(snapshot: Dictionary) -> bool:
 		var event: Dictionary = raw_event
 		var event_type_kind := typeof(event.get("event_type"))
 		if typeof(event.get("event_id")) != TYPE_INT \
-			or event_type_kind not in [TYPE_STRING, TYPE_STRING_NAME]:
+				or event_type_kind not in [TYPE_STRING, TYPE_STRING_NAME]:
+			return false
+	for raw_source: Variant in snapshot.get("mine_sources", []):
+		if not raw_source is Dictionary:
+			return false
+		var source: Dictionary = raw_source
+		if typeof(source.get("source_id")) != TYPE_STRING \
+				or typeof(source.get("mineral_id")) != TYPE_STRING \
+				or typeof(source.get("position")) != TYPE_ARRAY \
+				or (source["position"] as Array).size() != 2 \
+				or typeof(source.get("remaining")) != TYPE_INT \
+				or typeof(source.get("capacity")) != TYPE_INT:
 			return false
 	return true
 

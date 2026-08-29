@@ -2,6 +2,7 @@ extends Node2D
 
 const CHARACTER_CATALOG_PATH := "res://assets/characters/character_atlases.json"
 const COMBAT_VISUAL_MANIFEST_PATH := "res://assets/equipment_world/combat_visual_manifest.json"
+const MINING_VISUAL_MANIFEST_PATH := "res://assets/minerals/mining_asset_manifest.json"
 const NPC_CONFIG_PATH := "res://data/npcs/yian_harbor_hall_floor_1.json"
 const MAP_DEFINITION_PATH := "res://data/maps/yian_harbor_hall_floor_1.json"
 const MAP_DIRECTORY_PATH := "res://data/maps/map_directory.json"
@@ -32,6 +33,9 @@ const MonsterWorldControllerScript := preload(
 )
 const GroundLootWorldControllerScript := preload(
 	"res://scripts/client/presentation/combat/ground_loot_world_controller.gd"
+)
+const MineralWorldControllerScript := preload(
+	"res://scripts/client/presentation/mining/mineral_world_controller.gd"
 )
 const SelfRepairVisualControllerScript := preload(
 	"res://scripts/client/presentation/combat/self_repair_visual_controller.gd"
@@ -170,6 +174,7 @@ var combat_attack_controller: Node
 var combat_attack_controllers: Dictionary = {}
 var monster_world_controller: MonsterWorldController
 var ground_loot_world_controller: GroundLootWorldController
+var mineral_world_controller: MineralWorldController
 var self_repair_visual_controller: SelfRepairVisualController
 var game_window_manager: GameWindowManager
 var item_catalog: ItemCatalog
@@ -310,6 +315,17 @@ func _handle_world_combat_left_click(world_position: Vector2) -> void:
 		var loot_id := ground_loot_world_controller.loot_at(world_position)
 		if not loot_id.is_empty():
 			_request_ground_loot_pickup(loot_id)
+			return
+	if mineral_world_controller != null:
+		var source_id := mineral_world_controller.source_at(world_position)
+		if not source_id.is_empty():
+			var source_position := mineral_world_controller.source_position(source_id)
+			if multiplayer_presenter.request_use_ability(
+				"mining.collect", source_position
+			).is_empty():
+				hint_label.text = "采矿请求发送失败"
+			else:
+				hint_label.text = "正在准备采矿"
 			return
 	var selected_mode := String(hud.state.selected_action_slot)
 	var mode: Dictionary = WEAPON_MODES.get(selected_mode, {})
@@ -602,6 +618,21 @@ func _build_world() -> void:
 			push_error("Unable to configure ground loot presentation: %s" % error_string(loot_error))
 	else:
 		push_error("Unable to load shared item catalog: %s" % item_catalog_result.error_message)
+	var mining_manifest_value: Variant = JSON.parse_string(
+		FileAccess.get_file_as_string(MINING_VISUAL_MANIFEST_PATH)
+	)
+	if mining_manifest_value is Dictionary:
+		mineral_world_controller = MineralWorldControllerScript.new()
+		mineral_world_controller.name = "MineralWorldController"
+		add_child(mineral_world_controller)
+		var mining_error := mineral_world_controller.configure(
+			sortable_world,
+			mining_manifest_value,
+		)
+		if mining_error != OK:
+			push_error("Unable to configure mineral presentation: %s" % error_string(mining_error))
+	else:
+		push_error("Unable to load mineral presentation manifest")
 
 	local_player_controller = LocalPlayerControllerScript.new()
 	local_player_controller.name = "LocalPlayerController"
@@ -805,6 +836,8 @@ func _on_active_world_will_replace() -> void:
 		controller.clear_effects()
 	if monster_world_controller != null:
 		monster_world_controller.clear()
+	if mineral_world_controller != null:
+		mineral_world_controller.clear()
 
 
 ## 在玩家停步后查找触发半径内最近的内部出口，并先预载其目标地图。
@@ -986,6 +1019,8 @@ func _on_combat_snapshot_received(snapshot: Dictionary) -> void:
 	monster_world_controller.apply_snapshot(snapshot)
 	if ground_loot_world_controller != null:
 		ground_loot_world_controller.apply_snapshot(snapshot)
+	if mineral_world_controller != null:
+		mineral_world_controller.apply_snapshot(snapshot)
 	var vehicle: Variant = snapshot.get("local_vehicle", {})
 	if vehicle is Dictionary:
 		player.set_combat_status(vehicle)
@@ -1038,6 +1073,14 @@ func _on_combat_event_received(event: Dictionary) -> void:
 		if ground_loot_world_controller != null:
 			ground_loot_world_controller.remove_loot(String(event.get("loot_id", "")))
 		hint_label.text = "拾取了 %d 个物品" % int(event.get("quantity", 1))
+	elif event_type == &"mining_started":
+		hint_label.text = "开始采矿，每3秒采集一次"
+	elif event_type == &"mining_collected":
+		hint_label.text = "采集到%s × %d（矿点剩余%d）" % [
+			String(event.get("display_name", "矿物")),
+			int(event.get("quantity", 1)),
+			int(event.get("remaining", 0)),
+		]
 	elif event_type in [&"energy_cannon_hit", &"rocket_launcher_hit", &"missile_hit"]:
 		hint_label.text = "命中目标，造成%d点伤害（剩余%d）" % [
 			int(event.get("damage", 0)),
