@@ -166,4 +166,10 @@ if ($LASTEXITCODE -ne 0) {
     throw "Ground-loot presentation asset audit failed"
 }
 
+Write-Output "Auditing Glory self-repair presentation assets"
+& python (Join-Path $PSScriptRoot "import_glory_self_repair_assets.py")
+if ($LASTEXITCODE -ne 0) {
+    throw "Self-repair presentation asset audit failed"
+}
+
 Write-Output "All project checks passed."
