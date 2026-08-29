@@ -333,6 +333,9 @@ func _replenish_monster_population_if_due() -> void:
 	_monster_spawn_sequence += generated.value.size()
 
 
+## 为下一只怪物选择与存活实体保持配置间距的权威出生点。
+## [param spawn_sequence] 用于确定性随机采样的全局生成序号。
+## 返回可用出生坐标；地图没有候选点时返回无穷坐标。
 func _random_monster_spawn_position(spawn_sequence: int) -> Vector2:
 	var occupied: Array[Vector2] = []
 	if combat_module != null:

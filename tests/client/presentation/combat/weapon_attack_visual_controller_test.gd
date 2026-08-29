@@ -74,6 +74,10 @@ func _test_fire_lifecycle(controller: Node) -> void:
 	)
 
 
+## 验证火箭最小射程、范围爆炸和导弹追踪表现契约。
+## [param controller] 本次测试复用的武器表现控制器。
+## [param world_parent] 承载测试特效节点的二维世界根节点。
+## [param manifest] 包含荣耀版副武器配置的表现清单。
 func _test_secondary_weapons(controller: Node, world_parent: Node2D, manifest: Dictionary) -> void:
 	_expect(
 		controller.configure(manifest, world_parent, &"starter_rocket_launcher") == OK,
@@ -117,6 +121,8 @@ func _test_secondary_weapons(controller: Node, world_parent: Node2D, manifest: D
 	controller.clear_effects()
 
 
+## 解析导弹测试过程中可动态修改的追踪目标。
+## 返回当前测试目标的世界坐标。
 func _tracked_target_position() -> Vector2:
 	return tracked_target
 

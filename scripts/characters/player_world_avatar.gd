@@ -160,6 +160,8 @@ func clear_combat_layer_action(layer_id: StringName) -> void:
 		combat_presenter.clear_layer_action(layer_id)
 
 
+## 切换当前战斗形态中唯一可见的武器表现图层。
+## [param layer_id] 需要显示的主炮、火箭或导弹图层业务标识。
 func set_combat_weapon_layer(layer_id: StringName) -> void:
 	_combat_weapon_layer = layer_id
 	if combat_presenter == null:

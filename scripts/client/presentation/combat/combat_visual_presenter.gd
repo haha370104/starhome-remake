@@ -148,6 +148,10 @@ func clear_layer_direction(layer_id: StringName) -> void:
 	_apply_pose()
 
 
+## 设置指定角色合成图层的可见性覆盖值。
+## [param layer_id] 需要控制的业务图层标识。
+## [param visible] 是否显示该图层。
+## 返回图层存在且成功更新时为真。
 func set_layer_visible(layer_id: StringName, visible: bool) -> bool:
 	var sprite := _layers.get(layer_id) as AnimatedSprite2D
 	if sprite == null:

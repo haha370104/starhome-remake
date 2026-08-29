@@ -73,6 +73,7 @@ func set_visual_collision_resolver(resolver: Callable) -> void:
 ## 执行 `request_fire` 对应的模块操作。
 ## [param origin] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## [param requested_target] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param tracking_target_resolver] 可选的导弹目标实时坐标解析器。
 ## 返回该函数计算、查询或操作得到的结果。
 ## 设计：超出武器表现射程的点击会被钳制到射程边缘；伤害与命中仍必须由服务端裁决。
 func request_fire(
@@ -153,6 +154,8 @@ func active_impact_count() -> int:
 	return _impacts.size()
 
 
+## 查询当前仍在播放的炮口特效数量。
+## 返回活动炮口特效的数量。
 func active_muzzle_count() -> int:
 	return _muzzles.size()
 
@@ -191,6 +194,9 @@ func _is_valid_weapon(weapon: Dictionary) -> bool:
 	)
 
 
+## 校验允许为空的可选武器特效配置。
+## [param effect_value] 待校验的特效配置值。
+## 返回配置为空或满足标准特效契约时为真。
 func _is_valid_optional_effect(effect_value: Variant) -> bool:
 	return (
 		effect_value is Dictionary
@@ -226,6 +232,7 @@ func _load_frames(resource_path: String) -> SpriteFrames:
 ## 执行 `spawn_projectile` 对应的模块操作。
 ## [param origin] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## [param target] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param tracking_target_resolver] 导弹飞行期间用于刷新目标坐标的解析器。
 func _spawn_projectile(
 	origin: Vector2,
 	target: Vector2,
@@ -248,6 +255,8 @@ func _spawn_projectile(
 	})
 
 
+## 在指定世界坐标创建一次可选炮口动画。
+## [param position] 炮口特效的世界坐标。
 func _spawn_muzzle(position: Vector2) -> void:
 	if _muzzle_frames == null:
 		return
@@ -319,6 +328,10 @@ func _advance_projectiles(delta_seconds: float) -> void:
 		_projectiles.remove_at(index)
 
 
+## 推进一枚追踪弹体，并在抵达或超时后生成命中特效。
+## [param index] 弹体在活动数组中的索引。
+## [param state] 该弹体的可变表现状态。
+## [param delta_seconds] 本帧经过的秒数。
 func _advance_homing_projectile(index: int, state: Dictionary, delta_seconds: float) -> void:
 	state["elapsed"] = float(state["elapsed"]) + delta_seconds
 	var resolver: Callable = state["tracking_target_resolver"]
@@ -377,6 +390,9 @@ func _advance_impacts(delta_seconds: float) -> void:
 				sprite.frame = frame
 
 
+## 推进一组按持续时间自动销毁的瞬态特效。
+## [param states] 待推进的特效状态数组。
+## [param delta_seconds] 本帧经过的秒数。
 func _advance_timed_effects(states: Array[Dictionary], delta_seconds: float) -> void:
 	for index in range(states.size() - 1, -1, -1):
 		var state: Dictionary = states[index]

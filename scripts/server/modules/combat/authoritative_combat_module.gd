@@ -195,6 +195,9 @@ func handle_energy_cannon_attack(actor_id: String, raw_intent: Variant) -> Domai
 
 
 ## 处理能量炮、火箭炮与导弹的统一权威武器意图。
+## [param actor_id] 发起攻击且已通过会话鉴权的玩家实体标识。
+## [param raw_intent] 未经信任的能力使用意图字典。
+## 返回包含拒绝原因或已排程攻击事件的领域结果。
 func handle_weapon_attack(actor_id: String, raw_intent: Variant) -> DomainResult:
 	if not actors.has(actor_id):
 		return DomainResult.failure(&"combat.unknown_actor", "authenticated actor is not registered")
@@ -289,6 +292,10 @@ func handle_weapon_attack(actor_id: String, raw_intent: Variant) -> DomainResult
 
 
 ## 从点击点附近选择最近存活怪物，作为服务器认可的导弹锁定目标。
+## [param map_instance_id] 攻击者当前所在的权威地图实例标识。
+## [param point] 客户端请求锁定的世界坐标。
+## [param selection_radius] 允许从点击点吸附目标的最大半径。
+## 返回命中状态、目标实体及距离信息。
 func _nearest_target_to_point(
 	map_instance_id: String,
 	point: Vector2,
@@ -492,6 +499,7 @@ func _settle_projectile(projectile: Dictionary) -> void:
 
 
 ## 在火箭抵达落点时一次结算范围内的全部存活怪物。
+## [param projectile] 包含武器定义、落点和攻击者信息的权威弹体状态。
 func _settle_rocket_projectile(projectile: Dictionary) -> void:
 	var weapon: Dictionary = projectile["weapon"]
 	var impact_position: Vector2 = projectile["impact_position"]

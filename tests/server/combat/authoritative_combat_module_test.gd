@@ -528,6 +528,12 @@ func _test_secondary_weapon_modes() -> void:
 	_expect(module.monster_for("monster.aoe").health == 26, "rocket should damage every monster inside the configured area")
 
 
+## 构造供权威战斗模块测试使用的最小副武器定义。
+## [param skill_id] 武器关联的技能标识。
+## [param mode] 火箭或导弹攻击模式。
+## [param damage] 固定测试伤害。
+## [param speed] 权威弹体每刻移动速度。
+## 返回满足注册契约的副武器定义。
 func _secondary_weapon(skill_id: String, mode: StringName, damage: int, speed: float) -> Dictionary:
 	return {
 		"ability_id": "%s.primary" % skill_id,
@@ -548,6 +554,11 @@ func _secondary_weapon(skill_id: String, mode: StringName, damage: int, speed: f
 	}
 
 
+## 构造指向当前测试地图的合法能力使用意图。
+## [param ability_id] 需要触发的能力标识。
+## [param point] 玩家请求瞄准的世界坐标。
+## [param sequence] 单调递增的输入序号。
+## 返回可提交给权威战斗模块的协议字典。
 func _ability_intent(ability_id: String, point: Vector2, sequence: int) -> Dictionary:
 	return UseAbilityIntentContract.new(MAP_INSTANCE_ID, ability_id, point, sequence).to_dictionary()
 

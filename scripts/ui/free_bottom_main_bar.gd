@@ -132,6 +132,7 @@ func _build_reserve_energy(definition: Dictionary) -> void:
 ## 执行 `build_weapon_button` 对应的模块操作。
 ## [param action_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## [param definition] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 返回已按免费版布局创建但尚未加入父节点的武器按钮。
 func _build_weapon_button(
 	action_id: String,
 	definition: Dictionary
@@ -146,6 +147,8 @@ func _build_weapon_button(
 
 
 ## 依据 Location 13 的权威装备动态创建或清空唯一战术按钮。
+## [param action_id] 当前战术装备对应的操作标识，空值表示卸下。
+## [param count] 该战术物品的权威可用数量。
 func _update_tactical_action(action_id: String, count: int) -> void:
 	if tactical_button != null:
 		weapon_buttons.erase(String(tactical_button.name).to_snake_case())

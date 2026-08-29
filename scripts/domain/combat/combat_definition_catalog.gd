@@ -139,6 +139,8 @@ func starter_energy_cannon(simulation_hz: int) -> DomainResult:
 
 
 ## 规范化荣耀版初级火箭和初级导弹定义，供同一权威武器状态机消费。
+## [param simulation_hz] 权威服务器每秒模拟刻数。
+## 返回成功时携带两种副武器定义的领域结果。
 func starter_secondary_weapons(simulation_hz: int) -> DomainResult:
 	if simulation_hz <= 0:
 		return DomainResult.failure(&"combat.invalid_simulation_hz", "simulation frequency must be positive")
@@ -284,7 +286,7 @@ func monster_replenishment_for_map(
 ## [param group] 含物种和目标权重的生成组。
 ## [param map_instance_id] 新怪物所属权威地图实例。
 ## [param sequence] 新怪物的全局生成序号。
-## [param species_count] 该物种在生成本只前的数量。
+## [param _species_count] 该物种在生成本只前的数量，预留给后续密度规则。
 ## 返回包含数值、AI、掉落和确定性生成位置的完整定义。
 ## 设计：目录只生成领域数据，不直接创建运行时怪物对象。
 func _monster_lifecycle_definition(
@@ -330,6 +332,8 @@ func _monster_lifecycle_definition(
 			}
 
 
+## 读取 D04 遭遇配置中的怪物种群维持策略。
+## 返回可安全读取的种群策略字典。
 func _monster_population_policy() -> Dictionary:
 	return _d04_encounter.get("population_policy", {}) as Dictionary
 

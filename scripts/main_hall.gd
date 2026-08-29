@@ -329,6 +329,9 @@ func _handle_world_combat_left_click(world_position: Vector2) -> void:
 	_restore_locomotion_after_attack(was_moving, layer_id)
 
 
+## 查询战斗目标在当前客户端快照中的世界坐标。
+## [param target_entity_id] 需要跟踪的权威实体标识。
+## 返回目标坐标；目标不可见时返回无穷坐标。
 func _combat_target_position(target_entity_id: String) -> Vector2:
 	return monster_world_controller.target_position(target_entity_id) \
 		if monster_world_controller != null else Vector2.INF
@@ -391,6 +394,7 @@ func _request_self_repair() -> void:
 
 ## 在短促炮口动作结束后恢复开火前的移动状态。
 ## [param was_moving] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param layer_id] 本次开火临时切换动作的武器图层标识。
 ## 设计：等待期间若路线自然结束则恢复站立；仍在移动时从当前路径段重算朝向。
 func _restore_locomotion_after_attack(was_moving: bool, layer_id: StringName) -> void:
 	await get_tree().create_timer(0.16).timeout
@@ -1044,6 +1048,8 @@ func _on_hud_action_requested(action_id: String) -> void:
 		}.get(action_id, action_id)
 
 
+## 响应底栏武器槽选择并切换玩家战车的可见武器图层。
+## [param slot_id] 被选中的底栏武器槽标识。
 func _on_weapon_slot_selected(slot_id: String) -> void:
 	var mode: Dictionary = WEAPON_MODES.get(slot_id, {})
 	if player != null and not mode.is_empty():

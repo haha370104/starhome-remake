@@ -11,6 +11,7 @@ var _elapsed := 0.0
 var _active := false
 
 
+## 构建位于视口中央上方的系统消息标签并初始化队列状态。
 func configure() -> void:
 	name = "CentralSystemMessageFeed"
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -31,7 +32,8 @@ func configure() -> void:
 	set_process(false)
 
 
-## Enqueues one authoritative system message. Messages never overwrite each other.
+## 将一条权威系统消息加入串行展示队列，保证消息不会彼此覆盖。
+## [param message] 需要展示的非空中文系统消息。
 func show_message(message: String) -> void:
 	if message.is_empty():
 		return
@@ -40,11 +42,14 @@ func show_message(message: String) -> void:
 		_begin_next_message()
 
 
+## 按渲染帧推进当前系统消息的停留和上浮表现。
+## [param delta] 本帧经过的秒数。
 func _process(delta: float) -> void:
 	advance(delta)
 
 
-## Advances the presentation state; public so deterministic headless tests need no timers.
+## 显式推进消息表现状态，供运行时和确定性无头测试共同使用。
+## [param delta] 需要推进的秒数。
 func advance(delta: float) -> void:
 	if not _active or delta <= 0.0:
 		return
@@ -59,14 +64,19 @@ func advance(delta: float) -> void:
 		_begin_next_message()
 
 
+## 查询尚未开始展示的系统消息数量。
+## 返回等待队列中的消息数量。
 func queued_message_count() -> int:
 	return _queue.size()
 
 
+## 查询当前是否正在展示一条系统消息。
+## 返回存在活动消息时为真。
 func is_presenting() -> bool:
 	return _active
 
 
+## 从队列取出下一条消息并重置其停留与上浮状态。
 func _begin_next_message() -> void:
 	if _queue.is_empty():
 		message_label.visible = false
@@ -82,6 +92,8 @@ func _begin_next_message() -> void:
 	set_process(true)
 
 
+## 根据归一化上浮进度更新标签位置和透明度。
+## [param progress] 取值零到一的上浮淡出进度。
 func _apply_progress(progress: float) -> void:
 	var viewport_size := size
 	message_label.position = Vector2(

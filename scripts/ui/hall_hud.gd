@@ -129,6 +129,8 @@ func set_reserve_energy(current: float, capacity: float) -> void:
 
 
 ## 用战车 Location 13 的实际装备刷新唯一战术操作槽。
+## [param action_id] 当前战术装备对应的操作标识。
+## [param count] 该战术物品的权威可用数量；负数表示不显示数量。
 func set_tactical_action(action_id: String, count := -1) -> void:
 	state.set_tactical_action(action_id, count)
 

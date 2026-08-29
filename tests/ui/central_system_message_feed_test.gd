@@ -3,6 +3,7 @@ extends SceneTree
 const Feed := preload("res://scripts/ui/central_system_message_feed.gd")
 
 
+## 验证系统消息按顺序停留、上浮淡出且不会互相覆盖。
 func _initialize() -> void:
 	var feed := Feed.new()
 	root.add_child(feed)
