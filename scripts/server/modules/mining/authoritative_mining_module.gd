@@ -24,6 +24,7 @@ var _ready_cycles: Array[Dictionary] = []
 var _spawn_sequence := 0
 var _cycle_sequence := 0
 var _next_replenishment_tick := -1
+var _last_command_sequences: Dictionary = {}
 
 
 ## 为一张地图建立服务端矿源种群；非采矿地图保持禁用但不报错。
@@ -60,11 +61,15 @@ func begin_collection(
 	actor_position: Vector2,
 	aim_world_position: Vector2,
 	mining_level: int,
+	command_sequence: int,
 ) -> DomainResult:
 	if _policy.is_empty():
 		return DomainResult.failure(&"mining.not_available", "this map has no mineral population")
 	if actor_id.is_empty() or not actor_position.is_finite() or not aim_world_position.is_finite():
 		return DomainResult.failure(&"mining.invalid_request", "mining request identity or position is invalid")
+	if command_sequence <= int(_last_command_sequences.get(actor_id, 0)):
+		return DomainResult.failure(&"mining.stale_command", "mining command sequence is stale")
+	_last_command_sequences[actor_id] = command_sequence
 	var source: Variant = _source_at(aim_world_position)
 	if source == null:
 		return DomainResult.failure(&"mining.source_missing", "no mine source was selected")
@@ -95,6 +100,12 @@ func interrupt(actor_id: String, reason: StringName) -> bool:
 		if String(_pending_cycles[token].get("actor_id", "")) == actor_id:
 			_pending_cycles.erase(token)
 	return true
+
+
+## 玩家离开实例时清理动作和序号状态。
+func unregister_actor(actor_id: String) -> void:
+	interrupt(actor_id, &"map_exit")
+	_last_command_sequences.erase(actor_id)
 
 
 ## 按服务器固定 tick 推进采矿周期与五分钟补点计时。

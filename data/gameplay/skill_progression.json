@@ -9,7 +9,8 @@
       "rocket_launcher": 1.0
     },
     "driving_experience_unit": 10000.0,
-    "driving_weight_cap": 1000.0
+    "driving_weight_cap": 1000.0,
+    "mining_iron_equivalent_per_level": 25.0
   },
   "comprehensive_level": {
     "base_level": 10,

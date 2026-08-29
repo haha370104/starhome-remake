@@ -14,6 +14,10 @@ const VehicleRecoveryIntentContract := preload(
 )
 const TransportEndpointScript := preload("res://scripts/network/transport/network_transport_endpoint.gd")
 const CombatCatalogScript := preload("res://scripts/domain/combat/combat_definition_catalog.gd")
+const MiningCatalogScript := preload("res://scripts/domain/mining/mining_catalog.gd")
+const MiningModuleScript := preload(
+	"res://scripts/server/modules/mining/authoritative_mining_module.gd"
+)
 const PlayerStateRecordScript := preload("res://scripts/server/persistence/player_state_record.gd")
 const FilePlayerStateRepositoryScript := preload("res://scripts/server/persistence/file_player_state_repository.gd")
 const AutosaveServiceScript := preload("res://scripts/server/persistence/authoritative_autosave_service.gd")
@@ -43,6 +47,7 @@ var _next_entity_number := 1
 var _network_started := false
 var _transport_endpoint: NetworkTransportEndpoint
 var _combat_catalog
+var _mining_catalog
 var player_state_repository: PlayerStateRepository
 var autosave_service: AuthoritativeAutosaveService
 var player_panel_service: AuthoritativePlayerPanelService
@@ -102,6 +107,10 @@ func initialize(
 	if not combat_catalog_result.is_ok:
 		return _failure(combat_catalog_result.error_code, combat_catalog_result.error_message)
 	_combat_catalog = combat_catalog_result.value
+	var mining_catalog_result = MiningCatalogScript.load_default()
+	if not mining_catalog_result.is_ok:
+		return _failure(mining_catalog_result.error_code, mining_catalog_result.error_message)
+	_mining_catalog = mining_catalog_result.value
 	if injected_map_instances.is_empty():
 		var load_result := _load_configured_map_instances()
 		if not load_result.ok:
@@ -109,6 +118,11 @@ func initialize(
 	else:
 		for injected_instance: AuthoritativeMapInstance in injected_map_instances:
 			_configure_map_instance(injected_instance)
+			var mining_result := injected_instance.configure_mining(
+				_mining_catalog, config.simulation_hz
+			)
+			if not mining_result.ok:
+				return mining_result
 			var registration := map_registry.register_instance(injected_instance)
 			if not registration.ok:
 				return registration
@@ -198,6 +212,7 @@ func advance_simulation(elapsed_seconds: float, now_msec := -1) -> void:
 		server_tick += 1
 		for registered_instance: AuthoritativeMapInstance in map_registry.all_instances():
 			registered_instance.simulate(fixed_delta)
+			_settle_mining_cycles(registered_instance)
 			for progression_event: Dictionary in registered_instance.drain_skill_progression_events():
 				_apply_skill_progression_event(progression_event)
 		_complete_due_vehicle_recoveries()
@@ -318,16 +333,21 @@ func handle_peer_use_ability(peer_id: int, intent: Dictionary) -> Dictionary:
 	if current_instance == null:
 		return _failure(&"session_map_unavailable", "session map is not registered")
 	var authoritative_context: Dictionary = {}
-	if String(intent.get("ability_id", "")) == AuthoritativeCombatModule.SELF_REPAIR_ABILITY_ID:
+	var ability_id := String(intent.get("ability_id", ""))
+	if ability_id in [AuthoritativeCombatModule.SELF_REPAIR_ABILITY_ID, MiningModuleScript.COLLECT_ABILITY_ID]:
 		if autosave_service == null:
-			return _failure(&"combat.persistence_required", "self-repair requires authoritative player state")
+			return _failure(&"ability.persistence_required", "ability requires authoritative player state")
 		var current := autosave_service.state_for(session.entity_id)
 		if current == null:
-			return _failure(&"combat.player_state_missing", "self-repair player state is unavailable")
-		var repair_state: Variant = current.character_skills.get("repair", {})
-		if not repair_state is Dictionary:
-			return _failure(&"combat.repair_skill_missing", "repair skill state is invalid")
-		authoritative_context["repair_skill_level"] = maxi(0, int(repair_state.get("level", 0)))
+			return _failure(&"ability.player_state_missing", "ability player state is unavailable")
+		var skill_id := "repair" if ability_id == AuthoritativeCombatModule.SELF_REPAIR_ABILITY_ID \
+			else "mining"
+		var skill_state: Variant = current.character_skills.get(skill_id, {})
+		if not skill_state is Dictionary:
+			return _failure(&"ability.skill_missing", "%s skill state is invalid" % skill_id)
+		authoritative_context["%s_skill_level" % skill_id] = maxi(
+			0, int(skill_state.get("level", 0))
+		)
 	var result: Dictionary = current_instance.handle_use_ability(
 		session.entity_id, intent, authoritative_context
 	)
@@ -659,6 +679,68 @@ func _apply_skill_progression_event(progression_event: Dictionary) -> void:
 				"type": "player_panels",
 				"result": _wire_result(_success(player_panel_service.build_bundle(stored.value))),
 			})
+
+
+## 将地图到期的采矿周期原子地写入背包，再扣除矿源储量并发放采矿经验。
+func _settle_mining_cycles(instance: AuthoritativeMapInstance) -> void:
+	if instance == null or autosave_service == null or player_panel_service == null:
+		return
+	for cycle: Dictionary in instance.drain_mining_cycles():
+		var token := String(cycle.get("token", ""))
+		var entity_id := String(cycle.get("actor_id", ""))
+		var current := autosave_service.state_for(entity_id)
+		if token.is_empty() or current == null:
+			instance.reject_mining_cycle(token)
+			continue
+		var granted := player_panel_service.grant_loot(current, {
+			"loot_id": token,
+			"item_definition_id": String(cycle.get("item_definition_id", "")),
+			"quantity": int(cycle.get("quantity", 0)),
+		})
+		if not granted.is_ok:
+			instance.reject_mining_cycle(token)
+			_send_mining_rejection(entity_id, granted.error_code, granted.error_message)
+			continue
+		var grant_value: Dictionary = granted.value
+		var stored := autosave_service.commit_player_state(entity_id, grant_value["candidate"])
+		if not stored.is_ok:
+			instance.reject_mining_cycle(token)
+			_send_mining_rejection(entity_id, stored.error_code, stored.error_message)
+			continue
+		var committed = instance.commit_mining_cycle(token)
+		if not committed.is_ok:
+			push_error("Mining source commit failed after inventory commit: %s" % committed.error_message)
+			continue
+		var event: Dictionary = committed.value
+		_apply_skill_progression_event({
+			"entity_id": entity_id,
+			"source": "mined_material",
+			"skill_id": "mining",
+			"quantity": int(event["quantity"]),
+			"experience_coefficient": float(event["experience_coefficient"]),
+		})
+		var session := sessions.session_for_entity(entity_id)
+		if session != null and session.has_active_peer():
+			_send_reliable(session.peer_id, {
+				"type": "mining_collected",
+				"result": _wire_result(_success({
+					"mining_event": event,
+					"panel_bundle": player_panel_service.build_bundle(
+						autosave_service.state_for(entity_id)
+					),
+				})),
+			})
+
+
+## 向仍在线的采矿者报告异步背包/存档拒绝。
+func _send_mining_rejection(entity_id: String, code: StringName, message: String) -> void:
+	var session := sessions.session_for_entity(entity_id)
+	if session == null or not session.has_active_peer():
+		return
+	_send_reliable(session.peer_id, {
+		"type": "command_rejected",
+		"result": _wire_result(_failure(code, message)),
+	})
 
 
 ## 处理玩家对地面掉落物的拾取请求并原子写入持久化背包。
@@ -1214,6 +1296,12 @@ func _load_configured_map_instances() -> Dictionary:
 			return _failure(
 				&"map_combat_load_failed",
 				"%s: %s" % [definition_path, combat_result.get("message", "unknown combat error")],
+			)
+		var mining_result := loaded_instance.configure_mining(_mining_catalog, config.simulation_hz)
+		if not mining_result.ok:
+			return _failure(
+				&"map_mining_load_failed",
+				"%s: %s" % [definition_path, mining_result.get("message", "unknown mining error")],
 			)
 		var registration := map_registry.register_instance(loaded_instance)
 		if not registration.ok:

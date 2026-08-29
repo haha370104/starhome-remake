@@ -45,7 +45,7 @@ func _test_three_second_collection_and_capacity() -> void:
 	var module = _module(catalog, "d04_field_zone", "d04.collection.test")
 	var source = module.sources.values()[0]
 	var actor_position: Vector2 = source.position + Vector2(40.0, 0.0)
-	var started: Variant = module.begin_collection("player.1", actor_position, source.position, 10)
+	var started: Variant = module.begin_collection("player.1", actor_position, source.position, 10, 1)
 	_expect(started.is_ok and float(started.value["interval_seconds"]) == 3.0, "eligible actor should begin a three-second cycle")
 	module.advance_ticks(59)
 	_expect(module.drain_ready_cycles().is_empty(), "collection must not settle before three seconds at 20 Hz")
@@ -55,8 +55,8 @@ func _test_three_second_collection_and_capacity() -> void:
 	var committed: Variant = module.commit_cycle(String(ready[0]["token"]))
 	_expect(committed.is_ok and int(committed.value["remaining"]) == 49, "successful cycle should remove exactly one of fifty minerals")
 	_expect(not bool(committed.value["depleted"]), "partially consumed mine should remain in the map")
-	_expect(not module.begin_collection("player.low", actor_position, source.position, 9).is_ok, "mining level below the ore requirement should be rejected")
-	_expect(not module.begin_collection("player.far", source.position + Vector2(80, 0), source.position, 10).is_ok, "actor beyond seventy pixels should be rejected")
+	_expect(not module.begin_collection("player.low", actor_position, source.position, 9, 1).is_ok, "mining level below the ore requirement should be rejected")
+	_expect(not module.begin_collection("player.far", source.position + Vector2(80, 0), source.position, 10, 1).is_ok, "actor beyond seventy pixels should be rejected")
 
 
 func _test_five_minute_replenishment() -> void:
@@ -64,7 +64,7 @@ func _test_five_minute_replenishment() -> void:
 	var module = _module(catalog, "d04_field_zone", "d04.replenish.test")
 	var source = module.sources.values()[0]
 	source.remaining = 1
-	var started: Variant = module.begin_collection("player.1", source.position + Vector2(40, 0), source.position, 10)
+	var started: Variant = module.begin_collection("player.1", source.position + Vector2(40, 0), source.position, 10, 1)
 	_expect(started.is_ok, "depletion fixture should start collecting")
 	module.advance_ticks(60)
 	var ready: Array = module.drain_ready_cycles()

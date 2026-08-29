@@ -4,6 +4,7 @@ extends RefCounted
 const DomainResult := preload("res://scripts/core/domain_result.gd")
 const ItemCatalogScript := preload("res://scripts/domain/items/item_catalog.gd")
 const JsonConfigLoader := preload("res://scripts/core/json_config_loader.gd")
+const SkillProgressionScript := preload("res://scripts/domain/skills/skill_progression.gd")
 const PlayerStateMapperScript := preload("res://scripts/server/persistence/player_state_mapper.gd")
 const PlayerPanelProjectorScript := preload(
 	"res://scripts/server/player_panels/player_panel_projector.gd"
@@ -127,13 +128,13 @@ func grant_skill_progression(
 	if state == null or _mapper == null or _projector == null \
 			or _skill_progression_config.is_empty():
 		return DomainResult.failure(&"progression.service_unavailable", "skill progression service is unavailable")
-	var converted := _experience_from_event(progression_event)
-	if not converted.is_ok:
-		return converted
 	var mapped := _mapper.to_domain(state)
 	if not mapped.is_ok:
 		return mapped
 	var player: Player = mapped.value
+	var converted := _experience_from_event(progression_event, player)
+	if not converted.is_ok:
+		return converted
 	var value: Dictionary = converted.value
 	var skill_id := String(value["skill_id"])
 	var before_percent := player.skills.displayed_progress_percent(
@@ -165,7 +166,7 @@ func grant_skill_progression(
 ## [param progression_event] 移动、有效伤害或未来系统显式发放事件。
 ## 返回 skill_id 与非负经验量；格式非法或不产生经验时返回错误。
 ## 设计：所有倍率和驾驶计重参数均来自服务端配置，事件只携带已确认的客观结果。
-func _experience_from_event(progression_event: Dictionary) -> DomainResult:
+func _experience_from_event(progression_event: Dictionary, player: Player = null) -> DomainResult:
 	var source := String(progression_event.get("source", ""))
 	var skill_id := String(progression_event.get("skill_id", ""))
 	var sources: Dictionary = _skill_progression_config.get("experience_sources", {})
@@ -185,6 +186,20 @@ func _experience_from_event(progression_event: Dictionary) -> DomainResult:
 			if distance < 0.0 or weight < 0.0 or weight_cap <= 0.0 or experience_unit <= 0.0:
 				return DomainResult.failure(&"progression.invalid_event", "driving event or configuration is invalid")
 			amount = distance * minf(weight, weight_cap) / experience_unit
+		"mined_material":
+			if skill_id != "mining" or player == null:
+				return DomainResult.failure(&"progression.invalid_event", "mining event targets another skill")
+			var quantity := int(progression_event.get("quantity", 0))
+			var mineral_coefficient := float(progression_event.get("experience_coefficient", 0.0))
+			var equivalents_per_level := float(sources.get("mining_iron_equivalent_per_level", 0.0))
+			var threshold := SkillProgressionScript.get_need_points(
+				&"mining", player.skills.base_level("mining"), _skill_progression_config
+			)
+			if quantity <= 0 or mineral_coefficient <= 0.0 or equivalents_per_level <= 0.0 \
+					or not threshold.is_ok:
+				return DomainResult.failure(&"progression.invalid_event", "mining event or configuration is invalid")
+			amount = float(quantity) * mineral_coefficient * float(threshold.value) \
+				/ equivalents_per_level
 		"authoritative_action":
 			amount = float(progression_event.get("amount", 0.0))
 		_:

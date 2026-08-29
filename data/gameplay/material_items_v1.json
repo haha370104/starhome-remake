@@ -36,6 +36,27 @@
       "display_name": "低级类胶",
       "description": "从毒胶类生物中取得的基础胶质材料。",
       "max_stack": 99
+    },
+    {
+      "id": "iron_ore",
+      "kind": "material",
+      "display_name": "铁矿",
+      "description": "主要成分以金属铁为主，需要提炼才能使用。",
+      "max_stack": 99
+    },
+    {
+      "id": "silicon_ore",
+      "kind": "material",
+      "display_name": "硅矿",
+      "description": "主要成分以固态硅为主，需要提炼才能使用。",
+      "max_stack": 99
+    },
+    {
+      "id": "graphite_ore",
+      "kind": "material",
+      "display_name": "石墨矿",
+      "description": "主要成分以固态石墨为主，需要提炼才能使用。",
+      "max_stack": 99
     }
   ]
 }

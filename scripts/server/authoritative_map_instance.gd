@@ -11,6 +11,10 @@ const EntityScript := preload("res://scripts/server/authoritative_entity.gd")
 const MoveIntentContract := preload("res://scripts/network/contracts/move_intent.gd")
 const ErrorCodes := preload("res://scripts/network/contracts/network_error_codes.gd")
 const CombatModuleScript := preload("res://scripts/server/modules/combat/authoritative_combat_module.gd")
+const MiningModuleScript := preload(
+	"res://scripts/server/modules/mining/authoritative_mining_module.gd"
+)
+const UseAbilityIntentContract := preload("res://scripts/network/contracts/use_ability_intent.gd")
 const DomainResult := preload("res://scripts/core/domain_result.gd")
 
 var definition
@@ -21,6 +25,7 @@ var dynamic_blocking_enabled := true
 var dynamic_blocking_radius := 18.0
 var instance_id := ""
 var combat_module: AuthoritativeCombatModule
+var mining_module
 var _combat_catalog
 var _combat_assembly: Dictionary = {}
 var _combat_weapons: Dictionary = {}
@@ -104,6 +109,18 @@ func configure_combat(catalog, simulation_hz: int) -> Dictionary:
 	return _success(combat_module.monsters.size())
 
 
+## 为当前地图配置独立的权威矿源种群；非野外图得到空模块。
+func configure_mining(catalog, simulation_hz: int) -> Dictionary:
+	if definition == null or navigation == null:
+		return _failure(&"mining.map_not_loaded", "load map navigation before mining")
+	mining_module = MiningModuleScript.new()
+	var configured = mining_module.configure(
+		catalog, String(definition.map_id), instance_id, simulation_hz, navigation
+	)
+	return _success(configured.value) if configured.is_ok \
+		else _failure(configured.error_code, configured.error_message)
+
+
 ## 创建 `spawn_entity` 对应的模块状态。
 ## [param entity_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## [param requested_position] 调用方传入的参数；具体约束由函数签名和所在模块定义。
@@ -164,6 +181,8 @@ func remove_entity(entity_id: String) -> bool:
 	if combat_module != null:
 		combat_module.unregister_vehicle(entity_id)
 	_accepted_movement_distance.erase(entity_id)
+	if mining_module != null:
+		mining_module.unregister_actor(entity_id)
 	return entities.erase(entity_id)
 
 
@@ -176,9 +195,35 @@ func handle_use_ability(
 	raw_intent: Variant,
 	authoritative_context: Dictionary = {},
 ):
+	var ability_id := String(raw_intent.get("ability_id", "")) if raw_intent is Dictionary else ""
+	if ability_id == MiningModuleScript.COLLECT_ABILITY_ID:
+		if mining_module == null:
+			return _failure(&"mining.not_available", "this map has no configured mining module")
+		var intent_result = UseAbilityIntentContract.from_dictionary(raw_intent)
+		if not intent_result.is_ok:
+			return _failure(intent_result.error_code, intent_result.error_message)
+		var intent = intent_result.value
+		if intent.map_instance_id != instance_id:
+			return _failure(&"mining.map_instance_mismatch", "mining intent targets another map")
+		var entity: AuthoritativeEntity = entities.get(entity_id)
+		if entity == null:
+			return _failure(&"mining.actor_missing", "mining actor is absent from the map")
+		var vehicle_state := vehicle_combat_state_for(entity_id)
+		if is_vehicle_combat_active() and vehicle_state != null and vehicle_state.health <= 0:
+			return _failure(&"combat.vehicle_destroyed", "destroyed vehicle cannot collect minerals")
+		var mining_result = mining_module.begin_collection(
+			entity_id,
+			entity.position,
+			intent.aim_world_position,
+			int(authoritative_context.get("mining_skill_level", -1)),
+			intent.input_sequence,
+		)
+		return _success(mining_result.value) if mining_result.is_ok \
+			else _failure(mining_result.error_code, mining_result.error_message)
 	if combat_module == null or not is_vehicle_combat_active():
 		return _failure(&"combat.not_available", "this map has no configured combat encounter")
-	var ability_id := String(raw_intent.get("ability_id", "")) if raw_intent is Dictionary else ""
+	if mining_module != null:
+		mining_module.interrupt(entity_id, &"attack")
 	var result = combat_module.handle_self_repair(
 		entity_id,
 		raw_intent,
@@ -252,6 +297,8 @@ func handle_move_intent(entity_id: String, raw_intent: Variant) -> Dictionary:
 	entity.set_path(authoritative_path, authoritative_target, sequence)
 	if combat_module != null and not authoritative_target.is_equal_approx(entity.position):
 		combat_module.interrupt_self_repair(entity_id, &"movement")
+	if mining_module != null and not authoritative_target.is_equal_approx(entity.position):
+		mining_module.interrupt(entity_id, &"movement")
 	return _success({
 		"sequence": sequence,
 		"requested_target": requested_position,
@@ -298,6 +345,24 @@ func simulate(delta: float) -> void:
 			combat_module.update_actor_position(entity_id, entities[entity_id].position)
 		combat_module.advance_ticks(1)
 		_replenish_monster_population_if_due()
+	if mining_module != null:
+		mining_module.advance_ticks(1)
+
+
+## 取出到期的采矿周期，交给服务器完成背包与持久化事务。
+func drain_mining_cycles() -> Array[Dictionary]:
+	return mining_module.drain_ready_cycles() if mining_module != null else []
+
+
+## 背包入账成功后提交一次矿量扣减。
+func commit_mining_cycle(token: String):
+	return mining_module.commit_cycle(token) if mining_module != null \
+		else DomainResult.failure(&"mining.not_available", "mining module is unavailable")
+
+
+## 背包或存档失败时释放预约且不消耗矿量。
+func reject_mining_cycle(token: String) -> bool:
+	return mining_module.reject_cycle(token) if mining_module != null else false
 
 
 ## 每分钟按地图策略补充怪物；死亡实例在补量时统一回收，不再逐只原地复活。
@@ -588,6 +653,7 @@ func snapshot_for_actor(server_tick: int, server_time_seconds: float, actor_id: 
 	if combat_module != null:
 		var combat_snapshot: Dictionary = combat_module.snapshot_for_actor(actor_id)
 		combat_snapshot["vehicle_combat_active"] = is_vehicle_combat_active()
+		combat_snapshot["mine_sources"] = mining_module.snapshot() if mining_module != null else []
 		result["combat"] = combat_snapshot
 	return result
 
