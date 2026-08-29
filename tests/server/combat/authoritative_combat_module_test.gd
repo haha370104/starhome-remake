@@ -21,6 +21,7 @@ func _initialize() -> void:
 	_test_three_engagement_policies()
 	_test_five_second_wander_interval()
 	_test_authoritative_ground_loot_lifecycle()
+	_test_authoritative_self_repair_cycles()
 	_test_monster_projectile_timing()
 	_test_monster_projectile_can_be_dodged()
 	if failures.is_empty():
@@ -270,6 +271,70 @@ func _test_authoritative_ground_loot_lifecycle() -> void:
 	_expect(not module.commit_loot_pickup("player.loot", String(loot.loot_id)).is_ok, "the same drop must not be picked up twice")
 
 
+## 验证自维修的三秒周期、每二十级加成、工作能耗和受击后三秒延迟。
+func _test_authoritative_self_repair_cycles() -> void:
+	var module := _new_module(108)
+	var assembly: Dictionary = _assembly_result().value
+	assembly["self_repair_base_strength"] = 5
+	assembly["self_repair_energy_cost"] = 5.0
+	module.register_vehicle(
+		"player.repair", MAP_INSTANCE_ID, Vector2.ZERO, assembly,
+		{ABILITY_ID: _fixed_damage_weapon(1)},
+	)
+	var state: VehicleCombatState = module.vehicle_state_for("player.repair")
+	var full_health_start := module.handle_self_repair(
+		"player.repair", _self_repair_intent(1), 39
+	)
+	_expect(
+		not full_health_start.is_ok and full_health_start.error_code == &"combat.self_repair_not_needed",
+		"full-health vehicle should not start a repair loop",
+	)
+	state.apply_damage(20)
+	var started := module.handle_self_repair("player.repair", _self_repair_intent(2), 39)
+	_expect(started.is_ok, "damaged vehicle should start authoritative self-repair")
+	_expect(
+		int(started.value["health_per_cycle"]) == 6,
+		"level 39 repair should add exactly one point to base five",
+	)
+	module.advance_ticks(59)
+	_expect(state.health == 50, "self-repair should not resolve before three seconds")
+	module.advance_ticks(1)
+	_expect(state.health == 56, "first three-second cycle should restore six health")
+	_expect(is_equal_approx(state.working_energy, 45.0), "successful cycle should consume five working energy")
+	module._mark_actor_damaged("player.repair", 1)
+	module.advance_ticks(59)
+	_expect(state.health == 56, "damage should postpone the next repair until three quiet seconds")
+	module.advance_ticks(1)
+	_expect(state.health == 62, "repair should resume exactly three seconds after damage")
+	var snapshot := module.snapshot_for_actor("player.repair")
+	_expect(
+		bool(snapshot["local_vehicle"]["self_repair_active"]),
+		"combat snapshot should expose active repair presentation state",
+	)
+
+	var level_module := _new_module(109)
+	level_module.register_vehicle(
+		"player.level40", MAP_INSTANCE_ID, Vector2.ZERO, assembly,
+		{ABILITY_ID: _fixed_damage_weapon(1)},
+	)
+	var level_state: VehicleCombatState = level_module.vehicle_state_for("player.level40")
+	level_state.apply_damage(10)
+	var level_started := level_module.handle_self_repair(
+		"player.level40", _self_repair_intent(1), 40
+	)
+	_expect(
+		level_started.is_ok and int(level_started.value["health_per_cycle"]) == 7,
+		"level 40 repair should add two points to base five",
+	)
+	level_state.working_energy = 4.0
+	level_module.advance_ticks(60)
+	_expect(level_state.health == 60, "insufficient working energy should apply no healing")
+	_expect(
+		not bool(level_module.snapshot_for_actor("player.level40")["local_vehicle"]["self_repair_active"]),
+		"insufficient energy should stop the authoritative repair loop",
+	)
+
+
 ## 验证远程怪物只在权威弹体首次接触玩家受击圆时扣除生命。
 func _test_monster_projectile_timing() -> void:
 	var module := _new_module(104)
@@ -454,6 +519,18 @@ func _behavior_monster_definition(monster_id: String, engagement_policy: StringN
 func _attack_intent(aim_world_position: Vector2, sequence: int) -> Dictionary:
 	return UseAbilityIntentContract.new(
 		MAP_INSTANCE_ID, ABILITY_ID, aim_world_position, sequence
+	).to_dictionary()
+
+
+## 构造不携带任何维修数值的自维修能力意图。
+## [param sequence] 玩家能力命令的单调序号。
+## 返回与正式网络相同的四字段载荷。
+func _self_repair_intent(sequence: int) -> Dictionary:
+	return UseAbilityIntentContract.new(
+		MAP_INSTANCE_ID,
+		AuthoritativeCombatModule.SELF_REPAIR_ABILITY_ID,
+		Vector2.ZERO,
+		sequence,
 	).to_dictionary()
 
 

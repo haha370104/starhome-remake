@@ -96,6 +96,8 @@ func starter_vehicle_assembly(
 		return result
 	var assembly: Dictionary = result.value
 	assembly["vehicle_id"] = chassis_id
+	assembly["self_repair_base_strength"] = int(chassis_stats["repair_strength"])
+	assembly["self_repair_energy_cost"] = float(chassis_stats["repair_energy_cost"])
 	assembly["equipment_hardiness"] = equipment_hardiness
 	assembly["unknown_fields"] = ["beginner_engine.server_energy_drain_interval_seconds"]
 	return DomainResult.ok(assembly)

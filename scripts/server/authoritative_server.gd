@@ -300,7 +300,20 @@ func handle_peer_use_ability(peer_id: int, intent: Dictionary) -> Dictionary:
 	var current_instance := map_registry.instance_by_id(session.map_instance_id)
 	if current_instance == null:
 		return _failure(&"session_map_unavailable", "session map is not registered")
-	var result: Dictionary = current_instance.handle_use_ability(session.entity_id, intent)
+	var authoritative_context: Dictionary = {}
+	if String(intent.get("ability_id", "")) == AuthoritativeCombatModule.SELF_REPAIR_ABILITY_ID:
+		if autosave_service == null:
+			return _failure(&"combat.persistence_required", "self-repair requires authoritative player state")
+		var current := autosave_service.state_for(session.entity_id)
+		if current == null:
+			return _failure(&"combat.player_state_missing", "self-repair player state is unavailable")
+		var repair_state: Variant = current.character_skills.get("repair", {})
+		if not repair_state is Dictionary:
+			return _failure(&"combat.repair_skill_missing", "repair skill state is invalid")
+		authoritative_context["repair_skill_level"] = maxi(0, int(repair_state.get("level", 0)))
+	var result: Dictionary = current_instance.handle_use_ability(
+		session.entity_id, intent, authoritative_context
+	)
 	if not result.ok:
 		command_rejected.emit(peer_id, result.code)
 	return result

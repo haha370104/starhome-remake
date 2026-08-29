@@ -158,11 +158,22 @@ func remove_entity(entity_id: String) -> bool:
 
 ## 执行 `handle_use_ability` 对应的模块操作。
 ## [param entity_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
-## [param raw_intent] 调用方传入的参数；具体约束由函数签名和所在模块定义。
-func handle_use_ability(entity_id: String, raw_intent: Variant):
+## [param raw_intent] 客户端通用能力意图，不得携带战斗数值。
+## [param authoritative_context] 服务器从玩家聚合派生的技能等级等可信上下文。
+func handle_use_ability(
+	entity_id: String,
+	raw_intent: Variant,
+	authoritative_context: Dictionary = {},
+):
 	if combat_module == null:
 		return _failure(&"combat.not_available", "this map has no configured combat encounter")
-	var result = combat_module.handle_energy_cannon_attack(entity_id, raw_intent)
+	var ability_id := String(raw_intent.get("ability_id", "")) if raw_intent is Dictionary else ""
+	var result = combat_module.handle_self_repair(
+		entity_id,
+		raw_intent,
+		int(authoritative_context.get("repair_skill_level", -1)),
+	) if ability_id == AuthoritativeCombatModule.SELF_REPAIR_ABILITY_ID \
+	else combat_module.handle_energy_cannon_attack(entity_id, raw_intent)
 	return _success(result.value) if result.is_ok else _failure(result.error_code, result.error_message)
 
 
@@ -290,16 +301,23 @@ func drain_skill_progression_events() -> Array[Dictionary]:
 		if event_id <= _last_progression_combat_event_id:
 			continue
 		_last_progression_combat_event_id = maxi(_last_progression_combat_event_id, event_id)
-		if StringName(combat_event.get("event_type", &"")) != &"energy_cannon_hit" \
-				or int(combat_event.get("damage", 0)) <= 0:
-			continue
-		events.append({
-			"entity_id": String(combat_event.get("attacker_id", "")),
-			"source": "effective_damage",
-			"skill_id": "energy_cannon",
-			"damage": int(combat_event.get("damage", 0)),
-			"combat_event_id": event_id,
-		})
+		var event_type := StringName(combat_event.get("event_type", &""))
+		if event_type == &"energy_cannon_hit" and int(combat_event.get("damage", 0)) > 0:
+			events.append({
+				"entity_id": String(combat_event.get("attacker_id", "")),
+				"source": "effective_damage",
+				"skill_id": "energy_cannon",
+				"damage": int(combat_event.get("damage", 0)),
+				"combat_event_id": event_id,
+			})
+		elif event_type == &"self_repair_resolved" and int(combat_event.get("healed", 0)) > 0:
+			events.append({
+				"entity_id": String(combat_event.get("actor_id", "")),
+				"source": "authoritative_action",
+				"skill_id": "repair",
+				"amount": 1.0,
+				"combat_event_id": event_id,
+			})
 	return events
 
 

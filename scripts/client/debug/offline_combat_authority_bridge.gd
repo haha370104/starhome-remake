@@ -13,6 +13,7 @@ const SIMULATION_HZ := 20
 const SNAPSHOT_INTERVAL_TICKS := 2
 const LOCAL_ACTOR_ID := "player.local"
 const ABILITY_ID := "energy_cannon.primary"
+const SELF_REPAIR_ABILITY_ID := "self_repair"
 
 var module: AuthoritativeCombatModule
 var navigation
@@ -119,6 +120,30 @@ func request_attack(aim_world_position: Vector2) -> Dictionary:
 	return {"ok": false, "code": result.error_code, "message": result.error_message}
 
 
+## 向本地权威战斗模块提交一次开始自维修意图。
+## [param repair_skill_level] 当前离线玩家聚合中的维修基础等级。
+## 返回启动事件或与正式服务器一致的领域拒绝。
+## 设计：离线调试仍走通用能力契约；回血量、周期与能耗不由主场景直接修改。
+func request_self_repair(repair_skill_level: int) -> Dictionary:
+	if module == null or repair_skill_level < 0:
+		return {"ok": false, "code": &"combat.not_available"}
+	var intent := UseAbilityIntentScript.new(
+		map_instance_id,
+		SELF_REPAIR_ABILITY_ID,
+		player_position,
+		_next_command_sequence,
+	)
+	_next_command_sequence += 1
+	var result = module.handle_self_repair(
+		LOCAL_ACTOR_ID, intent.to_dictionary(), repair_skill_level
+	)
+	if result.is_ok:
+		combat_event_ready.emit((result.value as Dictionary).duplicate(true))
+		_emit_snapshot()
+		return {"ok": true, "value": result.value}
+	return {"ok": false, "code": result.error_code, "message": result.error_message}
+
+
 ## 预检离线调试玩家是否可以拾取指定地面掉落。
 ## [param loot_id] 权威战斗模块生成的掉落实例标识。
 ## 返回可交给正式背包入账规则的掉落 DTO 或领域拒绝。
@@ -174,16 +199,23 @@ func _emit_combat_progression_events() -> void:
 		if event_id <= _last_progression_combat_event_id:
 			continue
 		_last_progression_combat_event_id = maxi(_last_progression_combat_event_id, event_id)
-		if StringName(combat_event.get("event_type", &"")) != &"energy_cannon_hit" \
-				or int(combat_event.get("damage", 0)) <= 0:
-			continue
-		skill_progression_event_ready.emit({
-			"entity_id": LOCAL_ACTOR_ID,
-			"source": "effective_damage",
-			"skill_id": "energy_cannon",
-			"damage": int(combat_event.get("damage", 0)),
-			"combat_event_id": event_id,
-		})
+		var event_type := StringName(combat_event.get("event_type", &""))
+		if event_type == &"energy_cannon_hit" and int(combat_event.get("damage", 0)) > 0:
+			skill_progression_event_ready.emit({
+				"entity_id": LOCAL_ACTOR_ID,
+				"source": "effective_damage",
+				"skill_id": "energy_cannon",
+				"damage": int(combat_event.get("damage", 0)),
+				"combat_event_id": event_id,
+			})
+		elif event_type == &"self_repair_resolved" and int(combat_event.get("healed", 0)) > 0:
+			skill_progression_event_ready.emit({
+				"entity_id": LOCAL_ACTOR_ID,
+				"source": "authoritative_action",
+				"skill_id": "repair",
+				"amount": 1.0,
+				"combat_event_id": event_id,
+			})
 
 
 ## 执行 `resolve_monster_position` 对应的模块操作。

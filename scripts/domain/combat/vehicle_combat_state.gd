@@ -90,6 +90,24 @@ func apply_damage(amount: int) -> DomainResult:
 	})
 
 
+## 在不超过最大生命的前提下恢复战车生命。
+## [param amount] 本次权威维修请求恢复的非负生命值。
+## 返回实际恢复量与维修后的生命；战车已毁或参数非法时返回领域错误。
+## 设计：治疗截断规则属于可复用战车领域状态，服务器模块只负责周期与资源编排。
+func repair_health(amount: int) -> DomainResult:
+	if amount < 0:
+		return DomainResult.failure(&"combat.invalid_repair", "repair amount cannot be negative")
+	if health <= 0:
+		return DomainResult.failure(&"combat.vehicle_destroyed", "destroyed vehicle cannot self-repair")
+	var repaired := mini(amount, max_health - health)
+	health += repaired
+	return DomainResult.ok({
+		"repaired_health": repaired,
+		"health": health,
+		"full_health": health >= max_health,
+	})
+
+
 ## 执行 `supports_activation_power` 对应的模块操作。
 ## [param activation_power] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## 返回该函数计算、查询或操作得到的结果。

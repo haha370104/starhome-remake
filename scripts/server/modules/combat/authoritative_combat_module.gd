@@ -9,6 +9,9 @@ const UseAbilityIntentContract := preload("res://scripts/network/contracts/use_a
 const ACTOR_PROJECTILE_HITBOX_OFFSET := Vector2(0.0, -16.0)
 const ACTOR_PROJECTILE_HITBOX_RADIUS := 18.0
 const LOOT_PICKUP_RADIUS := 125.0
+const SELF_REPAIR_ABILITY_ID := "self_repair"
+const SELF_REPAIR_INTERVAL_SECONDS := 3.0
+const SELF_REPAIR_SKILL_LEVELS_PER_BONUS := 20
 
 var simulation_hz := 20
 var current_tick := 0
@@ -103,8 +106,19 @@ func register_vehicle(
 		"position_sample_tick": -1,
 		"vehicle_state": vehicle_state,
 		"weapons": normalized_weapons,
+		"self_repair_base_strength": maxi(
+			0, int(assembly.get("self_repair_base_strength", 5))
+		),
 		"cooldown_ready_ticks": {},
 		"last_command_sequence": -1,
+		"last_damage_tick": -1000000000,
+		"self_repair": {
+			"active": false,
+			"next_cycle_tick": 0,
+			"health_per_cycle": 0,
+			"working_energy_cost": float(assembly.get("self_repair_energy_cost", 0.0)),
+			"skill_level": 0,
+		},
 	}
 	return DomainResult.ok(vehicle_state)
 
@@ -226,6 +240,71 @@ func handle_energy_cannon_attack(actor_id: String, raw_intent: Variant) -> Domai
 		"cooldown_ready_tick": actor["cooldown_ready_ticks"][ability_id],
 	})
 	return DomainResult.ok(event)
+
+
+## 接收客户端“开始自维修”意图，并由服务器计算每周期恢复量与首次结算时刻。
+## [param actor_id] 已由认证会话绑定的战车实体标识。
+## [param raw_intent] 只含地图、能力、坐标与单调序号的通用能力意图。
+## [param repair_skill_level] 服务器持久化聚合读取的维修基础等级，客户端不得提供。
+## 返回自维修启动状态；重复启动保持幂等，非法地图、序号或战车状态返回领域错误。
+## 设计：客户端只请求开始；周期、技能加成、能耗、受击延迟和实际回血全部由本模块裁决。
+func handle_self_repair(
+	actor_id: String,
+	raw_intent: Variant,
+	repair_skill_level: int,
+) -> DomainResult:
+	if not actors.has(actor_id):
+		return DomainResult.failure(&"combat.unknown_actor", "authenticated actor is not registered")
+	if repair_skill_level < 0:
+		return DomainResult.failure(&"combat.invalid_repair_skill", "repair skill level cannot be negative")
+	var intent_result = UseAbilityIntentContract.from_dictionary(raw_intent)
+	if not intent_result.is_ok:
+		return intent_result
+	var intent: UseAbilityIntent = intent_result.value
+	var actor: Dictionary = actors[actor_id]
+	if intent.input_sequence <= int(actor["last_command_sequence"]):
+		return DomainResult.failure(&"combat.stale_command", "self-repair command sequence is stale")
+	actor["last_command_sequence"] = intent.input_sequence
+	if intent.map_instance_id != String(actor["map_instance_id"]):
+		return DomainResult.failure(&"combat.map_instance_mismatch", "self-repair targets another map instance")
+	if intent.ability_id != SELF_REPAIR_ABILITY_ID:
+		return DomainResult.failure(&"combat.unknown_ability", "ability is not self-repair")
+	var vehicle_state: VehicleCombatState = actor["vehicle_state"]
+	if vehicle_state.health <= 0:
+		return DomainResult.failure(&"combat.vehicle_destroyed", "destroyed vehicle cannot self-repair")
+	if vehicle_state.health >= vehicle_state.max_health:
+		return DomainResult.failure(&"combat.self_repair_not_needed", "vehicle health is already full")
+	var repair_state: Dictionary = actor["self_repair"]
+	if bool(repair_state["active"]):
+		return DomainResult.ok({
+			"event_type": &"self_repair_already_active",
+			"server_tick": current_tick,
+			"actor_id": actor_id,
+			"next_cycle_tick": int(repair_state["next_cycle_tick"]),
+			"health_per_cycle": int(repair_state["health_per_cycle"]),
+		})
+	var base_strength := maxi(0, int(actor.get("self_repair_base_strength", 0)))
+	if base_strength == 0:
+		base_strength = 5
+	var interval_ticks := maxi(1, roundi(SELF_REPAIR_INTERVAL_SECONDS * float(simulation_hz)))
+	repair_state["active"] = true
+	repair_state["skill_level"] = repair_skill_level
+	repair_state["health_per_cycle"] = base_strength + floori(
+		float(repair_skill_level) / float(SELF_REPAIR_SKILL_LEVELS_PER_BONUS)
+	)
+	repair_state["next_cycle_tick"] = maxi(
+		current_tick + interval_ticks,
+		int(actor["last_damage_tick"]) + interval_ticks,
+	)
+	return DomainResult.ok(_record_combat_event({
+		"event_type": &"self_repair_started",
+		"server_tick": current_tick,
+		"actor_id": actor_id,
+		"next_cycle_tick": int(repair_state["next_cycle_tick"]),
+		"health_per_cycle": int(repair_state["health_per_cycle"]),
+		"working_energy_cost": float(repair_state["working_energy_cost"]),
+		"repair_skill_level": repair_skill_level,
+	}))
 
 
 ## 计算与客户端预测一致的炮口世界坐标。
@@ -353,6 +432,85 @@ func _record_projectile_expired(projectile: Dictionary, impact_position: Vector2
 	})
 
 
+## 结算本 tick 到期的全部自维修周期，并在满血、摧毁或能量不足时自动结束。
+## 设计：每个周期先扣工作能量再回血；受击会把下一周期推迟到受击后三秒。
+func _settle_due_self_repairs() -> void:
+	var actor_ids := actors.keys()
+	actor_ids.sort()
+	for actor_id: String in actor_ids:
+		var actor: Dictionary = actors[actor_id]
+		var repair_state: Dictionary = actor["self_repair"]
+		if not bool(repair_state["active"]) or current_tick < int(repair_state["next_cycle_tick"]):
+			continue
+		var vehicle_state: VehicleCombatState = actor["vehicle_state"]
+		if vehicle_state.health <= 0:
+			_stop_self_repair(actor_id, &"vehicle_destroyed")
+			continue
+		if vehicle_state.health >= vehicle_state.max_health:
+			_stop_self_repair(actor_id, &"full_health")
+			continue
+		var interval_ticks := maxi(1, roundi(SELF_REPAIR_INTERVAL_SECONDS * float(simulation_hz)))
+		var earliest_after_damage := int(actor["last_damage_tick"]) + interval_ticks
+		if current_tick < earliest_after_damage:
+			repair_state["next_cycle_tick"] = earliest_after_damage
+			continue
+		var energy_result := vehicle_state.consume_working_energy(
+			float(repair_state["working_energy_cost"])
+		)
+		if not energy_result.is_ok:
+			_stop_self_repair(actor_id, &"insufficient_working_energy")
+			continue
+		var repair_result := vehicle_state.repair_health(int(repair_state["health_per_cycle"]))
+		if not repair_result.is_ok:
+			_stop_self_repair(actor_id, repair_result.error_code)
+			continue
+		var repaired := int(repair_result.value["repaired_health"])
+		repair_state["next_cycle_tick"] = current_tick + interval_ticks
+		_record_combat_event({
+			"event_type": &"self_repair_resolved",
+			"server_tick": current_tick,
+			"actor_id": actor_id,
+			"healed": repaired,
+			"target_health": int(repair_result.value["health"]),
+			"working_energy": vehicle_state.working_energy,
+			"repair_skill_level": int(repair_state["skill_level"]),
+		})
+		if bool(repair_result.value["full_health"]):
+			_stop_self_repair(actor_id, &"full_health")
+
+
+## 结束指定战车的自维修并记录可去重的权威原因事件。
+## [param actor_id] 已登记战车实体标识。
+## [param reason] 满血、能量不足或战车摧毁等稳定原因。
+func _stop_self_repair(actor_id: String, reason: StringName) -> void:
+	if not actors.has(actor_id):
+		return
+	var repair_state: Dictionary = actors[actor_id]["self_repair"]
+	if not bool(repair_state["active"]):
+		return
+	repair_state["active"] = false
+	_record_combat_event({
+		"event_type": &"self_repair_stopped",
+		"server_tick": current_tick,
+		"actor_id": actor_id,
+		"reason": reason,
+	})
+
+
+## 记录战车在本 tick 受到的有效伤害，并延后正在运行的自维修周期。
+## [param actor_id] 实际承受伤害的玩家实体标识。
+## [param applied_damage] 领域状态最终确认的有效伤害值。
+func _mark_actor_damaged(actor_id: String, applied_damage: int) -> void:
+	if applied_damage <= 0 or not actors.has(actor_id):
+		return
+	var actor: Dictionary = actors[actor_id]
+	actor["last_damage_tick"] = current_tick
+	var repair_state: Dictionary = actor["self_repair"]
+	if bool(repair_state["active"]):
+		var interval_ticks := maxi(1, roundi(SELF_REPAIR_INTERVAL_SECONDS * float(simulation_hz)))
+		repair_state["next_cycle_tick"] = current_tick + interval_ticks
+
+
 ## 执行 `advance_ticks` 对应的模块操作。
 ## [param tick_count] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## 返回该函数计算、查询或操作得到的结果。
@@ -366,6 +524,7 @@ func advance_ticks(tick_count: int) -> DomainResult:
 		for actor_id: String in actors:
 			var vehicle_state: VehicleCombatState = actors[actor_id]["vehicle_state"]
 			vehicle_state.regenerate_working_energy(fixed_delta, working_energy_regen_factor)
+		_settle_due_self_repairs()
 		_settle_due_projectiles()
 		_settle_due_monster_attacks()
 		_commit_actor_position_samples()
@@ -416,10 +575,15 @@ func snapshot_for_actor(actor_id: String) -> Dictionary:
 			"action_sequence": monster.action_sequence,
 			"facing_index": monster.facing_direction,
 		})
+	var local_vehicle: Dictionary = (actor["vehicle_state"] as VehicleCombatState).to_dictionary()
+	var repair_state: Dictionary = actor["self_repair"]
+	local_vehicle["self_repair_active"] = bool(repair_state["active"])
+	local_vehicle["self_repair_next_cycle_tick"] = int(repair_state["next_cycle_tick"])
+	local_vehicle["self_repair_health_per_cycle"] = int(repair_state["health_per_cycle"])
 	return {
 		"server_tick": current_tick,
 		"local_entity_id": actor_id,
-		"local_vehicle": (actor["vehicle_state"] as VehicleCombatState).to_dictionary(),
+		"local_vehicle": local_vehicle,
 		"monsters": monster_snapshots,
 		"ground_loot": _ground_loot_for_map(map_instance_id),
 		"recent_events": combat_events.slice(maxi(0, combat_events.size() - 32)).duplicate(true),
@@ -669,6 +833,7 @@ func _resolve_monster_attack(attack: Dictionary) -> void:
 	var damage_result := vehicle_state.apply_damage(int(attack["damage"]))
 	if not damage_result.is_ok:
 		return
+	_mark_actor_damaged(target_id, int(damage_result.value["applied_damage"]))
 	var impact_position := Vector2(
 		attack.get("impact_position", actor["position"] + ACTOR_PROJECTILE_HITBOX_OFFSET)
 	)

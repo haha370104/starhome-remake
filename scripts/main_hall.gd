@@ -36,11 +36,15 @@ const GroundLootWorldControllerScript := preload(
 const OfflineCombatAuthorityBridgeScript := preload(
 	"res://scripts/client/debug/offline_combat_authority_bridge.gd"
 )
+const SelfRepairVisualControllerScript := preload(
+	"res://scripts/client/presentation/combat/self_repair_visual_controller.gd"
+)
 const GameWindowManagerScript := preload(
 	"res://scripts/client/ui/windows/game_window_manager.gd"
 )
 const STARTER_WEAPON_ID := &"recruit_energy_cannon"
 const STARTER_ABILITY_ID := "energy_cannon.primary"
+const SELF_REPAIR_ABILITY_ID := "self_repair"
 const GROUND_LOOT_PRESENTATION_PATH := "res://data/presentation/ground_loot_v1.json"
 
 # Player tuning is intentionally local to the player. NPC patrol motion has its
@@ -138,6 +142,7 @@ var combat_attack_controller: Node
 var monster_world_controller: MonsterWorldController
 var ground_loot_world_controller: GroundLootWorldController
 var offline_combat_bridge: OfflineCombatAuthorityBridge
+var self_repair_visual_controller: SelfRepairVisualController
 var game_window_manager: GameWindowManager
 
 
@@ -209,6 +214,12 @@ func _process(delta: float) -> void:
 ## 接收并分发当前节点负责的输入事件。
 ## [param event] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _unhandled_input(event: InputEvent) -> void:
+	if event is InputEventKey:
+		var key_event := event as InputEventKey
+		if key_event.pressed and not key_event.echo and key_event.keycode == KEY_Z:
+			_request_self_repair()
+			get_viewport().set_input_as_handled()
+		return
 	if not event is InputEventMouseButton or not event.pressed:
 		return
 	if _world_input_locked():
@@ -337,8 +348,39 @@ func _combat_rejection_text(code: StringName) -> String:
 			return "当前能量不足"
 		&"combat.target_already_dead":
 			return "目标已经被击败"
+		&"combat.self_repair_not_needed":
+			return "战车生命已满，无需维修"
+		&"combat.vehicle_destroyed":
+			return "战车已损毁，无法自维修"
+		&"combat.not_available":
+			return "当前地图不能使用自维修"
 		_:
 			return "本次攻击未被权威战斗系统接受"
+
+
+## 通过离线或正式网络权威边界请求开始战车自维修。
+## 设计：`Z` 与顶部按钮复用此入口；客户端只读取离线调试等级，不自行修改生命或能量。
+func _request_self_repair() -> void:
+	if _world_input_locked() or player == null or not player.is_combat_actor_active():
+		hint_label.text = "当前地图不能使用自维修"
+		return
+	var submitted := false
+	if multiplayer_offline_debug_enabled:
+		var repair_skill_level := 10
+		if game_window_manager != null and game_window_manager.current_player != null:
+			repair_skill_level = game_window_manager.current_player.skills.base_level("repair")
+		var authority_result := offline_combat_bridge.request_self_repair(repair_skill_level) \
+			if offline_combat_bridge != null else {"ok": false, "code": &"combat.not_available"}
+		submitted = bool(authority_result.get("ok", false))
+		if not submitted:
+			hint_label.text = _combat_rejection_text(StringName(authority_result.get("code", &"")))
+			return
+	else:
+		submitted = not multiplayer_presenter.request_use_ability(
+			SELF_REPAIR_ABILITY_ID, player.position
+		).is_empty()
+	if submitted:
+		hint_label.text = "已开始自维修：每3秒恢复一次生命"
 
 
 ## 在短促炮口动作结束后恢复开火前的移动状态。
@@ -564,6 +606,13 @@ func _build_hud(initial_bundle: Dictionary) -> void:
 ## 创建大厅客户端会话表现器，并以显式配置选择离线调试或真实网络入口。
 ## 设计：大厅保留输入、导航与动画职责；表现器仅将预测/权威状态投影到角色节点。
 func _build_multiplayer_presentation() -> void:
+	self_repair_visual_controller = SelfRepairVisualControllerScript.new()
+	self_repair_visual_controller.name = "SelfRepairVisualController"
+	add_child(self_repair_visual_controller)
+	var repair_visual_error := self_repair_visual_controller.configure(player)
+	if repair_visual_error != OK:
+		push_error("Unable to configure self-repair presentation: %s" % error_string(repair_visual_error))
+
 	map_preloader = ClientMapPreloaderScript.new()
 	map_preloader.name = "ClientMapPreloader"
 	map_preloader.configure(_load_map_directory_definitions())
@@ -916,6 +965,8 @@ func _on_combat_snapshot_received(snapshot: Dictionary) -> void:
 	if vehicle is Dictionary:
 		player.set_combat_status(vehicle)
 		hud.set_vehicle_combat_state(vehicle)
+		if self_repair_visual_controller != null:
+			self_repair_visual_controller.apply_snapshot(vehicle)
 
 
 ## 处理 `_on_combat_event_received` 对应的信号回调。
@@ -931,6 +982,14 @@ func _on_combat_event_received(event: Dictionary) -> void:
 			int(event.get("damage", 0)),
 			int(event.get("target_health", 0)),
 		]
+	elif event_type == &"self_repair_resolved":
+		hint_label.text = "自维修恢复%d点生命（当前%d）" % [
+			int(event.get("healed", 0)),
+			int(event.get("target_health", 0)),
+		]
+	elif event_type == &"self_repair_stopped":
+		var reason := StringName(event.get("reason", &""))
+		hint_label.text = "战车已修复完成" if reason == &"full_health" else "自维修已停止"
 
 
 ## 执行 `handle_map_commit_failure` 对应的模块操作。
@@ -1004,6 +1063,9 @@ func _on_npc_action_requested(action_id: String) -> void:
 ## 将底栏人物、背包和战车按钮交给窗口管理器，其余动作保持 HUD 原有提示。
 ## [param action_id] 免费版底栏发出的业务动作标识。
 func _on_hud_action_requested(action_id: String) -> void:
+	if action_id == SELF_REPAIR_ABILITY_ID:
+		_request_self_repair()
+		return
 	if game_window_manager != null and game_window_manager.toggle(action_id):
 		hint_label.text = "已切换%s面板" % {
 			"character": "人物",
