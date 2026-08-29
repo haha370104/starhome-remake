@@ -37,6 +37,16 @@ SOURCES = {
         "world_visible": True,
         "relationship_evidence": "client_confirmed_FireGunBase_Action",
     },
+    "starter_rocket_impact": {
+        "display_name": "初级火箭爆炸",
+        "source_logical_path": "pic3/effect/CHN_2005_06_28_19_11_54_1154.ale",
+        "target": "starter_secondary_weapons/rocket/impact/explosion",
+        "expected_frames": 10,
+        "direction_mode": "shared",
+        "frames_per_direction": 10,
+        "world_visible": True,
+        "relationship_evidence": "client_confirmed_m_szBulletAvi_index_3",
+    },
     "starter_missile_projectile": {
         "display_name": "初级导弹弹体",
         "source_logical_path": "pic3/bullet/missile.ale",

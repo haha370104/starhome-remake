@@ -10,9 +10,11 @@ var _weapon_id: StringName = &""
 var _weapon: Dictionary = {}
 var _projectile_frames: SpriteFrames
 var _impact_frames: SpriteFrames
+var _muzzle_frames: SpriteFrames
 var _cooldown_remaining := 0.0
 var _projectiles: Array[Dictionary] = []
 var _impacts: Array[Dictionary] = []
+var _muzzles: Array[Dictionary] = []
 var _visual_collision_resolver := Callable()
 
 
@@ -33,6 +35,7 @@ func configure(
 	_weapon.clear()
 	_projectile_frames = null
 	_impact_frames = null
+	_muzzle_frames = null
 	_visual_collision_resolver = Callable()
 	_cooldown_remaining = 0.0
 	if _world_parent == null or _weapon_id == &"":
@@ -52,6 +55,11 @@ func configure(
 	_impact_frames = _load_frames(String(impact["resource"]))
 	if _projectile_frames == null or _impact_frames == null:
 		return ERR_CANT_OPEN
+	var muzzle_value: Variant = candidate.get("muzzle", {})
+	if muzzle_value is Dictionary and not (muzzle_value as Dictionary).is_empty():
+		_muzzle_frames = _load_frames(String((muzzle_value as Dictionary)["resource"]))
+		if _muzzle_frames == null:
+			return ERR_CANT_OPEN
 	_weapon = candidate
 	return OK
 
@@ -67,7 +75,11 @@ func set_visual_collision_resolver(resolver: Callable) -> void:
 ## [param requested_target] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## 返回该函数计算、查询或操作得到的结果。
 ## 设计：超出武器表现射程的点击会被钳制到射程边缘；伤害与命中仍必须由服务端裁决。
-func request_fire(origin: Vector2, requested_target: Vector2) -> Dictionary:
+func request_fire(
+	origin: Vector2,
+	requested_target: Vector2,
+	tracking_target_resolver: Callable = Callable(),
+) -> Dictionary:
 	if _weapon.is_empty() or _world_parent == null:
 		return {"ok": false, "code": &"unconfigured"}
 	if _cooldown_remaining > 0.0:
@@ -87,7 +99,8 @@ func request_fire(origin: Vector2, requested_target: Vector2) -> Dictionary:
 	var muzzle_offset := Vector2(float(muzzle_values[0]), float(muzzle_values[1]))
 	var forward_offset := minf(MUZZLE_FORWARD_OFFSET, resolved_distance * 0.5)
 	var muzzle_position := origin + muzzle_offset + direction * forward_offset
-	_spawn_projectile(muzzle_position, resolved_target)
+	_spawn_muzzle(muzzle_position)
+	_spawn_projectile(muzzle_position, resolved_target, tracking_target_resolver)
 	_cooldown_remaining = float(_weapon["cooldown_seconds"])
 	return {
 		"ok": true,
@@ -108,6 +121,7 @@ func advance(delta_seconds: float) -> void:
 		_cooldown_remaining = 0.0
 	_advance_projectiles(delta_seconds)
 	_advance_impacts(delta_seconds)
+	_advance_timed_effects(_muzzles, delta_seconds)
 
 
 ## 清除当前地图的全部瞬态弹体与命中特效，并重置冷却。
@@ -116,8 +130,11 @@ func clear_effects() -> void:
 		_free_state_node(state)
 	for state in _impacts:
 		_free_state_node(state)
+	for state in _muzzles:
+		_free_state_node(state)
 	_projectiles.clear()
 	_impacts.clear()
+	_muzzles.clear()
 	_cooldown_remaining = 0.0
 
 
@@ -131,6 +148,10 @@ func active_projectile_count() -> int:
 ## 返回该函数计算、查询或操作得到的结果。
 func active_impact_count() -> int:
 	return _impacts.size()
+
+
+func active_muzzle_count() -> int:
+	return _muzzles.size()
 
 
 ## 执行 `cooldown_remaining` 对应的模块操作。
@@ -161,6 +182,14 @@ func _is_valid_weapon(weapon: Dictionary) -> bool:
 	return (
 		_is_valid_effect(weapon.get("projectile", {}), true)
 		and _is_valid_effect(weapon.get("impact", {}), false)
+		and _is_valid_optional_effect(weapon.get("muzzle", {}))
+	)
+
+
+func _is_valid_optional_effect(effect_value: Variant) -> bool:
+	return (
+		effect_value is Dictionary
+		and ((effect_value as Dictionary).is_empty() or _is_valid_effect(effect_value, false))
 	)
 
 
@@ -192,16 +221,37 @@ func _load_frames(resource_path: String) -> SpriteFrames:
 ## 执行 `spawn_projectile` 对应的模块操作。
 ## [param origin] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## [param target] 调用方传入的参数；具体约束由函数签名和所在模块定义。
-func _spawn_projectile(origin: Vector2, target: Vector2) -> void:
+func _spawn_projectile(
+	origin: Vector2,
+	target: Vector2,
+	tracking_target_resolver: Callable,
+) -> void:
 	var wrapper := _create_effect_node("WeaponProjectile", origin, _projectile_frames)
 	var projectile: Dictionary = _weapon["projectile"]
 	var duration := origin.distance_to(target) / float(projectile["travel_pixels_per_second"])
+	wrapper.rotation = (target - origin).angle()
 	_projectiles.append({
 		"node": wrapper,
 		"origin": origin,
+		"position": origin,
 		"target": target,
 		"elapsed": 0.0,
 		"duration": maxf(duration, 0.001),
+		"maximum_lifetime": maxf(duration * 4.0, 2.0),
+		"motion_mode": StringName(projectile.get("motion_mode", "linear")),
+		"tracking_target_resolver": tracking_target_resolver,
+	})
+
+
+func _spawn_muzzle(position: Vector2) -> void:
+	if _muzzle_frames == null:
+		return
+	var muzzle: Dictionary = _weapon["muzzle"]
+	var wrapper := _create_effect_node("WeaponMuzzle", position, _muzzle_frames)
+	_muzzles.append({
+		"node": wrapper,
+		"elapsed": 0.0,
+		"duration": float(muzzle["frames"]) / float(muzzle["fps"]),
 	})
 
 
@@ -226,6 +276,7 @@ func _create_effect_node(name_value: String, position: Vector2, frames: SpriteFr
 	sprite.sprite_frames = frames
 	sprite.animation = RAW_ANIMATION
 	sprite.frame = 0
+	sprite.play(RAW_ANIMATION)
 	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	wrapper.add_child(sprite)
 	_world_parent.add_child(wrapper)
@@ -238,6 +289,9 @@ func _create_effect_node(name_value: String, position: Vector2, frames: SpriteFr
 func _advance_projectiles(delta_seconds: float) -> void:
 	for index in range(_projectiles.size() - 1, -1, -1):
 		var state: Dictionary = _projectiles[index]
+		if StringName(state.get("motion_mode", &"linear")) == &"homing":
+			_advance_homing_projectile(index, state, delta_seconds)
+			continue
 		var previous_progress := minf(float(state["elapsed"]) / float(state["duration"]), 1.0)
 		var previous_position := Vector2(state["origin"]).lerp(Vector2(state["target"]), previous_progress)
 		state["elapsed"] = float(state["elapsed"]) + delta_seconds
@@ -252,11 +306,38 @@ func _advance_projectiles(delta_seconds: float) -> void:
 		var wrapper := state["node"] as Node2D
 		if wrapper != null and is_instance_valid(wrapper):
 			wrapper.position = next_position
+			wrapper.rotation = (next_position - previous_position).angle()
 		if progress < 1.0:
 			continue
 		_free_state_node(state)
 		_spawn_impact(Vector2(state["target"]))
 		_projectiles.remove_at(index)
+
+
+func _advance_homing_projectile(index: int, state: Dictionary, delta_seconds: float) -> void:
+	state["elapsed"] = float(state["elapsed"]) + delta_seconds
+	var resolver: Callable = state["tracking_target_resolver"]
+	if resolver.is_valid():
+		var resolved: Variant = resolver.call()
+		if resolved is Vector2 and (resolved as Vector2).is_finite():
+			state["target"] = resolved
+	var previous_position: Vector2 = state["position"]
+	var target: Vector2 = state["target"]
+	var delta := target - previous_position
+	var speed := float((_weapon["projectile"] as Dictionary)["travel_pixels_per_second"])
+	var next_position := previous_position + delta.limit_length(speed * delta_seconds)
+	state["position"] = next_position
+	var wrapper := state["node"] as Node2D
+	if wrapper != null and is_instance_valid(wrapper):
+		wrapper.position = next_position
+		if not delta.is_zero_approx():
+			wrapper.rotation = delta.angle()
+	if next_position.distance_to(target) > 1.0 \
+			and float(state["elapsed"]) < float(state["maximum_lifetime"]):
+		return
+	_free_state_node(state)
+	_spawn_impact(target)
+	_projectiles.remove_at(index)
 
 
 ## 执行 `resolve_visual_collision` 对应的模块操作。
@@ -289,6 +370,16 @@ func _advance_impacts(delta_seconds: float) -> void:
 			var sprite := wrapper.get_node_or_null("Sprite") as AnimatedSprite2D
 			if sprite != null:
 				sprite.frame = frame
+
+
+func _advance_timed_effects(states: Array[Dictionary], delta_seconds: float) -> void:
+	for index in range(states.size() - 1, -1, -1):
+		var state: Dictionary = states[index]
+		state["elapsed"] = float(state["elapsed"]) + delta_seconds
+		if float(state["elapsed"]) < float(state["duration"]):
+			continue
+		_free_state_node(state)
+		states.remove_at(index)
 
 
 ## 执行 `free_state_node` 对应的模块操作。

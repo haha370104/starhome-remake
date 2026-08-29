@@ -8,6 +8,7 @@ const WEAPON_ID := &"recruit_energy_cannon"
 
 var failures: Array[String] = []
 var assertions := 0
+var tracked_target := Vector2.ZERO
 
 
 ## 运行新兵能量炮的射程钳制、冷却及弹体到命中特效生命周期测试。
@@ -26,6 +27,7 @@ func _initialize() -> void:
 			"starter cannon effects should configure",
 		)
 		_test_fire_lifecycle(controller)
+		_test_secondary_weapons(controller, world_parent, manifest_value)
 	controller.free()
 	world_parent.free()
 	_finish()
@@ -70,6 +72,51 @@ func _test_fire_lifecycle(controller: Node) -> void:
 		controller.active_projectile_count() == 0 and controller.active_impact_count() == 0,
 		"map cleanup should leave no transient effects",
 	)
+
+
+func _test_secondary_weapons(controller: Node, world_parent: Node2D, manifest: Dictionary) -> void:
+	_expect(
+		controller.configure(manifest, world_parent, &"starter_rocket_launcher") == OK,
+		"Glory starter rocket effects should configure",
+	)
+	var rocket: Dictionary = controller.request_fire(Vector2.ZERO, Vector2(300, 100))
+	_expect(bool(rocket.get("ok", false)), "rocket shot should start")
+	_expect(controller.active_muzzle_count() == 1, "rocket should play its launch smoke")
+	var rocket_node := world_parent.get_node_or_null("WeaponProjectile") as Node2D
+	_expect(
+		rocket_node != null and rocket_node.rotation > 0.0,
+		"rocket sprite should rotate along its firing vector",
+	)
+	controller.clear_effects()
+
+	_expect(
+		controller.configure(manifest, world_parent, &"starter_missile") == OK,
+		"Glory starter missile effects should configure",
+	)
+	tracked_target = Vector2(300, 0)
+	var missile: Dictionary = controller.request_fire(
+		Vector2.ZERO,
+		tracked_target,
+		_tracked_target_position,
+	)
+	_expect(bool(missile.get("ok", false)), "missile shot should start")
+	controller.advance(0.25)
+	var missile_node := world_parent.get_node_or_null("WeaponProjectile") as Node2D
+	_expect(
+		missile_node != null and missile_node.position.x > 140.0,
+		"missile should begin at the original 600 pixel-per-second speed",
+	)
+	tracked_target = Vector2(300, 150)
+	controller.advance(0.1)
+	_expect(
+		missile_node != null and missile_node.rotation > 0.0,
+		"missile should turn toward the target's current position",
+	)
+	controller.clear_effects()
+
+
+func _tracked_target_position() -> Vector2:
+	return tracked_target
 
 
 ## 执行 `fake_visual_collision` 对应的模块操作。
