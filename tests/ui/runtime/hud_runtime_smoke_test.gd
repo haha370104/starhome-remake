@@ -84,6 +84,10 @@ func _assert_state_updates(hud: CanvasLayer) -> void:
 	hud.state.set_selected_action_slot("missile")
 	_expect(hud.bottom_main_bar.weapon_buttons["missile"].base_state == "selected", "导弹槽应切换到选中帧")
 	_expect(hud.bottom_main_bar.weapon_buttons["energy_cannon"].base_state == "normal", "切换武器后能量炮应恢复普通帧")
+	hud.state.set_selected_action_slot("rocket_launcher")
+	_expect(hud.state.selected_action_slot == "rocket_launcher", "第三槽应选择火箭炮模式")
+	_expect(hud.bottom_main_bar.weapon_fallback_labels["rocket_launcher"].text == "火", "缺少免费版专用帧时第三槽应保持可辨认")
+	_expect(hud.bottom_main_bar.weapon_buttons["rocket_launcher"].hit_button.tooltip_text == "火箭炮", "空白第三槽仍应说明用途")
 
 	hud.state.set_shortcut_visible(false)
 	_expect(not hud.shortcut_bar.visible, "快捷栏状态为隐藏时不应渲染本体")

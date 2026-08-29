@@ -79,6 +79,8 @@ func _test_secondary_weapons(controller: Node, world_parent: Node2D, manifest: D
 		controller.configure(manifest, world_parent, &"starter_rocket_launcher") == OK,
 		"Glory starter rocket effects should configure",
 	)
+	var rocket_too_close: Dictionary = controller.request_fire(Vector2.ZERO, Vector2(100, 0))
+	_expect(rocket_too_close.get("code") == &"target_too_close", "rocket should preserve its 150-pixel dead zone")
 	var rocket: Dictionary = controller.request_fire(Vector2.ZERO, Vector2(300, 100))
 	_expect(bool(rocket.get("ok", false)), "rocket shot should start")
 	_expect(controller.active_muzzle_count() == 1, "rocket should play its launch smoke")

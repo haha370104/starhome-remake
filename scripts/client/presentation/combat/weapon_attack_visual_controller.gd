@@ -92,6 +92,9 @@ func request_fire(
 	if not aim.is_finite() or aim.length() < MINIMUM_SHOT_DISTANCE:
 		return {"ok": false, "code": &"target_too_close"}
 	var direction := aim.normalized()
+	var minimum_range := float(_weapon.get("minimum_visual_range", 0.0))
+	if aim.length() < minimum_range:
+		return {"ok": false, "code": &"target_too_close"}
 	var maximum_range := float(_weapon["maximum_visual_range"])
 	var resolved_distance := minf(aim.length(), maximum_range)
 	var resolved_target := origin + direction * resolved_distance
@@ -174,6 +177,8 @@ func _is_valid_weapon(weapon: Dictionary) -> bool:
 	var muzzle_value: Variant = weapon.get("muzzle_offset", [])
 	if (
 		float(weapon.get("maximum_visual_range", 0.0)) <= 0.0
+		or float(weapon.get("minimum_visual_range", 0.0)) < 0.0
+		or float(weapon.get("minimum_visual_range", 0.0)) >= float(weapon.get("maximum_visual_range", 0.0))
 		or float(weapon.get("cooldown_seconds", 0.0)) <= 0.0
 		or not muzzle_value is Array
 		or (muzzle_value as Array).size() != 2

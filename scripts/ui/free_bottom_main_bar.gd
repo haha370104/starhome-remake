@@ -15,12 +15,18 @@ const MENU_BUTTONS := {
 	"star_map": "星图",
 	"system": "系统",
 }
+const WEAPON_TOOLTIPS := {
+	"energy_cannon": "能量炮",
+	"missile": "导弹",
+	"rocket_launcher": "火箭炮",
+}
 
 var hud_state: HudState
 var design_surface: Control
 var reserve_energy_clip: Control
 var reserve_energy_fill: TextureRect
 var weapon_buttons: Dictionary = {}
+var weapon_fallback_labels: Dictionary = {}
 var shortcut_visibility_buttons: Dictionary = {}
 
 
@@ -128,11 +134,25 @@ func _build_weapon_button(
 	count_text: String,
 ) -> void:
 	var anchor := _vector_from_array(definition.get("position", []), Vector2.ZERO)
-	var button := _build_state_button(definition, action_id, action_id)
+	var button := _build_state_button(definition, action_id, WEAPON_TOOLTIPS.get(action_id, action_id))
 	button.place_at(anchor)
 	button.pressed.connect(hud_state.set_selected_action_slot.bind(action_id))
 	design_surface.add_child(button)
 	weapon_buttons[action_id] = button
+	if (definition.get("states", {}) as Dictionary).is_empty():
+		var fallback_label := Label.new()
+		fallback_label.name = "%sFallbackLabel" % action_id.to_pascal_case()
+		fallback_label.text = "火" if action_id == "rocket_launcher" else ""
+		fallback_label.position = anchor
+		fallback_label.size = Vector2(31, 22)
+		fallback_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		fallback_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		fallback_label.add_theme_font_size_override("font_size", 12)
+		fallback_label.add_theme_color_override("font_outline_color", Color.BLACK)
+		fallback_label.add_theme_constant_override("outline_size", 2)
+		fallback_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		design_surface.add_child(fallback_label)
+		weapon_fallback_labels[action_id] = fallback_label
 	if not count_text.is_empty():
 		var label := Label.new()
 		label.name = "%sAmmo" % action_id.to_pascal_case()
@@ -166,6 +186,11 @@ func _update_selected_weapon(action_id: String) -> void:
 	for button_id in weapon_buttons:
 		var button: Control = weapon_buttons[button_id]
 		button.set_base_state("selected" if button_id == action_id else "normal")
+		if weapon_fallback_labels.has(button_id):
+			var label: Label = weapon_fallback_labels[button_id]
+			label.add_theme_color_override(
+				"font_color", Color(1.0, 0.9, 0.2) if button_id == action_id else Color(0.75, 0.9, 1.0)
+			)
 
 
 ## 执行 `build_state_button` 对应的模块操作。
