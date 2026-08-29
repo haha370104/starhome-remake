@@ -4,6 +4,9 @@ const ConfigScript := preload("res://scripts/server/server_config.gd")
 const ServerScript := preload("res://scripts/server/authoritative_server.gd")
 const MoveIntentContract := preload("res://scripts/network/contracts/move_intent.gd")
 const MapTransitionIntentContract := preload("res://scripts/network/contracts/map_transition_intent.gd")
+const VehicleRecoveryIntentContract := preload(
+	"res://scripts/network/contracts/vehicle_recovery_intent.gd"
+)
 const MapJoinedContract := preload("res://scripts/network/contracts/map_joined.gd")
 const MapInstanceScript := preload("res://scripts/server/authoritative_map_instance.gd")
 const EntitySnapshotContract := preload("res://scripts/network/contracts/entity_snapshot.gd")
@@ -21,6 +24,7 @@ func _initialize() -> void:
 	_test_dynamic_entity_blocking()
 	_test_session_reconnect_and_cleanup()
 	_test_authoritative_map_transition()
+	_test_destroyed_vehicle_recovery()
 	_test_fixed_tick_and_snapshot_rate()
 	if failures.is_empty():
 		print("AUTHORITATIVE_SERVER_SMOKE_OK (%d assertions)" % assertions)
@@ -364,6 +368,49 @@ func _test_fixed_tick_and_snapshot_rate() -> void:
 	_expect(restored.is_ok, "服务端实体快照必须通过共享契约 round-trip：%s" % restored.error_message)
 	_expect(restored.value.entity_id == entity_id, "快照应携带业务实体 ID")
 	_expect(local_snapshot.has("acknowledged_input_sequence"), "本地实体快照应携带输入确认序号")
+	server.free()
+
+
+## 验证击毁后不能移动，并在权威三秒后回到大厅一层且恢复 10% 生命。
+func _test_destroyed_vehicle_recovery() -> void:
+	var server = _new_server()
+	var opened := server.open_session(62, _handshake(), 1000)
+	_expect(opened.ok, "恢复测试会话应成功建立")
+	var session: ServerSession = server.sessions.session_for_peer(62)
+	var entity_id := session.entity_id
+	var hall: AuthoritativeMapInstance = server.map_registry.instance_by_map_id(
+		"yian_harbor_hall_floor_1"
+	)
+	var field: AuthoritativeMapInstance = server.map_registry.instance_by_map_id("d04_field_zone")
+	var source_entity: AuthoritativeEntity = hall.entities[entity_id]
+	var field_spawn := field.admitted_spawn_position(Vector2(2412, 2400))
+	var spawned := field.spawn_entity(entity_id, field_spawn, source_entity.movement_speed)
+	_expect(spawned.ok, "恢复测试实体应能进入战斗地图")
+	server.call("_copy_transitioned_entity_state", source_entity, spawned.value)
+	hall.remove_entity(entity_id)
+	session.map_instance_id = field.instance_id
+	var state = field.vehicle_combat_state_for(entity_id)
+	state.apply_damage(state.max_health)
+	var move_result := field.handle_move_intent(entity_id, MoveIntentContract.new(
+		field.instance_id, field_spawn + Vector2(48, 0), 1
+	).to_dictionary())
+	_expect(not move_result.ok and move_result.code == &"combat.vehicle_destroyed",
+		"击毁战车不得继续提交移动")
+	var request := VehicleRecoveryIntentContract.new(
+		field.instance_id, VehicleRecoveryIntentContract.RETURN_TO_BASE, 1
+	).to_dictionary()
+	var scheduled := server.handle_peer_vehicle_recovery(62, request)
+	_expect(scheduled.ok and int(scheduled.value.complete_at_tick) == 60,
+		"回基地应由 20Hz 权威时钟预约三秒")
+	server.advance_simulation(2.95, 2000)
+	_expect(session.map_instance_id == field.instance_id, "三秒到期前不得提前切图")
+	server.advance_simulation(0.05, 2050)
+	_expect(session.map_instance_id == hall.instance_id, "到期后应回到大厅一层")
+	var recovered = hall.vehicle_combat_state_for(entity_id)
+	_expect(recovered != null and recovered.health == 7 and recovered.max_health == 70,
+		"返回基地后应恢复最大生命的 10%%：%s" % (
+			"missing" if recovered == null else "%d/%d" % [recovered.health, recovered.max_health]
+		))
 	server.free()
 
 

@@ -65,8 +65,6 @@ func configure_combat(catalog, simulation_hz: int) -> Dictionary:
 	var lifecycle_result = catalog.monster_lifecycles_for_map(String(definition.map_id), instance_id)
 	if not lifecycle_result.is_ok:
 		return _failure(lifecycle_result.error_code, lifecycle_result.error_message)
-	if lifecycle_result.value.is_empty():
-		return _success(0)
 	var assembly_result = catalog.starter_vehicle_assembly(10, {
 		"base_speed_multiplier": 1500.0,
 		"base_speed_cap": movement_speed_cap,
@@ -219,6 +217,9 @@ func handle_move_intent(entity_id: String, raw_intent: Variant) -> Dictionary:
 	var entity: AuthoritativeEntity = entities.get(entity_id)
 	if entity == null:
 		return _failure(ErrorCodes.INVALID_IDENTIFIER, "entity is not present in this map instance")
+	var vehicle_state := vehicle_combat_state_for(entity_id)
+	if vehicle_state != null and vehicle_state.health <= 0:
+		return _failure(&"combat.vehicle_destroyed", "destroyed vehicle cannot move")
 	var intent_result = MoveIntentContract.from_dictionary(raw_intent)
 	if not intent_result.is_ok:
 		return _failure(intent_result.error_code, intent_result.error_message)
@@ -269,6 +270,13 @@ func simulate(delta: float) -> void:
 	for entity_id: String in entity_ids:
 		var entity: AuthoritativeEntity = entities[entity_id]
 		var previous_position: Vector2 = entity.position
+		var vehicle_state := vehicle_combat_state_for(entity_id)
+		if vehicle_state != null and vehicle_state.health <= 0:
+			entity.target_position = entity.position
+			entity.path = PackedVector2Array([entity.position])
+			entity.path_index = entity.path.size()
+			entity.action = &"idle"
+			continue
 		if not dynamic_blocking_enabled or entities.size() <= 1:
 			entity.simulate(delta)
 		else:

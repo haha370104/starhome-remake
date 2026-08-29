@@ -18,6 +18,7 @@ const MOVE_INTENT: StringName = &"move_intent"
 const MAP_TRANSITION_INTENT: StringName = &"map_transition_intent"
 const USE_ABILITY_INTENT: StringName = &"use_ability_intent"
 const PICKUP_LOOT_INTENT: StringName = &"pickup_loot_intent"
+const VEHICLE_RECOVERY_INTENT: StringName = &"vehicle_recovery_intent"
 const ENTITY_SNAPSHOT: StringName = &"entity_snapshot"
 const MAP_JOINED: StringName = &"map_joined"
 const POSITION_CORRECTION: StringName = &"position_correction"
@@ -32,6 +33,7 @@ static func supported_message_types() -> Array[StringName]:
 		MAP_TRANSITION_INTENT,
 		USE_ABILITY_INTENT,
 		PICKUP_LOOT_INTENT,
+		VEHICLE_RECOVERY_INTENT,
 		ENTITY_SNAPSHOT,
 		MAP_JOINED,
 		POSITION_CORRECTION,

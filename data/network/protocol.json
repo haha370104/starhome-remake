@@ -14,6 +14,7 @@
     "map_transition_intent",
     "use_ability_intent",
     "pickup_loot_intent",
+    "vehicle_recovery_intent",
     "entity_snapshot",
     "map_joined",
     "position_correction"

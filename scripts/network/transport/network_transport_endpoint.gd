@@ -6,6 +6,7 @@ signal session_request_received(peer_id: int, request: Dictionary)
 signal move_intent_received(peer_id: int, intent: Dictionary)
 signal map_transition_intent_received(peer_id: int, intent: Dictionary)
 signal use_ability_intent_received(peer_id: int, intent: Dictionary)
+signal vehicle_recovery_intent_received(peer_id: int, intent: Dictionary)
 signal pickup_loot_intent_received(peer_id: int, intent: Dictionary)
 signal player_panel_command_received(peer_id: int, command: Dictionary)
 
@@ -90,6 +91,11 @@ func send_use_ability_intent(intent: Dictionary) -> void:
 	rpc_submit_use_ability_intent.rpc_id(SERVER_PEER_ID, intent)
 
 
+## 向权威服务器提交战车击毁后的恢复选择。
+func send_vehicle_recovery_intent(intent: Dictionary) -> void:
+	rpc_submit_vehicle_recovery_intent.rpc_id(SERVER_PEER_ID, intent)
+
+
 ## 向权威服务器提交地面掉落拾取意图。
 ## [param intent] 仅包含 loot_id 的目标选择字典。
 ## 设计：玩家身份、距离、物品定义和数量均由服务端会话与地面实体决定。
@@ -150,6 +156,14 @@ func rpc_submit_map_transition_intent(intent: Dictionary) -> void:
 ## 设计：传输层不解释技能，也不接受载荷中的身份、伤害或命中声明。
 func rpc_submit_use_ability_intent(intent: Dictionary) -> void:
 	use_ability_intent_received.emit(
+		multiplayer.get_remote_sender_id(), intent.duplicate(true)
+	)
+
+
+@rpc("any_peer", "call_remote", "reliable", 1)
+## 接收战车击毁后的恢复选择，并附加不可伪造的远端 peer 身份。
+func rpc_submit_vehicle_recovery_intent(intent: Dictionary) -> void:
+	vehicle_recovery_intent_received.emit(
 		multiplayer.get_remote_sender_id(), intent.duplicate(true)
 	)
 

@@ -9,6 +9,9 @@ const Protocol := preload("res://scripts/network/contracts/network_protocol.gd")
 const ErrorCodes := preload("res://scripts/network/contracts/network_error_codes.gd")
 const MapJoinedContract := preload("res://scripts/network/contracts/map_joined.gd")
 const MapTransitionIntentContract := preload("res://scripts/network/contracts/map_transition_intent.gd")
+const VehicleRecoveryIntentContract := preload(
+	"res://scripts/network/contracts/vehicle_recovery_intent.gd"
+)
 const TransportEndpointScript := preload("res://scripts/network/transport/network_transport_endpoint.gd")
 const CombatCatalogScript := preload("res://scripts/domain/combat/combat_definition_catalog.gd")
 const PlayerStateRecordScript := preload("res://scripts/server/persistence/player_state_record.gd")
@@ -24,6 +27,9 @@ signal peer_snapshot_generated(peer_id: int, snapshot: Dictionary)
 
 const TRANSPORT_SESSION_REQUEST := &"session_request"
 const TRANSPORT_PLAYER_PANEL_COMMAND := &"player_panel_command"
+const BASE_HALL_MAP_ID := "yian_harbor_hall_floor_1"
+const VEHICLE_RECOVERY_DELAY_SECONDS := 3.0
+const VEHICLE_RECOVERY_HEALTH_RATIO := 0.10
 
 var config: DedicatedServerConfig
 var map_instance: AuthoritativeMapInstance
@@ -40,6 +46,7 @@ var _combat_catalog
 var player_state_repository: PlayerStateRepository
 var autosave_service: AuthoritativeAutosaveService
 var player_panel_service: AuthoritativePlayerPanelService
+var _pending_vehicle_recoveries: Dictionary = {}
 
 
 ## 节点进入场景树后初始化运行依赖。
@@ -108,6 +115,7 @@ func initialize(
 		map_instance = injected_map_instances[0]
 	sessions = SessionRegistryScript.new()
 	sessions.configure(config.reconnect_grace_seconds)
+	_pending_vehicle_recoveries.clear()
 	var persistence_result := _initialize_persistence(injected_repository)
 	if not persistence_result.ok:
 		return persistence_result
@@ -161,6 +169,9 @@ func _ensure_transport_endpoint() -> void:
 	_transport_endpoint.move_intent_received.connect(_on_transport_move_intent)
 	_transport_endpoint.map_transition_intent_received.connect(_on_transport_map_transition_intent)
 	_transport_endpoint.use_ability_intent_received.connect(_on_transport_use_ability_intent)
+	_transport_endpoint.vehicle_recovery_intent_received.connect(
+		_on_transport_vehicle_recovery_intent
+	)
 	_transport_endpoint.pickup_loot_intent_received.connect(_on_transport_pickup_loot_intent)
 	_transport_endpoint.player_panel_command_received.connect(_on_transport_player_panel_command)
 	_transport_endpoint.peer_disconnected.connect(_on_peer_disconnected)
@@ -189,6 +200,7 @@ func advance_simulation(elapsed_seconds: float, now_msec := -1) -> void:
 			registered_instance.simulate(fixed_delta)
 			for progression_event: Dictionary in registered_instance.drain_skill_progression_events():
 				_apply_skill_progression_event(progression_event)
+		_complete_due_vehicle_recoveries()
 		if server_tick % _ticks_per_snapshot == 0:
 			_emit_snapshot()
 	if autosave_service != null:
@@ -441,6 +453,119 @@ func handle_peer_map_transition(peer_id: int, raw_intent: Variant) -> Dictionary
 	})
 
 
+## 校验战车确已击毁，并由权威时钟预约三秒后的基地救援。
+func handle_peer_vehicle_recovery(peer_id: int, raw_intent: Variant) -> Dictionary:
+	var session: ServerSession = sessions.session_for_peer(peer_id)
+	if session == null:
+		return _failure(&"vehicle_recovery.session_missing", "peer has no active session")
+	var intent_result = VehicleRecoveryIntentContract.from_dictionary(raw_intent)
+	if not intent_result.is_ok:
+		return _failure(intent_result.error_code, intent_result.error_message)
+	var intent = intent_result.value
+	if intent.input_sequence <= session.last_recovery_sequence:
+		return _failure(ErrorCodes.STALE_SEQUENCE, "recovery sequence was already acknowledged")
+	if intent.map_instance_id != session.map_instance_id:
+		return _failure(&"vehicle_recovery.map_mismatch", "recovery targets another map")
+	if intent.action != VehicleRecoveryIntentContract.RETURN_TO_BASE:
+		return _failure(&"vehicle_recovery.invalid_action", "unsupported recovery action")
+	if _pending_vehicle_recoveries.has(session.entity_id):
+		return _failure(&"vehicle_recovery.already_pending", "base rescue is already pending")
+	var source := map_registry.instance_by_id(session.map_instance_id)
+	var vehicle_state := source.vehicle_combat_state_for(session.entity_id) if source != null else null
+	if vehicle_state == null or vehicle_state.health > 0:
+		return _failure(&"vehicle_recovery.not_destroyed", "only a destroyed vehicle may return")
+	session.last_recovery_sequence = intent.input_sequence
+	var complete_at_tick := server_tick + maxi(
+		1, roundi(VEHICLE_RECOVERY_DELAY_SECONDS * float(config.simulation_hz))
+	)
+	_pending_vehicle_recoveries[session.entity_id] = {
+		"peer_id": peer_id,
+		"source_instance_id": session.map_instance_id,
+		"complete_at_tick": complete_at_tick,
+		"input_sequence": intent.input_sequence,
+	}
+	return _success({
+		"event_type": &"vehicle_recovery_scheduled",
+		"server_tick": server_tick,
+		"complete_at_tick": complete_at_tick,
+		"delay_seconds": VEHICLE_RECOVERY_DELAY_SECONDS,
+	})
+
+
+## 完成到期救援；传送、出生点和 10% 生命均由服务器确定。
+func _complete_due_vehicle_recoveries() -> void:
+	var entity_ids := _pending_vehicle_recoveries.keys()
+	entity_ids.sort()
+	for entity_id: String in entity_ids:
+		var pending: Dictionary = _pending_vehicle_recoveries[entity_id]
+		if server_tick < int(pending["complete_at_tick"]):
+			continue
+		_pending_vehicle_recoveries.erase(entity_id)
+		var result := _recover_destroyed_vehicle_to_base(entity_id, pending)
+		_send_reliable(int(pending["peer_id"]), {
+			"type": "vehicle_recovery_completed" if result.ok else "command_rejected",
+			"result": _wire_result(result),
+		})
+
+
+## 原子地把击毁实体迁移到大厅一层，并把新实例生命设置为最大值的 10%。
+func _recover_destroyed_vehicle_to_base(entity_id: String, pending: Dictionary) -> Dictionary:
+	var session: ServerSession = sessions.session_for_entity(entity_id)
+	if session == null or session.map_instance_id != String(pending["source_instance_id"]):
+		return _failure(&"vehicle_recovery.session_changed", "session changed during rescue")
+	var source := map_registry.instance_by_id(session.map_instance_id)
+	var destination := map_registry.instance_by_map_id(BASE_HALL_MAP_ID)
+	var source_entity: AuthoritativeEntity = source.entities.get(entity_id) if source != null else null
+	var source_vehicle := source.vehicle_combat_state_for(entity_id) if source != null else null
+	if source_entity == null or source_vehicle == null or source_vehicle.health > 0:
+		return _failure(&"vehicle_recovery.no_longer_destroyed", "vehicle is no longer destroyed")
+	if destination == null:
+		return _failure(&"vehicle_recovery.base_unavailable", "base hall is unavailable")
+	var spawn_point: MapSpawnPoint = destination.definition.spawn_by_id(
+		destination.definition.default_spawn_id
+	)
+	if spawn_point == null:
+		return _failure(&"vehicle_recovery.spawn_unavailable", "base spawn is unavailable")
+	var spawn_position := destination.admitted_spawn_position(
+		spawn_point.position, StringName(entity_id) if destination == source else &""
+	)
+	if not spawn_position.is_finite():
+		return _failure(&"vehicle_recovery.spawn_blocked", "base spawn is blocked")
+	var recovered_entity := source_entity
+	if destination == source:
+		_place_transitioned_entity(recovered_entity, destination, spawn_position)
+	else:
+		var spawned := destination.spawn_entity(
+			entity_id, spawn_position, source_entity.movement_speed
+		)
+		if not spawned.ok:
+			return _failure(&"vehicle_recovery.spawn_blocked", "base rejected rescue spawn")
+		recovered_entity = spawned.value
+		_copy_transitioned_entity_state(source_entity, recovered_entity)
+		if not source.remove_entity(entity_id):
+			destination.remove_entity(entity_id)
+			return _failure(&"vehicle_recovery.atomic_commit_failed", "source entity disappeared")
+		session.map_instance_id = destination.instance_id
+	var recovered_vehicle := destination.vehicle_combat_state_for(entity_id)
+	if recovered_vehicle == null:
+		return _failure(&"vehicle_recovery.combat_state_missing", "base vehicle state is missing")
+	recovered_vehicle.health = maxi(
+		1, ceili(float(recovered_vehicle.max_health) * VEHICLE_RECOVERY_HEALTH_RATIO)
+	)
+	var joined := MapJoinedContract.new(
+		String(destination.definition.map_id), destination.instance_id, entity_id,
+		recovered_entity.position, destination.definition.schema_version, server_tick,
+	)
+	return _success({
+		"map_joined": joined.to_dictionary(),
+		"snapshot": destination.snapshot_for_actor(
+			server_tick, float(server_tick) / float(config.simulation_hz), entity_id
+		),
+		"recovered_health": recovered_vehicle.health,
+		"input_sequence": int(pending["input_sequence"]),
+	})
+
+
 ## 执行 `snapshot_for_peer` 对应的模块操作。
 ## [param peer_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## 返回该函数计算、查询或操作得到的结果。
@@ -605,6 +730,12 @@ func dispatch_transport_command(
 				"type": "loot_picked_up" if result.ok else "command_rejected",
 				"result": _wire_result(result),
 			})
+		Protocol.VEHICLE_RECOVERY_INTENT:
+			var result := handle_peer_vehicle_recovery(peer_id, payload)
+			_send_reliable(peer_id, {
+				"type": "vehicle_recovery_scheduled" if result.ok else "command_rejected",
+				"result": _wire_result(result),
+			})
 		TRANSPORT_PLAYER_PANEL_COMMAND:
 			var result := handle_peer_player_panel_command(peer_id, payload)
 			_send_reliable(peer_id, {
@@ -660,6 +791,11 @@ func _on_transport_move_intent(peer_id: int, intent: Dictionary) -> void:
 ## [param intent] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _on_transport_use_ability_intent(peer_id: int, intent: Dictionary) -> void:
 	dispatch_transport_command(peer_id, Protocol.USE_ABILITY_INTENT, intent)
+
+
+## 将战车恢复意图交给统一权威命令分派器。
+func _on_transport_vehicle_recovery_intent(peer_id: int, intent: Dictionary) -> void:
+	dispatch_transport_command(peer_id, Protocol.VEHICLE_RECOVERY_INTENT, intent)
 
 
 ## 处理可靠通道收到的地面掉落拾取意图。

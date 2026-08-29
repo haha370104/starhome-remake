@@ -6,6 +6,7 @@ var peer_id := 0
 var entity_id := ""
 var map_instance_id := ""
 var last_transition_sequence := -1
+var last_recovery_sequence := -1
 var reconnect_token := ""
 var disconnected_at_msec := -1
 var expires_at_msec := -1

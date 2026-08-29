@@ -97,6 +97,11 @@ func send_use_ability_intent(intent: Dictionary) -> void:
 	_enqueue(Protocol.USE_ABILITY_INTENT, intent)
 
 
+## 发送战车击毁后的恢复选择。
+func send_vehicle_recovery_intent(intent: Dictionary) -> void:
+	_enqueue(Protocol.VEHICLE_RECOVERY_INTENT, intent)
+
+
 ## 发送地面掉落拾取意图。
 ## [param intent] 仅含权威掉落实例标识的协议载荷。
 func send_pickup_loot_intent(intent: Dictionary) -> void:
