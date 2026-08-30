@@ -9,7 +9,9 @@ const ProjectileSweep := preload("res://scripts/domain/combat/projectile_sweep.g
 const WorldCombatStatusBarScript := preload("res://scripts/client/presentation/combat/world_combat_status_bar.gd")
 
 const NAME_LABEL_SIZE := Vector2(100.0, 18.0)
-const HEALTH_BAR_OFFSET := Vector2(0.0, 10.0)
+const NAME_FONT_SIZE := 11
+const HEALTH_BAR_WIDTH := 50.0
+const HEALTH_BAR_OFFSET := Vector2(0.0, 20.0)
 const NAME_TO_HEALTH_GAP := 2.0
 
 var entity_id := ""
@@ -64,7 +66,7 @@ func configure(
 	name_label.name = "HoverName"
 	name_label.size = NAME_LABEL_SIZE
 	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	name_label.add_theme_font_size_override("font_size", 13)
+	name_label.add_theme_font_size_override("font_size", NAME_FONT_SIZE)
 	name_label.add_theme_color_override("font_color", Color.RED)
 	name_label.add_theme_color_override("font_shadow_color", Color.BLACK)
 	name_label.add_theme_constant_override("shadow_offset_x", 1)
@@ -80,7 +82,7 @@ func configure(
 	name_label.visible = false
 	add_child(name_label)
 	health_bar = WorldCombatStatusBarScript.new()
-	health_bar.configure(58.0, false, HEALTH_BAR_OFFSET)
+	health_bar.configure(HEALTH_BAR_WIDTH, false, HEALTH_BAR_OFFSET)
 	add_child(health_bar)
 	apply_snapshot(snapshot)
 	return OK

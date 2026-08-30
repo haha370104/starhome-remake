@@ -39,6 +39,14 @@ func _run() -> void:
 			"怪物名称必须使用原客户端红色",
 		)
 		_expect(
+			first.name_label.get_theme_font_size("font_size") == first.NAME_FONT_SIZE,
+			"怪物名称必须使用旧客户端比例的小字号",
+		)
+		_expect(
+			first.health_bar.position == first.HEALTH_BAR_OFFSET,
+			"血条组合必须下移至怪物脚点之外",
+		)
+		_expect(
 			first.name_label.position.y + first.name_label.size.y < first.health_bar.position.y,
 			"怪物名称必须位于血条正上方",
 		)
