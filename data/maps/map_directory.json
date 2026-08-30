@@ -4,6 +4,7 @@
   "definitions": {
     "yian_harbor_hall_floor_1": "res://data/maps/yian_harbor_hall_floor_1.json",
     "yian_harbor_city": "res://data/maps/yian_harbor_city.json",
+    "buli_c03_field_zone": "res://data/maps/buli_c03_field_zone.json",
     "d04_field_zone": "res://data/maps/d04_field_zone.json",
     "g08_field_zone": "res://data/maps/g08_field_zone.json"
   },

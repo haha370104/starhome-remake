@@ -149,9 +149,10 @@
         65
       ],
       "destination": {
+        "map_id": "buli_c03_field_zone",
         "legacy_code": "c03",
         "entry_number": 0,
-        "external": true
+        "external": false
       },
       "source_audit": {
         "source_release": "starhome_lz_ry",
