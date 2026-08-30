@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "content_version": "glory-sprite-runtime-v1",
+  "packs": [
+    {
+      "pack_id": "glory_sprites_001_v1",
+      "path": "res://assets/content_packs/glory_sprites_001_v1.zip",
+      "size_bytes": 532651347,
+      "sha256": "33f987c2639e9253c1c1a23654e6e650496e8f3ae88bc4d10c67d8582dcc38c0",
+      "content_groups": [
+        "sprites",
+        "animations",
+        "ui",
+        "audio_references"
+      ]
+    },
+    {
+      "pack_id": "glory_sprites_002_v1",
+      "path": "res://assets/content_packs/glory_sprites_002_v1.zip",
+      "size_bytes": 530778485,
+      "sha256": "081ffa3e0f307f1e67cd54c84fc568a77bf681a9c96a72e9f2f569c87555932e",
+      "content_groups": [
+        "sprites",
+        "animations",
+        "ui",
+        "audio_references"
+      ]
+    },
+    {
+      "pack_id": "glory_sprites_003_v1",
+      "path": "res://assets/content_packs/glory_sprites_003_v1.zip",
+      "size_bytes": 329578101,
+      "sha256": "a05c0091fef456230674a76241455ee33406778dcbd4d353a5f70b08b119b063",
+      "content_groups": [
+        "sprites",
+        "animations",
+        "ui",
+        "audio_references"
+      ]
+    }
+  ],
+  "summary": {
+    "sprites": 13888,
+    "decoded_bytes": 1405604807,
+    "packs": 3
+  }
+}
