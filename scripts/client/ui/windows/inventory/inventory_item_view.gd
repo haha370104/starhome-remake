@@ -8,6 +8,9 @@ signal character_equip_requested(instance_id: String, slot_id: String)
 const ItemHoverHighlightScript := preload(
 	"res://scripts/client/ui/windows/item_hover_highlight.gd"
 )
+const ItemTextureResolver := preload(
+	"res://scripts/client/presentation/items/item_presentation_texture_resolver.gd"
+)
 
 var item_snapshot: Dictionary = {}
 var item: GameItem
@@ -23,7 +26,11 @@ var _hover_material: ShaderMaterial
 func configure(domain_item: GameItem) -> void:
 	item = domain_item
 	item_snapshot = item.to_view_dictionary()
+	var inventory_presentation := item.presentation_for("inventory")
+	var resolved_visual := ItemTextureResolver.resolve(inventory_presentation)
 	var native_size := item.visual_size_for("inventory")
+	if not resolved_visual.is_empty() and not inventory_presentation.has("native_size"):
+		native_size = Vector2i(resolved_visual["size"])
 	size = Vector2(native_size)
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	var item_tooltip := "%s\n%s" % [
@@ -34,8 +41,7 @@ func configure(domain_item: GameItem) -> void:
 
 	_icon = TextureRect.new()
 	_icon.name = "Icon"
-	var icon_path := item.icon_path
-	_icon.texture = load(icon_path) as Texture2D if ResourceLoader.exists(icon_path) else null
+	_icon.texture = resolved_visual.get("texture") as Texture2D
 	_icon.position = Vector2.ZERO
 	_icon.size = Vector2(native_size)
 	_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE

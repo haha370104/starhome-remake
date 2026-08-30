@@ -8,6 +8,9 @@ const TooltipFormatter := preload("res://scripts/client/ui/windows/equipment_too
 const ItemHoverHighlightScript := preload(
 	"res://scripts/client/ui/windows/item_hover_highlight.gd"
 )
+const ItemTextureResolver := preload(
+	"res://scripts/client/presentation/items/item_presentation_texture_resolver.gd"
+)
 const BACKGROUND := preload("res://assets/ui/windows/character/background.png")
 const PORTRAIT_BACKGROUND := preload("res://assets/ui/windows/character/portrait_background.jpg")
 const BODY_MALE := preload("res://assets/ui/windows/character/body_male.png")
@@ -139,18 +142,24 @@ func _replace_equipment_layers(worn_items_value: Variant) -> void:
 ## 将一件服装的对话框图按 ALE origin 叠加并绑定悬浮属性。
 ## [param equipment] 带表现锚点、属性和持久化实例信息的穿着快照。
 func _add_equipment_layer(equipment: Dictionary) -> void:
-	var texture_path := String(equipment.get("dialog_texture", ""))
-	if texture_path.is_empty() or not ResourceLoader.exists(texture_path):
+	var dialog_presentation: Dictionary = equipment.get("dialog_presentation", {})
+	if dialog_presentation.is_empty():
+		dialog_presentation = {"dialog_texture": equipment.get("dialog_texture", "")}
+	var resolved_visual := ItemTextureResolver.resolve(dialog_presentation)
+	if resolved_visual.is_empty():
 		return
 	var anchor_value: Array = equipment.get("dialog_anchor", [91, 274])
 	var origin_value: Array = equipment.get("dialog_origin", [0, 0])
-	var texture := load(texture_path) as Texture2D
+	var texture := resolved_visual["texture"] as Texture2D
+	var resolved_origin: Vector2 = resolved_visual.get("origin", Vector2.ZERO)
+	if dialog_presentation.has("dialog_origin"):
+		resolved_origin = Vector2(float(origin_value[0]), float(origin_value[1]))
 	var layer := TextureRect.new()
 	layer.name = "Clothing_%s" % String(equipment.get("definition_id", "unknown"))
 	layer.texture = texture
 	layer.position = Vector2(
-		float(anchor_value[0]) + float(origin_value[0]),
-		float(anchor_value[1]) + float(origin_value[1]),
+		float(anchor_value[0]) + resolved_origin.x,
+		float(anchor_value[1]) + resolved_origin.y,
 	)
 	layer.size = texture.get_size()
 	layer.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
