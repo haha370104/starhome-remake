@@ -1,0 +1,253 @@
+{
+  "schema_version": 1,
+  "map_id": "buli_d03_field_zone",
+  "display_name": "D03区",
+  "category": "field",
+  "legacy": {
+    "codes": [
+      "d03"
+    ]
+  },
+  "world": {
+    "id": "buli",
+    "size": [
+      3384,
+      3360
+    ],
+    "navigation": {
+      "grid_size": [
+        71,
+        560
+      ],
+      "cell_size": [
+        48,
+        12
+      ],
+      "data_path": "res://assets/maps/exploration/buli_d03_field_zone/navigation_grid.bin"
+    }
+  },
+  "assets": {
+    "ids": {
+      "floor": "maps/exploration/buli_d03_field_zone/floor",
+      "minimap": "maps/exploration/buli_d03_field_zone/minimap",
+      "scene_manifest": "maps/exploration/buli_d03_field_zone/scene_manifest"
+    },
+    "resources": {
+      "floor": "res://assets/maps/exploration/buli_d03_field_zone/floor.png",
+      "minimap": "res://assets/maps/exploration/buli_d03_field_zone/minimap.jpg",
+      "scene_manifest": "res://assets/maps/exploration/buli_d03_field_zone/map_manifest.json"
+    }
+  },
+  "spawn_points": {
+    "default_id": "field_center",
+    "points": [
+      {
+        "spawn_id": "field_center",
+        "entry_number": 0,
+        "position": [
+          1680,
+          1680
+        ],
+        "enabled": true,
+        "evidence_level": "navigation_derived",
+        "source_audit": {
+          "source_release": "starhome_lz_ry",
+          "source_map_code": "d03",
+          "source_output": "d03/variant_01_nft_bl/navigation_grid.bin",
+          "derivation": "nearest confirmed walkable cell to map center"
+        }
+      }
+    ]
+  },
+  "navigation_overrides": [],
+  "player_presentation": {
+    "kind": "combat_actor",
+    "actor_id": "starter_combat_vehicle",
+    "manifest": "res://assets/equipment_world/combat_visual_manifest.json",
+    "animation_evidence": {
+      "directional_coverage": "source_confirmed_eight_way",
+      "move_cycle": "source_confirmed_four_frames_per_direction",
+      "idle_cycle": "reconstructed_directional_first_frame"
+    }
+  },
+  "transitions": [
+    {
+      "transition_id": "exit_to_c03",
+      "kind": "standard",
+      "enabled": true,
+      "label": "通往C03区",
+      "source_anchor": [
+        72,
+        1812
+      ],
+      "approach_point": [
+        150,
+        1804
+      ],
+      "presentation": {
+        "kind": "directional_transition",
+        "orientation": "west",
+        "activation": "enabled_transition"
+      },
+      "destination": {
+        "legacy_code": "c03",
+        "entry_number": 0,
+        "external": false,
+        "map_id": "buli_c03_field_zone"
+      },
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_map_code": "d03",
+        "source_output": "maps/d03/variant_01_nft_bl",
+        "source_line": 426,
+        "source_icon_ale": "../../map/mapimg/house/CHN_2005_06_28_19_30_52_38/as5.ale"
+      }
+    },
+    {
+      "transition_id": "exit_to_c04",
+      "kind": "standard",
+      "enabled": true,
+      "label": "通往C04区",
+      "source_anchor": [
+        72,
+        3156
+      ],
+      "approach_point": [
+        140,
+        3148
+      ],
+      "presentation": {
+        "kind": "directional_transition",
+        "orientation": "south_west",
+        "activation": "enabled_transition"
+      },
+      "destination": {
+        "legacy_code": "c04",
+        "entry_number": 0,
+        "external": false,
+        "map_id": "buli_c04_field_zone"
+      },
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_map_code": "d03",
+        "source_output": "maps/d03/variant_01_nft_bl",
+        "source_line": 429,
+        "source_icon_ale": "../../map/mapimg/house/CHN_2005_06_28_19_30_52_38/as6.ale"
+      }
+    },
+    {
+      "transition_id": "exit_to_d04",
+      "kind": "standard",
+      "enabled": true,
+      "label": "通往D04区",
+      "source_anchor": [
+        1728,
+        3144
+      ],
+      "approach_point": [
+        1756,
+        3118
+      ],
+      "presentation": {
+        "kind": "directional_transition",
+        "orientation": "south",
+        "activation": "enabled_transition"
+      },
+      "destination": {
+        "legacy_code": "d04",
+        "entry_number": 0,
+        "external": false,
+        "map_id": "d04_field_zone"
+      },
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_map_code": "d03",
+        "source_output": "maps/d03/variant_01_nft_bl",
+        "source_line": 427,
+        "source_icon_ale": "../../map/mapimg/house/CHN_2005_06_28_19_30_52_38/as7.ale"
+      }
+    },
+    {
+      "transition_id": "exit_to_e03",
+      "kind": "standard",
+      "enabled": true,
+      "label": "通往E03区",
+      "source_anchor": [
+        3264,
+        1656
+      ],
+      "approach_point": [
+        3271,
+        1653
+      ],
+      "presentation": {
+        "kind": "directional_transition",
+        "orientation": "east",
+        "activation": "enabled_transition"
+      },
+      "destination": {
+        "legacy_code": "e03",
+        "entry_number": 0,
+        "external": true
+      },
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_map_code": "d03",
+        "source_output": "maps/d03/variant_01_nft_bl",
+        "source_line": 425,
+        "source_icon_ale": "../../map/mapimg/house/CHN_2005_06_28_19_30_52_38/as1.ale"
+      }
+    },
+    {
+      "transition_id": "exit_to_e04",
+      "kind": "standard",
+      "enabled": true,
+      "label": "通往E04区",
+      "source_anchor": [
+        3216,
+        3144
+      ],
+      "approach_point": [
+        3240,
+        3136
+      ],
+      "presentation": {
+        "kind": "directional_transition",
+        "orientation": "south_east",
+        "activation": "enabled_transition"
+      },
+      "destination": {
+        "legacy_code": "e04",
+        "entry_number": 0,
+        "external": true
+      },
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_map_code": "d03",
+        "source_output": "maps/d03/variant_01_nft_bl",
+        "source_line": 428,
+        "source_icon_ale": "../../map/mapimg/house/CHN_2005_06_28_19_30_52_38/as8.ale"
+      }
+    }
+  ],
+  "source_audit": {
+    "source_release": "starhome_lz_ry",
+    "source_world": "NFT_BL",
+    "source_map_code": "d03",
+    "source_map_name": "D03区域",
+    "source_output": "d03/variant_01_nft_bl",
+    "source_branches": [
+      "NFT_BL",
+      "NFT_BT"
+    ],
+    "source_script_sha256": "da90af0eeaea5e128214d54de8c89d8b5d7ed8d573a5e244b469ca5e792ef9a9",
+    "navigation_sha256": "3d97a03b6c3e3628e1bab5ef8dfb19d9f332790a1208493a462f737e2279464a",
+    "navigation_passable": 34271,
+    "navigation_blocked": 5489,
+    "scene_objects_resolved": 33,
+    "scene_objects_missing": 0,
+    "semantic_layers": 73,
+    "presentation_state": "runtime_ready",
+    "promoted_transition_count": 5
+  }
+}

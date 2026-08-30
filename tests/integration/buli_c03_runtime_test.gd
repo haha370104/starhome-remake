@@ -21,8 +21,12 @@ func _initialize() -> void:
 	_expect(catalog.validate_links(), "运行地图内部传送应完整解析：%s" % catalog.errors)
 
 	var c03: MapDefinition = catalog.map_by_id(&"buli_c03_field_zone")
+	var c04: MapDefinition = catalog.map_by_id(&"buli_c04_field_zone")
+	var d03: MapDefinition = catalog.map_by_id(&"buli_d03_field_zone")
 	var d04: MapDefinition = catalog.map_by_id(&"d04_field_zone")
 	_expect(c03 != null, "NFT_BL/C03 应成为可运行地图")
+	_expect(c04 != null, "NFT_BL/C04 应成为可运行地图")
+	_expect(d03 != null, "NFT_BL/D03 应成为可运行地图")
 	_expect(d04 != null, "D04 运行地图应继续存在")
 	if c03 != null:
 		_expect(c03.world_id == &"buli", "C03 应保留布里世界身份")
@@ -41,6 +45,22 @@ func _initialize() -> void:
 		_expect(
 			catalog.resolve_target(c03.transition_by_id(&"exit_to_d04_field"), c03.world_id) == d04,
 			"C03 返回 D04 的内部边应解析",
+		)
+		_expect(
+			catalog.resolve_target(c03.transition_by_id(&"exit_to_c04_field"), c03.world_id) == c04,
+			"C03 到 C04 的内部边应解析",
+		)
+		_expect(
+			catalog.resolve_target(c03.transition_by_id(&"exit_to_d03_field"), c03.world_id) == d03,
+			"C03 到 D03 的内部边应解析",
+		)
+	for imported: MapDefinition in [c04, d03]:
+		if imported == null:
+			continue
+		_expect(imported.world_id == &"buli", "新增地图应保留布里世界身份")
+		_expect(
+			imported.source_audit.get("scene_objects_missing") == 0,
+			"新增地图不应遗漏已解析场景物件",
 		)
 	if d04 != null:
 		_expect(

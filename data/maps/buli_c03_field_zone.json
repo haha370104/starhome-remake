@@ -80,7 +80,12 @@
         "orientation": "south",
         "activation": "enabled_transition"
       },
-      "destination": {"legacy_code": "c04", "entry_number": 0, "external": true},
+      "destination": {
+        "map_id": "buli_c04_field_zone",
+        "legacy_code": "c04",
+        "entry_number": 0,
+        "external": false
+      },
       "source_audit": {
         "source_release": "starhome_lz_ry",
         "source_map_code": "c03",
@@ -101,7 +106,12 @@
         "orientation": "east",
         "activation": "enabled_transition"
       },
-      "destination": {"legacy_code": "d03", "entry_number": 0, "external": true},
+      "destination": {
+        "map_id": "buli_d03_field_zone",
+        "legacy_code": "d03",
+        "entry_number": 0,
+        "external": false
+      },
       "source_audit": {
         "source_release": "starhome_lz_ry",
         "source_map_code": "c03",
