@@ -4,7 +4,7 @@ extends RefCounted
 const DomainResult := preload("res://scripts/core/domain_result.gd")
 const VehicleAssemblyCalculator := preload("res://scripts/domain/combat/vehicle_assembly_calculator.gd")
 const DEFAULT_CATALOG_PATH := "res://data/gameplay/stage3/catalog_v1.json"
-const CONTROLLED_DATA_ROOT := "res://data/gameplay/stage3/"
+const CONTROLLED_DATA_ROOT := "res://data/gameplay/"
 const SUPPORTED_SCHEMA_VERSION := 1
 const STARTER_ABILITY_ID := "energy_cannon.primary"
 const STARTER_ROCKET_ABILITY_ID := "rocket_launcher.primary"
@@ -15,6 +15,7 @@ var _starter_loadout: Dictionary = {}
 var _equipment_by_id: Dictionary = {}
 var _monsters_by_id: Dictionary = {}
 var _d04_encounter: Dictionary = {}
+var _encounters_by_map_id: Dictionary = {}
 
 
 ## 加载并校验 `load_default` 对应的模块状态。
@@ -41,7 +42,9 @@ static func load_file(catalog_path: String) -> DomainResult:
 	if not references is Dictionary:
 		return DomainResult.failure(&"combat.invalid_catalog", "catalog definitions must be a dictionary")
 	var documents: Dictionary = {}
-	for key: String in ["starter_loadout", "monsters", "d04_encounters"]:
+	for key: String in [
+		"starter_loadout", "monsters", "d04_encounters", "glory_monsters", "glory_encounters"
+	]:
 		var path := String(references.get(key, ""))
 		if not _is_controlled_json_path(path):
 			return DomainResult.failure(&"combat.catalog_path_not_allowed", "definition path is outside the controlled stage-three directory")
@@ -201,9 +204,10 @@ func d04_monster_lifecycles(map_instance_id: String) -> DomainResult:
 func monster_lifecycles_for_map(map_id: String, map_instance_id: String) -> DomainResult:
 	if map_instance_id.is_empty():
 		return DomainResult.failure(&"combat.invalid_map_instance", "monster lifecycle generation requires a map instance")
-	if map_id != String(_d04_encounter["map_id"]):
+	var encounter := _encounter_for_map(map_id)
+	if encounter.is_empty():
 		return DomainResult.ok([])
-	if not bool(_d04_encounter["enabled"]):
+	if not bool(encounter["enabled"]):
 		return DomainResult.ok([])
 	var policy := monster_population_policy_for_map(map_id)
 	return monster_replenishment_for_map(
@@ -216,9 +220,10 @@ func monster_lifecycles_for_map(map_id: String, map_instance_id: String) -> Doma
 ## 返回启用地图的种群策略副本；无配置时返回空字典。
 ## 设计：调用方不得持有并修改目录内部配置。
 func monster_population_policy_for_map(map_id: String) -> Dictionary:
-	if map_id != String(_d04_encounter.get("map_id", "")) or not bool(_d04_encounter.get("enabled", false)):
+	var encounter := _encounter_for_map(map_id)
+	if encounter.is_empty() or not bool(encounter.get("enabled", false)):
 		return {}
-	return (_d04_encounter.get("population_policy", {}) as Dictionary).duplicate(true)
+	return (encounter.get("population_policy", {}) as Dictionary).duplicate(true)
 
 
 ## 计算本轮应补数量；阈值采用严格小于，结果始终受地图上限钳制。
@@ -257,9 +262,10 @@ func monster_replenishment_for_map(
 ) -> DomainResult:
 	if map_instance_id.is_empty() or first_sequence < 0 or requested_count < 0:
 		return DomainResult.failure(&"combat.invalid_population_request", "monster replenishment request is invalid")
-	if map_id != String(_d04_encounter.get("map_id", "")) or not bool(_d04_encounter.get("enabled", false)):
+	var encounter := _encounter_for_map(map_id)
+	if encounter.is_empty() or not bool(encounter.get("enabled", false)):
 		return DomainResult.ok([])
-	var groups: Array = _d04_encounter["spawn_groups"]
+	var groups: Array = encounter["spawn_groups"]
 	var working_counts := alive_by_species.duplicate()
 	var result: Array[Dictionary] = []
 	for batch_index: int in range(requested_count):
@@ -276,7 +282,7 @@ func monster_replenishment_for_map(
 		var species_count := int(working_counts.get(species_id, 0))
 		var sequence := first_sequence + batch_index
 		result.append(_monster_lifecycle_definition(
-			selected_group, map_instance_id, sequence, species_count
+			encounter, selected_group, map_instance_id, sequence, species_count
 		))
 		working_counts[species_id] = species_count + 1
 	return DomainResult.ok(result)
@@ -290,6 +296,7 @@ func monster_replenishment_for_map(
 ## 返回包含数值、AI、掉落和确定性生成位置的完整定义。
 ## 设计：目录只生成领域数据，不直接创建运行时怪物对象。
 func _monster_lifecycle_definition(
+	encounter: Dictionary,
 	group: Dictionary,
 	map_instance_id: String,
 	sequence: int,
@@ -300,12 +307,14 @@ func _monster_lifecycle_definition(
 	var stats: Dictionary = species["stats"]
 	var combat: Dictionary = species["combat"]
 	return {
-				"monster_id": "%s.population.%d" % [_d04_encounter["encounter_id"], sequence],
+				"monster_id": "%s.population.%d" % [encounter["encounter_id"], sequence],
 				"species_id": species_id,
 				"map_instance_id": map_instance_id,
 				"position": Vector2.INF,
 				"spawn_distribution": String(
-					_monster_population_policy().get("spawn_distribution", "full_walkable_map")
+					(encounter.get("population_policy", {}) as Dictionary).get(
+						"spawn_distribution", "full_walkable_map"
+					)
 				),
 				"spawn_index": sequence,
 				"max_health": int(stats["max_health"]),
@@ -334,8 +343,9 @@ func _monster_lifecycle_definition(
 
 ## 读取 D04 遭遇配置中的怪物种群维持策略。
 ## 返回可安全读取的种群策略字典。
-func _monster_population_policy() -> Dictionary:
-	return _d04_encounter.get("population_policy", {}) as Dictionary
+func _encounter_for_map(map_id: String) -> Dictionary:
+	var value: Variant = _encounters_by_map_id.get(map_id)
+	return value as Dictionary if value is Dictionary else {}
 
 
 ## 执行 `equipment_definition` 对应的模块操作。
@@ -354,6 +364,24 @@ func monster_definition(species_id: String) -> Dictionary:
 	return definition.duplicate(true) if definition is Dictionary else {}
 
 
+## 返回已接入权威运行时的全部怪物物种 ID，主要供内容完整性审计使用。
+func monster_ids() -> PackedStringArray:
+	var result := PackedStringArray()
+	for species_id: Variant in _monsters_by_id.keys():
+		result.append(String(species_id))
+	result.sort()
+	return result
+
+
+## 返回具备可靠客户端地图关系的地图 ID；未恢复关系的物种仍可由显式配置生成。
+func monster_encounter_map_ids() -> PackedStringArray:
+	var result := PackedStringArray()
+	for map_id: Variant in _encounters_by_map_id.keys():
+		result.append(String(map_id))
+	result.sort()
+	return result
+
+
 ## 执行 `configure` 对应的模块操作。
 ## [param catalog] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## [param documents] 调用方传入的参数；具体约束由函数签名和所在模块定义。
@@ -367,15 +395,31 @@ func _configure(catalog: Dictionary, documents: Dictionary) -> DomainResult:
 			return header_result
 		if String(document["content_version"]) != content_version:
 			return DomainResult.failure(&"combat.catalog_version_mismatch", "catalog documents must share one content version")
+	for key: String in ["glory_monsters", "glory_encounters"]:
+		var glory_header := _validate_document_header(documents[key], key)
+		if not glory_header.is_ok:
+			return glory_header
 	_starter_loadout = documents["starter_loadout"].duplicate(true)
 	_d04_encounter = documents["d04_encounters"].duplicate(true)
 	var equipment_result := _index_definitions(_starter_loadout.get("definitions"), _equipment_by_id, "equipment")
 	if not equipment_result.is_ok:
 		return equipment_result
+	var glory_monster_document: Dictionary = documents["glory_monsters"]
+	var glory_monster_result := _index_definitions(
+		glory_monster_document.get("definitions"), _monsters_by_id, "Glory monster"
+	)
+	if not glory_monster_result.is_ok:
+		return glory_monster_result
 	var monster_document: Dictionary = documents["monsters"]
-	var monster_result := _index_definitions(monster_document.get("definitions"), _monsters_by_id, "monster")
+	var monster_result := _index_definitions(
+		monster_document.get("definitions"), _monsters_by_id, "monster", true
+	)
 	if not monster_result.is_ok:
 		return monster_result
+	var encounter_result := _index_encounters(documents["glory_encounters"].get("encounters"))
+	if not encounter_result.is_ok:
+		return encounter_result
+	_encounters_by_map_id[String(_d04_encounter["map_id"])] = _d04_encounter.duplicate(true)
 	return _validate_runtime_links()
 
 
@@ -384,7 +428,12 @@ func _configure(catalog: Dictionary, documents: Dictionary) -> DomainResult:
 ## [param destination] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## [param context] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## 返回该函数计算、查询或操作得到的结果。
-func _index_definitions(raw_definitions: Variant, destination: Dictionary, context: String) -> DomainResult:
+func _index_definitions(
+	raw_definitions: Variant,
+	destination: Dictionary,
+	context: String,
+	allow_override := false,
+) -> DomainResult:
 	if not raw_definitions is Array:
 		return DomainResult.failure(&"combat.invalid_catalog", "%s definitions must be an array" % context)
 	for raw_definition: Variant in raw_definitions:
@@ -392,11 +441,26 @@ func _index_definitions(raw_definitions: Variant, destination: Dictionary, conte
 			return DomainResult.failure(&"combat.invalid_catalog", "%s definition must be a dictionary" % context)
 		var definition: Dictionary = raw_definition
 		var definition_id := String(definition.get("id", ""))
-		if definition_id.is_empty() or destination.has(definition_id):
+		if definition_id.is_empty() or (destination.has(definition_id) and not allow_override):
 			return DomainResult.failure(&"combat.invalid_catalog", "%s definition ID is empty or duplicated" % context)
 		if not definition.get("stats") is Dictionary:
 			return DomainResult.failure(&"combat.invalid_catalog", "%s stats must be a dictionary" % context)
 		destination[definition_id] = definition.duplicate(true)
+	return DomainResult.ok()
+
+
+## 建立地图到怪物种群定义的索引；D04 的手工首切配置会在随后覆盖同名地图。
+func _index_encounters(raw_encounters: Variant) -> DomainResult:
+	if not raw_encounters is Array:
+		return DomainResult.failure(&"combat.invalid_catalog", "Glory encounters must be an array")
+	for raw_encounter: Variant in raw_encounters:
+		if not raw_encounter is Dictionary:
+			return DomainResult.failure(&"combat.invalid_catalog", "Glory encounter must be a dictionary")
+		var encounter: Dictionary = raw_encounter
+		var map_id := String(encounter.get("map_id", ""))
+		if map_id.is_empty() or _encounters_by_map_id.has(map_id):
+			return DomainResult.failure(&"combat.invalid_catalog", "Glory encounter map ID is empty or duplicated")
+		_encounters_by_map_id[map_id] = encounter.duplicate(true)
 	return DomainResult.ok()
 
 
@@ -415,22 +479,25 @@ func _validate_runtime_links() -> DomainResult:
 	for weapon_id: String in ["starter_rocket_launcher", "starter_missile"]:
 		if not _equipment_by_id.has(weapon_id):
 			return DomainResult.failure(&"combat.invalid_catalog", "starter secondary weapon is unresolved")
-	var groups: Variant = _d04_encounter.get("spawn_groups")
-	var policy: Variant = _d04_encounter.get("population_policy")
-	if String(_d04_encounter.get("map_id", "")) != "d04_field_zone" or not groups is Array:
-		return DomainResult.failure(&"combat.invalid_catalog", "D04 encounter identity or spawn groups are invalid")
-	if not policy is Dictionary or int(policy.get("maximum_population", 0)) <= 0 \
-		or float(policy.get("replenish_interval_seconds", 0.0)) <= 0.0 \
-		or String(policy.get("spawn_distribution", "")) != "full_walkable_map" \
-		or float(policy.get("minimum_spawn_separation", 0.0)) < 0.0:
-		return DomainResult.failure(&"combat.invalid_catalog", "D04 population policy is invalid")
-	for raw_group: Variant in groups:
-		if not raw_group is Dictionary:
-			return DomainResult.failure(&"combat.invalid_catalog", "D04 spawn group must be a dictionary")
-		var group: Dictionary = raw_group
-		if not _monsters_by_id.has(String(group.get("monster_id", ""))) \
-			or float(group.get("weight", 0.0)) <= 0.0:
-			return DomainResult.failure(&"combat.invalid_catalog", "D04 spawn group contains unresolved or invalid data")
+	if String(_d04_encounter.get("map_id", "")) != "d04_field_zone":
+		return DomainResult.failure(&"combat.invalid_catalog", "D04 encounter identity is invalid")
+	for encounter: Dictionary in _encounters_by_map_id.values():
+		var groups: Variant = encounter.get("spawn_groups")
+		var policy: Variant = encounter.get("population_policy")
+		if not groups is Array or groups.is_empty():
+			return DomainResult.failure(&"combat.invalid_catalog", "encounter spawn groups are invalid")
+		if not policy is Dictionary or int(policy.get("maximum_population", 0)) <= 0 \
+			or float(policy.get("replenish_interval_seconds", 0.0)) <= 0.0 \
+			or String(policy.get("spawn_distribution", "")) != "full_walkable_map" \
+			or float(policy.get("minimum_spawn_separation", 0.0)) < 0.0:
+			return DomainResult.failure(&"combat.invalid_catalog", "encounter population policy is invalid")
+		for raw_group: Variant in groups:
+			if not raw_group is Dictionary:
+				return DomainResult.failure(&"combat.invalid_catalog", "encounter spawn group must be a dictionary")
+			var group: Dictionary = raw_group
+			if not _monsters_by_id.has(String(group.get("monster_id", ""))) \
+				or float(group.get("weight", 0.0)) <= 0.0:
+				return DomainResult.failure(&"combat.invalid_catalog", "encounter group contains unresolved or invalid data")
 	for species: Dictionary in _monsters_by_id.values():
 		var stats: Dictionary = species["stats"]
 		var combat: Dictionary = species.get("combat", {})

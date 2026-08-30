@@ -15,6 +15,7 @@ func _initialize() -> void:
 	_test_controlled_load_and_read_only_queries()
 	_test_formal_starter_definitions()
 	_test_d04_lifecycle_definitions()
+	_test_full_glory_monster_catalog()
 	_test_catalog_to_authoritative_module_seam()
 	if failures.is_empty():
 		print("COMBAT_DEFINITION_CATALOG_OK (%d assertions)" % assertions)
@@ -154,6 +155,26 @@ func _test_d04_lifecycle_definitions() -> void:
 	admitted_definition["position"] = Vector2(240, 240)
 	_expect(lifecycle.configure(admitted_definition, 20).is_ok, "map-admitted D04 definition should initialize MonsterLifecycle")
 	_expect(lifecycle.max_health == int(lifecycles[0]["max_health"]), "monster lifecycle should preserve formal health semantics")
+
+
+## 校验 119 条客户端 NPC 数值均可查询，且可靠恢复的地图关系能展开为权威种群。
+func _test_full_glory_monster_catalog() -> void:
+	var catalog: Variant = CatalogScript.load_default().value
+	_expect(catalog.monster_ids().size() == 119, "all 119 Glory NPC rows should be registered")
+	_expect(catalog.monster_encounter_map_ids().size() == 11, "ten recovered Glory map relations plus curated D04 should be configured")
+	var low_temperature_gel: Dictionary = catalog.monster_definition("glory_monster_005")
+	_expect(low_temperature_gel["display_name"] == "低温毒胶", "generated IDs should retain the decoded Chinese NPC name")
+	_expect(int(low_temperature_gel["stats"]["max_health"]) == 72, "generated monsters should retain client health fields")
+	_expect(low_temperature_gel["presentation"]["mode"] == "ale_repository", "generated monsters should address the lazy ALE repository")
+	var e06_result: Variant = catalog.monster_lifecycles_for_map(
+		"glory_nft_bl_e06", "glory.e06.catalog-test"
+	)
+	_expect(e06_result.is_ok and e06_result.value.size() == 100, "a recovered Glory encounter should expand to the configured cap")
+	var e06_species: Dictionary = {}
+	for definition: Dictionary in e06_result.value:
+		e06_species[String(definition["species_id"])] = true
+	_expect(e06_species.has("glory_monster_005"), "E06 should include the palette-confirmed low-temperature gel")
+	_expect(e06_species.has("glory_monster_008"), "E06 should include the palette-confirmed toxic Om adult")
 
 
 ## 执行 `test_catalog_to_authoritative_module_seam` 对应的模块操作。

@@ -9,7 +9,9 @@
   "definitions": {
     "starter_loadout": "res://data/gameplay/stage3/starter_loadout_v1.json",
     "monsters": "res://data/gameplay/stage3/monsters_v1.json",
-    "d04_encounters": "res://data/gameplay/stage3/d04_encounters_v1.json"
+    "d04_encounters": "res://data/gameplay/stage3/d04_encounters_v1.json",
+    "glory_monsters": "res://data/gameplay/glory/glory_monsters_v1.json",
+    "glory_encounters": "res://data/gameplay/glory/glory_monster_encounters_v1.json"
   },
   "runtime_ids": {
     "vehicle": ["recruit_tank"],
