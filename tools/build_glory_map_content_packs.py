@@ -72,6 +72,32 @@ def write_object(path: Path, value: dict[str, Any]) -> None:
     )
 
 
+def write_runtime_index(
+    path: Path,
+    summary: dict[str, Any],
+    rows: list[dict[str, Any]],
+    unresolved: list[str],
+) -> None:
+    """Keep the large generated index reviewable and below commit line limits."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    lines = [
+        "{",
+        '  "schema_version": 1,',
+        '  "content_version": %s,' % json.dumps(CONTENT_VERSION),
+        '  "summary": %s,' % json.dumps(summary, ensure_ascii=False, separators=(",", ":")),
+        '  "runtime_maps": [',
+    ]
+    for index, row in enumerate(rows):
+        suffix = "," if index + 1 < len(rows) else ""
+        lines.append("    " + json.dumps(row, ensure_ascii=False, separators=(",", ":")) + suffix)
+    lines.extend([
+        "  ],",
+        '  "unresolved_source_ids": %s' % json.dumps(unresolved, ensure_ascii=False),
+        "}",
+    ])
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
 def stable_token(value: str) -> str:
     token = re.sub(r"[^a-z0-9]+", "_", value.lower()).strip("_")
     if token:
@@ -468,13 +494,7 @@ def build(arguments: argparse.Namespace) -> dict[str, Any]:
         "packs": pack_entries,
         "summary": plan,
     })
-    write_object(RUNTIME_INDEX_PATH, {
-        "schema_version": 1,
-        "content_version": CONTENT_VERSION,
-        "summary": plan,
-        "runtime_maps": runtime_rows,
-        "unresolved_source_ids": unresolved_rows,
-    })
+    write_runtime_index(RUNTIME_INDEX_PATH, plan, runtime_rows, unresolved_rows)
     merged_paths = dict(current_paths)
     for map_id in generated_definitions:
         merged_paths[map_id] = "res://content/glory/map_definitions/%s.json" % map_id
