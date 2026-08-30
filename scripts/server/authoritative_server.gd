@@ -24,6 +24,9 @@ const AutosaveServiceScript := preload("res://scripts/server/persistence/authori
 const PlayerPanelServiceScript := preload("res://scripts/server/player_panels/authoritative_player_panel_service.gd")
 const DomainResultScript := preload("res://scripts/core/domain_result.gd")
 const CombatTraceLogger := preload("res://scripts/core/combat_trace_logger.gd")
+const RuntimeContentBootstrapScript := preload(
+	"res://scripts/content/runtime_content_bootstrap.gd"
+)
 
 signal snapshot_generated(snapshot: Dictionary)
 signal command_rejected(peer_id: int, code: StringName)
@@ -35,6 +38,7 @@ const TRANSPORT_PLAYER_PANEL_COMMAND := &"player_panel_command"
 const BASE_HALL_MAP_ID := "yian_harbor_hall_floor_1"
 const VEHICLE_RECOVERY_DELAY_SECONDS := 3.0
 const VEHICLE_RECOVERY_HEALTH_RATIO := 0.10
+const GLORY_RUNTIME_MAP_INDEX_PATH := "res://data/content/glory_map_runtime_index_v1.json"
 
 var config: DedicatedServerConfig
 var map_instance: AuthoritativeMapInstance
@@ -53,6 +57,8 @@ var player_state_repository: PlayerStateRepository
 var autosave_service: AuthoritativeAutosaveService
 var player_panel_service: AuthoritativePlayerPanelService
 var _pending_vehicle_recoveries: Dictionary = {}
+var _runtime_definition_paths_by_map_id: Dictionary = {}
+var _runtime_map_ids_by_legacy_world: Dictionary = {}
 
 
 ## 节点进入场景树后初始化运行依赖。
@@ -103,6 +109,12 @@ func initialize(
 	var errors := config.validation_errors()
 	if not errors.is_empty():
 		return _failure(&"invalid_server_config", "; ".join(errors))
+	var content_result: Dictionary = RuntimeContentBootstrapScript.mount_default()
+	if not bool(content_result.get("ok", false)):
+		return _failure(&"runtime_content_mount_failed", String(content_result.get("message", "")))
+	var runtime_index_result := _load_runtime_map_index()
+	if not runtime_index_result.ok:
+		return runtime_index_result
 	map_registry = MapRegistryScript.new()
 	var combat_catalog_result = CombatCatalogScript.load_default()
 	if not combat_catalog_result.is_ok:
@@ -435,7 +447,7 @@ func handle_peer_map_transition(peer_id: int, raw_intent: Variant) -> Dictionary
 			ErrorCodes.MAP_TRANSITION_TOO_FAR,
 			"entity is outside the authoritative exit activation radius",
 		)
-	var destination_instance := map_registry.resolve_transition_target(
+	var destination_instance := _resolve_or_load_transition_target(
 		transition, source_instance.definition.world_id
 	)
 	if destination_instance == null:
@@ -1230,6 +1242,10 @@ func _restore_persistent_player_state(
 	var target := map_registry.instance_by_id(state.map_instance_id)
 	if target == null:
 		target = map_registry.instance_by_map_id(state.map_id)
+	if target == null:
+		var ensured := ensure_runtime_map(state.map_id)
+		if ensured.ok:
+			target = ensured.value
 	if source == null or target == null:
 		return false
 	var source_entity: AuthoritativeEntity = source.entities.get(session.entity_id)
@@ -1282,6 +1298,96 @@ func _save_all_persistent_players() -> void:
 ## 在服务器节点退出场景树前执行最后一次权威存档。
 func _exit_tree() -> void:
 	_save_all_persistent_players()
+
+
+## 读取全量荣耀地图索引，但不构建导航图；地图实例在首次进入时创建。
+func _load_runtime_map_index() -> Dictionary:
+	_runtime_definition_paths_by_map_id.clear()
+	_runtime_map_ids_by_legacy_world.clear()
+	if not FileAccess.file_exists(GLORY_RUNTIME_MAP_INDEX_PATH):
+		return _failure(&"runtime_map_index_missing", "Glory runtime map index is missing")
+	var parsed: Variant = JSON.parse_string(
+		FileAccess.get_file_as_string(GLORY_RUNTIME_MAP_INDEX_PATH)
+	)
+	if not parsed is Dictionary or not parsed.get("runtime_maps", []) is Array:
+		return _failure(&"runtime_map_index_invalid", "Glory runtime map index is invalid")
+	for row_value: Variant in parsed["runtime_maps"]:
+		if not row_value is Dictionary:
+			return _failure(&"runtime_map_index_invalid", "runtime map row must be a dictionary")
+		var row: Dictionary = row_value
+		var map_id := String(row.get("runtime_id", ""))
+		var definition_path := String(row.get("definition_path", ""))
+		var world_id := String(row.get("world_id", ""))
+		var legacy_code := String(row.get("map_code", "")).strip_edges().to_lower()
+		if map_id.is_empty() or world_id.is_empty() or legacy_code.is_empty() \
+				or not definition_path.begins_with("res://") \
+				or not FileAccess.file_exists(definition_path):
+			return _failure(&"runtime_map_index_invalid", "runtime map row is incomplete")
+		if _runtime_definition_paths_by_map_id.has(map_id):
+			return _failure(&"runtime_map_index_duplicate", "runtime map ID is duplicated")
+		_runtime_definition_paths_by_map_id[map_id] = definition_path
+		if not _runtime_map_ids_by_legacy_world.has(world_id):
+			_runtime_map_ids_by_legacy_world[world_id] = {}
+		var world_index: Dictionary = _runtime_map_ids_by_legacy_world[world_id]
+		if world_index.has(legacy_code):
+			return _failure(&"runtime_map_index_duplicate", "runtime legacy map key is duplicated")
+		world_index[legacy_code] = map_id
+	return _success(_runtime_definition_paths_by_map_id.size())
+
+
+## 确保受控索引中的地图存在权威实例；未知客户端 ID 无法注入文件路径。
+func ensure_runtime_map(map_id: String) -> Dictionary:
+	var existing := map_registry.instance_by_map_id(map_id) if map_registry != null else null
+	if existing != null:
+		return _success(existing)
+	var definition_path := String(_runtime_definition_paths_by_map_id.get(map_id, ""))
+	if definition_path.is_empty():
+		return _failure(&"runtime_map_unknown", "runtime map is absent from the controlled index")
+	var loaded_instance: AuthoritativeMapInstance = MapInstanceScript.new()
+	_configure_map_instance(loaded_instance)
+	var map_result := loaded_instance.load_map(definition_path)
+	if not map_result.ok:
+		return _failure(
+			&"runtime_map_load_failed",
+			"%s: %s" % [definition_path, map_result.get("message", "unknown map error")],
+		)
+	var combat_result := loaded_instance.configure_combat(_combat_catalog, config.simulation_hz)
+	if not combat_result.ok:
+		return _failure(
+			&"runtime_map_combat_failed",
+			"%s: %s" % [definition_path, combat_result.get("message", "unknown combat error")],
+		)
+	var mining_result := loaded_instance.configure_mining(_mining_catalog, config.simulation_hz)
+	if not mining_result.ok:
+		return _failure(
+			&"runtime_map_mining_failed",
+			"%s: %s" % [definition_path, mining_result.get("message", "unknown mining error")],
+		)
+	var registration := map_registry.register_instance(loaded_instance)
+	return _success(loaded_instance) if registration.ok else registration
+
+
+## 先查已加载实例，再按 map_id 或当前世界旧代码惰性创建目标实例。
+func _resolve_or_load_transition_target(
+	transition: MapTransition,
+	source_world_id: StringName,
+) -> AuthoritativeMapInstance:
+	var existing := map_registry.resolve_transition_target(transition, source_world_id)
+	if existing != null:
+		return existing
+	var target_map_id := String(transition.destination_map_id)
+	if target_map_id.is_empty() and not transition.destination_legacy_code.is_empty():
+		var target_world := transition.destination_world_id
+		if target_world.is_empty():
+			target_world = source_world_id
+		var world_index: Dictionary = _runtime_map_ids_by_legacy_world.get(String(target_world), {})
+		target_map_id = String(
+			world_index.get(transition.destination_legacy_code.strip_edges().to_lower(), "")
+		)
+	if target_map_id.is_empty():
+		return null
+	var ensured := ensure_runtime_map(target_map_id)
+	return ensured.value if ensured.ok else null
 
 
 ## 加载并校验 `load_configured_map_instances` 对应的模块状态。
