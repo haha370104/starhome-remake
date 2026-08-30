@@ -41,6 +41,10 @@ func _run() -> void:
 		"all current runtime item IDs should be represented",
 	)
 	_expect(registry.size() == 2346, "three catalogs should expose 2346 registrations")
+	_expect(
+		registry.registrations_for_runtime(&"map", "buli_c03_field_zone").size() == 1,
+		"promoted Buli C03 should be represented by its NFT_BL source registration",
+	)
 
 	var d04_sources: Array[Dictionary] = registry.registrations_for_runtime(
 		&"map", "d04_field_zone"
