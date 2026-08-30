@@ -452,6 +452,10 @@ func _combat_rejection_text(code: StringName) -> String:
 			return "目标已经被击败"
 		&"combat.self_repair_not_needed":
 			return "战车生命已满，无需维修"
+		&"combat.repair_skill_insufficient":
+			return "维修技能等级不足，无法启动当前战车的自维修器"
+		&"combat.self_repair_unavailable":
+			return "当前战车没有可用的自维修器"
 		&"combat.vehicle_destroyed":
 			return "战车已损毁，无法自维修"
 		&"combat.not_available":
@@ -1106,11 +1110,14 @@ func _request_vehicle_recovery() -> void:
 
 
 ## 显示服务器确认的基地救援等待时间。
+## [param delay_seconds] 调用方传入的 `delay_seconds` 参数。
 func _on_vehicle_recovery_scheduled(delay_seconds: float) -> void:
 	vehicle_destroyed_dialog.show_recovery_scheduled(delay_seconds)
 
 
 ## 恢复被服务器拒绝的死亡窗选择。
+## [param _code] 调用方传入的 `_code` 参数。
+## [param _message] 调用方传入的 `_message` 参数。
 func _on_vehicle_recovery_failed(_code: StringName, _message: String) -> void:
 	vehicle_destroyed_dialog.show_recovery_failed("基地救援请求被拒绝，请重试")
 

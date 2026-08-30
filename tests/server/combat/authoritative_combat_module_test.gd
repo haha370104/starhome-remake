@@ -352,12 +352,14 @@ func _test_authoritative_ground_loot_lifecycle() -> void:
 	_expect(not module.commit_loot_pickup("player.loot", String(loot.loot_id)).is_ok, "the same drop must not be picked up twice")
 
 
-## 验证自维修的三秒周期、每二十级加成、工作能耗和受击后三秒延迟。
+## 验证底盘维修力、技能门槛、装备加成、三秒周期与工作能耗。
 func _test_authoritative_self_repair_cycles() -> void:
 	var module := _new_module(108)
 	var assembly: Dictionary = _assembly_result().value
 	assembly["self_repair_base_strength"] = 5
+	assembly["self_repair_bonus_strength"] = 1
 	assembly["self_repair_energy_cost"] = 5.0
+	assembly["self_repair_required_skill_level"] = 10
 	module.register_vehicle(
 		"player.repair", MAP_INSTANCE_ID, Vector2.ZERO, assembly,
 		{ABILITY_ID: _fixed_damage_weapon(1)},
@@ -371,11 +373,19 @@ func _test_authoritative_self_repair_cycles() -> void:
 		"full-health vehicle should not start a repair loop",
 	)
 	state.apply_damage(20)
-	var started := module.handle_self_repair("player.repair", _self_repair_intent(2), 39)
+	var insufficient_skill := module.handle_self_repair(
+		"player.repair", _self_repair_intent(2), 9
+	)
+	_expect(
+		not insufficient_skill.is_ok \
+		and insufficient_skill.error_code == &"combat.repair_skill_insufficient",
+		"repair skill below the installed chassis requirement should be rejected",
+	)
+	var started := module.handle_self_repair("player.repair", _self_repair_intent(3), 39)
 	_expect(started.is_ok, "damaged vehicle should start authoritative self-repair")
 	_expect(
 		int(started.value["health_per_cycle"]) == 6,
-		"level 39 repair should add exactly one point to base five",
+		"one equipment point should add to chassis power while skill level adds nothing",
 	)
 	module.advance_ticks(59)
 	_expect(state.health == 50, "self-repair should not resolve before three seconds")
@@ -394,7 +404,7 @@ func _test_authoritative_self_repair_cycles() -> void:
 	)
 	module.advance_ticks(20)
 	var attack := module.handle_energy_cannon_attack(
-		"player.repair", _attack_intent(Vector2(100.0, 0.0), 3)
+		"player.repair", _attack_intent(Vector2(100.0, 0.0), 4)
 	)
 	_expect(attack.is_ok, "an equipped weapon attack should be accepted during self-repair")
 	_expect(
@@ -408,7 +418,7 @@ func _test_authoritative_self_repair_cycles() -> void:
 	)
 	state.apply_damage(1)
 	var movement_started := module.handle_self_repair(
-		"player.repair", _self_repair_intent(4), 39
+		"player.repair", _self_repair_intent(5), 39
 	)
 	_expect(movement_started.is_ok, "repair should be restartable after attack cancellation")
 	_expect(
@@ -431,8 +441,8 @@ func _test_authoritative_self_repair_cycles() -> void:
 		"player.level40", _self_repair_intent(1), 40
 	)
 	_expect(
-		level_started.is_ok and int(level_started.value["health_per_cycle"]) == 7,
-		"level 40 repair should add two points to base five",
+		level_started.is_ok and int(level_started.value["health_per_cycle"]) == 6,
+		"higher repair skill should satisfy the gate without changing chassis repair power",
 	)
 	level_state.working_energy = 4.0
 	level_module.advance_ticks(60)

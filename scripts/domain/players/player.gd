@@ -87,6 +87,20 @@ func grant_skill_experience(
 	return DomainResult.ok(value)
 
 
+## 汇总当前人物穿着对战车维修属性的加成，并委托战车聚合计算最终面板数值。
+## 返回战车基础属性、自维修力拆分和能源状态。
+## 设计：人物服装归 Player 所有，战车不反向持有人物；Player 作为聚合根完成跨子对象组合。
+func calculate_vehicle_stats() -> Dictionary:
+	var self_repair_bonus := 0
+	var external_repair_bonus := 0
+	for clothing: Clothing in character_equipment.items():
+		if clothing.durability <= 0:
+			continue
+		self_repair_bonus += maxi(0, int(clothing.stat("self_repair_bonus", 0)))
+		external_repair_bonus += maxi(0, int(clothing.stat("external_repair_bonus", 0)))
+	return vehicle.calculate_stats(self_repair_bonus, external_repair_bonus)
+
+
 ## 移动背包物品并由背包维护自身 revision。
 ## [param instance_id] 物品实例标识。
 ## [param requested_position] 请求的像素坐标。

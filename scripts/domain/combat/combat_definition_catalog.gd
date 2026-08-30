@@ -81,6 +81,7 @@ func starter_vehicle_assembly(
 	}
 	var components: Array[Dictionary] = []
 	var equipment_hardiness: Dictionary = {chassis_id: int(chassis_stats["max_durability"])}
+	var self_repair_bonus_strength := maxi(0, int(chassis_stats.get("self_repair_bonus", 0)))
 	for raw_id: Variant in _starter_loadout["equipped_item_ids"]:
 		var equipment_id := String(raw_id)
 		var equipment: Dictionary = _equipment_by_id[equipment_id]
@@ -93,6 +94,7 @@ func starter_vehicle_assembly(
 			component["propulsion"] = stats["drive"]
 			component["required_driving_level"] = stats["required_skill_level"]
 		components.append(component)
+		self_repair_bonus_strength += maxi(0, int(stats.get("self_repair_bonus", 0)))
 		equipment_hardiness[equipment_id] = int(stats["max_durability"])
 	var result := VehicleAssemblyCalculator.calculate(
 		calculator_chassis, components, driving_skill_level, movement_config
@@ -102,7 +104,9 @@ func starter_vehicle_assembly(
 	var assembly: Dictionary = result.value
 	assembly["vehicle_id"] = chassis_id
 	assembly["self_repair_base_strength"] = int(chassis_stats["repair_strength"])
+	assembly["self_repair_bonus_strength"] = self_repair_bonus_strength
 	assembly["self_repair_energy_cost"] = float(chassis_stats["repair_energy_cost"])
+	assembly["self_repair_required_skill_level"] = int(chassis_stats["repair_skill_level"])
 	assembly["equipment_hardiness"] = equipment_hardiness
 	assembly["unknown_fields"] = ["beginner_engine.server_energy_drain_interval_seconds"]
 	return DomainResult.ok(assembly)
@@ -295,6 +299,7 @@ func monster_replenishment_for_map(
 ## [param _species_count] 该物种在生成本只前的数量，预留给后续密度规则。
 ## 返回包含数值、AI、掉落和确定性生成位置的完整定义。
 ## 设计：目录只生成领域数据，不直接创建运行时怪物对象。
+## [param encounter] 调用方传入的 `encounter` 参数。
 func _monster_lifecycle_definition(
 	encounter: Dictionary,
 	group: Dictionary,
@@ -343,6 +348,7 @@ func _monster_lifecycle_definition(
 
 ## 读取 D04 遭遇配置中的怪物种群维持策略。
 ## 返回可安全读取的种群策略字典。
+## [param map_id] 调用方传入的 `map_id` 参数。
 func _encounter_for_map(map_id: String) -> Dictionary:
 	var value: Variant = _encounters_by_map_id.get(map_id)
 	return value as Dictionary if value is Dictionary else {}
@@ -365,6 +371,7 @@ func monster_definition(species_id: String) -> Dictionary:
 
 
 ## 返回已接入权威运行时的全部怪物物种 ID，主要供内容完整性审计使用。
+## 执行 `monster_ids` 对应的模块操作。
 func monster_ids() -> PackedStringArray:
 	var result := PackedStringArray()
 	for species_id: Variant in _monsters_by_id.keys():
@@ -374,6 +381,7 @@ func monster_ids() -> PackedStringArray:
 
 
 ## 返回具备可靠客户端地图关系的地图 ID；未恢复关系的物种仍可由显式配置生成。
+## 执行 `monster_encounter_map_ids` 对应的模块操作。
 func monster_encounter_map_ids() -> PackedStringArray:
 	var result := PackedStringArray()
 	for map_id: Variant in _encounters_by_map_id.keys():
@@ -428,6 +436,7 @@ func _configure(catalog: Dictionary, documents: Dictionary) -> DomainResult:
 ## [param destination] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## [param context] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## 返回该函数计算、查询或操作得到的结果。
+## [param allow_override] 调用方传入的 `allow_override` 参数。
 func _index_definitions(
 	raw_definitions: Variant,
 	destination: Dictionary,
@@ -450,6 +459,8 @@ func _index_definitions(
 
 
 ## 建立地图到怪物种群定义的索引；D04 的手工首切配置会在随后覆盖同名地图。
+## [param raw_encounters] 调用方传入的 `raw_encounters` 参数。
+## 返回该函数计算、查询或操作得到的结果。
 func _index_encounters(raw_encounters: Variant) -> DomainResult:
 	if not raw_encounters is Array:
 		return DomainResult.failure(&"combat.invalid_catalog", "Glory encounters must be an array")

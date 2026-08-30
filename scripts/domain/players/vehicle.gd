@@ -28,25 +28,43 @@ func _init(state: Dictionary = {}) -> void:
 	output_power = maxf(0.0, float(state.get("output_power", 0.0)))
 
 
-## 汇总底盘、引擎、武器及装甲得到当前战车属性。
+## 汇总底盘、引擎、武器、装甲及维修器得到当前战车属性。
+## [param character_self_repair_bonus] 人物已穿装备提供的额外自维修力。
+## [param character_external_repair_bonus] 人物已穿装备提供的对外维修力。
 ## 返回战斗和装备面板共同消费的属性字典。
 ## 设计：属性计算属于战车聚合；UI 与应用服务只投影结果，不重复理解装备字段。
-func calculate_stats() -> Dictionary:
+func calculate_stats(
+	character_self_repair_bonus: int = 0,
+	character_external_repair_bonus: int = 0,
+) -> Dictionary:
 	var total_weight := 0
 	var propulsion := 0
 	var primary_attack := 0
 	var defense := 0
 	var armor_by_location := {5: 0, 6: 0, 7: 0, 8: 0}
 	var chassis_base_health := 0
+	var self_repair_base := 0
+	var self_repair_bonus := maxi(0, character_self_repair_bonus)
+	var extra_repair := maxi(0, character_external_repair_bonus)
+	var self_repair_energy_cost := 0.0
+	var required_repair_skill_level := 0
 	for equipment: VehicleEquipment in loadout.items():
 		total_weight += equipment.weight
 		if equipment is VehicleChassis:
 			var chassis := equipment as VehicleChassis
 			chassis_base_health += chassis.base_max_health
+			self_repair_base += chassis.self_repair_power()
+			self_repair_energy_cost += chassis.self_repair_energy_cost
+			required_repair_skill_level = maxi(
+				required_repair_skill_level, chassis.required_repair_skill_level
+			)
 		elif equipment is VehicleEngine:
 			propulsion += (equipment as VehicleEngine).drive
 		elif equipment is VehicleWeapon and equipment.equipment_location == 1:
 			primary_attack += (equipment as VehicleWeapon).base_attack
+		if equipment.durability > 0:
+			self_repair_bonus += maxi(0, int(equipment.stat("self_repair_bonus", 0)))
+			extra_repair += maxi(0, int(equipment.stat("external_repair_bonus", 0)))
 		var armor_value := int(equipment.stat("armor", 0))
 		defense += armor_value
 		if armor_by_location.has(equipment.equipment_location):
@@ -72,9 +90,12 @@ func calculate_stats() -> Dictionary:
 		"propulsion": propulsion,
 		"output_power": output_power,
 		"weight": total_weight,
-		"self_repair_base": 0,
-		"self_repair_bonus": 0,
-		"extra_repair": 0,
+		"self_repair_base": self_repair_base,
+		"self_repair_bonus": self_repair_bonus,
+		"self_repair_total": self_repair_base + self_repair_bonus,
+		"self_repair_energy_cost": self_repair_energy_cost,
+		"required_repair_skill_level": required_repair_skill_level,
+		"extra_repair": extra_repair,
 		"reserve_energy": reserve_energy,
 		"reserve_energy_capacity": reserve_energy_capacity,
 		"working_energy": working_energy,

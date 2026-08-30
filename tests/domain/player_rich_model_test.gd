@@ -55,6 +55,13 @@ func _initialize() -> void:
 	var stats := player.vehicle.calculate_stats()
 	_expect(stats.defense == 10, "战车防御应由底盘对象计算为 10")
 	_expect(stats.energy_cannon_attack == 7, "主武器对象应提供 7 点能量炮攻击")
+	_expect(stats.self_repair_base == 5, "底盘对象应提供 5 点基础自维修力")
+	_expect(stats.self_repair_total == 5, "维修技能等级不应直接放大战车自维修力")
+	_expect(stats.required_repair_skill_level == 10, "底盘应保存 10 级维修技能使用门槛")
+	_expect(is_equal_approx(stats.self_repair_energy_cost, 5.0), "底盘应保存单周期 5 点维修能耗")
+	var chassis := player.vehicle.loadout.at(0) as VehicleChassis
+	_expect(chassis.can_activate_self_repair(10), "达到底盘维修门槛时应允许启动自维修")
+	_expect(not chassis.can_activate_self_repair(9), "低于底盘维修门槛时应拒绝启动自维修")
 	var bundle := PlayerPanelProjectorScript.new(catalog).build_bundle(player)
 	var current: CurrentPlayer = CurrentPlayerScript.new()
 	_expect(current.apply_bundle(bundle), "客户端应从网络 DTO 重建 CurrentPlayer")

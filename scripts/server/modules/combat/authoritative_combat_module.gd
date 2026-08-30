@@ -12,7 +12,6 @@ const ACTOR_PROJECTILE_HITBOX_RADIUS := 18.0
 const LOOT_PICKUP_RADIUS := 125.0
 const SELF_REPAIR_ABILITY_ID := "self_repair"
 const SELF_REPAIR_INTERVAL_SECONDS := 3.0
-const SELF_REPAIR_SKILL_LEVELS_PER_BONUS := 20
 const MONSTER_ROUTE_REPLAN_DISTANCE := 24.0
 const MONSTER_MINIMUM_ACCEPTED_MOTION := 0.05
 
@@ -118,7 +117,13 @@ func register_vehicle(
 		"vehicle_state": vehicle_state,
 		"weapons": normalized_weapons,
 		"self_repair_base_strength": maxi(
-			0, int(assembly.get("self_repair_base_strength", 5))
+			0, int(assembly.get("self_repair_base_strength", 0))
+		),
+		"self_repair_bonus_strength": maxi(
+			0, int(assembly.get("self_repair_bonus_strength", 0))
+		),
+		"self_repair_required_skill_level": maxi(
+			0, int(assembly.get("self_repair_required_skill_level", 0))
 		),
 		"cooldown_ready_ticks": {},
 		"last_command_sequence": -1,
@@ -356,7 +361,7 @@ func _nearest_target_to_point(
 ## [param raw_intent] 只含地图、能力、坐标与单调序号的通用能力意图。
 ## [param repair_skill_level] 服务器持久化聚合读取的维修基础等级，客户端不得提供。
 ## 返回自维修启动状态；重复启动保持幂等，非法地图、序号或战车状态返回领域错误。
-## 设计：客户端只请求开始；周期、技能加成、能耗、受击延迟和实际回血全部由本模块裁决。
+## 设计：客户端只请求开始；底盘维修力、装备加成、技能门槛、能耗和实际回血均由本模块裁决。
 func handle_self_repair(
 	actor_id: String,
 	raw_intent: Variant,
@@ -378,6 +383,12 @@ func handle_self_repair(
 		return DomainResult.failure(&"combat.map_instance_mismatch", "self-repair targets another map instance")
 	if intent.ability_id != SELF_REPAIR_ABILITY_ID:
 		return DomainResult.failure(&"combat.unknown_ability", "ability is not self-repair")
+	var required_skill_level := int(actor["self_repair_required_skill_level"])
+	if repair_skill_level < required_skill_level:
+		return DomainResult.failure(
+			&"combat.repair_skill_insufficient",
+			"repair skill level does not meet the installed chassis requirement",
+		)
 	var vehicle_state: VehicleCombatState = actor["vehicle_state"]
 	if vehicle_state.health <= 0:
 		return DomainResult.failure(&"combat.vehicle_destroyed", "destroyed vehicle cannot self-repair")
@@ -393,14 +404,15 @@ func handle_self_repair(
 			"health_per_cycle": int(repair_state["health_per_cycle"]),
 		})
 	var base_strength := maxi(0, int(actor.get("self_repair_base_strength", 0)))
-	if base_strength == 0:
-		base_strength = 5
+	var bonus_strength := maxi(0, int(actor.get("self_repair_bonus_strength", 0)))
+	if base_strength + bonus_strength <= 0:
+		return DomainResult.failure(
+			&"combat.self_repair_unavailable", "installed chassis has no self-repair capability"
+		)
 	var interval_ticks := maxi(1, roundi(SELF_REPAIR_INTERVAL_SECONDS * float(simulation_hz)))
 	repair_state["active"] = true
 	repair_state["skill_level"] = repair_skill_level
-	repair_state["health_per_cycle"] = base_strength + floori(
-		float(repair_skill_level) / float(SELF_REPAIR_SKILL_LEVELS_PER_BONUS)
-	)
+	repair_state["health_per_cycle"] = base_strength + bonus_strength
 	repair_state["next_cycle_tick"] = current_tick + interval_ticks
 	return DomainResult.ok(_record_combat_event({
 		"event_type": &"self_repair_started",
@@ -408,8 +420,11 @@ func handle_self_repair(
 		"actor_id": actor_id,
 		"next_cycle_tick": int(repair_state["next_cycle_tick"]),
 		"health_per_cycle": int(repair_state["health_per_cycle"]),
+		"base_self_repair_power": base_strength,
+		"bonus_self_repair_power": bonus_strength,
 		"working_energy_cost": float(repair_state["working_energy_cost"]),
 		"repair_skill_level": repair_skill_level,
+		"required_repair_skill_level": required_skill_level,
 	}))
 
 
@@ -793,6 +808,11 @@ func snapshot_for_actor(actor_id: String) -> Dictionary:
 	local_vehicle["self_repair_active"] = bool(repair_state["active"])
 	local_vehicle["self_repair_next_cycle_tick"] = int(repair_state["next_cycle_tick"])
 	local_vehicle["self_repair_health_per_cycle"] = int(repair_state["health_per_cycle"])
+	local_vehicle["self_repair_base_power"] = int(actor["self_repair_base_strength"])
+	local_vehicle["self_repair_bonus_power"] = int(actor["self_repair_bonus_strength"])
+	local_vehicle["self_repair_required_skill_level"] = int(
+		actor["self_repair_required_skill_level"]
+	)
 	return {
 		"server_tick": current_tick,
 		"local_entity_id": actor_id,

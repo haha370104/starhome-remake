@@ -24,7 +24,7 @@ func build_bundle(player: Player) -> Dictionary:
 		"transaction_revision": player.revision,
 		"character": _character_snapshot(player),
 		"inventory": _inventory_snapshot(player.inventory),
-		"vehicle": _vehicle_snapshot(player.vehicle),
+		"vehicle": _vehicle_snapshot(player),
 	}
 
 
@@ -76,9 +76,10 @@ func _inventory_snapshot(inventory: Inventory) -> Dictionary:
 
 
 ## 构建战车装配及汇总属性 DTO。
-## [param vehicle] 玩家战车领域对象。
+## [param player] 持有战车及人物穿着的玩家聚合根。
 ## 返回 Location 装备、表现层和战车自身计算的属性。
-func _vehicle_snapshot(vehicle: PlayerVehicle) -> Dictionary:
+func _vehicle_snapshot(player: Player) -> Dictionary:
+	var vehicle := player.vehicle
 	var equipped: Array[Dictionary] = []
 	for equipment: VehicleEquipment in vehicle.loadout.items():
 		equipped.append(_equipment_view(equipment, "vehicle"))
@@ -88,7 +89,7 @@ func _vehicle_snapshot(vehicle: PlayerVehicle) -> Dictionary:
 		"vehicle_definition_id": vehicle.definition_id,
 		"display_name": _catalog.display_name(vehicle.definition_id),
 		"equipped": equipped,
-		"stats": vehicle.calculate_stats(),
+		"stats": player.calculate_vehicle_stats(),
 	}
 
 
