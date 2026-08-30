@@ -1,0 +1,115 @@
+{
+  "schema_version": 1,
+  "content_version": "glory-map-runtime-v1",
+  "packs": [
+    {
+      "pack_id": "glory_maps_index_v1",
+      "path": "res://assets/content_packs/glory_maps_index_v1.zip",
+      "size_bytes": 2116183,
+      "sha256": "c19a55ce0b994dd8e90d0fb8204f3e46fa1189b111a1a1e0a3996302403c7889",
+      "content_groups": [
+        "maps"
+      ]
+    },
+    {
+      "pack_id": "glory_maps_001_v1",
+      "path": "res://assets/content_packs/glory_maps_001_v1.zip",
+      "size_bytes": 1073601419,
+      "sha256": "a457e8d95bcf6d357bb2b7b63d1525469b6b692499ffbd65472e4c8c90aed212",
+      "content_groups": [
+        "maps"
+      ]
+    },
+    {
+      "pack_id": "glory_maps_002_v1",
+      "path": "res://assets/content_packs/glory_maps_002_v1.zip",
+      "size_bytes": 1069659730,
+      "sha256": "6b2d4474760709d27cf2588c2002366db67bfed5ada3dabc09d9dc260dcb28d5",
+      "content_groups": [
+        "maps"
+      ]
+    },
+    {
+      "pack_id": "glory_maps_003_v1",
+      "path": "res://assets/content_packs/glory_maps_003_v1.zip",
+      "size_bytes": 1051115538,
+      "sha256": "477380e60b5e4d67d09a253ce0d3f43bc3cd54564096ffc641ac008d2c464223",
+      "content_groups": [
+        "maps"
+      ]
+    },
+    {
+      "pack_id": "glory_maps_004_v1",
+      "path": "res://assets/content_packs/glory_maps_004_v1.zip",
+      "size_bytes": 1067474201,
+      "sha256": "22be660b39acc7bb7a63b7fde0457d3912afd92dc3cff9538d5afd2ad4ca27fa",
+      "content_groups": [
+        "maps"
+      ]
+    },
+    {
+      "pack_id": "glory_maps_005_v1",
+      "path": "res://assets/content_packs/glory_maps_005_v1.zip",
+      "size_bytes": 1064096235,
+      "sha256": "27140fb0117efd16dc13e53d6e70640c071b28bf473bcbbdd6fb43c7b6411dae",
+      "content_groups": [
+        "maps"
+      ]
+    },
+    {
+      "pack_id": "glory_maps_006_v1",
+      "path": "res://assets/content_packs/glory_maps_006_v1.zip",
+      "size_bytes": 1070930374,
+      "sha256": "e031e3b33d606ded0aba7176baa22b89be4a879c355818a672c8c9bee9a99381",
+      "content_groups": [
+        "maps"
+      ]
+    },
+    {
+      "pack_id": "glory_maps_007_v1",
+      "path": "res://assets/content_packs/glory_maps_007_v1.zip",
+      "size_bytes": 1072561915,
+      "sha256": "fcb8168bed763f633b1d556a2c2ba4d45467742158e6dba1f9d9fa60d9cf54e5",
+      "content_groups": [
+        "maps"
+      ]
+    },
+    {
+      "pack_id": "glory_maps_008_v1",
+      "path": "res://assets/content_packs/glory_maps_008_v1.zip",
+      "size_bytes": 1052314176,
+      "sha256": "5ef4ed0b7d0476d1389f6905c573daecec41f18416dac15923d96c850c6c5a53",
+      "content_groups": [
+        "maps"
+      ]
+    },
+    {
+      "pack_id": "glory_maps_009_v1",
+      "path": "res://assets/content_packs/glory_maps_009_v1.zip",
+      "size_bytes": 1042481302,
+      "sha256": "4fc4b3e8479a6db986e0f48ddd8955f38f37938fd254e8c41d90b16d19285b40",
+      "content_groups": [
+        "maps"
+      ]
+    },
+    {
+      "pack_id": "glory_maps_010_v1",
+      "path": "res://assets/content_packs/glory_maps_010_v1.zip",
+      "size_bytes": 141590659,
+      "sha256": "125c16da411fd7fd0da8fd4b5abf056372719bc190bdac00e62f7bf65ea28f42",
+      "content_groups": [
+        "maps"
+      ]
+    }
+  ],
+  "summary": {
+    "schema_version": 1,
+    "content_version": "glory-map-runtime-v1",
+    "source_rows": 814,
+    "resolved_runtime_rows": 810,
+    "generated_definitions": 801,
+    "existing_semantic_definitions": 9,
+    "unique_presentations": 486,
+    "unresolved_source_rows": 4
+  }
+}
