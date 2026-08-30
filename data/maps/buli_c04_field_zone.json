@@ -124,7 +124,8 @@
       "destination": {
         "legacy_code": "c05",
         "entry_number": 0,
-        "external": true
+        "external": false,
+        "map_id": "buli_c05_field_zone"
       },
       "source_audit": {
         "source_release": "starhome_lz_ry",
@@ -219,7 +220,8 @@
       "destination": {
         "legacy_code": "d05",
         "entry_number": 0,
-        "external": true
+        "external": false,
+        "map_id": "buli_d05_field_zone"
       },
       "source_audit": {
         "source_release": "starhome_lz_ry",
