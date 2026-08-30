@@ -8,6 +8,7 @@ const GAMEPLAY_PATHS := [
 	"res://data/gameplay/stage3/starter_loadout_v1.json",
 	"res://data/gameplay/character_items_v1.json",
 	"res://data/gameplay/material_items_v1.json",
+	"res://data/gameplay/glory/glory_items_v1.json",
 ]
 const PRESENTATION_PATHS := [
 	"res://data/presentation/player_equipment_v1.json",
@@ -58,8 +59,12 @@ func create(definition_id: String, state: Dictionary) -> DomainResult:
 			return DomainResult.ok(VehicleChassis.new(definition, state))
 		"vehicle_engine":
 			return DomainResult.ok(VehicleEngine.new(definition, state))
-		"energy_cannon", "missile_weapon", "rocket_weapon":
+		"energy_cannon", "missile_weapon", "rocket_weapon", "vehicle_weapon":
 			return DomainResult.ok(VehicleWeapon.new(definition, state))
+		"vehicle_equipment":
+			return DomainResult.ok(VehicleEquipment.new(definition, state))
+		"equipment":
+			return DomainResult.ok(Equipment.new(definition, state))
 		_:
 			if definition.has("equipment_location"):
 				return DomainResult.ok(VehicleEquipment.new(definition, state))
@@ -72,6 +77,21 @@ func create(definition_id: String, state: Dictionary) -> DomainResult:
 func display_name(definition_id: String) -> String:
 	var definition: Dictionary = _definitions.get(definition_id, {})
 	return String(definition.get("display_name", definition_id))
+
+
+## 返回全部可实例化定义 ID，供内容完整性测试与后续商店/任务目录连接使用。
+func definition_ids() -> PackedStringArray:
+	var result := PackedStringArray()
+	for definition_id: Variant in _definitions.keys():
+		result.append(String(definition_id))
+	result.sort()
+	return result
+
+
+## 返回单项定义的防御性副本；领域外不得修改目录内部状态。
+func definition(definition_id: String) -> Dictionary:
+	var value: Variant = _definitions.get(definition_id)
+	return value.duplicate(true) if value is Dictionary else {}
 
 
 ## 读取单个玩法定义文件并合并到目录。

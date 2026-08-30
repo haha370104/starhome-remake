@@ -21,6 +21,13 @@ func _initialize() -> void:
 	if not initialized.is_ok:
 		_finish()
 		return
+	_expect(catalog.definition_ids().size() == 1284, "原有 14 项与 1270 项荣耀物品应全部可实例化")
+	var glory_chassis_id := "glory_equipment_tank1_c2ba1ac5af"
+	var glory_chassis_definition := catalog.definition(glory_chassis_id)
+	_expect(not glory_chassis_definition.is_empty(), "新兵战车源定义应进入统一物品目录")
+	if not glory_chassis_definition.is_empty():
+		var glory_chassis := catalog.create(glory_chassis_id, {"instance_id": "glory.chassis"})
+		_expect(glory_chassis.is_ok and glory_chassis.value is VehicleChassis, "荣耀战车应组装为充血底盘类型")
 	var player := _build_player(catalog)
 	_expect(player != null, "测试玩家聚合应完成组装")
 	if player == null:
