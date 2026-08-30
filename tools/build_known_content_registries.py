@@ -44,11 +44,13 @@ RUNTIME_MAPS = {
     ("city1svr", "NFT_BT"): ("yian_harbor_city", "ready"),
     ("c03", "NFT_BL"): ("buli_c03_field_zone", "ready"),
     ("c04", "NFT_BL"): ("buli_c04_field_zone", "ready"),
+    ("c05", "NFT_BL"): ("buli_c05_field_zone", "ready"),
     ("d03", "NFT_BL"): ("buli_d03_field_zone", "ready"),
     ("d04", "NFT_BL"): ("d04_field_zone", "ready"),
     ("d04", "NFT_BT"): ("d04_field_zone", "ready"),
     ("d04", "NFT_BTB"): ("d04_field_zone", "ready"),
     ("d04", "NFT_PL"): ("d04_field_zone", "ready"),
+    ("d05", "NFT_BL"): ("buli_d05_field_zone", "ready"),
     ("g08", "NFT_BL"): ("g08_field_zone", "partial"),
     ("g08", "NFT_BT"): ("g08_field_zone", "partial"),
 }
