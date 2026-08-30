@@ -255,6 +255,9 @@ def build_definition(
     map_size = [int(value) for value in metadata["map_pixel_size"]]
     map_code = str(row["map_code"]).lower()
     asset_root = "content/glory/maps/" + presentation.relative_source
+    business_asset_root = "maps/runtime/map_" + hashlib.sha256(
+        str(row["id"]).encode("utf-8")
+    ).hexdigest()[:12]
     category = "field" if metadata.get("category") == "field_code" else "scene"
     actor = {
         "kind": "combat_actor",
@@ -284,9 +287,9 @@ def build_definition(
         },
         "assets": {
             "ids": {
-                "floor": asset_root + "/floor",
-                "minimap": asset_root + "/minimap",
-                "scene_manifest": asset_root + "/scene_manifest",
+                "floor": business_asset_root + "/floor",
+                "minimap": business_asset_root + "/minimap",
+                "scene_manifest": business_asset_root + "/scene_manifest",
             },
             "resources": {
                 "floor": "res://%s/floor.png" % asset_root,
@@ -380,11 +383,11 @@ def build(arguments: argparse.Namespace) -> dict[str, Any]:
         map_code = str(row["map_code"]).lower()
         existing_id = existing_legacy.get((world_id, map_code), "")
         generated_id = existing_id or runtime_id(world_code, map_code)
-        target_ids[(world_code, map_code)] = generated_id
         presentation = resolve_presentation(row.get("resource_ids", []), presentations)
         if presentation is None:
             unresolved_rows.append(str(row["id"]))
             continue
+        target_ids[(world_code, map_code)] = generated_id
         resolved_rows.append((row, presentation, generated_id, world_id))
 
     generated_definitions: dict[str, dict[str, Any]] = {}
