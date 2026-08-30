@@ -52,6 +52,10 @@ def resolved_properties(row: dict[str, str]) -> dict[str, Any]:
 def equipment_kind(row: dict[str, str]) -> str:
     category = row.get("category", "")
     base = row.get("base_class", "").lower()
+    if "missile" in base:
+        return "missile_weapon"
+    if "firegun" in base or "rocket" in base or "huojian" in base:
+        return "rocket_weapon"
     if category == "服装":
         return "character_clothing"
     if category == "战车/载具":
@@ -61,10 +65,6 @@ def equipment_kind(row: dict[str, str]) -> str:
     if category == "武器":
         if "energygun" in base:
             return "energy_cannon"
-        if "missile" in base:
-            return "missile_weapon"
-        if "rocket" in base or "huojian" in base:
-            return "rocket_weapon"
         return "vehicle_weapon"
     return "vehicle_equipment" if category in {"护甲", "其他装备", "机甲", "飞船装备"} else "equipment"
 
