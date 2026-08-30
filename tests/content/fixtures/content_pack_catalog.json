@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "content_version": "test-content-v1",
+  "packs": [
+    {
+      "pack_id": "test_mount_pack",
+      "path": "res://assets/content_packs/test_mount_pack.zip",
+      "size_bytes": 198,
+      "sha256": "dfa71418579a3af034dbd2bdfa02aa6501cf8650caddb9aca1a28779d42ad9b2"
+    }
+  ]
+}
