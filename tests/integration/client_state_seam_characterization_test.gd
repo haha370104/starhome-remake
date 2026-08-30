@@ -1,6 +1,7 @@
 extends SceneTree
 
 const MainHallScene := preload("res://scenes/main_hall.tscn")
+const MISSING_TEST_MAP_ID := &"test_missing_authoritative_map"
 
 var failures: PackedStringArray = []
 var assertions := 0
@@ -105,13 +106,13 @@ func _test_post_authority_preload_failure_locks_old_world() -> void:
 	var old_navigation: RefCounted = hall.navigation
 	var old_npc_count: int = hall.npc_instances.size()
 	var session = hall.multiplayer_presenter.session
-	session.current_map_id = &"g08_field_zone"
-	session.configure_map_instance("g08_field_zone.instance.review")
+	session.current_map_id = MISSING_TEST_MAP_ID
+	session.configure_map_instance("test_missing_authoritative_map.instance.review")
 	var before_sequence: int = session.local_predictor.next_input_sequence
 	hall.call(
 		"_on_authoritative_map_joined",
-		&"g08_field_zone",
-		"g08_field_zone.instance.review",
+		MISSING_TEST_MAP_ID,
+		"test_missing_authoritative_map.instance.review",
 		Vector2(420.0, 520.0),
 		1,
 	)
@@ -123,8 +124,8 @@ func _test_post_authority_preload_failure_locks_old_world() -> void:
 	_expect(hall.call("_world_input_locked"), "权威后预载失败必须冻结旧画面输入")
 	_expect(hall.path_points.is_empty(), "权威后预载失败必须终止旧路线")
 	_expect(hall.active_movement_input_sequence == 0, "权威后预载失败必须清除旧输入序号")
-	_expect(session.current_map_id == &"g08_field_zone", "权威会话地图必须保持服务端已提交目标")
-	_expect(session.current_map_instance_id == "g08_field_zone.instance.review", "权威会话实例必须保持服务端已提交目标")
+	_expect(session.current_map_id == MISSING_TEST_MAP_ID, "权威会话地图必须保持服务端已提交目标")
+	_expect(session.current_map_instance_id == "test_missing_authoritative_map.instance.review", "权威会话实例必须保持服务端已提交目标")
 	hall.call("_move_to", hall.player.position + Vector2(32.0, 0.0))
 	_expect(
 		session.local_predictor.next_input_sequence == before_sequence,

@@ -56,8 +56,13 @@ $client = $null
 try {
     $server = Start-MapTransitionWorker "server"
     $readyPath = Join-Path $resultDir "server_ready.json"
-    $readyDeadline = [DateTime]::UtcNow.AddSeconds(8)
+    # 荣耀版内容装载会在低速磁盘或冷缓存下占用数秒；这里只放宽进程启动阶段，
+    # 客户端握手和业务断言仍由 worker 内各自的短超时约束。
+    $readyDeadline = [DateTime]::UtcNow.AddSeconds(15)
     while (-not (Test-Path -LiteralPath $readyPath -PathType Leaf)) {
+        if ($server.HasExited) {
+            throw "ENet map-transition server exited before becoming ready with exit code $($server.ExitCode). Logs: $resultDir"
+        }
         if ([DateTime]::UtcNow -ge $readyDeadline) {
             throw "ENet map-transition server did not become ready. Logs: $resultDir"
         }
