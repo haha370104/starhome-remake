@@ -5,11 +5,13 @@ signal map_preload_ready(map_id: StringName, bundle: Dictionary)
 signal map_preload_failed(map_id: StringName, message: String)
 
 const MapDefinitionLoaderScript := preload("res://scripts/maps/map_definition_loader.gd")
+const RuntimeTextureLoaderScript := preload("res://scripts/content/runtime_texture_loader.gd")
 
 var _definition_paths: Dictionary = {}
 var _pending_map_id: StringName = &""
 var _pending_definition
 var _pending_resource_paths: Dictionary = {}
+var _pending_resources: Dictionary = {}
 
 
 ## 执行 `configure` 对应的模块操作。
@@ -56,9 +58,17 @@ func preload_map(map_id: StringName) -> Error:
 	_pending_map_id = map_id
 	_pending_definition = definition
 	_pending_resource_paths.clear()
+	_pending_resources.clear()
 	for resource_key in [&"floor", &"minimap"]:
 		var resource_path := String(definition.resource_paths.get(String(resource_key), ""))
 		if resource_path.is_empty():
+			continue
+		if not ResourceLoader.exists(resource_path):
+			var packed_texture: Texture2D = RuntimeTextureLoaderScript.load_texture(resource_path)
+			if packed_texture == null:
+				_fail_pending("无法解码内容包贴图 %s：%s" % [resource_key, resource_path])
+				return ERR_FILE_CORRUPT
+			_pending_resources[resource_key] = packed_texture
 			continue
 		var request_error := ResourceLoader.load_threaded_request(resource_path)
 		if request_error != OK:
@@ -107,7 +117,7 @@ func _complete_pending() -> void:
 	var bundle := {
 		"definition": _pending_definition,
 		"map_manifest": {},
-		"resources": {},
+		"resources": _pending_resources.duplicate(),
 	}
 	for resource_key in _pending_resource_paths:
 		var resource_path := String(_pending_resource_paths[resource_key])
@@ -144,4 +154,5 @@ func _clear_pending() -> void:
 	_pending_map_id = &""
 	_pending_definition = null
 	_pending_resource_paths.clear()
+	_pending_resources.clear()
 	set_process(false)

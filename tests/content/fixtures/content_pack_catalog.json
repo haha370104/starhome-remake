@@ -5,8 +5,8 @@
     {
       "pack_id": "test_mount_pack",
       "path": "res://assets/content_packs/test_mount_pack.zip",
-      "size_bytes": 198,
-      "sha256": "dfa71418579a3af034dbd2bdfa02aa6501cf8650caddb9aca1a28779d42ad9b2"
+      "size_bytes": 402,
+      "sha256": "1bd6acb891b06e91018798028cfcfd6bc34afd2202f5f41a98365c55c8612868"
     }
   ]
 }

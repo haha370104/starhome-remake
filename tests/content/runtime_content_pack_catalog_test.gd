@@ -1,6 +1,7 @@
 extends SceneTree
 
 const CatalogScript := preload("res://scripts/content/runtime_content_pack_catalog.gd")
+const TextureLoaderScript := preload("res://scripts/content/runtime_texture_loader.gd")
 
 var failures: PackedStringArray = []
 var assertions := 0
@@ -20,6 +21,10 @@ func _initialize() -> void:
 		"包内文本内容不匹配",
 	)
 	_expect(catalog.mount_pack(&"test_mount_pack", true), "重复挂载应幂等")
+	var texture: Texture2D = TextureLoaderScript.load_texture("res://content/test/raw_texture.png")
+	_expect(texture != null, "应能从内容包解码未经 Godot 导入的 PNG")
+	if texture != null:
+		_expect(texture.get_size() == Vector2(2, 2), "包内 PNG 尺寸不匹配")
 	if failures.is_empty():
 		print("RUNTIME_CONTENT_PACK_CATALOG_OK (%d assertions)" % assertions)
 		quit(0)
