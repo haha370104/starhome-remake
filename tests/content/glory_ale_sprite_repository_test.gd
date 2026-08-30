@@ -17,7 +17,7 @@ func _initialize() -> void:
 	_expect(packs.mount_all(false), "精灵包应可挂载：%s" % "; ".join(packs.errors))
 	var repository = RepositoryScript.new()
 	_expect(repository.load_default(), "ALE 索引应有效：%s" % "; ".join(repository.errors))
-	_expect(repository.size() == 13888, "ALE 索引数量不匹配")
+	_expect(repository.size() == 13994, "基础 ALE 与两类 ACT 变种索引数量不匹配")
 	var adult := repository.resolve("../pic3/npc/CHN_2005_06_28_18_49_17_921.ale")
 	_expect(not adult.is_empty(), "应按旧 FCC 相对路径解析奥姆虫移动动画")
 	var animation := repository.load_animation(

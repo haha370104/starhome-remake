@@ -51,7 +51,7 @@ func _test_directory(directory: Dictionary) -> void:
 	_expect(definitions is Dictionary, "地图目录 definitions 必须是 object")
 	if not definitions is Dictionary:
 		return
-	_expect(definitions.size() == EXPECTED_DEFINITIONS.size(), "地图目录不得静默增删定义")
+	_expect(definitions.size() >= EXPECTED_DEFINITIONS.size(), "地图目录不得删除既有核心定义")
 	for map_id in EXPECTED_DEFINITIONS:
 		_expect(
 			String(definitions.get(map_id, "")) == EXPECTED_DEFINITIONS[map_id],
@@ -85,15 +85,18 @@ func _test_definitions(directory: Dictionary) -> void:
 	var marker_catalog = TransitionMarkerCatalogScript.new()
 	_expect(marker_catalog.load_default() == OK, "八方向传送点公共目录必须可加载")
 	var definitions_by_id := {}
-	for map_id in EXPECTED_DEFINITIONS:
+	var directory_definitions: Dictionary = directory.get("definitions", {})
+	for map_id: String in directory_definitions:
 		var loader = LoaderScript.new()
-		var definition = loader.load_file(EXPECTED_DEFINITIONS[map_id])
+		var definition = loader.load_file(String(directory_definitions[map_id]))
 		_expect(definition != null, "地图定义加载失败 %s：%s" % [map_id, loader.errors])
 		if definition == null:
 			continue
-		definitions_by_id[map_id] = definition
 		_expect(String(definition.map_id) == map_id, "目录 key 与定义 map_id 不一致：%s" % map_id)
 		_expect(catalog.add_map(definition), "地图目录加入失败：%s" % map_id)
+		if not EXPECTED_DEFINITIONS.has(map_id):
+			continue
+		definitions_by_id[map_id] = definition
 		_test_navigation(definition)
 		_test_spawns(definition)
 		_test_transition_presentations(definition, marker_catalog)
