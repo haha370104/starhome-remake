@@ -12,11 +12,14 @@ var _maps: Dictionary = {}
 
 
 ## 读取默认荣耀版矿物目录与复刻刷新策略。
+## 返回该函数计算、查询或操作得到的结果。
 static func load_default() -> DomainResult:
 	return load_file(DEFAULT_PATH)
 
 
 ## 读取并校验指定矿物配置。
+## [param path] 调用方传入的 `path` 参数。
+## 返回该函数计算、查询或操作得到的结果。
 static func load_file(path: String) -> DomainResult:
 	var loaded := JsonConfigLoader.load_dictionary(path)
 	if not loaded.is_ok:
@@ -27,6 +30,8 @@ static func load_file(path: String) -> DomainResult:
 
 
 ## 返回地图的完整矿源策略；非采矿地图返回空字典。
+## 执行 `policy_for_map` 对应的模块操作。
+## [param map_id] 调用方传入的 `map_id` 参数。
 func policy_for_map(map_id: String) -> Dictionary:
 	var map_value: Variant = _maps.get(map_id)
 	if not map_value is Dictionary or not bool(map_value.get("enabled", false)):
@@ -37,11 +42,15 @@ func policy_for_map(map_id: String) -> Dictionary:
 
 
 ## 按稳定矿物标识返回定义副本。
+## [param mineral_id] 调用方传入的 `mineral_id` 参数。
+## 返回该函数计算、查询或操作得到的结果。
 func mineral(mineral_id: String) -> Dictionary:
 	var value: Variant = _minerals.get(mineral_id)
 	return (value as Dictionary).duplicate(true) if value is Dictionary else {}
 
 
+## 执行 `mineral_ids` 对应的模块操作。
+## 返回该函数计算、查询或操作得到的结果。
 func mineral_ids() -> PackedStringArray:
 	var result := PackedStringArray()
 	for mineral_id: String in _minerals:
@@ -50,6 +59,8 @@ func mineral_ids() -> PackedStringArray:
 	return result
 
 
+## 执行 `map_ids` 对应的模块操作。
+## 返回该函数计算、查询或操作得到的结果。
 func map_ids() -> PackedStringArray:
 	var result := PackedStringArray()
 	for map_id: String in _maps:
@@ -59,6 +70,9 @@ func map_ids() -> PackedStringArray:
 
 
 ## 依据权重和全局生成序号确定性选择本轮矿种。
+## [param map_id] 调用方传入的 `map_id` 参数。
+## [param sequence] 调用方传入的 `sequence` 参数。
+## 返回该函数计算、查询或操作得到的结果。
 func mineral_for_spawn(map_id: String, sequence: int) -> DomainResult:
 	var policy := policy_for_map(map_id)
 	if policy.is_empty() or sequence < 0:
@@ -82,6 +96,9 @@ func mineral_for_spawn(map_id: String, sequence: int) -> DomainResult:
 	return DomainResult.ok(mineral(String((pool.back() as Dictionary).get("mineral_id", ""))))
 
 
+## 执行 `configure` 对应的模块操作。
+## [param document] 调用方传入的 `document` 参数。
+## 返回该函数计算、查询或操作得到的结果。
 func _configure(document: Dictionary) -> DomainResult:
 	if int(document.get("schema_version", -1)) != 1:
 		return DomainResult.failure(&"mining.invalid_catalog", "unsupported mining schema")

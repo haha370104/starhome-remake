@@ -537,6 +537,9 @@ func handle_peer_map_transition(peer_id: int, raw_intent: Variant) -> Dictionary
 
 
 ## 校验战车确已击毁，并由权威时钟预约三秒后的基地救援。
+## [param peer_id] 调用方传入的 `peer_id` 参数。
+## [param raw_intent] 调用方传入的 `raw_intent` 参数。
+## 返回该函数计算、查询或操作得到的结果。
 func handle_peer_vehicle_recovery(peer_id: int, raw_intent: Variant) -> Dictionary:
 	var session: ServerSession = sessions.session_for_peer(peer_id)
 	if session == null:
@@ -597,6 +600,9 @@ func _complete_due_vehicle_recoveries() -> void:
 
 
 ## 原子地把击毁实体迁移到大厅一层，并把新实例生命设置为最大值的 10%。
+## [param entity_id] 调用方传入的 `entity_id` 参数。
+## [param pending] 调用方传入的 `pending` 参数。
+## 返回该函数计算、查询或操作得到的结果。
 func _recover_destroyed_vehicle_to_base(entity_id: String, pending: Dictionary) -> Dictionary:
 	var session: ServerSession = sessions.session_for_entity(entity_id)
 	if session == null or session.map_instance_id != String(pending["source_instance_id"]):
@@ -744,6 +750,7 @@ func _apply_skill_progression_event(progression_event: Dictionary) -> void:
 
 
 ## 将地图到期的采矿周期原子地写入背包，再扣除矿源储量并发放采矿经验。
+## [param instance] 调用方传入的 `instance` 参数。
 func _settle_mining_cycles(instance: AuthoritativeMapInstance) -> void:
 	if instance == null or autosave_service == null or player_panel_service == null:
 		return
@@ -795,6 +802,9 @@ func _settle_mining_cycles(instance: AuthoritativeMapInstance) -> void:
 
 
 ## 向仍在线的采矿者报告异步背包/存档拒绝。
+## [param entity_id] 调用方传入的 `entity_id` 参数。
+## [param code] 调用方传入的 `code` 参数。
+## [param message] 调用方传入的 `message` 参数。
 func _send_mining_rejection(entity_id: String, code: StringName, message: String) -> void:
 	var session := sessions.session_for_entity(entity_id)
 	if session == null or not session.has_active_peer():
@@ -952,6 +962,8 @@ func _on_transport_use_ability_intent(peer_id: int, intent: Dictionary) -> void:
 
 
 ## 将战车恢复意图交给统一权威命令分派器。
+## [param peer_id] 调用方传入的 `peer_id` 参数。
+## [param intent] 调用方传入的 `intent` 参数。
 func _on_transport_vehicle_recovery_intent(peer_id: int, intent: Dictionary) -> void:
 	dispatch_transport_command(peer_id, Protocol.VEHICLE_RECOVERY_INTENT, intent)
 
@@ -1316,6 +1328,7 @@ func _exit_tree() -> void:
 
 
 ## 读取全量荣耀地图索引，但不构建导航图；地图实例在首次进入时创建。
+## 返回该函数计算、查询或操作得到的结果。
 func _load_runtime_map_index() -> Dictionary:
 	_runtime_definition_paths_by_map_id.clear()
 	_runtime_map_ids_by_legacy_world.clear()
@@ -1351,6 +1364,8 @@ func _load_runtime_map_index() -> Dictionary:
 
 
 ## 确保受控索引中的地图存在权威实例；未知客户端 ID 无法注入文件路径。
+## [param map_id] 调用方传入的 `map_id` 参数。
+## 返回该函数计算、查询或操作得到的结果。
 func ensure_runtime_map(map_id: String) -> Dictionary:
 	var existing := map_registry.instance_by_map_id(map_id) if map_registry != null else null
 	if existing != null:
@@ -1383,6 +1398,9 @@ func ensure_runtime_map(map_id: String) -> Dictionary:
 
 
 ## 先查已加载实例，再按 map_id 或当前世界旧代码惰性创建目标实例。
+## [param transition] 调用方传入的 `transition` 参数。
+## [param source_world_id] 调用方传入的 `source_world_id` 参数。
+## 返回该函数计算、查询或操作得到的结果。
 func _resolve_or_load_transition_target(
 	transition: MapTransition,
 	source_world_id: StringName,
@@ -1496,6 +1514,9 @@ func _copy_transitioned_entity_state(
 
 
 ## 跨地图复制服务器拥有的战车当前资源，避免回城后的 10% 生命在下一次切图时重置。
+## [param source_instance] 调用方传入的 `source_instance` 参数。
+## [param destination_instance] 调用方传入的 `destination_instance` 参数。
+## [param entity_id] 调用方传入的 `entity_id` 参数。
 func _copy_transitioned_vehicle_state(
 	source_instance: AuthoritativeMapInstance,
 	destination_instance: AuthoritativeMapInstance,

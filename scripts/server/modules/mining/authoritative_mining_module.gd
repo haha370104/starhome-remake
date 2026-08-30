@@ -28,6 +28,12 @@ var _last_command_sequences: Dictionary = {}
 
 
 ## 为一张地图建立服务端矿源种群；非采矿地图保持禁用但不报错。
+## [param catalog] 调用方传入的 `catalog` 参数。
+## [param requested_map_id] 调用方传入的 `requested_map_id` 参数。
+## [param requested_instance_id] 调用方传入的 `requested_instance_id` 参数。
+## [param requested_simulation_hz] 调用方传入的 `requested_simulation_hz` 参数。
+## [param navigation] 调用方传入的 `navigation` 参数。
+## 返回该函数计算、查询或操作得到的结果。
 func configure(
 	catalog,
 	requested_map_id: String,
@@ -56,6 +62,12 @@ func configure(
 
 
 ## 以点击坐标选择矿源，并在距离、等级满足时启动连续三秒采集周期。
+## [param actor_id] 调用方传入的 `actor_id` 参数。
+## [param actor_position] 调用方传入的 `actor_position` 参数。
+## [param aim_world_position] 调用方传入的 `aim_world_position` 参数。
+## [param mining_level] 调用方传入的 `mining_level` 参数。
+## [param command_sequence] 调用方传入的 `command_sequence` 参数。
+## 返回该函数计算、查询或操作得到的结果。
 func begin_collection(
 	actor_id: String,
 	actor_position: Vector2,
@@ -92,6 +104,9 @@ func begin_collection(
 
 
 ## 移动、换装或其他中断原因停止当前采矿动作。
+## [param actor_id] 调用方传入的 `actor_id` 参数。
+## [param reason] 调用方传入的 `reason` 参数。
+## 返回该函数计算、查询或操作得到的结果。
 func interrupt(actor_id: String, reason: StringName) -> bool:
 	if not _actions.has(actor_id):
 		return false
@@ -103,12 +118,14 @@ func interrupt(actor_id: String, reason: StringName) -> bool:
 
 
 ## 玩家离开实例时清理动作和序号状态。
+## [param actor_id] 调用方传入的 `actor_id` 参数。
 func unregister_actor(actor_id: String) -> void:
 	interrupt(actor_id, &"map_exit")
 	_last_command_sequences.erase(actor_id)
 
 
 ## 按服务器固定 tick 推进采矿周期与五分钟补点计时。
+## [param tick_count] 调用方传入的 `tick_count` 参数。
 func advance_ticks(tick_count: int = 1) -> void:
 	for _tick: int in range(maxi(0, tick_count)):
 		current_tick += 1
@@ -117,6 +134,7 @@ func advance_ticks(tick_count: int = 1) -> void:
 
 
 ## 取出本 tick 已到期、等待背包事务的采矿结算预约。
+## 返回该函数计算、查询或操作得到的结果。
 func drain_ready_cycles() -> Array[Dictionary]:
 	var result := _ready_cycles.duplicate(true)
 	_ready_cycles.clear()
@@ -124,6 +142,8 @@ func drain_ready_cycles() -> Array[Dictionary]:
 
 
 ## 在背包成功入账后扣减矿源并安排同一目标的下一周期。
+## [param token] 调用方传入的 `token` 参数。
+## 返回该函数计算、查询或操作得到的结果。
 func commit_cycle(token: String) -> DomainResult:
 	var reservation_value: Variant = _pending_cycles.get(token)
 	if not reservation_value is Dictionary:
@@ -162,6 +182,8 @@ func commit_cycle(token: String) -> DomainResult:
 
 
 ## 背包或持久化拒绝本周期时停止采矿且不消耗矿源。
+## [param token] 调用方传入的 `token` 参数。
+## 返回该函数计算、查询或操作得到的结果。
 func reject_cycle(token: String) -> bool:
 	var reservation: Variant = _pending_cycles.get(token)
 	if not reservation is Dictionary:
@@ -172,6 +194,7 @@ func reject_cycle(token: String) -> bool:
 
 
 ## 返回按稳定标识排序的全部活动矿源快照。
+## 构建 `snapshot` 对应的只读状态快照。
 func snapshot() -> Array[Dictionary]:
 	var ids := sources.keys()
 	ids.sort()
@@ -181,6 +204,7 @@ func snapshot() -> Array[Dictionary]:
 	return result
 
 
+## 执行 `reserve_due_cycles` 对应的模块操作。
 func _reserve_due_cycles() -> void:
 	var actor_ids := _actions.keys()
 	actor_ids.sort()
@@ -206,6 +230,7 @@ func _reserve_due_cycles() -> void:
 		_ready_cycles.append(reservation.duplicate(true))
 
 
+## 执行 `replenish_if_due` 对应的模块操作。
 func _replenish_if_due() -> void:
 	if _next_replenishment_tick < 0 or current_tick < _next_replenishment_tick:
 		return
@@ -220,6 +245,8 @@ func _replenish_if_due() -> void:
 			break
 
 
+## 执行 `spawn_one` 对应的模块操作。
+## 返回该函数计算、查询或操作得到的结果。
 func _spawn_one() -> DomainResult:
 	var selected: Variant = _catalog.mineral_for_spawn(map_id, _spawn_sequence)
 	if not selected.is_ok:
@@ -262,6 +289,8 @@ func _spawn_one() -> DomainResult:
 	return DomainResult.ok(source)
 
 
+## 执行 `source_at` 对应的模块操作。
+## [param world_position] 调用方传入的 `world_position` 参数。
 func _source_at(world_position: Vector2):
 	var result = null
 	var closest_squared := float(_policy["selection_radius"]) ** 2
@@ -273,6 +302,9 @@ func _source_at(world_position: Vector2):
 	return result
 
 
+## 执行 `actor_has_pending_cycle` 对应的模块操作。
+## [param actor_id] 调用方传入的 `actor_id` 参数。
+## 返回该函数计算、查询或操作得到的结果。
 func _actor_has_pending_cycle(actor_id: String) -> bool:
 	for reservation: Dictionary in _pending_cycles.values():
 		if String(reservation.get("actor_id", "")) == actor_id:
@@ -280,5 +312,8 @@ func _actor_has_pending_cycle(actor_id: String) -> bool:
 	return false
 
 
+## 执行 `seconds_to_ticks` 对应的模块操作。
+## [param seconds] 调用方传入的 `seconds` 参数。
+## 返回该函数计算、查询或操作得到的结果。
 func _seconds_to_ticks(seconds: float) -> int:
 	return maxi(1, roundi(seconds * float(simulation_hz)))

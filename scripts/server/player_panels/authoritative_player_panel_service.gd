@@ -166,6 +166,7 @@ func grant_skill_progression(
 ## [param progression_event] 移动、有效伤害或未来系统显式发放事件。
 ## 返回 skill_id 与非负经验量；格式非法或不产生经验时返回错误。
 ## 设计：所有倍率和驾驶计重参数均来自服务端配置，事件只携带已确认的客观结果。
+## [param player] 调用方传入的 `player` 参数。
 func _experience_from_event(progression_event: Dictionary, player: Player = null) -> DomainResult:
 	var source := String(progression_event.get("source", ""))
 	var skill_id := String(progression_event.get("skill_id", ""))

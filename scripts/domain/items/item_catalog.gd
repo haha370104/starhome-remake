@@ -80,6 +80,7 @@ func display_name(definition_id: String) -> String:
 
 
 ## 返回全部可实例化定义 ID，供内容完整性测试与后续商店/任务目录连接使用。
+## 执行 `definition_ids` 对应的模块操作。
 func definition_ids() -> PackedStringArray:
 	var result := PackedStringArray()
 	for definition_id: Variant in _definitions.keys():
@@ -89,6 +90,8 @@ func definition_ids() -> PackedStringArray:
 
 
 ## 返回单项定义的防御性副本；领域外不得修改目录内部状态。
+## 执行 `definition` 对应的模块操作。
+## [param definition_id] 调用方传入的 `definition_id` 参数。
 func definition(definition_id: String) -> Dictionary:
 	var value: Variant = _definitions.get(definition_id)
 	return value.duplicate(true) if value is Dictionary else {}

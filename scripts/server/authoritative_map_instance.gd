@@ -110,6 +110,9 @@ func configure_combat(catalog, simulation_hz: int) -> Dictionary:
 
 
 ## 为当前地图配置独立的权威矿源种群；非野外图得到空模块。
+## [param catalog] 调用方传入的 `catalog` 参数。
+## [param simulation_hz] 调用方传入的 `simulation_hz` 参数。
+## 返回该函数计算、查询或操作得到的结果。
 func configure_mining(catalog, simulation_hz: int) -> Dictionary:
 	if definition == null or navigation == null:
 		return _failure(&"mining.map_not_loaded", "load map navigation before mining")
@@ -350,17 +353,21 @@ func simulate(delta: float) -> void:
 
 
 ## 取出到期的采矿周期，交给服务器完成背包与持久化事务。
+## 返回该函数计算、查询或操作得到的结果。
 func drain_mining_cycles() -> Array[Dictionary]:
 	return mining_module.drain_ready_cycles() if mining_module != null else []
 
 
 ## 背包入账成功后提交一次矿量扣减。
+## [param token] 调用方传入的 `token` 参数。
 func commit_mining_cycle(token: String):
 	return mining_module.commit_cycle(token) if mining_module != null \
 		else DomainResult.failure(&"mining.not_available", "mining module is unavailable")
 
 
 ## 背包或存档失败时释放预约且不消耗矿量。
+## [param token] 调用方传入的 `token` 参数。
+## 返回该函数计算、查询或操作得到的结果。
 func reject_mining_cycle(token: String) -> bool:
 	return mining_module.reject_cycle(token) if mining_module != null else false
 
@@ -659,6 +666,7 @@ func snapshot_for_actor(server_tick: int, server_time_seconds: float, actor_id: 
 
 
 ## 当前地图是否把玩家表现为可战斗战车；资源状态可以存在于非战斗地图，但不能限制人物移动。
+## 返回该函数计算、查询或操作得到的结果。
 func is_vehicle_combat_active() -> bool:
 	if definition == null:
 		return false

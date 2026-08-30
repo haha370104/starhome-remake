@@ -24,12 +24,15 @@ var _summary_by_kind: Dictionary = {}
 
 
 ## 从受控默认 manifest 加载全量已知内容注册表。
+## 返回该函数计算、查询或操作得到的结果。
 static func load_default() -> DomainResult:
 	return load_manifest(DEFAULT_MANIFEST_PATH)
 
 
 ## 加载 manifest 及其固定的地图、怪物和道具目录。
 ## “已知”注册不等于运行时可实例化；availability 字段必须明确表达边界。
+## [param manifest_path] 调用方传入的 `manifest_path` 参数。
+## 返回该函数计算、查询或操作得到的结果。
 static func load_manifest(manifest_path: String) -> DomainResult:
 	if not _is_controlled_path(manifest_path):
 		return DomainResult.failure(
@@ -74,12 +77,16 @@ static func load_manifest(manifest_path: String) -> DomainResult:
 
 
 ## 按全局稳定注册 ID 查询一条已知内容定义。
+## [param registration_id] 调用方传入的 `registration_id` 参数。
+## 返回该函数计算、查询或操作得到的结果。
 func definition(registration_id: String) -> Dictionary:
 	var value: Variant = _definitions_by_id.get(registration_id)
 	return (value as Dictionary).duplicate(true) if value is Dictionary else {}
 
 
 ## 返回某类全部定义，按注册 ID 稳定排序。
+## 执行 `definitions_for` 对应的模块操作。
+## [param kind] 调用方传入的 `kind` 参数。
 func definitions_for(kind: StringName) -> Array[Dictionary]:
 	var result: Array[Dictionary] = []
 	for registration_id: String in _ids_by_kind.get(kind, []):
@@ -89,27 +96,41 @@ func definitions_for(kind: StringName) -> Array[Dictionary]:
 
 ## 查询一个现有 remake runtime_id 对应的全部来源注册。
 ## 地图允许多个世界分支共同映射到同一业务 MapDefinition。
+## [param kind] 调用方传入的 `kind` 参数。
+## [param runtime_id] 调用方传入的 `runtime_id` 参数。
+## 返回该函数计算、查询或操作得到的结果。
 func registrations_for_runtime(kind: StringName, runtime_id: String) -> Array[Dictionary]:
 	return _definitions_for_ids(_runtime_index.get(kind, {}).get(runtime_id, []))
 
 
 ## 按旧客户端索引、类名、中文名或 runtime_key 查询来源注册。
 ## 同名与重复类定义合法，因此返回数组而不是任意挑选一个。
+## [param kind] 调用方传入的 `kind` 参数。
+## [param legacy_key] 调用方传入的 `legacy_key` 参数。
+## 返回该函数计算、查询或操作得到的结果。
 func registrations_for_legacy_key(kind: StringName, legacy_key: String) -> Array[Dictionary]:
 	return _definitions_for_ids(_legacy_index.get(kind, {}).get(legacy_key, []))
 
 
 ## 返回生成器写入并经加载器核验的目录摘要。
+## 执行 `summary_for` 对应的模块操作。
+## [param kind] 调用方传入的 `kind` 参数。
 func summary_for(kind: StringName) -> Dictionary:
 	var value: Variant = _summary_by_kind.get(kind)
 	return (value as Dictionary).duplicate(true) if value is Dictionary else {}
 
 
 ## 返回三类目录合计定义数。
+## 执行 `size` 对应的模块操作。
 func size() -> int:
 	return _definitions_by_id.size()
 
 
+## 加载并校验 `load_catalog` 对应的模块数据。
+## [param kind] 调用方传入的 `kind` 参数。
+## [param path] 调用方传入的 `path` 参数。
+## [param expected] 调用方传入的 `expected` 参数。
+## 返回该函数计算、查询或操作得到的结果。
 func _load_catalog(kind: StringName, path: String, expected: Variant) -> DomainResult:
 	var document_result := _read_dictionary(path)
 	if not document_result.is_ok:
@@ -179,6 +200,8 @@ func _load_catalog(kind: StringName, path: String, expected: Variant) -> DomainR
 	return DomainResult.ok()
 
 
+## 执行 `validate_cross_catalog_links` 对应的模块操作。
+## 返回该函数计算、查询或操作得到的结果。
 func _validate_cross_catalog_links() -> DomainResult:
 	for definition: Dictionary in definitions_for(&"monster"):
 		for presence_value: Variant in definition.get("map_presence", []):
@@ -197,6 +220,9 @@ func _validate_cross_catalog_links() -> DomainResult:
 	return DomainResult.ok()
 
 
+## 执行 `definitions_for_ids` 对应的模块操作。
+## [param ids] 调用方传入的 `ids` 参数。
+## 返回该函数计算、查询或操作得到的结果。
 func _definitions_for_ids(ids: Variant) -> Array[Dictionary]:
 	var result: Array[Dictionary] = []
 	if not ids is Array:
@@ -206,6 +232,10 @@ func _definitions_for_ids(ids: Variant) -> Array[Dictionary]:
 	return result
 
 
+## 执行 `index_append` 对应的模块操作。
+## [param index] 调用方传入的 `index` 参数。
+## [param key] 调用方传入的 `key` 参数。
+## [param registration_id] 调用方传入的 `registration_id` 参数。
 static func _index_append(index: Dictionary, key: String, registration_id: String) -> void:
 	if key.is_empty():
 		return
@@ -214,6 +244,9 @@ static func _index_append(index: Dictionary, key: String, registration_id: Strin
 	(index[key] as Array).append(registration_id)
 
 
+## 执行 `read_dictionary` 对应的模块操作。
+## [param path] 调用方传入的 `path` 参数。
+## 返回该函数计算、查询或操作得到的结果。
 static func _read_dictionary(path: String) -> DomainResult:
 	if not FileAccess.file_exists(path):
 		return DomainResult.failure(
@@ -227,6 +260,9 @@ static func _read_dictionary(path: String) -> DomainResult:
 	return DomainResult.ok(parsed)
 
 
+## 执行 `is_controlled_path` 对应的模块操作。
+## [param path] 调用方传入的 `path` 参数。
+## 返回该函数计算、查询或操作得到的结果。
 static func _is_controlled_path(path: String) -> bool:
 	return path.begins_with("res://data/content/") \
 		and path.ends_with(".json") \

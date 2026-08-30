@@ -98,6 +98,7 @@ func send_use_ability_intent(intent: Dictionary) -> void:
 
 
 ## 发送战车击毁后的恢复选择。
+## [param intent] 调用方传入的 `intent` 参数。
 func send_vehicle_recovery_intent(intent: Dictionary) -> void:
 	_enqueue(Protocol.VEHICLE_RECOVERY_INTENT, intent)
 

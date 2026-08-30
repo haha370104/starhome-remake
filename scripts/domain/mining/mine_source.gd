@@ -19,6 +19,8 @@ var alpha_byte := 255
 
 
 ## 用可信目录定义创建一个服务端矿源聚合。
+## [param definition] 调用方传入的 `definition` 参数。
+## 返回该函数计算、查询或操作得到的结果。
 func configure(definition: Dictionary) -> DomainResult:
 	if definition.is_empty():
 		return DomainResult.failure(&"mining.invalid_source", "mine source definition is empty")
@@ -45,6 +47,8 @@ func configure(definition: Dictionary) -> DomainResult:
 
 
 ## 结算已经完成背包事务的一次采集；矿源不会出现负储量。
+## [param quantity] 调用方传入的 `quantity` 参数。
+## 返回该函数计算、查询或操作得到的结果。
 func extract(quantity: int) -> DomainResult:
 	if quantity <= 0 or quantity > remaining:
 		return DomainResult.failure(&"mining.invalid_yield", "mine extraction exceeds remaining content")
@@ -53,6 +57,7 @@ func extract(quantity: int) -> DomainResult:
 
 
 ## 导出客户端只读快照；剩余量不会改变荣耀版矿源外观。
+## 返回该函数计算、查询或操作得到的结果。
 func snapshot() -> Dictionary:
 	return {
 		"source_id": source_id,

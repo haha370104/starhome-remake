@@ -92,6 +92,7 @@ func send_use_ability_intent(intent: Dictionary) -> void:
 
 
 ## 向权威服务器提交战车击毁后的恢复选择。
+## [param intent] 调用方传入的 `intent` 参数。
 func send_vehicle_recovery_intent(intent: Dictionary) -> void:
 	rpc_submit_vehicle_recovery_intent.rpc_id(SERVER_PEER_ID, intent)
 
@@ -162,6 +163,7 @@ func rpc_submit_use_ability_intent(intent: Dictionary) -> void:
 
 @rpc("any_peer", "call_remote", "reliable", 1)
 ## 接收战车击毁后的恢复选择，并附加不可伪造的远端 peer 身份。
+## [param intent] 调用方传入的 `intent` 参数。
 func rpc_submit_vehicle_recovery_intent(intent: Dictionary) -> void:
 	vehicle_recovery_intent_received.emit(
 		multiplayer.get_remote_sender_id(), intent.duplicate(true)

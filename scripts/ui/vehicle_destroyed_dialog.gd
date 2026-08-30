@@ -69,6 +69,7 @@ func show_destroyed() -> void:
 
 
 ## 显示服务器已接受的三秒基地救援倒计时。
+## [param delay_seconds] 调用方传入的 `delay_seconds` 参数。
 func show_recovery_scheduled(delay_seconds: float) -> void:
 	_remaining_seconds = maxf(delay_seconds, 0.0)
 	wait_button.disabled = true
@@ -84,6 +85,7 @@ func hide_dialog() -> void:
 
 
 ## 按渲染帧更新提示文字；实际传送时刻仍只接受服务器消息。
+## [param delta] 调用方传入的 `delta` 参数。
 func _process(delta: float) -> void:
 	if not visible or _remaining_seconds <= 0.0:
 		return
@@ -106,6 +108,7 @@ func _select_return_to_base() -> void:
 
 
 ## 恢复一次被服务器拒绝的选择，让玩家能够重试或继续等待。
+## [param message] 调用方传入的 `message` 参数。
 func show_recovery_failed(message: String) -> void:
 	_remaining_seconds = 0.0
 	countdown_label.text = message
@@ -120,6 +123,8 @@ func _update_countdown_text() -> void:
 
 
 ## 创建一项与旧客户端文字按钮相近的高亮按钮。
+## [param text_value] 调用方传入的 `text_value` 参数。
+## 返回该函数计算、查询或操作得到的结果。
 func _choice_button(text_value: String) -> Button:
 	var button := Button.new()
 	button.text = text_value
@@ -131,6 +136,7 @@ func _choice_button(text_value: String) -> Button:
 
 
 ## 创建中央提示窗的深蓝底和青色描边。
+## 返回该函数计算、查询或操作得到的结果。
 func _panel_style() -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
 	style.bg_color = Color("0a1826e8")

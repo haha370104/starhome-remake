@@ -18,6 +18,8 @@ var _ids_by_product_key: Dictionary = {}
 
 
 ## 加载荣耀客户端恢复出的全部制作、强化与分解证据。
+## [param path] 调用方传入的 `path` 参数。
+## 返回该函数计算、查询或操作得到的结果。
 func initialize(path := DEFAULT_PATH) -> DomainResult:
 	_by_id.clear()
 	_ids_by_group.clear()
@@ -50,15 +52,23 @@ func initialize(path := DEFAULT_PATH) -> DomainResult:
 	return DomainResult.ok(self)
 
 
+## 执行 `size` 对应的模块操作。
+## 返回该函数计算、查询或操作得到的结果。
 func size() -> int:
 	return _by_id.size()
 
 
+## 执行 `recipe` 对应的模块操作。
+## [param recipe_id] 调用方传入的 `recipe_id` 参数。
+## 返回该函数计算、查询或操作得到的结果。
 func recipe(recipe_id: String) -> Dictionary:
 	var value: Variant = _by_id.get(recipe_id)
 	return value.duplicate(true) if value is Dictionary else {}
 
 
+## 执行 `recipe_ids` 对应的模块操作。
+## [param group_name] 调用方传入的 `group_name` 参数。
+## 返回该函数计算、查询或操作得到的结果。
 func recipe_ids(group_name := "") -> PackedStringArray:
 	if not group_name.is_empty():
 		return PackedStringArray(_ids_by_group.get(group_name, PackedStringArray()))
@@ -69,6 +79,8 @@ func recipe_ids(group_name := "") -> PackedStringArray:
 
 
 ## 按客户端产品类名或显示名返回全部候选，避免同名赠品/普通品被覆盖。
+## [param product_key] 调用方传入的 `product_key` 参数。
+## 返回该函数计算、查询或操作得到的结果。
 func find_by_product(product_key: String) -> Array[Dictionary]:
 	var result: Array[Dictionary] = []
 	for recipe_id: String in _ids_by_product_key.get(product_key.strip_edges().to_lower(), PackedStringArray()):
@@ -76,6 +88,11 @@ func find_by_product(product_key: String) -> Array[Dictionary]:
 	return result
 
 
+## 执行 `normalize` 对应的模块操作。
+## [param group_name] 调用方传入的 `group_name` 参数。
+## [param index] 调用方传入的 `index` 参数。
+## [param source] 调用方传入的 `source` 参数。
+## 返回该函数计算、查询或操作得到的结果。
 func _normalize(group_name: String, index: int, source: Dictionary) -> Dictionary:
 	var result := source.duplicate(true)
 	result["id"] = "glory_recipe_%s_%03d" % [group_name, index + 1]
@@ -105,6 +122,10 @@ func _normalize(group_name: String, index: int, source: Dictionary) -> Dictionar
 	return result
 
 
+## 执行 `settlement_ready` 对应的模块操作。
+## [param group_name] 调用方传入的 `group_name` 参数。
+## [param recipe] 调用方传入的 `recipe` 参数。
+## 返回该函数计算、查询或操作得到的结果。
 func _settlement_ready(group_name: String, recipe: Dictionary) -> bool:
 	if group_name in ["equipment_upgrade", "equipment_dismantle"]:
 		return false
@@ -117,11 +138,17 @@ func _settlement_ready(group_name: String, recipe: Dictionary) -> bool:
 	return not String(recipe.get("product_class", "")).is_empty()
 
 
+## 执行 `parse_embedded_materials` 对应的模块操作。
+## [param encoded] 调用方传入的 `encoded` 参数。
+## 返回该函数计算、查询或操作得到的结果。
 func _parse_embedded_materials(encoded: String) -> Array[Dictionary]:
 	var parsed: Variant = JSON.parse_string(encoded)
 	return _dictionary_array(parsed)
 
 
+## 执行 `dictionary_array` 对应的模块操作。
+## [param value] 调用方传入的 `value` 参数。
+## 返回该函数计算、查询或操作得到的结果。
 func _dictionary_array(value: Variant) -> Array[Dictionary]:
 	var result: Array[Dictionary] = []
 	if not value is Array:
@@ -132,6 +159,9 @@ func _dictionary_array(value: Variant) -> Array[Dictionary]:
 	return result
 
 
+## 执行 `index_product_key` 对应的模块操作。
+## [param key] 调用方传入的 `key` 参数。
+## [param recipe_id] 调用方传入的 `recipe_id` 参数。
 func _index_product_key(key: String, recipe_id: String) -> void:
 	var normalized := key.strip_edges().to_lower()
 	if normalized.is_empty():

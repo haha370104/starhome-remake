@@ -17,6 +17,9 @@ var input_sequence: int
 
 
 ## 创建只表达击毁后选择的恢复意图；客户端不能声明目的地图、坐标或恢复生命值。
+## [param requested_map_instance_id] 调用方传入的 `requested_map_instance_id` 参数。
+## [param requested_action] 调用方传入的 `requested_action` 参数。
+## [param sequence] 调用方传入的 `sequence` 参数。
 func _init(requested_map_instance_id: String, requested_action: String, sequence: int) -> void:
 	map_instance_id = requested_map_instance_id
 	action = requested_action
@@ -30,6 +33,7 @@ func validate():
 
 
 ## 序列化为稳定的三字段载荷。
+## 返回该函数计算、查询或操作得到的结果。
 func to_dictionary() -> Dictionary:
 	return {
 		"map_instance_id": map_instance_id,
@@ -39,6 +43,7 @@ func to_dictionary() -> Dictionary:
 
 
 ## 从不可信网络字典恢复击毁后恢复意图。
+## [param raw] 调用方传入的 `raw` 参数。
 static func from_dictionary(raw: Variant):
 	var dictionary_result = Validation.require_dictionary(raw, "vehicle recovery intent")
 	if not dictionary_result.is_ok:

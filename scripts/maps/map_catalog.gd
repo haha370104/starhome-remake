@@ -71,6 +71,7 @@ func map_by_id(map_id: StringName) -> MapDefinition:
 ## [param code] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## 返回该函数计算、查询或操作得到的结果。
 ## 设计：该函数遵循所在模块的职责边界。
+## [param world_id] 调用方传入的 `world_id` 参数。
 func map_by_legacy_code(code: String, world_id: StringName = &"") -> MapDefinition:
 	var normalized := code.strip_edges().to_lower()
 	if not world_id.is_empty():
@@ -99,6 +100,7 @@ func source_audit_for_map(map_id: StringName) -> Dictionary:
 ## [param transition] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## 返回该函数计算、查询或操作得到的结果。
 ## 设计：该函数遵循所在模块的职责边界。
+## [param source_world_id] 调用方传入的 `source_world_id` 参数。
 func resolve_target(
 	transition: MapTransition,
 	source_world_id: StringName = &"legacy_world",
