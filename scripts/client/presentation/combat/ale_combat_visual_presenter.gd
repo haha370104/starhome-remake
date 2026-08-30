@@ -14,6 +14,10 @@ var _elapsed_seconds := 0.0
 
 
 ## 配置一个由 npcinfo 三态 ALE 引用驱动的怪物表现器。
+## [param repository] 调用方传入的 `repository` 参数。
+## [param actor_id] 调用方传入的 `actor_id` 参数。
+## [param definition] 调用方传入的 `definition` 参数。
+## 返回该函数计算、查询或操作得到的结果。
 func configure(
 	repository: RefCounted,
 	actor_id: String,
@@ -36,6 +40,9 @@ func configure(
 	return _apply_pose()
 
 
+## 执行 `set_action` 对应的模块操作。
+## [param action_id] 调用方传入的 `action_id` 参数。
+## 返回该函数计算、查询或操作得到的结果。
 func set_action(action_id: StringName) -> bool:
 	if action_id not in [&"idle", &"move", &"attack"]:
 		return false
@@ -44,11 +51,15 @@ func set_action(action_id: StringName) -> bool:
 	return _apply_pose() == OK
 
 
+## 执行 `set_direction` 对应的模块操作。
+## [param direction] 调用方传入的 `direction` 参数。
 func set_direction(direction: int) -> void:
 	current_direction = posmod(direction, maxi(1, int(_definition.get("directions", 8))))
 	_apply_pose()
 
 
+## 执行 `advance` 对应的模块操作。
+## [param delta_seconds] 调用方传入的 `delta_seconds` 参数。
 func advance(delta_seconds: float) -> void:
 	if delta_seconds <= 0.0:
 		return
@@ -56,6 +67,8 @@ func advance(delta_seconds: float) -> void:
 	_apply_pose()
 
 
+## 执行 `apply_pose` 对应的模块操作。
+## 返回该函数计算、查询或操作得到的结果。
 func _apply_pose() -> Error:
 	var body_reference := _action_reference("actions", String(current_action_id))
 	if body_reference.is_empty():
@@ -79,12 +92,19 @@ func _apply_pose() -> Error:
 	return OK
 
 
+## 执行 `action_reference` 对应的模块操作。
+## [param group_name] 调用方传入的 `group_name` 参数。
+## [param action_name] 调用方传入的 `action_name` 参数。
+## 返回该函数计算、查询或操作得到的结果。
 func _action_reference(group_name: String, action_name: String) -> String:
 	var group: Variant = _definition.get(group_name, {})
 	return String((group as Dictionary).get(action_name, "")).strip_edges() \
 		if group is Dictionary else ""
 
 
+## 加载并校验 `load_animation` 对应的模块数据。
+## [param reference] 调用方传入的 `reference` 参数。
+## 返回该函数计算、查询或操作得到的结果。
 func _load_animation(reference: String) -> Dictionary:
 	var cached: Variant = _animation_cache.get(reference)
 	if cached is Dictionary:
@@ -97,6 +117,8 @@ func _load_animation(reference: String) -> Dictionary:
 
 
 ## ALE 原点是相对实体脚点的负偏移；每帧应用可消除不同尺寸帧的抖动。
+## [param sprite] 调用方传入的 `sprite` 参数。
+## [param animation] 调用方传入的 `animation` 参数。
 func _apply_animation_frame(sprite: Sprite2D, animation: Dictionary) -> void:
 	var frames: Array = animation.get("frames", [])
 	if frames.is_empty():

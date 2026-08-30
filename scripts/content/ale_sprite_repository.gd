@@ -15,6 +15,7 @@ var _page_cache: Dictionary = {}
 
 
 ## 加载 ALE 逻辑路径索引；图片和帧描述仍保持按需读取。
+## 返回该函数计算、查询或操作得到的结果。
 func load_default() -> bool:
 	if not load_file(DEFAULT_INDEX_PATH):
 		return false
@@ -23,6 +24,9 @@ func load_default() -> bool:
 	return merge_file(DEFAULT_MINE_PALETTE_INDEX_PATH)
 
 
+## 加载并校验 `load_file` 对应的模块数据。
+## [param path] 调用方传入的 `path` 参数。
+## 返回该函数计算、查询或操作得到的结果。
 func load_file(path: String) -> bool:
 	errors.clear()
 	_by_logical_id.clear()
@@ -32,11 +36,17 @@ func load_file(path: String) -> bool:
 	return _merge_file(path)
 
 
+## 执行 `merge_file` 对应的模块操作。
+## [param path] 调用方传入的 `path` 参数。
+## 返回该函数计算、查询或操作得到的结果。
 func merge_file(path: String) -> bool:
 	errors.clear()
 	return _merge_file(path)
 
 
+## 执行 `merge_file` 对应的模块操作。
+## [param path] 调用方传入的 `path` 参数。
+## 返回该函数计算、查询或操作得到的结果。
 func _merge_file(path: String) -> bool:
 	if not FileAccess.file_exists(path):
 		_add_error("index", "ALE 精灵索引不存在：%s" % path)
@@ -74,6 +84,8 @@ func _merge_file(path: String) -> bool:
 
 
 ## 将旧 FCC 中的 ../pic2/foo.ale、反斜杠和大小写归一为索引键。
+## [param reference] 调用方传入的 `reference` 参数。
+## 返回该函数计算、查询或操作得到的结果。
 static func normalize_reference(reference: String) -> String:
 	var normalized := reference.strip_edges().replace("\\", "/").to_lower()
 	while normalized.begins_with("../"):
@@ -90,6 +102,9 @@ static func normalize_reference(reference: String) -> String:
 
 
 ## 优先解析完整路径；裸文件名仅在唯一或命中指定前缀时成立。
+## [param reference] 调用方传入的 `reference` 参数。
+## [param preferred_prefix] 调用方传入的 `preferred_prefix` 参数。
+## 返回该函数计算、查询或操作得到的结果。
 func resolve(reference: String, preferred_prefix := "") -> Dictionary:
 	var normalized := normalize_reference(reference)
 	if _by_logical_id.has(normalized):
@@ -107,11 +122,16 @@ func resolve(reference: String, preferred_prefix := "") -> Dictionary:
 	return {}
 
 
+## 执行 `size` 对应的模块操作。
+## 返回该函数计算、查询或操作得到的结果。
 func size() -> int:
 	return _by_logical_id.size()
 
 
 ## 返回帧描述、页贴图和原点，可直接供 AnimatedSprite2D 表现适配器消费。
+## 加载并校验 `load_animation` 对应的模块数据。
+## [param reference] 调用方传入的 `reference` 参数。
+## [param preferred_prefix] 调用方传入的 `preferred_prefix` 参数。
 func load_animation(reference: String, preferred_prefix := "") -> Dictionary:
 	var definition := resolve(reference, preferred_prefix)
 	if definition.is_empty():
@@ -177,5 +197,8 @@ func load_animation(reference: String, preferred_prefix := "") -> Dictionary:
 	}
 
 
+## 执行 `add_error` 对应的模块操作。
+## [param field] 调用方传入的 `field` 参数。
+## [param message] 调用方传入的 `message` 参数。
 func _add_error(field: String, message: String) -> void:
 	errors.append("%s: %s" % [field, message])

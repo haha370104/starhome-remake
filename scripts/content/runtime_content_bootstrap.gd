@@ -14,6 +14,7 @@ static var _catalogs: Array = []
 
 
 ## 在任何定义或素材查找前挂载荣耀版运行内容；同一进程只执行一次。
+## 返回该函数计算、查询或操作得到的结果。
 static func mount_default() -> Dictionary:
 	if _mounted:
 		return {"ok": true, "catalog_count": _catalogs.size()}
@@ -29,5 +30,7 @@ static func mount_default() -> Dictionary:
 	return {"ok": true, "catalog_count": _catalogs.size()}
 
 
+## 查询 `is_mounted` 对应的模块状态。
+## 返回该函数计算、查询或操作得到的结果。
 static func is_mounted() -> bool:
 	return _mounted

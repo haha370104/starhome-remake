@@ -218,6 +218,7 @@ func apply_character_equipment(
 
 
 ## 按荣耀版死亡表现降低战车本体透明度；名称和状态条保持可读。
+## [param destroyed] 调用方传入的 `destroyed` 参数。
 func set_vehicle_destroyed(destroyed: bool) -> void:
 	_vehicle_destroyed = destroyed
 	if combat_presenter != null:

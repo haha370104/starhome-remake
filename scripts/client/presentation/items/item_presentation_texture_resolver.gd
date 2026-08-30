@@ -9,6 +9,8 @@ static var _initialized := false
 
 
 ## 将业务表现定义解析为贴图、ALE 原点和原生尺寸；旧 PNG 路径仍原样兼容。
+## [param presentation] 调用方传入的 `presentation` 参数。
+## 返回该函数计算、查询或操作得到的结果。
 static func resolve(presentation: Dictionary) -> Dictionary:
 	var texture_path := String(presentation.get(
 		"icon", presentation.get("dialog_texture", presentation.get("texture", ""))
@@ -34,6 +36,8 @@ static func resolve(presentation: Dictionary) -> Dictionary:
 	}
 
 
+## 执行 `ensure_repository` 对应的模块操作。
+## 返回该函数计算、查询或操作得到的结果。
 static func _ensure_repository() -> bool:
 	if _initialized:
 		return _repository != null

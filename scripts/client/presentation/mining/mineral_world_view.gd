@@ -19,6 +19,9 @@ var _local_hit_rect := Rect2()
 
 
 ## 以荣耀版 ALE 帧表和权威矿源快照创建一处矿物表现。
+## [param snapshot] 调用方传入的 `snapshot` 参数。
+## [param presentation] 调用方传入的 `presentation` 参数。
+## 返回该函数计算、查询或操作得到的结果。
 func configure(snapshot: Dictionary, presentation: Dictionary) -> Error:
 	var runtime_animation: Variant = presentation.get("runtime_animation", {})
 	if runtime_animation is Dictionary and not runtime_animation.is_empty():
@@ -70,6 +73,10 @@ func configure(snapshot: Dictionary, presentation: Dictionary) -> Error:
 	return OK
 
 
+## 执行 `configure_runtime_animation` 对应的模块操作。
+## [param snapshot] 调用方传入的 `snapshot` 参数。
+## [param animation] 调用方传入的 `animation` 参数。
+## 返回该函数计算、查询或操作得到的结果。
 func _configure_runtime_animation(snapshot: Dictionary, animation: Dictionary) -> Error:
 	var frames: Array = animation.get("frames", [])
 	if frames.is_empty():
@@ -88,6 +95,11 @@ func _configure_runtime_animation(snapshot: Dictionary, animation: Dictionary) -
 	return OK
 
 
+## 创建 `create_visual_nodes` 对应的运行时对象。
+## [param texture] 调用方传入的 `texture` 参数。
+## [param origin] 调用方传入的 `origin` 参数。
+## [param size] 调用方传入的 `size` 参数。
+## [param hit_origin] 调用方传入的 `hit_origin` 参数。
 func _create_visual_nodes(
 	texture: Texture2D,
 	origin: Vector2,
@@ -121,6 +133,7 @@ func _create_visual_nodes(
 
 
 ## 应用矿源的可变权威状态；储量变化不切换 ALE 外观帧。
+## [param snapshot] 调用方传入的 `snapshot` 参数。
 func apply_snapshot(snapshot: Dictionary) -> void:
 	source_id = String(snapshot.get("source_id", source_id))
 	mineral_id = String(snapshot.get("mineral_id", mineral_id))
@@ -138,11 +151,14 @@ func apply_snapshot(snapshot: Dictionary) -> void:
 
 
 ## 判断世界坐标是否命中此矿点的原始 ALE 帧矩形。
+## [param world_position] 调用方传入的 `world_position` 参数。
+## 返回该函数计算、查询或操作得到的结果。
 func contains_world_point(world_position: Vector2) -> bool:
 	return visible and _local_hit_rect.has_point(to_local(world_position))
 
 
 ## 切换荣耀版地面资源通用的绿色悬浮描边与说明文字。
+## [param hovered] 调用方传入的 `hovered` 参数。
 func set_hovered(hovered: bool) -> void:
 	if _hover_material != null:
 		_hover_material.set_shader_parameter("hover_amount", 1.0 if hovered else 0.0)
@@ -151,10 +167,12 @@ func set_hovered(hovered: bool) -> void:
 
 
 ## 返回当前 ALE 图集帧，供表现回归测试读取。
+## 执行 `displayed_variant` 对应的模块操作。
 func displayed_variant() -> int:
 	return visual_variant
 
 
 ## 返回本地命中矩形，供坐标和原点回归测试读取。
+## 执行 `local_hit_rect` 对应的模块操作。
 func local_hit_rect() -> Rect2:
 	return _local_hit_rect

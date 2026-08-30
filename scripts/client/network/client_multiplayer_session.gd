@@ -143,6 +143,7 @@ func request_use_ability(ability_id: String, aim_world_position: Vector2) -> Dic
 
 
 ## 请求权威服务器在战车击毁后安排返回基地；地图、坐标和回血值不由客户端提供。
+## 返回该函数计算、查询或操作得到的结果。
 func request_vehicle_recovery() -> Dictionary:
 	if network_adapter == null or current_map_instance_id.is_empty() \
 			or not _pending_vehicle_recovery.is_empty():
@@ -164,6 +165,7 @@ func request_vehicle_recovery() -> Dictionary:
 
 
 ## 返回当前是否正在等待权威基地救援完成。
+## 查询 `is_vehicle_recovery_pending` 对应的模块状态。
 func is_vehicle_recovery_pending() -> bool:
 	return not _pending_vehicle_recovery.is_empty()
 
@@ -419,6 +421,9 @@ func _commit_map_joined(value: Dictionary, explicit_transition: bool) -> bool:
 
 
 ## 保留本会话尚未使用的序号，并在重连时至少越过服务器已确认值。
+## [param snapshot] 调用方传入的 `snapshot` 参数。
+## [param joined_entity_id] 调用方传入的 `joined_entity_id` 参数。
+## 返回该函数计算、查询或操作得到的结果。
 func _movement_sequence_after_join(snapshot: Dictionary, joined_entity_id: StringName) -> int:
 	var result := local_predictor.next_input_sequence
 	for raw_entity: Variant in snapshot.get("entities", []):

@@ -138,6 +138,8 @@ func send_use_ability_intent(payload: Dictionary) -> Error:
 
 
 ## 将击毁后回基地的选择发送给权威服务器。
+## [param payload] 调用方传入的 `payload` 参数。
+## 返回该函数计算、查询或操作得到的结果。
 func send_vehicle_recovery_intent(payload: Dictionary) -> Error:
 	if connection_state != ConnectionState.CONNECTED:
 		return ERR_UNCONFIGURED

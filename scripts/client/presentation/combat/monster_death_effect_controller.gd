@@ -32,6 +32,8 @@ func configure(manifest: Dictionary, world_parent: Node2D) -> Error:
 
 
 ## 注入全量荣耀 ALE 仓储，供不在首批手工清单中的怪物使用。
+## [param repository] 调用方传入的 `repository` 参数。
+## [param presentations] 调用方传入的 `presentations` 参数。
 func configure_glory(repository: RefCounted, presentations: RefCounted) -> void:
 	_ale_repository = repository
 	_glory_presentations = presentations
@@ -86,6 +88,12 @@ func present_death(
 	return true
 
 
+## 执行 `present_ale_death` 对应的模块操作。
+## [param entity_id] 调用方传入的 `entity_id` 参数。
+## [param combat_actor_id] 调用方传入的 `combat_actor_id` 参数。
+## [param world_position] 调用方传入的 `world_position` 参数。
+## [param death_generation] 调用方传入的 `death_generation` 参数。
+## 返回该函数计算、查询或操作得到的结果。
 func _present_ale_death(
 	entity_id: String,
 	combat_actor_id: String,
@@ -193,6 +201,9 @@ func _free_effect(state: Dictionary) -> void:
 		node.free()
 
 
+## 执行 `apply_ale_frame` 对应的模块操作。
+## [param sprite] 调用方传入的 `sprite` 参数。
+## [param frame] 调用方传入的 `frame` 参数。
 func _apply_ale_frame(sprite: Sprite2D, frame: Dictionary) -> void:
 	sprite.texture = frame["texture"] as Texture2D
 	sprite.position = frame["origin"] as Vector2

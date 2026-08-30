@@ -15,6 +15,9 @@ var _repository: RefCounted
 
 
 ## 绑定活动地图的共享 Y 排序层和已解析的矿物表现清单。
+## [param world_parent] 调用方传入的 `world_parent` 参数。
+## [param manifest] 调用方传入的 `manifest` 参数。
+## 返回该函数计算、查询或操作得到的结果。
 func configure(world_parent: Node2D, manifest: Dictionary) -> Error:
 	if world_parent == null or not manifest.get("definitions", {}) is Dictionary:
 		return ERR_INVALID_PARAMETER
@@ -33,6 +36,7 @@ func configure(world_parent: Node2D, manifest: Dictionary) -> Error:
 
 
 ## 将服务器完整矿源快照投影为世界节点，并移除已耗尽或离图矿点。
+## [param combat_snapshot] 调用方传入的 `combat_snapshot` 参数。
 func apply_snapshot(combat_snapshot: Dictionary) -> void:
 	var observed: Dictionary = {}
 	var source_value: Variant = combat_snapshot.get("mine_sources", [])
@@ -76,6 +80,8 @@ func apply_snapshot(combat_snapshot: Dictionary) -> void:
 
 
 ## 返回坐标命中的最前方矿源标识。
+## 执行 `source_at` 对应的模块操作。
+## [param world_position] 调用方传入的 `world_position` 参数。
 func source_at(world_position: Vector2) -> String:
 	var selected := ""
 	var selected_y := -INF
@@ -88,6 +94,8 @@ func source_at(world_position: Vector2) -> String:
 
 
 ## 返回矿源的权威脚点；不存在时返回非有限坐标。
+## 执行 `source_position` 对应的模块操作。
+## [param source_id] 调用方传入的 `source_id` 参数。
 func source_position(source_id: String) -> Vector2:
 	var view: MineralWorldView = _views.get(source_id)
 	return view.position if view != null else Vector2.INF
@@ -102,16 +110,20 @@ func clear() -> void:
 
 
 ## 返回当前活动矿点数，供诊断和回归测试读取。
+## 执行 `active_view_count` 对应的模块操作。
 func active_view_count() -> int:
 	return _views.size()
 
 
 ## 返回指定矿点视图，供只读诊断和测试使用。
+## 执行 `view_for_source` 对应的模块操作。
+## [param source_id] 调用方传入的 `source_id` 参数。
 func view_for_source(source_id: String) -> MineralWorldView:
 	return _views.get(source_id) as MineralWorldView
 
 
 ## 按鼠标世界坐标维护唯一悬浮矿源。
+## [param _delta] 调用方传入的 `_delta` 参数。
 func _process(_delta: float) -> void:
 	if _world_parent == null or not is_instance_valid(_world_parent):
 		return

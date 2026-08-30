@@ -8,6 +8,8 @@ var _mounted: Dictionary = {}
 
 
 ## 读取受控内容包目录。包路径只能位于工程的 assets/content_packs 下。
+## [param path] 调用方传入的 `path` 参数。
+## 返回该函数计算、查询或操作得到的结果。
 func load_file(path: String) -> bool:
 	errors.clear()
 	_packs.clear()
@@ -34,6 +36,8 @@ func load_file(path: String) -> bool:
 
 
 ## 挂载目录中的全部内容包。挂载后包内文件统一暴露为 res:// 路径。
+## [param verify_integrity] 调用方传入的 `verify_integrity` 参数。
+## 返回该函数计算、查询或操作得到的结果。
 func mount_all(verify_integrity := false) -> bool:
 	for pack_id_value in _packs:
 		if not mount_pack(StringName(pack_id_value), verify_integrity):
@@ -42,6 +46,9 @@ func mount_all(verify_integrity := false) -> bool:
 
 
 ## 挂载指定内容包；重复调用是幂等的。
+## [param pack_id] 调用方传入的 `pack_id` 参数。
+## [param verify_integrity] 调用方传入的 `verify_integrity` 参数。
+## 返回该函数计算、查询或操作得到的结果。
 func mount_pack(pack_id: StringName, verify_integrity := false) -> bool:
 	if _mounted.has(pack_id):
 		return true
@@ -70,6 +77,8 @@ func mount_pack(pack_id: StringName, verify_integrity := false) -> bool:
 	return true
 
 
+## 执行 `pack_ids` 对应的模块操作。
+## 返回该函数计算、查询或操作得到的结果。
 func pack_ids() -> Array[StringName]:
 	var result: Array[StringName] = []
 	for pack_id_value in _packs:
@@ -77,14 +86,23 @@ func pack_ids() -> Array[StringName]:
 	return result
 
 
+## 查询 `is_mounted` 对应的模块状态。
+## [param pack_id] 调用方传入的 `pack_id` 参数。
+## 返回该函数计算、查询或操作得到的结果。
 func is_mounted(pack_id: StringName) -> bool:
 	return _mounted.has(pack_id)
 
 
+## 执行 `pack_entry` 对应的模块操作。
+## [param pack_id] 调用方传入的 `pack_id` 参数。
+## 返回该函数计算、查询或操作得到的结果。
 func pack_entry(pack_id: StringName) -> Dictionary:
 	return _packs.get(pack_id, {}).duplicate(true)
 
 
+## 加载并校验 `load_pack_entry` 对应的模块数据。
+## [param value] 调用方传入的 `value` 参数。
+## [param index] 调用方传入的 `index` 参数。
 func _load_pack_entry(value: Variant, index: int) -> void:
 	var prefix := "packs[%d]" % index
 	if not value is Dictionary:
@@ -109,6 +127,9 @@ func _load_pack_entry(value: Variant, index: int) -> void:
 	_packs[pack_id] = entry
 
 
+## 执行 `is_business_id` 对应的模块操作。
+## [param value] 调用方传入的 `value` 参数。
+## 返回该函数计算、查询或操作得到的结果。
 func _is_business_id(value: String) -> bool:
 	if value.is_empty():
 		return false
@@ -118,5 +139,8 @@ func _is_business_id(value: String) -> bool:
 	return true
 
 
+## 执行 `add_error` 对应的模块操作。
+## [param field] 调用方传入的 `field` 参数。
+## [param message] 调用方传入的 `message` 参数。
 func _add_error(field: String, message: String) -> void:
 	errors.append("%s: %s" % [field, message])

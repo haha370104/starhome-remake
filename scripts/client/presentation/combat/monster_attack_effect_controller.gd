@@ -30,6 +30,8 @@ func configure(manifest: Dictionary, world_parent: Node2D) -> Error:
 
 
 ## 注入全量荣耀 ALE 仓储，供生成目录中的弹体和贴身命中特效使用。
+## [param repository] 调用方传入的 `repository` 参数。
+## [param presentations] 调用方传入的 `presentations` 参数。
 func configure_glory(repository: RefCounted, presentations: RefCounted) -> void:
 	_ale_repository = repository
 	_glory_presentations = presentations
@@ -89,6 +91,10 @@ func present_attack(event: Dictionary) -> bool:
 	return true
 
 
+## 执行 `present_ale_projectile` 对应的模块操作。
+## [param event] 调用方传入的 `event` 参数。
+## [param actor_id] 调用方传入的 `actor_id` 参数。
+## 返回该函数计算、查询或操作得到的结果。
 func _present_ale_projectile(event: Dictionary, actor_id: String) -> bool:
 	if _ale_repository == null or _glory_presentations == null:
 		return false
@@ -177,6 +183,10 @@ func present_contact_impact(event: Dictionary, target_position: Vector2) -> bool
 	return true
 
 
+## 执行 `present_ale_contact_impact` 对应的模块操作。
+## [param event] 调用方传入的 `event` 参数。
+## [param target_position] 调用方传入的 `target_position` 参数。
+## 返回该函数计算、查询或操作得到的结果。
 func _present_ale_contact_impact(event: Dictionary, target_position: Vector2) -> bool:
 	if _ale_repository == null or _glory_presentations == null:
 		return false
@@ -338,6 +348,9 @@ func _free_effect_node(state: Dictionary) -> void:
 		node.free()
 
 
+## 执行 `apply_ale_frame` 对应的模块操作。
+## [param sprite] 调用方传入的 `sprite` 参数。
+## [param frame] 调用方传入的 `frame` 参数。
 func _apply_ale_frame(sprite: Sprite2D, frame: Dictionary) -> void:
 	sprite.texture = frame["texture"] as Texture2D
 	sprite.position = frame["origin"] as Vector2

@@ -140,6 +140,7 @@ func request_use_ability(ability_id: String, aim_world_position: Vector2) -> Dic
 
 
 ## 将击毁后回基地的选择交给客户端会话与权威服务器。
+## 返回该函数计算、查询或操作得到的结果。
 func request_vehicle_recovery() -> Dictionary:
 	if session == null:
 		return {}
@@ -260,6 +261,8 @@ func _on_loot_picked_up(event: Dictionary, panel_bundle: Dictionary) -> void:
 
 
 ## 将采集结算同时投影到世界提示与三面板背包快照。
+## [param event] 调用方传入的 `event` 参数。
+## [param panel_bundle] 调用方传入的 `panel_bundle` 参数。
 func _on_mining_collected(event: Dictionary, panel_bundle: Dictionary) -> void:
 	combat_event_received.emit(event.duplicate(true))
 	player_panel_bundle_received.emit(panel_bundle.duplicate(true))

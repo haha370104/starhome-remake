@@ -28,6 +28,8 @@ var _last_action_sequence := -1
 ## [param manifest] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## [param snapshot] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## 返回该函数计算、查询或操作得到的结果。
+## [param ale_repository] 调用方传入的 `ale_repository` 参数。
+## [param glory_presentation] 调用方传入的 `glory_presentation` 参数。
 func configure(
 	manifest: Dictionary,
 	snapshot: Dictionary,
