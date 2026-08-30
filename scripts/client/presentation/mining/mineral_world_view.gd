@@ -20,6 +20,9 @@ var _local_hit_rect := Rect2()
 
 ## 以荣耀版 ALE 帧表和权威矿源快照创建一处矿物表现。
 func configure(snapshot: Dictionary, presentation: Dictionary) -> Error:
+	var runtime_animation: Variant = presentation.get("runtime_animation", {})
+	if runtime_animation is Dictionary and not runtime_animation.is_empty():
+		return _configure_runtime_animation(snapshot, runtime_animation)
 	var texture_path := String(presentation.get("world_texture", ""))
 	var cell_value: Variant = presentation.get("cell_size", [])
 	var origin_value: Variant = presentation.get("origin", [])
@@ -67,6 +70,56 @@ func configure(snapshot: Dictionary, presentation: Dictionary) -> Error:
 	return OK
 
 
+func _configure_runtime_animation(snapshot: Dictionary, animation: Dictionary) -> Error:
+	var frames: Array = animation.get("frames", [])
+	if frames.is_empty():
+		return ERR_INVALID_DATA
+	visual_variant = clampi(int(snapshot.get("visual_variant", 0)), 0, frames.size() - 1)
+	var frame: Dictionary = frames[visual_variant]
+	var texture := frame.get("texture") as Texture2D
+	var size := Vector2(frame.get("size", Vector2.ZERO))
+	var origin := Vector2(frame.get("origin", Vector2.ZERO))
+	if texture == null or size.x <= 0.0 or size.y <= 0.0:
+		return ERR_INVALID_DATA
+	var hit_origin := Vector2(animation.get("bounds_origin", origin))
+	var hit_size := Vector2(animation.get("bounds_size", size))
+	_create_visual_nodes(texture, origin, hit_size, hit_origin)
+	apply_snapshot(snapshot)
+	return OK
+
+
+func _create_visual_nodes(
+	texture: Texture2D,
+	origin: Vector2,
+	size: Vector2,
+	hit_origin := Vector2.INF,
+) -> void:
+	_sprite = Sprite2D.new()
+	_sprite.name = "MineralSprite"
+	_sprite.texture = texture
+	_sprite.centered = false
+	_sprite.position = origin
+	_hover_material = ShaderMaterial.new()
+	_hover_material.shader = HOVER_GLOW_SHADER
+	_hover_material.set_shader_parameter("glow_color", HOVER_GLOW_COLOR)
+	_hover_material.set_shader_parameter("glow_radius", HOVER_GLOW_RADIUS)
+	_hover_material.set_shader_parameter("hover_amount", 0.0)
+	_sprite.material = _hover_material
+	add_child(_sprite)
+	_local_hit_rect = Rect2(origin if not hit_origin.is_finite() else hit_origin, size)
+	_tooltip = Label.new()
+	_tooltip.name = "HoverTooltip"
+	_tooltip.position = Vector2(origin.x + size.x + 6.0, origin.y)
+	_tooltip.z_index = 100
+	_tooltip.visible = false
+	_tooltip.add_theme_font_size_override("font_size", 13)
+	_tooltip.add_theme_color_override("font_color", Color(0.72, 1.0, 0.58))
+	_tooltip.add_theme_color_override("font_shadow_color", Color.BLACK)
+	_tooltip.add_theme_constant_override("shadow_offset_x", 1)
+	_tooltip.add_theme_constant_override("shadow_offset_y", 1)
+	add_child(_tooltip)
+
+
 ## 应用矿源的可变权威状态；储量变化不切换 ALE 外观帧。
 func apply_snapshot(snapshot: Dictionary) -> void:
 	source_id = String(snapshot.get("source_id", source_id))
@@ -105,4 +158,3 @@ func displayed_variant() -> int:
 ## 返回本地命中矩形，供坐标和原点回归测试读取。
 func local_hit_rect() -> Rect2:
 	return _local_hit_rect
-

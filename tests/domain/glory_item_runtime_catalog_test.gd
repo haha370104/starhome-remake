@@ -6,6 +6,7 @@ const ItemTextureResolver := preload(
 )
 const CHASSIS_ID := "glory_equipment_tank1_c2ba1ac5af"
 const HAIR_ID := "glory_equipment_1_7b41203496"
+const ENERGY_ORE_ID := "item:material:078bc4104cd1"
 
 var failures := PackedStringArray()
 var assertions := 0
@@ -43,6 +44,9 @@ func _initialize() -> void:
 	_expect(chassis_dialog.get("texture") is AtlasTexture, "战车装备面板图应从独立 dialog ALE 加载")
 	_expect(hair_icon.get("texture") is AtlasTexture, "服装背包图应从荣耀 ALE 包加载")
 	_expect(Vector2(chassis_dialog.get("origin", Vector2.ZERO)).is_finite(), "ALE 对话框原点应可供面板叠图")
+	var energy_ore: Variant = catalog.create(ENERGY_ORE_ID, {"instance_id": "test.energy_ore"})
+	var energy_icon := ItemTextureResolver.resolve(energy_ore.value.presentation_for("inventory"))
+	_expect(energy_ore.is_ok and energy_icon.get("texture") is AtlasTexture, "矿石物品应使用对应 ACT 调色板背包图")
 	_finish()
 
 

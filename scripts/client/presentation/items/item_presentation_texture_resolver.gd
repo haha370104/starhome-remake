@@ -1,9 +1,8 @@
 class_name ItemPresentationTextureResolver
 extends RefCounted
 
-const PackCatalogScript := preload("res://scripts/content/runtime_content_pack_catalog.gd")
 const RepositoryScript := preload("res://scripts/content/ale_sprite_repository.gd")
-const SPRITE_PACK_CATALOG := "res://data/content/glory_sprite_content_packs_v1.json"
+const RuntimeContentBootstrapScript := preload("res://scripts/content/runtime_content_bootstrap.gd")
 
 static var _repository: RefCounted
 static var _initialized := false
@@ -39,8 +38,7 @@ static func _ensure_repository() -> bool:
 	if _initialized:
 		return _repository != null
 	_initialized = true
-	var packs = PackCatalogScript.new()
-	if not packs.load_file(SPRITE_PACK_CATALOG) or not packs.mount_all(false):
+	if not bool(RuntimeContentBootstrapScript.mount_default().get("ok", false)):
 		return false
 	var repository = RepositoryScript.new()
 	if not repository.load_default():

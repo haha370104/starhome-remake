@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "content_version": "glory-mine-palettes-v1",
+  "packs": [
+    {
+      "pack_id": "glory_mine_palettes_v1",
+      "path": "res://assets/content_packs/glory_mine_palettes_v1.zip",
+      "size_bytes": 523257,
+      "sha256": "c00569eb4701483526cc7eb83a3ba8c5adf72ee0fb88d8f35d2e5196a3449404",
+      "content_groups": [
+        "mineral_palette_variants"
+      ]
+    }
+  ],
+  "summary": {
+    "sprites": 25
+  }
+}

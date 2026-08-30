@@ -58,6 +58,24 @@ func _run() -> void:
 	_expect(controller.active_view_count() == 1, "missing source should remove its stale view")
 	controller.apply_snapshot(_snapshot([]))
 	_expect(controller.active_view_count() == 0, "depleted source should disappear on snapshot")
+	var all_sources: Array = []
+	var sequence := 0
+	for mineral_id: String in parsed.get("definitions", {}):
+		var definition: Dictionary = parsed["definitions"][mineral_id]
+		if not definition.has("world_animation"):
+			continue
+		all_sources.append({
+			"source_id": "catalog.mine.%d" % sequence,
+			"mineral_id": mineral_id,
+			"display_name": mineral_id,
+			"position": [float(sequence * 200), 0.0],
+			"remaining": 50,
+			"required_mining_level": 0,
+			"visual_variant": 0,
+		})
+		sequence += 1
+	controller.apply_snapshot(_snapshot(all_sources))
+	_expect(controller.active_view_count() == 24, "全部 24 类有世界素材的矿源都应可渲染")
 	controller.queue_free()
 	world.queue_free()
 	_finish()
@@ -107,4 +125,3 @@ func _finish() -> void:
 		push_error(failure)
 	print("MINERAL_WORLD_FAILED (%d assertions, %d failures)" % [assertions, failures.size()])
 	quit(1)
-

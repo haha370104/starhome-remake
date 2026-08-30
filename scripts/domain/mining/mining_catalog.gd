@@ -42,6 +42,22 @@ func mineral(mineral_id: String) -> Dictionary:
 	return (value as Dictionary).duplicate(true) if value is Dictionary else {}
 
 
+func mineral_ids() -> PackedStringArray:
+	var result := PackedStringArray()
+	for mineral_id: String in _minerals:
+		result.append(mineral_id)
+	result.sort()
+	return result
+
+
+func map_ids() -> PackedStringArray:
+	var result := PackedStringArray()
+	for map_id: String in _maps:
+		result.append(map_id)
+	result.sort()
+	return result
+
+
 ## 依据权重和全局生成序号确定性选择本轮矿种。
 func mineral_for_spawn(map_id: String, sequence: int) -> DomainResult:
 	var policy := policy_for_map(map_id)
@@ -92,8 +108,9 @@ func _configure(document: Dictionary) -> DomainResult:
 			return DomainResult.failure(&"mining.invalid_catalog", "mineral definition must be an object")
 		var definition: Dictionary = raw_definition
 		var mineral_id := String(definition.get("id", ""))
+		var collectible := bool(definition.get("collectible", true))
 		if mineral_id.is_empty() or _minerals.has(mineral_id) \
-				or String(definition.get("item_definition_id", "")).is_empty() \
+				or (collectible and String(definition.get("item_definition_id", "")).is_empty()) \
 				or int(definition.get("required_mining_level", -1)) < 0 \
 				or float(definition.get("experience_coefficient", 0.0)) <= 0.0:
 			return DomainResult.failure(&"mining.invalid_catalog", "mineral definition is invalid")

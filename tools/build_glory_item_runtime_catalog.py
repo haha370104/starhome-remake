@@ -119,6 +119,12 @@ def normalize_ale_reference(value: str) -> str:
 def annotate_asset_availability(definitions: list[dict[str, Any]]) -> tuple[int, int]:
     sprite_index = read_json(Path("data/content/glory_sprite_runtime_index_v1.json"))
     logical_ids = {row["logical_id"] for row in sprite_index["sprites"]}
+    for extra_path in (
+        Path("data/content/glory_monster_palette_runtime_index_v1.json"),
+        Path("data/content/glory_mine_palette_runtime_index_v1.json"),
+    ):
+        if extra_path.is_file():
+            logical_ids.update(row["logical_id"] for row in read_json(extra_path)["sprites"])
     resolved = 0
     unresolved = 0
     for definition in definitions:
@@ -192,7 +198,8 @@ def equipment_definition(row: dict[str, str], known: dict[str, Any]) -> dict[str
     return definition
 
 
-def material_definition(known: dict[str, Any]) -> dict[str, Any]:
+def material_definition(known: dict[str, Any], ore_presentations: dict[str, str]) -> dict[str, Any]:
+    ore_reference = ore_presentations.get(known["display_name"], "")
     return {
         "id": known["id"],
         "kind": "material",
@@ -200,9 +207,25 @@ def material_definition(known: dict[str, Any]) -> dict[str, Any]:
         "description": "荣耀版客户端已登记的材料或消耗品。具体用途见配方和掉落证据。",
         "max_stack": 99,
         "evidence_roles": known.get("evidence_roles", []),
-        "presentation": {},
+        "presentation": {"inventory": {"ale_reference": ore_reference}} if ore_reference else {},
         "source_audit": {"source_release": "starhome_lz_ry", "status": "name_only"},
     }
+
+
+def ore_presentations(source_root: Path) -> dict[str, str]:
+    path = source_root / "catalogs" / "mines" / "glory_ore_catalog.csv"
+    with path.open(encoding="utf-8-sig", newline="") as source:
+        rows = list(csv.reader(source))[1:]
+    result: dict[str, str] = {}
+    for row in rows:
+        if len(row) < 15 or not row[12]:
+            continue
+        if row[14]:
+            key = hashlib.sha256((row[0] + "|" + row[2]).encode("utf-8")).hexdigest()[:12]
+            result[row[0]] = f"mine_palettes/{key}/inventory"
+        else:
+            result[row[0]] = normalize_ale_reference(row[12])
+    return result
 
 
 def sha256(path: Path) -> str:
@@ -247,7 +270,8 @@ def main() -> int:
     with source_csv.open(encoding="utf-8-sig", newline="") as source:
         equipment_rows = list(csv.DictReader(source))
     equipment = [equipment_definition(row, equipment_known[row["class_name"]]) for row in equipment_rows]
-    materials = [material_definition(row) for row in material_known]
+    mineral_presentations = ore_presentations(args.source_root)
+    materials = [material_definition(row, mineral_presentations) for row in material_known]
     definitions = equipment + materials
     resolved_assets, unresolved_assets = annotate_asset_availability(definitions)
     write_json(

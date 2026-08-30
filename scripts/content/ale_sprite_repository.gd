@@ -4,6 +4,7 @@ extends RefCounted
 const TextureLoaderScript := preload("res://scripts/content/runtime_texture_loader.gd")
 const DEFAULT_INDEX_PATH := "res://data/content/glory_sprite_runtime_index_v1.json"
 const DEFAULT_PALETTE_INDEX_PATH := "res://data/content/glory_monster_palette_runtime_index_v1.json"
+const DEFAULT_MINE_PALETTE_INDEX_PATH := "res://data/content/glory_mine_palette_runtime_index_v1.json"
 
 var content_version := ""
 var errors: PackedStringArray = []
@@ -17,7 +18,9 @@ var _page_cache: Dictionary = {}
 func load_default() -> bool:
 	if not load_file(DEFAULT_INDEX_PATH):
 		return false
-	return merge_file(DEFAULT_PALETTE_INDEX_PATH)
+	if not merge_file(DEFAULT_PALETTE_INDEX_PATH):
+		return false
+	return merge_file(DEFAULT_MINE_PALETTE_INDEX_PATH)
 
 
 func load_file(path: String) -> bool:
@@ -133,6 +136,8 @@ func load_animation(reference: String, preferred_prefix := "") -> Dictionary:
 			_page_cache[page_path] = texture
 		page_textures.append(texture)
 	var frames: Array[Dictionary] = []
+	var bounds := Rect2()
+	var has_bounds := false
 	for frame_value: Variant in metadata.get("frames", []):
 		if not frame_value is Dictionary:
 			return {}
@@ -154,12 +159,20 @@ func load_animation(reference: String, preferred_prefix := "") -> Dictionary:
 			"origin": Vector2(float(frame.get("origin_x", 0)), float(frame.get("origin_y", 0))),
 			"size": atlas.region.size,
 		})
+		var frame_bounds := Rect2(
+			Vector2(float(frame.get("origin_x", 0)), float(frame.get("origin_y", 0))),
+			atlas.region.size,
+		)
+		bounds = bounds.merge(frame_bounds) if has_bounds else frame_bounds
+		has_bounds = true
 	return {
 		"logical_id": logical_id,
 		"frames": frames,
 		"cell_size": Vector2(
 			float(metadata.get("cell_width", 0)), float(metadata.get("cell_height", 0))
 		),
+		"bounds_origin": bounds.position,
+		"bounds_size": bounds.size,
 		"source_release": "starhome_lz_ry",
 	}
 

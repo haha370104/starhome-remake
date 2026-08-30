@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "content_version": "starhome-remake-mining-v1",
+  "content_version": "starhome-remake-mining-v2",
   "defaults": {
     "maximum_sources": 20,
     "source_capacity": 50,
@@ -15,51 +15,1211 @@
   },
   "minerals": [
     {
+      "id": "glory_mineral_d10fa75dc4c0",
+      "display_name": "能量矿",
+      "item_definition_id": "item:material:078bc4104cd1",
+      "world_presentation_id": "glory_mineral_d10fa75dc4c0",
+      "collectible": true,
+      "required_mining_level": 10,
+      "experience_coefficient": 1.0,
+      "tooltip": "能量矿，需要采矿等级10级",
+      "description": "具有隐含能量的矿石，需要提炼才能使用",
+      "worth": 2,
+      "sell_price": 1,
+      "presentation": {
+        "inventory_animation": "mine_palettes/85b95313c136/inventory",
+        "world_animation": "mine_palettes/85b95313c136/world"
+      },
+      "source_class": "能量矿源",
+      "evidence": {
+        "level": "客户端矿源提示文本",
+        "locations": "地图编辑器注释坐标；非服务器最终刷新表",
+        "definition": "mineclt.fcc:152"
+      }
+    },
+    {
       "id": "iron_ore",
       "display_name": "铁矿",
       "item_definition_id": "iron_ore",
+      "world_presentation_id": "iron_ore",
+      "collectible": true,
       "required_mining_level": 10,
       "experience_coefficient": 1.0,
-      "world_presentation_id": "common_ore_iron"
+      "tooltip": "铁矿，需要采矿等级10级",
+      "description": "主要成分以金属铁为主，需要提炼才能使用",
+      "worth": 2,
+      "sell_price": 1,
+      "presentation": {
+        "inventory_animation": "mine_palettes/67a9a1deddab/inventory",
+        "world_animation": "mine_palettes/67a9a1deddab/world"
+      },
+      "source_class": "铁矿源",
+      "evidence": {
+        "level": "客户端矿源提示文本",
+        "locations": "地图编辑器注释坐标；非服务器最终刷新表",
+        "definition": "mineclt.fcc:122"
+      }
+    },
+    {
+      "id": "glory_mineral_82be09b62d86",
+      "display_name": "神秘宝藏",
+      "item_definition_id": "item:material:d524bd8652dc",
+      "world_presentation_id": "glory_mineral_82be09b62d86",
+      "collectible": false,
+      "required_mining_level": 50,
+      "experience_coefficient": 5.0,
+      "tooltip": "神秘宝藏，需要采矿等级50级",
+      "description": "",
+      "worth": null,
+      "sell_price": null,
+      "presentation": {
+        "world_animation": "pic3/mine/secretmine"
+      },
+      "source_class": "SecretMine",
+      "evidence": {
+        "level": "客户端矿源提示文本",
+        "locations": "本地未发现矿点坐标",
+        "definition": "mineclt.fcc:196"
+      }
+    },
+    {
+      "id": "glory_mineral_97b5ace0918f",
+      "display_name": "铜矿",
+      "item_definition_id": "item:material:1850770283a8",
+      "world_presentation_id": "glory_mineral_97b5ace0918f",
+      "collectible": true,
+      "required_mining_level": 50,
+      "experience_coefficient": 5.0,
+      "tooltip": "铜矿，需要采矿等级50级",
+      "description": "主要成分以铜金属为主，需要提炼才能使用",
+      "worth": 2,
+      "sell_price": 1,
+      "presentation": {
+        "inventory_animation": "mine_palettes/04484e979197/inventory",
+        "world_animation": "mine_palettes/04484e979197/world"
+      },
+      "source_class": "铜矿源",
+      "evidence": {
+        "level": "客户端矿源提示文本",
+        "locations": "地图编辑器注释坐标；非服务器最终刷新表",
+        "definition": "mineclt.fcc:128"
+      }
     },
     {
       "id": "silicon_ore",
       "display_name": "硅矿",
       "item_definition_id": "silicon_ore",
+      "world_presentation_id": "silicon_ore",
+      "collectible": true,
       "required_mining_level": 100,
-      "experience_coefficient": 1.5,
-      "world_presentation_id": "common_ore_silicon"
+      "experience_coefficient": 10.0,
+      "tooltip": "硅矿，需要采矿等级100级",
+      "description": "主要成分以固态硅为主，需要提炼才能使用",
+      "worth": 2,
+      "sell_price": 2,
+      "presentation": {
+        "inventory_animation": "mine_palettes/fae76c612bab/inventory",
+        "world_animation": "mine_palettes/fae76c612bab/world"
+      },
+      "source_class": "硅矿源",
+      "evidence": {
+        "level": "客户端矿源提示文本",
+        "locations": "地图编辑器注释坐标；非服务器最终刷新表",
+        "definition": "mineclt.fcc:140"
+      }
     },
     {
       "id": "graphite_ore",
       "display_name": "石墨矿",
       "item_definition_id": "graphite_ore",
+      "world_presentation_id": "graphite_ore",
+      "collectible": true,
       "required_mining_level": 150,
-      "experience_coefficient": 1.75,
-      "world_presentation_id": "common_ore_graphite"
+      "experience_coefficient": 15.0,
+      "tooltip": "石墨矿，需要采矿等级150级",
+      "description": "主要成分以固态石墨为主，需要提炼才能使用",
+      "worth": 2,
+      "sell_price": 2,
+      "presentation": {
+        "inventory_animation": "mine_palettes/30b4c4360feb/inventory",
+        "world_animation": "mine_palettes/30b4c4360feb/world"
+      },
+      "source_class": "石墨矿源",
+      "evidence": {
+        "level": "客户端矿源提示文本",
+        "locations": "地图编辑器注释坐标；非服务器最终刷新表",
+        "definition": "mineclt.fcc:146"
+      }
+    },
+    {
+      "id": "glory_mineral_8cdb4c763103",
+      "display_name": "银矿",
+      "item_definition_id": "item:material:dbd4b5c8b82f",
+      "world_presentation_id": "glory_mineral_8cdb4c763103",
+      "collectible": true,
+      "required_mining_level": 200,
+      "experience_coefficient": 20.0,
+      "tooltip": "银矿，需要采矿等级200级",
+      "description": "主要成分以金属银为主，需要提炼才能使用",
+      "worth": 2,
+      "sell_price": 3,
+      "presentation": {
+        "inventory_animation": "mine_palettes/65af5740a667/inventory",
+        "world_animation": "mine_palettes/65af5740a667/world"
+      },
+      "source_class": "银矿源",
+      "evidence": {
+        "level": "客户端矿源提示文本",
+        "locations": "地图编辑器注释坐标；非服务器最终刷新表",
+        "definition": "mineclt.fcc:134"
+      }
+    },
+    {
+      "id": "glory_mineral_7e5a51823863",
+      "display_name": "金矿",
+      "item_definition_id": "item:material:6b764a13c668",
+      "world_presentation_id": "glory_mineral_7e5a51823863",
+      "collectible": true,
+      "required_mining_level": 250,
+      "experience_coefficient": 25.0,
+      "tooltip": "金矿，需要采矿等级250级",
+      "description": "主要成分以金属金为主，需要提炼才能使用",
+      "worth": 2,
+      "sell_price": 3,
+      "presentation": {
+        "inventory_animation": "mine_palettes/8288780ed4c7/inventory",
+        "world_animation": "mine_palettes/8288780ed4c7/world"
+      },
+      "source_class": "金矿源",
+      "evidence": {
+        "level": "客户端矿源提示文本",
+        "locations": "地图编辑器注释坐标；非服务器最终刷新表",
+        "definition": "mineclt.fcc:116"
+      }
+    },
+    {
+      "id": "glory_mineral_adc85c66662c",
+      "display_name": "宝石矿",
+      "item_definition_id": "item:material:ba90bdec9217",
+      "world_presentation_id": "glory_mineral_adc85c66662c",
+      "collectible": true,
+      "required_mining_level": 300,
+      "experience_coefficient": 30.0,
+      "tooltip": "宝石矿，需要采矿等级300级",
+      "description": "",
+      "worth": 2,
+      "sell_price": null,
+      "presentation": {
+        "inventory_animation": "mine_palettes/8cdc32fe25bb/inventory",
+        "world_animation": "mine_palettes/8cdc32fe25bb/world"
+      },
+      "source_class": "宝石矿源",
+      "evidence": {
+        "level": "客户端矿源提示文本",
+        "locations": "本地未发现矿点坐标",
+        "definition": "mineclt.fcc:158"
+      }
+    },
+    {
+      "id": "glory_mineral_1ab9ea134717",
+      "display_name": "铬矿",
+      "item_definition_id": "item:material:8e82258ba743",
+      "world_presentation_id": "glory_mineral_1ab9ea134717",
+      "collectible": true,
+      "required_mining_level": 300,
+      "experience_coefficient": 30.0,
+      "tooltip": "铬矿，需要采矿等级300级",
+      "description": "以铬元素为主的矿，提炼可以得到铬",
+      "worth": 20,
+      "sell_price": 10,
+      "presentation": {
+        "inventory_animation": "mine_palettes/20497a68d884/inventory",
+        "world_animation": "mine_palettes/20497a68d884/world"
+      },
+      "source_class": "铬矿源",
+      "evidence": {
+        "level": "客户端矿源提示文本",
+        "locations": "本地未发现矿点坐标",
+        "definition": "mineclt.fcc:165"
+      }
+    },
+    {
+      "id": "glory_mineral_0f7843d5e272",
+      "display_name": "红水晶矿",
+      "item_definition_id": "item:material:a039c10cf145",
+      "world_presentation_id": "glory_mineral_0f7843d5e272",
+      "collectible": true,
+      "required_mining_level": 300,
+      "experience_coefficient": 30.0,
+      "tooltip": "红水晶矿，需要采矿等级300级",
+      "description": "主要成份以红水晶为主，需要提炼才能使用。",
+      "worth": 20,
+      "sell_price": 10,
+      "presentation": {
+        "inventory_animation": "pic3/mine/hongshuijing",
+        "world_animation": "pic3/mine/hongshuijingkuang"
+      },
+      "source_class": "红水晶矿源",
+      "evidence": {
+        "level": "客户端矿源提示文本",
+        "locations": "本地未发现矿点坐标",
+        "definition": "mineclt.fcc:249"
+      }
+    },
+    {
+      "id": "glory_mineral_f8b0d6ec51a5",
+      "display_name": "蓝水晶矿",
+      "item_definition_id": "item:material:f112d2e6b2a1",
+      "world_presentation_id": "glory_mineral_f8b0d6ec51a5",
+      "collectible": true,
+      "required_mining_level": 300,
+      "experience_coefficient": 30.0,
+      "tooltip": "蓝水晶矿，需要采矿等级300级",
+      "description": "主要成份以蓝水晶为主，需要提炼才能使用。",
+      "worth": 20,
+      "sell_price": 10,
+      "presentation": {
+        "inventory_animation": "pic3/mine/lanshuijing",
+        "world_animation": "pic3/mine/lanshuijingkuang"
+      },
+      "source_class": "蓝水晶矿源",
+      "evidence": {
+        "level": "客户端矿源提示文本",
+        "locations": "本地未发现矿点坐标",
+        "definition": "mineclt.fcc:256"
+      }
+    },
+    {
+      "id": "glory_mineral_4bc7df36d8ad",
+      "display_name": "镭矿",
+      "item_definition_id": "item:material:39aa70e8697d",
+      "world_presentation_id": "glory_mineral_4bc7df36d8ad",
+      "collectible": true,
+      "required_mining_level": 300,
+      "experience_coefficient": 30.0,
+      "tooltip": "镭矿，需要采矿等级300级",
+      "description": "以镭元素为主的矿，提炼可以得到镭",
+      "worth": 20,
+      "sell_price": 10,
+      "presentation": {
+        "inventory_animation": "mine_palettes/ad791d664c2b/inventory",
+        "world_animation": "mine_palettes/ad791d664c2b/world"
+      },
+      "source_class": "镭矿源",
+      "evidence": {
+        "level": "客户端矿源提示文本",
+        "locations": "本地未发现矿点坐标",
+        "definition": "mineclt.fcc:183"
+      }
+    },
+    {
+      "id": "glory_mineral_4f96977fb953",
+      "display_name": "绿水晶矿",
+      "item_definition_id": "item:material:32205fa18c6a",
+      "world_presentation_id": "glory_mineral_4f96977fb953",
+      "collectible": true,
+      "required_mining_level": 300,
+      "experience_coefficient": 30.0,
+      "tooltip": "绿水晶矿，需要采矿等级300级",
+      "description": "主要成份以绿水晶为主，需要提炼才能使用。",
+      "worth": 20,
+      "sell_price": 10,
+      "presentation": {
+        "inventory_animation": "pic3/mine/lvshuijing",
+        "world_animation": "pic3/mine/lvshuijingkuang"
+      },
+      "source_class": "绿水晶矿源",
+      "evidence": {
+        "level": "客户端矿源提示文本",
+        "locations": "本地未发现矿点坐标",
+        "definition": "mineclt.fcc:263"
+      }
+    },
+    {
+      "id": "glory_mineral_d23fa12c2180",
+      "display_name": "镍矿",
+      "item_definition_id": "item:material:1342bef47b1c",
+      "world_presentation_id": "glory_mineral_d23fa12c2180",
+      "collectible": true,
+      "required_mining_level": 300,
+      "experience_coefficient": 30.0,
+      "tooltip": "镍矿，需要采矿等级300级",
+      "description": "以镍元素为主的矿，提炼可以得到镍",
+      "worth": 20,
+      "sell_price": 10,
+      "presentation": {
+        "inventory_animation": "mine_palettes/1a50ebcdc8ac/inventory",
+        "world_animation": "mine_palettes/1a50ebcdc8ac/world"
+      },
+      "source_class": "镍矿源",
+      "evidence": {
+        "level": "客户端矿源提示文本",
+        "locations": "本地未发现矿点坐标",
+        "definition": "mineclt.fcc:171"
+      }
+    },
+    {
+      "id": "glory_mineral_f1f4bf68b431",
+      "display_name": "锌矿",
+      "item_definition_id": "item:material:8e983c02db12",
+      "world_presentation_id": "glory_mineral_f1f4bf68b431",
+      "collectible": true,
+      "required_mining_level": 300,
+      "experience_coefficient": 30.0,
+      "tooltip": "锌矿，需要采矿等级300级",
+      "description": "以锌元素为主的矿，提炼可以得到锌",
+      "worth": 20,
+      "sell_price": 10,
+      "presentation": {
+        "inventory_animation": "mine_palettes/b15ba61bb3c3/inventory",
+        "world_animation": "mine_palettes/b15ba61bb3c3/world"
+      },
+      "source_class": "锌矿源",
+      "evidence": {
+        "level": "客户端矿源提示文本",
+        "locations": "本地未发现矿点坐标",
+        "definition": "mineclt.fcc:177"
+      }
+    },
+    {
+      "id": "glory_mineral_9c533145ffbe",
+      "display_name": "紫水晶矿",
+      "item_definition_id": "item:material:639ecee21fb7",
+      "world_presentation_id": "glory_mineral_9c533145ffbe",
+      "collectible": true,
+      "required_mining_level": 300,
+      "experience_coefficient": 30.0,
+      "tooltip": "紫水晶矿，需要采矿等级300级",
+      "description": "主要成份以紫水晶为主，需要提炼才能使用。",
+      "worth": 20,
+      "sell_price": 10,
+      "presentation": {
+        "inventory_animation": "pic3/mine/zishuijing",
+        "world_animation": "pic3/mine/zishuijingkuang"
+      },
+      "source_class": "紫水晶矿源",
+      "evidence": {
+        "level": "客户端矿源提示文本",
+        "locations": "本地未发现矿点坐标",
+        "definition": "mineclt.fcc:242"
+      }
+    },
+    {
+      "id": "glory_mineral_3080b224d6a6",
+      "display_name": "镁矿",
+      "item_definition_id": "item:material:185cf7b29406",
+      "world_presentation_id": "glory_mineral_3080b224d6a6",
+      "collectible": true,
+      "required_mining_level": 500,
+      "experience_coefficient": 50.0,
+      "tooltip": "镁矿,需要采矿等级500级",
+      "description": "以镁元素为主的矿，提炼可以得到镁",
+      "worth": 30,
+      "sell_price": 15,
+      "presentation": {
+        "inventory_animation": "pic3/mine/magnesium",
+        "world_animation": "pic3/mine/meikuang"
+      },
+      "source_class": "镁矿源",
+      "evidence": {
+        "level": "客户端矿源提示文本",
+        "locations": "本地未发现矿点坐标",
+        "definition": "mineclt.fcc:204"
+      }
+    },
+    {
+      "id": "glory_mineral_96bf750337d4",
+      "display_name": "钡矿",
+      "item_definition_id": "item:material:6b0269b35f1b",
+      "world_presentation_id": "glory_mineral_96bf750337d4",
+      "collectible": true,
+      "required_mining_level": 550,
+      "experience_coefficient": 55.0,
+      "tooltip": "钡矿,需要采矿等级550级",
+      "description": "以钡元素为主的矿，提炼可以得到钡",
+      "worth": 40,
+      "sell_price": 20,
+      "presentation": {
+        "inventory_animation": "pic3/mine/barium",
+        "world_animation": "pic3/mine/beikuang"
+      },
+      "source_class": "钡矿源",
+      "evidence": {
+        "level": "客户端矿源提示文本",
+        "locations": "本地未发现矿点坐标",
+        "definition": "mineclt.fcc:210"
+      }
+    },
+    {
+      "id": "glory_mineral_f9c977e517f2",
+      "display_name": "钒矿",
+      "item_definition_id": "item:material:4f5c6d64fd5b",
+      "world_presentation_id": "glory_mineral_f9c977e517f2",
+      "collectible": true,
+      "required_mining_level": 850,
+      "experience_coefficient": 85.0,
+      "tooltip": "钒矿，需要采矿等级850级",
+      "description": "以钒元素为主的矿物，可提炼成钒条，需要挖掘等级850级。",
+      "worth": 0,
+      "sell_price": 0,
+      "presentation": {
+        "inventory_animation": "pic3/mine/vanadium",
+        "world_animation": "pic3/mine/fankuang"
+      },
+      "source_class": "钒矿源",
+      "evidence": {
+        "level": "客户端矿源提示文本",
+        "locations": "本地未发现矿点坐标",
+        "definition": "mineclt.fcc:217"
+      }
+    },
+    {
+      "id": "glory_mineral_bbad441932d7",
+      "display_name": "钴矿",
+      "item_definition_id": "item:material:8811cec57497",
+      "world_presentation_id": "glory_mineral_bbad441932d7",
+      "collectible": true,
+      "required_mining_level": 900,
+      "experience_coefficient": 90.0,
+      "tooltip": "钴矿，需要采矿等级900级",
+      "description": "以钴元素为主的矿物，可提炼成钴条，需要挖掘等级900级。",
+      "worth": 0,
+      "sell_price": 0,
+      "presentation": {
+        "inventory_animation": "pic3/mine/cobalt",
+        "world_animation": "pic3/mine/gukuang"
+      },
+      "source_class": "钴矿源",
+      "evidence": {
+        "level": "客户端矿源提示文本",
+        "locations": "本地未发现矿点坐标",
+        "definition": "mineclt.fcc:223"
+      }
+    },
+    {
+      "id": "glory_mineral_d1eae7a89c0a",
+      "display_name": "钼矿",
+      "item_definition_id": "item:material:283227001fe4",
+      "world_presentation_id": "glory_mineral_d1eae7a89c0a",
+      "collectible": true,
+      "required_mining_level": 950,
+      "experience_coefficient": 95.0,
+      "tooltip": "钼矿，需要采矿等级950级",
+      "description": "以钼元素为主的矿物，可提炼成钼条，需要挖掘等级950级。",
+      "worth": 0,
+      "sell_price": 0,
+      "presentation": {
+        "inventory_animation": "pic3/mine/molybdenum",
+        "world_animation": "pic3/mine/mukuang"
+      },
+      "source_class": "钼矿源",
+      "evidence": {
+        "level": "客户端矿源提示文本",
+        "locations": "本地未发现矿点坐标",
+        "definition": "mineclt.fcc:229"
+      }
+    },
+    {
+      "id": "glory_mineral_51e548c405e5",
+      "display_name": "钽矿",
+      "item_definition_id": "item:material:1793569f3af3",
+      "world_presentation_id": "glory_mineral_51e548c405e5",
+      "collectible": true,
+      "required_mining_level": 1000,
+      "experience_coefficient": 100.0,
+      "tooltip": "钽矿，需要采矿等级1000级",
+      "description": "以钽元素为主的矿物，可提炼成钽条，需要挖掘等级1000级。",
+      "worth": 0,
+      "sell_price": 0,
+      "presentation": {
+        "inventory_animation": "pic3/mine/tantalum",
+        "world_animation": "pic3/mine/tankuang"
+      },
+      "source_class": "钽矿源",
+      "evidence": {
+        "level": "客户端矿源提示文本",
+        "locations": "本地未发现矿点坐标",
+        "definition": "mineclt.fcc:235"
+      }
+    },
+    {
+      "id": "glory_mineral_8d7632e7294c",
+      "display_name": "铂金矿",
+      "item_definition_id": "item:material:8d7632e7294c",
+      "world_presentation_id": "glory_mineral_8d7632e7294c",
+      "collectible": true,
+      "required_mining_level": 0,
+      "experience_coefficient": 1.0,
+      "tooltip": "",
+      "description": "以铂元素为主的矿，提炼可以得到铂金",
+      "worth": 16,
+      "sell_price": 6,
+      "presentation": {
+        "inventory_animation": "pic3/mine/bo01"
+      },
+      "source_class": "",
+      "evidence": {
+        "level": "本地未发现等级",
+        "locations": "本地未发现矿点坐标",
+        "definition": ""
+      }
+    },
+    {
+      "id": "glory_mineral_867a23dd07d9",
+      "display_name": "藏宝矿",
+      "item_definition_id": "item:material:6ce6d7cd8016",
+      "world_presentation_id": "glory_mineral_867a23dd07d9",
+      "collectible": true,
+      "required_mining_level": 0,
+      "experience_coefficient": 1.0,
+      "tooltip": "藏宝矿",
+      "description": "是您获得意外惊喜时的副产品。",
+      "worth": 0,
+      "sell_price": null,
+      "presentation": {
+        "inventory_animation": "pic3/mine/lei01",
+        "world_animation": "pic3/mine/gem"
+      },
+      "source_class": "藏宝矿源",
+      "evidence": {
+        "level": "本地未发现等级",
+        "locations": "本地未发现矿点坐标",
+        "definition": "mineclt.fcc:189"
+      }
+    },
+    {
+      "id": "glory_mineral_5f3632e66566",
+      "display_name": "锆矿",
+      "item_definition_id": "item:material:5f3632e66566",
+      "world_presentation_id": "glory_mineral_5f3632e66566",
+      "collectible": true,
+      "required_mining_level": 0,
+      "experience_coefficient": 1.0,
+      "tooltip": "",
+      "description": "以锆元素为主的矿，提炼可以得到锆",
+      "worth": 20,
+      "sell_price": 10,
+      "presentation": {
+        "inventory_animation": "pic3/mine/zirconium"
+      },
+      "source_class": "",
+      "evidence": {
+        "level": "本地未发现等级",
+        "locations": "本地未发现矿点坐标",
+        "definition": ""
+      }
+    },
+    {
+      "id": "glory_mineral_7289df5b1ab9",
+      "display_name": "合金矿",
+      "item_definition_id": "item:material:7289df5b1ab9",
+      "world_presentation_id": "glory_mineral_7289df5b1ab9",
+      "collectible": true,
+      "required_mining_level": 0,
+      "experience_coefficient": 1.0,
+      "tooltip": "",
+      "description": "",
+      "worth": 2,
+      "sell_price": null,
+      "presentation": {
+        "inventory_animation": "mine_palettes/e21701933abc/inventory"
+      },
+      "source_class": "",
+      "evidence": {
+        "level": "本地未发现等级",
+        "locations": "本地未发现矿点坐标",
+        "definition": ""
+      }
+    },
+    {
+      "id": "glory_mineral_3d9597ddfaa0",
+      "display_name": "钾矿",
+      "item_definition_id": "item:material:3d9597ddfaa0",
+      "world_presentation_id": "glory_mineral_3d9597ddfaa0",
+      "collectible": true,
+      "required_mining_level": 0,
+      "experience_coefficient": 1.0,
+      "tooltip": "",
+      "description": "以钾元素为主的矿，提炼可以得到钾",
+      "worth": 10,
+      "sell_price": 5,
+      "presentation": {
+        "inventory_animation": "pic3/mine/jia01"
+      },
+      "source_class": "",
+      "evidence": {
+        "level": "本地未发现等级",
+        "locations": "本地未发现矿点坐标",
+        "definition": ""
+      }
+    },
+    {
+      "id": "glory_mineral_ba72367493f5",
+      "display_name": "钪矿",
+      "item_definition_id": "item:material:ba72367493f5",
+      "world_presentation_id": "glory_mineral_ba72367493f5",
+      "collectible": true,
+      "required_mining_level": 0,
+      "experience_coefficient": 1.0,
+      "tooltip": "",
+      "description": "以钪元素为主的矿，提炼可以得到钪",
+      "worth": 30,
+      "sell_price": 15,
+      "presentation": {
+        "inventory_animation": "pic3/mine/scandium"
+      },
+      "source_class": "",
+      "evidence": {
+        "level": "本地未发现等级",
+        "locations": "本地未发现矿点坐标",
+        "definition": ""
+      }
+    },
+    {
+      "id": "glory_mineral_b739c1f3c1d8",
+      "display_name": "磷矿",
+      "item_definition_id": "item:material:b739c1f3c1d8",
+      "world_presentation_id": "glory_mineral_b739c1f3c1d8",
+      "collectible": true,
+      "required_mining_level": 0,
+      "experience_coefficient": 1.0,
+      "tooltip": "",
+      "description": "以磷元素为主的矿，提炼可以得到磷",
+      "worth": 10,
+      "sell_price": 5,
+      "presentation": {
+        "inventory_animation": "pic3/mine/lin01"
+      },
+      "source_class": "",
+      "evidence": {
+        "level": "本地未发现等级",
+        "locations": "本地未发现矿点坐标",
+        "definition": ""
+      }
+    },
+    {
+      "id": "glory_mineral_5479cbea59ce",
+      "display_name": "硫矿",
+      "item_definition_id": "item:material:5479cbea59ce",
+      "world_presentation_id": "glory_mineral_5479cbea59ce",
+      "collectible": true,
+      "required_mining_level": 0,
+      "experience_coefficient": 1.0,
+      "tooltip": "",
+      "description": "以硫元素为主的矿，提炼可以得到硫",
+      "worth": 10,
+      "sell_price": 5,
+      "presentation": {
+        "inventory_animation": "pic3/mine/liu01"
+      },
+      "source_class": "",
+      "evidence": {
+        "level": "本地未发现等级",
+        "locations": "本地未发现矿点坐标",
+        "definition": ""
+      }
+    },
+    {
+      "id": "glory_mineral_7c2a619313f6",
+      "display_name": "锰矿",
+      "item_definition_id": "item:material:7c2a619313f6",
+      "world_presentation_id": "glory_mineral_7c2a619313f6",
+      "collectible": true,
+      "required_mining_level": 0,
+      "experience_coefficient": 1.0,
+      "tooltip": "",
+      "description": "以锰元素为主的矿，提炼可以得到锰",
+      "worth": 6,
+      "sell_price": 3,
+      "presentation": {
+        "inventory_animation": "pic3/mine/meng01"
+      },
+      "source_class": "",
+      "evidence": {
+        "level": "本地未发现等级",
+        "locations": "本地未发现矿点坐标",
+        "definition": ""
+      }
+    },
+    {
+      "id": "glory_mineral_f5a20e4fbcd6",
+      "display_name": "钛矿",
+      "item_definition_id": "item:material:f5a20e4fbcd6",
+      "world_presentation_id": "glory_mineral_f5a20e4fbcd6",
+      "collectible": true,
+      "required_mining_level": 0,
+      "experience_coefficient": 1.0,
+      "tooltip": "",
+      "description": "以钛元素为主的矿，提炼可以得到钛",
+      "worth": 16,
+      "sell_price": 6,
+      "presentation": {
+        "inventory_animation": "pic3/mine/tai01"
+      },
+      "source_class": "",
+      "evidence": {
+        "level": "本地未发现等级",
+        "locations": "本地未发现矿点坐标",
+        "definition": ""
+      }
+    },
+    {
+      "id": "glory_mineral_a1d287e71f35",
+      "display_name": "钨矿",
+      "item_definition_id": "item:material:a1d287e71f35",
+      "world_presentation_id": "glory_mineral_a1d287e71f35",
+      "collectible": true,
+      "required_mining_level": 0,
+      "experience_coefficient": 1.0,
+      "tooltip": "",
+      "description": "以钨元素为主的矿，提炼可以得到钨",
+      "worth": 6,
+      "sell_price": 3,
+      "presentation": {
+        "inventory_animation": "pic3/mine/wu01"
+      },
+      "source_class": "",
+      "evidence": {
+        "level": "本地未发现等级",
+        "locations": "本地未发现矿点坐标",
+        "definition": ""
+      }
+    },
+    {
+      "id": "glory_mineral_aa7b06e40657",
+      "display_name": "铱矿",
+      "item_definition_id": "item:material:aa7b06e40657",
+      "world_presentation_id": "glory_mineral_aa7b06e40657",
+      "collectible": true,
+      "required_mining_level": 0,
+      "experience_coefficient": 1.0,
+      "tooltip": "",
+      "description": "以铱元素为主的矿，提炼可以得到铱",
+      "worth": 16,
+      "sell_price": 6,
+      "presentation": {
+        "inventory_animation": "pic3/mine/yi01"
+      },
+      "source_class": "",
+      "evidence": {
+        "level": "本地未发现等级",
+        "locations": "本地未发现矿点坐标",
+        "definition": ""
+      }
     }
   ],
   "maps": {
     "d04_field_zone": {
       "enabled": true,
       "mineral_pool": [
-        {"mineral_id": "iron_ore", "weight": 1.0}
+        {
+          "mineral_id": "iron_ore",
+          "weight": 1.0
+        }
       ],
-      "evidence": "D04 is the first playable field; iron is a reconstructed beginner-map default because the retired server spawn table was not recovered."
+      "evidence": "User-confirmed beginner-map remake fallback; the retired server spawn table was not recovered."
     },
     "g08_field_zone": {
       "enabled": true,
       "mineral_pool": [
-        {"mineral_id": "silicon_ore", "weight": 1.0},
-        {"mineral_id": "graphite_ore", "weight": 1.0}
+        {
+          "mineral_id": "silicon_ore",
+          "weight": 1.0
+        },
+        {
+          "mineral_id": "graphite_ore",
+          "weight": 1.0
+        }
       ],
-      "evidence": "Glory client map comments list silicon and graphite candidates on NFT_BL/NFT_BT G08; coordinates are intentionally not reused as server spawns."
+      "evidence": "Glory client map placement relation; remake uses random walkable spawns, not source coordinates."
+    },
+    "glory_nft_bl_c07": {
+      "enabled": true,
+      "mineral_pool": [
+        {
+          "mineral_id": "silicon_ore",
+          "weight": 1.0
+        },
+        {
+          "mineral_id": "graphite_ore",
+          "weight": 1.0
+        }
+      ],
+      "evidence": "Glory client map placement relation; remake uses random walkable spawns, not source coordinates."
+    },
+    "glory_nft_bl_c08": {
+      "enabled": true,
+      "mineral_pool": [
+        {
+          "mineral_id": "iron_ore",
+          "weight": 1.0
+        },
+        {
+          "mineral_id": "glory_mineral_97b5ace0918f",
+          "weight": 1.0
+        },
+        {
+          "mineral_id": "glory_mineral_8cdb4c763103",
+          "weight": 1.0
+        }
+      ],
+      "evidence": "Glory client map placement relation; remake uses random walkable spawns, not source coordinates."
+    },
+    "glory_nft_bl_d06": {
+      "enabled": true,
+      "mineral_pool": [
+        {
+          "mineral_id": "silicon_ore",
+          "weight": 1.0
+        },
+        {
+          "mineral_id": "graphite_ore",
+          "weight": 1.0
+        }
+      ],
+      "evidence": "Glory client map placement relation; remake uses random walkable spawns, not source coordinates."
+    },
+    "glory_nft_bl_d08": {
+      "enabled": true,
+      "mineral_pool": [
+        {
+          "mineral_id": "glory_mineral_d10fa75dc4c0",
+          "weight": 1.0
+        },
+        {
+          "mineral_id": "glory_mineral_8cdb4c763103",
+          "weight": 1.0
+        },
+        {
+          "mineral_id": "glory_mineral_7e5a51823863",
+          "weight": 1.0
+        }
+      ],
+      "evidence": "Glory client map placement relation; remake uses random walkable spawns, not source coordinates."
+    },
+    "glory_nft_bl_e06": {
+      "enabled": true,
+      "mineral_pool": [
+        {
+          "mineral_id": "glory_mineral_d10fa75dc4c0",
+          "weight": 1.0
+        },
+        {
+          "mineral_id": "glory_mineral_97b5ace0918f",
+          "weight": 1.0
+        }
+      ],
+      "evidence": "Glory client map placement relation; remake uses random walkable spawns, not source coordinates."
+    },
+    "glory_nft_bl_e07": {
+      "enabled": true,
+      "mineral_pool": [
+        {
+          "mineral_id": "glory_mineral_d10fa75dc4c0",
+          "weight": 1.0
+        }
+      ],
+      "evidence": "Glory client map placement relation; remake uses random walkable spawns, not source coordinates."
+    },
+    "glory_nft_bl_g06": {
+      "enabled": true,
+      "mineral_pool": [
+        {
+          "mineral_id": "silicon_ore",
+          "weight": 1.0
+        },
+        {
+          "mineral_id": "graphite_ore",
+          "weight": 1.0
+        },
+        {
+          "mineral_id": "glory_mineral_8cdb4c763103",
+          "weight": 1.0
+        }
+      ],
+      "evidence": "Glory client map placement relation; remake uses random walkable spawns, not source coordinates."
+    },
+    "glory_nft_bl_h07": {
+      "enabled": true,
+      "mineral_pool": [
+        {
+          "mineral_id": "glory_mineral_8cdb4c763103",
+          "weight": 1.0
+        },
+        {
+          "mineral_id": "glory_mineral_7e5a51823863",
+          "weight": 1.0
+        }
+      ],
+      "evidence": "Glory client map placement relation; remake uses random walkable spawns, not source coordinates."
+    },
+    "glory_nft_bl_h08": {
+      "enabled": true,
+      "mineral_pool": [
+        {
+          "mineral_id": "silicon_ore",
+          "weight": 1.0
+        },
+        {
+          "mineral_id": "graphite_ore",
+          "weight": 1.0
+        }
+      ],
+      "evidence": "Glory client map placement relation; remake uses random walkable spawns, not source coordinates."
+    },
+    "glory_nft_bt_a08": {
+      "enabled": true,
+      "mineral_pool": [
+        {
+          "mineral_id": "glory_mineral_8cdb4c763103",
+          "weight": 1.0
+        },
+        {
+          "mineral_id": "glory_mineral_7e5a51823863",
+          "weight": 1.0
+        }
+      ],
+      "evidence": "Glory client map placement relation; remake uses random walkable spawns, not source coordinates."
+    },
+    "glory_nft_bt_a09": {
+      "enabled": true,
+      "mineral_pool": [
+        {
+          "mineral_id": "glory_mineral_8cdb4c763103",
+          "weight": 1.0
+        },
+        {
+          "mineral_id": "glory_mineral_7e5a51823863",
+          "weight": 1.0
+        }
+      ],
+      "evidence": "Glory client map placement relation; remake uses random walkable spawns, not source coordinates."
+    },
+    "glory_nft_bt_c06": {
+      "enabled": true,
+      "mineral_pool": [
+        {
+          "mineral_id": "iron_ore",
+          "weight": 1.0
+        },
+        {
+          "mineral_id": "silicon_ore",
+          "weight": 1.0
+        }
+      ],
+      "evidence": "Glory client map placement relation; remake uses random walkable spawns, not source coordinates."
+    },
+    "glory_nft_bt_c07": {
+      "enabled": true,
+      "mineral_pool": [
+        {
+          "mineral_id": "silicon_ore",
+          "weight": 1.0
+        },
+        {
+          "mineral_id": "graphite_ore",
+          "weight": 1.0
+        }
+      ],
+      "evidence": "Glory client map placement relation; remake uses random walkable spawns, not source coordinates."
+    },
+    "glory_nft_bt_c08": {
+      "enabled": true,
+      "mineral_pool": [
+        {
+          "mineral_id": "iron_ore",
+          "weight": 1.0
+        },
+        {
+          "mineral_id": "glory_mineral_97b5ace0918f",
+          "weight": 1.0
+        },
+        {
+          "mineral_id": "glory_mineral_8cdb4c763103",
+          "weight": 1.0
+        }
+      ],
+      "evidence": "Glory client map placement relation; remake uses random walkable spawns, not source coordinates."
+    },
+    "glory_nft_bt_d06": {
+      "enabled": true,
+      "mineral_pool": [
+        {
+          "mineral_id": "silicon_ore",
+          "weight": 1.0
+        },
+        {
+          "mineral_id": "graphite_ore",
+          "weight": 1.0
+        }
+      ],
+      "evidence": "Glory client map placement relation; remake uses random walkable spawns, not source coordinates."
+    },
+    "glory_nft_bt_d08": {
+      "enabled": true,
+      "mineral_pool": [
+        {
+          "mineral_id": "glory_mineral_d10fa75dc4c0",
+          "weight": 1.0
+        },
+        {
+          "mineral_id": "glory_mineral_8cdb4c763103",
+          "weight": 1.0
+        },
+        {
+          "mineral_id": "glory_mineral_7e5a51823863",
+          "weight": 1.0
+        }
+      ],
+      "evidence": "Glory client map placement relation; remake uses random walkable spawns, not source coordinates."
+    },
+    "glory_nft_bt_e06": {
+      "enabled": true,
+      "mineral_pool": [
+        {
+          "mineral_id": "glory_mineral_d10fa75dc4c0",
+          "weight": 1.0
+        },
+        {
+          "mineral_id": "glory_mineral_97b5ace0918f",
+          "weight": 1.0
+        }
+      ],
+      "evidence": "Glory client map placement relation; remake uses random walkable spawns, not source coordinates."
+    },
+    "glory_nft_bt_e07": {
+      "enabled": true,
+      "mineral_pool": [
+        {
+          "mineral_id": "glory_mineral_d10fa75dc4c0",
+          "weight": 1.0
+        }
+      ],
+      "evidence": "Glory client map placement relation; remake uses random walkable spawns, not source coordinates."
+    },
+    "glory_nft_bt_e08": {
+      "enabled": true,
+      "mineral_pool": [
+        {
+          "mineral_id": "glory_mineral_8cdb4c763103",
+          "weight": 1.0
+        },
+        {
+          "mineral_id": "glory_mineral_7e5a51823863",
+          "weight": 1.0
+        }
+      ],
+      "evidence": "Glory client map placement relation; remake uses random walkable spawns, not source coordinates."
+    },
+    "glory_nft_bt_g06": {
+      "enabled": true,
+      "mineral_pool": [
+        {
+          "mineral_id": "silicon_ore",
+          "weight": 1.0
+        },
+        {
+          "mineral_id": "graphite_ore",
+          "weight": 1.0
+        },
+        {
+          "mineral_id": "glory_mineral_8cdb4c763103",
+          "weight": 1.0
+        }
+      ],
+      "evidence": "Glory client map placement relation; remake uses random walkable spawns, not source coordinates."
+    },
+    "glory_nft_bt_g08": {
+      "enabled": true,
+      "mineral_pool": [
+        {
+          "mineral_id": "silicon_ore",
+          "weight": 1.0
+        },
+        {
+          "mineral_id": "graphite_ore",
+          "weight": 1.0
+        }
+      ],
+      "evidence": "Glory client map placement relation; remake uses random walkable spawns, not source coordinates."
+    },
+    "glory_nft_bt_h06": {
+      "enabled": true,
+      "mineral_pool": [
+        {
+          "mineral_id": "glory_mineral_8cdb4c763103",
+          "weight": 1.0
+        },
+        {
+          "mineral_id": "glory_mineral_7e5a51823863",
+          "weight": 1.0
+        }
+      ],
+      "evidence": "Glory client map placement relation; remake uses random walkable spawns, not source coordinates."
+    },
+    "glory_nft_bt_h07": {
+      "enabled": true,
+      "mineral_pool": [
+        {
+          "mineral_id": "glory_mineral_8cdb4c763103",
+          "weight": 1.0
+        },
+        {
+          "mineral_id": "glory_mineral_7e5a51823863",
+          "weight": 1.0
+        }
+      ],
+      "evidence": "Glory client map placement relation; remake uses random walkable spawns, not source coordinates."
+    },
+    "glory_nft_bt_h08": {
+      "enabled": true,
+      "mineral_pool": [
+        {
+          "mineral_id": "silicon_ore",
+          "weight": 1.0
+        },
+        {
+          "mineral_id": "graphite_ore",
+          "weight": 1.0
+        }
+      ],
+      "evidence": "Glory client map placement relation; remake uses random walkable spawns, not source coordinates."
+    },
+    "glory_nft_bt_j08": {
+      "enabled": true,
+      "mineral_pool": [
+        {
+          "mineral_id": "iron_ore",
+          "weight": 1.0
+        },
+        {
+          "mineral_id": "silicon_ore",
+          "weight": 1.0
+        }
+      ],
+      "evidence": "Glory client map placement relation; remake uses random walkable spawns, not source coordinates."
+    },
+    "glory_nft_bt_j09": {
+      "enabled": true,
+      "mineral_pool": [
+        {
+          "mineral_id": "silicon_ore",
+          "weight": 1.0
+        },
+        {
+          "mineral_id": "graphite_ore",
+          "weight": 1.0
+        }
+      ],
+      "evidence": "Glory client map placement relation; remake uses random walkable spawns, not source coordinates."
     }
   },
   "source_audit": {
     "source_release": "starhome_lz_ry",
-    "catalog": "../starhome_lz_ry_full_parsed/catalogs/mines/glory_ore_catalog.json",
-    "runtime_authority": "remake server",
-    "notes": "Source capacity, map population, replenish cadence and collection cadence are user-confirmed remake rules."
+    "catalog": "starhome_lz_ry_full_parsed/catalogs/mines/glory_ore_catalog.csv",
+    "definitions": 35,
+    "maps_with_client_evidence": 27,
+    "runtime_enabled_maps": 28,
+    "runtime_authority": "remake server"
   }
 }

@@ -6,6 +6,7 @@ const DEFAULT_CATALOG_PATHS := [
 	"res://data/content/glory_map_content_packs_v1.json",
 	"res://data/content/glory_sprite_content_packs_v1.json",
 	"res://data/content/glory_monster_palette_content_pack_v1.json",
+	"res://data/content/glory_mine_palette_content_pack_v1.json",
 ]
 
 static var _mounted := false

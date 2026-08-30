@@ -4,11 +4,14 @@ extends Node
 const MineralWorldViewScript := preload(
 	"res://scripts/client/presentation/mining/mineral_world_view.gd"
 )
+const RuntimeContentBootstrapScript := preload("res://scripts/content/runtime_content_bootstrap.gd")
+const AleRepositoryScript := preload("res://scripts/content/ale_sprite_repository.gd")
 
 var _world_parent: Node2D
 var _definitions: Dictionary = {}
 var _views: Dictionary = {}
 var _hovered_source_id := ""
+var _repository: RefCounted
 
 
 ## 绑定活动地图的共享 Y 排序层和已解析的矿物表现清单。
@@ -19,6 +22,12 @@ func configure(world_parent: Node2D, manifest: Dictionary) -> Error:
 	_definitions = (manifest["definitions"] as Dictionary).duplicate(true)
 	if _definitions.is_empty():
 		return ERR_INVALID_DATA
+	var mounted: Dictionary = RuntimeContentBootstrapScript.mount_default()
+	if not bool(mounted.get("ok", false)):
+		return ERR_CANT_OPEN
+	_repository = AleRepositoryScript.new()
+	if not _repository.load_default():
+		return ERR_CANT_OPEN
 	set_process(true)
 	return OK
 
@@ -38,13 +47,19 @@ func apply_snapshot(combat_snapshot: Dictionary) -> void:
 		var presentation_value: Variant = _definitions.get(mineral_id)
 		if source_id.is_empty() or not presentation_value is Dictionary:
 			continue
+		var presentation: Dictionary = presentation_value
+		if presentation.has("world_animation") and not presentation.has("runtime_animation"):
+			presentation["runtime_animation"] = _repository.load_animation(
+				String(presentation["world_animation"]), "pic3/mine"
+			)
+			_definitions[mineral_id] = presentation
 		observed[source_id] = true
 		var view: MineralWorldView = _views.get(source_id)
 		if view == null:
 			view = MineralWorldViewScript.new()
 			view.name = "Mineral_%s" % source_id.replace(".", "_")
 			_world_parent.add_child(view)
-			if view.configure(source, presentation_value) != OK:
+			if view.configure(source, presentation) != OK:
 				view.queue_free()
 				continue
 			_views[source_id] = view
@@ -110,4 +125,3 @@ func _process(_delta: float) -> void:
 	var current: MineralWorldView = _views.get(_hovered_source_id)
 	if current != null:
 		current.set_hovered(true)
-
