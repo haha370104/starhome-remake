@@ -104,23 +104,22 @@ def runtime_row(source: SpriteSource) -> dict[str, Any]:
 
 
 def write_index(rows: list[dict[str, Any]], total_bytes: int, pack_count: int) -> None:
+    """Write one machine-owned line; 13k source rows are not manually edited."""
     INDEX_PATH.parent.mkdir(parents=True, exist_ok=True)
-    lines = [
-        "{",
-        '  "schema_version": 1,',
-        '  "content_version": %s,' % json.dumps(CONTENT_VERSION),
-        '  "summary": %s,' % json.dumps({
+    value = {
+        "schema_version": 1,
+        "content_version": CONTENT_VERSION,
+        "summary": {
             "sprites": len(rows),
             "decoded_bytes": total_bytes,
             "packs": pack_count,
-        }, separators=(",", ":")),
-        '  "sprites": [',
-    ]
-    for index, row in enumerate(rows):
-        suffix = "," if index + 1 < len(rows) else ""
-        lines.append("    " + json.dumps(row, ensure_ascii=False, separators=(",", ":")) + suffix)
-    lines.extend(["  ]", "}"])
-    INDEX_PATH.write_text("\n".join(lines) + "\n", encoding="utf-8")
+        },
+        "sprites": rows,
+    }
+    INDEX_PATH.write_text(
+        json.dumps(value, ensure_ascii=False, separators=(",", ":")) + "\n",
+        encoding="utf-8",
+    )
 
 
 def write_catalog(pack_files: list[Path], summary: dict[str, Any]) -> None:
