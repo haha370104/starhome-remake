@@ -2,6 +2,9 @@ class_name MonsterWorldView
 extends Node2D
 
 const CombatVisualPresenterScript := preload("res://scripts/client/presentation/combat/combat_visual_presenter.gd")
+const AleCombatVisualPresenterScript := preload(
+	"res://scripts/client/presentation/combat/ale_combat_visual_presenter.gd"
+)
 const ProjectileSweep := preload("res://scripts/domain/combat/projectile_sweep.gd")
 const WorldCombatStatusBarScript := preload("res://scripts/client/presentation/combat/world_combat_status_bar.gd")
 
@@ -11,7 +14,7 @@ const NAME_TO_HEALTH_GAP := 2.0
 
 var entity_id := ""
 var combat_actor_id := ""
-var presenter: CombatVisualPresenter
+var presenter: Node
 var name_label: Label
 var health_bar: WorldCombatStatusBar
 var visual_collision_offset := Vector2.ZERO
@@ -23,15 +26,26 @@ var _last_action_sequence := -1
 ## [param manifest] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## [param snapshot] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## 返回该函数计算、查询或操作得到的结果。
-func configure(manifest: Dictionary, snapshot: Dictionary) -> Error:
+func configure(
+	manifest: Dictionary,
+	snapshot: Dictionary,
+	ale_repository: RefCounted = null,
+	glory_presentation: Dictionary = {},
+) -> Error:
 	entity_id = String(snapshot["entity_id"])
 	combat_actor_id = String(snapshot["combat_actor_id"])
-	presenter = CombatVisualPresenterScript.new()
-	add_child(presenter)
-	var error := presenter.configure(manifest)
-	if error != OK:
-		return error
-	error = presenter.present_actor(StringName(combat_actor_id))
+	var manifest_actors: Dictionary = manifest.get("actors", {})
+	var error := OK
+	if manifest_actors.has(combat_actor_id):
+		presenter = CombatVisualPresenterScript.new()
+		add_child(presenter)
+		error = presenter.configure(manifest)
+		if error == OK:
+			error = presenter.present_actor(StringName(combat_actor_id))
+	else:
+		presenter = AleCombatVisualPresenterScript.new()
+		add_child(presenter)
+		error = presenter.configure(ale_repository, combat_actor_id, glory_presentation)
 	if error != OK:
 		return error
 	var actor_value: Variant = (manifest.get("actors", {}) as Dictionary).get(
@@ -42,7 +56,10 @@ func configure(manifest: Dictionary, snapshot: Dictionary) -> Error:
 		var offset_value: Variant = collision.get("offset", [0, -24])
 		if offset_value is Array and (offset_value as Array).size() == 2:
 			visual_collision_offset = Vector2(float(offset_value[0]), float(offset_value[1]))
-		visual_collision_radius = maxf(4.0, float(collision.get("radius", 24.0)))
+			visual_collision_radius = maxf(4.0, float(collision.get("radius", 24.0)))
+	elif not glory_presentation.is_empty():
+		visual_collision_offset = Vector2(0.0, -24.0)
+		visual_collision_radius = 28.0
 	name_label = Label.new()
 	name_label.name = "HoverName"
 	name_label.size = NAME_LABEL_SIZE

@@ -10,6 +10,11 @@ const MonsterDeathEffectControllerScript := preload(
 const MonsterAttackEffectControllerScript := preload(
 	"res://scripts/client/presentation/combat/monster_attack_effect_controller.gd"
 )
+const RuntimeContentBootstrapScript := preload("res://scripts/content/runtime_content_bootstrap.gd")
+const AleSpriteRepositoryScript := preload("res://scripts/content/ale_sprite_repository.gd")
+const GloryMonsterPresentationCatalogScript := preload(
+	"res://scripts/content/glory_monster_presentation_catalog.gd"
+)
 
 var _world_parent: Node2D
 var _manifest: Dictionary = {}
@@ -19,6 +24,8 @@ var _last_event_id := 0
 var _death_effects: MonsterDeathEffectController
 var _attack_effects: MonsterAttackEffectController
 var _hovered_entity_id := ""
+var _ale_repository: RefCounted
+var _glory_presentations: RefCounted
 
 
 ## 执行 `configure` 对应的模块操作。
@@ -32,6 +39,14 @@ func configure(world_parent: Node2D, manifest: Dictionary, local_player: Node2D)
 	_world_parent = world_parent
 	_manifest = manifest.duplicate(true)
 	_local_player = local_player
+	var mount_result := RuntimeContentBootstrapScript.mount_default()
+	if bool(mount_result.get("ok", false)):
+		_ale_repository = AleSpriteRepositoryScript.new()
+		if not _ale_repository.load_default():
+			_ale_repository = null
+	_glory_presentations = GloryMonsterPresentationCatalogScript.new()
+	if not _glory_presentations.load_default():
+		_glory_presentations = null
 	_death_effects = MonsterDeathEffectControllerScript.new()
 	_death_effects.name = "MonsterDeathEffects"
 	add_child(_death_effects)
@@ -73,7 +88,14 @@ func apply_snapshot(combat_snapshot: Dictionary) -> void:
 			view = MonsterWorldViewScript.new()
 			view.name = "Monster_%s" % entity_id.replace(".", "_")
 			_world_parent.add_child(view)
-			if view.configure(_manifest, monster) != OK:
+			var glory_presentation: Dictionary = {}
+			if _glory_presentations != null:
+				glory_presentation = _glory_presentations.definition_for_actor(
+					String(monster["combat_actor_id"])
+				)
+			if view.configure(
+				_manifest, monster, _ale_repository, glory_presentation
+			) != OK:
 				view.queue_free()
 				continue
 			_views[entity_id] = view
