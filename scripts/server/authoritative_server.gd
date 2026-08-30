@@ -27,6 +27,9 @@ const CombatTraceLogger := preload("res://scripts/core/combat_trace_logger.gd")
 const RuntimeContentBootstrapScript := preload(
 	"res://scripts/content/runtime_content_bootstrap.gd"
 )
+const MapTransitionLandingResolverScript := preload(
+	"res://scripts/maps/map_transition_landing_resolver.gd"
+)
 
 signal snapshot_generated(snapshot: Dictionary)
 signal command_rejected(peer_id: int, code: StringName)
@@ -39,6 +42,7 @@ const BASE_HALL_MAP_ID := "yian_harbor_hall_floor_1"
 const VEHICLE_RECOVERY_DELAY_SECONDS := 3.0
 const VEHICLE_RECOVERY_HEALTH_RATIO := 0.10
 const GLORY_RUNTIME_MAP_INDEX_PATH := "res://data/content/glory_map_runtime_index_v1.json"
+const MAX_TRANSITION_LANDING_CORRECTION_DISTANCE := 192.0
 
 var config: DedicatedServerConfig
 var map_instance: AuthoritativeMapInstance
@@ -459,20 +463,31 @@ func handle_peer_map_transition(peer_id: int, raw_intent: Variant) -> Dictionary
 	if transition.kind == MapTransition.Kind.CLIENT_POINT and transition.has_destination_landing_point:
 		destination_spawn = transition.destination_landing_point
 	else:
-		var destination_entry: MapSpawnPoint = destination_instance.definition.spawn_for_entry(
-			transition.destination_entry_number
+		var landing: Dictionary = MapTransitionLandingResolverScript.resolve_landing(
+			source_instance.definition,
+			transition,
+			destination_instance.definition,
 		)
-		if destination_entry == null:
+		if landing.is_empty():
 			return _failure(
 				ErrorCodes.MAP_TRANSITION_ENTRY_MISMATCH,
 				"destination map does not admit the requested entry number",
 			)
-		destination_spawn = destination_entry.position
+		destination_spawn = landing["position"]
 	if not destination_instance.navigation.is_walkable(destination_spawn):
-		return _failure(
-			ErrorCodes.MAP_TRANSITION_DESTINATION_BLOCKED,
-			"destination entry landing point is not walkable",
+		var corrected_spawn: Vector2 = destination_instance.navigation.closest_walkable_position(
+			destination_spawn
 		)
+		if (
+			not corrected_spawn.is_finite()
+			or corrected_spawn.distance_to(destination_spawn)
+				> MAX_TRANSITION_LANDING_CORRECTION_DISTANCE
+		):
+			return _failure(
+				ErrorCodes.MAP_TRANSITION_DESTINATION_BLOCKED,
+				"destination entry has no nearby walkable landing point",
+			)
+		destination_spawn = corrected_spawn
 	if destination_instance == source_instance:
 		destination_spawn = destination_instance.admitted_spawn_position(
 			destination_spawn, StringName(session.entity_id)
