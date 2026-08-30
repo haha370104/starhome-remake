@@ -44,6 +44,18 @@ func _run() -> void:
 				== "flattened_source_composite",
 			"批量导入地图必须明确标记平面合成策略",
 		)
+	ready_bundle.clear()
+	failure_message = ""
+	_expect(preloader.preload_map(&"buli_c04_field_zone") == OK, "D04 相邻的 C04 应进入预载")
+	for _frame in range(120):
+		if not ready_bundle.is_empty() or not failure_message.is_empty():
+			break
+		await process_frame
+	_expect(failure_message.is_empty(), "C04 运行资源不应缺失：%s" % failure_message)
+	_expect(not ready_bundle.is_empty(), "C04 应在限定帧内交付完整资源包")
+	if not ready_bundle.is_empty():
+		_expect(ready_bundle["definition"].map_id == &"buli_c04_field_zone", "C04 地图定义不匹配")
+		_expect(ready_bundle["resources"]["floor"] is Texture2D, "C04 必须交付地图底图")
 	preloader.free()
 	_finish()
 

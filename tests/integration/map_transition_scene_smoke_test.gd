@@ -13,7 +13,7 @@ func _initialize() -> void:
 	call_deferred("_run")
 
 
-## 驱动真实大厅出口与城市西北门，验证 RoomSvr1→City1Svr→D04 原子表现切换。
+## 驱动真实出口，验证 RoomSvr1→City1Svr→D04→C04 原子表现切换。
 func _run() -> void:
 	var hall: Node2D = MainHallScene.instantiate()
 	hall.multiplayer_connect_automatically = false
@@ -111,6 +111,19 @@ func _run() -> void:
 	_expect(hall.map_scene_nodes.size() == 117, "D04必须提交官网惰性资源恢复后的荣耀语义遮挡层")
 	_expect(hall.hud.minimap_dock.map_name_label.text == "D04区", "HUD 必须原子更新 D04 名称")
 	_expect(hall.multiplayer_presenter.session.current_map_id == &"d04_field_zone", "离线调试会话也必须同步当前业务地图")
+
+	_place_authoritative_player(hall, Vector2(130, 2553))
+	hall.call("_try_begin_nearby_map_transition")
+	await _wait_for_map(hall, &"buli_c04_field_zone")
+	_expect(hall.map_definition.map_id == &"buli_c04_field_zone", "D04 西侧出口必须进入布里 C04")
+	_expect(hall.player.position == Vector2(2400, 2400), "C04 入口0必须采用受控导航落点")
+	_expect(hall.navigation.grid_size == Vector2i(101, 800), "C04 必须提交自己的荣耀导航")
+	_expect(not hall.map_scene_nodes.is_empty(), "C04 必须提交已打包的场景表现")
+	_expect(hall.hud.minimap_dock.map_name_label.text.contains("C04"), "HUD 必须原子更新 C04 名称")
+	_expect(
+		hall.multiplayer_presenter.session.current_map_id == &"buli_c04_field_zone",
+		"权威会话必须同步到布里 C04",
+	)
 	var final_sequence: int = hall.multiplayer_presenter.session.local_predictor.next_input_sequence
 	hall.call("_handle_map_commit_failure", "测试不可恢复提交失败")
 	hall.call("_move_to", Vector2(1200, 2500))

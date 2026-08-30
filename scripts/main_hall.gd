@@ -19,6 +19,9 @@ const HallMultiplayerPresenterScript := preload(
 const ClientMapPreloaderScript := preload(
 	"res://scripts/client/presentation/client_map_preloader.gd"
 )
+const RuntimeMapRouteResolverScript := preload(
+	"res://scripts/maps/runtime_map_route_resolver.gd"
+)
 const LocalPlayerControllerScript := preload(
 	"res://scripts/client/gameplay/local_player_controller.gd"
 )
@@ -163,6 +166,7 @@ var popup: PanelContainer
 var minimap_player_dot: ColorRect
 var multiplayer_presenter: Node
 var map_preloader: Node
+var map_route_resolver: RefCounted
 var active_movement_input_sequence: int:
 	get:
 		return local_player_controller.active_movement_input_sequence if local_player_controller else 0
@@ -726,10 +730,16 @@ func _build_multiplayer_presentation() -> void:
 
 	map_preloader = ClientMapPreloaderScript.new()
 	map_preloader.name = "ClientMapPreloader"
-	map_preloader.configure(_load_map_directory_definitions())
+	var map_definition_paths := _load_map_directory_definitions()
+	map_preloader.configure(map_definition_paths)
 	map_preloader.map_preload_ready.connect(_on_map_preload_ready)
 	map_preloader.map_preload_failed.connect(_on_map_preload_failed)
 	add_child(map_preloader)
+	map_route_resolver = RuntimeMapRouteResolverScript.new()
+	if not map_route_resolver.configure(map_definition_paths):
+		push_error("Unable to configure runtime map routes: %s" % "; ".join(
+			map_route_resolver.errors
+		))
 
 	multiplayer_presenter = HallMultiplayerPresenterScript.new()
 	multiplayer_presenter.name = "HallMultiplayerPresenter"
@@ -869,12 +879,15 @@ func _try_begin_nearby_map_transition() -> void:
 	if not pending_map_transition.is_empty() or map_preloader == null:
 		return
 	var selected_transition: MapTransition
+	var selected_destination_map_id: StringName = &""
 	var selected_distance := map_transition_trigger_radius
 	if not selected_transition_id.is_empty():
 		var requested_transition: MapTransition = map_definition.transition_by_id(selected_transition_id)
 		if requested_transition != null:
-			if requested_transition.external_target \
-					or requested_transition.destination_map_id.is_empty():
+			var requested_destination_map_id := _resolve_transition_destination_id(
+				requested_transition
+			)
+			if requested_destination_map_id.is_empty():
 				selected_transition_id = &""
 				hint_label.text = "地图%s已识别，但运行资源尚未导入" % [
 					requested_transition.destination_key().to_upper(),
@@ -883,29 +896,41 @@ func _try_begin_nearby_map_transition() -> void:
 			var requested_distance := player.position.distance_to(requested_transition.approach_point)
 			if requested_distance <= selected_distance:
 				selected_transition = requested_transition
+				selected_destination_map_id = requested_destination_map_id
 				selected_distance = requested_distance
 	else:
 		for transition: MapTransition in map_definition.enabled_transitions():
-			if transition.external_target or transition.destination_map_id.is_empty():
+			var destination_map_id := _resolve_transition_destination_id(transition)
+			if destination_map_id.is_empty():
 				continue
 			var distance := player.position.distance_to(transition.approach_point)
 			if distance <= selected_distance:
 				selected_transition = transition
+				selected_destination_map_id = destination_map_id
 				selected_distance = distance
 	selected_transition_id = &""
 	if selected_transition == null:
 		return
 	pending_map_transition = {
 		"transition_id": selected_transition.transition_id,
-		"destination_map_id": selected_transition.destination_map_id,
+		"destination_map_id": selected_destination_map_id,
 		"destination_entry_number": selected_transition.destination_entry_number,
 	}
 	hint_label.text = "正在准备前往%s…" % selected_transition.label
 	var preload_error: Error = map_preloader.preload_map(
-		selected_transition.destination_map_id
+		selected_destination_map_id
 	)
 	if preload_error != OK and not pending_map_transition.is_empty():
 		pending_map_transition.clear()
+
+
+## 使用与权威服务器相同的世界内旧代码规则解析预载目标，但仅返回受控内容目录中的地图。
+## [param transition] 当前活动地图内待解析的出口。
+## 返回允许客户端预载的运行时地图 ID；未导入目标返回空值。
+func _resolve_transition_destination_id(transition: MapTransition) -> StringName:
+	if map_route_resolver != null:
+		return map_route_resolver.resolve_target_id(transition, map_definition.world_id)
+	return transition.destination_map_id
 
 
 ## 处理 `_on_map_preload_ready` 对应的信号回调。
