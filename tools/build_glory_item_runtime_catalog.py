@@ -96,6 +96,46 @@ def equipment_id(row: dict[str, str]) -> str:
     return f"glory_equipment_{token}_{suffix}"
 
 
+def asset_reference(value: str) -> str:
+    value = value.strip()
+    if "$+" in value or '"+"' in value:
+        fragments = re.findall(r'"([^"\\]*(?:\\.[^"\\]*)*)"', value)
+        if fragments:
+            combined = "".join(fragments).replace('\\"', '"')
+            if combined.lower().endswith(".ale"):
+                return combined
+    return value.strip('"')
+
+
+def normalize_ale_reference(value: str) -> str:
+    normalized = value.strip().replace("\\", "/").lower()
+    while normalized.startswith("../"):
+        normalized = normalized[3:]
+    while normalized.startswith("./"):
+        normalized = normalized[2:]
+    return normalized[:-4] if normalized.endswith(".ale") else normalized
+
+
+def annotate_asset_availability(definitions: list[dict[str, Any]]) -> tuple[int, int]:
+    sprite_index = read_json(Path("data/content/glory_sprite_runtime_index_v1.json"))
+    logical_ids = {row["logical_id"] for row in sprite_index["sprites"]}
+    resolved = 0
+    unresolved = 0
+    for definition in definitions:
+        for presentation in definition.get("presentation", {}).values():
+            reference = presentation.get("ale_reference", "")
+            if not reference:
+                presentation["asset_status"] = "not_declared"
+                continue
+            if normalize_ale_reference(reference) in logical_ids:
+                presentation["asset_status"] = "decoded_available"
+                resolved += 1
+            else:
+                presentation["asset_status"] = "referenced_but_missing_from_glory_package"
+                unresolved += 1
+    return resolved, unresolved
+
+
 def equipment_definition(row: dict[str, str], known: dict[str, Any]) -> dict[str, Any]:
     props = resolved_properties(row)
     stats = {
@@ -112,9 +152,9 @@ def equipment_definition(row: dict[str, str], known: dict[str, Any]) -> dict[str
         "max_stack": 1,
         "stats": stats,
         "presentation": {
-            "inventory": {"ale_reference": row.get("asset_base", "").strip(), "frame": 0},
-            "dialog": {"ale_reference": row.get("asset_dialog", "").strip(), "frame": 0},
-            "world": {"ale_reference": row.get("asset_move", "").strip(), "frame": 0},
+            "inventory": {"ale_reference": asset_reference(row.get("asset_base", "")), "frame": 0},
+            "dialog": {"ale_reference": asset_reference(row.get("asset_dialog", "")), "frame": 0},
+            "world": {"ale_reference": asset_reference(row.get("asset_move", "")), "frame": 0},
         },
         "source_class": row["class_name"],
         "source_category": row.get("category", ""),
@@ -209,12 +249,19 @@ def main() -> int:
     equipment = [equipment_definition(row, equipment_known[row["class_name"]]) for row in equipment_rows]
     materials = [material_definition(row) for row in material_known]
     definitions = equipment + materials
+    resolved_assets, unresolved_assets = annotate_asset_availability(definitions)
     write_json(
         args.output_root / "glory_items_v1.json",
         {
             "schema_version": 1,
             "content_version": "glory-runtime-v1",
-            "summary": {"definitions": len(definitions), "equipment": len(equipment), "materials": len(materials)},
+            "summary": {
+                "definitions": len(definitions),
+                "equipment": len(equipment),
+                "materials": len(materials),
+                "decoded_asset_references": resolved_assets,
+                "missing_asset_references": unresolved_assets,
+            },
             "source_audit": {
                 "source_release": "starhome_lz_ry",
                 "equipment_catalog_sha256": sha256(source_csv),
