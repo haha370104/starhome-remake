@@ -492,7 +492,31 @@ def main() -> int:
     """Parse command line selections and import the requested map presentations."""
     parser = argparse.ArgumentParser()
     parser.add_argument("--map", action="append", choices=sorted(MAPS), dest="maps")
+    parser.add_argument("--runtime-map-id")
+    parser.add_argument("--source")
+    parser.add_argument("--destination")
+    parser.add_argument("--asset-prefix")
     arguments = parser.parse_args()
+    custom_values = [
+        arguments.runtime_map_id,
+        arguments.source,
+        arguments.destination,
+        arguments.asset_prefix,
+    ]
+    if any(custom_values):
+        if arguments.maps or not all(custom_values):
+            parser.error(
+                "custom import requires --runtime-map-id, --source, --destination "
+                "and --asset-prefix, without --map"
+            )
+        config = {
+            "source": arguments.source,
+            "destination": arguments.destination,
+            "asset_prefix": arguments.asset_prefix,
+        }
+        results = [import_map(arguments.runtime_map_id, config)]
+        print(json.dumps(results, ensure_ascii=False, indent=2))
+        return 0
     selected = arguments.maps or list(MAPS)
     results = [import_map(map_id, MAPS[map_id]) for map_id in selected]
     print(json.dumps(results, ensure_ascii=False, indent=2))
