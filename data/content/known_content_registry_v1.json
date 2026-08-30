@@ -11,24 +11,24 @@
       "definitions": 814,
       "worlds": 6,
       "resource_groups": 497,
-      "runtime_ready_source_keys": 15,
-      "presentation_ready_source_keys": 13
+      "runtime_ready_source_keys": 810,
+      "presentation_ready_source_keys": 808
     },
     "monster": {
       "definitions": 139,
       "npc_rows": 119,
       "map_archetypes": 20,
       "monster_map_relations": 85,
-      "runtime_ready_npc_rows": 4,
+      "runtime_ready_npc_rows": 119,
       "npc_rows_with_source_presentation": 119
     },
     "item": {
-      "definitions": 1393,
+      "definitions": 1396,
       "equipment_rows": 1012,
       "material_names": 258,
       "local_crafting_products": 123,
-      "runtime_item_ids": 14,
-      "runtime_item_ids_covered": 14
+      "runtime_item_ids": 1284,
+      "runtime_item_ids_covered": 1284
     }
   },
   "semantics": {

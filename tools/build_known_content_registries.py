@@ -31,6 +31,8 @@ EQUIPMENT_SOURCE = SOURCE_ROOT / "catalogs" / "equipment_catalog.json"
 MANUFACTURING_SOURCE = SOURCE_ROOT / "catalogs" / "manufacturing_recipes.json"
 LOCAL_CRAFT_SOURCE = SOURCE_ROOT / "catalogs" / "local_crafting_recipes.json"
 ORE_SOURCE = SOURCE_ROOT / "catalogs" / "mines" / "glory_ore_catalog.json"
+RUNTIME_MAP_INDEX = CONTENT_ROOT / "glory_map_runtime_index_v1.json"
+RUNTIME_MONSTER_CATALOG = PROJECT_ROOT / "data" / "gameplay" / "glory" / "glory_monsters_v1.json"
 
 MAP_TARGET = CONTENT_ROOT / "known_maps_v1.json"
 MONSTER_TARGET = CONTENT_ROOT / "known_monsters_v1.json"
@@ -55,17 +57,11 @@ RUNTIME_MAPS = {
     ("g08", "NFT_BT"): ("g08_field_zone", "partial"),
 }
 
-RUNTIME_MONSTERS = {
-    "1": "toxic_gel",
-    "2": "photosensitive_orb",
-    "3": "om_larva",
-    "4": "om_adult",
-}
-
 RUNTIME_ITEM_FILES = [
     PROJECT_ROOT / "data" / "gameplay" / "stage3" / "starter_loadout_v1.json",
     PROJECT_ROOT / "data" / "gameplay" / "character_items_v1.json",
     PROJECT_ROOT / "data" / "gameplay" / "material_items_v1.json",
+    PROJECT_ROOT / "data" / "gameplay" / "glory" / "glory_items_v1.json",
 ]
 
 
@@ -93,6 +89,7 @@ def compact_document(
     summary: dict[str, Any],
     source_audit: dict[str, Any],
     extra: dict[str, Any] | None = None,
+    one_line: bool = False,
 ) -> None:
     """Write one definition per line so large generated catalogs remain reviewable."""
     fields: list[tuple[str, Any]] = [
@@ -105,6 +102,15 @@ def compact_document(
     if extra:
         fields.extend(extra.items())
     path.parent.mkdir(parents=True, exist_ok=True)
+    if one_line:
+        document = {key: value for key, value in fields}
+        document["definitions"] = definitions
+        path.write_text(
+            json.dumps(document, ensure_ascii=False, separators=(",", ":")) + "\n",
+            encoding="utf-8",
+            newline="\n",
+        )
+        return
     lines = ["{"]
     for key, value in fields:
         lines.append(
@@ -129,15 +135,24 @@ def map_content_id(runtime_key: str) -> str:
 
 def build_maps() -> tuple[list[dict[str, Any]], dict[str, Any]]:
     source = read_json(MAP_SOURCE)
+    runtime_index = read_json(RUNTIME_MAP_INDEX)
+    runtime_by_source = {
+        row["source_id"]: row for row in runtime_index["runtime_maps"]
+    }
     definitions: list[dict[str, Any]] = []
     runtime_ready = 0
     presentation_ready = 0
     for row in sorted(source["runtime_maps"], key=lambda value: value["runtime_key"].lower()):
         map_code = str(row["map_code"])
         world_code = str(row["world_code"])
+        source_id = "map:%s/%s" % (world_code.lower(), map_code.lower())
+        runtime_row = runtime_by_source.get(source_id)
         runtime_mapping = RUNTIME_MAPS.get((map_code.lower(), world_code))
-        runtime_ids = [runtime_mapping[0]] if runtime_mapping else []
-        presentation_state = runtime_mapping[1] if runtime_mapping else "unimplemented"
+        runtime_ids = [runtime_row["runtime_id"]] if runtime_row else []
+        presentation_state = (
+            runtime_mapping[1] if runtime_mapping and runtime_mapping[1] == "partial"
+            else ("ready" if runtime_row else "unimplemented")
+        )
         if runtime_ids:
             runtime_ready += 1
         if presentation_state == "ready":
@@ -203,6 +218,10 @@ def build_monsters(
     known_map_ids: set[str],
 ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     rows = read_json(MONSTER_SOURCE)
+    runtime_monsters = {
+        str(row["source_audit"]["index"]): row["id"]
+        for row in read_json(RUNTIME_MONSTER_CATALOG)["definitions"]
+    }
     relation_source = read_json(MONSTER_MAP_SOURCE)
     relations_by_name: dict[str, list[dict[str, Any]]] = defaultdict(list)
     relation_definitions: list[dict[str, Any]] = []
@@ -251,7 +270,7 @@ def build_monsters(
     for row in sorted(rows, key=lambda value: int(value["index"])):
         index = str(row["index"])
         display_name = str(row.get("npc_name", ""))
-        runtime_ids = [RUNTIME_MONSTERS[index]] if index in RUNTIME_MONSTERS else []
+        runtime_ids = [runtime_monsters[index]] if index in runtime_monsters else []
         if runtime_ids:
             runtime_ready += 1
         body_assets = split_assets(row.get("attr_30", ""))
@@ -341,6 +360,7 @@ def build_items() -> tuple[list[dict[str, Any]], dict[str, Any]]:
     runtime_rows = runtime_item_definitions()
 
     runtime_by_source_class: dict[str, list[str]] = defaultdict(list)
+    runtime_by_known_registration: dict[str, list[str]] = defaultdict(list)
     runtime_by_name: dict[str, list[str]] = defaultdict(list)
     runtime_by_id: dict[str, dict[str, Any]] = {}
     for definition in runtime_rows:
@@ -350,6 +370,11 @@ def build_items() -> tuple[list[dict[str, Any]], dict[str, Any]]:
         selector = definition.get("source_audit", {}).get("row_selector", {})
         if isinstance(selector, dict) and selector.get("class_name"):
             runtime_by_source_class[str(selector["class_name"])].append(runtime_id)
+        known_registration = definition.get("source_audit", {}).get("known_registry_id", "")
+        if known_registration:
+            runtime_by_known_registration[str(known_registration)].append(runtime_id)
+        if runtime_id.startswith("item:material:"):
+            runtime_by_known_registration[runtime_id].append(runtime_id)
 
     definitions: list[dict[str, Any]] = []
     attached_runtime_ids: set[str] = set()
@@ -362,7 +387,11 @@ def build_items() -> tuple[list[dict[str, Any]], dict[str, Any]]:
         ),
     ):
         source_class = str(row.get("class_name", ""))
-        runtime_ids = list(runtime_by_source_class.get(source_class, []))
+        registration_id = equipment_registration_id(row)
+        runtime_ids = list(dict.fromkeys([
+            *runtime_by_known_registration.get(registration_id, []),
+            *runtime_by_source_class.get(source_class, []),
+        ]))
         if not runtime_ids:
             candidates = runtime_by_name.get(str(row.get("display_name", "")), [])
             if len(candidates) == 1:
@@ -379,7 +408,7 @@ def build_items() -> tuple[list[dict[str, Any]], dict[str, Any]]:
             if row.get(key, "") != ""
         }
         definitions.append({
-            "id": equipment_registration_id(row),
+            "id": registration_id,
             "record_type": "equipment_row",
             "display_name": str(row.get("display_name", source_class)),
             "description": str(row.get("description", "")),
@@ -442,10 +471,14 @@ def build_items() -> tuple[list[dict[str, Any]], dict[str, Any]]:
             add_material(candidate["display_name"], "monster_drop_candidate", source)
 
     for name in sorted(material_sources):
-        runtime_ids = list(runtime_by_name.get(name, []))
+        registration_id = "item:material:" + short_hash(name)
+        runtime_ids = list(dict.fromkeys([
+            *runtime_by_known_registration.get(registration_id, []),
+            *runtime_by_name.get(name, []),
+        ]))
         attached_runtime_ids.update(runtime_ids)
         definitions.append({
-            "id": "item:material:" + short_hash(name),
+            "id": registration_id,
             "record_type": "material_name",
             "display_name": name,
             "evidence_roles": material_sources[name],
@@ -532,6 +565,7 @@ def main() -> int:
     source_paths = [
         MAP_SOURCE, MONSTER_SOURCE, MONSTER_MAP_SOURCE, EQUIPMENT_SOURCE,
         MANUFACTURING_SOURCE, LOCAL_CRAFT_SOURCE, ORE_SOURCE, *RUNTIME_ITEM_FILES,
+        RUNTIME_MAP_INDEX, RUNTIME_MONSTER_CATALOG,
     ]
     missing = [path for path in source_paths if not path.is_file()]
     if missing:
@@ -570,6 +604,7 @@ def main() -> int:
             "ore_source": str(ORE_SOURCE.relative_to(OUTPUTS_ROOT)),
             "ore_sha256": sha256(ORE_SOURCE),
         },
+        one_line=True,
     )
     manifest = {
         "schema_version": 1,
