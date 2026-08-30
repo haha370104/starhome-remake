@@ -18,6 +18,7 @@ var _local_player: Node2D
 var _last_event_id := 0
 var _death_effects: MonsterDeathEffectController
 var _attack_effects: MonsterAttackEffectController
+var _hovered_entity_id := ""
 
 
 ## 执行 `configure` 对应的模块操作。
@@ -50,6 +51,15 @@ func configure(world_parent: Node2D, manifest: Dictionary, local_player: Node2D)
 	return OK
 
 
+## 每帧将视口鼠标位置换算为世界坐标，并刷新唯一的怪物悬浮目标。
+## [param _delta] 当前渲染帧与上一帧之间的秒数；悬浮判定不依赖该值。
+func _process(_delta: float) -> void:
+	if _world_parent == null or not is_instance_valid(_world_parent):
+		_set_hovered_entity("")
+		return
+	update_hover_at(_world_parent.get_global_mouse_position())
+
+
 ## 执行 `apply_snapshot` 对应的模块操作。
 ## [param combat_snapshot] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func apply_snapshot(combat_snapshot: Dictionary) -> void:
@@ -73,6 +83,8 @@ func apply_snapshot(combat_snapshot: Dictionary) -> void:
 		if observed.has(entity_id):
 			continue
 		var stale: MonsterWorldView = _views[entity_id]
+		if entity_id == _hovered_entity_id:
+			_hovered_entity_id = ""
 		stale.queue_free()
 		_views.erase(entity_id)
 	_apply_recent_events(combat_snapshot)
@@ -91,6 +103,25 @@ func nearest_target(world_position: Vector2, radius: float = 72.0) -> String:
 		if view.is_selectable_at(world_position, radius) and distance <= best_distance:
 			selected = entity_id
 			best_distance = distance
+	return selected
+
+
+## 按世界坐标刷新当前唯一悬浮怪物，复刻旧客户端的 `m_pShowNpcName` 语义。
+## [param world_position] 鼠标换算后的世界坐标。
+## 返回当前命中的怪物实体 ID；未命中时返回空字符串。
+func update_hover_at(world_position: Vector2) -> String:
+	var selected := ""
+	var best_distance_squared := INF
+	for entity_id: String in _views:
+		var view: MonsterWorldView = _views[entity_id]
+		if not view.is_hovered_at(world_position):
+			continue
+		var collision_center := view.position + view.visual_collision_offset
+		var distance_squared := collision_center.distance_squared_to(world_position)
+		if distance_squared < best_distance_squared:
+			selected = entity_id
+			best_distance_squared = distance_squared
+	_set_hovered_entity(selected)
 	return selected
 
 
@@ -117,6 +148,7 @@ func first_visual_collision(segment_start: Vector2, segment_end: Vector2) -> Dic
 
 ## 执行 `clear` 对应的模块操作。
 func clear() -> void:
+	_set_hovered_entity("")
 	for view: MonsterWorldView in _views.values():
 		view.queue_free()
 	_views.clear()
@@ -125,6 +157,20 @@ func clear() -> void:
 		_death_effects.clear()
 	if _attack_effects != null:
 		_attack_effects.clear()
+
+
+## 在旧目标与新目标间原子切换名称可见性，保证全场最多显示一个怪物名。
+## [param entity_id] 新悬浮怪物实体 ID；空字符串表示鼠标已离开全部怪物。
+func _set_hovered_entity(entity_id: String) -> void:
+	if entity_id == _hovered_entity_id:
+		return
+	var previous: MonsterWorldView = _views.get(_hovered_entity_id)
+	if previous != null:
+		previous.set_hovered(false)
+	_hovered_entity_id = entity_id
+	var current: MonsterWorldView = _views.get(_hovered_entity_id)
+	if current != null:
+		current.set_hovered(true)
 
 
 ## 执行 `apply_recent_events` 对应的模块操作。

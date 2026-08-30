@@ -5,6 +5,10 @@ const CombatVisualPresenterScript := preload("res://scripts/client/presentation/
 const ProjectileSweep := preload("res://scripts/domain/combat/projectile_sweep.gd")
 const WorldCombatStatusBarScript := preload("res://scripts/client/presentation/combat/world_combat_status_bar.gd")
 
+const NAME_LABEL_SIZE := Vector2(100.0, 18.0)
+const HEALTH_BAR_OFFSET := Vector2(0.0, 10.0)
+const NAME_TO_HEALTH_GAP := 2.0
+
 var entity_id := ""
 var combat_actor_id := ""
 var presenter: CombatVisualPresenter
@@ -40,15 +44,26 @@ func configure(manifest: Dictionary, snapshot: Dictionary) -> Error:
 			visual_collision_offset = Vector2(float(offset_value[0]), float(offset_value[1]))
 		visual_collision_radius = maxf(4.0, float(collision.get("radius", 24.0)))
 	name_label = Label.new()
-	name_label.position = Vector2(-44, -88)
-	name_label.size = Vector2(88, 18)
+	name_label.name = "HoverName"
+	name_label.size = NAME_LABEL_SIZE
 	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	name_label.add_theme_font_size_override("font_size", 13)
-	name_label.add_theme_color_override("font_color", Color(1.0, 0.86, 0.45))
+	name_label.add_theme_color_override("font_color", Color.RED)
 	name_label.add_theme_color_override("font_shadow_color", Color.BLACK)
+	name_label.add_theme_constant_override("shadow_offset_x", 1)
+	name_label.add_theme_constant_override("shadow_offset_y", 1)
+	var name_height := maxf(NAME_LABEL_SIZE.y, name_label.get_combined_minimum_size().y)
+	name_label.size = Vector2(NAME_LABEL_SIZE.x, name_height)
+	name_label.position = Vector2(
+		-NAME_LABEL_SIZE.x * 0.5,
+		HEALTH_BAR_OFFSET.y - name_height - NAME_TO_HEALTH_GAP,
+	)
+	name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	name_label.z_index = 21
+	name_label.visible = false
 	add_child(name_label)
 	health_bar = WorldCombatStatusBarScript.new()
-	health_bar.configure(58.0, false, Vector2(0, 10))
+	health_bar.configure(58.0, false, HEALTH_BAR_OFFSET)
 	add_child(health_bar)
 	apply_snapshot(snapshot)
 	return OK
@@ -83,6 +98,24 @@ func _process(delta: float) -> void:
 ## 返回该函数计算、查询或操作得到的结果。
 func is_selectable_at(world_position: Vector2, radius: float) -> bool:
 	return visible and position.distance_to(world_position) <= radius
+
+
+## 判断世界坐标是否落在怪物本体的悬浮命中区域内。
+## [param world_position] 鼠标对应的世界坐标。
+## 返回坐标是否命中由表现清单定义的怪物本体圆形区域。
+## 设计：悬浮与弹体预碰撞共用同一份表现几何，避免为每种怪物另写热点补丁。
+func is_hovered_at(world_position: Vector2) -> bool:
+	if not visible:
+		return false
+	var collision_center := position + visual_collision_offset
+	return collision_center.distance_squared_to(world_position) <= visual_collision_radius ** 2
+
+
+## 切换原客户端式怪物悬浮名称显示状态。
+## [param hovered] 当前怪物是否是唯一的鼠标悬浮目标。
+func set_hovered(hovered: bool) -> void:
+	if name_label != null:
+		name_label.visible = hovered and visible
 
 
 ## 执行 `visual_segment_collision` 对应的模块操作。

@@ -61,6 +61,7 @@ $testScripts = @(
 	"res://tests/client/presentation/combat/weapon_attack_visual_controller_test.gd",
 	"res://tests/client/presentation/combat/monster_death_effect_controller_test.gd",
 	"res://tests/client/presentation/combat/monster_attack_effect_controller_test.gd",
+	"res://tests/client/presentation/combat/monster_hover_name_test.gd",
 	"res://tests/client/presentation/combat/ground_loot_world_controller_test.gd",
 	"res://tests/server/authoritative_server_smoke_test.gd",
 	"res://tests/server/combat/authoritative_combat_module_test.gd",
