@@ -1,0 +1,78 @@
+{
+  "schema_version": 1,
+  "content_version": "glory-runtime-coverage-v1",
+  "source_policy": {
+    "default_release": "starhome_lz_ry",
+    "exception": "Free-version assets are allowed only for the HUD."
+  },
+  "operational_catalogs": {
+    "maps": {
+      "source_registrations": 814,
+      "runtime_ready": 810,
+      "unresolved": 4
+    },
+    "animations": {
+      "decoded_ale": 13888,
+      "monster_act_variants": 81,
+      "mineral_act_variants": 25,
+      "runtime_total": 13994
+    },
+    "monsters": {
+      "runtime_definitions": 119,
+      "maps_with_reliable_encounters": 10
+    },
+    "items": {
+      "generated_definitions": 1270,
+      "total_runtime_definitions": 1284,
+      "decoded_asset_references": 2277
+    },
+    "recipes": {
+      "registered_records": 346,
+      "groups": {
+        "local_crafting": 123,
+        "manufacturing": 128,
+        "equipment_upgrade": 80,
+        "equipment_dismantle": 15
+      },
+      "execution_status": "registered_client_evidence_not_yet_authoritative_settlement"
+    },
+    "minerals": {
+      "runtime_definitions": 35,
+      "client_evidence_maps": 27,
+      "runtime_enabled_maps": 28
+    }
+  },
+  "explicit_exceptions": [
+    {
+      "kind": "map_package_missing",
+      "count": 4,
+      "identifiers": [
+        "map:nft_bt/blackroom",
+        "map:nft_bt/yzzl",
+        "map:nft_ds/roomsvr3",
+        "map:nft_sk/yzzl"
+      ],
+      "effect": "Registered as known but cannot be entered until a source package is recovered."
+    },
+    {
+      "kind": "item_asset_missing_from_glory_package",
+      "count": 463,
+      "effect": "Business data is active; the affected presentation remains empty rather than borrowing another release."
+    },
+    {
+      "kind": "monster_map_relation_unjoined",
+      "count": 13,
+      "effect": "Monster definitions are active but map populations are not fabricated without a safe class/name join."
+    },
+    {
+      "kind": "server_authority_not_recovered",
+      "domains": [
+        "monster_drop_settlement",
+        "shop_inventory",
+        "quest_progression",
+        "recipe_success_settlement"
+      ],
+      "effect": "Client evidence is queryable; server-authoritative values are not invented."
+    }
+  ]
+}
