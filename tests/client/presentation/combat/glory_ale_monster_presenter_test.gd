@@ -19,6 +19,7 @@ var failures := PackedStringArray()
 var assertions := 0
 
 
+## 执行本测试脚本的全部验证并汇总结果。
 func _initialize() -> void:
 	var packs = PackCatalogScript.new()
 	_expect(packs.load_file("res://data/content/glory_sprite_content_packs_v1.json"), "精灵包目录应可读")
@@ -81,6 +82,9 @@ func _initialize() -> void:
 	quit(1)
 
 
+## 记录一项测试断言及其失败信息。
+## [param condition] 调用方传入的 `condition` 参数。
+## [param message] 调用方传入的 `message` 参数。
 func _expect(condition: bool, message: String) -> void:
 	assertions += 1
 	if not condition:

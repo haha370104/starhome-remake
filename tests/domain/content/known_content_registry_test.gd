@@ -9,6 +9,7 @@ var assertions := 0
 var failures: Array[String] = []
 
 
+## 初始化对象及其运行时依赖。
 func _init() -> void:
 	_run()
 
@@ -106,6 +107,9 @@ func _run() -> void:
 	_finish()
 
 
+## 执行 `all_runtime_ready` 对应的模块操作。
+## [param definitions] 调用方传入的 `definitions` 参数。
+## 返回该函数计算、查询或操作得到的结果。
 func _all_runtime_ready(definitions: Array[Dictionary]) -> bool:
 	for definition: Dictionary in definitions:
 		if definition.get("availability", {}).get("runtime") != "ready":
@@ -113,6 +117,10 @@ func _all_runtime_ready(definitions: Array[Dictionary]) -> bool:
 	return true
 
 
+## 执行 `presence_has_map` 对应的模块操作。
+## [param presence] 调用方传入的 `presence` 参数。
+## [param map_id] 调用方传入的 `map_id` 参数。
+## 返回该函数计算、查询或操作得到的结果。
 func _presence_has_map(presence: Array, map_id: String) -> bool:
 	for value: Variant in presence:
 		if value is Dictionary and value.get("map_id") == map_id:
@@ -120,6 +128,10 @@ func _presence_has_map(presence: Array, map_id: String) -> bool:
 	return false
 
 
+## 执行 `registrations_contain_runtime` 对应的模块操作。
+## [param definitions] 调用方传入的 `definitions` 参数。
+## [param runtime_id] 调用方传入的 `runtime_id` 参数。
+## 返回该函数计算、查询或操作得到的结果。
 func _registrations_contain_runtime(definitions: Array[Dictionary], runtime_id: String) -> bool:
 	for definition: Dictionary in definitions:
 		if (definition.get("runtime_ids", []) as Array).has(runtime_id):
@@ -127,12 +139,16 @@ func _registrations_contain_runtime(definitions: Array[Dictionary], runtime_id: 
 	return false
 
 
+## 记录一项测试断言及其失败信息。
+## [param condition] 调用方传入的 `condition` 参数。
+## [param message] 调用方传入的 `message` 参数。
 func _expect(condition: bool, message: String) -> void:
 	assertions += 1
 	if not condition:
 		failures.append(message)
 
 
+## 汇总测试断言并以对应退出码结束测试。
 func _finish() -> void:
 	if failures.is_empty():
 		print("KNOWN_CONTENT_REGISTRY_OK (%d assertions)" % assertions)

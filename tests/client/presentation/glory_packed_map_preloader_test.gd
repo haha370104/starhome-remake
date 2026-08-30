@@ -10,10 +10,12 @@ var ready_bundle: Dictionary = {}
 var failure_message := ""
 
 
+## 执行本测试脚本的全部验证并汇总结果。
 func _initialize() -> void:
 	call_deferred("_run")
 
 
+## 执行 `run` 对应的模块操作。
 func _run() -> void:
 	var mount_result: Dictionary = BootstrapScript.mount_default()
 	_expect(bool(mount_result.get("ok", false)), String(mount_result.get("message", "")))
@@ -60,6 +62,7 @@ func _run() -> void:
 	_finish()
 
 
+## 汇总测试断言并以对应退出码结束测试。
 func _finish() -> void:
 	if failures.is_empty():
 		print("GLORY_PACKED_MAP_PRELOADER_OK (%d assertions)" % assertions)
@@ -70,6 +73,9 @@ func _finish() -> void:
 	quit(1)
 
 
+## 记录一项测试断言及其失败信息。
+## [param condition] 调用方传入的 `condition` 参数。
+## [param message] 调用方传入的 `message` 参数。
 func _expect(condition: bool, message: String) -> void:
 	assertions += 1
 	if not condition:

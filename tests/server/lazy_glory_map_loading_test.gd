@@ -7,6 +7,7 @@ var failures: PackedStringArray = []
 var assertions := 0
 
 
+## 执行本测试脚本的全部验证并汇总结果。
 func _initialize() -> void:
 	var config = ConfigScript.new()
 	config.network_enabled = false
@@ -39,6 +40,7 @@ func _initialize() -> void:
 	_finish()
 
 
+## 汇总测试断言并以对应退出码结束测试。
 func _finish() -> void:
 	if failures.is_empty():
 		print("LAZY_GLORY_MAP_LOADING_OK (%d assertions)" % assertions)
@@ -49,6 +51,9 @@ func _finish() -> void:
 	quit(1)
 
 
+## 记录一项测试断言及其失败信息。
+## [param condition] 调用方传入的 `condition` 参数。
+## [param message] 调用方传入的 `message` 参数。
 func _expect(condition: bool, message: String) -> void:
 	assertions += 1
 	if not condition:

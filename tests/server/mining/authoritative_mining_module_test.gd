@@ -13,6 +13,7 @@ var failures: Array[String] = []
 var assertions := 0
 
 
+## 执行本测试脚本的全部验证并汇总结果。
 func _initialize() -> void:
 	_test_catalog_and_initial_population()
 	_test_three_second_collection_and_capacity()
@@ -26,6 +27,7 @@ func _initialize() -> void:
 	quit(1)
 
 
+## 验证 `test_catalog_and_initial_population` 对应的业务约束。
 func _test_catalog_and_initial_population() -> void:
 	var catalog_result := MiningCatalogScript.load_default()
 	_expect(catalog_result.is_ok, "default mining catalog should load")
@@ -40,6 +42,7 @@ func _test_catalog_and_initial_population() -> void:
 	_expect(disabled.sources.is_empty(), "non-field city maps should not grow mine sources")
 
 
+## 验证 `test_three_second_collection_and_capacity` 对应的业务约束。
 func _test_three_second_collection_and_capacity() -> void:
 	var catalog = MiningCatalogScript.load_default().value
 	var module = _module(catalog, "d04_field_zone", "d04.collection.test")
@@ -59,6 +62,7 @@ func _test_three_second_collection_and_capacity() -> void:
 	_expect(not module.begin_collection("player.far", source.position + Vector2(80, 0), source.position, 10, 1).is_ok, "actor beyond seventy pixels should be rejected")
 
 
+## 验证 `test_five_minute_replenishment` 对应的业务约束。
 func _test_five_minute_replenishment() -> void:
 	var catalog = MiningCatalogScript.load_default().value
 	var module = _module(catalog, "d04_field_zone", "d04.replenish.test")
@@ -79,6 +83,10 @@ func _test_five_minute_replenishment() -> void:
 	_expect(replacement.capacity == 50 and replacement.remaining == 50, "replacement source should be born full")
 
 
+## 执行 `module` 对应的模块操作。
+## [param catalog] 调用方传入的 `catalog` 参数。
+## [param requested_map_id] 调用方传入的 `requested_map_id` 参数。
+## [param instance_id] 调用方传入的 `instance_id` 参数。
 func _module(catalog, requested_map_id: String, instance_id: String):
 	var navigation := FakeNavigation.new()
 	for index: int in range(400):
@@ -91,6 +99,9 @@ func _module(catalog, requested_map_id: String, instance_id: String):
 	return module
 
 
+## 记录一项测试断言及其失败信息。
+## [param condition] 调用方传入的 `condition` 参数。
+## [param message] 调用方传入的 `message` 参数。
 func _expect(condition: bool, message: String) -> void:
 	assertions += 1
 	if not condition:

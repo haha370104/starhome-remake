@@ -12,6 +12,7 @@ var failures := PackedStringArray()
 var assertions := 0
 
 
+## 执行本测试脚本的全部验证并汇总结果。
 func _initialize() -> void:
 	var catalog = ItemCatalogScript.new()
 	var initialized: Variant = catalog.initialize()
@@ -50,12 +51,16 @@ func _initialize() -> void:
 	_finish()
 
 
+## 记录一项测试断言及其失败信息。
+## [param condition] 调用方传入的 `condition` 参数。
+## [param message] 调用方传入的 `message` 参数。
 func _expect(condition: bool, message: String) -> void:
 	assertions += 1
 	if not condition:
 		failures.append(message)
 
 
+## 汇总测试断言并以对应退出码结束测试。
 func _finish() -> void:
 	if failures.is_empty():
 		print("GLORY_ITEM_RUNTIME_CATALOG_OK (%d assertions)" % assertions)

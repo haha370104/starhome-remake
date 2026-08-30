@@ -9,6 +9,7 @@ var assertions := 0
 var failures: Array[String] = []
 
 
+## 初始化对象及其运行时依赖。
 func _init() -> void:
 	call_deferred("_run")
 
@@ -81,10 +82,20 @@ func _run() -> void:
 	_finish()
 
 
+## 构建 `snapshot` 对应的只读状态快照。
+## [param sources] 调用方传入的 `sources` 参数。
+## 返回该函数计算、查询或操作得到的结果。
 func _snapshot(sources: Array) -> Dictionary:
 	return {"server_tick": 1, "mine_sources": sources}
 
 
+## 执行 `source` 对应的模块操作。
+## [param source_id] 调用方传入的 `source_id` 参数。
+## [param mineral_id] 调用方传入的 `mineral_id` 参数。
+## [param position] 调用方传入的 `position` 参数。
+## [param variant] 调用方传入的 `variant` 参数。
+## [param remaining] 调用方传入的 `remaining` 参数。
+## 返回该函数计算、查询或操作得到的结果。
 func _source(
 	source_id: String,
 	mineral_id: String,
@@ -110,12 +121,16 @@ func _source(
 	}
 
 
+## 记录一项测试断言及其失败信息。
+## [param condition] 调用方传入的 `condition` 参数。
+## [param message] 调用方传入的 `message` 参数。
 func _expect(condition: bool, message: String) -> void:
 	assertions += 1
 	if not condition:
 		failures.append(message)
 
 
+## 汇总测试断言并以对应退出码结束测试。
 func _finish() -> void:
 	if failures.is_empty():
 		print("MINERAL_WORLD_OK (%d assertions)" % assertions)

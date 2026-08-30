@@ -10,6 +10,7 @@ var assertions := 0
 var _state_path := "res://tests/.tmp_mining_server_state_%d.json" % Time.get_ticks_usec()
 
 
+## 执行本测试脚本的全部验证并汇总结果。
 func _initialize() -> void:
 	_test_authoritative_collection_transaction()
 	_remove_state_file()
@@ -22,6 +23,7 @@ func _initialize() -> void:
 	quit(1)
 
 
+## 验证 `test_authoritative_collection_transaction` 对应的业务约束。
 func _test_authoritative_collection_transaction() -> void:
 	var config := ConfigScript.new()
 	config.network_enabled = false
@@ -73,6 +75,10 @@ func _test_authoritative_collection_transaction() -> void:
 	server.free()
 
 
+## 执行 `inventory_quantity` 对应的模块操作。
+## [param state] 调用方传入的 `state` 参数。
+## [param definition_id] 调用方传入的 `definition_id` 参数。
+## 返回该函数计算、查询或操作得到的结果。
 func _inventory_quantity(state, definition_id: String) -> int:
 	if state == null:
 		return 0
@@ -83,12 +89,16 @@ func _inventory_quantity(state, definition_id: String) -> int:
 	return quantity
 
 
+## 执行 `remove_state_file` 对应的模块操作。
 func _remove_state_file() -> void:
 	var absolute := ProjectSettings.globalize_path(_state_path)
 	if FileAccess.file_exists(_state_path):
 		DirAccess.remove_absolute(absolute)
 
 
+## 记录一项测试断言及其失败信息。
+## [param condition] 调用方传入的 `condition` 参数。
+## [param message] 调用方传入的 `message` 参数。
 func _expect(condition: bool, message: String) -> void:
 	assertions += 1
 	if not condition:

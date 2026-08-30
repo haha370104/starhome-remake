@@ -46,6 +46,8 @@ func _initialize() -> void:
 
 
 ## 累积断言，统一报告失败。
+## [param condition] 调用方传入的 `condition` 参数。
+## [param message] 调用方传入的 `message` 参数。
 func _expect(condition: bool, message: String) -> void:
 	assertions += 1
 	if not condition:

@@ -6,6 +6,7 @@ var failures := PackedStringArray()
 var assertions := 0
 
 
+## 执行本测试脚本的全部验证并汇总结果。
 func _initialize() -> void:
 	var loaded: Variant = MiningCatalogScript.load_default()
 	_expect(loaded.is_ok, "荣耀矿物目录应加载")
@@ -32,12 +33,16 @@ func _initialize() -> void:
 	_finish()
 
 
+## 记录一项测试断言及其失败信息。
+## [param condition] 调用方传入的 `condition` 参数。
+## [param message] 调用方传入的 `message` 参数。
 func _expect(condition: bool, message: String) -> void:
 	assertions += 1
 	if not condition:
 		failures.append(message)
 
 
+## 汇总测试断言并以对应退出码结束测试。
 func _finish() -> void:
 	if failures.is_empty():
 		print("GLORY_MINING_CATALOG_OK (%d assertions)" % assertions)
