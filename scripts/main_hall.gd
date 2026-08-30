@@ -5,7 +5,10 @@ const COMBAT_VISUAL_MANIFEST_PATH := "res://assets/equipment_world/combat_visual
 const MINING_VISUAL_MANIFEST_PATH := "res://assets/minerals/mining_asset_manifest.json"
 const NPC_CONFIG_PATH := "res://data/npcs/yian_harbor_hall_floor_1.json"
 const MAP_DEFINITION_PATH := "res://data/maps/yian_harbor_hall_floor_1.json"
-const MAP_DIRECTORY_PATH := "res://data/maps/map_directory.json"
+const MAP_DIRECTORY_PATH := "res://data/maps/glory_map_directory_v1.json"
+const RuntimeContentBootstrapScript := preload(
+	"res://scripts/content/runtime_content_bootstrap.gd"
+)
 const DiamondNavigationScript := preload("res://scripts/navigation/diamond_navigation.gd")
 const CharacterFactoryScript := preload("res://scripts/characters/character_factory.gd")
 const PlayerWorldAvatarScript := preload("res://scripts/characters/player_world_avatar.gd")
@@ -189,6 +192,10 @@ var _initial_authoritative_world_ready := false
 func _ready() -> void:
 	_apply_multiplayer_command_line(OS.get_cmdline_user_args())
 	_build_initial_loading_screen()
+	var content_result: Dictionary = RuntimeContentBootstrapScript.mount_default()
+	if not bool(content_result.get("ok", false)):
+		push_error("Unable to mount Glory runtime content: %s" % content_result.get("message", ""))
+		return
 	character_catalog = JSON.parse_string(FileAccess.get_file_as_string(CHARACTER_CATALOG_PATH))
 	npc_catalog = JSON.parse_string(FileAccess.get_file_as_string(NPC_CONFIG_PATH))
 	active_world_controller = ActiveWorldControllerScript.new()
