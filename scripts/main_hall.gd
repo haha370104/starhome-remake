@@ -866,6 +866,13 @@ func _try_begin_nearby_map_transition() -> void:
 	if not selected_transition_id.is_empty():
 		var requested_transition: MapTransition = map_definition.transition_by_id(selected_transition_id)
 		if requested_transition != null:
+			if requested_transition.external_target \
+					or requested_transition.destination_map_id.is_empty():
+				selected_transition_id = &""
+				hint_label.text = "地图%s已识别，但运行资源尚未导入" % [
+					requested_transition.destination_key().to_upper(),
+				]
+				return
 			var requested_distance := player.position.distance_to(requested_transition.approach_point)
 			if requested_distance <= selected_distance:
 				selected_transition = requested_transition
