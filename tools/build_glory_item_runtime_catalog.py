@@ -7,6 +7,7 @@ import argparse
 import csv
 import hashlib
 import json
+import re
 from pathlib import Path
 from typing import Any
 
@@ -88,6 +89,13 @@ def required_sex(properties: dict[str, Any]) -> str:
     return {0: "male", 1: "female"}.get(value, "any")
 
 
+def equipment_id(row: dict[str, str]) -> str:
+    token = re.sub(r"[^a-z0-9]+", "_", row["class_name"].lower()).strip("_") or "source"
+    identity = f"{row.get('source_file', '')}:{row.get('source_line', '')}:{row['class_name']}"
+    suffix = hashlib.sha1(identity.encode("utf-8")).hexdigest()[:10]
+    return f"glory_equipment_{token}_{suffix}"
+
+
 def equipment_definition(row: dict[str, str], known: dict[str, Any]) -> dict[str, Any]:
     props = resolved_properties(row)
     stats = {
@@ -97,7 +105,7 @@ def equipment_definition(row: dict[str, str], known: dict[str, Any]) -> dict[str
     }
     stats["legacy_properties"] = props
     definition: dict[str, Any] = {
-        "id": known["id"],
+        "id": equipment_id(row),
         "kind": equipment_kind(row),
         "display_name": known.get("display_name", row["display_name"]),
         "description": known.get("description", row.get("description", "")),
@@ -117,6 +125,7 @@ def equipment_definition(row: dict[str, str], known: dict[str, Any]) -> dict[str
             "inheritance": row.get("inheritance", ""),
             "repair_materials": row.get("repair_materials", ""),
             "material_recipe": row.get("material_recipe", ""),
+            "known_registry_id": known["id"],
         },
     }
     if definition["kind"] == "character_clothing":
