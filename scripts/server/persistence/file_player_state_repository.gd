@@ -25,9 +25,10 @@ func initialize() -> DomainResult:
 	var recovered := _recover_interrupted_commit()
 	if not recovered.is_ok:
 		return recovered
+	var storage_path := _native_storage_path()
 	var raw_document: Dictionary
-	if FileAccess.file_exists(database_path):
-		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(database_path))
+	if FileAccess.file_exists(storage_path):
+		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(storage_path))
 		if not parsed is Dictionary:
 			return DomainResult.failure(&"persistence.invalid_database", "file repository root is not valid JSON object")
 		raw_document = parsed
@@ -147,22 +148,23 @@ func _commit_candidate(candidate: Dictionary, committed_character_id: String) ->
 ## 返回该函数计算、查询或操作得到的结果。
 ## 设计：该函数位于权威服务器边界，客户端不得覆盖其计算结果。
 func _persist_document(document: Dictionary) -> DomainResult:
-	var absolute_directory := ProjectSettings.globalize_path(database_path.get_base_dir())
+	var storage_path := _native_storage_path()
+	var absolute_directory := storage_path.get_base_dir()
 	var make_error := DirAccess.make_dir_recursive_absolute(absolute_directory)
 	if make_error != OK and make_error != ERR_ALREADY_EXISTS:
 		return DomainResult.failure(&"persistence.storage_error", "cannot create database directory")
-	var temporary_path := database_path + ".tmp"
-	var backup_path := database_path + ".bak"
+	var temporary_path := storage_path + ".tmp"
+	var backup_path := storage_path + ".bak"
 	var file := FileAccess.open(temporary_path, FileAccess.WRITE)
 	if file == null:
 		return DomainResult.failure(&"persistence.storage_error", "cannot open temporary database file")
 	file.store_string(JSON.stringify(document, "  "))
 	file.flush()
 	file.close()
-	var directory := DirAccess.open(database_path.get_base_dir())
+	var directory := DirAccess.open(absolute_directory)
 	if directory == null:
 		return DomainResult.failure(&"persistence.storage_error", "cannot open database directory")
-	var database_name := database_path.get_file()
+	var database_name := storage_path.get_file()
 	var temporary_name := temporary_path.get_file()
 	var backup_name := backup_path.get_file()
 	if directory.file_exists(backup_name):
@@ -182,13 +184,23 @@ func _persist_document(document: Dictionary) -> DomainResult:
 ## 执行 `recover_interrupted_commit` 对应的模块操作。
 ## 返回该函数计算、查询或操作得到的结果。
 func _recover_interrupted_commit() -> DomainResult:
-	var backup_path := database_path + ".bak"
-	if FileAccess.file_exists(database_path) or not FileAccess.file_exists(backup_path):
+	var storage_path := _native_storage_path()
+	var backup_path := storage_path + ".bak"
+	if FileAccess.file_exists(storage_path) or not FileAccess.file_exists(backup_path):
 		return DomainResult.ok()
-	var directory := DirAccess.open(database_path.get_base_dir())
-	if directory == null or directory.rename(backup_path.get_file(), database_path.get_file()) != OK:
+	var directory := DirAccess.open(storage_path.get_base_dir())
+	if directory == null or directory.rename(backup_path.get_file(), storage_path.get_file()) != OK:
 		return DomainResult.failure(&"persistence.storage_error", "cannot recover staged database backup")
 	return DomainResult.ok()
+
+
+## 将 Godot 虚拟资源路径转换为可执行原子重命名的原生文件系统路径。
+## 返回 `res://`、`user://` 对应的绝对路径；原生路径保持不变。
+## 设计：FileAccess 可以写虚拟路径，但 DirAccess 的资源视图不会立即发现新文件，提交过程必须统一使用原生路径。
+func _native_storage_path() -> String:
+	return ProjectSettings.globalize_path(database_path) \
+		if database_path.begins_with("res://") or database_path.begins_with("user://") \
+		else database_path
 
 
 ## 执行 `decode_players` 对应的模块操作。
