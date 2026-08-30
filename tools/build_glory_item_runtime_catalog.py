@@ -135,9 +135,20 @@ def equipment_definition(row: dict[str, str], known: dict[str, Any]) -> dict[str
         definition["presentation"]["dialog"]["z_layer"] = integer(props.get("m_nLayer", 60), 60)
     else:
         location = integer(props.get("m_nLocation", -1), -1)
+        if location < 0:
+            location = {
+                "vehicle_chassis": 0,
+                "energy_cannon": 1,
+                "vehicle_weapon": 1,
+                "vehicle_engine": 3,
+                "missile_weapon": 13,
+                "rocket_weapon": 13,
+            }.get(definition["kind"], -1)
         if location >= 0:
             definition["equipment_location"] = location
         definition["equip_kind"] = integer(props.get("m_nEquipKind", -1), -1)
+    if definition["kind"] == "vehicle_chassis" and "defense" in stats:
+        stats["armor"] = stats["defense"]
     return definition
 
 
