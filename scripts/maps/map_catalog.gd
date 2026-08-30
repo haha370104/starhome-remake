@@ -2,7 +2,7 @@ class_name MapCatalog
 extends RefCounted
 
 var _by_id: Dictionary = {}
-var _by_legacy_code: Dictionary = {}
+var _by_legacy_code_by_world: Dictionary = {}
 var errors: PackedStringArray = []
 
 
@@ -10,7 +10,7 @@ var errors: PackedStringArray = []
 ## 设计：该函数遵循所在模块的职责边界。
 func clear() -> void:
 	_by_id.clear()
-	_by_legacy_code.clear()
+	_by_legacy_code_by_world.clear()
 	errors.clear()
 
 
@@ -26,14 +26,17 @@ func add_map(definition: MapDefinition) -> bool:
 		succeeded = false
 	for code in definition.legacy_codes:
 		var normalized := code.to_lower()
-		if _by_legacy_code.has(normalized):
+		var world_index: Dictionary = _by_legacy_code_by_world.get(definition.world_id, {})
+		if world_index.has(normalized):
 			_add_error("duplicate_legacy_code", "旧地图代码重复：%s" % normalized)
 			succeeded = false
 	if not succeeded:
 		return false
 	_by_id[id_key] = definition
+	if not _by_legacy_code_by_world.has(definition.world_id):
+		_by_legacy_code_by_world[definition.world_id] = {}
 	for code in definition.legacy_codes:
-		_by_legacy_code[code.to_lower()] = definition
+		(_by_legacy_code_by_world[definition.world_id] as Dictionary)[code.to_lower()] = definition
 	return true
 
 
@@ -68,8 +71,19 @@ func map_by_id(map_id: StringName) -> MapDefinition:
 ## [param code] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## 返回该函数计算、查询或操作得到的结果。
 ## 设计：该函数遵循所在模块的职责边界。
-func map_by_legacy_code(code: String) -> MapDefinition:
-	return _by_legacy_code.get(code.strip_edges().to_lower())
+func map_by_legacy_code(code: String, world_id: StringName = &"") -> MapDefinition:
+	var normalized := code.strip_edges().to_lower()
+	if not world_id.is_empty():
+		return (_by_legacy_code_by_world.get(world_id, {}) as Dictionary).get(normalized)
+	var unique_match: MapDefinition
+	for world_index_value: Variant in _by_legacy_code_by_world.values():
+		var candidate: MapDefinition = (world_index_value as Dictionary).get(normalized)
+		if candidate == null:
+			continue
+		if unique_match != null and unique_match != candidate:
+			return null
+		unique_match = candidate
+	return unique_match
 
 
 ## 执行 `source_audit_for_map` 对应的模块操作。
@@ -85,13 +99,19 @@ func source_audit_for_map(map_id: StringName) -> Dictionary:
 ## [param transition] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## 返回该函数计算、查询或操作得到的结果。
 ## 设计：该函数遵循所在模块的职责边界。
-func resolve_target(transition: MapTransition) -> MapDefinition:
+func resolve_target(
+	transition: MapTransition,
+	source_world_id: StringName = &"legacy_world",
+) -> MapDefinition:
 	if not transition.destination_map_id.is_empty():
 		var by_id := map_by_id(transition.destination_map_id)
 		if by_id != null:
 			return by_id
 	if not transition.destination_legacy_code.is_empty():
-		return map_by_legacy_code(transition.destination_legacy_code)
+		var target_world := transition.destination_world_id
+		if target_world.is_empty():
+			target_world = source_world_id
+		return map_by_legacy_code(transition.destination_legacy_code, target_world)
 	return null
 
 
@@ -104,7 +124,8 @@ func validate_links() -> bool:
 		for transition in definition.transitions:
 			if not transition.enabled:
 				continue
-			if resolve_target(transition) == null and not transition.external_target:
+			if resolve_target(transition, definition.world_id) == null \
+					and not transition.external_target:
 				_add_error(
 					"unresolved_target",
 					"%s/%s 无法解析目标 %s" % [
@@ -137,7 +158,8 @@ func unresolved_external_transitions() -> Array[Dictionary]:
 	var result: Array[Dictionary] = []
 	for definition: MapDefinition in _by_id.values():
 		for transition in definition.transitions:
-			if transition.enabled and transition.external_target and resolve_target(transition) == null:
+			if transition.enabled and transition.external_target \
+					and resolve_target(transition, definition.world_id) == null:
 				result.append({
 					"source_map_id": definition.map_id,
 					"transition_id": transition.transition_id,

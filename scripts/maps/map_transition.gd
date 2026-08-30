@@ -15,6 +15,7 @@ var label := ""
 var source_anchor := Vector2.ZERO
 var approach_point := Vector2.ZERO
 var destination_map_id: StringName
+var destination_world_id: StringName
 var destination_legacy_code := ""
 var destination_entry_number := 0
 var destination_landing_point := Vector2.ZERO
@@ -30,7 +31,10 @@ var source_audit: Dictionary = {}
 func destination_key() -> String:
 	if not destination_map_id.is_empty():
 		return String(destination_map_id)
-	return destination_legacy_code.to_lower()
+	var legacy_key := destination_legacy_code.to_lower()
+	return legacy_key if destination_world_id.is_empty() else "%s/%s" % [
+		destination_world_id, legacy_key,
+	]
 
 
 ## 执行 `kind_name` 对应的模块操作。

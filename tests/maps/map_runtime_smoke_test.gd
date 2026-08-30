@@ -12,12 +12,13 @@ func _initialize() -> void:
 	_test_valid_configuration()
 	_test_bad_coordinate()
 	_test_duplicate_id()
+	_test_world_scoped_legacy_codes()
 	_test_empty_transitions()
 	_test_unresolved_external_target()
 	_test_unresolved_internal_target()
 	_test_business_adapter_configuration()
 	if failures.is_empty():
-		print("MAP_RUNTIME_SMOKE_OK (7 cases)")
+		print("MAP_RUNTIME_SMOKE_OK (8 cases)")
 		quit(0)
 		return
 	for failure in failures:
@@ -55,6 +56,32 @@ func _test_duplicate_id() -> void:
 	_expect(catalog.add_map(first), "首次加入地图目录应成功")
 	_expect(not catalog.add_map(second), "重复 map_id 必须被拒绝")
 	_expect(_contains(catalog.errors, "duplicate_map_id"), "重复 ID 错误未记录")
+
+
+## 验证不同原版世界可复用相同地图代码，且传送默认在来源世界内解析。
+func _test_world_scoped_legacy_codes() -> void:
+	var loader := LoaderScript.new()
+	var buli = loader.load_file("res://tests/maps/fixtures/valid_empty_map.json")
+	var asgard = loader.load_file("res://tests/maps/fixtures/valid_empty_map.json")
+	buli.map_id = &"buli_f08"
+	buli.world_id = &"buli"
+	asgard.map_id = &"asgard_f08"
+	asgard.world_id = &"asgard"
+	var catalog := CatalogScript.new()
+	_expect(catalog.add_map(buli), "布里世界 F08 应可登记")
+	_expect(catalog.add_map(asgard), "阿斯加德世界同名 F08 应可登记")
+	_expect(catalog.map_by_legacy_code("f08", &"buli") == buli, "旧代码应按布里世界解析")
+	_expect(
+		catalog.map_by_legacy_code("f08", &"asgard") == asgard,
+		"旧代码应按阿斯加德世界解析",
+	)
+	_expect(catalog.map_by_legacy_code("f08") == null, "跨世界歧义查询不得任取一张地图")
+	var transition := MapTransition.new()
+	transition.destination_legacy_code = "f08"
+	_expect(
+		catalog.resolve_target(transition, &"buli") == buli,
+		"未显式指定目标世界的传送应继承来源世界",
+	)
 
 
 ## 验证没有出口的地图仍是合法配置且保持空跳转集合。

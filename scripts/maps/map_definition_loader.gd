@@ -73,6 +73,9 @@ func load_dictionary(raw: Dictionary) -> MapDefinition:
 	if not world is Dictionary:
 		_add_error("world", "world 必须是 object")
 		world = {}
+	definition.world_id = StringName(String(world.get("id", "legacy_world")).strip_edges())
+	if not _is_business_id(String(definition.world_id)):
+		_add_error("world.id", "world.id 必须是小写业务语义标识")
 	definition.world_size = _read_vector2(world.get("size", []), "world.size", true)
 	var navigation: Variant = world.get("navigation", {})
 	if not navigation is Dictionary:
@@ -321,6 +324,12 @@ func _load_transition(raw: Dictionary, index: int, world_size: Vector2) -> MapTr
 		_add_error(prefix + ".destination", "destination 必须是 object")
 		destination = {}
 	transition.destination_map_id = StringName(String(destination.get("map_id", "")).strip_edges())
+	transition.destination_world_id = StringName(
+		String(destination.get("world_id", "")).strip_edges()
+	)
+	if not transition.destination_world_id.is_empty() \
+			and not _is_business_id(String(transition.destination_world_id)):
+		_add_error(prefix + ".destination.world_id", "world_id 必须是小写业务语义标识")
 	transition.destination_legacy_code = String(destination.get("legacy_code", "")).strip_edges().to_lower()
 	transition.destination_entry_number = int(destination.get("entry_number", 0))
 	transition.external_target = bool(destination.get("external", false))

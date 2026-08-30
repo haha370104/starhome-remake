@@ -5,7 +5,7 @@ const ErrorCodes := preload("res://scripts/network/contracts/network_error_codes
 
 var _by_instance_id: Dictionary = {}
 var _by_map_id: Dictionary = {}
-var _by_legacy_code: Dictionary = {}
+var _by_legacy_code_by_world: Dictionary = {}
 
 
 ## 执行 `register_instance` 对应的模块操作。
@@ -23,14 +23,19 @@ func register_instance(instance: AuthoritativeMapInstance) -> Dictionary:
 		return _failure(&"map_registry.duplicate_map", "map or instance identifier is already registered")
 	for legacy_code: String in instance.definition.legacy_codes:
 		var normalized := legacy_code.strip_edges().to_lower()
-		if not normalized.is_empty() and _by_legacy_code.has(normalized):
+		var world_index: Dictionary = _by_legacy_code_by_world.get(
+			instance.definition.world_id, {}
+		)
+		if not normalized.is_empty() and world_index.has(normalized):
 			return _failure(&"map_registry.duplicate_legacy_code", "legacy map code is already registered")
 	_by_instance_id[instance_key] = instance
 	_by_map_id[map_key] = instance
+	if not _by_legacy_code_by_world.has(instance.definition.world_id):
+		_by_legacy_code_by_world[instance.definition.world_id] = {}
 	for legacy_code: String in instance.definition.legacy_codes:
 		var normalized := legacy_code.strip_edges().to_lower()
 		if not normalized.is_empty():
-			_by_legacy_code[normalized] = instance
+			(_by_legacy_code_by_world[instance.definition.world_id] as Dictionary)[normalized] = instance
 	return _success(instance)
 
 
@@ -52,13 +57,21 @@ func instance_by_map_id(map_id: String) -> AuthoritativeMapInstance:
 ## [param transition] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## 返回该函数计算、查询或操作得到的结果。
 ## 设计：该函数位于权威服务器边界，客户端不得覆盖其计算结果。
-func resolve_transition_target(transition: MapTransition) -> AuthoritativeMapInstance:
+func resolve_transition_target(
+	transition: MapTransition,
+	source_world_id: StringName = &"legacy_world",
+) -> AuthoritativeMapInstance:
 	if not transition.destination_map_id.is_empty():
 		var by_id: AuthoritativeMapInstance = _by_map_id.get(String(transition.destination_map_id))
 		if by_id != null:
 			return by_id
 	if not transition.destination_legacy_code.is_empty():
-		return _by_legacy_code.get(transition.destination_legacy_code.strip_edges().to_lower())
+		var target_world := transition.destination_world_id
+		if target_world.is_empty():
+			target_world = source_world_id
+		return (_by_legacy_code_by_world.get(target_world, {}) as Dictionary).get(
+			transition.destination_legacy_code.strip_edges().to_lower()
+		)
 	return null
 
 

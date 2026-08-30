@@ -435,7 +435,9 @@ func handle_peer_map_transition(peer_id: int, raw_intent: Variant) -> Dictionary
 			ErrorCodes.MAP_TRANSITION_TOO_FAR,
 			"entity is outside the authoritative exit activation radius",
 		)
-	var destination_instance := map_registry.resolve_transition_target(transition)
+	var destination_instance := map_registry.resolve_transition_target(
+		transition, source_instance.definition.world_id
+	)
 	if destination_instance == null:
 		return _failure(
 			ErrorCodes.MAP_TRANSITION_TARGET_UNRESOLVED,

@@ -3,6 +3,7 @@ extends RefCounted
 
 var schema_version := 1
 var map_id: StringName
+var world_id: StringName = &"legacy_world"
 var display_name := ""
 var legacy_codes: PackedStringArray = []
 var category := "unknown"
