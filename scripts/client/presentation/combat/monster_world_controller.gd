@@ -55,6 +55,7 @@ func configure(world_parent: Node2D, manifest: Dictionary, local_player: Node2D)
 		_death_effects.queue_free()
 		_death_effects = null
 		return effect_error
+	_death_effects.configure_glory(_ale_repository, _glory_presentations)
 	_attack_effects = MonsterAttackEffectControllerScript.new()
 	_attack_effects.name = "MonsterAttackEffects"
 	add_child(_attack_effects)
@@ -63,6 +64,7 @@ func configure(world_parent: Node2D, manifest: Dictionary, local_player: Node2D)
 		_attack_effects.queue_free()
 		_attack_effects = null
 		return attack_effect_error
+	_attack_effects.configure_glory(_ale_repository, _glory_presentations)
 	return OK
 
 

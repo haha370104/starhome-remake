@@ -7,6 +7,8 @@ var _world_parent: Node2D
 var _effect_definitions: Dictionary = {}
 var _active_effects: Array[Dictionary] = []
 var _presented_generations: Dictionary = {}
+var _ale_repository: RefCounted
+var _glory_presentations: RefCounted
 
 
 ## 配置怪物死亡特效控制器，并校验业务清单中的 SpriteFrames。
@@ -29,6 +31,12 @@ func configure(manifest: Dictionary, world_parent: Node2D) -> Error:
 	return OK
 
 
+## 注入全量荣耀 ALE 仓储，供不在首批手工清单中的怪物使用。
+func configure_glory(repository: RefCounted, presentations: RefCounted) -> void:
+	_ale_repository = repository
+	_glory_presentations = presentations
+
+
 ## 在怪物原脚点播放一次权威死亡代际对应的爆散动画。
 ## [param entity_id] 怪物实体 ID。
 ## [param combat_actor_id] 怪物表现角色 ID。
@@ -46,8 +54,8 @@ func present_death(
 	if int(_presented_generations.get(entity_id, 0)) >= death_generation:
 		return false
 	var actor_value: Variant = _effect_definitions.get(combat_actor_id, {})
-	if not actor_value is Dictionary:
-		return false
+	if not actor_value is Dictionary or (actor_value as Dictionary).is_empty():
+		return _present_ale_death(entity_id, combat_actor_id, world_position, death_generation)
 	var effect: Dictionary = (actor_value as Dictionary).get("death", {})
 	if not _valid_effect(effect):
 		return false
@@ -78,6 +86,42 @@ func present_death(
 	return true
 
 
+func _present_ale_death(
+	entity_id: String,
+	combat_actor_id: String,
+	world_position: Vector2,
+	death_generation: int,
+) -> bool:
+	if _ale_repository == null or _glory_presentations == null:
+		return false
+	var presentation: Dictionary = _glory_presentations.definition_for_actor(combat_actor_id)
+	var reference := String(presentation.get("death_effect", "")).strip_edges()
+	if reference.is_empty():
+		return false
+	var animation: Dictionary = _ale_repository.load_animation(
+		reference, String(presentation.get("preferred_prefix", "pic3/npc"))
+	)
+	var frames: Array = animation.get("frames", [])
+	if frames.is_empty():
+		return false
+	var wrapper := Node2D.new()
+	wrapper.name = "MonsterDeath_%s_%d" % [entity_id.replace(".", "_"), death_generation]
+	wrapper.position = world_position
+	var sprite := Sprite2D.new()
+	sprite.name = "Sprite"
+	sprite.centered = false
+	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	_apply_ale_frame(sprite, frames[0])
+	wrapper.add_child(sprite)
+	_world_parent.add_child(wrapper)
+	_active_effects.append({
+		"node": wrapper, "elapsed": 0.0, "frames": frames.size(), "fps": 10.0,
+		"ale_frames": frames,
+	})
+	_presented_generations[entity_id] = death_generation
+	return true
+
+
 ## 按渲染时间推进全部独立死亡特效。
 ## [param delta_seconds] 本帧秒数。
 func advance(delta_seconds: float) -> void:
@@ -93,9 +137,15 @@ func advance(delta_seconds: float) -> void:
 			continue
 		var wrapper := state["node"] as Node2D
 		if wrapper != null and is_instance_valid(wrapper):
-			var sprite := wrapper.get_node_or_null("Sprite") as AnimatedSprite2D
-			if sprite != null:
-				sprite.frame = frame
+			var ale_frames: Variant = state.get("ale_frames")
+			if ale_frames is Array:
+				var ale_sprite := wrapper.get_node_or_null("Sprite") as Sprite2D
+				if ale_sprite != null:
+					_apply_ale_frame(ale_sprite, (ale_frames as Array)[frame])
+			else:
+				var sprite := wrapper.get_node_or_null("Sprite") as AnimatedSprite2D
+				if sprite != null:
+					sprite.frame = frame
 
 
 ## 清除地图切换前残留的瞬态特效和事件代际游标。
@@ -141,3 +191,8 @@ func _free_effect(state: Dictionary) -> void:
 	var node := state.get("node") as Node
 	if node != null and is_instance_valid(node):
 		node.free()
+
+
+func _apply_ale_frame(sprite: Sprite2D, frame: Dictionary) -> void:
+	sprite.texture = frame["texture"] as Texture2D
+	sprite.position = frame["origin"] as Vector2

@@ -9,6 +9,8 @@ var _active_projectiles: Array[Dictionary] = []
 var _active_impacts: Array[Dictionary] = []
 var _presented_attack_ids: Dictionary = {}
 var _presented_impact_ids: Dictionary = {}
+var _ale_repository: RefCounted
+var _glory_presentations: RefCounted
 
 
 ## 配置怪物远程攻击表现所需的业务清单和世界节点。
@@ -27,6 +29,12 @@ func configure(manifest: Dictionary, world_parent: Node2D) -> Error:
 	return OK
 
 
+## 注入全量荣耀 ALE 仓储，供生成目录中的弹体和贴身命中特效使用。
+func configure_glory(repository: RefCounted, presentations: RefCounted) -> void:
+	_ale_repository = repository
+	_glory_presentations = presentations
+
+
 ## 根据权威攻击开始事件创建荣耀版怪物弹体；贴身攻击不创建弹体。
 ## [param event] `monster_attack_started` 权威事件。
 ## 返回是否创建了新的弹体表现。
@@ -39,8 +47,8 @@ func present_attack(event: Dictionary) -> bool:
 		return false
 	var actor_id := String(event.get("combat_actor_id", ""))
 	var actor_value: Variant = _effect_definitions.get(actor_id, {})
-	if not actor_value is Dictionary:
-		return false
+	if not actor_value is Dictionary or (actor_value as Dictionary).is_empty():
+		return _present_ale_projectile(event, actor_id)
 	var projectile_value: Variant = (actor_value as Dictionary).get("projectile", {})
 	if not _valid_projectile(projectile_value):
 		return false
@@ -81,6 +89,43 @@ func present_attack(event: Dictionary) -> bool:
 	return true
 
 
+func _present_ale_projectile(event: Dictionary, actor_id: String) -> bool:
+	if _ale_repository == null or _glory_presentations == null:
+		return false
+	var presentation: Dictionary = _glory_presentations.definition_for_actor(actor_id)
+	var reference := String(presentation.get("projectile", "")).strip_edges()
+	var origin := _vector_from_event(event.get("origin", []))
+	var target := _vector_from_event(event.get("target_position", []))
+	var speed := float(event.get("projectile_speed", 0.0))
+	if reference.is_empty() or not origin.is_finite() or not target.is_finite() or speed <= 0.0:
+		return false
+	var animation: Dictionary = _ale_repository.load_animation(
+		reference, String(presentation.get("preferred_prefix", "pic3/npc"))
+	)
+	var frames: Array = animation.get("frames", [])
+	if frames.is_empty():
+		return false
+	var attack_id := String(event["attack_id"])
+	var wrapper := Node2D.new()
+	wrapper.name = "MonsterProjectile_%s" % attack_id.replace(".", "_")
+	wrapper.position = origin
+	wrapper.rotation = origin.angle_to_point(target)
+	var sprite := Sprite2D.new()
+	sprite.name = "Sprite"
+	sprite.centered = false
+	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	_apply_ale_frame(sprite, frames[0])
+	wrapper.add_child(sprite)
+	_world_parent.add_child(wrapper)
+	_active_projectiles.append({
+		"node": wrapper, "origin": origin, "target": target, "elapsed": 0.0,
+		"duration": maxf(origin.distance_to(target) / speed, 0.001),
+		"frames": frames.size(), "fps": 10.0, "ale_frames": frames,
+	})
+	_presented_attack_ids[attack_id] = true
+	return true
+
+
 ## 在权威贴身攻击结算时，于受击战车位置播放荣耀版命中特效。
 ## [param event] `monster_attack_resolved` 权威事件。
 ## [param target_position] 受击目标在世界父节点坐标系内的位置。
@@ -95,8 +140,11 @@ func present_contact_impact(event: Dictionary, target_position: Vector2) -> bool
 	):
 		return false
 	var actor_value: Variant = _effect_definitions.get(String(event.get("combat_actor_id", "")), {})
-	if not actor_value is Dictionary:
-		return false
+	if (not actor_value is Dictionary or (actor_value as Dictionary).is_empty()) \
+		and _effect_definitions.has("photosensitive_orb_standard"):
+		actor_value = _effect_definitions["photosensitive_orb_standard"]
+	if not actor_value is Dictionary or (actor_value as Dictionary).is_empty():
+		return _present_ale_contact_impact(event, target_position)
 	var impact_value: Variant = (actor_value as Dictionary).get("contact_impact", {})
 	if not _valid_effect(impact_value):
 		return false
@@ -129,6 +177,41 @@ func present_contact_impact(event: Dictionary, target_position: Vector2) -> bool
 	return true
 
 
+func _present_ale_contact_impact(event: Dictionary, target_position: Vector2) -> bool:
+	if _ale_repository == null or _glory_presentations == null:
+		return false
+	var presentation: Dictionary = _glory_presentations.definition_for_actor(
+		String(event.get("combat_actor_id", ""))
+	)
+	var reference := String(presentation.get("hit_effect", "")).strip_edges()
+	if reference.is_empty():
+		return false
+	var animation: Dictionary = _ale_repository.load_animation(
+		reference, String(presentation.get("preferred_prefix", "pic3/npc"))
+	)
+	var frames: Array = animation.get("frames", [])
+	if frames.is_empty():
+		return false
+	var attack_id := String(event["attack_id"])
+	var wrapper := Node2D.new()
+	wrapper.name = "MonsterContactImpact_%s" % attack_id.replace(".", "_")
+	wrapper.position = target_position
+	wrapper.z_index = 1
+	var sprite := Sprite2D.new()
+	sprite.name = "Sprite"
+	sprite.centered = false
+	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	_apply_ale_frame(sprite, frames[0])
+	wrapper.add_child(sprite)
+	_world_parent.add_child(wrapper)
+	_active_impacts.append({
+		"node": wrapper, "elapsed": 0.0, "frames": frames.size(), "fps": 10.0,
+		"ale_frames": frames,
+	})
+	_presented_impact_ids[attack_id] = true
+	return true
+
+
 ## 按渲染时间推进怪物弹体，并在权威目标点结束表现。
 ## [param delta_seconds] 本帧秒数。
 func advance(delta_seconds: float) -> void:
@@ -141,12 +224,18 @@ func advance(delta_seconds: float) -> void:
 		var wrapper := state["node"] as Node2D
 		if wrapper != null and is_instance_valid(wrapper):
 			wrapper.position = Vector2(state["origin"]).lerp(Vector2(state["target"]), progress)
-			var sprite := wrapper.get_node_or_null("Sprite") as AnimatedSprite2D
-			if sprite != null:
-				sprite.frame = posmod(
-					int(floor(float(state["elapsed"]) * float(state["fps"]))),
-					int(state["frames"]),
-				)
+			var next_frame := posmod(
+				int(floor(float(state["elapsed"]) * float(state["fps"]))), int(state["frames"])
+			)
+			var ale_frames: Variant = state.get("ale_frames")
+			if ale_frames is Array:
+				var ale_sprite := wrapper.get_node_or_null("Sprite") as Sprite2D
+				if ale_sprite != null:
+					_apply_ale_frame(ale_sprite, (ale_frames as Array)[next_frame])
+			else:
+				var sprite := wrapper.get_node_or_null("Sprite") as AnimatedSprite2D
+				if sprite != null:
+					sprite.frame = next_frame
 		if progress >= 1.0:
 			_free_projectile(state)
 			_active_projectiles.remove_at(index)
@@ -157,9 +246,16 @@ func advance(delta_seconds: float) -> void:
 		var fps := float(state["fps"])
 		var wrapper := state["node"] as Node2D
 		if wrapper != null and is_instance_valid(wrapper):
-			var sprite := wrapper.get_node_or_null("Sprite") as AnimatedSprite2D
-			if sprite != null:
-				sprite.frame = mini(int(floor(float(state["elapsed"]) * fps)), frame_count - 1)
+			var next_frame := mini(int(floor(float(state["elapsed"]) * fps)), frame_count - 1)
+			var ale_frames: Variant = state.get("ale_frames")
+			if ale_frames is Array:
+				var ale_sprite := wrapper.get_node_or_null("Sprite") as Sprite2D
+				if ale_sprite != null:
+					_apply_ale_frame(ale_sprite, (ale_frames as Array)[next_frame])
+			else:
+				var sprite := wrapper.get_node_or_null("Sprite") as AnimatedSprite2D
+				if sprite != null:
+					sprite.frame = next_frame
 		if float(state["elapsed"]) >= float(frame_count) / fps:
 			_free_effect_node(state)
 			_active_impacts.remove_at(index)
@@ -240,3 +336,8 @@ func _free_effect_node(state: Dictionary) -> void:
 	var node := state.get("node") as Node
 	if node != null and is_instance_valid(node):
 		node.free()
+
+
+func _apply_ale_frame(sprite: Sprite2D, frame: Dictionary) -> void:
+	sprite.texture = frame["texture"] as Texture2D
+	sprite.position = frame["origin"] as Vector2

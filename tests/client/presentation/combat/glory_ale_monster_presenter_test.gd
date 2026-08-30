@@ -8,6 +8,12 @@ const PresentationCatalogScript := preload(
 const PresenterScript := preload(
 	"res://scripts/client/presentation/combat/ale_combat_visual_presenter.gd"
 )
+const DeathEffectsScript := preload(
+	"res://scripts/client/presentation/combat/monster_death_effect_controller.gd"
+)
+const AttackEffectsScript := preload(
+	"res://scripts/client/presentation/combat/monster_attack_effect_controller.gd"
+)
 
 var failures := PackedStringArray()
 var assertions := 0
@@ -37,6 +43,27 @@ func _initialize() -> void:
 	_expect(presenter.set_action(&"attack"), "攻击状态应消费 npcinfo 第三套动画")
 	presenter.advance(0.2)
 	_expect(presenter.current_action_id == &"attack", "攻击状态应持续到权威快照切换")
+	var death_effects = DeathEffectsScript.new()
+	root.add_child(death_effects)
+	_expect(death_effects.configure({"monster_effects": {}}, presenter) == OK, "死亡特效控制器应配置")
+	death_effects.configure_glory(repository, catalog)
+	_expect(death_effects.present_death("boss.128", "glory_npc_128", Vector2.ZERO, 1), "BOSS 死亡 ALE 应播放")
+	_expect(death_effects.active_effect_count() == 1, "生成目录死亡特效应进入活动队列")
+	var attack_effects = AttackEffectsScript.new()
+	root.add_child(attack_effects)
+	_expect(attack_effects.configure({"monster_effects": {}}, presenter) == OK, "攻击特效控制器应配置")
+	attack_effects.configure_glory(repository, catalog)
+	_expect(attack_effects.present_attack({
+		"attack_id": "boss.128.attack.1",
+		"attack_archetype": "ranged_projectile",
+		"combat_actor_id": "glory_npc_128",
+		"origin": [0.0, 0.0],
+		"target_position": [300.0, 0.0],
+		"projectile_speed": 416.666667,
+	}), "BOSS 弹体 ALE 应播放")
+	_expect(attack_effects.active_projectile_count() == 1, "生成目录弹体应进入活动队列")
+	death_effects.queue_free()
+	attack_effects.queue_free()
 	presenter.queue_free()
 	if failures.is_empty():
 		print("GLORY_ALE_MONSTER_PRESENTER_OK (%d assertions)" % assertions)
