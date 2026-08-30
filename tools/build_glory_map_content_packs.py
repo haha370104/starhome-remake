@@ -113,20 +113,31 @@ def sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
-def existing_definitions() -> tuple[dict[str, str], dict[tuple[str, str], str]]:
+def existing_definitions() -> tuple[
+    dict[str, str],
+    dict[tuple[str, str], str],
+    set[str],
+]:
     """Return current directory entries and their world/legacy runtime index."""
     directory = read_object(CURRENT_DIRECTORY_PATH)
     paths = dict(directory.get("definitions", {}))
     legacy: dict[tuple[str, str], str] = {}
+    presentation_ready: set[str] = set()
     for map_id, resource_path in paths.items():
         path = PROJECT_ROOT / str(resource_path).removeprefix("res://")
         if not path.is_file():
             continue
         definition = read_object(path)
+        resources = definition.get("assets", {}).get("resources", {})
+        if all(
+            (PROJECT_ROOT / str(resources.get(key, "")).removeprefix("res://")).is_file()
+            for key in ("floor", "minimap", "scene_manifest")
+        ):
+            presentation_ready.add(str(map_id))
         world_id = str(definition.get("world", {}).get("id", "legacy_world"))
         for code in definition.get("legacy", {}).get("codes", []):
             legacy[(world_id, str(code).lower())] = str(map_id)
-    return paths, legacy
+    return paths, legacy, presentation_ready
 
 
 def discover_presentations() -> dict[str, Presentation]:
@@ -397,7 +408,7 @@ def partition_presentations(
 
 def build(arguments: argparse.Namespace) -> dict[str, Any]:
     known = read_object(KNOWN_MAPS_PATH)
-    current_paths, existing_legacy = existing_definitions()
+    current_paths, existing_legacy, existing_ready = existing_definitions()
     presentations = discover_presentations()
     rows: list[dict[str, Any]] = list(known.get("definitions", []))
     target_ids: dict[tuple[str, str], str] = {}
@@ -420,7 +431,7 @@ def build(arguments: argparse.Namespace) -> dict[str, Any]:
     runtime_rows: list[dict[str, Any]] = []
     used_presentations: dict[str, Presentation] = {}
     for row, presentation, map_id, world_id in resolved_rows:
-        is_existing = map_id in current_paths
+        is_existing = map_id in existing_ready
         if not is_existing:
             generated_definitions[map_id] = build_definition(
                 row, presentation, map_id, world_id, target_ids
@@ -429,11 +440,11 @@ def build(arguments: argparse.Namespace) -> dict[str, Any]:
         runtime_rows.append({
             "source_id": row["id"],
             "world_code": row["world_code"],
+            "world_id": world_id,
             "map_code": row["map_code"],
             "runtime_id": map_id,
-            "definition_path": current_paths.get(
-                map_id, "res://content/glory/map_definitions/%s.json" % map_id
-            ),
+            "definition_path": current_paths[map_id] if is_existing
+                else "res://content/glory/map_definitions/%s.json" % map_id,
             "presentation_id": presentation.resource_id,
             "presentation_mode": "semantic" if is_existing else "flattened_source_composite",
         })

@@ -8,7 +8,7 @@
     "buli_d03_field_zone": "res://data/maps/buli_d03_field_zone.json",
     "buli_d05_field_zone": "res://data/maps/buli_d05_field_zone.json",
     "d04_field_zone": "res://data/maps/d04_field_zone.json",
-    "g08_field_zone": "res://data/maps/g08_field_zone.json",
+    "g08_field_zone": "res://content/glory/map_definitions/g08_field_zone.json",
     "glory_nft_bl_2armshop1": "res://content/glory/map_definitions/glory_nft_bl_2armshop1.json",
     "glory_nft_bl_2beautyroom": "res://content/glory/map_definitions/glory_nft_bl_2beautyroom.json",
     "glory_nft_bl_2clothshop1": "res://content/glory/map_definitions/glory_nft_bl_2clothshop1.json",

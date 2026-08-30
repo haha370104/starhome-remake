@@ -5,8 +5,8 @@
     {
       "pack_id": "glory_maps_index_v1",
       "path": "res://assets/content_packs/glory_maps_index_v1.zip",
-      "size_bytes": 2116183,
-      "sha256": "c19a55ce0b994dd8e90d0fb8204f3e46fa1189b111a1a1e0a3996302403c7889",
+      "size_bytes": 2121181,
+      "sha256": "d4492b86fcae784b8a15d40fab865b9694bef0262ef31fcde12c856d21421293",
       "content_groups": [
         "maps"
       ]
@@ -107,8 +107,8 @@
     "content_version": "glory-map-runtime-v1",
     "source_rows": 814,
     "resolved_runtime_rows": 810,
-    "generated_definitions": 801,
-    "existing_semantic_definitions": 9,
+    "generated_definitions": 802,
+    "existing_semantic_definitions": 8,
     "unique_presentations": 486,
     "unresolved_source_rows": 4
   }
