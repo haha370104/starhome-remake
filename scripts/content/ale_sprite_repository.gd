@@ -3,6 +3,7 @@ extends RefCounted
 
 const TextureLoaderScript := preload("res://scripts/content/runtime_texture_loader.gd")
 const DEFAULT_INDEX_PATH := "res://data/content/glory_sprite_runtime_index_v1.json"
+const DEFAULT_PALETTE_INDEX_PATH := "res://data/content/glory_monster_palette_runtime_index_v1.json"
 
 var content_version := ""
 var errors: PackedStringArray = []
@@ -14,7 +15,9 @@ var _page_cache: Dictionary = {}
 
 ## 加载 ALE 逻辑路径索引；图片和帧描述仍保持按需读取。
 func load_default() -> bool:
-	return load_file(DEFAULT_INDEX_PATH)
+	if not load_file(DEFAULT_INDEX_PATH):
+		return false
+	return merge_file(DEFAULT_PALETTE_INDEX_PATH)
 
 
 func load_file(path: String) -> bool:
@@ -23,6 +26,15 @@ func load_file(path: String) -> bool:
 	_logical_ids_by_basename.clear()
 	_metadata_cache.clear()
 	_page_cache.clear()
+	return _merge_file(path)
+
+
+func merge_file(path: String) -> bool:
+	errors.clear()
+	return _merge_file(path)
+
+
+func _merge_file(path: String) -> bool:
 	if not FileAccess.file_exists(path):
 		_add_error("index", "ALE 精灵索引不存在：%s" % path)
 		return false
@@ -42,7 +54,7 @@ func load_file(path: String) -> bool:
 		var row: Dictionary = row_value
 		var logical_id := normalize_reference(String(row.get("logical_id", "")))
 		var frames_path := String(row.get("frames_path", ""))
-		if logical_id.is_empty() or not frames_path.begins_with("res://content/glory/sprites/"):
+		if logical_id.is_empty() or not frames_path.begins_with("res://content/glory/"):
 			_add_error("row", "ALE 精灵条目路径无效")
 			continue
 		if _by_logical_id.has(logical_id):

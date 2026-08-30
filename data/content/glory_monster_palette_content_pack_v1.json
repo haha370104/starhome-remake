@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "content_version": "glory-monster-palettes-v1",
+  "packs": [
+    {
+      "pack_id": "glory_monster_palettes_v1",
+      "path": "res://assets/content_packs/glory_monster_palettes_v1.zip",
+      "size_bytes": 8240277,
+      "sha256": "b818a8a7584b1d481eb2bac7be5bdf2b39a812a02357d81ad195645d31a94985",
+      "content_groups": [
+        "monster_palette_variants"
+      ]
+    }
+  ],
+  "summary": {
+    "palette_monsters": 27,
+    "sprites": 81
+  }
+}

@@ -106,7 +106,7 @@ def combat_definition(row: dict[str, str]) -> dict[str, Any]:
     }
 
 
-def presentation(row: dict[str, str]) -> dict[str, Any]:
+def presentation(row: dict[str, str], index: int) -> dict[str, Any]:
     body = split_assets(row.get("attr_30", ""))
     shadows = split_assets(row.get("attr_31", ""))
     # The decoded npcinfo layout is move, stand, action for both body and shadow.
@@ -114,17 +114,23 @@ def presentation(row: dict[str, str]) -> dict[str, Any]:
     shadow_actions = {
         name: shadows[i] if i < len(shadows) else "" for i, name in enumerate(("move", "idle", "attack"))
     }
+    palette = row.get("attr_32", "").strip()
+    source_actions = dict(actions)
+    if palette:
+        actor = actor_id(index)
+        actions = {action: f"monster_palettes/{actor}/{action}" for action in actions}
     return {
         "mode": "ale_repository",
         "preferred_prefix": "pic3/npc",
         "actions": actions,
+        "source_actions": source_actions,
         "shadow_actions": shadow_actions,
         "hit_effect": row.get("attr_24", "").strip(),
         "projectile": row.get("attr_26", "").strip(),
         "death_effect": row.get("attr_27", "").strip(),
         "death_sound": row.get("attr_28", "").strip(),
         "attack_sound": row.get("attr_29", "").strip(),
-        "palette": row.get("attr_32", "").strip(),
+        "palette": palette,
         "directions": 8,
         "fps": 10,
     }
@@ -166,7 +172,7 @@ def build_definitions(rows: list[dict[str, str]], source_path: Path) -> list[dic
                 "combat": combat_definition(row),
                 "drops": None,
                 "rewards": None,
-                "presentation": presentation(row),
+                "presentation": presentation(row, index),
                 "source_drop_candidates": source_drop_candidates(row),
                 "evidence": {
                     "stats": "client_confirmed_fields_attr_00_attr_01",
