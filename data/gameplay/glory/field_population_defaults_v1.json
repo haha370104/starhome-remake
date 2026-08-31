@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "evidence": "remake_default_not_original_distribution",
+  "description": "仅用于没有已确认怪物地图关系的野外地图；有原始地图编辑器记录的地图优先使用记录。D04 保留 stage3 配置。修改权重后重新运行 build_glory_monster_runtime_catalog.py。",
+  "spawn_groups": [
+    {"monster_id": "om_adult", "weight": 1.0},
+    {"monster_id": "om_larva", "weight": 1.0},
+    {"monster_id": "photosensitive_orb", "weight": 1.0},
+    {"monster_id": "toxic_gel", "weight": 1.0}
+  ]
+}

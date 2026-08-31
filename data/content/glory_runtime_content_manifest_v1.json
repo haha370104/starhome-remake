@@ -19,7 +19,10 @@
     },
     "monsters": {
       "runtime_definitions": 119,
-      "maps_with_reliable_encounters": 10
+      "maps_with_reliable_encounters": 27,
+      "maps_with_remake_defaults": 432,
+      "curated_override_maps": 1,
+      "runtime_field_maps": 460
     },
     "items": {
       "generated_definitions": 1270,
@@ -60,9 +63,9 @@
       "effect": "Business data is active; the affected presentation remains empty rather than borrowing another release."
     },
     {
-      "kind": "monster_map_relation_unjoined",
-      "count": 13,
-      "effect": "Monster definitions are active but map populations are not fabricated without a safe class/name join."
+      "kind": "monster_distribution_remake_default",
+      "count": 432,
+      "effect": "Fields without recovered placements use explicitly configurable basic-four populations; this is not a recovered original-server distribution."
     },
     {
       "kind": "server_authority_not_recovered",

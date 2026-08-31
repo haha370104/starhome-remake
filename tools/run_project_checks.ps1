@@ -66,6 +66,7 @@ $testScripts = @(
 	"res://tests/server/authoritative_server_smoke_test.gd",
 	"res://tests/server/combat/authoritative_combat_module_test.gd",
 	"res://tests/server/combat/combat_definition_catalog_test.gd",
+	"res://tests/server/combat/glory_field_population_test.gd",
 	"res://tests/server/persistence/player_state_persistence_test.gd",
 	"res://tests/server/persistence/authoritative_autosave_test.gd",
 	"res://tests/server/player_panels/player_panel_service_test.gd",

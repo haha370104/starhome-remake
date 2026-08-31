@@ -125,6 +125,7 @@ func _run() -> void:
 		hall.multiplayer_presenter.session.current_map_id == &"buli_c04_field_zone",
 		"权威会话必须同步到布里 C04",
 	)
+	await _assert_current_map_monsters(hall)
 
 	_place_authoritative_player(hall, Vector2(1825, 55))
 	hall.call("_try_begin_nearby_map_transition")
@@ -134,6 +135,7 @@ func _run() -> void:
 	_expect(not hall.map_scene_nodes.is_empty(), "C03 必须提交已打包的场景表现")
 	_expect(hall.hud.minimap_dock.map_name_label.text.contains("C03"), "HUD 必须原子更新 C03 名称")
 	_expect(hall.hud.minimap_dock.marker_layer.marker_positions().size() == 3, "C03 小地图必须替换为本图三个传送点，不残留 D04 标记")
+	await _assert_current_map_monsters(hall)
 	var final_sequence: int = hall.multiplayer_presenter.session.local_predictor.next_input_sequence
 	hall.call("_handle_map_commit_failure", "测试不可恢复提交失败")
 	hall.call("_move_to", Vector2(1200, 2500))
@@ -174,6 +176,21 @@ func _wait_for_map(hall: Node2D, expected_map_id: StringName) -> void:
 			transition_events,
 		]
 	)
+
+
+## 等待正常网络快照创建当前野外怪物，防止只有服务端配置而画面仍为空。
+## [param hall] 已提交新地图的真实主场景。
+func _assert_current_map_monsters(hall: Node2D) -> void:
+	var transport: Node = hall.multiplayer_presenter.session.network_adapter._transport_endpoint
+	var server: AuthoritativeServer = transport.authoritative_server
+	var instance: AuthoritativeMapInstance = server.map_registry.instance_by_map_id(hall.map_definition.map_id)
+	for _frame in range(120):
+		if hall.monster_world_controller._views.size() == instance.combat_module.monsters.size():
+			break
+		await physics_frame
+	_expect(hall.monster_world_controller._views.size() == 100, "新野外图的100只怪物应通过权威快照进入客户端")
+	for monster_id: String in hall.monster_world_controller._views:
+		_expect(instance.combat_module.monsters.has(monster_id), "客户端不得残留上一地图的怪物")
 
 
 ## 等待进程内传输完成与正式权威服务器相同的异步握手。

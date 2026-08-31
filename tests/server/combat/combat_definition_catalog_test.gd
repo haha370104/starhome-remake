@@ -165,7 +165,7 @@ func _test_d04_lifecycle_definitions() -> void:
 func _test_full_glory_monster_catalog() -> void:
 	var catalog: Variant = CatalogScript.load_default().value
 	_expect(catalog.monster_ids().size() == 119, "all 119 Glory NPC rows should be registered")
-	_expect(catalog.monster_encounter_map_ids().size() == 11, "ten recovered Glory map relations plus curated D04 should be configured")
+	_expect(catalog.monster_encounter_map_ids().size() == 460, "all runnable fields should have populations, including curated D04")
 	var low_temperature_gel: Dictionary = catalog.monster_definition("glory_monster_005")
 	_expect(low_temperature_gel["display_name"] == "低温毒胶", "generated IDs should retain the decoded Chinese NPC name")
 	_expect(int(low_temperature_gel["stats"]["max_health"]) == 72, "generated monsters should retain client health fields")

@@ -3,7 +3,7 @@
 
 The retired server's spawn table and several combat constants are unavailable.
 This generator therefore keeps client evidence separate from configurable remake
-defaults and only emits map relations that can be joined without guessing.
+defaults. Recovered placements take precedence over explicit field defaults.
 """
 
 from __future__ import annotations
@@ -12,17 +12,13 @@ import argparse
 import csv
 import hashlib
 import json
+import re
 from collections import defaultdict
 from pathlib import Path
 from typing import Any
 
 
 CURATED_IDS = {1: "toxic_gel", 2: "photosensitive_orb", 3: "om_larva", 4: "om_adult"}
-CLASS_PALETTES = {
-    "Npc成虫1": "NpcChengChong1.act",
-    "Npc成虫2": "NpcChengChong2.act",
-    "Npc幼虫1": "NpcYouChong1.act",
-}
 POPULATION_POLICY = {
     "maximum_population": 100,
     "replenish_interval_seconds": 60,
@@ -193,30 +189,66 @@ def build_definitions(rows: list[dict[str, str]], source_path: Path) -> list[dic
     return sorted(definitions, key=lambda item: int(item["source_audit"]["index"]))
 
 
-def map_join_keys(row: dict[str, str]) -> set[str]:
-    keys = {row["npc_name"], Path(row.get("attr_32", "")).name.lower()}
-    return {key for key in keys if key}
+def recover_class_names(source_root: Path) -> dict[str, dict[str, Any]]:
+    """Resolve explicit class name assignments, never palette identity aliases."""
+    strings_path = source_root / "great/code_string.fcc"
+    classes_path = source_root / "npcclt1.fcc"
+    strings_text = strings_path.read_text(encoding="utf-8-sig")
+    strings = {
+        match[1]: (match[2], strings_text.count("\n", 0, match.start()) + 1)
+        for match in re.finditer(r'^\s*#define\s+(String\d+)\s+"([^"]+)"', strings_text, re.M)
+    }
+    text = classes_path.read_text(encoding="utf-8-sig")
+    declarations = list(re.finditer(r"^class\s+([^\s:]+)\s*:", text, re.M))
+    result = {}
+    for index, declaration in enumerate(declarations):
+        end = declarations[index + 1].start() if index + 1 < len(declarations) else len(text)
+        body = text[declaration.end():end]
+        assignment = re.search(r"^\s*m_sNpcName\s*=\s*(String\d+)\s*;", body, re.M)
+        if assignment is None or assignment[1] not in strings:
+            continue
+        name, string_line = strings[assignment[1]]
+        result[declaration[1]] = {
+            "display_name": name,
+            "source_class_file": "npcclt1.fcc",
+            "source_class_line": text.count("\n", 0, declaration.start()) + 1,
+            "source_name_token": assignment[1],
+            "source_string_file": "great/code_string.fcc",
+            "source_string_line": string_line,
+        }
+    return result
 
 
 def build_encounters(
-    rows: list[dict[str, str]], relations: dict[str, Any], map_index: dict[str, Any]
+    rows: list[dict[str, str]], relations: dict[str, Any], map_index: dict[str, Any],
+    known_maps: dict[str, Any], class_names: dict[str, dict[str, Any]], defaults: dict[str, Any],
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
-    source_to_runtime = {row["source_id"]: row["runtime_id"] for row in map_index["runtime_maps"]}
-    row_by_key: dict[str, dict[str, str]] = {}
+    field_sources = {row["id"] for row in known_maps["definitions"] if row["category"] == "field_code"}
+    source_to_runtime = {
+        row["source_id"]: row["runtime_id"] for row in map_index["runtime_maps"]
+        if row["source_id"] in field_sources
+    }
+    rows_by_name: dict[str, list[dict[str, str]]] = defaultdict(list)
     for row in rows:
-        for key in map_join_keys(row):
-            row_by_key.setdefault(key, row)
-    for class_name, palette in CLASS_PALETTES.items():
-        candidate = next((row for row in rows if row.get("attr_32", "").lower() == palette.lower()), None)
-        if candidate is not None:
-            row_by_key[class_name] = candidate
+        rows_by_name[row["npc_name"]].append(row)
+    valid_species = {runtime_id(number(row["index"])) for row in rows}
+    default_groups = defaults["spawn_groups"]
+    if not default_groups or any(
+        group["monster_id"] not in valid_species or float(group["weight"]) <= 0
+        for group in default_groups
+    ) or len({group["monster_id"] for group in default_groups}) != len(default_groups):
+        raise ValueError("Field defaults must contain unique known species with positive weights")
     groups_by_map: dict[str, dict[str, dict[str, Any]]] = defaultdict(dict)
+    classes_by_map: dict[str, list[str]] = defaultdict(list)
     joins: list[dict[str, Any]] = []
     for relation in relations["relations"]:
-        keys = [relation["monster_class"], *relation.get("display_names", [])]
-        source_row = next((row_by_key[key] for key in keys if key in row_by_key), None)
-        if source_row is None:
+        class_name = relation["monster_class"]
+        class_evidence = class_names.get(class_name, {})
+        names = [class_evidence.get("display_name", ""), *relation.get("display_names", []), class_name]
+        candidates = {row["index"]: row for name in names for row in rows_by_name.get(name, [])}
+        if len(candidates) != 1:
             continue
+        source_row = next(iter(candidates.values()))
         species_id = runtime_id(number(source_row["index"]))
         joined_maps: list[str] = []
         for map_row in relation["maps"]:
@@ -227,6 +259,7 @@ def build_encounters(
             groups_by_map[mapped][species_id] = {
                 "group_id": f"{mapped}.{species_id}", "monster_id": species_id, "weight": 1.0
             }
+            classes_by_map[mapped].append(class_name)
             joined_maps.append(mapped)
         joins.append(
             {
@@ -234,19 +267,29 @@ def build_encounters(
                 "species_id": species_id,
                 "npc_index": number(source_row["index"]),
                 "maps": sorted(set(joined_maps)),
-                "evidence": "exact_display_name_or_palette_class_join",
+                "evidence": "exact_client_class_display_name",
+                "source_name_resolution": class_evidence,
             }
         )
-    encounters = [
-        {
+    encounters = []
+    for source_id, map_id in sorted(source_to_runtime.items()):
+        # Kept in the existing stage3 definition; the runtime applies that override.
+        if map_id == "d04_field_zone":
+            continue
+        recovered = bool(groups_by_map.get(map_id))
+        groups = list(groups_by_map[map_id].values()) if recovered else [
+            {"group_id": f"{map_id}.{group['monster_id']}", **group} for group in default_groups
+        ]
+        encounters.append({
             "encounter_id": f"glory_{map_id}_population",
             "map_id": map_id,
             "enabled": True,
             "population_policy": POPULATION_POLICY,
-            "spawn_groups": sorted(groups.values(), key=lambda item: item["monster_id"]),
-        }
-        for map_id, groups in sorted(groups_by_map.items())
-    ]
+            "spawn_groups": sorted(groups, key=lambda item: item["monster_id"]),
+            "distribution_evidence": "client_editor_placement" if recovered else "remake_default",
+            "source_map_id": source_id,
+            "source_monster_classes": sorted(set(classes_by_map[map_id])),
+        })
     return encounters, joins
 
 
@@ -258,6 +301,7 @@ def write_json(path: Path, payload: Any) -> None:
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--source-root", type=Path, default=Path("../starhome_lz_ry_full_parsed"))
+    parser.add_argument("--fcc-source-root", type=Path, default=Path("../starhome_lz_ry_fcc_source"))
     parser.add_argument("--output-root", type=Path, default=Path("data/gameplay/glory"))
     args = parser.parse_args()
     source_csv = args.source_root / "catalogs_utf8" / "npc_catalog.csv"
@@ -266,7 +310,12 @@ def main() -> int:
     with source_csv.open(encoding="utf-8-sig", newline="") as source:
         rows = list(csv.DictReader(source))
     definitions = build_definitions(rows, source_csv)
-    encounters, joins = build_encounters(rows, read_json(relations_path), read_json(map_index_path))
+    defaults_path = Path("data/gameplay/glory/field_population_defaults_v1.json")
+    encounters, joins = build_encounters(
+        rows, read_json(relations_path), read_json(map_index_path),
+        read_json(Path("data/content/known_maps_v1.json")),
+        recover_class_names(args.fcc_source_root), read_json(defaults_path),
+    )
     write_json(
         args.output_root / "glory_monsters_v1.json",
         {
@@ -286,10 +335,22 @@ def main() -> int:
                 "encounters": len(encounters),
                 "joined_classes": len(joins),
                 "unjoined_classes": len(read_json(relations_path)["relations"]) - len(joins),
+                "client_evidence_maps": sum(row["distribution_evidence"] == "client_editor_placement" for row in encounters),
+                "remake_default_maps": sum(row["distribution_evidence"] == "remake_default" for row in encounters),
+                "curated_override_maps": 1,
+                "runtime_field_maps": len(encounters) + 1,
+            },
+            "source_audit": {
+                "source_release": "starhome_lz_ry",
+                "map_relations_sha256": sha256(relations_path),
+                "class_names_sha256": sha256(args.fcc_source_root / "npcclt1.fcc"),
+                "string_constants_sha256": sha256(args.fcc_source_root / "great/code_string.fcc"),
+                "defaults_path": defaults_path.as_posix(),
+                "defaults_sha256": sha256(defaults_path),
             },
             "encounters": encounters,
             "confirmed_joins": joins,
-            "caveat": "Client placements establish map presence, not retired-server spawn coordinates or population counts.",
+            "caveat": "Client editor placements are historical map-presence evidence, not live server tables. Uncovered fields use explicitly marked remake defaults; D04 retains its curated override. Coordinates are randomized by authoritative navigation.",
         },
     )
     print(f"Generated {len(definitions)} monsters and {len(encounters)} map encounters from {len(joins)} safe class joins")

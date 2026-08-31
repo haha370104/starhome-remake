@@ -67,7 +67,10 @@ def main() -> int:
             },
             "monsters": {
                 "runtime_definitions": len(monsters["definitions"]),
-                "maps_with_reliable_encounters": encounters["summary"]["encounters"],
+                "maps_with_reliable_encounters": encounters["summary"]["client_evidence_maps"],
+                "maps_with_remake_defaults": encounters["summary"]["remake_default_maps"],
+                "curated_override_maps": encounters["summary"]["curated_override_maps"],
+                "runtime_field_maps": encounters["summary"]["runtime_field_maps"],
             },
             "items": {
                 "generated_definitions": len(items["definitions"]),
@@ -98,9 +101,9 @@ def main() -> int:
                 "effect": "Business data is active; the affected presentation remains empty rather than borrowing another release.",
             },
             {
-                "kind": "monster_map_relation_unjoined",
-                "count": encounters["summary"]["unjoined_classes"],
-                "effect": "Monster definitions are active but map populations are not fabricated without a safe class/name join.",
+                "kind": "monster_distribution_remake_default",
+                "count": encounters["summary"]["remake_default_maps"],
+                "effect": "Fields without recovered placements use explicitly configurable basic-four populations; this is not a recovered original-server distribution.",
             },
             {
                 "kind": "server_authority_not_recovered",

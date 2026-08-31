@@ -5,6 +5,7 @@ const RepositoryScript := preload("res://scripts/content/ale_sprite_repository.g
 const PresentationCatalogScript := preload(
 	"res://scripts/content/glory_monster_presentation_catalog.gd"
 )
+const CombatCatalogScript := preload("res://scripts/domain/combat/combat_definition_catalog.gd")
 const PresenterScript := preload(
 	"res://scripts/client/presentation/combat/ale_combat_visual_presenter.gd"
 )
@@ -32,6 +33,7 @@ func _initialize() -> void:
 	var catalog = PresentationCatalogScript.new()
 	_expect(catalog.load_default(), "119 条怪物表现目录应加载")
 	_expect(catalog.size() == 119, "怪物表现目录数量应为 119")
+	_test_field_species(repository, catalog)
 	var cold_gel_definition: Dictionary = catalog.definition_for_actor("glory_npc_005")
 	_expect(String(cold_gel_definition.get("actions", {}).get("move", "")).begins_with("monster_palettes/"), "外置 ACT 变种应指向调色板运行包")
 	var cold_gel_animation: Dictionary = repository.load_animation(String(cold_gel_definition["actions"]["move"]))
@@ -80,6 +82,32 @@ func _initialize() -> void:
 	for failure in failures:
 		push_error(failure)
 	quit(1)
+
+
+## 校验已启用野外种群的所有身体三态与八向帧均能真正加载。
+## [param repository] 已挂载荣耀 ALE 包的仓储。
+## [param catalog] 怪物表现目录。
+func _test_field_species(repository, catalog) -> void:
+	var combat = CombatCatalogScript.load_default().value
+	var encounters: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/gameplay/glory/glory_monster_encounters_v1.json"))
+	var species := {"om_adult": true, "om_larva": true, "toxic_gel": true, "photosensitive_orb": true}
+	for encounter: Dictionary in encounters["encounters"]:
+		for group: Dictionary in encounter["spawn_groups"]:
+			species[group["monster_id"]] = true
+	_expect(species.size() == 21, "本批种群应使用21种荣耀怪物")
+	for species_id: String in species:
+		var actor_id := String(combat.monster_definition(species_id)["combat_actor_id"])
+		var definition: Dictionary = catalog.definition_for_actor(actor_id)
+		var presenter = PresenterScript.new()
+		_expect(presenter.configure(repository, actor_id, definition) == OK, "%s 身体和阴影应可加载" % species_id)
+		for action: StringName in [&"idle", &"move", &"attack"]:
+			_expect(presenter.set_action(action), "%s %s 动画应可用" % [species_id, action])
+			for direction in range(8):
+				presenter.set_direction(direction)
+				presenter.advance(0.1)
+				var body := presenter.get_node("Body") as Sprite2D
+				_expect(body.visible and body.texture != null, "%s %s 第%d方向必须有身体帧" % [species_id, action, direction])
+		presenter.free()
 
 
 ## 记录一项测试断言及其失败信息。
