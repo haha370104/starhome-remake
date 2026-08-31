@@ -26,10 +26,15 @@ static func resolve(
 		)
 	if not authoritative_target.is_finite():
 		return {}
+	if navigation.segment_is_walkable(current_position, authoritative_target):
+		return {"target": authoritative_target,
+			"path": PackedVector2Array([current_position, authoritative_target])}
 	var path: PackedVector2Array = navigation.find_path(
 		current_position,
 		authoritative_target,
+		false,
 	)
+	path = navigation.simplify_path_bounded(path)
 	if path.size() < 2:
 		return {}
 	return {"target": authoritative_target, "path": path}

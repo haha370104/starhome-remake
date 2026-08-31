@@ -84,6 +84,7 @@ $testScripts = @(
     "res://tests/maps/map_runtime_smoke_test.gd",
 	"res://tests/maps/glory_world_graph_data_test.gd",
     "res://tests/navigation/diamond_navigation_smoke_test.gd",
+	"res://tests/navigation/monster_route_planner_test.gd",
     "res://tests/world/semantic_scene_depth_smoke_test.gd"
 )
 

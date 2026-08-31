@@ -155,6 +155,28 @@ func simplify_path(raw_path: PackedVector2Array) -> PackedVector2Array:
 	return simplified
 
 
+## 为高频 AI 路线做有界前瞻简化，避免对每个拐点都从最终终点向前穷举。
+## [param raw_path] AStar 返回的连通原始折线。
+## [param lookahead_points] 每个锚点最多前瞻的原始节点数，至少为一。
+## 返回每一段均通过阻挡校验的简化路径；不安全时返回空路径。
+## 设计：玩家仍使用原有全路径简化；怪物限制候选跨度以控制长绕路的单次成本。
+func simplify_path_bounded(raw_path: PackedVector2Array, lookahead_points: int = 24) -> PackedVector2Array:
+	if raw_path.size() < 2:
+		return raw_path
+	var simplified := PackedVector2Array([raw_path[0]])
+	var anchor := 0
+	var lookahead := maxi(1, lookahead_points)
+	while anchor < raw_path.size() - 1:
+		var next_index := mini(raw_path.size() - 1, anchor + lookahead)
+		while next_index > anchor and not segment_is_walkable(raw_path[anchor], raw_path[next_index]):
+			next_index -= 1
+		if next_index == anchor:
+			return PackedVector2Array()
+		simplified.append(raw_path[next_index])
+		anchor = next_index
+	return simplified
+
+
 ## 执行 `segment_is_walkable` 对应的模块操作。
 ## [param from_position] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## [param to_position] 调用方传入的参数；具体约束由函数签名和所在模块定义。
