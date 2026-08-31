@@ -179,10 +179,10 @@ func _update_tactical_action(action_id: String, count: int) -> void:
 
 
 ## 执行 `update_shortcut_visibility_button` 对应的模块操作。
-## [param visible] 调用方传入的参数；具体约束由函数签名和所在模块定义。
-func _update_shortcut_visibility_button(visible: bool) -> void:
-	shortcut_visibility_buttons["collapse"].visible = visible
-	shortcut_visibility_buttons["expand"].visible = not visible
+## [param should_show] 当前快捷栏是否展开。
+func _update_shortcut_visibility_button(should_show: bool) -> void:
+	shortcut_visibility_buttons["collapse"].visible = should_show
+	shortcut_visibility_buttons["expand"].visible = not should_show
 
 
 ## 执行 `update_reserve_energy` 对应的模块操作。

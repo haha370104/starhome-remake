@@ -1,10 +1,17 @@
 class_name ClientTransportEndpoint
 extends Node
 
+# 传输端口契约：这些信号由 ENet/进程内子类发出，由会话适配器订阅。
+# 基类不伪造事件；GDScript 不跨子类检查信号用途，因此只在这五项声明上说明例外。
+@warning_ignore("unused_signal")
 signal connected_to_server
+@warning_ignore("unused_signal")
 signal connection_failed
+@warning_ignore("unused_signal")
 signal server_disconnected
+@warning_ignore("unused_signal")
 signal server_message_received(message: Dictionary)
+@warning_ignore("unused_signal")
 signal world_snapshot_received(snapshot: Dictionary)
 
 

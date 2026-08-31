@@ -101,6 +101,6 @@ func set_equipment_set(character_set: Dictionary) -> void:
 
 
 ## 设置人物服装层是否可见；裸模和阴影始终保留。
-## [param visible] 当前 CharacterEquipment 是否在上衣槽拥有服装。
-func set_equipment_visible(visible: bool) -> void:
-	equipment.visible = visible
+## [param should_show] 当前 CharacterEquipment 是否在上衣槽拥有服装。
+func set_equipment_visible(should_show: bool) -> void:
+	equipment.visible = should_show

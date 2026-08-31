@@ -1,7 +1,6 @@
 class_name WeaponAttackVisualController
 extends Node
 
-const CombatTraceLogger := preload("res://scripts/core/combat_trace_logger.gd")
 const RAW_ANIMATION := &"raw"
 const MINIMUM_SHOT_DISTANCE := 2.0
 const MUZZLE_FORWARD_OFFSET := 28.0

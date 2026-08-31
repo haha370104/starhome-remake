@@ -5,7 +5,6 @@ const CombatVisualPresenterScript := preload("res://scripts/client/presentation/
 const AleCombatVisualPresenterScript := preload(
 	"res://scripts/client/presentation/combat/ale_combat_visual_presenter.gd"
 )
-const ProjectileSweep := preload("res://scripts/domain/combat/projectile_sweep.gd")
 const WorldCombatStatusBarScript := preload("res://scripts/client/presentation/combat/world_combat_status_bar.gd")
 
 const NAME_LABEL_SIZE := Vector2(100.0, 18.0)

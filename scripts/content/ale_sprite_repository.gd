@@ -84,10 +84,10 @@ func _merge_file(path: String) -> bool:
 
 
 ## 将旧 FCC 中的 ../pic2/foo.ale、反斜杠和大小写归一为索引键。
-## [param reference] 调用方传入的 `reference` 参数。
+## [param asset_reference] 原始资源逻辑路径或文件名。
 ## 返回该函数计算、查询或操作得到的结果。
-static func normalize_reference(reference: String) -> String:
-	var normalized := reference.strip_edges().replace("\\", "/").to_lower()
+static func normalize_reference(asset_reference: String) -> String:
+	var normalized := asset_reference.strip_edges().replace("\\", "/").to_lower()
 	while normalized.begins_with("../"):
 		normalized = normalized.trim_prefix("../")
 	while normalized.begins_with("./"):
@@ -102,11 +102,11 @@ static func normalize_reference(reference: String) -> String:
 
 
 ## 优先解析完整路径；裸文件名仅在唯一或命中指定前缀时成立。
-## [param reference] 调用方传入的 `reference` 参数。
+## [param asset_reference] 原始资源逻辑路径或文件名。
 ## [param preferred_prefix] 调用方传入的 `preferred_prefix` 参数。
 ## 返回该函数计算、查询或操作得到的结果。
-func resolve(reference: String, preferred_prefix := "") -> Dictionary:
-	var normalized := normalize_reference(reference)
+func resolve(asset_reference: String, preferred_prefix := "") -> Dictionary:
+	var normalized := normalize_reference(asset_reference)
 	if _by_logical_id.has(normalized):
 		return (_by_logical_id[normalized] as Dictionary).duplicate(true)
 	if normalized.contains("/"):
@@ -130,10 +130,10 @@ func size() -> int:
 
 ## 返回帧描述、页贴图和原点，可直接供 AnimatedSprite2D 表现适配器消费。
 ## 加载并校验 `load_animation` 对应的模块数据。
-## [param reference] 调用方传入的 `reference` 参数。
+## [param asset_reference] 原始资源逻辑路径或文件名。
 ## [param preferred_prefix] 调用方传入的 `preferred_prefix` 参数。
-func load_animation(reference: String, preferred_prefix := "") -> Dictionary:
-	var definition := resolve(reference, preferred_prefix)
+func load_animation(asset_reference: String, preferred_prefix := "") -> Dictionary:
+	var definition := resolve(asset_reference, preferred_prefix)
 	if definition.is_empty():
 		return {}
 	var logical_id := String(definition["logical_id"])

@@ -56,10 +56,6 @@ const VehicleDestroyedDialogScript := preload(
 	"res://scripts/ui/vehicle_destroyed_dialog.gd"
 )
 const ItemCatalogScript := preload("res://scripts/domain/items/item_catalog.gd")
-const SkillLevelMessageFormatter := preload(
-	"res://scripts/client/presentation/skill_level_message_formatter.gd"
-)
-const CombatTraceLogger := preload("res://scripts/core/combat_trace_logger.gd")
 const WEAPON_MODES := {
 	"energy_cannon": {
 		"weapon_id": &"recruit_energy_cannon",

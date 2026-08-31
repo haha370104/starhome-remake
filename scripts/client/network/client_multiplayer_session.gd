@@ -1,11 +1,9 @@
 class_name ClientMultiplayerSession
 extends Node
 
-const CombatTraceLogger := preload("res://scripts/core/combat_trace_logger.gd")
 const EntitySnapshotContract := preload("res://scripts/network/contracts/entity_snapshot.gd")
 const MapJoinedContract := preload("res://scripts/network/contracts/map_joined.gd")
 const MapTransitionIntentContract := preload("res://scripts/network/contracts/map_transition_intent.gd")
-const NetworkErrorCodes := preload("res://scripts/network/contracts/network_error_codes.gd")
 const Protocol := preload("res://scripts/network/contracts/network_protocol.gd")
 const UseAbilityIntentContract := preload("res://scripts/network/contracts/use_ability_intent.gd")
 const VehicleRecoveryIntentContract := preload(

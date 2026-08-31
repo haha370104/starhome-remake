@@ -180,10 +180,10 @@ func _add_equipment_visual(equipment: Dictionary) -> void:
 	visual.stretch_mode = TextureRect.STRETCH_KEEP
 	visual.z_index = int(equipment.get("z_layer", 0))
 	visual.mouse_filter = Control.MOUSE_FILTER_STOP
-	var tooltip_text := TooltipFormatter.format(equipment)
+	var item_description := TooltipFormatter.format(equipment)
 	visual.gui_input.connect(_on_equipment_gui_input.bind(int(equipment.get("location", -1))))
 	_slot_root.add_child(visual)
-	ItemHoverHighlightScript.bind(visual, visual, tooltip_text)
+	ItemHoverHighlightScript.bind(visual, visual, item_description)
 
 
 ## 处理装备表现双击并提交卸载意图。

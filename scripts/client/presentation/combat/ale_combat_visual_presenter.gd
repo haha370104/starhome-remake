@@ -125,7 +125,7 @@ func _apply_animation_frame(sprite: Sprite2D, animation: Dictionary) -> void:
 		sprite.visible = false
 		return
 	var directions := maxi(1, int(_definition.get("directions", 8)))
-	var frames_per_direction := maxi(1, frames.size() / directions) \
+	var frames_per_direction := maxi(1, floori(float(frames.size()) / float(directions))) \
 		if frames.size() % directions == 0 else frames.size()
 	var direction_slot := current_direction if frames.size() % directions == 0 else 0
 	var local_frame := int(floor(_elapsed_seconds * float(_definition.get("fps", 10.0))))

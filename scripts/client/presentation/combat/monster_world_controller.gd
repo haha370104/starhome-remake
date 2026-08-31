@@ -1,7 +1,6 @@
 class_name MonsterWorldController
 extends Node
 
-const CombatTraceLogger := preload("res://scripts/core/combat_trace_logger.gd")
 const MonsterWorldViewScript := preload("res://scripts/client/presentation/combat/monster_world_view.gd")
 const CombatDamageFloatScript := preload("res://scripts/client/presentation/combat/combat_damage_float.gd")
 const MonsterDeathEffectControllerScript := preload(

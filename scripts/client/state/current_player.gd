@@ -4,7 +4,6 @@ extends Player
 signal changed(player: Player)
 
 const ItemCatalogScript := preload("res://scripts/domain/items/item_catalog.gd")
-const JsonConfigLoader := preload("res://scripts/core/json_config_loader.gd")
 const PlayerPanelProjectorScript := preload(
 	"res://scripts/server/player_panels/player_panel_projector.gd"
 )
