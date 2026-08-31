@@ -67,7 +67,7 @@ func _run_server() -> void:
 	var retained_entity_id := ""
 	var known_entities: Array[String] = []
 	while Time.get_ticks_msec() < deadline:
-		if server.map_instance.entities.size() >= 2:
+		if server.map_instance != null and server.map_instance.entities.size() >= 2:
 			saw_two_entities = true
 			for entity_id in server.map_instance.entities.keys():
 				if not known_entities.has(String(entity_id)):

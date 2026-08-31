@@ -16,6 +16,7 @@ func _initialize() -> void:
 	var initialized := server.initialize(config)
 	_expect(initialized.ok, "权威服务器应完成初始化：%s" % initialized)
 	if not initialized.ok:
+		server.free()
 		_finish()
 		return
 	var initial_count: int = server.map_registry.all_instances().size()
@@ -40,6 +41,8 @@ func _initialize() -> void:
 	_expect(server.map_registry.all_instances().size() == initial_count + 1, "重复进入不得重复登记")
 	var rejected := server.ensure_runtime_map("client_supplied_missing_map")
 	_expect(not rejected.ok and rejected.code == &"runtime_map_unknown", "未知地图 ID 必须被受控索引拒绝")
+	server.map_registry.suspend_empty_instances(server.server_tick)
+	server.free()
 	_finish()
 
 

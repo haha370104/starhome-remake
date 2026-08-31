@@ -271,9 +271,9 @@ func _test_session_integration() -> void:
 	var hall_instance: AuthoritativeMapInstance = server.map_registry.instance_by_id(
 		server_session.map_instance_id
 	)
-	var field_instance: AuthoritativeMapInstance = server.map_registry.instance_by_map_id(
+	var field_instance: AuthoritativeMapInstance = server.ensure_runtime_map(
 		"d04_field_zone"
-	)
+	).value
 	var hall_entity: AuthoritativeEntity = hall_instance.entities[server_session.entity_id]
 	var field_spawn := field_instance.admitted_spawn_position(Vector2(2412, 2400))
 	var spawned = field_instance.spawn_entity(

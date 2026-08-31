@@ -63,10 +63,10 @@ func _run_server() -> void:
 		_fail("server listen failed: %s" % listen_result)
 		_finish({})
 		return
-	var source = server.map_registry.instance_by_id(SOURCE_INSTANCE_ID)
-	var target = server.map_registry.instance_by_id(TARGET_INSTANCE_ID)
-	if source == null or target == null:
-		_fail("server map directory did not register RoomSvr1 and City1Svr")
+	var source: AuthoritativeMapInstance
+	var target: AuthoritativeMapInstance
+	if not server.map_registry.all_instances().is_empty():
+		_fail("server must not load maps before any player arrives")
 		server.stop_network()
 		_finish({})
 		return
@@ -79,13 +79,18 @@ func _run_server() -> void:
 	var session_switched := false
 	var target_snapshot_isolated := false
 	while Time.get_ticks_msec() < deadline:
+		if source == null:
+			source = server.map_registry.instance_by_id(SOURCE_INSTANCE_ID)
+		if target == null:
+			target = server.map_registry.instance_by_id(TARGET_INSTANCE_ID)
 		var all_sessions: Array[ServerSession] = server.sessions.all_sessions()
 		if not all_sessions.is_empty():
 			var active_session: ServerSession = all_sessions[0]
 			entity_id = active_session.entity_id
-			if source.entities.has(entity_id) and not target.entities.has(entity_id):
+			if source != null and source.entities.has(entity_id) \
+					and (target == null or not target.entities.has(entity_id)):
 				saw_source_ownership = true
-			if target.entities.has(entity_id):
+			if source != null and target != null and target.entities.has(entity_id):
 				saw_target_ownership = true
 				source_released = not source.entities.has(entity_id)
 				session_switched = active_session.map_instance_id == TARGET_INSTANCE_ID
