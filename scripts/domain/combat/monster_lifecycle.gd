@@ -34,6 +34,7 @@ var movement_route := PackedVector2Array()
 var movement_route_index := 0
 var movement_route_goal := Vector2.INF
 var movement_route_kind := &""
+var returning_home := false
 var attack_ready_tick := 0
 var action := &"idle"
 var action_sequence := 0
@@ -75,6 +76,7 @@ func configure(definition: Dictionary, simulation_hz: int) -> DomainResult:
 	position = requested_position
 	home_position = position
 	wander_target = position
+	returning_home = false
 	clear_movement_route()
 	movement_speed = maxf(0.0, float(definition.get("runtime_move_speed", 0.0)))
 	species_id = String(definition.get("species_id", ""))
@@ -162,9 +164,26 @@ func advance_to_tick(current_tick: int) -> DomainResult:
 ## [param current_tick] 当前权威逻辑 tick。
 func reset_to_home(current_tick: int) -> void:
 	position = home_position
-	action = &"idle"
 	target_actor_id = ""
+	pause_wander(current_tick)
+
+
+## 开始完整返巢；途中重新进入游荡半径不能恢复旧目标或再次追击。
+## [param current_tick] 允许立即规划首段返巢路线的权威时钟。
+func begin_return_home(current_tick: int) -> void:
+	returning_home = true
+	clear_target()
+	clear_movement_route()
 	wander_target = home_position
+	next_wander_tick = current_tick
+
+
+## 完成返巢或游荡，清除旧路线并开始下一次游荡前的等待。
+## [param current_tick] 停留间隔的起始权威时钟。
+func pause_wander(current_tick: int) -> void:
+	returning_home = false
+	action = &"idle"
+	wander_target = position
 	clear_movement_route()
 	next_wander_tick = current_tick + wander_interval_ticks
 

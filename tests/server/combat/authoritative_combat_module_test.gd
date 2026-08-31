@@ -21,6 +21,7 @@ func _initialize() -> void:
 	_test_three_engagement_policies()
 	_test_five_second_wander_interval()
 	_test_obstacle_aware_monster_wander()
+	_test_return_home_does_not_oscillate()
 	_test_authoritative_ground_loot_lifecycle()
 	_test_authoritative_self_repair_cycles()
 	_test_monster_projectile_timing()
@@ -274,6 +275,45 @@ func _test_obstacle_aware_monster_wander() -> void:
 		and blocked_monster.next_wander_tick == blocked.current_tick + blocked_monster.wander_interval_ticks,
 		"rejected wander should clear its target and wait for the next configured interval",
 	)
+
+
+## 验证绕路越过游荡边界后持续返巢，不因重新进入边界而恢复旧游荡路线。
+func _test_return_home_does_not_oscillate() -> void:
+	var module := _new_module(111)
+	var calls := [0]
+	module.set_monster_route_resolver(func(_id: String, start: Vector2, target: Vector2) -> Dictionary:
+		calls[0] += 1
+		var path := PackedVector2Array([start])
+		if not target.is_zero_approx():
+			path.append(Vector2(0, 120))
+		path.append(target)
+		return {"target": target, "path": path}
+	)
+	var definition := _monster_definition("monster.boundary", 30, Vector2.ZERO)
+	definition.merge({"runtime_move_speed": 60.0, "wander_radius": 80.0}, true)
+	_expect(module.register_monster(definition).is_ok, "boundary monster should register")
+	var monster: MonsterLifecycle = module.monster_for("monster.boundary")
+	monster.wander_target = Vector2(40, 0)
+	module.advance_ticks(100)
+	_expect(calls[0] == 2, "boundary detour should plan twice; got %d at %s returning=%s" % [calls[0], monster.position, monster.returning_home])
+	_expect(monster.position.distance_to(monster.home_position) <= 1.0,
+		"monster should finish returning all the way home")
+	_expect(monster.action == &"idle" and monster.wander_target == monster.position,
+		"return completion should discard the old wander target and pause")
+	var blocked := _new_module(112)
+	var retries := [0]
+	blocked.set_monster_route_resolver(func(_id: String, _start: Vector2, _target: Vector2) -> Dictionary:
+		retries[0] += 1
+		return {}
+	)
+	blocked.register_monster(definition)
+	var stranded: MonsterLifecycle = blocked.monster_for("monster.boundary")
+	stranded.position = Vector2(100, 0)
+	blocked.advance_ticks(100)
+	_expect(retries[0] == 1 and stranded.returning_home,
+		"failed home route should retain return state and back off for five seconds")
+	blocked.advance_ticks(1)
+	_expect(retries[0] == 2, "home route may retry after the configured pause")
 
 
 ## 构造一条先向下再转向目标的测试路线，模拟直线中间存在障碍。

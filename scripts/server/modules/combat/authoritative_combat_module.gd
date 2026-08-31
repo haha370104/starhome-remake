@@ -909,6 +909,9 @@ func _ground_loot_for_map(map_instance_id: String) -> Array[Dictionary]:
 ## 设计：该函数位于权威服务器边界，客户端不得覆盖其计算结果。
 func _simulate_monster_tick(monster_id: String, fixed_delta: float) -> void:
 	var monster: MonsterLifecycle = monsters[monster_id]
+	if monster.returning_home:
+		_move_monster_towards_home(monster_id, fixed_delta)
+		return
 	var target_id := _engaged_actor_id(monster)
 	if target_id.is_empty():
 		_simulate_unengaged_monster(monster_id, fixed_delta)
@@ -1178,9 +1181,18 @@ func _move_monster_towards_home(monster_id: String, fixed_delta: float) -> void:
 	monster.clear_target()
 	var home_position := monster.home_position
 	if monster.position.distance_to(home_position) <= 1.0:
+		monster.pause_wander(current_tick)
+		return
+	if not monster.returning_home:
+		monster.begin_return_home(current_tick)
+	if not monster.has_active_movement_route() and current_tick < monster.next_wander_tick:
 		monster.action = &"idle"
 		return
-	_move_monster(monster_id, home_position, fixed_delta, &"home")
+	if not _move_monster(monster_id, home_position, fixed_delta, &"home"):
+		# 无法返巢也必须退避重试，不能每 tick 重新搜索同一条失败路线。
+		monster.next_wander_tick = current_tick + maxi(1, monster.wander_interval_ticks)
+	elif monster.position.distance_to(home_position) <= 1.0:
+		monster.pause_wander(current_tick)
 
 
 ## 执行 `simulate_unengaged_monster` 对应的模块操作。
@@ -1225,10 +1237,7 @@ func _simulate_unengaged_monster(monster_id: String, fixed_delta: float) -> void
 ## 结束一次失败或完成的随机游荡，并重新进入配置化停留间隔。
 ## [param monster] 待重置为空闲状态的怪物领域对象。
 func _pause_monster_wander(monster: MonsterLifecycle) -> void:
-	monster.action = &"idle"
-	monster.wander_target = monster.position
-	monster.clear_movement_route()
-	monster.next_wander_tick = current_tick + monster.wander_interval_ticks
+	monster.pause_wander(current_tick)
 
 
 ## 向地图权威导航申请一条完整路线并写入怪物移动状态。
