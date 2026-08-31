@@ -1,8 +1,6 @@
 class_name CombatDefinitionCatalog
 extends RefCounted
 
-const DomainResult := preload("res://scripts/core/domain_result.gd")
-const VehicleAssemblyCalculator := preload("res://scripts/domain/combat/vehicle_assembly_calculator.gd")
 const DEFAULT_CATALOG_PATH := "res://data/gameplay/stage3/catalog_v1.json"
 const CONTROLLED_DATA_ROOT := "res://data/gameplay/"
 const SUPPORTED_SCHEMA_VERSION := 1
@@ -340,10 +338,19 @@ func _monster_lifecycle_definition(
 				"combat_actor_id": String(species["combat_actor_id"]),
 				"respawn_seconds": float(combat["respawn_seconds"]),
 				"population_managed": true,
-				"drops": (species.get("drops") as Array).duplicate(true)
-					if species.get("drops") is Array else null,
+				"drops": _copy_optional_drops(species),
 				"unknown_fields": _unknown_monster_fields(stats),
 			}
+
+
+## 复制已确认的掉落表，同时保留 null 表示尚无可信掉落数据的语义。
+## [param species] 怪物物种定义。
+## 返回独立掉落数组；未配置或非数组时返回 null。
+func _copy_optional_drops(species: Dictionary) -> Variant:
+	var drops: Variant = species.get("drops")
+	if drops is Array:
+		return drops.duplicate(true)
+	return null
 
 
 ## 读取 D04 遭遇配置中的怪物种群维持策略。

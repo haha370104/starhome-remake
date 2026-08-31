@@ -1,7 +1,6 @@
 class_name MineSource
 extends RefCounted
 
-const DomainResult := preload("res://scripts/core/domain_result.gd")
 
 var source_id := ""
 var mineral_id := ""

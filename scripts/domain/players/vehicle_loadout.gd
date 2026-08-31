@@ -1,7 +1,6 @@
 class_name VehicleLoadout
 extends RefCounted
 
-const DomainResult := preload("res://scripts/core/domain_result.gd")
 const EquipmentSlotRegistryScript := preload("res://scripts/domain/equipment/equipment_slot_registry.gd")
 
 var revision: int

@@ -1,7 +1,6 @@
 class_name ItemCatalog
 extends RefCounted
 
-const DomainResult := preload("res://scripts/core/domain_result.gd")
 const EquipmentSlotRegistryScript := preload("res://scripts/domain/equipment/equipment_slot_registry.gd")
 
 const GAMEPLAY_PATHS := [
@@ -50,33 +49,33 @@ func initialize() -> DomainResult:
 func create(definition_id: String, state: Dictionary) -> DomainResult:
 	if not _definitions.has(definition_id):
 		return DomainResult.failure(&"items.definition_missing", "item definition does not exist")
-	var definition: Dictionary = _definitions[definition_id].duplicate(true)
-	var kind := String(definition.get("kind", ""))
+	var item_definition: Dictionary = _definitions[definition_id].duplicate(true)
+	var kind := String(item_definition.get("kind", ""))
 	match kind:
 		"character_clothing":
-			return DomainResult.ok(Clothing.new(definition, state))
+			return DomainResult.ok(Clothing.new(item_definition, state))
 		"vehicle_chassis":
-			return DomainResult.ok(VehicleChassis.new(definition, state))
+			return DomainResult.ok(VehicleChassis.new(item_definition, state))
 		"vehicle_engine":
-			return DomainResult.ok(VehicleEngine.new(definition, state))
+			return DomainResult.ok(VehicleEngine.new(item_definition, state))
 		"energy_cannon", "missile_weapon", "rocket_weapon", "vehicle_weapon":
-			return DomainResult.ok(VehicleWeapon.new(definition, state))
+			return DomainResult.ok(VehicleWeapon.new(item_definition, state))
 		"vehicle_equipment":
-			return DomainResult.ok(VehicleEquipment.new(definition, state))
+			return DomainResult.ok(VehicleEquipment.new(item_definition, state))
 		"equipment":
-			return DomainResult.ok(Equipment.new(definition, state))
+			return DomainResult.ok(Equipment.new(item_definition, state))
 		_:
-			if definition.has("equipment_location"):
-				return DomainResult.ok(VehicleEquipment.new(definition, state))
-			return DomainResult.ok(GameItem.new(definition, state))
+			if item_definition.has("equipment_location"):
+				return DomainResult.ok(VehicleEquipment.new(item_definition, state))
+			return DomainResult.ok(GameItem.new(item_definition, state))
 
 
 ## 查询物品定义的中文显示名。
 ## [param definition_id] 配置表定义标识。
 ## 返回定义显示名；未知定义返回原标识。
 func display_name(definition_id: String) -> String:
-	var definition: Dictionary = _definitions.get(definition_id, {})
-	return String(definition.get("display_name", definition_id))
+	var item_definition: Dictionary = _definitions.get(definition_id, {})
+	return String(item_definition.get("display_name", definition_id))
 
 
 ## 返回全部可实例化定义 ID，供内容完整性测试与后续商店/任务目录连接使用。
@@ -109,12 +108,12 @@ func _load_gameplay_file(path: String) -> DomainResult:
 	for raw_definition: Variant in parsed["definitions"]:
 		if not raw_definition is Dictionary:
 			return DomainResult.failure(&"items.catalog_invalid", "item definition must be a dictionary")
-		var definition: Dictionary = raw_definition.duplicate(true)
-		var definition_id := String(definition.get("id", ""))
+		var item_definition: Dictionary = raw_definition.duplicate(true)
+		var definition_id := String(item_definition.get("id", ""))
 		if definition_id.is_empty() or _definitions.has(definition_id):
 			return DomainResult.failure(&"items.catalog_invalid", "item definition identity is invalid")
-		_apply_equipment_contract(definition)
-		_definitions[definition_id] = definition
+		_apply_equipment_contract(item_definition)
+		_definitions[definition_id] = item_definition
 	return DomainResult.ok()
 
 
@@ -131,17 +130,17 @@ func _load_presentation_file(path: String) -> DomainResult:
 
 
 ## 将旧内容表中的 kind 规范化为固定装备槽契约。
-## [param definition] 即将进入目录的可变定义副本。
-func _apply_equipment_contract(definition: Dictionary) -> void:
-	var kind := String(definition.get("kind", ""))
-	var definition_id := String(definition.get("id", ""))
+## [param item_definition] 即将进入目录的可变定义副本。
+func _apply_equipment_contract(item_definition: Dictionary) -> void:
+	var kind := String(item_definition.get("kind", ""))
+	var definition_id := String(item_definition.get("id", ""))
 	if kind == "character_clothing":
 		return
 	var location := EquipmentSlotRegistryScript.location_for_definition(definition_id)
 	if location < 0:
 		return
-	definition["equipment_location"] = location
-	definition["equip_kind"] = {
+	item_definition["equipment_location"] = location
+	item_definition["equip_kind"] = {
 		"vehicle_chassis": 0,
 		"energy_cannon": 1,
 		"vehicle_engine": 3,

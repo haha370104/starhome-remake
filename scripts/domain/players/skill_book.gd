@@ -1,7 +1,6 @@
 class_name SkillBook
 extends RefCounted
 
-const DomainResult := preload("res://scripts/core/domain_result.gd")
 const SkillStateScript := preload("res://scripts/domain/skills/skill_state.gd")
 const SkillProgressionScript := preload("res://scripts/domain/skills/skill_progression.gd")
 

@@ -1,7 +1,6 @@
 class_name NpcBase
 extends MovableEntity
 
-const DomainResult := preload("res://scripts/core/domain_result.gd")
 
 var display_name := ""
 var npc_kind := "ambient"

@@ -1,7 +1,6 @@
 class_name Inventory
 extends RefCounted
 
-const DomainResult := preload("res://scripts/core/domain_result.gd")
 const InventoryLayoutScript := preload("res://scripts/domain/inventory/inventory_layout.gd")
 
 var capacity: int

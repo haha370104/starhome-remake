@@ -1,7 +1,6 @@
 class_name InventoryLayout
 extends RefCounted
 
-const DomainResult := preload("res://scripts/core/domain_result.gd")
 
 const MAIN_CONTAINER_ID := "main"
 const MAIN_SIZE := Vector2i(276, 295)

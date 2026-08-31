@@ -1,7 +1,6 @@
 class_name MonsterLifecycle
 extends MovableEntity
 
-const DomainResult := preload("res://scripts/core/domain_result.gd")
 const MonsterAggroPolicyScript := preload(
 	"res://scripts/domain/combat/monster_aggro_policy.gd"
 )

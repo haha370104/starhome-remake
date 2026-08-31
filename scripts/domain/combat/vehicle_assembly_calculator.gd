@@ -1,7 +1,6 @@
 class_name VehicleAssemblyCalculator
 extends RefCounted
 
-const DomainResult := preload("res://scripts/core/domain_result.gd")
 
 
 ## 执行 `calculate` 对应的模块操作。

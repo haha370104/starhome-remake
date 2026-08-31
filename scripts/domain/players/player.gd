@@ -1,7 +1,6 @@
 class_name Player
 extends MovableEntity
 
-const DomainResult := preload("res://scripts/core/domain_result.gd")
 
 var account_id: String
 var account_name: String

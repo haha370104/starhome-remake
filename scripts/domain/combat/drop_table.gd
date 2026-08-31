@@ -1,7 +1,6 @@
 class_name DropTable
 extends RefCounted
 
-const DomainResult := preload("res://scripts/core/domain_result.gd")
 
 var _entries: Array[Dictionary] = []
 

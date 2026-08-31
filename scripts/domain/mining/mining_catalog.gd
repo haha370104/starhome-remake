@@ -1,8 +1,6 @@
 class_name MiningCatalog
 extends RefCounted
 
-const DomainResult := preload("res://scripts/core/domain_result.gd")
-const JsonConfigLoader := preload("res://scripts/core/json_config_loader.gd")
 const DEFAULT_PATH := "res://data/gameplay/mining_v1.json"
 
 var content_version := ""

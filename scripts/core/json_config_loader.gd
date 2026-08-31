@@ -1,7 +1,6 @@
 class_name JsonConfigLoader
 extends RefCounted
 
-const DomainResult = preload("res://scripts/core/domain_result.gd")
 
 
 ## 加载并校验 `load_dictionary` 对应的模块状态。

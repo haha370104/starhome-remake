@@ -15,6 +15,7 @@ func _initialize() -> void:
 	_test_controlled_load_and_read_only_queries()
 	_test_formal_starter_definitions()
 	_test_d04_lifecycle_definitions()
+	_test_optional_drop_copy()
 	_test_full_glory_monster_catalog()
 	_test_catalog_to_authoritative_module_seam()
 	if failures.is_empty():
@@ -91,6 +92,17 @@ func _test_formal_starter_definitions() -> void:
 	var missile: Dictionary = secondary["missile.primary"]
 	_expect(int(missile["minimum_damage"]) == 17 and int(missile["cooldown_ticks"]) == 40, "Glory starter missile should preserve attack and two-second cadence")
 	_expect(float(missile["projectile_speed"]) == 600.0 and float(missile["range"]) == 400.0, "Glory missile should preserve client flight speed and lock range")
+
+
+## 验证未知掉落和空掉落表仍有区别，且复制后的条目不反向修改定义。
+func _test_optional_drop_copy() -> void:
+	var catalog := CatalogScript.new()
+	_expect(catalog._copy_optional_drops({}) == null, "missing drops must remain unknown")
+	_expect(catalog._copy_optional_drops({"drops": []}) is Array, "known empty drops must remain an array")
+	var source := {"drops": [{"item_definition_id": "fixture", "chance": 0.5}]}
+	var copied: Array = catalog._copy_optional_drops(source)
+	copied[0]["chance"] = 1.0
+	_expect(source["drops"][0]["chance"] == 0.5, "drop copy must not mutate the shared source")
 
 
 ## 执行 `test_d04_lifecycle_definitions` 对应的模块操作。

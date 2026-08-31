@@ -1,7 +1,6 @@
 class_name VehicleCombatState
 extends RefCounted
 
-const DomainResult := preload("res://scripts/core/domain_result.gd")
 
 var max_health := 0
 var health := 0

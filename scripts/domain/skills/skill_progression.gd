@@ -1,8 +1,6 @@
 class_name SkillProgression
 extends RefCounted
 
-const DomainResult = preload("res://scripts/core/domain_result.gd")
-const SkillState = preload("res://scripts/domain/skills/skill_state.gd")
 
 
 ## 查询并返回 `get_need_points` 对应的模块状态。
