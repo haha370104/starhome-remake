@@ -24,7 +24,6 @@ const FilePlayerStateRepositoryScript := preload("res://scripts/server/persisten
 const AutosaveServiceScript := preload("res://scripts/server/persistence/authoritative_autosave_service.gd")
 const PlayerPanelServiceScript := preload("res://scripts/server/player_panels/authoritative_player_panel_service.gd")
 const DomainResultScript := preload("res://scripts/core/domain_result.gd")
-const CombatTraceLogger := preload("res://scripts/core/combat_trace_logger.gd")
 const RuntimeContentBootstrapScript := preload(
 	"res://scripts/content/runtime_content_bootstrap.gd"
 )
@@ -157,7 +156,7 @@ func initialize(
 	var panel_result = player_panel_service.initialize()
 	if not panel_result.is_ok:
 		return _failure(panel_result.error_code, panel_result.error_message)
-	_ticks_per_snapshot = config.simulation_hz / config.snapshot_hz
+	_ticks_per_snapshot = floori(float(config.simulation_hz) / float(config.snapshot_hz))
 	return _success(_default_map_id)
 
 

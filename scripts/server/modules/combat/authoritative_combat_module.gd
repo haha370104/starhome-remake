@@ -1,10 +1,7 @@
 class_name AuthoritativeCombatModule
 extends RefCounted
 
-const CombatTraceLogger := preload("res://scripts/core/combat_trace_logger.gd")
-const DomainResult := preload("res://scripts/core/domain_result.gd")
 const MonsterLifecycleScript := preload("res://scripts/domain/combat/monster_lifecycle.gd")
-const ProjectileSweep := preload("res://scripts/domain/combat/projectile_sweep.gd")
 const VehicleCombatStateScript := preload("res://scripts/domain/combat/vehicle_combat_state.gd")
 const UseAbilityIntentContract := preload("res://scripts/network/contracts/use_ability_intent.gd")
 const ACTOR_PROJECTILE_HITBOX_OFFSET := Vector2(0.0, -16.0)
@@ -157,9 +154,9 @@ func register_monster(definition: Dictionary) -> DomainResult:
 ## 返回被移除的稳定实例 ID，存活怪物绝不会被此入口删除。
 func remove_dead_monsters(map_instance_id: String) -> Array[String]:
 	var removed: Array[String] = []
-	var monster_ids := monsters.keys()
-	monster_ids.sort()
-	for monster_id: String in monster_ids:
+	var ordered_monster_ids := monsters.keys()
+	ordered_monster_ids.sort()
+	for monster_id: String in ordered_monster_ids:
 		var monster: MonsterLifecycle = monsters[monster_id]
 		if monster.map_instance_id == map_instance_id and not monster.is_alive():
 			monsters.erase(monster_id)
@@ -337,9 +334,9 @@ func _nearest_target_to_point(
 	selection_radius: float,
 ) -> Dictionary:
 	var best := {"hit": false, "distance_squared": INF}
-	var monster_ids := monsters.keys()
-	monster_ids.sort()
-	for monster_id: String in monster_ids:
+	var ordered_monster_ids := monsters.keys()
+	ordered_monster_ids.sort()
+	for monster_id: String in ordered_monster_ids:
 		var monster: MonsterLifecycle = monsters[monster_id]
 		if monster.map_instance_id != map_instance_id or not monster.is_alive():
 			continue
@@ -458,9 +455,9 @@ func _first_projectile_collision(
 	endpoint: Vector2,
 ) -> Dictionary:
 	var best := {"hit": false, "t": INF}
-	var monster_ids := monsters.keys()
-	monster_ids.sort()
-	for monster_id: String in monster_ids:
+	var ordered_monster_ids := monsters.keys()
+	ordered_monster_ids.sort()
+	for monster_id: String in ordered_monster_ids:
 		var monster: MonsterLifecycle = monsters[monster_id]
 		if monster.map_instance_id != map_instance_id or not monster.is_alive():
 			continue
@@ -594,9 +591,9 @@ func _settle_rocket_projectile(projectile: Dictionary) -> void:
 	var impact_position: Vector2 = projectile["impact_position"]
 	var radius := float(weapon.get("area_radius", ACTOR_PROJECTILE_HITBOX_RADIUS * 2.0))
 	var hit_any := false
-	var monster_ids := monsters.keys()
-	monster_ids.sort()
-	for monster_id: String in monster_ids:
+	var ordered_monster_ids := monsters.keys()
+	ordered_monster_ids.sort()
+	for monster_id: String in ordered_monster_ids:
 		var monster: MonsterLifecycle = monsters[monster_id]
 		if not monster.is_alive() or monster.map_instance_id != String(actors[projectile["attacker_id"]]["map_instance_id"]):
 			continue
@@ -785,9 +782,9 @@ func snapshot_for_actor(actor_id: String) -> Dictionary:
 	var actor: Dictionary = actors[actor_id]
 	var map_instance_id := String(actor["map_instance_id"])
 	var monster_snapshots: Array[Dictionary] = []
-	var monster_ids := monsters.keys()
-	monster_ids.sort()
-	for monster_id: String in monster_ids:
+	var ordered_monster_ids := monsters.keys()
+	ordered_monster_ids.sort()
+	for monster_id: String in ordered_monster_ids:
 		var monster: MonsterLifecycle = monsters[monster_id]
 		if monster.map_instance_id != map_instance_id:
 			continue

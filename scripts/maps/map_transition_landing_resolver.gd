@@ -28,7 +28,7 @@ static func resolve_landing(
 			source_definition.world_size,
 			destination_definition.world_size,
 		)
-		var best: MapTransition
+		var best: MapTransition = null
 		var best_score := INF
 		for candidate: MapTransition in reciprocal_candidates:
 			var score := _normalized_distance_squared(

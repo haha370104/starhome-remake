@@ -1,7 +1,6 @@
 class_name InventoryStackRecord
 extends RefCounted
 
-const DomainResult := preload("res://scripts/core/domain_result.gd")
 
 var stack_id := ""
 var item_definition_id := ""
@@ -30,7 +29,7 @@ static func from_dictionary(raw: Variant) -> DomainResult:
 	stack.container_id = String(raw.get("container_id", "main"))
 	var position_value: Variant = raw.get("position_px", [
 		(stack.slot_index % 8) * 30,
-		(stack.slot_index / 8) * 30,
+		floori(float(stack.slot_index) / 8.0) * 30,
 	])
 	var footprint_value: Variant = raw.get("footprint_px", [30, 30])
 	if not position_value is Array or position_value.size() != 2 \

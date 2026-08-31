@@ -1,7 +1,6 @@
 class_name SqliteDriverPort
 extends RefCounted
 
-const DomainResult := preload("res://scripts/core/domain_result.gd")
 
 
 ## 判断 `is_available` 对应的模块状态。

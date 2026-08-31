@@ -1,7 +1,6 @@
 class_name AuthoritativeAutosaveService
 extends RefCounted
 
-const DomainResult := preload("res://scripts/core/domain_result.gd")
 
 var interval_seconds := 3.0
 var save_count := 0

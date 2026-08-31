@@ -1,7 +1,6 @@
 class_name PlayerStateMapper
 extends RefCounted
 
-const DomainResult := preload("res://scripts/core/domain_result.gd")
 const PlayerStateRecordScript := preload("res://scripts/server/persistence/player_state_record.gd")
 
 var _catalog: ItemCatalog

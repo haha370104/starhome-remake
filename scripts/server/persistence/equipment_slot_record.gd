@@ -1,7 +1,6 @@
 class_name EquipmentSlotRecord
 extends RefCounted
 
-const DomainResult := preload("res://scripts/core/domain_result.gd")
 
 var owner_kind := ""
 var slot_id := ""

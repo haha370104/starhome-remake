@@ -15,7 +15,6 @@ const MiningModuleScript := preload(
 	"res://scripts/server/modules/mining/authoritative_mining_module.gd"
 )
 const UseAbilityIntentContract := preload("res://scripts/network/contracts/use_ability_intent.gd")
-const DomainResult := preload("res://scripts/core/domain_result.gd")
 
 var definition
 var navigation

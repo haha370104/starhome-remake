@@ -20,6 +20,7 @@ func _initialize() -> void:
 	)
 	_test_sqlite_runtime_and_schema_seam()
 	_test_schema_zero_migration()
+	_test_legacy_inventory_row_rounding()
 	_test_atomic_transaction_and_reload()
 	_cleanup_test_files()
 	if failures.is_empty():
@@ -46,6 +47,20 @@ func _test_sqlite_runtime_and_schema_seam() -> void:
 		"character_locations", "command_receipts",
 	]:
 		_expect(sql.contains("CREATE TABLE IF NOT EXISTS %s" % table_name), "SQL migration should define %s" % table_name)
+
+
+## 验证旧背包序号跨行时向下取整，不能把第七格提前推到下一行。
+func _test_legacy_inventory_row_rounding() -> void:
+	for slot in [0, 7, 8, 15, 16]:
+		var decoded := InventoryStackRecord.from_dictionary({
+			"stack_id": "fixture", "item_definition_id": "fixture", "quantity": 1,
+			"slot_index": slot,
+		})
+		_expect(decoded.is_ok, "legacy inventory slot should decode")
+		if decoded.is_ok:
+			var expected_row := 0 if slot < 8 else (1 if slot < 16 else 2)
+			_expect(decoded.value.position_px == Vector2i((slot % 8) * 30, expected_row * 30),
+				"legacy slot must preserve its original row and column")
 
 
 ## 执行 `test_schema_zero_migration` 对应的模块操作。

@@ -1,11 +1,7 @@
 class_name AuthoritativeMiningModule
 extends RefCounted
 
-const DomainResult := preload("res://scripts/core/domain_result.gd")
 const MineSourceScript := preload("res://scripts/domain/mining/mine_source.gd")
-const RandomWalkableSpawnSampler := preload(
-	"res://scripts/navigation/random_walkable_spawn_sampler.gd"
-)
 
 const COLLECT_ABILITY_ID := "mining.collect"
 
@@ -105,9 +101,9 @@ func begin_collection(
 
 ## 移动、换装或其他中断原因停止当前采矿动作。
 ## [param actor_id] 调用方传入的 `actor_id` 参数。
-## [param reason] 调用方传入的 `reason` 参数。
+## [param _reason] 保留中断原因接口，当前模块不按原因区分清理方式。
 ## 返回该函数计算、查询或操作得到的结果。
-func interrupt(actor_id: String, reason: StringName) -> bool:
+func interrupt(actor_id: String, _reason: StringName) -> bool:
 	if not _actions.has(actor_id):
 		return false
 	_actions.erase(actor_id)

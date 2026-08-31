@@ -1,9 +1,7 @@
 class_name AuthoritativePlayerPanelService
 extends RefCounted
 
-const DomainResult := preload("res://scripts/core/domain_result.gd")
 const ItemCatalogScript := preload("res://scripts/domain/items/item_catalog.gd")
-const JsonConfigLoader := preload("res://scripts/core/json_config_loader.gd")
 const SkillProgressionScript := preload("res://scripts/domain/skills/skill_progression.gd")
 const PlayerStateMapperScript := preload("res://scripts/server/persistence/player_state_mapper.gd")
 const PlayerPanelProjectorScript := preload(
