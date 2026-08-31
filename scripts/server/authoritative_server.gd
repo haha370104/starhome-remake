@@ -3,6 +3,7 @@ extends Node
 
 const ConfigScript := preload("res://scripts/server/server_config.gd")
 const MapInstanceScript := preload("res://scripts/server/authoritative_map_instance.gd")
+const MapDefinitionLoaderScript := preload("res://scripts/maps/map_definition_loader.gd")
 const MapRegistryScript := preload("res://scripts/server/authoritative_map_registry.gd")
 const SessionRegistryScript := preload("res://scripts/server/session_registry.gd")
 const Protocol := preload("res://scripts/network/contracts/network_protocol.gd")
@@ -63,6 +64,7 @@ var player_panel_service: AuthoritativePlayerPanelService
 var _pending_vehicle_recoveries: Dictionary = {}
 var _runtime_definition_paths_by_map_id: Dictionary = {}
 var _runtime_map_ids_by_legacy_world: Dictionary = {}
+var _default_map_id := ""
 
 
 ## 节点进入场景树后初始化运行依赖。
@@ -144,6 +146,7 @@ func initialize(
 			if not registration.ok:
 				return registration
 		map_instance = injected_map_instances[0]
+		_default_map_id = String(map_instance.definition.map_id)
 	sessions = SessionRegistryScript.new()
 	sessions.configure(config.reconnect_grace_seconds)
 	_pending_vehicle_recoveries.clear()
@@ -155,7 +158,7 @@ func initialize(
 	if not panel_result.is_ok:
 		return _failure(panel_result.error_code, panel_result.error_message)
 	_ticks_per_snapshot = config.simulation_hz / config.snapshot_hz
-	return _success(map_instance.definition.map_id)
+	return _success(_default_map_id)
 
 
 ## 执行 `start_network` 对应的模块操作。
@@ -220,7 +223,7 @@ func _physics_process(delta: float) -> void:
 ## [param now_msec] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## 设计：该函数位于权威服务器边界，客户端不得覆盖其计算结果。
 func advance_simulation(elapsed_seconds: float, now_msec := -1) -> void:
-	if map_instance == null or elapsed_seconds <= 0.0:
+	if sessions == null or elapsed_seconds <= 0.0:
 		return
 	_simulation_accumulator += elapsed_seconds
 	var fixed_delta := 1.0 / float(config.simulation_hz)
@@ -269,7 +272,7 @@ func advance_simulation(elapsed_seconds: float, now_msec := -1) -> void:
 ## 返回该函数计算、查询或操作得到的结果。
 ## 设计：该函数位于权威服务器边界，客户端不得覆盖其计算结果。
 func open_session(peer_id: int, request: Dictionary, now_msec := -1) -> Dictionary:
-	if map_instance == null:
+	if sessions == null:
 		return _failure(&"server_not_initialized", "server has no active map")
 	var version_result = Protocol.validate_versions(
 		int(request.get("protocol_version", -1)),
@@ -284,6 +287,10 @@ func open_session(peer_id: int, request: Dictionary, now_msec := -1) -> Dictiona
 		if not reconnect_result.ok:
 			return reconnect_result
 		return _session_response(reconnect_result.value, true)
+	var primary := ensure_runtime_map(_default_map_id)
+	if not primary.ok:
+		return primary
+	map_instance = primary.value
 	var entity_id := "player.%d" % _next_entity_number
 	_next_entity_number += 1
 	var spawn_result := map_instance.spawn_entity(
@@ -609,6 +616,10 @@ func _recover_destroyed_vehicle_to_base(entity_id: String, pending: Dictionary) 
 		return _failure(&"vehicle_recovery.session_changed", "session changed during rescue")
 	var source := map_registry.instance_by_id(session.map_instance_id)
 	var destination := map_registry.instance_by_map_id(BASE_HALL_MAP_ID)
+	if destination == null:
+		var ensured := ensure_runtime_map(BASE_HALL_MAP_ID)
+		if ensured.ok:
+			destination = ensured.value
 	var source_entity: AuthoritativeEntity = source.entities.get(entity_id) if source != null else null
 	var source_vehicle := source.vehicle_combat_state_for(entity_id) if source != null else null
 	if source_entity == null or source_vehicle == null or source_vehicle.health > 0:
@@ -1423,7 +1434,7 @@ func _resolve_or_load_transition_target(
 	return ensured.value if ensured.ok else null
 
 
-## 加载并校验 `load_configured_map_instances` 对应的模块状态。
+## 只索引开发目录的地图定义；没有玩家连接时不创建导航、怪物或矿源实例。
 ## 返回该函数计算、查询或操作得到的结果。
 ## 设计：该函数位于权威服务器边界，客户端不得覆盖其计算结果。
 func _load_configured_map_instances() -> Dictionary:
@@ -1456,35 +1467,22 @@ func _load_configured_map_instances() -> Dictionary:
 	if config.map_config_path not in definition_paths:
 		definition_paths.insert(0, config.map_config_path)
 	map_instance = null
+	_default_map_id = ""
 	for definition_path: String in definition_paths:
-		var loaded_instance: AuthoritativeMapInstance = MapInstanceScript.new()
-		_configure_map_instance(loaded_instance)
-		var map_result := loaded_instance.load_map(definition_path)
-		if not map_result.ok:
-			return _failure(
-				&"map_catalog_load_failed",
-				"%s: %s" % [definition_path, map_result.get("message", "unknown map error")],
-			)
-		var combat_result := loaded_instance.configure_combat(_combat_catalog, config.simulation_hz)
-		if not combat_result.ok:
-			return _failure(
-				&"map_combat_load_failed",
-				"%s: %s" % [definition_path, combat_result.get("message", "unknown combat error")],
-			)
-		var mining_result := loaded_instance.configure_mining(_mining_catalog, config.simulation_hz)
-		if not mining_result.ok:
-			return _failure(
-				&"map_mining_load_failed",
-				"%s: %s" % [definition_path, mining_result.get("message", "unknown mining error")],
-			)
-		var registration := map_registry.register_instance(loaded_instance)
-		if not registration.ok:
-			return registration
+		var loader := MapDefinitionLoaderScript.new()
+		var definition := loader.load_file(definition_path)
+		if definition == null:
+			return _failure(&"map_catalog_load_failed", "; ".join(loader.errors))
+		_runtime_definition_paths_by_map_id[String(definition.map_id)] = definition_path
+		var world_index: Dictionary = _runtime_map_ids_by_legacy_world.get(String(definition.world_id), {})
+		for legacy_code: String in definition.legacy_codes:
+			world_index[legacy_code.strip_edges().to_lower()] = String(definition.map_id)
+		_runtime_map_ids_by_legacy_world[String(definition.world_id)] = world_index
 		if definition_path == config.map_config_path:
-			map_instance = loaded_instance
-	if map_instance == null:
-		return _failure(&"primary_map_not_registered", "configured primary map was not loaded")
-	return _success(map_instance)
+			_default_map_id = String(definition.map_id)
+	if _default_map_id.is_empty():
+		return _failure(&"primary_map_not_registered", "configured primary map was not indexed")
+	return _success(_default_map_id)
 
 
 ## 执行 `configure_map_instance` 对应的模块操作。

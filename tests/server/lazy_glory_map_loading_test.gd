@@ -19,7 +19,10 @@ func _initialize() -> void:
 		_finish()
 		return
 	var initial_count: int = server.map_registry.all_instances().size()
-	_expect(initial_count == 9, "启动时只应加载开发目录中的九张地图")
+	_expect(initial_count == 0, "无玩家启动时不能预建任何地图实例")
+	_expect(server.map_instance == null, "默认出生地图也应等首个玩家加入后才加载")
+	server.advance_simulation(1.0, 0)
+	_expect(server.map_registry.all_instances().is_empty(), "空服务器推进时间不能生成地图或怪物")
 	_expect(
 		server.map_registry.instance_by_map_id("glory_nft_bl_2armshop1") == null,
 		"全量地图不应在启动时预建 A* 实例",

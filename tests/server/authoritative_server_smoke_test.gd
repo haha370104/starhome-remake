@@ -381,7 +381,7 @@ func _test_destroyed_vehicle_recovery() -> void:
 	var hall: AuthoritativeMapInstance = server.map_registry.instance_by_map_id(
 		"yian_harbor_hall_floor_1"
 	)
-	var field: AuthoritativeMapInstance = server.map_registry.instance_by_map_id("d04_field_zone")
+	var field: AuthoritativeMapInstance = server.ensure_runtime_map("d04_field_zone").value
 	var source_entity: AuthoritativeEntity = hall.entities[entity_id]
 	var parked_state = hall.vehicle_combat_state_for(entity_id)
 	parked_state.apply_damage(parked_state.max_health)
