@@ -32,6 +32,7 @@ func _run() -> void:
 	_assert_state_updates(hud)
 	_assert_map_rebinding(hud)
 	_assert_minimap_modes(hud)
+	_assert_transition_markers(hud)
 
 	root.size = Vector2i(1600, 900)
 	await process_frame
@@ -140,6 +141,34 @@ func _assert_minimap_modes(hud: CanvasLayer) -> void:
 	hud.state.set_top_menu_expanded(true)
 	hud.state.set_minimap_collapsed(false)
 	hud.state.set_minimap_size("small")
+
+
+## 验证传送点的投影、禁用过滤、滚动、折叠和切图清理。
+## [param hud] 测试中的真实 HUD 节点。
+func _assert_transition_markers(hud: CanvasLayer) -> void:
+	var first := MapTransition.new()
+	first.source_anchor = Vector2(972, 960)
+	var disabled := MapTransition.new()
+	disabled.source_anchor = Vector2(100, 100)
+	disabled.enabled = false
+	var duplicate := MapTransition.new()
+	duplicate.source_anchor = first.source_anchor
+	var transitions: Array[MapTransition] = [first, disabled, duplicate]
+	var dock: Control = hud.minimap_dock
+	hud.set_map(Vector2(1944, 1920), dock.map_image.texture, "标记测试", transitions)
+	var points: PackedVector2Array = dock.marker_layer.marker_positions()
+	_expect(points == PackedVector2Array([Vector2(150, 150)]), "传送点必须按世界尺寸投影、过滤禁用并去重")
+	_expect(dock.marker_layer.MARKER_COLOR == Color(0.65, 1.0, 0.7, 1.0), "传送点必须使用浅绿色")
+	hud.update_player_dot(Vector2(972, 960))
+	_expect(dock.marker_layer.global_position + points[0] == dock.map_viewport.global_position + Vector2(60, 60), "小模式下标记必须随地图滚动到正确位置")
+	hud.state.set_minimap_size("large")
+	_expect(dock.marker_layer.marker_positions() == points, "大小模式切换不得缩放或移动地图内标记")
+	hud.state.set_minimap_collapsed(true)
+	_expect(not dock.marker_layer.is_visible_in_tree(), "收起小地图必须隐藏传送标记")
+	hud.state.set_minimap_collapsed(false)
+	hud.state.set_minimap_size("small")
+	hud.set_map(Vector2(1944, 1920), dock.map_image.texture, "易安港基地大厅一层")
+	_expect(dock.marker_layer.marker_positions().is_empty(), "切到没有出口的地图必须清除旧传送标记")
 
 
 ## 执行 `assert_1600_layout` 对应的模块操作。

@@ -112,13 +112,15 @@ func update_player_dot(world_position: Vector2) -> void:
 ## [param minimap_texture] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## [param map_name] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## 设计：地图切换只更新地图业务内容，免费版 HUD 外框及玩家设置状态保持不变。
+## [param transitions] 当前地图的传送点定义，交给小地图绘制浅绿色标记。
 func set_map(
 	world_map_size: Vector2,
 	minimap_texture: Texture2D,
 	map_name: String,
+	transitions: Array[MapTransition] = [],
 ) -> void:
 	if minimap_dock:
-		minimap_dock.set_map(world_map_size, minimap_texture, map_name)
+		minimap_dock.set_map(world_map_size, minimap_texture, map_name, transitions)
 
 
 ## 执行 `set_reserve_energy` 对应的模块操作。

@@ -4,6 +4,7 @@ extends Control
 signal layout_width_changed(width: float)
 
 const LegacyStateButtonScript := preload("res://scripts/ui/legacy_state_button.gd")
+const TransitionMarkersScript := preload("res://scripts/ui/minimap_transition_markers.gd")
 var world_size := Vector2.ONE
 var map_texture: Texture2D
 var definition: Dictionary
@@ -78,11 +79,11 @@ func configure(
 	map_image.texture = map_texture
 	map_image.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	map_image.stretch_mode = TextureRect.STRETCH_KEEP
-	map_image.modulate.a = 200.0 / 255.0
+	map_image.self_modulate.a = 200.0 / 255.0
 	map_image.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	map_image.size = map_texture.get_size() if map_texture else Vector2(300, 300)
 	map_viewport.add_child(map_image)
-	marker_layer = Control.new()
+	marker_layer = TransitionMarkersScript.new()
 	marker_layer.name = "Markers"
 	marker_layer.size = map_image.size
 	marker_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -158,16 +159,19 @@ func update_player_position(world_position: Vector2) -> void:
 ## [param minimap_texture] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## [param display_name] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## 设计：外框、大小模式及收起状态属于 HUD 偏好，不随地图切换重建。
+## [param transitions] 当前地图的传送定义；省略时清除上一地图标记。
 func set_map(
 	world_map_size: Vector2,
 	minimap_texture: Texture2D,
 	display_name: String,
+	transitions: Array[MapTransition] = [],
 ) -> void:
 	world_size = Vector2(maxf(world_map_size.x, 1.0), maxf(world_map_size.y, 1.0))
 	map_texture = minimap_texture
 	map_image.texture = map_texture
 	map_image.size = map_texture.get_size() if map_texture else Vector2(300, 300)
 	marker_layer.size = map_image.size
+	marker_layer.set_transitions(world_size, map_image.size, transitions)
 	map_name_label.text = display_name
 	_apply_layout()
 

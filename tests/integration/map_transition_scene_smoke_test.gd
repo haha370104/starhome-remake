@@ -110,6 +110,7 @@ func _run() -> void:
 	_expect(hall.navigation.grid_size == Vector2i(101, 800), "D04必须切换到自己的荣耀导航")
 	_expect(hall.map_scene_nodes.size() == 117, "D04必须提交官网惰性资源恢复后的荣耀语义遮挡层")
 	_expect(hall.hud.minimap_dock.map_name_label.text == "D04区", "HUD 必须原子更新 D04 名称")
+	_expect(hall.hud.minimap_dock.marker_layer.marker_positions().size() == 12, "D04 小地图必须显示当前地图的十二个传送点")
 	_expect(hall.multiplayer_presenter.session.current_map_id == &"d04_field_zone", "离线调试会话也必须同步当前业务地图")
 
 	_place_authoritative_player(hall, Vector2(130, 2553))
@@ -132,6 +133,7 @@ func _run() -> void:
 	_expect(hall.player.position == Vector2(2426, 4565), "C04→C03 必须落在 C03 正下方反向出口")
 	_expect(not hall.map_scene_nodes.is_empty(), "C03 必须提交已打包的场景表现")
 	_expect(hall.hud.minimap_dock.map_name_label.text.contains("C03"), "HUD 必须原子更新 C03 名称")
+	_expect(hall.hud.minimap_dock.marker_layer.marker_positions().size() == 3, "C03 小地图必须替换为本图三个传送点，不残留 D04 标记")
 	var final_sequence: int = hall.multiplayer_presenter.session.local_predictor.next_input_sequence
 	hall.call("_handle_map_commit_failure", "测试不可恢复提交失败")
 	hall.call("_move_to", Vector2(1200, 2500))

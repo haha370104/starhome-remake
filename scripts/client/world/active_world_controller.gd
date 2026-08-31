@@ -137,7 +137,7 @@ func commit_bundle(bundle: Dictionary, spawn_position: Vector2) -> bool:
 	_camera.limit_right = int(map_size.x)
 	_camera.limit_bottom = int(map_size.y)
 	_camera.position = spawn_position
-	_hud.set_map(map_size, staged["minimap_texture"], definition.display_name)
+	_hud.set_map(map_size, staged["minimap_texture"], definition.display_name, definition.enabled_transitions())
 	return true
 
 
