@@ -50,6 +50,14 @@ if ($LASTEXITCODE -ne 0) {
 }
 Assert-NoRuntimeLoadErrors $importLog
 
+Write-Output "Checking runtime entry-point GDScript warnings"
+$warningLog = Join-Path $projectRoot ".godot/check-gdscript-warnings.log"
+& $godot --headless --path $projectRoot --log-file $warningLog --script "res://tools/check_gdscript_warnings.gd"
+if ($LASTEXITCODE -ne 0) {
+    throw "Runtime GDScript warning check failed. See: $warningLog"
+}
+Assert-NoRuntimeLoadErrors $warningLog
+
 $testScripts = @(
 	"res://tests/core/combat_trace_logger_test.gd",
     "res://tests/domain/run_domain_smoke_tests.gd",
