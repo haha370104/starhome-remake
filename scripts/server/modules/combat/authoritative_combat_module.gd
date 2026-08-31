@@ -741,8 +741,9 @@ func interrupt_self_repair(actor_id: String, reason: StringName) -> bool:
 	return true
 ## 执行 `advance_ticks` 对应的模块操作。
 ## [param tick_count] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param simulate_monster_ai] 空地图仅结算在途攻击和时钟，不继续寻路或产生新攻击。
 ## 返回该函数计算、查询或操作得到的结果。
-func advance_ticks(tick_count: int) -> DomainResult:
+func advance_ticks(tick_count: int, simulate_monster_ai := true) -> DomainResult:
 	if tick_count < 0:
 		return DomainResult.failure(&"combat.invalid_tick_count", "tick count cannot be negative")
 	var emitted_respawns: Array[Dictionary] = []
@@ -769,7 +770,7 @@ func advance_ticks(tick_count: int) -> DomainResult:
 				}
 				respawn_events.append(respawn_event)
 				emitted_respawns.append(respawn_event)
-			if monster.is_alive():
+			if monster.is_alive() and simulate_monster_ai:
 				_simulate_monster_tick(monster_id, fixed_delta)
 	return DomainResult.ok(emitted_respawns)
 

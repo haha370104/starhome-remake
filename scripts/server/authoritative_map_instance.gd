@@ -34,6 +34,63 @@ var _last_progression_combat_event_id := 0
 var _monster_population_policy: Dictionary = {}
 var _next_monster_replenishment_tick := -1
 var _monster_spawn_sequence := 0
+var suspended_at_server_tick := -1
+
+
+## 检查空地图是否已结清在途攻击和矿物事务，允许释放导航。
+## 返回本实例是否能进入休眠态。
+func can_suspend_runtime() -> bool:
+	return entities.is_empty() and navigation != null \
+		and (combat_module == null or (combat_module.pending_projectiles.is_empty() \
+			and combat_module.pending_monster_attacks.is_empty())) \
+		and (mining_module == null or mining_module.can_suspend())
+
+
+## 空地图仅保留领域状态，解除导航及反向回调的重资源引用。
+## [param server_tick] 本次休眠发生时的服务器时钟。
+## 返回是否完成休眠；仍有玩家或未结算攻击时返回 false。
+func suspend_runtime(server_tick: int) -> bool:
+	if not can_suspend_runtime():
+		return false
+	suspended_at_server_tick = server_tick
+	if combat_module != null:
+		combat_module.set_monster_position_resolver(Callable())
+		combat_module.set_monster_route_resolver(Callable())
+	if mining_module != null:
+		mining_module.release_navigation()
+	navigation = null
+	return true
+
+
+## 再次进入时只重建导航，复用原怪物、矿源和掉落，并按休眠时间补充种群。
+## [param server_tick] 本次唤醒的服务器时钟。
+## 返回导航恢复结果；失败时保持休眠数据不变。
+func resume_runtime(server_tick: int) -> Dictionary:
+	if suspended_at_server_tick < 0:
+		return _success(self)
+	var restored_navigation = DiamondNavigationScript.new()
+	if not restored_navigation.load_from(definition.navigation_data_path,
+			definition.navigation_grid_size, definition.navigation_cell_size):
+		return _failure(&"invalid_navigation", "cannot resume map navigation")
+	navigation = restored_navigation
+	var elapsed_ticks := maxi(0, server_tick - suspended_at_server_tick)
+	if combat_module != null:
+		combat_module.set_monster_position_resolver(_resolve_monster_position)
+		combat_module.set_monster_route_resolver(_resolve_monster_route)
+		combat_module.current_tick += elapsed_ticks
+		if _next_monster_replenishment_tick >= 0 \
+				and combat_module.current_tick >= _next_monster_replenishment_tick:
+			var interval := maxi(1, roundi(float(_monster_population_policy.get("replenish_interval_seconds", 60.0)) * combat_module.simulation_hz))
+			var missed := 1 + floori(float(combat_module.current_tick - _next_monster_replenishment_tick) / interval)
+			# 无玩家期间只会补充，不会继续死亡；最多人口上限轮即可收敛。
+			var rounds := mini(missed, int(_monster_population_policy.get("maximum_population", 0)))
+			for _round in range(rounds):
+				_replenish_monster_population_if_due()
+			_next_monster_replenishment_tick += (missed - rounds) * interval
+	if mining_module != null:
+		mining_module.resume_navigation(navigation, elapsed_ticks)
+	suspended_at_server_tick = -1
+	return _success(self)
 
 
 ## 加载并校验 `load_map` 对应的模块状态。
@@ -346,7 +403,7 @@ func simulate(delta: float) -> void:
 	if combat_module != null:
 		for entity_id: String in entities:
 			combat_module.update_actor_position(entity_id, entities[entity_id].position)
-		combat_module.advance_ticks(1)
+		combat_module.advance_ticks(1, not entities.is_empty())
 		_replenish_monster_population_if_due()
 	if mining_module != null:
 		mining_module.advance_ticks(1)

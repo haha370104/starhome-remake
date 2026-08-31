@@ -133,6 +133,26 @@ func advance_ticks(tick_count: int = 1) -> void:
 		_reserve_due_cycles()
 
 
+## 判断采矿模块是否没有待结算的玩家动作，允许解除导航引用。
+## 返回当前是否能安全休眠。
+func can_suspend() -> bool:
+	return _actions.is_empty() and _pending_cycles.is_empty() and _ready_cycles.is_empty()
+
+
+## 解除占内存的导航引用，但保留矿量、点位、序号及补充时钟。
+func release_navigation() -> void:
+	_navigation = null
+
+
+## 唤醒时重新绑定导航并按经过时间补点，不逐 tick 重放休眠时间。
+## [param navigation] 新加载的当前地图导航。
+## [param elapsed_ticks] 休眠期间经过的权威时钟刻数。
+func resume_navigation(navigation, elapsed_ticks: int) -> void:
+	_navigation = navigation
+	current_tick += maxi(0, elapsed_ticks)
+	_replenish_if_due()
+
+
 ## 取出本 tick 已到期、等待背包事务的采矿结算预约。
 ## 返回该函数计算、查询或操作得到的结果。
 func drain_ready_cycles() -> Array[Dictionary]:
@@ -235,8 +255,8 @@ func _replenish_if_due() -> void:
 	if _next_replenishment_tick < 0 or current_tick < _next_replenishment_tick:
 		return
 	var interval := _seconds_to_ticks(float(_policy["replenish_interval_seconds"]))
-	while current_tick >= _next_replenishment_tick:
-		_next_replenishment_tick += interval
+	var missed_intervals := 1 + floori(float(current_tick - _next_replenishment_tick) / interval)
+	_next_replenishment_tick += missed_intervals * interval
 	var missing := maxi(0, int(_policy["maximum_sources"]) - sources.size())
 	for _index: int in range(missing):
 		var result := _spawn_one()

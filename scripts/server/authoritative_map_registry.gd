@@ -6,6 +6,7 @@ const ErrorCodes := preload("res://scripts/network/contracts/network_error_codes
 var _by_instance_id: Dictionary = {}
 var _by_map_id: Dictionary = {}
 var _by_legacy_code_by_world: Dictionary = {}
+var _dormant_by_map_id: Dictionary = {}
 
 
 ## 执行 `register_instance` 对应的模块操作。
@@ -30,6 +31,7 @@ func register_instance(instance: AuthoritativeMapInstance) -> Dictionary:
 			return _failure(&"map_registry.duplicate_legacy_code", "legacy map code is already registered")
 	_by_instance_id[instance_key] = instance
 	_by_map_id[map_key] = instance
+	_dormant_by_map_id.erase(map_key)
 	if not _by_legacy_code_by_world.has(instance.definition.world_id):
 		_by_legacy_code_by_world[instance.definition.world_id] = {}
 	for legacy_code: String in instance.definition.legacy_codes:
@@ -85,6 +87,28 @@ func all_instances() -> Array[AuthoritativeMapInstance]:
 	for key: String in keys:
 		result.append(_by_instance_id[key])
 	return result
+
+
+## 查询仅保留领域状态、已释放导航的休眠地图。
+## [param map_id] 稳定的业务地图标识。
+## 返回休眠实例；从未进入或当前活跃时返回 null。
+func dormant_instance(map_id: String) -> AuthoritativeMapInstance:
+	return _dormant_by_map_id.get(map_id)
+
+
+## 把没有玩家且已结算完在途行为的实例从活跃索引移入休眠索引。
+## [param server_tick] 当前服务器时钟，用于唤醒时计算补充间隔。
+func suspend_empty_instances(server_tick: int) -> void:
+	for instance: AuthoritativeMapInstance in all_instances():
+		if not instance.suspend_runtime(server_tick):
+			continue
+		var map_id := String(instance.definition.map_id)
+		_by_instance_id.erase(instance.instance_id)
+		_by_map_id.erase(map_id)
+		var world_index: Dictionary = _by_legacy_code_by_world.get(instance.definition.world_id, {})
+		for code: String in instance.definition.legacy_codes:
+			world_index.erase(code.strip_edges().to_lower())
+		_dormant_by_map_id[map_id] = instance
 
 
 ## 执行 `success` 对应的模块操作。

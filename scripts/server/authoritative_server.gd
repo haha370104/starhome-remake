@@ -230,6 +230,7 @@ func advance_simulation(elapsed_seconds: float, now_msec := -1) -> void:
 	while _simulation_accumulator + 0.000001 >= fixed_delta:
 		_simulation_accumulator -= fixed_delta
 		server_tick += 1
+		map_registry.suspend_empty_instances(server_tick - 1)
 		for registered_instance: AuthoritativeMapInstance in map_registry.all_instances():
 			registered_instance.simulate(fixed_delta)
 			_settle_mining_cycles(registered_instance)
@@ -1381,6 +1382,12 @@ func ensure_runtime_map(map_id: String) -> Dictionary:
 	var existing := map_registry.instance_by_map_id(map_id) if map_registry != null else null
 	if existing != null:
 		return _success(existing)
+	var dormant := map_registry.dormant_instance(map_id)
+	if dormant != null:
+		var resumed := dormant.resume_runtime(server_tick)
+		if not resumed.ok:
+			return resumed
+		return map_registry.register_instance(dormant)
 	var definition_path := String(_runtime_definition_paths_by_map_id.get(map_id, ""))
 	if definition_path.is_empty():
 		return _failure(&"runtime_map_unknown", "runtime map is absent from the controlled index")
