@@ -400,6 +400,7 @@ def build_runtime_floor(presentation: Presentation) -> tuple[bytes, dict[str, An
         payload = source_composite.read_bytes()
         return payload, {
             "excluded_static_transition_placements": 0,
+            "unresolved_static_transition_sources": 0,
             "runtime_floor_sha256": sha256_bytes(payload),
         }
 
@@ -417,9 +418,17 @@ def build_runtime_floor(presentation: Presentation) -> tuple[bytes, dict[str, An
     restored_composite = Image.alpha_composite(background, filtered_scene)
     transition_layer = Image.new("RGBA", background.size, (0, 0, 0, 0))
     frame_cache: dict[str, tuple[Image.Image, dict[str, Any]]] = {}
+    unresolved_sources = 0
     for item in matching_items:
         source = resolve_frame_source(item)
         if source is None:
+            # The parsed composite could not contain a frame which the source
+            # extractor itself marked missing. Keep the registry placement
+            # excluded without inventing a footprint for malformed legacy
+            # paths such as ``jt-08..ale``.
+            if str(item.get("status", "")) == "missing":
+                unresolved_sources += 1
+                continue
             raise FileNotFoundError(
                 "Cannot remove transition placement without its source frame: "
                 + str(item.get("source_ale", ""))
@@ -444,6 +453,7 @@ def build_runtime_floor(presentation: Presentation) -> tuple[bytes, dict[str, An
     payload = output.getvalue()
     return payload, {
         "excluded_static_transition_placements": len(excluded),
+        "unresolved_static_transition_sources": unresolved_sources,
         "runtime_floor_sha256": sha256_bytes(payload),
     }
 
@@ -468,6 +478,9 @@ def build_manifest(
                 "semantic_occlusion_available": False,
                 "excluded_static_transition_placements": runtime_floor_audit[
                     "excluded_static_transition_placements"
+                ],
+                "unresolved_static_transition_sources": runtime_floor_audit[
+                    "unresolved_static_transition_sources"
                 ],
                 "runtime_transition_registry_only": True,
             },
