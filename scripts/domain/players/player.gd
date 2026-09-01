@@ -23,6 +23,7 @@ var inventory: Inventory
 var character_equipment: CharacterEquipment
 var vehicle: PlayerVehicle
 var skills: SkillBook
+var quest_states: Dictionary
 
 
 ## 初始化完整玩家聚合及其固定子对象。
@@ -60,6 +61,8 @@ func _init(state: Dictionary = {}) -> void:
 	character_equipment = CharacterEquipment.new()
 	vehicle = PlayerVehicle.new(state.get("vehicle", {}))
 	skills = SkillBook.new(state.get("skills", {}))
+	var quest_value: Variant = state.get("quest_states", {})
+	quest_states = (quest_value as Dictionary).duplicate(true) if quest_value is Dictionary else {}
 
 
 ## 向指定技能发放一次权威经验，并在升级后同步重算综合等级。

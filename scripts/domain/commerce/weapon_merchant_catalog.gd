@@ -58,7 +58,9 @@ func purchase_price(definition_id: String) -> int:
 	if definition.is_empty():
 		return 0
 	var stats: Dictionary = definition.get("stats", {})
-	return maxi(0, int(stats.get("sell_value", 0)))
+	var original_sell_value := int(stats.get("sell_value", 0))
+	var original_purchase_value := int(stats.get("purchase_value", 0))
+	return maxi(1, maxi(original_sell_value, floori(float(original_purchase_value) / 2.0)))
 
 
 ## 返回武器商人及循环任务配置的防御性副本。

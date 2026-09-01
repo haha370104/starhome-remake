@@ -25,9 +25,9 @@ func _initialize() -> void:
 	_expect(_all_offers_valid(offers), "在售项必须属于五类且不超过270级")
 	var inventory := Inventory.new(40, 0, 0)
 	for definition_id: String in [
-		"item:material:02ff69f031b5",
-		"item:material:e07b300afb44",
-		"item:material:fc4cebd5d85b",
+		"low_grade_gel",
+		"low_grade_energy_catalyst",
+		"low_grade_biosilicon",
 	]:
 		var created: DomainResult = items.create(definition_id, {
 			"instance_id": "test.%s" % definition_id,
@@ -43,7 +43,7 @@ func _initialize() -> void:
 	var completed: DomainResult = task.turn_in(inventory, accepted.value)
 	_expect(completed.is_ok and int(completed.value["currency_reward"]) == 1500, "交付应奖励1500金币")
 	_expect(int((completed.value["state"] as Dictionary)["completions"]) == 1, "交付应累计完成次数")
-	_expect(inventory.count_definition("item:material:02ff69f031b5") == 0, "交付应消耗材料")
+	_expect(inventory.count_definition("low_grade_gel") == 0, "交付应消耗材料")
 	_finish()
 
 

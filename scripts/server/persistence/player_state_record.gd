@@ -27,6 +27,7 @@ var character_max_health := 1
 var character_health := 1
 var character_experience := 0
 var character_skills: Dictionary = {}
+var quest_states: Dictionary = {}
 var vehicle_id := ""
 var vehicle_definition_id := ""
 var vehicle_max_health := 0
@@ -76,6 +77,10 @@ static func from_dictionary(raw: Variant) -> DomainResult:
 	if not skills_value is Dictionary:
 		return DomainResult.failure(&"persistence.invalid_player_state", "character skills must be a dictionary")
 	record.character_skills = (skills_value as Dictionary).duplicate(true)
+	var quest_value: Variant = raw.get("quest_states", {})
+	if not quest_value is Dictionary:
+		return DomainResult.failure(&"persistence.invalid_player_state", "quest states must be a dictionary")
+	record.quest_states = (quest_value as Dictionary).duplicate(true)
 	record.vehicle_id = String(raw.get("vehicle_id", ""))
 	record.vehicle_definition_id = String(raw.get("vehicle_definition_id", ""))
 	record.vehicle_max_health = int(raw.get("vehicle_max_health", 0))
@@ -128,6 +133,12 @@ func validate() -> DomainResult:
 				or float(skill_state.get("fractional_exp", -1.0)) < 0.0 \
 				or float(skill_state.get("fractional_exp", -1.0)) >= 1.0:
 			return DomainResult.failure(&"persistence.invalid_player_state", "character skill state is invalid")
+	for quest_id: Variant in quest_states:
+		var quest_state: Variant = quest_states[quest_id]
+		if String(quest_id).is_empty() or not quest_state is Dictionary \
+				or int(quest_state.get("completions", -1)) < 0 \
+				or not (quest_state.get("accepted", false) is bool):
+			return DomainResult.failure(&"persistence.invalid_player_state", "quest state is invalid")
 	if vehicle_id.is_empty() or vehicle_definition_id.is_empty() or vehicle_max_health <= 0 \
 		or vehicle_health < 0 or vehicle_health > vehicle_max_health:
 		return DomainResult.failure(&"persistence.invalid_player_state", "vehicle identity or health is invalid")
@@ -192,6 +203,7 @@ func to_dictionary() -> Dictionary:
 		"character_health": character_health,
 		"character_experience": character_experience,
 		"character_skills": character_skills.duplicate(true),
+		"quest_states": quest_states.duplicate(true),
 		"vehicle_id": vehicle_id,
 		"vehicle_definition_id": vehicle_definition_id,
 		"vehicle_max_health": vehicle_max_health,

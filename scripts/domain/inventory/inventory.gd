@@ -153,8 +153,8 @@ func remove_quantity(instance_id: String, quantity: int) -> DomainResult:
 		var item: GameItem = _items[index]
 		if item.instance_id != instance_id:
 			continue
-		if item.locked or item.bound:
-			return DomainResult.failure(&"inventory.item_not_tradeable", "locked or bound item cannot be sold")
+		if item.locked:
+			return DomainResult.failure(&"inventory.item_not_tradeable", "locked item cannot be sold")
 		if item.quantity < quantity:
 			return DomainResult.failure(&"inventory.insufficient_quantity", "item quantity is insufficient")
 		var result := {

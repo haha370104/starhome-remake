@@ -12,9 +12,9 @@
     "title": "武器店材料收集",
     "maximum_completions": 30,
     "requirements": [
-      {"definition_id": "item:material:02ff69f031b5", "display_name": "低级类胶", "quantity": 20},
-      {"definition_id": "item:material:e07b300afb44", "display_name": "低级能量催化剂", "quantity": 20},
-      {"definition_id": "item:material:fc4cebd5d85b", "display_name": "低级生物硅", "quantity": 20}
+      {"definition_id": "low_grade_gel", "display_name": "低级类胶", "quantity": 20},
+      {"definition_id": "low_grade_energy_catalyst", "display_name": "低级能量催化剂", "quantity": 20},
+      {"definition_id": "low_grade_biosilicon", "display_name": "低级生物硅", "quantity": 20}
     ],
     "currency_reward": 1500,
     "milestone_rewards": {
