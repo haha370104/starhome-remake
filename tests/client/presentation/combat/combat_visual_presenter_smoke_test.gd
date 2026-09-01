@@ -48,6 +48,22 @@ func _run() -> void:
 	_expect_equal(presenter.layer_frame(&"primary_weapon"), 2, "independent aiming rotates only weapon")
 	_expect_true(presenter.set_action(&"attack"), "weapon exposes attack action")
 	_expect_equal(presenter.layer_frame(&"chassis"), 28, "missing chassis attack falls back to idle")
+	_expect_equal(
+		(runtime.get("vehicle_actor_by_chassis_definition", {}) as Dictionary).get(
+			"glory_equipment_tank1000_27ae5e8059", ""
+		),
+		"sama_king_combat_vehicle",
+		"撒玛王底盘定义必须映射到独立业务 actor",
+	)
+	_expect_equal(presenter.present_actor(&"sama_king_combat_vehicle"), OK,
+		"撒玛王战车应从按需导入资源构建")
+	presenter.set_direction(7)
+	_expect_equal(presenter.layer_frame(&"chassis"), 28,
+		"撒玛王底盘应使用八向四帧序列")
+	_expect_equal(presenter.layer_frame(&"primary_weapon"), 7,
+		"天神之怒炮口应独立使用八向序列")
+	_expect_true(presenter.layer_frames_resource(&"shadow") != null,
+		"撒玛王战车应加载同族八向阴影")
 
 	_expect_monster(presenter, &"om_adult_standard", {&"idle": 5, &"move": 5, &"attack": 6})
 	_expect_monster(presenter, &"om_larva_standard", {&"idle": 5, &"move": 5, &"attack": 5})

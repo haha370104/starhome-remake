@@ -811,6 +811,7 @@ func _on_current_player_changed(current_player: Player) -> void:
 			current_player.character_equipment,
 			character_catalog,
 		)
+		player.apply_vehicle_equipment(current_player.vehicle)
 	if hud != null:
 		var tactical_equipment: VehicleEquipment = current_player.vehicle.loadout.at(13)
 		var action_id := "" if tactical_equipment == null else String(

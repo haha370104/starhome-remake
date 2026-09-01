@@ -28,6 +28,7 @@ var _current_direction := 6
 var _animation_speed_scale := 1.0
 var _combat_weapon_layer := &"primary_weapon"
 var _vehicle_destroyed := false
+var _equipped_combat_actor_id: StringName = &""
 
 
 ## 构建共享人形角色与按需隐藏的战斗载具表现。
@@ -116,7 +117,9 @@ func apply_map_presentation(presentation: Dictionary) -> Error:
 		_apply_active_pose()
 		return OK
 
-	var requested_actor := StringName(presentation.get("actor_id", &""))
+	var requested_actor := _equipped_combat_actor_id
+	if requested_actor == &"":
+		requested_actor = StringName(presentation.get("actor_id", &""))
 	if combat_presenter.current_actor_id != requested_actor:
 		var present_error: Error = combat_presenter.present_actor(requested_actor)
 		if present_error != OK:
@@ -170,6 +173,101 @@ func set_combat_weapon_layer(layer_id: StringName) -> void:
 		return
 	for candidate: StringName in [&"primary_weapon", &"rocket_weapon", &"missile_weapon"]:
 		combat_presenter.set_layer_visible(candidate, candidate == layer_id)
+
+
+## 用当前 PlayerVehicle 装配选择业务化战车 actor，替换地图中的新兵占位外观。
+## [param vehicle] 当前玩家唯一的战车聚合对象。
+## 返回清单中存在对应底盘 actor 且已完成切换时为 true。
+## 设计：地图只决定“进入战车模式”，具体哪辆战车始终由当前玩家装配对象决定。
+func apply_vehicle_equipment(vehicle: PlayerVehicle) -> bool:
+	if vehicle == null or combat_presenter == null:
+		return false
+	var chassis := vehicle.loadout.at(0) as VehicleChassis
+	var primary_weapon := vehicle.loadout.at(1) as VehicleWeapon
+	if chassis == null or primary_weapon == null:
+		return false
+	var component_map: Dictionary = _combat_manifest.get(
+		"vehicle_component_by_equipment_definition", {}
+	)
+	var shadow_map: Dictionary = _combat_manifest.get(
+		"vehicle_shadow_component_by_chassis_definition", {}
+	)
+	var components: Dictionary = _combat_manifest.get("components", {})
+	var chassis_component := String(component_map.get(chassis.definition_id, ""))
+	var weapon_component := String(component_map.get(primary_weapon.definition_id, ""))
+	var shadow_component := String(shadow_map.get(chassis.definition_id, ""))
+	if chassis_component.is_empty() or weapon_component.is_empty() \
+			or not components.has(chassis_component) or not components.has(weapon_component):
+		return false
+	var layers: Array[Dictionary] = []
+	if not shadow_component.is_empty() and components.has(shadow_component):
+		layers.append(_vehicle_layer(
+			&"shadow", -1, components[shadow_component], false
+		))
+	layers.append(_vehicle_layer(&"chassis", 0, components[chassis_component], true))
+	layers.append(_vehicle_layer(&"primary_weapon", 1, components[weapon_component], false))
+	_append_secondary_weapon_layers(layers)
+	var actor_id := &"equipped_combat_vehicle"
+	var registered: Error = combat_presenter.register_actor(actor_id, {
+		"display_name": chassis.display_name,
+		"default_action": "idle",
+		"layers": layers,
+		"installed_components": [chassis_component, weapon_component],
+	})
+	if registered != OK:
+		return false
+	var presented: Error = combat_presenter.present_actor(actor_id)
+	if presented != OK:
+		return false
+	_equipped_combat_actor_id = actor_id
+	combat_actor_id = actor_id if presentation_kind == COMBAT_ACTOR_KIND else &""
+	set_combat_weapon_layer(_combat_weapon_layer)
+	_apply_active_pose()
+	return true
+
+
+## 把单项业务组件动作扩展为战车 actor 的 idle、move 与可选 attack 动作。
+## [param layer_id] shadow、chassis 或 primary_weapon。
+## [param layer_z_index] 战车内部绘制层级。
+## [param component] 运行时 components 中的业务组件定义。
+## [param animated_while_moving] 是否在 move 时循环多帧底盘动画。
+## 返回可直接登记到 CombatVisualPresenter 的图层定义。
+func _vehicle_layer(
+	layer_id: StringName,
+	layer_z_index: int,
+	component: Dictionary,
+	animated_while_moving: bool,
+) -> Dictionary:
+	var source_action: Dictionary = component.get("action", {})
+	var idle := source_action.duplicate(true)
+	idle["fps"] = 0.0
+	idle["loop"] = false
+	var move := source_action.duplicate(true)
+	if not animated_while_moving:
+		move["fps"] = 0.0
+		move["loop"] = false
+	var actions := {"idle": idle, "move": move}
+	if layer_id != &"chassis":
+		actions["attack"] = idle.duplicate(true)
+	return {
+		"id": String(layer_id),
+		"z_index": layer_z_index,
+		"actions": actions,
+	}
+
+
+## 从新兵兼容 actor 复制已按需导入的火箭与导弹表现层。
+## [param layers] 正在组装的玩家实际战车图层数组。
+## 设计：副武器尚未纳入完整固定装配映射前继续复用公共视觉层，但不影响底盘和主炮事实来源。
+func _append_secondary_weapon_layers(layers: Array[Dictionary]) -> void:
+	var actors: Dictionary = _combat_manifest.get("actors", {})
+	var fallback_actor: Dictionary = actors.get("starter_combat_vehicle", {})
+	for layer_value: Variant in fallback_actor.get("layers", []):
+		if not layer_value is Dictionary:
+			continue
+		var layer: Dictionary = layer_value
+		if StringName(layer.get("id", "")) in [&"rocket_weapon", &"missile_weapon"]:
+			layers.append(layer.duplicate(true))
 
 
 ## 执行 `set_combat_status` 对应的模块操作。

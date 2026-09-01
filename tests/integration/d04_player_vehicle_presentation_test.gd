@@ -3,6 +3,7 @@ extends SceneTree
 const MainHallScene := preload("res://scenes/main_hall.tscn")
 const CITY_DEFINITION := "res://data/maps/yian_harbor_city.json"
 const D04_DEFINITION := "res://data/maps/d04_field_zone.json"
+const ItemCatalogScript := preload("res://scripts/domain/items/item_catalog.gd")
 
 var assertions := 0
 var failures: PackedStringArray = []
@@ -72,6 +73,7 @@ func _run() -> void:
 	_test_eight_way_idle_and_move(player, hall.local_player_controller)
 	_test_move_and_fire_keeps_route(hall)
 	_test_evidence_contract(d04_definition, player.combat_presenter)
+	_test_equipped_vehicle_replaces_map_placeholder(player)
 
 	_expect(
 		hall.active_world_controller.commit_bundle(city_bundle, Vector2(1399, 954)),
@@ -80,6 +82,52 @@ func _run() -> void:
 	_expect(player.presentation_kind == &"character", "返回城区必须恢复人形而非残留战车")
 	_expect(player.human_character.visible and not player.combat_presenter.visible, "两套表现必须互斥")
 	_finish(hall)
+
+
+## 验证地图仅声明战车模式，实际底盘与主炮由当前 PlayerVehicle 装配覆盖。
+## [param player] 当前 D04 玩家世界 avatar。
+func _test_equipped_vehicle_replaces_map_placeholder(player: Node2D) -> void:
+	var catalog: ItemCatalog = ItemCatalogScript.new()
+	var initialized := catalog.initialize()
+	_expect(initialized.is_ok, "实际战车外观测试应加载统一物品目录")
+	if not initialized.is_ok:
+		return
+	var vehicle := PlayerVehicle.new({
+		"vehicle_id": "vehicle.presentation.test",
+		"definition_id": "recruit_tank",
+		"max_health": 70,
+		"health": 70,
+		"reserve_energy_capacity": 10000.0,
+		"reserve_energy": 10000.0,
+		"working_energy_capacity": 100.0,
+		"working_energy": 100.0,
+		"output_power": 21.0,
+	})
+	for definition_id: String in [
+		"glory_equipment_tank1000_27ae5e8059",
+		"glory_equipment_gun1000_c4c24e2500",
+	]:
+		var created := catalog.create(definition_id, {
+			"instance_id": "presentation.%s" % definition_id,
+			"footprint_px": [45, 45],
+		})
+		_expect(created.is_ok and vehicle.loadout.restore(created.value).is_ok,
+			"撒玛王底盘与天神之怒应进入固定装配")
+	vehicle.reconcile_loadout_state()
+	_expect(player.apply_vehicle_equipment(vehicle),
+		"世界 avatar 应接受当前玩家实际战车装配")
+	_expect(player.combat_actor_id == &"equipped_combat_vehicle",
+		"D04 世界外观必须切换为由实际固定装配动态合成的 actor")
+	_expect(
+		player.combat_presenter._actor.get("installed_components", []) == [
+			"sama_king_vehicle_chassis", "divine_wrath_energy_cannon",
+		],
+		"动态 actor 必须分别消费撒玛王底盘与天神之怒主炮",
+	)
+	_expect(player.combat_presenter.layer_frame(&"chassis") >= 0,
+		"撒玛王底盘应完成实际帧渲染")
+	_expect(player.combat_presenter.layer_frame(&"primary_weapon") >= 0,
+		"天神之怒主炮应完成实际帧渲染")
 
 
 ## 执行 `test_eight_way_idle_and_move` 对应的模块操作。

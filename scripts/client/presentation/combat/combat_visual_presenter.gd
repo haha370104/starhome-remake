@@ -29,6 +29,22 @@ func configure(manifest: Dictionary) -> Error:
 	return OK
 
 
+## 向当前表现器的隔离清单登记一个由实际装备动态组装的业务 actor。
+## [param actor_id] 仅在该 PlayerWorldAvatar 内使用的业务 actor 标识。
+## [param actor_definition] 与静态 actors 条目相同的图层和动作定义。
+## 返回 actor 标识、默认动作和图层结构合法时为 OK。
+## 设计：动态登记只修改 configure 时复制的清单，不会污染全局资源或其他玩家实例。
+func register_actor(actor_id: StringName, actor_definition: Dictionary) -> Error:
+	if actor_id == &"" or actor_definition.is_empty() \
+			or not actor_definition.get("layers") is Array \
+			or String(actor_definition.get("default_action", "")).is_empty():
+		return ERR_INVALID_DATA
+	var actors: Dictionary = _manifest.get("actors", {})
+	actors[String(actor_id)] = actor_definition.duplicate(true)
+	_manifest["actors"] = actors
+	return OK
+
+
 ## 执行 `present_actor` 对应的模块操作。
 ## [param actor_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## 返回该函数计算、查询或操作得到的结果。
