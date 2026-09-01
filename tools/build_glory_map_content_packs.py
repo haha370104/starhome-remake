@@ -39,6 +39,8 @@ WORLD_IDS = {
     "NFT_PL": "glory_nft_pl",
     "NFT_SK": "glory_nft_sk",
 }
+TRANSITION_RECOVERY_WORLD = "NFT_BL"
+TRANSITION_RECOVERY_BRANCH = "NFT_BT"
 REQUIRED_SOURCE_FILES = (
     "composite.png",
     "minimap.jpg",
@@ -202,6 +204,97 @@ def closest_walkable(source: Path, metadata: dict[str, Any]) -> list[int]:
     return [best[1], best[2]]
 
 
+def world_to_cell(position: list[int]) -> tuple[int, int]:
+    """Convert one nEngine world position to its diamond navigation cell."""
+    projected_y = position[1] * CELL_SIZE[0] / (2.0 * CELL_SIZE[1]) + CELL_SIZE[0] * 0.5
+    positive = math.floor((projected_y + position[0]) / CELL_SIZE[0])
+    negative = math.floor((projected_y - position[0]) / CELL_SIZE[0])
+    return math.floor((positive - negative) / 2.0), positive + negative
+
+
+def is_walkable(source: Path, metadata: dict[str, Any], position: list[int]) -> bool:
+    """Return whether one world position belongs to a passable source cell."""
+    grid_width, grid_height = (int(value) for value in metadata["engine_grid_size"])
+    cell_x, cell_y = world_to_cell(position)
+    if cell_x < 0 or cell_x >= grid_width or cell_y < 0 or cell_y >= grid_height:
+        return False
+    navigation = (source / "navigation_grid.bin").read_bytes()
+    return navigation[cell_y * grid_width + cell_x] != 0
+
+
+def closest_walkable_to(
+    source: Path,
+    metadata: dict[str, Any],
+    requested: list[int],
+) -> list[int]:
+    """Keep recovered markers usable when sibling layouts differ locally."""
+    if is_walkable(source, metadata, requested):
+        return requested
+    grid_width, grid_height = (int(value) for value in metadata["engine_grid_size"])
+    navigation = (source / "navigation_grid.bin").read_bytes()
+    best: tuple[float, int, int] | None = None
+    for cell_y in range(grid_height):
+        for cell_x in range(grid_width):
+            if navigation[cell_y * grid_width + cell_x] == 0:
+                continue
+            world_x = cell_x * CELL_SIZE[0] + (CELL_SIZE[0] // 2 if cell_y % 2 else 0)
+            world_y = cell_y * CELL_SIZE[1]
+            candidate = (
+                (world_x - requested[0]) ** 2 + (world_y - requested[1]) ** 2,
+                world_x,
+                world_y,
+            )
+            if best is None or candidate < best:
+                best = candidate
+    if best is None:
+        raise ValueError(f"map has no walkable cell: {source}")
+    return [best[1], best[2]]
+
+
+def recover_empty_buli_field_transitions(
+    row: dict[str, Any],
+    presentation: Presentation,
+    metadata: dict[str, Any],
+    raw_transitions: list[dict[str, Any]],
+) -> tuple[list[dict[str, Any]], str]:
+    """Recover an empty Buli exit table from the Glory sibling world only.
+
+    Some NFT_BL field FCC files contain the complete map and navigation payload
+    but omit every editor Transport record. NFT_BT retains those records for a
+    subset of the same 4824x4800 field codes. Recovery is intentionally limited
+    to an entirely empty table; existing branch-specific topology always wins.
+    """
+    if raw_transitions or str(row.get("world_code", "")) != TRANSITION_RECOVERY_WORLD:
+        return raw_transitions, ""
+    if str(metadata.get("category", "")) != "field_code":
+        return raw_transitions, ""
+    for sibling in sorted(presentation.source.parent.iterdir()):
+        metadata_path = sibling / "map_metadata.json"
+        transitions_path = sibling / "transitions.json"
+        if not metadata_path.is_file() or not transitions_path.is_file():
+            continue
+        sibling_metadata = read_object(metadata_path)
+        if TRANSITION_RECOVERY_BRANCH not in sibling_metadata.get("source_branches", []):
+            continue
+        sibling_transitions = list(read_object(transitions_path).get("enabled", []))
+        if not sibling_transitions:
+            continue
+        recovered: list[dict[str, Any]] = []
+        for source_record in sibling_transitions:
+            record = dict(source_record)
+            original_approach = [int(value) for value in record.get("approach_point", [0, 0])]
+            record["approach_point"] = closest_walkable_to(
+                presentation.source,
+                metadata,
+                original_approach,
+            )
+            record["_recovery_original_approach_point"] = original_approach
+            record["_recovery_source_output"] = sibling.relative_to(PARSED_MAP_ROOT).as_posix()
+            recovered.append(record)
+        return recovered, sibling.relative_to(PARSED_MAP_ROOT).as_posix()
+    return raw_transitions, ""
+
+
 def direction(point: list[int], size: list[int]) -> str:
     angle = math.atan2(point[1] - size[1] / 2.0, point[0] - size[0] / 2.0)
     sector = int(round(angle / (math.pi / 4.0))) % 8
@@ -233,6 +326,23 @@ def build_transition(
     anchor = [int(value) for value in raw_anchor]
     raw_approach = raw.get("approach_point") or anchor
     approach = [int(value) for value in raw_approach]
+    source_audit = {
+        "source_release": "starhome_lz_ry",
+        "source_map_code": str(raw.get("source_map_code", "")),
+        "source_output": str(raw.get("source_map_output", "")),
+        "source_line": int(raw.get("source_line", 0)),
+        "source_icon_ale": str(raw.get("icon_ale", "")),
+    }
+    recovery_output = str(raw.get("_recovery_source_output", ""))
+    if recovery_output:
+        source_audit["recovery"] = {
+            "kind": "same_release_sibling_world_transport_metadata",
+            "source_world": TRANSITION_RECOVERY_BRANCH,
+            "source_output": recovery_output,
+            "original_approach_point": raw.get("_recovery_original_approach_point", approach),
+            "walkable_approach_corrected": approach
+                != raw.get("_recovery_original_approach_point", approach),
+        }
     return {
         "transition_id": "exit_to_%s_%02d" % (stable_token(destination_code), ordinal),
         "kind": "standard",
@@ -246,13 +356,7 @@ def build_transition(
             "activation": "enabled_transition",
         },
         "destination": destination,
-        "source_audit": {
-            "source_release": "starhome_lz_ry",
-            "source_map_code": str(raw.get("source_map_code", "")),
-            "source_output": str(raw.get("source_map_output", "")),
-            "source_line": int(raw.get("source_line", 0)),
-            "source_icon_ale": str(raw.get("icon_ale", "")),
-        },
+        "source_audit": source_audit,
     }
 
 
@@ -306,7 +410,13 @@ def build_definition(
             "idle_cycle": "reconstructed_directional_first_frame",
         },
     } if category == "field" else {"kind": "character"}
-    raw_transitions = transitions.get("enabled", [])
+    raw_transitions = list(transitions.get("enabled", []))
+    raw_transitions, recovery_output = recover_empty_buli_field_transitions(
+        row,
+        presentation,
+        metadata,
+        raw_transitions,
+    )
     return {
         "schema_version": 1,
         "map_id": map_id,
@@ -367,6 +477,12 @@ def build_definition(
             "navigation_passable": int(metadata["navigation"]["passable"]),
             "navigation_blocked": int(metadata["navigation"]["blocked"]),
             "presentation_state": "runtime_ready_flattened",
+            "promoted_transition_count": len(raw_transitions),
+            "transition_recovery": ({
+                "kind": "same_release_sibling_world_transport_metadata",
+                "source_world": TRANSITION_RECOVERY_BRANCH,
+                "source_output": recovery_output,
+            } if recovery_output else None),
         },
     }
 
@@ -469,26 +585,31 @@ def build(arguments: argparse.Namespace) -> dict[str, Any]:
         for map_id, definition in sorted(generated_definitions.items()):
             add_json(archive, definition, "content/glory/map_definitions/%s.json" % map_id)
 
-    parts = partition_presentations(
-        sorted(used_presentations.values(), key=lambda item: item.relative_source.lower()),
-        int(arguments.maximum_pack_mib * 1024 * 1024),
-    )
     pack_files = [index_pack]
-    for part_index, part in enumerate(parts, start=1):
-        pack_path = PACK_ROOT / ("glory_maps_%03d_v1.zip" % part_index)
-        with zipfile.ZipFile(pack_path, "w", allowZip64=True) as archive:
-            for presentation in part:
-                root = "content/glory/maps/" + presentation.relative_source
-                metadata = read_object(presentation.source / "map_metadata.json")
-                add_file(archive, presentation.source / "composite.png", root + "/floor.png")
-                add_file(archive, presentation.source / "minimap.jpg", root + "/minimap.jpg")
-                add_file(archive, presentation.source / "navigation_grid.bin", root + "/navigation_grid.bin")
-                add_json(archive, build_manifest(presentation, metadata), root + "/scene_manifest.json")
-                add_file(archive, presentation.source / "scene_objects.json", root + "/source_scene_objects.json")
-                add_file(archive, presentation.source / "transitions.json", root + "/source_transitions.json")
-                add_file(archive, presentation.source / "map_metadata.json", root + "/source_metadata.json")
-        pack_files.append(pack_path)
-        print("BUILT", pack_path.name, len(part), "presentations")
+    if arguments.index_only:
+        pack_files.extend(sorted(PACK_ROOT.glob("glory_maps_[0-9][0-9][0-9]_v1.zip")))
+        if len(pack_files) == 1:
+            raise FileNotFoundError("--index-only requires existing Glory presentation packs")
+    else:
+        parts = partition_presentations(
+            sorted(used_presentations.values(), key=lambda item: item.relative_source.lower()),
+            int(arguments.maximum_pack_mib * 1024 * 1024),
+        )
+        for part_index, part in enumerate(parts, start=1):
+            pack_path = PACK_ROOT / ("glory_maps_%03d_v1.zip" % part_index)
+            with zipfile.ZipFile(pack_path, "w", allowZip64=True) as archive:
+                for presentation in part:
+                    root = "content/glory/maps/" + presentation.relative_source
+                    metadata = read_object(presentation.source / "map_metadata.json")
+                    add_file(archive, presentation.source / "composite.png", root + "/floor.png")
+                    add_file(archive, presentation.source / "minimap.jpg", root + "/minimap.jpg")
+                    add_file(archive, presentation.source / "navigation_grid.bin", root + "/navigation_grid.bin")
+                    add_json(archive, build_manifest(presentation, metadata), root + "/scene_manifest.json")
+                    add_file(archive, presentation.source / "scene_objects.json", root + "/source_scene_objects.json")
+                    add_file(archive, presentation.source / "transitions.json", root + "/source_transitions.json")
+                    add_file(archive, presentation.source / "map_metadata.json", root + "/source_metadata.json")
+            pack_files.append(pack_path)
+            print("BUILT", pack_path.name, len(part), "presentations")
 
     pack_entries = []
     for path in pack_files:
@@ -527,6 +648,7 @@ def build(arguments: argparse.Namespace) -> dict[str, Any]:
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--plan-only", action="store_true")
+    parser.add_argument("--index-only", action="store_true")
     parser.add_argument("--maximum-pack-mib", type=int, default=1536)
     arguments = parser.parse_args()
     if arguments.maximum_pack_mib < 64:

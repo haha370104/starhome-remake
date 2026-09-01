@@ -70,7 +70,198 @@
       "idle_cycle": "reconstructed_directional_first_frame"
     }
   },
-  "transitions": [],
+  "transitions": [
+    {
+      "transition_id": "exit_to_c04",
+      "kind": "standard",
+      "enabled": true,
+      "label": "通往C04区",
+      "source_anchor": [
+        2856,
+        36
+      ],
+      "approach_point": [
+        2885,
+        53
+      ],
+      "presentation": {
+        "kind": "directional_transition",
+        "orientation": "north",
+        "activation": "enabled_transition"
+      },
+      "destination": {
+        "legacy_code": "c04",
+        "entry_number": 0,
+        "external": false,
+        "map_id": "buli_c04_field_zone"
+      },
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_map_code": "c05",
+        "source_output": "maps/c05/variant_02_nft_bt",
+        "source_line": 526,
+        "source_icon_ale": "../../map/mapimg/house/CHN_2005_06_28_19_30_52_38/as3.ale",
+        "recovery": {
+          "kind": "same_release_sibling_world_transport_metadata",
+          "source_world": "NFT_BT",
+          "target_world": "NFT_BL"
+        }
+      }
+    },
+    {
+      "transition_id": "exit_to_c06",
+      "kind": "standard",
+      "enabled": true,
+      "label": "进入C06区域",
+      "source_anchor": [
+        2448,
+        4560
+      ],
+      "approach_point": [
+        2448,
+        4560
+      ],
+      "presentation": {
+        "kind": "directional_transition",
+        "orientation": "south",
+        "activation": "enabled_transition"
+      },
+      "destination": {
+        "legacy_code": "c06",
+        "entry_number": 0,
+        "external": true,
+        "map_id": "glory_nft_bl_c06"
+      },
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_map_code": "c05",
+        "source_output": "maps/c05/variant_02_nft_bt",
+        "source_line": 600,
+        "source_icon_ale": "../../map/mapimg/house/CHN_2005_06_28_19_30_52_38/as7.ale",
+        "recovery": {
+          "kind": "same_release_sibling_world_transport_metadata",
+          "source_world": "NFT_BT",
+          "target_world": "NFT_BL"
+        }
+      }
+    },
+    {
+      "transition_id": "exit_to_d04",
+      "kind": "standard",
+      "enabled": true,
+      "label": "通往D04区",
+      "source_anchor": [
+        4680,
+        60
+      ],
+      "approach_point": [
+        4699,
+        69
+      ],
+      "presentation": {
+        "kind": "directional_transition",
+        "orientation": "north_east",
+        "activation": "enabled_transition"
+      },
+      "destination": {
+        "legacy_code": "d04",
+        "entry_number": 0,
+        "external": false,
+        "map_id": "d04_field_zone"
+      },
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_map_code": "c05",
+        "source_output": "maps/c05/variant_02_nft_bt",
+        "source_line": 527,
+        "source_icon_ale": "../../map/mapimg/house/CHN_2005_06_28_19_30_52_38/as2.ale",
+        "recovery": {
+          "kind": "same_release_sibling_world_transport_metadata",
+          "source_world": "NFT_BT",
+          "target_world": "NFT_BL"
+        }
+      }
+    },
+    {
+      "transition_id": "exit_to_d05",
+      "kind": "standard",
+      "enabled": true,
+      "label": "通往D05区",
+      "source_anchor": [
+        4704,
+        2688
+      ],
+      "approach_point": [
+        4711,
+        2685
+      ],
+      "presentation": {
+        "kind": "directional_transition",
+        "orientation": "east",
+        "activation": "enabled_transition"
+      },
+      "destination": {
+        "legacy_code": "d05",
+        "entry_number": 0,
+        "external": false,
+        "map_id": "buli_d05_field_zone"
+      },
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_map_code": "c05",
+        "source_output": "maps/c05/variant_02_nft_bt",
+        "source_line": 528,
+        "source_icon_ale": "../../map/mapimg/house/CHN_2005_06_28_19_30_52_38/as1.ale",
+        "recovery": {
+          "kind": "same_release_sibling_world_transport_metadata",
+          "source_world": "NFT_BT",
+          "target_world": "NFT_BL"
+        }
+      }
+    },
+    {
+      "transition_id": "exit_to_d06",
+      "kind": "standard",
+      "enabled": true,
+      "label": "进入D06区域",
+      "source_anchor": [
+        4608,
+        4608
+      ],
+      "approach_point": [
+        4632,
+        4644
+      ],
+      "presentation": {
+        "kind": "directional_transition",
+        "orientation": "south_east",
+        "activation": "enabled_transition"
+      },
+      "destination": {
+        "legacy_code": "d06",
+        "entry_number": 0,
+        "external": true,
+        "map_id": "glory_nft_bl_d06"
+      },
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_map_code": "c05",
+        "source_output": "maps/c05/variant_02_nft_bt",
+        "source_line": 601,
+        "source_icon_ale": "../../map/mapimg/house/CHN_2005_06_28_19_30_52_38/as8.ale",
+        "recovery": {
+          "kind": "same_release_sibling_world_transport_metadata",
+          "source_world": "NFT_BT",
+          "target_world": "NFT_BL",
+          "original_approach_point": [
+            4608,
+            4608
+          ],
+          "walkable_approach_corrected": true
+        }
+      }
+    }
+  ],
   "source_audit": {
     "source_release": "starhome_lz_ry",
     "source_world": "NFT_BL",
@@ -88,6 +279,12 @@
     "scene_objects_missing": 0,
     "semantic_layers": 116,
     "presentation_state": "runtime_ready",
-    "promoted_transition_count": 0
+    "promoted_transition_count": 5,
+    "transition_recovery": {
+      "kind": "same_release_sibling_world_transport_metadata",
+      "source_world": "NFT_BT",
+      "source_output": "maps/c05/variant_02_nft_bt",
+      "reason": "NFT_BL C05 contains no Transport records while reciprocal Buli edges and the sibling Glory branch preserve the field topology"
+    }
   }
 }
