@@ -11,6 +11,7 @@ const TopMenuScript := preload("res://scripts/ui/free_top_menu.gd")
 const BottomMainBarScript := preload("res://scripts/ui/free_bottom_main_bar.gd")
 const ShortcutBarScript := preload("res://scripts/ui/free_shortcut_bar.gd")
 const MinimapDockScript := preload("res://scripts/ui/free_minimap_dock.gd")
+const LEGACY_PANEL_FONT := preload("res://assets/ui/fonts/legacy_panel_font.tres")
 const CentralSystemMessageFeedScript := preload(
 	"res://scripts/ui/central_system_message_feed.gd"
 )
@@ -41,6 +42,7 @@ func configure(world_map_size: Vector2, minimap_texture: Texture2D, map_name := 
 	name = "HallHud"
 	state = HudStateScript.new()
 	asset_manifest = _load_manifest()
+	set_process_input(true)
 
 	root_control = Control.new()
 	root_control.name = "HudRoot"
@@ -154,23 +156,51 @@ func set_vehicle_combat_state(snapshot: Dictionary) -> void:
 
 
 ## 执行 `show_npc_popup` 对应的模块操作。
-## [param interaction] 调用方传入的参数；具体约束由函数签名和所在模块定义。
-func show_npc_popup(interaction: Dictionary) -> void:
+## [param interaction] NPC 名称、正文和原版纵向动作项。
+## [param screen_position] NPC 当前屏幕坐标；菜单按原版在其左上方约 30 像素弹出。
+func show_npc_popup(interaction: Dictionary, screen_position := Vector2(-1, -1)) -> void:
 	popup_title.text = String(interaction.get("title", "NPC"))
 	popup_body.text = String(interaction.get("body", ""))
 	for child in popup_actions.get_children():
 		child.free()
+	var action_count := 0
 	for action_value in interaction.get("actions", []):
-		var action_id := String(action_value)
-		var action_label := String(action_value)
+		var action_id := ""
+		var action_label := ""
 		if action_value is Dictionary:
 			action_id = String(action_value.get("id", "action"))
 			action_label = String(action_value.get("label", action_id))
+		else:
+			action_id = String(action_value)
+			action_label = action_id
 		var action_button := Button.new()
 		action_button.text = action_label
-		action_button.custom_minimum_size = Vector2(0, 36)
+		action_button.custom_minimum_size = Vector2(106, 23)
+		action_button.add_theme_font_override("font", LEGACY_PANEL_FONT)
+		action_button.add_theme_font_size_override("font_size", 13)
+		action_button.add_theme_color_override("font_color", Color("faf0c8"))
+		action_button.add_theme_color_override("font_hover_color", Color.YELLOW)
+		action_button.add_theme_stylebox_override(
+			"normal", _button_style(Color.TRANSPARENT, Color.TRANSPARENT)
+		)
+		action_button.add_theme_stylebox_override(
+			"hover", _button_style(Color("123d5d"), Color("47cdf2"))
+		)
+		action_button.add_theme_stylebox_override(
+			"pressed", _button_style(Color("03121d"), Color.YELLOW)
+		)
 		action_button.pressed.connect(_emit_npc_action.bind(action_id))
 		popup_actions.add_child(action_button)
+		action_count += 1
+	popup.size = Vector2(118, 12 + action_count * 23)
+	var requested := screen_position - Vector2(30, 30)
+	if screen_position.x < 0.0:
+		requested = (get_viewport().get_visible_rect().size - popup.size) * 0.5
+	var viewport_size := get_viewport().get_visible_rect().size
+	popup.position = Vector2(
+		clampf(requested.x, 0.0, maxf(0.0, viewport_size.x - popup.size.x)),
+		clampf(requested.y, 0.0, maxf(0.0, viewport_size.y - popup.size.y)),
+	)
 	popup.visible = true
 
 
@@ -224,47 +254,49 @@ func _build_hint_label() -> void:
 	root_control.add_child(hint_label)
 
 
-## 创建由标题、正文、动态动作区和关闭按钮组成的 NPC 弹窗。
+## 创建原版 BasePOPMenu 风格的 NPC 动作菜单；标题和正文仅保留为语义数据。
 func _build_popup() -> void:
 	popup = PanelContainer.new()
 	popup.name = "NpcPopup"
-	popup.set_anchors_preset(Control.PRESET_CENTER)
-	popup.offset_left = -155
-	popup.offset_right = 155
-	popup.offset_top = -125
-	popup.offset_bottom = 125
-	popup.add_theme_stylebox_override("panel", _panel_style(Color("0a1b2b"), Color("39d5ff")))
+	popup.size = Vector2(118, 80)
+	popup.add_theme_stylebox_override("panel", _panel_style(Color("00121eea"), Color("2996c9")))
 	popup.visible = false
 	popup.mouse_filter = Control.MOUSE_FILTER_STOP
 	root_control.add_child(popup)
 	var margin := MarginContainer.new()
 	for side in ["left", "right"]:
-		margin.add_theme_constant_override("margin_%s" % side, 20)
+		margin.add_theme_constant_override("margin_%s" % side, 5)
 	for side in ["top", "bottom"]:
-		margin.add_theme_constant_override("margin_%s" % side, 16)
+		margin.add_theme_constant_override("margin_%s" % side, 6)
 	popup.add_child(margin)
 	var column := VBoxContainer.new()
-	column.add_theme_constant_override("separation", 10)
+	column.add_theme_constant_override("separation", 0)
 	margin.add_child(column)
 	popup_title = Label.new()
 	popup_title.name = "Title"
-	popup_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	popup_title.add_theme_font_size_override("font_size", 23)
-	popup_title.add_theme_color_override("font_color", Color("65eaff"))
+	popup_title.visible = false
 	column.add_child(popup_title)
 	popup_body = Label.new()
 	popup_body.name = "Body"
-	popup_body.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	popup_body.add_theme_font_size_override("font_size", 16)
+	popup_body.visible = false
 	column.add_child(popup_body)
 	popup_actions = VBoxContainer.new()
 	popup_actions.name = "Actions"
-	popup_actions.add_theme_constant_override("separation", 6)
+	popup_actions.add_theme_constant_override("separation", 0)
 	column.add_child(popup_actions)
-	var close_button := Button.new()
-	close_button.text = "关闭"
-	close_button.pressed.connect(hide_popup)
-	column.add_child(close_button)
+
+
+## 右键点菜单关闭且不触发移动；点菜单外则先关闭，再由地图处理移动。
+func _input(event: InputEvent) -> void:
+	if not popup or not popup.visible or not event is InputEventMouseButton:
+		return
+	var mouse_event := event as InputEventMouseButton
+	if mouse_event.button_index != MOUSE_BUTTON_RIGHT or not mouse_event.pressed:
+		return
+	var inside := popup.get_global_rect().has_point(mouse_event.position)
+	hide_popup()
+	if inside:
+		get_viewport().set_input_as_handled()
 
 
 ## 执行 `panel_style` 对应的模块操作。
@@ -275,6 +307,16 @@ func _panel_style(background: Color, border: Color) -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
 	style.bg_color = background
 	style.border_color = border
-	style.set_border_width_all(2)
-	style.set_corner_radius_all(6)
+	style.set_border_width_all(1)
+	style.set_corner_radius_all(1)
+	style.shadow_color = Color(0, 0, 0, 0.7)
+	style.shadow_size = 3
+	return style
+
+
+func _button_style(background: Color, border: Color) -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = background
+	style.border_color = border
+	style.set_border_width_all(1 if border.a > 0.0 else 0)
 	return style

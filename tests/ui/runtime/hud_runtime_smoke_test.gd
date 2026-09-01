@@ -30,6 +30,7 @@ func _run() -> void:
 	await process_frame
 	_assert_1280_layout(hud)
 	_assert_state_updates(hud)
+	_assert_npc_popup(hud)
 	_assert_map_rebinding(hud)
 	_assert_minimap_modes(hud)
 	_assert_transition_markers(hud)
@@ -108,6 +109,31 @@ func _assert_state_updates(hud: CanvasLayer) -> void:
 	_expect(not hud.shortcut_bar.visible, "快捷栏状态为隐藏时不应渲染本体")
 	_expect(hud.bottom_main_bar.shortcut_visibility_buttons["expand"].visible, "快捷栏隐藏时底栏应显示展开按钮")
 	hud.state.set_shortcut_visible(true)
+
+
+## 验证 NPC 菜单采用原版贴身纵向动作布局，并支持右键关闭。
+func _assert_npc_popup(hud: CanvasLayer) -> void:
+	hud.show_npc_popup({
+		"title": "武器商人",
+		"actions": [
+			{"id": "buy", "label": "买东西"},
+			{"id": "sell", "label": "卖东西"},
+			{"id": "task", "label": "中级任务"},
+		],
+	}, Vector2(600, 300))
+	_expect(hud.popup.position == Vector2(570, 270), "NPC 菜单应在 NPC 屏幕坐标左上 30 像素弹出")
+	_expect(hud.popup_actions.get_child_count() == 3, "武器商人应显示三个独立文字动作")
+	_expect(not hud.popup_title.visible and not hud.popup_body.visible,
+		"原版 BasePOPMenu 不应显示现代化标题和正文")
+	var task_button := hud.popup_actions.get_child(2) as Button
+	_expect(task_button.text == "中级任务" and task_button.size.y == 23,
+		"第三项应以原版紧凑行显示中级任务")
+	var right_click := InputEventMouseButton.new()
+	right_click.button_index = MOUSE_BUTTON_RIGHT
+	right_click.pressed = true
+	right_click.position = hud.popup.get_global_rect().get_center()
+	hud._input(right_click)
+	_expect(not hud.popup.visible, "右键点击 NPC 菜单应关闭菜单")
 
 
 ## 执行 `assert_map_rebinding` 对应的模块操作。

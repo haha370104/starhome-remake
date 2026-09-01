@@ -8,12 +8,16 @@ const CharacterPanelScript := preload("res://scripts/client/ui/windows/character
 const InventoryPanelScript := preload("res://scripts/client/ui/windows/inventory/inventory_panel.gd")
 const VehiclePanelScript := preload("res://scripts/client/ui/windows/vehicle/vehicle_equipment_panel.gd")
 const SkillLevelPanelScript := preload("res://scripts/client/ui/windows/skills/skill_level_panel.gd")
+const WeaponMerchantWindowScript := preload(
+	"res://scripts/client/ui/windows/commerce/weapon_merchant_window.gd"
+)
 const CurrentPlayerScript := preload("res://scripts/client/state/current_player.gd")
 
 var character_panel: CharacterPanel
 var inventory_panel: InventoryPanel
 var vehicle_panel: VehicleEquipmentPanel
 var skill_panel: SkillLevelPanel
+var weapon_merchant_window: WeaponMerchantWindow
 
 ## 【重点 Review】当前登录人物的客户端只读全局投影；业务 UI 必须从这里读取同版本人物与战车状态。
 ## 设计：属性值仍由权威服务器产生，本对象只负责跨面板共享与信号通知。
@@ -59,6 +63,11 @@ func configure(
 	skill_panel.name = "SkillLevelPanel"
 	skill_panel.position = Vector2(445, 70)
 	_add_window(skill_panel)
+	weapon_merchant_window = WeaponMerchantWindowScript.new()
+	weapon_merchant_window.name = "WeaponMerchantWindow"
+	weapon_merchant_window.position = Vector2(170, 80)
+	weapon_merchant_window.command_requested.connect(_dispatch)
+	_add_window(weapon_merchant_window)
 
 	return true
 
@@ -112,6 +121,8 @@ func toggle(action_id: String) -> bool:
 ## 原子应用服务端返回的三面板快照。
 ## [param bundle] 含 character、inventory、vehicle 与 transaction_revision 的快照组。
 func apply_bundle(bundle: Dictionary) -> void:
+	if weapon_merchant_window != null and bundle.get("commerce") is Dictionary:
+		weapon_merchant_window.apply_commerce_bundle(bundle)
 	if current_player == null or not current_player.apply_bundle(bundle):
 		return
 	_bundle = current_player.snapshot_bundle()
@@ -122,6 +133,13 @@ func apply_bundle(bundle: Dictionary) -> void:
 	vehicle_panel.apply_snapshot(_bundle["vehicle"])
 	skill_panel.apply_skills(_bundle["character"].get("skills", []))
 	current_player_changed.emit(current_player)
+
+
+## 打开武器商人的购买、出售或任务窗口，并拉取同一事务快照。
+## [param mode] buy、sell 或 task。
+func open_weapon_merchant(mode: String) -> void:
+	weapon_merchant_window.open_mode(mode)
+	weapon_merchant_window.clamp_to_viewport(size)
 
 
 ## 切换非模态技能等级窗口并保持其处于可见区域。
@@ -157,6 +175,8 @@ func _add_window(window: Control) -> void:
 
 ## 视口变化时把所有窗口重新限制在可见区域。
 func _clamp_windows() -> void:
-	for window: Control in [character_panel, inventory_panel, vehicle_panel, skill_panel]:
+	for window: Control in [
+		character_panel, inventory_panel, vehicle_panel, skill_panel, weapon_merchant_window,
+	]:
 		if window != null:
 			window.call("clamp_to_viewport", size)

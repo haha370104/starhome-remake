@@ -1207,7 +1207,8 @@ func _show_npc_popup(npc: Node2D) -> void:
 		active_npc.set_interaction_active(false)
 	active_npc = npc
 	active_npc.set_interaction_active(true)
-	hud.show_npc_popup(active_npc.get_interaction_data())
+	var screen_position := get_viewport().get_canvas_transform() * active_npc.global_position
+	hud.show_npc_popup(active_npc.get_interaction_data(), screen_position)
 
 
 ## 处理 `_on_npc_popup_closed` 对应的信号回调。
@@ -1221,6 +1222,11 @@ func _on_npc_popup_closed() -> void:
 ## [param action_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _on_npc_action_requested(action_id: String) -> void:
 	if active_npc:
+		if active_npc.npc_id == "weapon_merchant" and action_id in ["buy", "sell", "task"]:
+			hud.hide_popup()
+			game_window_manager.open_weapon_merchant(action_id)
+			hint_label.text = "正在与武器商人交互"
+			return
 		hint_label.text = active_npc.handle_action(action_id)
 
 
