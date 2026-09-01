@@ -142,6 +142,76 @@ func add_reward(item: GameItem) -> DomainResult:
 	return DomainResult.ok(item)
 
 
+## 按实例移除可交易物品，并推进背包 revision。
+## [param instance_id] 待移除实例标识。
+## [param quantity] 移除数量；装备通常为 1。
+## 返回被移除的定义、数量和实例，供权威交易服务结算。
+func remove_quantity(instance_id: String, quantity: int) -> DomainResult:
+	if instance_id.is_empty() or quantity <= 0:
+		return DomainResult.failure(&"inventory.invalid_quantity", "positive quantity is required")
+	for index: int in _items.size():
+		var item: GameItem = _items[index]
+		if item.instance_id != instance_id:
+			continue
+		if item.locked or item.bound:
+			return DomainResult.failure(&"inventory.item_not_tradeable", "locked or bound item cannot be sold")
+		if item.quantity < quantity:
+			return DomainResult.failure(&"inventory.insufficient_quantity", "item quantity is insufficient")
+		var result := {
+			"instance_id": item.instance_id,
+			"definition_id": item.definition_id,
+			"quantity": quantity,
+		}
+		item.quantity -= quantity
+		if item.quantity == 0:
+			_items.remove_at(index)
+		revision += 1
+		return DomainResult.ok(result)
+	return DomainResult.failure(&"inventory.item_not_found", "inventory item does not exist")
+
+
+## 统计背包内指定定义的总数量。
+## [param definition_id] 稳定物品定义标识。
+## 返回跨堆叠合计数量。
+func count_definition(definition_id: String) -> int:
+	var total := 0
+	for item: GameItem in _items:
+		if item.definition_id == definition_id:
+			total += item.quantity
+	return total
+
+
+## 消耗任务要求的指定定义，预检不足时不改变背包。
+## [param definition_id] 稳定物品定义标识。
+## [param quantity] 需要消耗的总量。
+## 返回消耗数量和受影响实例；成功只推进一次 revision。
+func consume_definition(definition_id: String, quantity: int) -> DomainResult:
+	if definition_id.is_empty() or quantity <= 0:
+		return DomainResult.failure(&"inventory.invalid_quantity", "positive quantity is required")
+	if count_definition(definition_id) < quantity:
+		return DomainResult.failure(&"inventory.insufficient_quantity", "required item quantity is insufficient")
+	var remaining := quantity
+	var consumed_instances := PackedStringArray()
+	for index: int in range(_items.size() - 1, -1, -1):
+		var item: GameItem = _items[index]
+		if item.definition_id != definition_id:
+			continue
+		var amount := mini(item.quantity, remaining)
+		item.quantity -= amount
+		remaining -= amount
+		consumed_instances.append(item.instance_id)
+		if item.quantity == 0:
+			_items.remove_at(index)
+		if remaining == 0:
+			break
+	revision += 1
+	return DomainResult.ok({
+		"definition_id": definition_id,
+		"quantity": quantity,
+		"instance_ids": consumed_instances,
+	})
+
+
 ## 预检一次装备转移后可使用的背包位置。
 ## [param item] 即将放入背包的物品。
 ## [param excluding_instance_id] 同一事务中将先移出的背包物品标识。

@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "merchant": {
+    "id": "yian_weapon_merchant",
+    "display_name": "武器商人",
+    "maximum_required_level": 270,
+    "sell_categories": ["vehicle_chassis", "energy_cannon", "vehicle_engine", "repair_arm", "mining_arm"],
+    "buys_all_unbound_items": true
+  },
+  "repeatable_task": {
+    "id": "arms_npc_supply",
+    "title": "武器店材料收集",
+    "maximum_completions": 30,
+    "requirements": [
+      {"definition_id": "item:material:02ff69f031b5", "display_name": "低级类胶", "quantity": 20},
+      {"definition_id": "item:material:e07b300afb44", "display_name": "低级能量催化剂", "quantity": 20},
+      {"definition_id": "item:material:fc4cebd5d85b", "display_name": "低级生物硅", "quantity": 20}
+    ],
+    "currency_reward": 1500,
+    "milestone_rewards": {
+      "5": {"definition_id": "glory_equipment_gun2_baf92d19b5", "display_name": "加强能量炮", "quantity": 1},
+      "10": {"definition_id": "glory_equipment_engine2_115bae65ed", "display_name": "改式引擎", "quantity": 1},
+      "15": {"definition_id": "glory_equipment_tank2_b58e433608", "display_name": "领航者战车", "quantity": 1},
+      "20": {"definition_id": "glory_equipment_gun3_3599e6f3f0", "display_name": "突袭能量炮", "quantity": 1},
+      "25": {"definition_id": "glory_equipment_engine3_7a19d8f6cd", "display_name": "多能引擎", "quantity": 1},
+      "30": {"definition_id": "glory_equipment_tank3_bd8a6a14d1", "display_name": "勇敢者战车", "quantity": 1}
+    },
+    "dialogue": {
+      "offer": "根据我们的最新消息，在我们的太空基地附近有一些太空生物，体内含有我们制造武器装备的重要材料。希望你能在探险中收集低级类胶、低级能量催化剂和低级生物硅各20个，拿给我，我一定不会让你白干的！",
+      "turn_in": "我将收走你20个低级类胶、20个低级能量催化剂、20个低级生物硅。",
+      "complete": "不错，就是这些。我一定信守诺言，这些报酬送给你；不断努力，你会得到更多。",
+      "exhausted": "您已经做太多这样的任务了！"
+    },
+    "source_evidence": [
+      "starhome_lz_ry_fcc_source/sellorclt.fcc:276-304",
+      "starhome_lz_ry_fcc_source/great/code_string.fcc:457-460"
+    ]
+  }
+}
