@@ -6,6 +6,12 @@ const NavigationScript := preload("res://scripts/navigation/diamond_navigation.g
 const TransitionMarkerCatalogScript := preload(
 	"res://scripts/client/world/map_transition_marker_catalog.gd"
 )
+const RuntimeContentBootstrapScript := preload(
+	"res://scripts/content/runtime_content_bootstrap.gd"
+)
+const LandingResolverScript := preload(
+	"res://scripts/maps/map_transition_landing_resolver.gd"
+)
 const DIRECTORY_PATH := "res://data/maps/map_directory.json"
 const WORLD_GRAPH_PATH := "res://data/maps/world_graph_seed.json"
 
@@ -29,18 +35,17 @@ var assertions := 0
 ## 验证阶段 2 荣耀版地图目录、真实拓扑、出生点证据和导航文件完整性。
 ## 设计：网络只交换 map_id；本测试确保 map_id 到本地资源路径的映射只来自受控目录。
 func _initialize() -> void:
+	var mount_result: Dictionary = RuntimeContentBootstrapScript.mount_default()
+	_expect(bool(mount_result.get("ok", false)), "荣耀版地图内容包必须可挂载")
+	if not bool(mount_result.get("ok", false)):
+		_finish()
+		return
 	var directory := _read_json_object(DIRECTORY_PATH)
 	var graph := _read_json_object(WORLD_GRAPH_PATH)
 	_test_directory(directory)
 	_test_world_graph(graph)
 	_test_definitions(directory)
-	if failures.is_empty():
-		print("GLORY_WORLD_GRAPH_DATA_OK (%d assertions)" % assertions)
-		quit(0)
-		return
-	for failure in failures:
-		push_error(failure)
-	quit(1)
+	_finish()
 
 
 ## 执行 `test_directory` 对应的模块操作。
@@ -75,7 +80,7 @@ func _test_world_graph(graph: Dictionary) -> void:
 		"真实拓扑限制没有写入结构化证据",
 	)
 	var gaps: Array = graph.get("known_gaps", [])
-	_expect(gaps.size() >= 5, "缺失落点、场景素材和延后出口必须结构化记录")
+	_expect(gaps.size() >= 6, "缺失落点、场景素材、重建返程边和延后出口必须结构化记录")
 
 
 ## 执行 `test_definitions` 对应的模块操作。
@@ -115,7 +120,7 @@ func _test_definitions(directory: Dictionary) -> void:
 		"大厅出口必须忠实采用源 as4 的屏幕左上方向",
 	)
 	var city = definitions_by_id["yian_harbor_city"]
-	_expect(city.transitions.size() == 5, "City1Svr 本纵切应提升大厅边和四条 D04 边")
+	_expect(city.transitions.size() == 13, "City1Svr 应提升大厅、四条 D04 边和八个服务设施入口")
 	for entry_number in range(5):
 		_expect(city.spawn_for_entry(entry_number) != null, "City1Svr 缺少入口 %d 出生点" % entry_number)
 	var city_hall_transition: MapTransition = city.transition_by_id(&"enter_base_hall_floor_1")
@@ -124,6 +129,7 @@ func _test_definitions(directory: Dictionary) -> void:
 		"城区基地入口必须忠实采用源 as2 的屏幕右上方向",
 	)
 	_expect(int(city_hall_transition.source_audit.get("source_marker_style", 0)) == 2, "城区基地入口必须保留源 as2 审计")
+	_test_city_service_transitions(city, catalog)
 	var d04 = definitions_by_id["d04_field_zone"]
 	_expect(d04.transitions.size() == 12, "D04 的 12 条荣耀版有效出口必须全部保留")
 	for transition: MapTransition in d04.transitions:
@@ -134,6 +140,64 @@ func _test_definitions(directory: Dictionary) -> void:
 	for entry_number in range(1, 5):
 		_expect(d04.spawn_for_entry(entry_number) != null, "D04 缺少城市入口 %d 出生点" % entry_number)
 	_test_g08_transitions(definitions_by_id["g08_field_zone"])
+
+
+## 验证城区八个服务设施入口、室内地图资源和双向返程拓扑。
+## [param city] 已加载的易安港城区定义。
+## [param catalog] 已包含核心地图及服务设施的受控开发地图目录。
+func _test_city_service_transitions(city: MapDefinition, catalog) -> void:
+	var expected := {
+		&"enter_clothing_shop": [&"glory_nft_bl_clothshop1", "裁缝店"],
+		&"enter_food_shop": [&"glory_nft_bl_foodroom1", "食品店"],
+		&"enter_entertainment_hall": [&"glory_nft_bl_funroom1", "娱乐大厅"],
+		&"enter_refinery_1": [&"glory_nft_bl_factory1", "提炼厂"],
+		&"enter_grocery_shop": [&"glory_nft_bl_shop1", "杂货店"],
+		&"enter_trade_center": [&"glory_nft_bl_traderoom1", "交易中心"],
+		&"enter_botanical_garden": [&"glory_nft_bl_treeroom1", "植物园"],
+		&"enter_weapon_shop": [&"glory_nft_bl_weaponshop1", "武器店"],
+	}
+	for transition_id: StringName in expected:
+		var transition: MapTransition = city.transition_by_id(transition_id)
+		_expect(transition != null, "城区缺少服务设施入口：%s" % transition_id)
+		if transition == null:
+			continue
+		var expected_values: Array = expected[transition_id]
+		var target: MapDefinition = catalog.map_by_id(expected_values[0])
+		_expect(target != null, "服务设施地图未纳入受控目录：%s" % expected_values[0])
+		if target == null:
+			continue
+		_expect(target.display_name == expected_values[1], "服务设施中文名不匹配：%s" % target.map_id)
+		for resource_key in ["floor", "minimap", "scene_manifest"]:
+			_expect(
+				FileAccess.file_exists(String(target.resource_paths.get(resource_key, ""))),
+				"服务设施缺少运行资源：%s/%s" % [target.map_id, resource_key],
+			)
+		var landing: Dictionary = LandingResolverScript.resolve_landing(city, transition, target)
+		_expect(
+			String(landing.get("evidence", "")) == "reciprocal_exit",
+			"进入服务设施必须落在其返程门口：%s" % target.map_id,
+		)
+		var reciprocal_id := StringName(String(landing.get("reciprocal_transition_id", "")))
+		var reciprocal: MapTransition = target.transition_by_id(reciprocal_id)
+		_expect(
+			reciprocal != null and reciprocal.destination_map_id == city.map_id,
+			"服务设施必须提供返回易安港城区的双向边：%s" % target.map_id,
+		)
+		if reciprocal == null:
+			continue
+		var navigation = NavigationScript.new()
+		_expect(
+			navigation.load_from(
+				target.navigation_data_path,
+				target.navigation_grid_size,
+				target.navigation_cell_size,
+			),
+			"服务设施导航无法加载：%s" % target.map_id,
+		)
+		_expect(
+			navigation.is_walkable(reciprocal.approach_point),
+			"服务设施返程接近点必须可行走：%s" % target.map_id,
+		)
 
 
 ## 验证每张正式地图只声明传送方向，并能通过公共目录解析为完整动画表现。
@@ -229,6 +293,17 @@ func _read_json_object(path: String) -> Dictionary:
 		_expect(false, "JSON 根节点不是 object：%s" % path)
 		return {}
 	return parsed
+
+
+## 输出全部失败并以对应退出码结束地图结构测试。
+func _finish() -> void:
+	if failures.is_empty():
+		print("GLORY_WORLD_GRAPH_DATA_OK (%d assertions)" % assertions)
+		quit(0)
+		return
+	for failure in failures:
+		push_error(failure)
+	quit(1)
 
 
 ## 执行 `expect` 对应的模块操作。

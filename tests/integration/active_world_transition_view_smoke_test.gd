@@ -44,6 +44,12 @@ func _run() -> void:
 		return
 	_expect(view.position == Vector2(408, 348), "传送表现必须采用数据声明的业务锚点")
 	_expect(view.approach_point == Vector2(480, 370), "传送交互必须保留独立的可行走接近点")
+	_expect(view.z_index < hall.player.z_index, "地表传送动画必须始终渲染在人物和战车下方")
+	var tooltip := view.get_node_or_null("HoverTooltip") as Label
+	_expect(tooltip != null, "传送视图必须创建目的地悬浮提示")
+	_expect(tooltip != null and tooltip.text == "通往城市", "悬浮提示必须采用地图出口配置中的目的地标签")
+	_expect(view.update_hover(Vector2(420, 360)) and tooltip.visible, "鼠标进入固定命中框时必须显示目的地")
+	_expect(not view.update_hover(Vector2(407, 347)) and not tooltip.visible, "鼠标离开固定命中框时必须隐藏目的地")
 	_expect(active.transition_view_at(Vector2(420, 360)) == view, "固定交互矩形内必须能命中传送图标")
 	_expect(active.transition_view_at(Vector2(407, 347)) == null, "固定交互矩形外不得命中传送图标")
 	await create_timer(0.15).timeout
@@ -80,7 +86,7 @@ func _run() -> void:
 
 	_test_failed_bundle_isolation(hall, active)
 	_test_city_transition_views(active)
-	_expect(assertions == 42, "组合回归必须执行完整的 42 条业务断言")
+	_expect(assertions == 63, "组合回归必须执行完整的 63 条业务断言")
 	_finish(hall)
 
 
@@ -123,7 +129,7 @@ func _test_failed_bundle_isolation(hall: Node2D, active: Node) -> void:
 	_expect(old_first_scene == null or is_instance_valid(old_first_scene), "提交失败不得释放旧场景节点")
 
 
-## 提交城区地图并验证五处出口全部由八方向公共组件生成。
+## 提交城区地图并验证核心出口及新增服务设施全部由八方向公共组件生成。
 ## [param active] 当前活动世界控制器。
 func _test_city_transition_views(active: Node) -> void:
 	var city_bundle: Dictionary = active.prepare_initial_bundle("res://data/maps/yian_harbor_city.json")
@@ -131,13 +137,21 @@ func _test_city_transition_views(active: Node) -> void:
 	if city_bundle.is_empty():
 		return
 	_expect(active.commit_bundle(city_bundle, Vector2(1399, 954)), "城区 bundle 必须可原子提交")
-	_expect(active.transition_views.size() == 5, "城区五个已启用出口必须全部显示传送动画")
+	_expect(active.transition_views.size() == 13, "城区十三个已启用出口必须全部显示传送动画")
 	var expected_orientations := {
 		&"enter_base_hall_floor_1": "north_east",
 		&"exit_to_d04_northwest_gate": "north_west",
 		&"exit_to_d04_southwest_gate": "south_west",
 		&"exit_to_d04_southeast_gate": "south_east",
 		&"exit_to_d04_northeast_gate": "north_east",
+		&"enter_clothing_shop": "north_west",
+		&"enter_food_shop": "north_east",
+		&"enter_entertainment_hall": "north_west",
+		&"enter_refinery_1": "north_east",
+		&"enter_grocery_shop": "north_east",
+		&"enter_trade_center": "north_east",
+		&"enter_botanical_garden": "north_east",
+		&"enter_weapon_shop": "north_west",
 	}
 	for transition_id: StringName in expected_orientations:
 		var view: Node2D = active.transition_view_by_id(transition_id)

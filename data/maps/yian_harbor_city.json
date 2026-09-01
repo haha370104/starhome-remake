@@ -311,6 +311,231 @@
         "source_marker_style": 2,
         "source_marker_family": "house_directional_marker"
       }
+    },
+    {
+      "transition_id": "enter_clothing_shop",
+      "kind": "standard",
+      "enabled": true,
+      "label": "进入裁缝店",
+      "source_anchor": [624, 2232],
+      "approach_point": [674, 2238],
+      "presentation": {
+        "kind": "directional_transition",
+        "orientation": "north_west",
+        "activation": "enabled_transition"
+      },
+      "destination": {
+        "map_id": "glory_nft_bl_clothshop1",
+        "legacy_code": "clothshop1",
+        "entry_number": 0,
+        "external": false
+      },
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_map_code": "City1Svr",
+        "source_output": "maps/city1svr/variant_01_nft_bl/transitions.json",
+        "source_line": 387,
+        "source_icon_ale": "../../map/mapimg/house/CHN_2005_06_28_19_30_52_38/as4.ale",
+        "source_marker_style": 4,
+        "source_marker_family": "house_directional_marker"
+      }
+    },
+    {
+      "transition_id": "enter_food_shop",
+      "kind": "standard",
+      "enabled": true,
+      "label": "进入食品店",
+      "source_anchor": [2136, 2244],
+      "approach_point": [2160, 2250],
+      "presentation": {
+        "kind": "directional_transition",
+        "orientation": "north_east",
+        "activation": "enabled_transition"
+      },
+      "destination": {
+        "map_id": "glory_nft_bl_foodroom1",
+        "legacy_code": "foodroom1",
+        "entry_number": 0,
+        "external": false
+      },
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_map_code": "City1Svr",
+        "source_output": "maps/city1svr/variant_01_nft_bl/transitions.json",
+        "source_line": 388,
+        "source_icon_ale": "../../map/mapimg/house/CHN_2005_06_28_19_30_52_38/as2.ale",
+        "source_marker_style": 2,
+        "source_marker_family": "house_directional_marker"
+      }
+    },
+    {
+      "transition_id": "enter_entertainment_hall",
+      "kind": "standard",
+      "enabled": true,
+      "label": "进入娱乐大厅",
+      "source_anchor": [504, 780],
+      "approach_point": [555, 787],
+      "presentation": {
+        "kind": "directional_transition",
+        "orientation": "north_west",
+        "activation": "enabled_transition"
+      },
+      "destination": {
+        "map_id": "glory_nft_bl_funroom1",
+        "legacy_code": "funroom1",
+        "entry_number": 0,
+        "external": false
+      },
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_map_code": "City1Svr",
+        "source_output": "maps/city1svr/variant_01_nft_bl/transitions.json",
+        "source_line": 482,
+        "source_icon_ale": "../../map/mapimg/house/CHN_2005_06_28_19_30_52_38/as4.ale",
+        "source_marker_style": 4,
+        "source_marker_family": "house_directional_marker"
+      }
+    },
+    {
+      "transition_id": "enter_refinery_1",
+      "kind": "multi_choice",
+      "enabled": true,
+      "label": "进入提炼中心1",
+      "source_anchor": [264, 2628],
+      "approach_point": [291, 2636],
+      "presentation": {
+        "kind": "directional_transition",
+        "orientation": "north_east",
+        "activation": "enabled_transition"
+      },
+      "destination": {
+        "map_id": "glory_nft_bl_factory1",
+        "legacy_code": "factory1",
+        "entry_number": 0,
+        "external": false
+      },
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_map_code": "City1Svr",
+        "source_output": "maps/city1svr/variant_01_nft_bl/transitions.json",
+        "source_line": 391,
+        "choice_index": 0,
+        "source_icon_ale": "../../map/mapimg/house/CHN_2005_06_28_19_30_52_38/as2.ale",
+        "source_marker_style": 2,
+        "source_marker_family": "house_directional_marker"
+      }
+    },
+    {
+      "transition_id": "enter_grocery_shop",
+      "kind": "standard",
+      "enabled": true,
+      "label": "进入杂货店",
+      "source_anchor": [2376, 996],
+      "approach_point": [2402, 1004],
+      "presentation": {
+        "kind": "directional_transition",
+        "orientation": "north_east",
+        "activation": "enabled_transition"
+      },
+      "destination": {
+        "map_id": "glory_nft_bl_shop1",
+        "legacy_code": "shop1",
+        "entry_number": 0,
+        "external": false
+      },
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_map_code": "City1Svr",
+        "source_output": "maps/city1svr/variant_01_nft_bl/transitions.json",
+        "source_line": 382,
+        "source_icon_ale": "../../map/mapimg/house/CHN_2005_06_28_19_30_52_38/as2.ale",
+        "source_marker_style": 2,
+        "source_marker_family": "house_directional_marker"
+      }
+    },
+    {
+      "transition_id": "enter_trade_center",
+      "kind": "standard",
+      "enabled": true,
+      "label": "进入交易中心",
+      "source_anchor": [3048, 2196],
+      "approach_point": [3078, 2205],
+      "presentation": {
+        "kind": "directional_transition",
+        "orientation": "north_east",
+        "activation": "enabled_transition"
+      },
+      "destination": {
+        "map_id": "glory_nft_bl_traderoom1",
+        "legacy_code": "traderoom1",
+        "entry_number": 0,
+        "external": false
+      },
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_map_code": "City1Svr",
+        "source_output": "maps/city1svr/variant_01_nft_bl/transitions.json",
+        "source_line": 386,
+        "source_icon_ale": "../../map/mapimg/house/CHN_2005_06_28_19_30_52_38/as2.ale",
+        "source_marker_style": 2,
+        "source_marker_family": "house_directional_marker"
+      }
+    },
+    {
+      "transition_id": "enter_botanical_garden",
+      "kind": "standard",
+      "enabled": true,
+      "label": "进入植物园",
+      "source_anchor": [2328, 324],
+      "approach_point": [2351, 333],
+      "presentation": {
+        "kind": "directional_transition",
+        "orientation": "north_east",
+        "activation": "enabled_transition"
+      },
+      "destination": {
+        "map_id": "glory_nft_bl_treeroom1",
+        "legacy_code": "treeroom1",
+        "entry_number": 0,
+        "external": false
+      },
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_map_code": "City1Svr",
+        "source_output": "maps/city1svr/variant_01_nft_bl/transitions.json",
+        "source_line": 380,
+        "source_icon_ale": "../../map/mapimg/house/CHN_2005_06_28_19_30_52_38/as2.ale",
+        "source_marker_style": 2,
+        "source_marker_family": "house_directional_marker"
+      }
+    },
+    {
+      "transition_id": "enter_weapon_shop",
+      "kind": "standard",
+      "enabled": true,
+      "label": "进入武器店",
+      "source_anchor": [1056, 2592],
+      "approach_point": [1105, 2602],
+      "presentation": {
+        "kind": "directional_transition",
+        "orientation": "north_west",
+        "activation": "enabled_transition"
+      },
+      "destination": {
+        "map_id": "glory_nft_bl_weaponshop1",
+        "legacy_code": "weaponshop1",
+        "entry_number": 0,
+        "external": false
+      },
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_map_code": "City1Svr",
+        "source_output": "maps/city1svr/variant_01_nft_bl/transitions.json",
+        "source_line": 390,
+        "source_icon_ale": "../../map/mapimg/house/CHN_2005_06_28_19_30_52_38/as4.ale",
+        "source_marker_style": 4,
+        "source_marker_family": "house_directional_marker"
+      }
     }
   ],
   "source_audit": {
@@ -331,8 +556,8 @@
     "official_lazy_recovered_placements": 31,
     "rejected_cross_version_fallbacks": 0,
     "presentation_state": "glory_semantic_import_complete",
-    "promoted_transition_count": 5,
-    "deferred_enabled_transition_count": 26,
+    "promoted_transition_count": 13,
+    "deferred_enabled_transition_count": 18,
     "semantic_name_note": "remake follows the established 易安港 context; the selected Glory FCC stores 龙之城"
   }
 }

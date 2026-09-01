@@ -59,7 +59,20 @@
       "gap_id": "city_deferred_exits",
       "scope": ["yian_harbor_city"],
       "state": "deferred_not_deleted",
-      "detail": "The source has 31 enabled transitions. This seed promotes the hall edge plus four D04 gates; the remaining 26 stay in the global parsed graph for later business naming."
+      "detail": "The source has 31 enabled transitions. This seed promotes the hall edge, four D04 gates and eight currently available service interiors; the remaining 18 stay in the global parsed graph until their target map packages exist."
+    },
+    {
+      "gap_id": "city_service_interior_return_edges",
+      "scope": [
+        "glory_nft_bl_foodroom1",
+        "glory_nft_bl_funroom1",
+        "glory_nft_bl_factory1",
+        "glory_nft_bl_shop1",
+        "glory_nft_bl_traderoom1",
+        "glory_nft_bl_treeroom1"
+      ],
+      "state": "navigation_derived_remake_default",
+      "detail": "These Glory FCC files omit their return Transport. The remake adds audited south-door return edges only where the source composite has a visible doorway and the selected approach point is walkable. WeaponShop1 and ClothShop1 retain their source-confirmed return Transport unchanged."
     }
   ],
   "source_audit": {

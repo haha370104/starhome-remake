@@ -4,6 +4,9 @@ extends RefCounted
 const MapDefinitionScript := preload("res://scripts/maps/map_definition.gd")
 const MapTransitionScript := preload("res://scripts/maps/map_transition.gd")
 const MapSpawnPointScript := preload("res://scripts/maps/map_spawn_point.gd")
+const RUNTIME_TRANSITION_OVERRIDES_PATH := (
+	"res://data/maps/runtime_transition_overrides_v1.json"
+)
 
 var errors: PackedStringArray = []
 
@@ -25,7 +28,47 @@ func load_file(path: String) -> MapDefinition:
 	if not parsed is Dictionary:
 		_add_error("json", "根节点必须是 JSON object：%s" % path)
 		return null
-	return load_dictionary(parsed)
+	var merged := _merge_runtime_transition_overrides(parsed)
+	if merged.is_empty():
+		return null
+	return load_dictionary(merged)
+
+
+## 将版本化的运行时重建出口合并到原始地图定义副本中。
+## [param raw] 从受控地图定义文件解析出的原始字典。
+## 返回：合并后的独立字典；覆盖目录损坏时返回空字典并记录错误。
+## 设计：原客户端确有室内地图未保存返程 Transport；重建边集中留在单一审计文件中，
+## 客户端和权威服务器继续复用同一个 MapDefinitionLoader，避免两套拓扑。
+func _merge_runtime_transition_overrides(raw: Dictionary) -> Dictionary:
+	if not FileAccess.file_exists(RUNTIME_TRANSITION_OVERRIDES_PATH):
+		_add_error("transition_overrides", "运行时传送覆盖目录不存在")
+		return {}
+	var parsed: Variant = JSON.parse_string(
+		FileAccess.get_file_as_string(RUNTIME_TRANSITION_OVERRIDES_PATH)
+	)
+	if not parsed is Dictionary or int(parsed.get("schema_version", 0)) != 1:
+		_add_error("transition_overrides", "运行时传送覆盖目录格式无效")
+		return {}
+	var overrides: Variant = parsed.get("maps", {})
+	if not overrides is Dictionary:
+		_add_error("transition_overrides.maps", "maps 必须是 object")
+		return {}
+	var map_id := String(raw.get("map_id", "")).strip_edges()
+	var additions: Variant = overrides.get(map_id, [])
+	if not additions is Array:
+		_add_error("transition_overrides.maps.%s" % map_id, "地图覆盖必须是 array")
+		return {}
+	var merged := raw.duplicate(true)
+	if additions.is_empty():
+		return merged
+	var transitions: Variant = merged.get("transitions", [])
+	if not transitions is Array:
+		_add_error("transitions", "应用运行时覆盖前 transitions 必须是 array")
+		return {}
+	var merged_transitions: Array = transitions.duplicate(true)
+	merged_transitions.append_array(additions.duplicate(true))
+	merged["transitions"] = merged_transitions
+	return merged
 
 
 ## 加载并校验 `load_dictionary` 对应的模块状态。

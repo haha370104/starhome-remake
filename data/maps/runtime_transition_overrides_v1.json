@@ -1,0 +1,185 @@
+{
+  "schema_version": 1,
+  "maps": {
+    "glory_nft_bl_foodroom1": [
+      {
+        "transition_id": "return_to_yian_harbor_city",
+        "kind": "standard",
+        "enabled": true,
+        "label": "返回易安港城区",
+        "source_anchor": [1176, 1260],
+        "approach_point": [1200, 1248],
+        "presentation": {
+          "kind": "directional_transition",
+          "orientation": "south",
+          "activation": "enabled_transition"
+        },
+        "destination": {
+          "map_id": "yian_harbor_city",
+          "world_id": "buli",
+          "legacy_code": "city1svr",
+          "entry_number": 0,
+          "external": false
+        },
+        "source_audit": {
+          "source_release": "starhome_lz_ry",
+          "source_map_code": "foodroom1",
+          "source_output": "maps/foodroom1/navigation_grid.bin",
+          "evidence_level": "navigation_derived",
+          "derivation": "荣耀版合成图南侧门洞中心，并校验为可行走导航格"
+        }
+      }
+    ],
+    "glory_nft_bl_shop1": [
+      {
+        "transition_id": "return_to_yian_harbor_city",
+        "kind": "standard",
+        "enabled": true,
+        "label": "返回易安港城区",
+        "source_anchor": [648, 1188],
+        "approach_point": [672, 1176],
+        "presentation": {
+          "kind": "directional_transition",
+          "orientation": "south",
+          "activation": "enabled_transition"
+        },
+        "destination": {
+          "map_id": "yian_harbor_city",
+          "world_id": "buli",
+          "legacy_code": "city1svr",
+          "entry_number": 0,
+          "external": false
+        },
+        "source_audit": {
+          "source_release": "starhome_lz_ry",
+          "source_map_code": "shop1",
+          "source_output": "maps/shop1/navigation_grid.bin",
+          "evidence_level": "navigation_derived",
+          "derivation": "荣耀版合成图南侧门洞中心，并校验为可行走导航格"
+        }
+      }
+    ],
+    "glory_nft_bl_factory1": [
+      {
+        "transition_id": "return_to_yian_harbor_city",
+        "kind": "standard",
+        "enabled": true,
+        "label": "返回易安港城区",
+        "source_anchor": [1152, 1896],
+        "approach_point": [1200, 1872],
+        "presentation": {
+          "kind": "directional_transition",
+          "orientation": "south",
+          "activation": "enabled_transition"
+        },
+        "destination": {
+          "map_id": "yian_harbor_city",
+          "world_id": "buli",
+          "legacy_code": "city1svr",
+          "entry_number": 0,
+          "external": false
+        },
+        "source_audit": {
+          "source_release": "starhome_lz_ry",
+          "source_map_code": "factory1",
+          "source_output": "maps/factory1/navigation_grid.bin",
+          "evidence_level": "navigation_derived",
+          "derivation": "荣耀版合成图南侧门洞中心，并校验为可行走导航格"
+        }
+      }
+    ],
+    "glory_nft_bl_treeroom1": [
+      {
+        "transition_id": "return_to_yian_harbor_city",
+        "kind": "standard",
+        "enabled": true,
+        "label": "返回易安港城区",
+        "source_anchor": [1656, 3348],
+        "approach_point": [1680, 3336],
+        "presentation": {
+          "kind": "directional_transition",
+          "orientation": "south",
+          "activation": "enabled_transition"
+        },
+        "destination": {
+          "map_id": "yian_harbor_city",
+          "world_id": "buli",
+          "legacy_code": "city1svr",
+          "entry_number": 0,
+          "external": false
+        },
+        "source_audit": {
+          "source_release": "starhome_lz_ry",
+          "source_map_code": "treeroom1",
+          "source_output": "maps/treeroom1/navigation_grid.bin",
+          "evidence_level": "navigation_derived",
+          "derivation": "荣耀版合成图南侧门洞中心，并校验为可行走导航格"
+        }
+      }
+    ],
+    "glory_nft_bl_traderoom1": [
+      {
+        "transition_id": "return_to_yian_harbor_city",
+        "kind": "standard",
+        "enabled": true,
+        "label": "返回易安港城区",
+        "source_anchor": [1152, 2376],
+        "approach_point": [1176, 2364],
+        "presentation": {
+          "kind": "directional_transition",
+          "orientation": "south",
+          "activation": "enabled_transition"
+        },
+        "destination": {
+          "map_id": "yian_harbor_city",
+          "world_id": "buli",
+          "legacy_code": "city1svr",
+          "entry_number": 0,
+          "external": false
+        },
+        "source_audit": {
+          "source_release": "starhome_lz_ry",
+          "source_map_code": "traderoom1",
+          "source_output": "maps/traderoom1/navigation_grid.bin",
+          "evidence_level": "navigation_derived",
+          "derivation": "荣耀版合成图南侧门洞中心，并校验为可行走导航格"
+        }
+      }
+    ],
+    "glory_nft_bl_funroom1": [
+      {
+        "transition_id": "return_to_yian_harbor_city",
+        "kind": "standard",
+        "enabled": true,
+        "label": "返回易安港城区",
+        "source_anchor": [1008, 1656],
+        "approach_point": [1032, 1644],
+        "presentation": {
+          "kind": "directional_transition",
+          "orientation": "south",
+          "activation": "enabled_transition"
+        },
+        "destination": {
+          "map_id": "yian_harbor_city",
+          "world_id": "buli",
+          "legacy_code": "city1svr",
+          "entry_number": 0,
+          "external": false
+        },
+        "source_audit": {
+          "source_release": "starhome_lz_ry",
+          "source_map_code": "funroom1",
+          "source_output": "maps/funroom1/variant_01_nft_bl/navigation_grid.bin",
+          "evidence_level": "navigation_derived",
+          "derivation": "荣耀版合成图南侧门洞中心，并校验为可行走导航格"
+        }
+      }
+    ]
+  },
+  "source_audit": {
+    "source_release": "starhome_lz_ry",
+    "source_map_code": "city1_service_interiors",
+    "source_output": "starhome_lz_ry_maps_parsed/maps",
+    "note": "仅补原 FCC 未保存返程 Transport 的室内图；原始武器店和裁缝店出口不覆盖"
+  }
+}
