@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
 """Build executable monster definitions from the decoded Glory client tables.
 
-The retired server's spawn table and several combat constants are unavailable.
-This generator therefore activates only recovered map-presence evidence. Fields
-without a recovered relationship remain empty instead of receiving invented
-species defaults.
+The retired server's complete spawn table is unavailable. Recovered editor
+placements remain audit evidence, while ordinary field populations follow the
+remake's explicit radial progression and regional ecology design.
 """
 
 from __future__ import annotations
@@ -30,6 +29,45 @@ POPULATION_POLICY = {
     "normal_replenish_ratio": 0.05,
     "spawn_distribution": "full_walkable_map",
     "minimum_spawn_separation": 96,
+}
+
+# Coarse remake tiers confirmed with the user. Prefix variants inside one tier
+# keep their source stats, so e.g. toxic remains stronger than low-temperature.
+MONSTER_TIERS: dict[int, list[tuple[int, str]]] = {
+    1: [(1, "slime"), (2, "photosensitive"), (3, "om"), (4, "om")],
+    2: [(5, "slime"), (6, "photosensitive"), (7, "om"), (8, "om")],
+    3: [(9, "slime"), (10, "photosensitive"), (11, "om"), (12, "om")],
+    4: [(13, "slime"), (15, "om"), (14, "mutant_insect"), (16, "mutant_insect")],
+    5: [(17, "slime"), (21, "om"), (19, "mutant_insect"), (22, "mutant_insect")],
+    6: [
+        (23, "slime"), (24, "mutant_insect"), (26, "mutant_insect"),
+        (28, "sama"), (29, "mechanical"), (30, "mechanical"),
+        (32, "sama"), (34, "sama"),
+    ],
+    7: [(27, "mutant_insect"), (35, "sama"), (31, "mechanical"), (36, "mechanical")],
+    8: [
+        (25, "om"), (33, "mutant_insect"), (38, "mechanical"),
+        (20, "sama"), (18, "sama"), (40, "mutant_insect"),
+    ],
+    9: [(37, "mutant_insect"), (41, "mechanical"), (39, "sama"), (43, "sama")],
+    10: [(42, "sama"), (44, "mechanical"), (45, "mechanical"),
+         (46, "mechanical"), (47, "mutant_insect")],
+}
+ECOLOGY_FAMILIES = ("slime", "photosensitive", "om", "mutant_insect", "sama", "mechanical")
+SECTOR_FAMILIES = {
+    "center": ("slime", "photosensitive", "om"),
+    "north": ("slime", "photosensitive"),
+    "north_east": ("photosensitive", "om"),
+    "east": ("om", "sama"),
+    "south_east": ("sama", "mechanical"),
+    "south": ("mechanical", "sama"),
+    "south_west": ("mechanical", "mutant_insect"),
+    "west": ("mutant_insect", "slime"),
+    "north_west": ("slime", "mutant_insect"),
+}
+WORLD_THEME_OFFSETS = {
+    "nft_bl": 0, "nft_bt": 1, "nft_btb": 2,
+    "nft_ds": 3, "nft_pl": 4, "nft_sk": 5,
 }
 
 
@@ -220,6 +258,63 @@ def recover_class_names(source_root: Path) -> dict[str, dict[str, Any]]:
     return result
 
 
+def field_progression(source_id: str) -> dict[str, Any]:
+    """Return deterministic danger and ecology coordinates for a field map."""
+    world, code = source_id.removeprefix("map:").split("/", 1)
+    match = re.fullmatch(r"(?:(?P<region>[a-z]+)_)?(?P<row>[a-j])(?P<column>\d{2})", code)
+    if match is None:
+        raise ValueError(f"Unsupported field map code: {source_id}")
+    row = ord(match["row"]) - ord("a")
+    column = int(match["column"])
+    region = match["region"] or "main"
+    if region == "main":
+        row_delta, column_delta = row - 3, column - 4  # D04 city exit
+        tier = min(10, 1 + max(abs(row_delta), abs(column_delta)))
+    else:
+        row_delta, column_delta = row - 2, column - 3  # C03 regional center
+        tier = min(10, 8 + abs(row_delta) + abs(column_delta))
+    vertical = "north" if row_delta < 0 else ("south" if row_delta > 0 else "")
+    horizontal = "west" if column_delta < 0 else ("east" if column_delta > 0 else "")
+    sector = "_".join(part for part in (vertical, horizontal) if part) or "center"
+    offset = WORLD_THEME_OFFSETS.get(world, 0)
+    themes = tuple(
+        ECOLOGY_FAMILIES[(ECOLOGY_FAMILIES.index(family) + offset) % len(ECOLOGY_FAMILIES)]
+        for family in SECTOR_FAMILIES[sector]
+    )
+    return {"world": world, "region": region, "danger_tier": tier, "sector": sector, "themes": themes}
+
+
+def designed_spawn_groups(source_id: str, map_id: str) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    """Choose three to five ordinary species from one ecology and adjacent tiers."""
+    progression = field_progression(source_id)
+    tier = int(progression["danger_tier"])
+    allowed_tiers = [tier] if tier == 1 else [tier - 1, tier]
+    themes = set(progression["themes"])
+    ranked: list[tuple[int, int, int, int, str]] = []
+    stable_seed = int(hashlib.sha256(map_id.encode("utf-8")).hexdigest()[:8], 16)
+    for candidate_tier in reversed(allowed_tiers):
+        for index, family in MONSTER_TIERS[candidate_tier]:
+            theme_penalty = 0 if family in themes else 1
+            stable_order = int(hashlib.sha256(f"{map_id}:{index}".encode("utf-8")).hexdigest()[:8], 16)
+            ranked.append((theme_penalty, tier - candidate_tier, stable_order, index, family))
+    target_count = min(5, 3 + stable_seed % 3, len(ranked))
+    selected = sorted(ranked)[:target_count]
+    groups = [
+        {
+            "group_id": f"{map_id}.{runtime_id(index)}",
+            "monster_id": runtime_id(index),
+            "weight": 1.0,
+            "progression_tier": candidate_tier,
+            "ecology_family": family,
+        }
+        for _, tier_gap, _, index, family in selected
+        for candidate_tier in [tier - tier_gap]
+    ]
+    progression["allowed_tiers"] = allowed_tiers
+    progression["ordinary_species_limit"] = 5
+    return groups, progression
+
+
 def build_encounters(
     rows: list[dict[str, str]], relations: dict[str, Any], map_index: dict[str, Any],
     known_maps: dict[str, Any], class_names: dict[str, dict[str, Any]],
@@ -268,19 +363,26 @@ def build_encounters(
     encounters = []
     for source_id, map_id in sorted(source_to_runtime.items()):
         # Kept in the existing stage3 definition; the runtime applies that override.
-        if map_id == "d04_field_zone" or not groups_by_map.get(map_id):
+        if map_id == "d04_field_zone":
             continue
-        groups = list(groups_by_map[map_id].values())
-        encounters.append({
+        groups, progression = designed_spawn_groups(source_id, map_id)
+        encounter = {
             "encounter_id": f"glory_{map_id}_population",
             "map_id": map_id,
             "enabled": True,
             "population_policy": POPULATION_POLICY,
-            "spawn_groups": sorted(groups, key=lambda item: item["monster_id"]),
-            "distribution_evidence": "client_editor_placement",
+            "spawn_groups": groups,
+            "distribution_evidence": "design_inferred_radial_ecology",
             "source_map_id": source_id,
-            "source_monster_classes": sorted(set(classes_by_map[map_id])),
-        })
+            "progression": progression,
+        }
+        if groups_by_map.get(map_id):
+            encounter["supporting_client_evidence"] = {
+                "kind": "historical_client_editor_placement",
+                "monster_ids": sorted(groups_by_map[map_id]),
+                "monster_classes": sorted(set(classes_by_map[map_id])),
+            }
+        encounters.append(encounter)
     return encounters, joins
 
 
@@ -331,7 +433,8 @@ def main() -> int:
                 "encounters": len(encounters),
                 "joined_classes": len(joins),
                 "unjoined_classes": len(read_json(relations_path)["relations"]) - len(joins),
-                "client_evidence_maps": sum(row["distribution_evidence"] == "client_editor_placement" for row in encounters),
+                "client_evidence_maps": sum("supporting_client_evidence" in row for row in encounters),
+                "design_inferred_maps": len(encounters),
                 "curated_override_maps": 1,
                 "configured_field_maps": configured_field_maps,
                 "unconfigured_field_maps": runtime_field_maps - configured_field_maps,
@@ -345,7 +448,11 @@ def main() -> int:
             },
             "encounters": encounters,
             "confirmed_joins": joins,
-            "caveat": "Client editor placements are historical map-presence evidence, not live server tables. Uncovered fields remain unconfigured and spawn no monsters; D04 retains its curated override. Coordinates are randomized by authoritative navigation.",
+            "progression_tiers": {
+                str(tier): [runtime_id(index) for index, _ in members]
+                for tier, members in MONSTER_TIERS.items()
+            },
+            "caveat": "Client editor placements remain historical supporting evidence, not live server tables. Ordinary field populations use an explicit remake radial/ecology design, contain at most five species, and spawn at randomized authoritative navigation positions. D04 retains its curated tier-one override.",
         },
     )
     print(f"Generated {len(definitions)} monsters and {len(encounters)} map encounters from {len(joins)} safe class joins")

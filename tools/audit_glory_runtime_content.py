@@ -102,13 +102,8 @@ def main() -> int:
                 "effect": "Business data is active; the affected presentation remains empty rather than borrowing another release.",
             },
             {
-                "kind": "monster_distribution_unrecovered",
-                "count": encounters["summary"]["unconfigured_field_maps"],
-                "effect": "Fields without recovered map-presence evidence spawn no monsters instead of receiving invented basic-four populations.",
-            },
-            {
                 "kind": "server_authority_not_recovered",
-                "domains": ["monster_drop_settlement", "shop_inventory", "quest_progression", "recipe_success_settlement"],
+                "domains": ["original_monster_spawn_distribution", "monster_drop_settlement", "shop_inventory", "quest_progression", "recipe_success_settlement"],
                 "effect": "Client evidence is queryable; server-authoritative values are not invented.",
             },
         ],

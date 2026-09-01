@@ -9,7 +9,7 @@ var failures := PackedStringArray()
 var assertions := 0
 
 
-## 验证关系表地图才启用种群，并抽样真正的服务端出生及补充。
+## 验证所有野外图启用受限的设计种群，并抽样真正的服务端出生及补充。
 func _initialize() -> void:
 	if not BootstrapScript.mount_default().ok:
 		push_error("荣耀内容包挂载失败")
@@ -40,8 +40,8 @@ func _initialize() -> void:
 			_expect(population.value.is_empty(), "%s 非野外不能刷怪" % map_id)
 			continue
 		field_count += 1
+		_expect(configured_maps.has(map_id), "%s 野外图必须有设计种群" % map_id)
 		if not configured_maps.has(map_id):
-			_expect(population.value.is_empty(), "%s 无关系证据时不能套用基础四怪" % map_id)
 			continue
 		configured_field_count += 1
 		_expect(population.value.size() == 200, "%s 初始数量必须为 200" % map_id)
@@ -51,13 +51,14 @@ func _initialize() -> void:
 			_expect(monster["map_instance_id"] == map_id + ".test", "怪物必须属于当前地图实例")
 			_expect(not Vector2(monster["position"]).is_finite(), "目录不能强行指定固定刷怪簇")
 		var amounts: Array = counts.values()
+		_expect(counts.size() <= 5, "%s 普通怪物种类不能超过5种" % map_id)
 		_expect(int(amounts.max()) - int(amounts.min()) <= 1, "%s 等权种群数量差不超过一只" % map_id)
 		_expect(catalog.monster_replenishment_count(map_id, 99) == 40, "少于50%补40只")
 		_expect(catalog.monster_replenishment_count(map_id, 159) == 20, "少于80%补20只")
 		_expect(catalog.monster_replenishment_count(map_id, 199) == 1, "补量不能突破200只")
 	_expect(field_count == 460, "运行定义应包含460张野外图")
-	_expect(configured_field_count == 28, "仅27张关系表地图与D04首切启用种群")
-	_expect(catalog.monster_encounter_map_ids().size() == configured_field_count, "刷怪目录只能包含有依据的野外图")
+	_expect(configured_field_count == 460, "全部460张野外图应启用设计种群")
+	_expect(catalog.monster_encounter_map_ids().size() == configured_field_count, "刷怪目录应覆盖全部野外图")
 	for map_id: String in ["d04_field_zone", "glory_nft_bl_c08", "glory_nft_bl_e07", "glory_nft_bt_c06", "glory_nft_bt_e06", "glory_nft_bt_j08", "g08_field_zone"]:
 		_check_authoritative_spawn(catalog, directory["definitions"][map_id])
 	_finish()

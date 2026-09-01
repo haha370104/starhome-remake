@@ -21,14 +21,14 @@ func _initialize() -> void:
 	_expect(catalog.catalog_summary("monsters").get("runtime_definitions") == 119, "应激活 119 个怪物定义")
 	_expect(catalog.catalog_summary("monsters").get("runtime_field_maps") == 460, "应覆盖全部460张野外图")
 	_expect(catalog.catalog_summary("monsters").get("maps_with_reliable_encounters") == 27, "仅27张有历史分布证据，不得把默认配置冒充逆向结果")
-	_expect(catalog.catalog_summary("monsters").get("configured_field_maps") == 28, "仅历史证据图与D04首切应启用种群")
-	_expect(catalog.exception("monster_distribution_unrecovered").get("count") == 432, "无分布证据地图数量必须显式记录")
+	_expect(catalog.catalog_summary("monsters").get("configured_field_maps") == 460, "全部野外图应启用设计种群")
+	_expect(catalog.exception("monster_distribution_unrecovered").is_empty(), "设计种群覆盖后不应保留未配置分布异常")
 	_expect(catalog.catalog_summary("items").get("total_runtime_definitions") == 1284, "应激活 1284 个物品定义")
 	_expect(catalog.catalog_summary("recipes").get("registered_records") == 346, "应注册 346 条配方")
 	_expect(catalog.catalog_summary("minerals").get("runtime_definitions") == 35, "应激活 35 类矿源")
 	_expect(catalog.exception("map_package_missing").get("count") == 4, "四个缺包地图必须显式保留")
 	_expect(catalog.exception("item_asset_missing_from_glory_package").get("count") == 463, "缺失素材引用必须显式保留")
-	_expect(catalog.exceptions().size() == 4, "所有不可恢复边界应集中列示")
+	_expect(catalog.exceptions().size() == 3, "所有不可恢复边界应集中列示")
 	_finish()
 
 

@@ -1,4 +1,4 @@
-"""Verify source-name joins and evidence-only field encounter semantics."""
+"""Verify source-name joins and designed field encounter semantics."""
 import csv
 import sys
 import unittest
@@ -38,28 +38,46 @@ class EncounterTests(unittest.TestCase):
         reversed_result = self.build(rows=list(reversed(self.rows)))
         self.assertEqual((encounters, joins), reversed_result)
 
-    def test_only_recovered_fields_are_configured(self):
+    def test_all_fields_receive_bounded_designed_populations(self):
         encounters, _ = self.build()
         field_sources = {row["id"] for row in self.known["definitions"] if row["category"] == "field_code"}
         runtime_fields = {row["runtime_id"] for row in self.index["runtime_maps"] if row["source_id"] in field_sources}
         actual = {row["map_id"] for row in encounters}
         self.assertEqual(len(runtime_fields), 460)
-        self.assertEqual(len(actual), 27)
-        self.assertTrue(actual < runtime_fields)
-        self.assertNotIn("glory_nft_bl_b02", actual)
-        self.assertTrue(all(row["distribution_evidence"] == "client_editor_placement" for row in encounters))
+        self.assertEqual(len(actual), 459)
+        self.assertEqual(runtime_fields - actual, {"d04_field_zone"})
+        self.assertIn("glory_nft_bl_b02", actual)
+        self.assertTrue(all(row["distribution_evidence"] == "design_inferred_radial_ecology" for row in encounters))
         valid = {builder.runtime_id(int(row["index"])) for row in self.rows}
         for encounter in encounters:
             self.assertEqual(encounter["population_policy"], builder.POPULATION_POLICY)
+            self.assertGreaterEqual(len(encounter["spawn_groups"]), 3)
+            self.assertLessEqual(len(encounter["spawn_groups"]), 5)
             self.assertTrue(all(group["monster_id"] in valid for group in encounter["spawn_groups"]))
+            allowed = set(encounter["progression"]["allowed_tiers"])
+            self.assertTrue(all(group["progression_tier"] in allowed for group in encounter["spawn_groups"]))
 
-    def test_e07_uses_only_its_recovered_species(self):
+    def test_recovered_relations_are_retained_as_supporting_evidence(self):
         encounters = {row["map_id"]: row for row in self.build()[0]}
-        expected = {"om_adult", "om_larva", "photosensitive_orb"}
         for map_id in ["glory_nft_bl_e07", "glory_nft_bt_e07"]:
-            actual = {row["monster_id"] for row in encounters[map_id]["spawn_groups"]}
-            self.assertEqual(actual, expected)
-            self.assertNotIn("toxic_gel", actual)
+            evidence = encounters[map_id]["supporting_client_evidence"]
+            self.assertEqual(evidence["kind"], "historical_client_editor_placement")
+            self.assertEqual(set(evidence["monster_ids"]), {"om_adult", "om_larva", "photosensitive_orb"})
+
+    def test_radial_tiers_and_regional_tiers_are_deterministic(self):
+        self.assertEqual(builder.field_progression("map:nft_bl/d04")["danger_tier"], 1)
+        self.assertEqual(builder.field_progression("map:nft_bl/c03")["danger_tier"], 2)
+        self.assertEqual(builder.field_progression("map:nft_bl/b02")["danger_tier"], 3)
+        self.assertEqual(builder.field_progression("map:nft_bl/i09")["danger_tier"], 6)
+        self.assertEqual(builder.field_progression("map:nft_bl/ym_c03")["danger_tier"], 8)
+        self.assertEqual(builder.field_progression("map:nft_bl/ym_b02")["danger_tier"], 10)
+
+    def test_user_confirmed_progression_tiers(self):
+        tiers = {index: tier for tier, members in builder.MONSTER_TIERS.items() for index, _ in members}
+        self.assertEqual({index: tiers[index] for index in [1, 2, 3, 4]}, {1: 1, 2: 1, 3: 1, 4: 1})
+        self.assertEqual({index: tiers[index] for index in [5, 6, 7, 8]}, {5: 2, 6: 2, 7: 2, 8: 2})
+        self.assertEqual({index: tiers[index] for index in [9, 10, 11, 12]}, {9: 3, 10: 3, 11: 3, 12: 3})
+        self.assertEqual({index: tiers[index] for index in [13, 14, 15, 16]}, {13: 4, 14: 4, 15: 4, 16: 4})
 
     def test_ambiguous_name_is_not_silently_joined(self):
         duplicate = next(row.copy() for row in self.rows if row["index"] == "4")
