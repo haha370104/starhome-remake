@@ -723,7 +723,7 @@ func handle_peer_player_panel_command(peer_id: int, command: Dictionary) -> Dict
 	if not committed.is_ok:
 		return _failure(committed.error_code, committed.error_message)
 	return _success(
-		commerce_service.build_bundle(committed.value)
+		commerce_service.build_bundle(committed.value, value.get("operation", {}))
 		if is_commerce else player_panel_service.build_bundle(committed.value)
 	)
 

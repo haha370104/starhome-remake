@@ -77,17 +77,17 @@ func execute(state: PlayerStateRecord, command: Dictionary) -> DomainResult:
 		"candidate": candidate,
 		"changed": changed,
 		"operation": operation.value,
-		"panel_bundle": _build_bundle(player),
+		"panel_bundle": _build_bundle(player, operation.value),
 	})
 
 
 ## 从已提交存档重建玩家面板和商店/任务快照。
 ## [param state] 仓储返回的最新 revision 状态。
-func build_bundle(state: PlayerStateRecord) -> Dictionary:
+func build_bundle(state: PlayerStateRecord, operation: Dictionary = {}) -> Dictionary:
 	var mapped: DomainResult = _mapper.to_domain(state) if state != null else DomainResult.failure(
 		&"commerce.state_missing", "player state is missing"
 	)
-	return _build_bundle(mapped.value) if mapped.is_ok else {}
+	return _build_bundle(mapped.value, operation) if mapped.is_ok else {}
 
 
 func _execute_command(player: Player, command_type: String, command: Dictionary) -> DomainResult:
@@ -186,7 +186,7 @@ func _turn_in_task(player: Player, command: Dictionary) -> DomainResult:
 	})
 
 
-func _build_bundle(player: Player) -> Dictionary:
+func _build_bundle(player: Player, operation: Dictionary = {}) -> Dictionary:
 	var bundle := _projector.build_bundle(player)
 	var sell_items: Array[Dictionary] = []
 	for item: GameItem in player.inventory.items():
@@ -200,6 +200,7 @@ func _build_bundle(player: Player) -> Dictionary:
 		"offers": _merchant.offers(),
 		"sell_items": sell_items,
 		"task": _task.snapshot(player.inventory, player.quest_states.get(_task_id, {})),
+		"operation": operation.duplicate(true),
 	}
 	return bundle
 

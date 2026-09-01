@@ -22,6 +22,8 @@ func _initialize() -> void:
 	state.currency = 100000
 	var queried: DomainResult = service.execute(state, {"type": "query_weapon_merchant"})
 	_expect(queried.is_ok and queried.value.panel_bundle.has("commerce"), "查询应返回交易快照")
+	_expect(queried.value.panel_bundle.commerce.operation.action == "query",
+		"交易快照应携带本次操作结果供原版消息窗反馈")
 	var bought: DomainResult = service.execute(state, {
 		"type": "buy_from_weapon_merchant",
 		"definition_id": "glory_equipment_gun1_216568dc50",
@@ -29,6 +31,8 @@ func _initialize() -> void:
 	})
 	_expect(bought.is_ok, "余额和背包空间足够时应能购买新兵能量炮")
 	if bought.is_ok:
+		_expect(bought.value.panel_bundle.commerce.operation.action == "buy",
+			"购买回包应标明成功动作")
 		state = bought.value.candidate
 		_expect(state.currency == 99500, "新兵能量炮应按原版500金币售价扣款")
 	var sold: DomainResult = service.execute(state, {
