@@ -14,8 +14,8 @@
     {
       "pack_id": "glory_maps_001_v1",
       "path": "res://assets/content_packs/glory_maps_001_v1.zip",
-      "size_bytes": 1073601419,
-      "sha256": "a457e8d95bcf6d357bb2b7b63d1525469b6b692499ffbd65472e4c8c90aed212",
+      "size_bytes": 1073425806,
+      "sha256": "79ce48d1c16271218451b9aef59786562b71d13b2cd15867d8fbe9bc4092aff7",
       "content_groups": [
         "maps"
       ]
@@ -23,8 +23,8 @@
     {
       "pack_id": "glory_maps_002_v1",
       "path": "res://assets/content_packs/glory_maps_002_v1.zip",
-      "size_bytes": 1069659730,
-      "sha256": "6b2d4474760709d27cf2588c2002366db67bfed5ada3dabc09d9dc260dcb28d5",
+      "size_bytes": 1069549185,
+      "sha256": "42fe1e3a88ec8332c042b0d13d6d9b10571f0723d0e68bb62a9ea099e845df97",
       "content_groups": [
         "maps"
       ]
@@ -32,8 +32,8 @@
     {
       "pack_id": "glory_maps_003_v1",
       "path": "res://assets/content_packs/glory_maps_003_v1.zip",
-      "size_bytes": 1051115538,
-      "sha256": "477380e60b5e4d67d09a253ce0d3f43bc3cd54564096ffc641ac008d2c464223",
+      "size_bytes": 1050644671,
+      "sha256": "02036f9f747190a5a4cac04a8ace5e4df20a027516cab93035d0d28d008fb392",
       "content_groups": [
         "maps"
       ]
@@ -41,8 +41,8 @@
     {
       "pack_id": "glory_maps_004_v1",
       "path": "res://assets/content_packs/glory_maps_004_v1.zip",
-      "size_bytes": 1067474201,
-      "sha256": "22be660b39acc7bb7a63b7fde0457d3912afd92dc3cff9538d5afd2ad4ca27fa",
+      "size_bytes": 1067297071,
+      "sha256": "03052b938cb4e0b5d1e48fc3e138cdc295ca9f23944bd3842c1002c22273e256",
       "content_groups": [
         "maps"
       ]
@@ -50,8 +50,8 @@
     {
       "pack_id": "glory_maps_005_v1",
       "path": "res://assets/content_packs/glory_maps_005_v1.zip",
-      "size_bytes": 1064096235,
-      "sha256": "27140fb0117efd16dc13e53d6e70640c071b28bf473bcbbdd6fb43c7b6411dae",
+      "size_bytes": 1063808885,
+      "sha256": "667f349d4be2e58613a471df7dace95dbc267ba96d5a7c83bf63b217374bce91",
       "content_groups": [
         "maps"
       ]
@@ -59,8 +59,8 @@
     {
       "pack_id": "glory_maps_006_v1",
       "path": "res://assets/content_packs/glory_maps_006_v1.zip",
-      "size_bytes": 1070930374,
-      "sha256": "e031e3b33d606ded0aba7176baa22b89be4a879c355818a672c8c9bee9a99381",
+      "size_bytes": 1070818465,
+      "sha256": "7173f92ce6286f619f0eea663849ab301fa670902f4b36c8686988265ab50c37",
       "content_groups": [
         "maps"
       ]
@@ -68,8 +68,8 @@
     {
       "pack_id": "glory_maps_007_v1",
       "path": "res://assets/content_packs/glory_maps_007_v1.zip",
-      "size_bytes": 1072561915,
-      "sha256": "fcb8168bed763f633b1d556a2c2ba4d45467742158e6dba1f9d9fa60d9cf54e5",
+      "size_bytes": 1072543952,
+      "sha256": "58c79d7839e75f741cbec672c418a41e7a4a95fa18e752326d49d3053538f9fa",
       "content_groups": [
         "maps"
       ]
@@ -77,8 +77,8 @@
     {
       "pack_id": "glory_maps_008_v1",
       "path": "res://assets/content_packs/glory_maps_008_v1.zip",
-      "size_bytes": 1052314176,
-      "sha256": "5ef4ed0b7d0476d1389f6905c573daecec41f18416dac15923d96c850c6c5a53",
+      "size_bytes": 1052247015,
+      "sha256": "672f034b433875cff3dcf0eea8c4dcf071dbf85f0f898d36b81af5c83815d283",
       "content_groups": [
         "maps"
       ]
@@ -86,8 +86,8 @@
     {
       "pack_id": "glory_maps_009_v1",
       "path": "res://assets/content_packs/glory_maps_009_v1.zip",
-      "size_bytes": 1042481302,
-      "sha256": "4fc4b3e8479a6db986e0f48ddd8955f38f37938fd254e8c41d90b16d19285b40",
+      "size_bytes": 1042457315,
+      "sha256": "6412672d8baebeb7c3671da036aa19d65f0f95be8d7afce5c994f42b9deab4a4",
       "content_groups": [
         "maps"
       ]
@@ -95,8 +95,8 @@
     {
       "pack_id": "glory_maps_010_v1",
       "path": "res://assets/content_packs/glory_maps_010_v1.zip",
-      "size_bytes": 141590659,
-      "sha256": "125c16da411fd7fd0da8fd4b5abf056372719bc190bdac00e62f7bf65ea28f42",
+      "size_bytes": 141591724,
+      "sha256": "86f61db96fd3952f8d0d3e6f046a19e11efca090c8c095f40698e5b6b079d6d6",
       "content_groups": [
         "maps"
       ]
