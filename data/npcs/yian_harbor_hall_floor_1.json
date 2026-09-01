@@ -166,6 +166,31 @@
         "body": "欢迎来到易安港基地大厅一层。请选择需要办理的业务。",
         "actions": ["买东西", "卖东西"]
       }
+    },
+    {
+      "id": "weapon_merchant",
+      "name": "武器商人",
+      "kind": "shop",
+      "appearance": "npc_red",
+      "spawn": [760, 1190],
+      "patrol": {
+        "speed": 203,
+        "animation_speed_scale": 1.0,
+        "initial_delay": [2.0, 4.0],
+        "points": [
+          {"position": [760, 1190], "dwell": [4.0, 7.0]},
+          {"position": [712, 1166], "dwell": [2.0, 4.0]},
+          {"position": [712, 1214], "dwell": [3.0, 5.0]}
+        ]
+      },
+      "interaction": {
+        "body": "武器、战车与工程装备都可以在这里买卖。",
+        "actions": [
+          {"id": "buy", "label": "买东西"},
+          {"id": "sell", "label": "卖东西"},
+          {"id": "task", "label": "中级任务"}
+        ]
+      }
     }
   ]
 }
