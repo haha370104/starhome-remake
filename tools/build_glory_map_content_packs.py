@@ -733,6 +733,11 @@ def build(arguments: argparse.Namespace) -> dict[str, Any]:
                     add_file(archive, presentation.source / "map_metadata.json", root + "/source_metadata.json")
             pack_files.append(pack_path)
             print("BUILT", pack_path.name, len(part), "presentations")
+        current_pack_paths = set(pack_files)
+        for stale_pack in PACK_ROOT.glob("glory_maps_[0-9][0-9][0-9]_v1.zip"):
+            if stale_pack not in current_pack_paths:
+                stale_pack.unlink()
+                print("REMOVED_STALE", stale_pack.name)
 
     pack_entries = []
     for path in pack_files:
@@ -772,7 +777,7 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--plan-only", action="store_true")
     parser.add_argument("--index-only", action="store_true")
-    parser.add_argument("--maximum-pack-mib", type=int, default=1536)
+    parser.add_argument("--maximum-pack-mib", type=int, default=1024)
     arguments = parser.parse_args()
     if arguments.maximum_pack_mib < 64:
         parser.error("--maximum-pack-mib must be at least 64")
