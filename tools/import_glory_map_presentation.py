@@ -94,6 +94,37 @@ def normalize_source_reference(source_ale: str) -> str:
     return normalized
 
 
+def transition_placement_keys(transitions: dict[str, Any]) -> set[tuple[str, int, int]]:
+    """Return source asset/anchor keys owned by the transition registry.
+
+    Both enabled and explicitly disabled legacy transports are excluded from
+    static scenery. Enabled markers are recreated by the runtime transition
+    registry; disabled markers must not remain as misleading scenery.
+    """
+    result: set[tuple[str, int, int]] = set()
+    for collection_name in ("enabled", "disabled_legacy"):
+        entries = transitions.get(collection_name, [])
+        if not isinstance(entries, list):
+            continue
+        for entry in entries:
+            if not isinstance(entry, dict):
+                continue
+            anchor = entry.get("icon_anchor", [])
+            logical_path = normalize_source_reference(str(entry.get("icon_ale", ""))).lower()
+            if logical_path and isinstance(anchor, list) and len(anchor) == 2:
+                result.add((logical_path, int(anchor[0]), int(anchor[1])))
+    return result
+
+
+def scene_placement_key(item: dict[str, Any]) -> tuple[str, int, int] | None:
+    """Return the comparable source asset/anchor key for one scene placement."""
+    anchor = item.get("anchor", [])
+    logical_path = normalize_source_reference(str(item.get("source_ale", ""))).lower()
+    if not logical_path or not isinstance(anchor, list) or len(anchor) != 2:
+        return None
+    return logical_path, int(anchor[0]), int(anchor[1])
+
+
 def resolve_frame_source(item: dict[str, Any]) -> dict[str, Any] | None:
     """Resolve an indexed Glory frame or a verified same-release unindexed overlay."""
     direct_logical = normalize_source_reference(str(item.get("source_ale", "")))
@@ -172,12 +203,14 @@ def build_scene_ownership(
     background: Image.Image,
     scene: dict[str, Any],
     asset_prefix: str,
+    dynamic_transition_keys: set[tuple[str, int, int]] | None = None,
 ) -> tuple[
     Image.Image,
     np.ndarray,
     list[dict[str, Any]],
     list[dict[str, Any]],
     int,
+    list[dict[str, Any]],
 ]:
     """Composite resolved placements and return final color/owner/audit values."""
     canvas_size = background.size
@@ -187,8 +220,21 @@ def build_scene_ownership(
     missing: list[dict[str, Any]] = []
     frame_cache: dict[str, tuple[Image.Image, dict[str, Any]]] = {}
     recovered_placements = 0
+    dynamic_transition_keys = dynamic_transition_keys or set()
+    excluded_transitions: list[dict[str, Any]] = []
 
     for source_index, item in enumerate(scene.get("objects", [])):
+        placement_key = scene_placement_key(item)
+        if placement_key in dynamic_transition_keys:
+            excluded_transitions.append(
+                {
+                    "source_index": source_index,
+                    "source_resource": item.get("source_ale", ""),
+                    "anchor": item.get("anchor", [0, 0]),
+                    "reason": "runtime_transition_registry_owned",
+                }
+            )
+            continue
         source = resolve_frame_source(item)
         if source is None:
             rejected_resolution = str(item.get("resolved_ale", ""))
@@ -253,7 +299,7 @@ def build_scene_ownership(
 
     scene_pixels = np.asarray(scene_color, dtype=np.uint8)
     owner[scene_pixels[:, :, 3] == 0] = -1
-    return scene_color, owner, owners, missing, recovered_placements
+    return scene_color, owner, owners, missing, recovered_placements, excluded_transitions
 
 
 def build_chunks(
@@ -364,12 +410,14 @@ def import_map(map_id: str, config: dict[str, str]) -> dict[str, Any]:
         raise FileNotFoundError(source)
     destination.mkdir(parents=True, exist_ok=True)
     scene = read_json(source / "scene_objects.json")
+    transitions = read_json(source / "transitions.json")
+    dynamic_transition_keys = transition_placement_keys(transitions)
     with Image.open(source / "background.png") as image:
         background = image.convert("RGBA")
     with Image.open(source / "composite.png") as image:
         source_composite = image.convert("RGBA")
-    scene_color, owner, owners, missing, recovered_placements = build_scene_ownership(
-        background, scene, config["asset_prefix"]
+    scene_color, owner, owners, missing, recovered_placements, excluded_transitions = build_scene_ownership(
+        background, scene, config["asset_prefix"], dynamic_transition_keys
     )
     chunks = build_chunks(scene_color, owner, owners)
     atlas, packed_chunks = pack_chunks(chunks)
@@ -381,7 +429,7 @@ def import_map(map_id: str, config: dict[str, str]) -> dict[str, Any]:
         source_composite,
         scene_color,
         chunks,
-        require_source_match=excluded_non_glory == 0,
+        require_source_match=excluded_non_glory == 0 and not excluded_transitions,
     )
 
     floor_path = destination / "floor.png"
@@ -459,6 +507,8 @@ def import_map(map_id: str, config: dict[str, str]) -> dict[str, Any]:
                 "parsed_composite_matches_glory_only": source_composite_matches,
                 "excluded_non_glory_fallbacks": excluded_non_glory,
                 "recovered_same_release_unindexed_placements": recovered_placements,
+                "excluded_static_transition_placements": len(excluded_transitions),
+                "runtime_transition_registry_only": True,
             },
         },
         "source_audit": {
@@ -466,9 +516,11 @@ def import_map(map_id: str, config: dict[str, str]) -> dict[str, Any]:
             "source_map_code": source.parent.name,
             "source_output": str(source.relative_to(OUTPUTS_ROOT)).replace("\\", "/"),
             "source_scene_objects_sha256": sha256(source / "scene_objects.json"),
+            "source_transitions_sha256": sha256(source / "transitions.json"),
             "resolved_placements": len(owners),
             "missing_placements": len(missing),
             "recovered_same_release_unindexed_placements": recovered_placements,
+            "excluded_static_transition_placements": len(excluded_transitions),
             "recovered_same_release_unindexed_assets": sorted(
                 recovered_assets_by_path.values(),
                 key=lambda value: value["source_logical_asset"].lower(),
@@ -482,6 +534,7 @@ def import_map(map_id: str, config: dict[str, str]) -> dict[str, Any]:
         "resolved": len(owners),
         "missing": len(missing),
         "recovered_same_release_unindexed": recovered_placements,
+        "excluded_static_transition_placements": len(excluded_transitions),
         "semantic_layers": len(layers),
         "atlas_size": list(atlas.size),
         "composite_sha256": composite_sha,

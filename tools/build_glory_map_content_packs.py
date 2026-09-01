@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import io
 import json
 import math
 import re
@@ -18,6 +19,25 @@ import zipfile
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Iterable
+
+from PIL import Image
+
+try:
+    from tools.import_glory_map_presentation import (
+        build_scene_ownership,
+        load_first_frame,
+        resolve_frame_source,
+        scene_placement_key,
+        transition_placement_keys,
+    )
+except ModuleNotFoundError:  # Direct execution from the tools directory.
+    from import_glory_map_presentation import (  # type: ignore[no-redef]
+        build_scene_ownership,
+        load_first_frame,
+        resolve_frame_source,
+        scene_placement_key,
+        transition_placement_keys,
+    )
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -42,6 +62,7 @@ WORLD_IDS = {
 TRANSITION_RECOVERY_WORLD = "NFT_BL"
 TRANSITION_RECOVERY_BRANCH = "NFT_BT"
 REQUIRED_SOURCE_FILES = (
+    "background.png",
     "composite.png",
     "minimap.jpg",
     "navigation_grid.bin",
@@ -113,6 +134,10 @@ def sha256(path: Path) -> str:
         for block in iter(lambda: stream.read(4 * 1024 * 1024), b""):
             digest.update(block)
     return digest.hexdigest()
+
+
+def sha256_bytes(payload: bytes) -> str:
+    return hashlib.sha256(payload).hexdigest()
 
 
 def existing_definitions() -> tuple[
@@ -360,7 +385,74 @@ def build_transition(
     }
 
 
-def build_manifest(presentation: Presentation, metadata: dict[str, Any]) -> dict[str, Any]:
+def build_runtime_floor(presentation: Presentation) -> tuple[bytes, dict[str, Any]]:
+    """Return a flattened floor with transition-owned static frames removed."""
+    scene = read_object(presentation.source / "scene_objects.json")
+    transitions = read_object(presentation.source / "transitions.json")
+    transition_keys = transition_placement_keys(transitions)
+    matching_items = [
+        item
+        for item in scene.get("objects", [])
+        if isinstance(item, dict) and scene_placement_key(item) in transition_keys
+    ]
+    source_composite = presentation.source / "composite.png"
+    if not matching_items:
+        payload = source_composite.read_bytes()
+        return payload, {
+            "excluded_static_transition_placements": 0,
+            "runtime_floor_sha256": sha256_bytes(payload),
+        }
+
+    with Image.open(presentation.source / "background.png") as image:
+        background = image.convert("RGBA")
+    with Image.open(source_composite) as image:
+        runtime_floor = image.convert("RGBA")
+
+    filtered_scene, _, _, _, _, excluded = build_scene_ownership(
+        background,
+        scene,
+        "runtime/flattened",
+        transition_keys,
+    )
+    restored_composite = Image.alpha_composite(background, filtered_scene)
+    transition_layer = Image.new("RGBA", background.size, (0, 0, 0, 0))
+    frame_cache: dict[str, tuple[Image.Image, dict[str, Any]]] = {}
+    for item in matching_items:
+        source = resolve_frame_source(item)
+        if source is None:
+            raise FileNotFoundError(
+                "Cannot remove transition placement without its source frame: "
+                + str(item.get("source_ale", ""))
+            )
+        source_image, frame = load_first_frame(source, frame_cache)
+        anchor = item.get("anchor", [0, 0])
+        if "top_left" in item:
+            top_left = (int(item["top_left"][0]), int(item["top_left"][1]))
+        else:
+            top_left = (
+                int(anchor[0]) + int(frame.get("origin_x", 0)),
+                int(anchor[1]) + int(frame.get("origin_y", 0)),
+            )
+        transition_layer.alpha_composite(source_image, top_left)
+
+    # Replace the complete transition footprint rather than alpha-blending it
+    # again; the parsed composite already contains the old first frame.
+    binary_mask = transition_layer.getchannel("A").point(lambda alpha: 255 if alpha else 0)
+    runtime_floor.paste(restored_composite, (0, 0), binary_mask)
+    output = io.BytesIO()
+    runtime_floor.save(output, format="PNG", compress_level=3)
+    payload = output.getvalue()
+    return payload, {
+        "excluded_static_transition_placements": len(excluded),
+        "runtime_floor_sha256": sha256_bytes(payload),
+    }
+
+
+def build_manifest(
+    presentation: Presentation,
+    metadata: dict[str, Any],
+    runtime_floor_audit: dict[str, Any],
+) -> dict[str, Any]:
     scene = read_object(presentation.source / "scene_objects.json")
     return {
         "schema_version": 1,
@@ -371,8 +463,13 @@ def build_manifest(presentation: Presentation, metadata: dict[str, Any]) -> dict
             "missing_dependencies": scene.get("missing", []),
             "validation": {
                 "source_composite_sha256": sha256(presentation.source / "composite.png"),
+                "runtime_floor_sha256": runtime_floor_audit["runtime_floor_sha256"],
                 "flattened_static_scene": True,
                 "semantic_occlusion_available": False,
+                "excluded_static_transition_placements": runtime_floor_audit[
+                    "excluded_static_transition_placements"
+                ],
+                "runtime_transition_registry_only": True,
             },
         },
         "source_audit": {
@@ -498,6 +595,10 @@ def add_file(archive: zipfile.ZipFile, source: Path, target: str) -> None:
     archive.writestr(fixed_zip_info(target), source.read_bytes())
 
 
+def add_bytes(archive: zipfile.ZipFile, payload: bytes, target: str) -> None:
+    archive.writestr(fixed_zip_info(target), payload)
+
+
 def add_json(archive: zipfile.ZipFile, value: dict[str, Any], target: str) -> None:
     payload = (json.dumps(value, ensure_ascii=False, separators=(",", ":")) + "\n").encode("utf-8")
     archive.writestr(fixed_zip_info(target), payload)
@@ -601,10 +702,15 @@ def build(arguments: argparse.Namespace) -> dict[str, Any]:
                 for presentation in part:
                     root = "content/glory/maps/" + presentation.relative_source
                     metadata = read_object(presentation.source / "map_metadata.json")
-                    add_file(archive, presentation.source / "composite.png", root + "/floor.png")
+                    runtime_floor, runtime_floor_audit = build_runtime_floor(presentation)
+                    add_bytes(archive, runtime_floor, root + "/floor.png")
                     add_file(archive, presentation.source / "minimap.jpg", root + "/minimap.jpg")
                     add_file(archive, presentation.source / "navigation_grid.bin", root + "/navigation_grid.bin")
-                    add_json(archive, build_manifest(presentation, metadata), root + "/scene_manifest.json")
+                    add_json(
+                        archive,
+                        build_manifest(presentation, metadata, runtime_floor_audit),
+                        root + "/scene_manifest.json",
+                    )
                     add_file(archive, presentation.source / "scene_objects.json", root + "/source_scene_objects.json")
                     add_file(archive, presentation.source / "transitions.json", root + "/source_transitions.json")
                     add_file(archive, presentation.source / "map_metadata.json", root + "/source_metadata.json")

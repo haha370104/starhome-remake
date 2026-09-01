@@ -18,6 +18,7 @@ EXPECTED = {
         "recovered_same_release_unindexed_placements": 31,
         "recovered_same_release_unindexed_assets": 19,
         "missing_placements": 0,
+        "excluded_static_transition_placements": 22,
     },
     "d04_field_zone": {
         "directory": PROJECT_ROOT / "assets/maps/exploration/d04_field_zone",
@@ -25,7 +26,8 @@ EXPECTED = {
         "excluded_non_glory_fallbacks": 0,
         "recovered_same_release_unindexed_placements": 10,
         "recovered_same_release_unindexed_assets": 6,
-        "missing_placements": 16,
+        "missing_placements": 0,
+        "excluded_static_transition_placements": 16,
     },
 }
 
@@ -54,6 +56,13 @@ def main() -> int:
             errors.append(f"{map_id}: semantic owner rendering is not enabled")
         if not validation.get("semantic_reconstruction_exact"):
             errors.append(f"{map_id}: importer did not prove exact semantic reconstruction")
+        if validation.get("runtime_transition_registry_only") is not True:
+            errors.append(f"{map_id}: transition rendering is not registry-owned")
+        if (
+            validation.get("excluded_static_transition_placements", 0)
+            != expected["excluded_static_transition_placements"]
+        ):
+            errors.append(f"{map_id}: unexpected static transition exclusion count")
         if validation.get("excluded_non_glory_fallbacks") != expected["excluded_non_glory_fallbacks"]:
             errors.append(f"{map_id}: unexpected cross-version fallback count")
         if (
