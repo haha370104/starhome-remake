@@ -176,7 +176,11 @@ def discover_presentations() -> dict[str, Presentation]:
             continue
         relative = source.relative_to(PARSED_MAP_ROOT).as_posix()
         resource_id = "maps/" + relative
-        size = sum((source / name).stat().st_size for name in REQUIRED_SOURCE_FILES)
+        size = sum(
+            (source / name).stat().st_size
+            for name in REQUIRED_SOURCE_FILES
+            if name != "background.png"
+        )
         result[resource_id.lower()] = Presentation(resource_id, source, relative, size)
     return result
 
