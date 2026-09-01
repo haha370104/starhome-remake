@@ -76,6 +76,16 @@ func build_bundle(state: PlayerStateRecord) -> Dictionary:
 	return _projector.build_bundle(mapped.value)
 
 
+## 将权威持久化记录还原为共享充血 Player 聚合，供同进程其他权威模块复用。
+## [param state] 已通过仓储校验的玩家记录。
+## 返回含完整固定装配对象的 Player，或映射失败原因。
+## 设计：战斗、面板和存档必须共用同一映射边界，禁止再从 DTO 手工拼第二套战车状态。
+func restore_player(state: PlayerStateRecord) -> DomainResult:
+	if state == null or _mapper == null:
+		return DomainResult.failure(&"panels.service_unavailable", "player mapper is unavailable")
+	return _mapper.to_domain(state)
+
+
 ## 将战斗模块预检通过的地面掉落加入权威玩家聚合。
 ## [param state] 自动存档服务持有的当前玩家记录副本。
 ## [param loot] 包含 loot_id、item_definition_id 与 quantity 的可信掉落 DTO。

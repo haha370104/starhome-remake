@@ -101,3 +101,38 @@ func calculate_stats(
 		"working_energy": working_energy,
 		"working_energy_capacity": working_energy_capacity,
 	}
+
+
+## 由固定装配槽重新派生战车身份、生命和能源上限，并按比例保留当前资源。
+## [param preserve_resource_ratios] 上限变化时是否保留生命、储备能量和工作能量百分比。
+## 返回找到有效底盘并完成同步时为 true；未安装底盘时保持原状态并返回 false。
+## 设计：loadout 是装配事实来源，definition_id 与各项容量只是可持久化的运行时派生状态。
+func reconcile_loadout_state(preserve_resource_ratios := true) -> bool:
+	var chassis := loadout.at(0) as VehicleChassis
+	if chassis == null:
+		return false
+	var health_ratio := _resource_ratio(health, max_health)
+	var reserve_ratio := _resource_ratio(reserve_energy, reserve_energy_capacity)
+	var working_ratio := _resource_ratio(working_energy, working_energy_capacity)
+	definition_id = chassis.definition_id
+	max_health = chassis.base_max_health
+	reserve_energy_capacity = chassis.reserve_energy_capacity
+	working_energy_capacity = chassis.working_energy_capacity
+	output_power = chassis.output_power
+	if preserve_resource_ratios:
+		health = clampi(roundi(health_ratio * float(max_health)), 0, max_health)
+		reserve_energy = clampf(reserve_ratio * reserve_energy_capacity, 0.0, reserve_energy_capacity)
+		working_energy = clampf(working_ratio * working_energy_capacity, 0.0, working_energy_capacity)
+	else:
+		health = clampi(health, 0, max_health)
+		reserve_energy = clampf(reserve_energy, 0.0, reserve_energy_capacity)
+		working_energy = clampf(working_energy, 0.0, working_energy_capacity)
+	return true
+
+
+## 计算当前资源相对旧上限的安全比例。
+## [param current_value] 当前资源值。
+## [param capacity] 旧资源上限。
+## 返回 0 到 1 的资源比例；无有效上限时按满值处理。
+func _resource_ratio(current_value: float, capacity: float) -> float:
+	return clampf(current_value / capacity, 0.0, 1.0) if capacity > 0.0 else 1.0

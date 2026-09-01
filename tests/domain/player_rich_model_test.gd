@@ -8,6 +8,9 @@ const PlayerPanelProjectorScript := preload(
 const EquipmentSlotRegistryScript := preload(
 	"res://scripts/domain/equipment/equipment_slot_registry.gd"
 )
+const CombatDefinitionCatalogScript := preload(
+	"res://scripts/domain/combat/combat_definition_catalog.gd"
+)
 
 var failures: PackedStringArray = []
 var assertions := 0
@@ -62,6 +65,7 @@ func _initialize() -> void:
 	var chassis := player.vehicle.loadout.at(0) as VehicleChassis
 	_expect(chassis.can_activate_self_repair(10), "达到底盘维修门槛时应允许启动自维修")
 	_expect(not chassis.can_activate_self_repair(9), "低于底盘维修门槛时应拒绝启动自维修")
+	_test_advanced_vehicle_loadout(catalog, player)
 	var bundle := PlayerPanelProjectorScript.new(catalog).build_bundle(player)
 	var current: CurrentPlayer = CurrentPlayerScript.new()
 	_expect(current.apply_bundle(bundle), "客户端应从网络 DTO 重建 CurrentPlayer")
@@ -94,6 +98,55 @@ func _initialize() -> void:
 	_expect(player.inventory.find("loot.first").quantity == 5, "合并后的掉落数量应为权威结算总和")
 	_expect(player.inventory.find("loot.second") == null, "已合并掉落不应额外占用背包格")
 	_finish()
+
+
+## 验证撒玛王底盘与天神之怒从同一装配对象派生身份、面板及权威战斗数值。
+## [param catalog] 已初始化的统一物品目录。
+## [param player] 已装配新兵战车的测试玩家聚合。
+func _test_advanced_vehicle_loadout(catalog: ItemCatalog, player: Player) -> void:
+	var chassis_id := "glory_equipment_tank1000_27ae5e8059"
+	var weapon_id := "glory_equipment_gun1000_c4c24e2500"
+	for specification: Dictionary in [
+		{"id": chassis_id, "instance": "item.sama_chassis", "position": [120, 0]},
+		{"id": weapon_id, "instance": "item.divine_weapon", "position": [180, 0]},
+	]:
+		var created := catalog.create(String(specification.id), {
+			"instance_id": specification.instance,
+			"position_px": specification.position,
+			"footprint_px": [45, 45],
+		})
+		_expect(created.is_ok, "高级战车装备应从荣耀目录组装")
+		if created.is_ok:
+			_expect(player.inventory.add_from_transfer(created.value).is_ok, "高级装备应进入同一玩家背包")
+	var chassis_equipped := player.equip_vehicle_item(
+		"item.sama_chassis", 0, player.inventory.revision, player.vehicle.loadout.revision
+	)
+	_expect(chassis_equipped.is_ok, "撒玛王战车应替换 Location 0 底盘")
+	var weapon_equipped := player.equip_vehicle_item(
+		"item.divine_weapon", 1, player.inventory.revision, player.vehicle.loadout.revision
+	)
+	_expect(weapon_equipped.is_ok, "天神之怒应替换 Location 1 主炮")
+	var stats := player.calculate_vehicle_stats()
+	_expect(player.vehicle.definition_id == chassis_id, "战车身份必须由实际底盘装配同步")
+	_expect(stats.max_health == 13000, "撒玛王战车最大生命应为 13000")
+	_expect(stats.energy_cannon_attack == 900, "天神之怒基础攻击应为 900")
+	_expect(stats.working_energy_capacity == 10000.0, "荣耀旧字段应提升为一万工作能量上限")
+	_expect(stats.reserve_energy_capacity == 100000.0, "荣耀旧字段应提升为十万储备能量上限")
+	var combat_catalog_result := CombatDefinitionCatalogScript.load_default()
+	_expect(combat_catalog_result.is_ok, "权威战斗目录应完成初始化")
+	if not combat_catalog_result.is_ok:
+		return
+	var combat_loadout: DomainResult = combat_catalog_result.value.vehicle_combat_loadout(
+		player,
+		20,
+		{"base_speed_multiplier": 1500.0, "base_speed_cap": 240.0},
+	)
+	_expect(combat_loadout.is_ok, "权威战斗装配应直接消费当前 Player loadout")
+	if combat_loadout.is_ok:
+		_expect(combat_loadout.value.assembly.max_health == 13000,
+			"权威战斗生命不得回退到新兵底盘")
+		_expect(combat_loadout.value.weapons["energy_cannon.primary"].minimum_damage == 900,
+			"权威命中伤害不得回退到新兵能量炮")
 
 
 ## 创建包含背包、固定人物装备和固定战车装配的测试玩家。

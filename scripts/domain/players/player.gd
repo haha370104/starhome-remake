@@ -171,6 +171,7 @@ func equip_vehicle_item(
 			return returned
 	inventory.commit_transfer()
 	vehicle.loadout.commit_transfer()
+	vehicle.reconcile_loadout_state()
 	return DomainResult.ok()
 
 
@@ -201,6 +202,7 @@ func unequip_vehicle_item(
 		return returned
 	inventory.commit_transfer()
 	vehicle.loadout.commit_transfer()
+	vehicle.reconcile_loadout_state()
 	return DomainResult.ok()
 
 

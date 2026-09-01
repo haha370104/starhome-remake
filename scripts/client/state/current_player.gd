@@ -91,6 +91,7 @@ func apply_bundle(bundle: Dictionary) -> bool:
 	})
 	if not _restore_equipment(character.get("worn_items", []), vehicle_snapshot.get("equipped", [])):
 		return false
+	vehicle.reconcile_loadout_state(false)
 	changed.emit(self)
 	return true
 

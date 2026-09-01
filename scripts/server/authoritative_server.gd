@@ -517,6 +517,14 @@ func handle_peer_map_transition(peer_id: int, raw_intent: Variant) -> Dictionary
 		committed_entity = entity
 		_place_transitioned_entity(committed_entity, destination_instance, destination_spawn)
 	else:
+		var transition_state := autosave_service.state_for(session.entity_id) \
+			if autosave_service != null else null
+		if transition_state != null:
+			var prepared_loadout := _prepare_entity_combat_loadout(
+				destination_instance, session.entity_id, transition_state
+			)
+			if not prepared_loadout.ok:
+				return prepared_loadout
 		var destination_spawn_result := destination_instance.spawn_entity(
 			session.entity_id, destination_spawn, entity.movement_speed
 		)
@@ -648,6 +656,14 @@ func _recover_destroyed_vehicle_to_base(entity_id: String, pending: Dictionary) 
 	if destination == source:
 		_place_transitioned_entity(recovered_entity, destination, spawn_position)
 	else:
+		var recovery_state := autosave_service.state_for(entity_id) \
+			if autosave_service != null else null
+		if recovery_state != null:
+			var prepared_loadout := _prepare_entity_combat_loadout(
+				destination, entity_id, recovery_state
+			)
+			if not prepared_loadout.ok:
+				return prepared_loadout
 		var spawned := destination.spawn_entity(
 			entity_id, spawn_position, source_entity.movement_speed
 		)
@@ -722,6 +738,13 @@ func handle_peer_player_panel_command(peer_id: int, command: Dictionary) -> Dict
 	var committed = autosave_service.commit_player_state(session.entity_id, value["candidate"])
 	if not committed.is_ok:
 		return _failure(committed.error_code, committed.error_message)
+	var current_map := map_registry.instance_by_id(session.map_instance_id)
+	if current_map != null:
+		var refreshed_loadout := _prepare_entity_combat_loadout(
+			current_map, session.entity_id, committed.value
+		)
+		if not refreshed_loadout.ok:
+			return refreshed_loadout
 	return _success(
 		commerce_service.build_bundle(committed.value, value.get("operation", {}))
 		if is_commerce else player_panel_service.build_bundle(committed.value)
@@ -1310,6 +1333,11 @@ func _restore_persistent_player_state(
 	if not restored_position.is_finite():
 		return false
 	var restored_entity := source_entity
+	var prepared_loadout := _prepare_entity_combat_loadout(
+		target, session.entity_id, state
+	)
+	if not prepared_loadout.ok:
+		return false
 	if target != source:
 		var spawn_result := target.spawn_entity(
 			session.entity_id,
@@ -1334,6 +1362,36 @@ func _restore_persistent_player_state(
 		if not combat_restore.ok:
 			return false
 	return true
+
+
+## 从同一 Player 聚合为地图实例准备玩家专属权威战车装配。
+## [param target] 即将拥有或已经拥有该玩家的地图实例。
+## [param entity_id] 玩家权威实体标识。
+## [param state] 自动存档服务中的完整玩家记录。
+## 返回地图缓存或热更新结果。
+## 设计：面板、存档与战斗都经 PlayerStateMapper 还原同一个 loadout，不允许地图回退到独立新兵配置。
+func _prepare_entity_combat_loadout(
+	target: AuthoritativeMapInstance,
+	entity_id: String,
+	state: PlayerStateRecord,
+) -> Dictionary:
+	if target == null or state == null or player_panel_service == null or _combat_catalog == null:
+		return _failure(&"combat.player_loadout_unavailable", "player combat loadout dependencies are unavailable")
+	var restored := player_panel_service.restore_player(state)
+	if not restored.is_ok:
+		return _failure(restored.error_code, restored.error_message)
+	var player: Player = restored.value
+	var loadout: DomainResult = _combat_catalog.vehicle_combat_loadout(
+		player,
+		config.simulation_hz,
+		{
+			"base_speed_multiplier": 1500.0,
+			"base_speed_cap": target.movement_speed_cap,
+		},
+	)
+	if not loadout.is_ok:
+		return _failure(loadout.error_code, loadout.error_message)
+	return target.set_vehicle_combat_loadout(entity_id, loadout.value)
 
 
 ## 立即提交全部已登记角色，未启用持久化时安全忽略。

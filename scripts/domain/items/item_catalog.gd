@@ -138,6 +138,8 @@ func _apply_equipment_contract(item_definition: Dictionary) -> void:
 		return
 	var location := EquipmentSlotRegistryScript.location_for_definition(definition_id)
 	if location < 0:
+		location = int(item_definition.get("equipment_location", -1))
+	if location < 0:
 		return
 	item_definition["equipment_location"] = location
 	item_definition["equip_kind"] = {
@@ -145,3 +147,51 @@ func _apply_equipment_contract(item_definition: Dictionary) -> void:
 		"energy_cannon": 1,
 		"vehicle_engine": 3,
 	}.get(kind, -1)
+	_normalize_legacy_vehicle_stats(item_definition)
+
+
+## 将荣耀旧客户端字段提升为充血装备模型直接消费的统一战车属性。
+## [param item_definition] 已确认属于固定战车槽位的可变定义副本。
+## 设计：旧字段只在目录边界出现，PlayerVehicle、战斗模块和 UI 不再各自解释 FCC 字段。
+func _normalize_legacy_vehicle_stats(item_definition: Dictionary) -> void:
+	var stats_value: Variant = item_definition.get("stats", {})
+	if not stats_value is Dictionary:
+		return
+	var stats: Dictionary = stats_value
+	var legacy_value: Variant = stats.get("legacy_properties", {})
+	if not legacy_value is Dictionary:
+		return
+	var legacy: Dictionary = legacy_value
+	match String(item_definition.get("kind", "")):
+		"vehicle_chassis":
+			_set_missing_numeric_stat(stats, "armor", legacy.get("m_narmor", 0))
+			_set_missing_numeric_stat(
+				stats, "working_energy_capacity", legacy.get("m_nenergy", stats.get("energy_cost", 0))
+			)
+			_set_missing_numeric_stat(stats, "reserve_energy_capacity", legacy.get("m_nmaxenergy", 0))
+			_set_missing_numeric_stat(stats, "repair_strength", legacy.get("m_nOneRepairAttack", 0))
+			_set_missing_numeric_stat(stats, "repair_energy_cost", legacy.get("m_nOneRepairEnergy", 0))
+			_set_missing_numeric_stat(stats, "repair_skill_level", legacy.get("m_nRepairLevel", 0))
+		"energy_cannon", "missile_weapon", "rocket_weapon", "vehicle_weapon":
+			_set_missing_numeric_stat(stats, "working_energy_per_shot", legacy.get("m_nenergy", stats.get("energy_cost", 0)))
+			if not stats.has("attack_interval_seconds"):
+				stats["attack_interval_seconds"] = maxf(
+					0.0, _numeric_value(legacy.get("m_nacttime", 800)) / 1000.0
+				)
+
+
+## 仅在标准字段缺失时写入旧客户端数值，避免覆盖人工确认过的配置。
+## [param stats] 待补齐的统一装备属性字典。
+## [param key] 统一属性名。
+## [param raw_value] 旧客户端字符串或数值。
+func _set_missing_numeric_stat(stats: Dictionary, key: String, raw_value: Variant) -> void:
+	if not stats.has(key):
+		stats[key] = _numeric_value(raw_value)
+
+
+## 将 FCC 遗留的数字字符串安全转换为浮点数。
+## [param raw_value] 数值或数字字符串。
+## 返回可供装备模型消费的有限非负数值；非法值返回零。
+func _numeric_value(raw_value: Variant) -> float:
+	var result := float(raw_value)
+	return maxf(0.0, result) if is_finite(result) else 0.0

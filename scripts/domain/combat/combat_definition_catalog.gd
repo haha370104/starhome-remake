@@ -190,6 +190,108 @@ func starter_secondary_weapons(simulation_hz: int) -> DomainResult:
 	return DomainResult.ok(result)
 
 
+## 从玩家当前固定装配对象生成该玩家独有的权威战车装配与武器定义。
+## [param player] 已由共享持久化映射器还原的 Player 聚合。
+## [param simulation_hz] 权威服务器每秒模拟刻数。
+## [param movement_config] 战车重量、推进力到移动速度的服务器规则。
+## 返回 assembly 与 weapons 字典；缺少底盘或主炮时返回领域错误。
+## 设计：loadout 是唯一装备事实来源；新兵目录只为未装备的副武器和待证实弹道常量提供回退。
+func vehicle_combat_loadout(
+	player: Player,
+	simulation_hz: int,
+	movement_config: Dictionary,
+) -> DomainResult:
+	if player == null or simulation_hz <= 0:
+		return DomainResult.failure(&"combat.invalid_player_loadout", "player combat loadout is unavailable")
+	var chassis := player.vehicle.loadout.at(0) as VehicleChassis
+	var primary_weapon := player.vehicle.loadout.at(1) as VehicleWeapon
+	if chassis == null or primary_weapon == null:
+		return DomainResult.failure(&"combat.invalid_player_loadout", "vehicle chassis and primary weapon are required")
+	var calculator_chassis := {
+		"weight": chassis.weight,
+		"max_health": chassis.base_max_health,
+		"max_durability": chassis.max_durability,
+		"working_energy_capacity": chassis.working_energy_capacity,
+		"reserve_energy_capacity": chassis.reserve_energy_capacity,
+		"power_output": chassis.output_power,
+	}
+	var components: Array[Dictionary] = []
+	var equipment_hardiness: Dictionary = {chassis.definition_id: chassis.max_durability}
+	var self_repair_bonus := maxi(0, int(chassis.stat("self_repair_bonus", 0)))
+	for equipment: VehicleEquipment in player.vehicle.loadout.items():
+		if equipment == chassis:
+			continue
+		var component := {
+			"weight": equipment.weight,
+			"max_durability": equipment.max_durability,
+			"reserve_energy_capacity": float(equipment.stat("reserve_energy_capacity", 0.0)),
+			"working_energy_capacity": float(equipment.stat("working_energy_capacity", 0.0)),
+			"power_output": float(equipment.stat("power_output", 0.0)),
+			"continuous_power_draw": float(equipment.stat("continuous_power_draw", 0.0)),
+		}
+		if equipment is VehicleEngine:
+			component["propulsion"] = (equipment as VehicleEngine).drive
+			component["required_driving_level"] = equipment.required_skill_level
+		components.append(component)
+		self_repair_bonus += maxi(0, int(equipment.stat("self_repair_bonus", 0)))
+		equipment_hardiness[equipment.definition_id] = equipment.max_durability
+	var driving_level := player.skills.effective_level("driving", player.character_equipment)
+	var assembly_result := VehicleAssemblyCalculator.calculate(
+		calculator_chassis, components, driving_level, movement_config
+	)
+	if not assembly_result.is_ok:
+		return assembly_result
+	var assembly: Dictionary = assembly_result.value
+	assembly["vehicle_id"] = chassis.definition_id
+	assembly["self_repair_base_strength"] = chassis.self_repair_power()
+	assembly["self_repair_bonus_strength"] = self_repair_bonus
+	assembly["self_repair_energy_cost"] = chassis.self_repair_energy_cost
+	assembly["self_repair_required_skill_level"] = chassis.required_repair_skill_level
+	assembly["equipment_hardiness"] = equipment_hardiness
+	assembly["unknown_fields"] = []
+	var weapon_result := _primary_weapon_definition(primary_weapon, simulation_hz)
+	if not weapon_result.is_ok:
+		return weapon_result
+	var weapons := {STARTER_ABILITY_ID: weapon_result.value}
+	var secondary_result := starter_secondary_weapons(simulation_hz)
+	if not secondary_result.is_ok:
+		return secondary_result
+	weapons.merge(secondary_result.value)
+	return DomainResult.ok({"assembly": assembly, "weapons": weapons})
+
+
+## 将实际装备的能量炮转换为权威战斗状态机协议。
+## [param weapon] 玩家 Location 1 的具体武器实例。
+## [param simulation_hz] 权威服务器每秒模拟刻数。
+## 返回统一武器定义；运行时弹道常量缺失时复用已确认的新兵炮默认值。
+func _primary_weapon_definition(weapon: VehicleWeapon, simulation_hz: int) -> DomainResult:
+	var fallback: Dictionary = (_equipment_by_id["recruit_energy_cannon"] as Dictionary)["stats"]
+	var interval := weapon.attack_interval_seconds
+	if interval <= 0.0:
+		interval = float(fallback["attack_interval_seconds"])
+	var cooldown_ticks := roundi(interval * float(simulation_hz))
+	if weapon.base_attack <= 0 or weapon.attack_range <= 0.0 or cooldown_ticks <= 0:
+		return DomainResult.failure(&"combat.invalid_weapon_definition", "equipped primary weapon stats are invalid")
+	return DomainResult.ok({
+		"ability_id": STARTER_ABILITY_ID,
+		"weapon_id": weapon.definition_id,
+		"skill_id": "energy_cannon",
+		"attack_mode": "line_projectile",
+		"minimum_damage": weapon.base_attack,
+		"maximum_damage": weapon.base_attack,
+		"working_energy_cost": weapon.working_energy_per_shot,
+		"activation_power": null,
+		"range": weapon.attack_range,
+		"upgrade_range_limit": float(weapon.stat("range_limit", weapon.attack_range)),
+		"cooldown_ticks": cooldown_ticks,
+		"projectile_speed": float(weapon.stat("runtime_projectile_speed", fallback["runtime_projectile_speed"])),
+		"muzzle_offset": (weapon.stat("runtime_muzzle_offset", fallback["runtime_muzzle_offset"]) as Array).duplicate(),
+		"muzzle_forward_offset": float(weapon.stat("runtime_muzzle_forward_offset", fallback["runtime_muzzle_forward_offset"])),
+		"damage_model": &"confirmed_base_attack_direct",
+		"unknown_fields": ["activation_power", "server_damage_formula", "original_server_projectile_speed"],
+	})
+
+
 ## 执行 `d04_monster_lifecycles` 对应的模块操作。
 ## [param map_instance_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## 返回该函数计算、查询或操作得到的结果。

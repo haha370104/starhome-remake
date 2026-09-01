@@ -28,6 +28,7 @@ var mining_module
 var _combat_catalog
 var _combat_assembly: Dictionary = {}
 var _combat_weapons: Dictionary = {}
+var _combat_loadout_by_entity: Dictionary = {}
 var _accepted_movement_distance: Dictionary = {}
 var _last_progression_combat_event_id := 0
 var _monster_population_policy: Dictionary = {}
@@ -239,6 +240,7 @@ func admitted_spawn_position(
 func remove_entity(entity_id: String) -> bool:
 	if combat_module != null:
 		combat_module.unregister_vehicle(entity_id)
+	_combat_loadout_by_entity.erase(entity_id)
 	_accepted_movement_distance.erase(entity_id)
 	if mining_module != null:
 		mining_module.unregister_actor(entity_id)
@@ -765,6 +767,42 @@ func restore_vehicle_combat_state(entity_id: String, persisted_state: PlayerStat
 	return _success(vehicle_state)
 
 
+## 为指定玩家缓存并应用由其实际固定装配生成的权威战斗定义。
+## [param entity_id] 玩家权威实体标识。
+## [param loadout] 含 assembly 与 weapons 的已验证战斗装配字典。
+## 返回缓存或重新登记后的战车状态。
+## 设计：地图只拥有战斗运行时；装备含义由 Player 聚合和 CombatDefinitionCatalog 在外部统一组装。
+func set_vehicle_combat_loadout(entity_id: String, loadout: Dictionary) -> Dictionary:
+	if entity_id.is_empty() or not loadout.get("assembly") is Dictionary \
+			or not loadout.get("weapons") is Dictionary:
+		return _failure(&"combat.invalid_player_loadout", "player combat loadout is invalid")
+	_combat_loadout_by_entity[entity_id] = loadout.duplicate(true)
+	if combat_module == null or not entities.has(entity_id):
+		return _success(true)
+	var old_state := vehicle_combat_state_for(entity_id)
+	var health_ratio := _combat_resource_ratio(old_state.health, old_state.max_health) \
+		if old_state != null else 1.0
+	var reserve_ratio := _combat_resource_ratio(
+		old_state.reserve_energy, old_state.reserve_energy_capacity
+	) if old_state != null else 1.0
+	var working_ratio := _combat_resource_ratio(
+		old_state.working_energy, old_state.working_energy_capacity
+	) if old_state != null else 1.0
+	combat_module.unregister_vehicle(entity_id)
+	var registered := _register_vehicle_combat(entity_id)
+	if not registered.ok:
+		return registered
+	var new_state := vehicle_combat_state_for(entity_id)
+	new_state.health = clampi(roundi(health_ratio * new_state.max_health), 0, new_state.max_health)
+	new_state.reserve_energy = clampf(
+		reserve_ratio * new_state.reserve_energy_capacity, 0.0, new_state.reserve_energy_capacity
+	)
+	new_state.working_energy = clampf(
+		working_ratio * new_state.working_energy_capacity, 0.0, new_state.working_energy_capacity
+	)
+	return _success(new_state)
+
+
 ## 执行 `register_vehicle_combat` 对应的模块操作。
 ## [param entity_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## 返回该函数计算、查询或操作得到的结果。
@@ -772,10 +810,21 @@ func _register_vehicle_combat(entity_id: String) -> Dictionary:
 	var entity: AuthoritativeEntity = entities.get(entity_id)
 	if entity == null or combat_module == null:
 		return _failure(&"combat.invalid_actor", "combat vehicle registration requires a map entity")
+	var loadout: Dictionary = _combat_loadout_by_entity.get(entity_id, {})
+	var assembly: Dictionary = loadout.get("assembly", _combat_assembly)
+	var weapons: Dictionary = loadout.get("weapons", _combat_weapons)
 	var result = combat_module.register_vehicle(
-		entity_id, instance_id, entity.position, _combat_assembly, _combat_weapons
+		entity_id, instance_id, entity.position, assembly, weapons
 	)
 	return _success(result.value) if result.is_ok else _failure(result.error_code, result.error_message)
+
+
+## 计算战斗资源相对旧上限的安全比例。
+## [param current_value] 当前生命或能源值。
+## [param capacity] 对应旧上限。
+## 返回 0 到 1 的比例；上限无效时按满值处理。
+func _combat_resource_ratio(current_value: float, capacity: float) -> float:
+	return clampf(current_value / capacity, 0.0, 1.0) if capacity > 0.0 else 1.0
 
 
 ## 执行 `resolve_monster_position` 对应的模块操作。
