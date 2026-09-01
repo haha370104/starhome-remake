@@ -36,12 +36,12 @@ func _initialize() -> void:
 func _test_population_and_routes(instance: AuthoritativeMapInstance) -> void:
 	var module: AuthoritativeCombatModule = instance.combat_module
 	var snapshot := module.snapshot_for_actor(PLAYER_ID)
-	_expect(snapshot.monsters.size() == 100, "D04 应初始化配置上限的一百只怪物")
+	_expect(snapshot.monsters.size() == 200, "D04 应初始化配置上限的二百只怪物")
 	var species: Dictionary = {}
 	for monster: Dictionary in snapshot.monsters:
 		species[String(monster.species_id)] = int(species.get(String(monster.species_id), 0)) + 1
 	_expect(species == {
-		"om_adult": 25, "om_larva": 25, "photosensitive_orb": 25, "toxic_gel": 25,
+		"om_adult": 50, "om_larva": 50, "photosensitive_orb": 50, "toxic_gel": 50,
 	}, "D04 怪物数量应完全由地图配置驱动")
 	_expect(snapshot.local_vehicle.health == 70 and snapshot.local_vehicle.max_health == 70,
 		"新兵底盘应拥有七十点生命")

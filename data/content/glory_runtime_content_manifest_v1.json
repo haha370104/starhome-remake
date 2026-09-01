@@ -20,8 +20,9 @@
     "monsters": {
       "runtime_definitions": 119,
       "maps_with_reliable_encounters": 27,
-      "maps_with_remake_defaults": 432,
       "curated_override_maps": 1,
+      "configured_field_maps": 28,
+      "unconfigured_field_maps": 432,
       "runtime_field_maps": 460
     },
     "items": {
@@ -63,9 +64,9 @@
       "effect": "Business data is active; the affected presentation remains empty rather than borrowing another release."
     },
     {
-      "kind": "monster_distribution_remake_default",
+      "kind": "monster_distribution_unrecovered",
       "count": 432,
-      "effect": "Fields without recovered placements use explicitly configurable basic-four populations; this is not a recovered original-server distribution."
+      "effect": "Fields without recovered map-presence evidence spawn no monsters instead of receiving invented basic-four populations."
     },
     {
       "kind": "server_authority_not_recovered",

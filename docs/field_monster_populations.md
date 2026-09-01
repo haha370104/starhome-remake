@@ -1,23 +1,24 @@
-# 全野外怪物种群与小地图传送点
+# 野外怪物种群与小地图传送点
 
 更新：2026-08-31。
 
 ## 覆盖范围与证据边界
 
-当前可进入的 810 张地图中，460 张运行定义为 `category: field`，全部启用怪物种群。
-其余 350 张城镇、商店、大厅等地图不启用刷怪。按世界和地图代码联合识别，
+当前可进入的 810 张地图中，460 张运行定义为 `category: field`；其中 27 张按荣耀客户端
+关系表启用怪物种群，D04 保留首切配置，其余 432 张暂不刷怪。
+另外 350 张城镇、商店、大厅等地图也不启用刷怪。按世界和地图代码联合识别，
 不同星球的同名 C04 不共享种群或刷新计时器。
 
 | 配置来源 | 地图数 | 含义 |
 | --- | ---: | --- |
 | 荣耀客户端地图编辑器记录 | 27 | 20 个怪物类、85 条怪物—地图关系全部匹配到数值和素材实体 |
 | 既有 D04 首切配置 | 1 | 保留现有四种怪物、属性、被动/反击行为及掉落配置 |
-| 明确标记的复刻默认 | 432 | 缺少原始分布证据，暂用奥姆虫、奥姆幼虫、感光质、毒胶，各权重 1 |
+| 无分布证据 | 432 | 不再套用四种基础怪；在补到可信关系或人工设计前保持无怪 |
 
 这里使用的是此前整理的 `glory_monster_map_relations.json`，而不是一份覆盖全世界的原版服务端刷怪表。
 源证据是地图 FCC 中**被注释的 `NpcNewAddress` 编辑器记录**，只能说明历史配置，
 不能断言为正式服务器最后使用的分布。当前没有找到另一份独立的“怪物手册”文件。
-432 张默认地图不能描述为已经还原原版；之后提供更完整分布时应替换默认配置。
+因此关系表外的 432 张野外图不再通过四种基础怪伪造覆盖；之后取得更完整分布时再逐图启用。
 
 六个世界的野外数：布里星 73、阿斯加德 85、贝特β星 71、德萨星 73、伯雷星 73、索卡星 85。
 尚缺原包的四个注册地图不在上述 810 张运行地图中，本次未伪造资源。
@@ -45,26 +46,27 @@
 | NpcFire / 自走车 | 熔岩 / 自走车 |
 
 新增种群复用已导入的荣耀版数值及 ALE 动画；没有跨版本借用素材，也没有修改原有
-普通毒胶、奥姆幼虫“不攻击”的行为规则。全部地图共使用 21 种怪物，其中普通毒胶来自默认配置。
+普通毒胶、奥姆幼虫“不攻击”的行为规则。27 张关系表区域共使用 20 种怪物；
+D04 首切另配置普通毒胶，因此当前实际启用 21 种。
 
 ## 权威刷新与配置入口
 
-- 每图初始 100 只，上限 100；首次加载权威地图实例时生成，并非启动时预建所有野外实例。
+- 已配置地图初始 200 只、上限 200；首次有玩家进入并加载权威地图实例时生成，
+  并非启动时预建所有野外实例。无关系配置的野外图初始和后续均为 0。
 - 全图可走区域随机出生，优先满足 96 像素间距，不使用旧编辑器的固定点簇。
-- 每 60 秒检查一次：低于 50% 补 20 只，低于 80% 补 10 只，否则补 5 只，始终受上限限制。
+- 每 60 秒检查一次：低于 50% 补 40 只，低于 80% 补 20 只，否则补 10 只，始终受上限限制。
 - 按物种权重补缺，当前各物种权重相同。怪物生命周期、攻击和死亡仍由服务端领域模型负责，客户端只呈现快照。
 
 配置与生成流程：
 
-1. `data/gameplay/glory/field_population_defaults_v1.json`：无证据地图的默认物种及权重。
-2. `tools/build_glory_monster_runtime_catalog.py`：读取地图目录、关系表和名称常量，生成逐图配置；人口上限与补量比例也在此集中定义。
-3. `data/gameplay/glory/glory_monster_encounters_v1.json`：生成的 459 张地图配置。
-   `distribution_evidence` 区分 `client_editor_placement` / `remake_default`，
+1. `tools/build_glory_monster_runtime_catalog.py`：读取地图目录、关系表和名称常量，只生成有关系证据的逐图配置；人口上限与补量比例也在此集中定义。
+2. `data/gameplay/glory/glory_monster_encounters_v1.json`：生成的 27 张地图配置。
+   `distribution_evidence` 固定为 `client_editor_placement`，
    `source_map_id` 保留世界+区域，`confirmed_joins` 保留可追溯的类关联。
-4. D04 继续由 `data/gameplay/stage3/d04_encounters_v1.json` 配置覆盖。
-5. `python tools/audit_glory_runtime_content.py` 更新运行覆盖清单，分别列示历史证据和默认配置数量。
+3. D04 继续由 `data/gameplay/stage3/d04_encounters_v1.json` 配置覆盖。
+4. `python tools/audit_glory_runtime_content.py` 更新运行覆盖清单，分别列示有依据和未配置的地图数量。
 
-修改默认权重后执行 `python tools/build_glory_monster_runtime_catalog.py`，再执行审计脚本。
+修改关系表解析或人口策略后执行 `python tools/build_glory_monster_runtime_catalog.py`，再执行审计脚本。
 不要只手改生成文件，否则下一次生成会覆盖修改。怪物目录在启动时加载，修改后需重启游戏/服务端。
 
 ## 小地图传送点
@@ -79,8 +81,8 @@
 
 ## 验证入口
 
-- `python tools/tests/test_glory_monster_encounters.py`：名称关联、调色板别名回归、全野外集合、默认配置隔离、无效权重拒绝。
-- `tests/server/combat/glory_field_population_test.gd`：加载全部 810 张运行定义检查分类；全部 460 张野外生成种群；六世界抽样真实导航出生与一分钟补怪。
+- `python tools/tests/test_glory_monster_encounters.py`：名称关联、调色板别名回归、关系表地图集合和 E07 物种精确性。
+- `tests/server/combat/glory_field_population_test.gd`：加载全部 810 张运行定义检查分类；仅 28 张已配置野外生成种群；抽样真实导航出生与一分钟补怪。
 - `tests/server/combat/combat_definition_catalog_test.gd`：D04 行为、数量、战斗和权重补缺回归。
 - `tests/client/presentation/combat/glory_ale_monster_presenter_test.gd`：启用物种的站立/移动/攻击三态和八向帧加载。
 - `tests/ui/runtime/hud_runtime_smoke_test.gd`、`tests/integration/map_transition_scene_smoke_test.gd`：小地图标记、模式变化及大厅→城区→D04→C04→C03 切换。

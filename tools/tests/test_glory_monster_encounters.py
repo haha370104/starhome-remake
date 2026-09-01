@@ -1,5 +1,4 @@
-"""Verify source-name joins and explicit field-only fallback semantics."""
-import copy
+"""Verify source-name joins and evidence-only field encounter semantics."""
 import csv
 import sys
 import unittest
@@ -21,11 +20,10 @@ class EncounterTests(unittest.TestCase):
         cls.index = builder.read_json(ROOT / "data/content/glory_map_runtime_index_v1.json")
         cls.known = builder.read_json(ROOT / "data/content/known_maps_v1.json")
         cls.names = builder.recover_class_names(ROOT.parent / "starhome_lz_ry_fcc_source")
-        cls.defaults = builder.read_json(ROOT / "data/gameplay/glory/field_population_defaults_v1.json")
 
     def build(self, **overrides):
         arguments = dict(rows=self.rows, relations=self.relations, map_index=self.index,
-                         known_maps=self.known, class_names=self.names, defaults=self.defaults)
+                         known_maps=self.known, class_names=self.names)
         arguments.update(overrides)
         return builder.build_encounters(**arguments)
 
@@ -40,40 +38,28 @@ class EncounterTests(unittest.TestCase):
         reversed_result = self.build(rows=list(reversed(self.rows)))
         self.assertEqual((encounters, joins), reversed_result)
 
-    def test_all_fields_and_no_towns(self):
+    def test_only_recovered_fields_are_configured(self):
         encounters, _ = self.build()
         field_sources = {row["id"] for row in self.known["definitions"] if row["category"] == "field_code"}
-        expected = {row["runtime_id"] for row in self.index["runtime_maps"] if row["source_id"] in field_sources}
-        actual = {row["map_id"] for row in encounters} | {"d04_field_zone"}
-        self.assertEqual(actual, expected)
-        self.assertEqual(len(actual), 460)
-        self.assertEqual(len(encounters), len(actual) - 1)
-        self.assertEqual(sum(row["distribution_evidence"] == "client_editor_placement" for row in encounters), 27)
-        self.assertEqual(sum(row["distribution_evidence"] == "remake_default" for row in encounters), 432)
+        runtime_fields = {row["runtime_id"] for row in self.index["runtime_maps"] if row["source_id"] in field_sources}
+        actual = {row["map_id"] for row in encounters}
+        self.assertEqual(len(runtime_fields), 460)
+        self.assertEqual(len(actual), 27)
+        self.assertTrue(actual < runtime_fields)
+        self.assertNotIn("glory_nft_bl_b02", actual)
+        self.assertTrue(all(row["distribution_evidence"] == "client_editor_placement" for row in encounters))
         valid = {builder.runtime_id(int(row["index"])) for row in self.rows}
         for encounter in encounters:
             self.assertEqual(encounter["population_policy"], builder.POPULATION_POLICY)
             self.assertTrue(all(group["monster_id"] in valid for group in encounter["spawn_groups"]))
 
-    def test_defaults_are_configurable_but_do_not_leak_into_recovered_maps(self):
-        defaults = copy.deepcopy(self.defaults)
-        defaults["spawn_groups"] = [{"monster_id": "om_larva", "weight": 3.0}]
-        encounters, _ = self.build(defaults=defaults)
-        baseline = {row["map_id"]: row for row in self.build()[0]}
-        for encounter in encounters:
-            if encounter["distribution_evidence"] == "client_editor_placement":
-                self.assertEqual(encounter, baseline[encounter["map_id"]])
-            else:
-                self.assertEqual(len(encounter["spawn_groups"]), 1)
-                self.assertEqual(encounter["spawn_groups"][0]["weight"], 3.0)
-                self.assertFalse(encounter["source_monster_classes"])
-
-    def test_invalid_default_species_weight_or_duplicate_is_rejected(self):
-        for groups in [[], [{"monster_id": "missing", "weight": 1}],
-                       [{"monster_id": "om_adult", "weight": 0}],
-                       [{"monster_id": "om_adult", "weight": 1}] * 2]:
-            with self.assertRaises(ValueError):
-                self.build(defaults={"spawn_groups": groups})
+    def test_e07_uses_only_its_recovered_species(self):
+        encounters = {row["map_id"]: row for row in self.build()[0]}
+        expected = {"om_adult", "om_larva", "photosensitive_orb"}
+        for map_id in ["glory_nft_bl_e07", "glory_nft_bt_e07"]:
+            actual = {row["monster_id"] for row in encounters[map_id]["spawn_groups"]}
+            self.assertEqual(actual, expected)
+            self.assertNotIn("toxic_gel", actual)
 
     def test_ambiguous_name_is_not_silently_joined(self):
         duplicate = next(row.copy() for row in self.rows if row["index"] == "4")

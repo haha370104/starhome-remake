@@ -112,6 +112,8 @@ func _run() -> void:
 	_expect(hall.hud.minimap_dock.map_name_label.text == "D04区", "HUD 必须原子更新 D04 名称")
 	_expect(hall.hud.minimap_dock.marker_layer.marker_positions().size() == 12, "D04 小地图必须显示当前地图的十二个传送点")
 	_expect(hall.multiplayer_presenter.session.current_map_id == &"d04_field_zone", "离线调试会话也必须同步当前业务地图")
+	await _assert_current_map_monsters(hall)
+	_expect(hall.monster_world_controller._views.size() == 200, "D04 的200只怪物应通过权威快照进入客户端")
 
 	_place_authoritative_player(hall, Vector2(130, 2553))
 	hall.call("_try_begin_nearby_map_transition")
@@ -188,7 +190,10 @@ func _assert_current_map_monsters(hall: Node2D) -> void:
 		if hall.monster_world_controller._views.size() == instance.combat_module.monsters.size():
 			break
 		await physics_frame
-	_expect(hall.monster_world_controller._views.size() == 100, "新野外图的100只怪物应通过权威快照进入客户端")
+	_expect(
+		hall.monster_world_controller._views.size() == instance.combat_module.monsters.size(),
+		"当前地图客户端怪物数必须与权威种群一致",
+	)
 	for monster_id: String in hall.monster_world_controller._views:
 		_expect(instance.combat_module.monsters.has(monster_id), "客户端不得残留上一地图的怪物")
 

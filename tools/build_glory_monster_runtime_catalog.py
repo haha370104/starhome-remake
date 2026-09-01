@@ -2,8 +2,9 @@
 """Build executable monster definitions from the decoded Glory client tables.
 
 The retired server's spawn table and several combat constants are unavailable.
-This generator therefore keeps client evidence separate from configurable remake
-defaults. Recovered placements take precedence over explicit field defaults.
+This generator therefore activates only recovered map-presence evidence. Fields
+without a recovered relationship remain empty instead of receiving invented
+species defaults.
 """
 
 from __future__ import annotations
@@ -20,7 +21,7 @@ from typing import Any
 
 CURATED_IDS = {1: "toxic_gel", 2: "photosensitive_orb", 3: "om_larva", 4: "om_adult"}
 POPULATION_POLICY = {
-    "maximum_population": 100,
+    "maximum_population": 200,
     "replenish_interval_seconds": 60,
     "critical_threshold_ratio": 0.5,
     "low_threshold_ratio": 0.8,
@@ -221,7 +222,7 @@ def recover_class_names(source_root: Path) -> dict[str, dict[str, Any]]:
 
 def build_encounters(
     rows: list[dict[str, str]], relations: dict[str, Any], map_index: dict[str, Any],
-    known_maps: dict[str, Any], class_names: dict[str, dict[str, Any]], defaults: dict[str, Any],
+    known_maps: dict[str, Any], class_names: dict[str, dict[str, Any]],
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     field_sources = {row["id"] for row in known_maps["definitions"] if row["category"] == "field_code"}
     source_to_runtime = {
@@ -231,13 +232,6 @@ def build_encounters(
     rows_by_name: dict[str, list[dict[str, str]]] = defaultdict(list)
     for row in rows:
         rows_by_name[row["npc_name"]].append(row)
-    valid_species = {runtime_id(number(row["index"])) for row in rows}
-    default_groups = defaults["spawn_groups"]
-    if not default_groups or any(
-        group["monster_id"] not in valid_species or float(group["weight"]) <= 0
-        for group in default_groups
-    ) or len({group["monster_id"] for group in default_groups}) != len(default_groups):
-        raise ValueError("Field defaults must contain unique known species with positive weights")
     groups_by_map: dict[str, dict[str, dict[str, Any]]] = defaultdict(dict)
     classes_by_map: dict[str, list[str]] = defaultdict(list)
     joins: list[dict[str, Any]] = []
@@ -274,19 +268,16 @@ def build_encounters(
     encounters = []
     for source_id, map_id in sorted(source_to_runtime.items()):
         # Kept in the existing stage3 definition; the runtime applies that override.
-        if map_id == "d04_field_zone":
+        if map_id == "d04_field_zone" or not groups_by_map.get(map_id):
             continue
-        recovered = bool(groups_by_map.get(map_id))
-        groups = list(groups_by_map[map_id].values()) if recovered else [
-            {"group_id": f"{map_id}.{group['monster_id']}", **group} for group in default_groups
-        ]
+        groups = list(groups_by_map[map_id].values())
         encounters.append({
             "encounter_id": f"glory_{map_id}_population",
             "map_id": map_id,
             "enabled": True,
             "population_policy": POPULATION_POLICY,
             "spawn_groups": sorted(groups, key=lambda item: item["monster_id"]),
-            "distribution_evidence": "client_editor_placement" if recovered else "remake_default",
+            "distribution_evidence": "client_editor_placement",
             "source_map_id": source_id,
             "source_monster_classes": sorted(set(classes_by_map[map_id])),
         })
@@ -310,12 +301,17 @@ def main() -> int:
     with source_csv.open(encoding="utf-8-sig", newline="") as source:
         rows = list(csv.DictReader(source))
     definitions = build_definitions(rows, source_csv)
-    defaults_path = Path("data/gameplay/glory/field_population_defaults_v1.json")
     encounters, joins = build_encounters(
         rows, read_json(relations_path), read_json(map_index_path),
         read_json(Path("data/content/known_maps_v1.json")),
-        recover_class_names(args.fcc_source_root), read_json(defaults_path),
+        recover_class_names(args.fcc_source_root),
     )
+    known_maps = read_json(Path("data/content/known_maps_v1.json"))
+    field_sources = {row["id"] for row in known_maps["definitions"] if row["category"] == "field_code"}
+    runtime_field_maps = sum(
+        row["source_id"] in field_sources for row in read_json(map_index_path)["runtime_maps"]
+    )
+    configured_field_maps = len(encounters) + 1
     write_json(
         args.output_root / "glory_monsters_v1.json",
         {
@@ -336,21 +332,20 @@ def main() -> int:
                 "joined_classes": len(joins),
                 "unjoined_classes": len(read_json(relations_path)["relations"]) - len(joins),
                 "client_evidence_maps": sum(row["distribution_evidence"] == "client_editor_placement" for row in encounters),
-                "remake_default_maps": sum(row["distribution_evidence"] == "remake_default" for row in encounters),
                 "curated_override_maps": 1,
-                "runtime_field_maps": len(encounters) + 1,
+                "configured_field_maps": configured_field_maps,
+                "unconfigured_field_maps": runtime_field_maps - configured_field_maps,
+                "runtime_field_maps": runtime_field_maps,
             },
             "source_audit": {
                 "source_release": "starhome_lz_ry",
                 "map_relations_sha256": sha256(relations_path),
                 "class_names_sha256": sha256(args.fcc_source_root / "npcclt1.fcc"),
                 "string_constants_sha256": sha256(args.fcc_source_root / "great/code_string.fcc"),
-                "defaults_path": defaults_path.as_posix(),
-                "defaults_sha256": sha256(defaults_path),
             },
             "encounters": encounters,
             "confirmed_joins": joins,
-            "caveat": "Client editor placements are historical map-presence evidence, not live server tables. Uncovered fields use explicitly marked remake defaults; D04 retains its curated override. Coordinates are randomized by authoritative navigation.",
+            "caveat": "Client editor placements are historical map-presence evidence, not live server tables. Uncovered fields remain unconfigured and spawn no monsters; D04 retains its curated override. Coordinates are randomized by authoritative navigation.",
         },
     )
     print(f"Generated {len(definitions)} monsters and {len(encounters)} map encounters from {len(joins)} safe class joins")

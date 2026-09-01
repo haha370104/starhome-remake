@@ -113,7 +113,7 @@ func _test_d04_lifecycle_definitions() -> void:
 	if not lifecycle_result.is_ok:
 		return
 	var lifecycles: Array = lifecycle_result.value
-	_expect(lifecycles.size() == 100, "D04 should start at its configured population cap")
+	_expect(lifecycles.size() == 200, "D04 should start at its configured population cap")
 	var identities: Dictionary = {}
 	var population_by_species: Dictionary = {}
 	var expected_engagement_policy := {
@@ -156,16 +156,16 @@ func _test_d04_lifecycle_definitions() -> void:
 	var all_unique := identities.size() == lifecycles.size()
 	_expect(all_unique, "expanded monster instance IDs should be unique")
 	for species_id: String in ["om_adult", "om_larva", "photosensitive_orb", "toxic_gel"]:
-		_expect(int(population_by_species.get(species_id, 0)) == 25, "equal weights should start with twenty-five %s" % species_id)
+		_expect(int(population_by_species.get(species_id, 0)) == 50, "equal weights should start with fifty %s" % species_id)
 	var replenish: Variant = catalog.monster_replenishment_for_map(
-		"d04_field_zone", MAP_INSTANCE_ID, {"om_adult": 24, "om_larva": 25, "photosensitive_orb": 25, "toxic_gel": 25}, 100, 1
+		"d04_field_zone", MAP_INSTANCE_ID, {"om_adult": 49, "om_larva": 50, "photosensitive_orb": 50, "toxic_gel": 50}, 200, 1
 	)
 	_expect(replenish.is_ok and String(replenish.value[0]["species_id"]) == "om_adult", "replenishment should fill the largest weighted deficit first")
-	_expect(catalog.monster_replenishment_count("d04_field_zone", 49) == 20, "below fifty percent should add twenty percent")
-	_expect(catalog.monster_replenishment_count("d04_field_zone", 50) == 10, "exactly fifty percent should use the ten-percent tier")
-	_expect(catalog.monster_replenishment_count("d04_field_zone", 79) == 10, "below eighty percent should add ten percent")
-	_expect(catalog.monster_replenishment_count("d04_field_zone", 80) == 5, "exactly eighty percent should use the five-percent tier")
-	_expect(catalog.monster_replenishment_count("d04_field_zone", 98) == 2, "replenishment must not exceed the map cap")
+	_expect(catalog.monster_replenishment_count("d04_field_zone", 99) == 40, "below fifty percent should add twenty percent")
+	_expect(catalog.monster_replenishment_count("d04_field_zone", 100) == 20, "exactly fifty percent should use the ten-percent tier")
+	_expect(catalog.monster_replenishment_count("d04_field_zone", 159) == 20, "below eighty percent should add ten percent")
+	_expect(catalog.monster_replenishment_count("d04_field_zone", 160) == 10, "exactly eighty percent should use the five-percent tier")
+	_expect(catalog.monster_replenishment_count("d04_field_zone", 198) == 2, "replenishment must not exceed the map cap")
 	var lifecycle: MonsterLifecycle = MonsterLifecycleScript.new()
 	var admitted_definition: Dictionary = lifecycles[0].duplicate(true)
 	admitted_definition["position"] = Vector2(240, 240)
@@ -177,7 +177,7 @@ func _test_d04_lifecycle_definitions() -> void:
 func _test_full_glory_monster_catalog() -> void:
 	var catalog: Variant = CatalogScript.load_default().value
 	_expect(catalog.monster_ids().size() == 119, "all 119 Glory NPC rows should be registered")
-	_expect(catalog.monster_encounter_map_ids().size() == 460, "all runnable fields should have populations, including curated D04")
+	_expect(catalog.monster_encounter_map_ids().size() == 28, "only recovered fields and curated D04 should have populations")
 	var low_temperature_gel: Dictionary = catalog.monster_definition("glory_monster_005")
 	_expect(low_temperature_gel["display_name"] == "低温毒胶", "generated IDs should retain the decoded Chinese NPC name")
 	_expect(int(low_temperature_gel["stats"]["max_health"]) == 72, "generated monsters should retain client health fields")
@@ -185,7 +185,8 @@ func _test_full_glory_monster_catalog() -> void:
 	var e06_result: Variant = catalog.monster_lifecycles_for_map(
 		"glory_nft_bl_e06", "glory.e06.catalog-test"
 	)
-	_expect(e06_result.is_ok and e06_result.value.size() == 100, "a recovered Glory encounter should expand to the configured cap")
+	_expect(e06_result.is_ok and e06_result.value.size() == 200, "a recovered Glory encounter should expand to the configured cap")
+	_expect(catalog.monster_lifecycles_for_map("glory_nft_bl_b02", "unconfigured.test").value.is_empty(), "uncovered fields must not receive the basic-four fallback")
 	var e06_species: Dictionary = {}
 	for definition: Dictionary in e06_result.value:
 		e06_species[String(definition["species_id"])] = true
