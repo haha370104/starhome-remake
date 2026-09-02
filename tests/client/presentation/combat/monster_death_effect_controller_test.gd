@@ -35,6 +35,9 @@ func _run() -> void:
 	_expect(monster != null and monster.visible, "living monster should be visible")
 	controller.apply_snapshot(_snapshot(false, 0, [_death_hit_event(1, 1)]))
 	_expect(monster != null and not monster.visible, "authoritative death snapshot should hide the body")
+	var lethal_damage := world.get_node_or_null("DamageFloat_1") as Node2D
+	_expect(lethal_damage != null and lethal_damage.position == Vector2(140.0, 220.0),
+		"最后一击应在怪物节点移除后仍按权威死亡脚点显示扣血")
 	var effects := controller.get_node_or_null("MonsterDeathEffects")
 	_expect(effects != null and effects.active_effect_count() == 1, "death should create one independent effect")
 	var effect := world.get_node_or_null("MonsterDeath_monster_om_1") as Node2D

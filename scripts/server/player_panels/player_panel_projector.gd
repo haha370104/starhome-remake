@@ -113,9 +113,13 @@ func _equipment_view(equipment: Equipment, owner_kind: String) -> Dictionary:
 	view["special_row"] = -1 if equipment is Clothing \
 		else EquipmentSlotRegistry.special_row(location)
 	var dialog_presentation := equipment.presentation_for("dialog")
+	var default_anchor := EquipmentSlotRegistry.dialog_anchor(location)
 	view["dialog_presentation"] = dialog_presentation
 	view["dialog_texture"] = String(dialog_presentation.get("dialog_texture", ""))
-	view["dialog_anchor"] = _int_pair(dialog_presentation.get("dialog_anchor", [205, 245]), [205, 245])
+	view["dialog_anchor"] = _int_pair(
+		dialog_presentation.get("dialog_anchor", [default_anchor.x, default_anchor.y]),
+		[default_anchor.x, default_anchor.y],
+	)
 	view["dialog_origin"] = _int_pair(dialog_presentation.get("dialog_origin", [0, 0]), [0, 0])
 	view["z_layer"] = int(dialog_presentation.get("z_layer", location))
 	return view

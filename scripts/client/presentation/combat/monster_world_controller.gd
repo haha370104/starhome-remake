@@ -216,11 +216,14 @@ func _apply_recent_events(combat_snapshot: Dictionary) -> void:
 			CombatTraceLogger.record(&"client", &"authoritative_projectile_event_observed", event)
 		if event_type == &"monster_attack_started" and _attack_effects != null:
 			_attack_effects.present_attack(event)
-		if event_type in [&"energy_cannon_hit", &"monster_attack_resolved"]:
+		if event_type in [
+			&"energy_cannon_hit", &"rocket_launcher_hit", &"missile_hit",
+			&"monster_attack_resolved",
+		]:
 			_present_damage(event, combat_snapshot)
 		if event_type == &"monster_attack_resolved":
 			_present_contact_impact(event, combat_snapshot)
-		if event_type == &"energy_cannon_hit":
+		if event_type in [&"energy_cannon_hit", &"rocket_launcher_hit", &"missile_hit"]:
 			_present_nested_death(event)
 
 
@@ -231,12 +234,41 @@ func _present_damage(event: Dictionary, combat_snapshot: Dictionary) -> void:
 	var damage := int(event.get("damage", 0))
 	if damage <= 0:
 		return
-	var anchor := _target_anchor(event, combat_snapshot)
-	if anchor == null:
+	var world_position := _damage_world_position(event, combat_snapshot)
+	if not is_finite(world_position.x) or not is_finite(world_position.y):
 		return
 	var damage_float: Node2D = CombatDamageFloatScript.new()
-	anchor.add_child(damage_float)
+	damage_float.name = "DamageFloat_%d" % int(event.get("event_id", 0))
+	damage_float.position = world_position
+	_world_parent.add_child(damage_float)
 	damage_float.present(damage)
+
+
+## 解析权威伤害事件的世界表现位置，并允许目标节点已因死亡快照被移除。
+## [param event] 包含目标、命中点及可选死亡子事件的权威伤害事件。
+## [param combat_snapshot] 用于识别本地玩家的当前权威快照。
+## 返回可绘制的世界坐标；事件缺少任何可信位置时返回无穷坐标。
+## 设计：飘字是独立瞬时效果，不从属于怪物节点生命周期；最后一击仍使用服务端死亡脚点。
+func _damage_world_position(event: Dictionary, combat_snapshot: Dictionary) -> Vector2:
+	var anchor := _target_anchor(event, combat_snapshot)
+	if anchor != null:
+		return _world_parent.to_local(anchor.global_position)
+	var death_value: Variant = event.get("death", {})
+	if death_value is Dictionary:
+		var death_position := _vector_from_pair((death_value as Dictionary).get("position", []))
+		if is_finite(death_position.x) and is_finite(death_position.y):
+			return death_position
+	return _vector_from_pair(event.get("impact_position", []))
+
+
+## 将网络事件中的二元素坐标数组转换为 Vector2。
+## [param value] 期望为 `[x, y]` 的外部数据。
+## 返回有效坐标；格式不合法时返回 `Vector2.INF`。
+func _vector_from_pair(value: Variant) -> Vector2:
+	if not value is Array or (value as Array).size() != 2:
+		return Vector2.INF
+	var result := Vector2(float(value[0]), float(value[1]))
+	return result if is_finite(result.x) and is_finite(result.y) else Vector2.INF
 
 
 ## 在贴身攻击权威结算点播放受击覆盖效果。

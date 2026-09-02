@@ -50,6 +50,16 @@ const DEFINITION_LOCATIONS := {
 	"starter_missile": 13,
 }
 
+const DIALOG_ANCHORS := {
+	0: Vector2i(170, 200),
+	1: Vector2i(170, 200),
+	3: Vector2i(130, 385),
+	5: Vector2i(50, 80),
+	6: Vector2i(330, 385),
+	7: Vector2i(210, 385),
+	8: Vector2i(270, 385),
+}
+
 
 ## 查询定义允许安装的稳定 Location 编号。
 ## [param definition_id] 装备定义标识。
@@ -96,6 +106,15 @@ static func special_series(location: int) -> String:
 static func special_row(location: int) -> int:
 	var definition: Dictionary = LOCATION_DEFINITIONS.get(location, {})
 	return int(definition.get("special_row", -1))
+
+
+## 返回旧客户端 `EquipInDlg()` 为该逻辑 Location 指定的面板业务锚点。
+## [param location] 荣耀客户端 Location 编号。
+## [param fallback] 尚未逆向的扩展位置使用的兼容锚点。
+## 返回不包含 ALE 帧 origin 的面板坐标；渲染器应将两者相加得到纹理左上角。
+## 设计：锚点属于装备槽语义，不由纹理尺寸或透明边界推算，避免不同车体素材发生漂移。
+static func dialog_anchor(location: int, fallback: Vector2i = Vector2i(205, 245)) -> Vector2i:
+	return DIALOG_ANCHORS.get(location, fallback)
 
 
 ## 判断给定定义是否允许安装到目标 Location。

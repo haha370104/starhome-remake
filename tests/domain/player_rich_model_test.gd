@@ -67,6 +67,12 @@ func _initialize() -> void:
 	_expect(not chassis.can_activate_self_repair(9), "低于底盘维修门槛时应拒绝启动自维修")
 	_test_advanced_vehicle_loadout(catalog, player)
 	var bundle := PlayerPanelProjectorScript.new(catalog).build_bundle(player)
+	var advanced_chassis := _equipped_view(bundle.vehicle.equipped, 0)
+	var advanced_weapon := _equipped_view(bundle.vehicle.equipped, 1)
+	_expect(advanced_chassis.dialog_anchor == [170, 200],
+		"撒玛王底盘应复用 Location 0 的原客户端业务锚点")
+	_expect(advanced_weapon.dialog_anchor == [170, 200],
+		"天神之怒应复用 Location 1 的原客户端业务锚点")
 	var current: CurrentPlayer = CurrentPlayerScript.new()
 	_expect(current.apply_bundle(bundle), "客户端应从网络 DTO 重建 CurrentPlayer")
 	_expect(current is Player, "客户端全局自己应当就是 Player 子类")
@@ -98,6 +104,17 @@ func _initialize() -> void:
 	_expect(player.inventory.find("loot.first").quantity == 5, "合并后的掉落数量应为权威结算总和")
 	_expect(player.inventory.find("loot.second") == null, "已合并掉落不应额外占用背包格")
 	_finish()
+
+
+## 从权威装备快照中查找指定 Location 的视图。
+## [param equipped] `PlayerPanelProjector` 输出的装备视图数组。
+## [param location] 需要查找的旧客户端固定槽编号。
+## 返回匹配的装备视图；不存在时返回空字典。
+func _equipped_view(equipped: Array, location: int) -> Dictionary:
+	for value: Variant in equipped:
+		if value is Dictionary and int((value as Dictionary).get("location", -1)) == location:
+			return value
+	return {}
 
 
 ## 验证撒玛王底盘与天神之怒从同一装配对象派生身份、面板及权威战斗数值。
