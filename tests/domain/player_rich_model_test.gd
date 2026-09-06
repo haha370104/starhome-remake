@@ -24,7 +24,7 @@ func _initialize() -> void:
 	if not initialized.is_ok:
 		_finish()
 		return
-	_expect(catalog.definition_ids().size() == 1284, "原有 14 项与 1270 项荣耀物品应全部可实例化")
+	_expect(catalog.definition_ids().size() == 1290, "14项基础物品、6项官网火箭炮与1270项荣耀物品应全部可实例化")
 	var glory_chassis_id := "glory_equipment_tank1_c2ba1ac5af"
 	var glory_chassis_definition := catalog.definition(glory_chassis_id)
 	_expect(not glory_chassis_definition.is_empty(), "新兵战车源定义应进入统一物品目录")

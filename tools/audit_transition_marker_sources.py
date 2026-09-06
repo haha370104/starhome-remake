@@ -64,7 +64,7 @@ def _style_from_source_icon(source_icon: str) -> tuple[int, str] | None:
 
 
 def main() -> int:
-    """校验八方向目录、23 条地图关联和跨版本 jt/as 等价证据。"""
+    """校验八方向目录、39 条地图关联和跨版本 jt/as 等价证据。"""
     errors: list[str] = []
     catalog = _read_json(CATALOG_PATH).get("markers", {})
     for style, direction in STYLE_DIRECTIONS.items():
@@ -119,13 +119,13 @@ def main() -> int:
             if orientation != STYLE_DIRECTIONS[style]:
                 errors.append(f"{label} 未忠实采用源 style {style} 的屏幕方向")
 
-    if transition_count != 23:
-        errors.append(f"正式地图传送点数量预期 23，实际 {transition_count}")
+    if transition_count != 39:
+        errors.append(f"正式地图传送点数量预期 39，实际 {transition_count}")
     if errors:
         for error in errors:
             print(error)
         return 1
-    print("Transition marker source audit passed: 23 source-bound markers, 8 jt/as byte matches")
+    print("Transition marker source audit passed: 39 source-bound markers, 8 jt/as byte matches")
     return 0
 
 

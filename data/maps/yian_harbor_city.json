@@ -430,14 +430,14 @@
       "label": "进入提炼中心2", "source_anchor": [264, 2628], "approach_point": [291, 2636],
       "presentation": {"kind":"directional_transition","orientation":"north_east","activation":"enabled_transition"},
       "destination": {"map_id":"dragon_city_refinery_floor_2","legacy_code":"factory2","entry_number":0,"external":false},
-      "source_audit": {"source_release":"starhome_lz_ry","source_map_code":"City1Svr","source_output":"maps/city1svr/variant_01_nft_bl/transitions.json","source_line":391,"choice_index":1,"source_icon_ale":"../../map/mapimg/house/CHN_2005_06_28_19_30_52_38/as2.ale"}
+      "source_audit": {"source_release":"starhome_lz_ry","source_map_code":"City1Svr","source_output":"maps/city1svr/variant_01_nft_bl/transitions.json","source_line":391,"choice_index":1,"source_icon_ale":"../../map/mapimg/house/CHN_2005_06_28_19_30_52_38/as2.ale","source_marker_style":2,"source_marker_family":"house_directional_marker"}
     },
     {
       "transition_id": "enter_refinery_3", "kind": "multi_choice", "enabled": true,
       "label": "进入提炼中心3", "source_anchor": [264, 2628], "approach_point": [291, 2636],
       "presentation": {"kind":"directional_transition","orientation":"north_east","activation":"enabled_transition"},
       "destination": {"map_id":"dragon_city_refinery_floor_3","legacy_code":"factory3","entry_number":0,"external":false},
-      "source_audit": {"source_release":"starhome_lz_ry","source_map_code":"City1Svr","source_output":"maps/city1svr/variant_01_nft_bl/transitions.json","source_line":391,"choice_index":2,"source_icon_ale":"../../map/mapimg/house/CHN_2005_06_28_19_30_52_38/as2.ale"}
+      "source_audit": {"source_release":"starhome_lz_ry","source_map_code":"City1Svr","source_output":"maps/city1svr/variant_01_nft_bl/transitions.json","source_line":391,"choice_index":2,"source_icon_ale":"../../map/mapimg/house/CHN_2005_06_28_19_30_52_38/as2.ale","source_marker_style":2,"source_marker_family":"house_directional_marker"}
     },
     {
       "transition_id": "enter_grocery_shop",
@@ -556,42 +556,42 @@
       "source_anchor":[840,156],"approach_point":[868,164],
       "presentation":{"kind":"directional_transition","orientation":"north_east","activation":"enabled_transition"},
       "destination":{"legacy_code":"adsfsdb","entry_number":0,"external":true},
-      "source_audit":{"source_release":"starhome_lz_ry","source_map_code":"City1Svr","source_output":"maps/city1svr/variant_01_nft_bl/transitions.json","source_line":407,"evidence_level":"fcc_placeholder_destination"}
+      "source_audit":{"source_release":"starhome_lz_ry","source_map_code":"City1Svr","source_output":"maps/city1svr/variant_01_nft_bl/transitions.json","source_line":407,"evidence_level":"fcc_placeholder_destination","source_icon_ale":"../../map/mapimg/house/CHN_2005_06_28_19_30_52_38/as2.ale","source_marker_style":2,"source_marker_family":"house_directional_marker"}
     },
     {
       "transition_id":"enter_research_center","kind":"standard","enabled":true,"label":"进入科研中心",
       "source_anchor":[2784,2712],"approach_point":[2807,2721],
       "presentation":{"kind":"directional_transition","orientation":"north_east","activation":"enabled_transition"},
       "destination":{"legacy_code":"bbbb","entry_number":0,"external":true},
-      "source_audit":{"source_release":"starhome_lz_ry","source_map_code":"City1Svr","source_output":"maps/city1svr/variant_01_nft_bl/transitions.json","source_line":392,"evidence_level":"fcc_placeholder_destination"}
+      "source_audit":{"source_release":"starhome_lz_ry","source_map_code":"City1Svr","source_output":"maps/city1svr/variant_01_nft_bl/transitions.json","source_line":392,"evidence_level":"fcc_placeholder_destination","source_icon_ale":"../../map/mapimg/house/CHN_2005_06_28_19_30_52_38/as2.ale","source_marker_style":2,"source_marker_family":"house_directional_marker"}
     },
     {
       "transition_id":"enter_beauty_shop","kind":"standard","enabled":true,"label":"进入美容院",
       "source_anchor":[288,1848],"approach_point":[344,1857],
       "presentation":{"kind":"directional_transition","orientation":"north_west","activation":"enabled_transition"},
       "destination":{"map_id":"glory_nft_bl_2beautyroom","legacy_code":"beautyroom","entry_number":0,"external":false},
-      "source_audit":{"source_release":"starhome_lz_ry","source_map_code":"City1Svr","source_output":"maps/city1svr/variant_01_nft_bl/transitions.json","source_line":385,"fallback":"荣耀包仅保留同城系 2beautyroom 室内图"}
+      "source_audit":{"source_release":"starhome_lz_ry","source_map_code":"City1Svr","source_output":"maps/city1svr/variant_01_nft_bl/transitions.json","source_line":385,"fallback":"荣耀包仅保留同城系 2beautyroom 室内图","source_icon_ale":"../../map/mapimg/house/CHN_2005_06_28_19_30_52_38/as4.ale","source_marker_style":4,"source_marker_family":"house_directional_marker"}
     },
     {
       "transition_id":"enter_flower_shop","kind":"standard","enabled":true,"label":"进入花店",
       "source_anchor":[1224,2316],"approach_point":[1256,2326],
       "presentation":{"kind":"directional_transition","orientation":"north_east","activation":"enabled_transition"},
       "destination":{"legacy_code":"flowerroom1","entry_number":0,"external":true},
-      "source_audit":{"source_release":"starhome_lz_ry","source_map_code":"City1Svr","source_output":"maps/city1svr/variant_01_nft_bl/transitions.json","source_line":389,"evidence_level":"fcc_target_missing_from_package"}
+      "source_audit":{"source_release":"starhome_lz_ry","source_map_code":"City1Svr","source_output":"maps/city1svr/variant_01_nft_bl/transitions.json","source_line":389,"evidence_level":"fcc_target_missing_from_package","source_icon_ale":"../../map/mapimg/house/CHN_2005_06_28_19_30_52_38/as2.ale","source_marker_style":2,"source_marker_family":"house_directional_marker"}
     },
     {
       "transition_id":"enter_armory","kind":"standard","enabled":true,"label":"进入兵工厂",
       "source_anchor":[3024,1440],"approach_point":[3059,1449],
       "presentation":{"kind":"directional_transition","orientation":"north_east","activation":"enabled_transition"},
       "destination":{"map_id":"glory_nft_bl_armshop1","legacy_code":"armshop1","entry_number":0,"external":false},
-      "source_audit":{"source_release":"starhome_lz_ry","source_map_code":"City1Svr","source_output":"maps/city1svr/variant_01_nft_bl/transitions.json","source_line":383,"source_state":"metadata_disabled_promoted_for_remake"}
+      "source_audit":{"source_release":"starhome_lz_ry","source_map_code":"City1Svr","source_output":"maps/city1svr/variant_01_nft_bl/transitions.json","source_line":383,"source_state":"metadata_disabled_promoted_for_remake","source_icon_ale":"../../map/mapimg/house/CHN_2005_06_28_19_30_52_38/as2.ale","source_marker_style":2,"source_marker_family":"house_directional_marker"}
     },
     {
       "transition_id":"enter_space_center","kind":"standard","enabled":true,"label":"进入宇航中心",
       "source_anchor":[312,1572],"approach_point":[369,1583],
       "presentation":{"kind":"directional_transition","orientation":"north_west","activation":"enabled_transition"},
       "destination":{"map_id":"glory_nft_bl_nasa1","legacy_code":"nasa1","entry_number":0,"external":false},
-      "source_audit":{"source_release":"starhome_lz_ry","source_map_code":"City1Svr","source_output":"maps/city1svr/variant_01_nft_bl/transitions.json","source_line":384,"source_state":"commented_placeholder_promoted_for_remake"}
+      "source_audit":{"source_release":"starhome_lz_ry","source_map_code":"City1Svr","source_output":"maps/city1svr/variant_01_nft_bl/transitions.json","source_line":384,"source_state":"commented_placeholder_promoted_for_remake","source_icon_ale":"../../map/mapimg/house/CHN_2005_06_28_19_30_52_38/as4.ale","source_marker_style":4,"source_marker_family":"house_directional_marker"}
     }
   ],
   "source_audit": {

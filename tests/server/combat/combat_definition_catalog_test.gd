@@ -173,11 +173,11 @@ func _test_d04_lifecycle_definitions() -> void:
 	_expect(lifecycle.max_health == int(lifecycles[0]["max_health"]), "monster lifecycle should preserve formal health semantics")
 
 
-## 校验 119 条客户端 NPC 数值均可查询，且可靠恢复的地图关系能展开为权威种群。
+## 校验 119 条客户端 NPC 数值均可查询，且全部野外图使用受限的复刻种群。
 func _test_full_glory_monster_catalog() -> void:
 	var catalog: Variant = CatalogScript.load_default().value
 	_expect(catalog.monster_ids().size() == 119, "all 119 Glory NPC rows should be registered")
-	_expect(catalog.monster_encounter_map_ids().size() == 28, "only recovered fields and curated D04 should have populations")
+	_expect(catalog.monster_encounter_map_ids().size() == 460, "all configured Glory fields and curated D04 should have populations")
 	var low_temperature_gel: Dictionary = catalog.monster_definition("glory_monster_005")
 	_expect(low_temperature_gel["display_name"] == "低温毒胶", "generated IDs should retain the decoded Chinese NPC name")
 	_expect(int(low_temperature_gel["stats"]["max_health"]) == 72, "generated monsters should retain client health fields")
@@ -185,13 +185,16 @@ func _test_full_glory_monster_catalog() -> void:
 	var e06_result: Variant = catalog.monster_lifecycles_for_map(
 		"glory_nft_bl_e06", "glory.e06.catalog-test"
 	)
-	_expect(e06_result.is_ok and e06_result.value.size() == 200, "a recovered Glory encounter should expand to the configured cap")
-	_expect(catalog.monster_lifecycles_for_map("glory_nft_bl_b02", "unconfigured.test").value.is_empty(), "uncovered fields must not receive the basic-four fallback")
+	_expect(e06_result.is_ok and e06_result.value.size() == 200, "a configured Glory encounter should expand to the configured cap")
+	var b02_result: Variant = catalog.monster_lifecycles_for_map(
+		"glory_nft_bl_b02", "glory.b02.catalog-test"
+	)
+	_expect(b02_result.is_ok and b02_result.value.size() == 200, "every runtime field should receive its explicit ecology population")
 	var e06_species: Dictionary = {}
 	for definition: Dictionary in e06_result.value:
 		e06_species[String(definition["species_id"])] = true
-	_expect(e06_species.has("glory_monster_005"), "E06 should include the palette-confirmed low-temperature gel")
-	_expect(e06_species.has("glory_monster_008"), "E06 should include the palette-confirmed toxic Om adult")
+	_expect(e06_species.size() <= 5, "E06 ecology population should keep the per-field species cap")
+	_expect(e06_species.has("glory_monster_009"), "E06 should retain its configured tier-three slime species")
 
 
 ## 执行 `test_catalog_to_authoritative_module_seam` 对应的模块操作。
