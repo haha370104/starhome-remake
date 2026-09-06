@@ -7,6 +7,7 @@ const GAMEPLAY_PATHS := [
 	"res://data/gameplay/stage3/starter_loadout_v1.json",
 	"res://data/gameplay/character_items_v1.json",
 	"res://data/gameplay/material_items_v1.json",
+	"res://data/gameplay/official_rocket_items_v1.json",
 	"res://data/gameplay/glory/glory_items_v1.json",
 ]
 const PRESENTATION_PATHS := [

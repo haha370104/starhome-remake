@@ -137,8 +137,9 @@ func apply_bundle(bundle: Dictionary) -> void:
 
 ## 打开武器商人的购买、出售或任务窗口，并拉取同一事务快照。
 ## [param mode] buy、sell 或 task。
-func open_weapon_merchant(mode: String) -> void:
-	weapon_merchant_window.open_mode(mode)
+## [param merchant_id] NPC 对应的普通或特殊武器商人标识。
+func open_weapon_merchant(mode: String, merchant_id := "weapon_merchant") -> void:
+	weapon_merchant_window.open_mode(mode, merchant_id)
 	weapon_merchant_window.clamp_to_viewport(size)
 
 

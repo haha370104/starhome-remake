@@ -21,8 +21,18 @@ func _initialize() -> void:
 	var offers: Array[Dictionary] = merchant.offers()
 	_expect(not offers.is_empty(), "武器商人应有荣耀装备可售")
 	_expect(not merchant.offer("glory_equipment_gun1_216568dc50").is_empty(), "新兵能量炮应在售")
-	_expect(merchant.offer("glory_equipment_gun9_d2426d05e9").is_empty(), "高于270级装备不应在售")
-	_expect(_all_offers_valid(offers), "在售项必须属于五类且不超过270级")
+	_expect(not merchant.offer("glory_equipment_gun9_d2426d05e9").is_empty(), "官网280级虎式突袭能量炮应在售")
+	_expect(_all_offers_valid(offers), "在售项必须属于五类官网清单且不超过280级")
+	_expect(String(offers[0]["category"]) == "vehicle_engine", "普通商店必须先列引擎")
+	var special = MerchantCatalogScript.new()
+	var special_loaded: DomainResult = special.initialize(items, "special_weapon_merchant")
+	_expect(special_loaded.is_ok, "特殊武器商人目录应加载")
+	if special_loaded.is_ok:
+		var special_offers: Array[Dictionary] = special.offers()
+		_expect(not special_offers.is_empty(), "特殊武器商人应有官网装备可售")
+		_expect(String(special_offers[0]["category"]) == "rocket_weapon", "特殊商店必须先列火箭")
+		_expect(not special.offer("official_rocket_firegun_7").is_empty(), "240级劲弩式火箭应在售")
+		_expect(not special.offer("glory_equipment_missile5_15584171c6").is_empty(), "280级大力神导弹应在售")
 	var inventory := Inventory.new(40, 0, 0)
 	for definition_id: String in [
 		"low_grade_gel",
@@ -50,7 +60,7 @@ func _initialize() -> void:
 func _all_offers_valid(offers: Array[Dictionary]) -> bool:
 	var categories := ["vehicle_chassis", "energy_cannon", "vehicle_engine", "repair_arm", "mining_arm"]
 	for offer: Dictionary in offers:
-		if String(offer["category"]) not in categories or int(offer["required_level"]) > 270:
+		if String(offer["category"]) not in categories or int(offer["required_level"]) > 280:
 			return false
 	return true
 

@@ -281,9 +281,14 @@ func _stage_npcs(
 	container: Node2D,
 	output: Array[Node2D],
 ) -> bool:
-	if staged_definition.map_id != &"yian_harbor_hall_floor_1":
+	var definitions_value: Variant = _npc_catalog.get("npcs", []) \
+		if staged_definition.map_id == &"yian_harbor_hall_floor_1" \
+		else (_npc_catalog.get("maps", {}) as Dictionary).get(String(staged_definition.map_id), [])
+	if not definitions_value is Array:
+		return false
+	if (definitions_value as Array).is_empty():
 		return true
-	for definition_value: Variant in _npc_catalog.get("npcs", []):
+	for definition_value: Variant in definitions_value:
 		if not definition_value is Dictionary:
 			return false
 		var npc_definition: Dictionary = definition_value

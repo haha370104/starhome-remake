@@ -15,6 +15,7 @@ const CYAN_TEXT := Color("70eaff")
 const HOVER_COLOR := Color(1.0, 1.0, 0.0, 0.18)
 
 var _mode := "buy"
+var _merchant_id := "weapon_merchant"
 var _commerce: Dictionary = {}
 var _inventory_revision := -1
 var _currency := 0
@@ -40,13 +41,16 @@ func _ready() -> void:
 	_build_task_view()
 
 
-## 打开武器商人的一个原版动作，并请求最新权威快照。
-func open_mode(mode: String) -> void:
+## 打开指定武器商人的一个原版动作，并请求最新权威快照。
+## [param mode] buy、sell 或普通武器商人才支持的 task。
+## [param merchant_id] 当前 NPC 对应的权威商人标识。
+func open_mode(mode: String, merchant_id := "weapon_merchant") -> void:
 	_mode = mode if mode in ["buy", "sell", "task"] else "buy"
+	_merchant_id = merchant_id
 	visible = true
 	move_to_front()
 	_render()
-	command_requested.emit({"type": "query_weapon_merchant"})
+	command_requested.emit({"type": "query_weapon_merchant", "merchant_id": _merchant_id})
 
 
 ## 应用服务器随玩家面板一并返回的交易快照。
@@ -160,7 +164,8 @@ func _render() -> void:
 
 
 func _render_trade() -> void:
-	_title_label.text = "买 卖"
+	var merchant: Dictionary = _commerce.get("merchant", {})
+	_title_label.text = String(merchant.get("display_name", "武器商人"))
 	_column_header.text = "物品名称                 %s      数量" % ("售价" if _mode == "buy" else "收购")
 	for child in _list.get_children():
 		child.queue_free()
@@ -231,12 +236,14 @@ func _request_trade(entry: Dictionary) -> void:
 	if _mode == "buy":
 		command_requested.emit({
 			"type": "buy_from_weapon_merchant",
+			"merchant_id": _merchant_id,
 			"definition_id": String(entry.get("definition_id", "")),
 			"inventory_revision": _inventory_revision,
 		})
 	else:
 		command_requested.emit({
 			"type": "sell_to_weapon_merchant",
+			"merchant_id": _merchant_id,
 			"instance_id": String(entry.get("instance_id", "")),
 			"quantity": 1,
 			"inventory_revision": _inventory_revision,
@@ -292,10 +299,14 @@ func _request_task_action() -> void:
 		if _inventory_revision >= 0:
 			command_requested.emit({
 				"type": "turn_in_weapon_merchant_task",
+				"merchant_id": _merchant_id,
 				"inventory_revision": _inventory_revision,
 			})
 	else:
-		command_requested.emit({"type": "accept_weapon_merchant_task"})
+		command_requested.emit({
+			"type": "accept_weapon_merchant_task",
+			"merchant_id": _merchant_id,
+		})
 
 
 func _clear_description() -> void:

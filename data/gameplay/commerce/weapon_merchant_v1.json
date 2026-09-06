@@ -1,10 +1,30 @@
 {
   "schema_version": 1,
   "merchant": {
-    "id": "yian_weapon_merchant",
+    "id": "weapon_merchant",
     "display_name": "武器商人",
-    "maximum_required_level": 270,
-    "sell_categories": ["vehicle_chassis", "energy_cannon", "vehicle_engine", "repair_arm", "mining_arm"],
+    "maximum_required_level": 280,
+    "sell_categories": ["vehicle_engine", "vehicle_chassis", "energy_cannon", "mining_arm", "repair_arm"],
+    "official_whitelist_ids": {
+      "vehicle_engine": [
+        "glory_equipment_engine1_8030b9773a", "glory_equipment_engine2_115bae65ed",
+        "glory_equipment_engine3_7a19d8f6cd", "glory_equipment_engine4_7fba1b4794",
+        "glory_equipment_engine5_30d0085696", "glory_equipment_engine6_da0065d620",
+        "glory_equipment_engine7_24246159c0", "glory_equipment_engine8_df38922e4b"
+      ],
+      "vehicle_chassis": [
+        "glory_equipment_tank1_c2ba1ac5af", "glory_equipment_tank2_b58e433608",
+        "glory_equipment_tank3_bd8a6a14d1", "glory_equipment_tank4_1aae1fdcc4",
+        "glory_equipment_tank5_1c18f7410d", "glory_equipment_tank6_bb6cdb6f5c",
+        "glory_equipment_tank7_6dce9d1c52", "glory_equipment_tank8_eccf445ff5"
+      ],
+      "energy_cannon": [
+        "glory_equipment_gun1_216568dc50", "glory_equipment_gun3_3599e6f3f0",
+        "glory_equipment_gun4_d045d0a572", "glory_equipment_gun5_550f30177d",
+        "glory_equipment_gun6_e2c0fdc60c", "glory_equipment_gun7_0705215c72",
+        "glory_equipment_gun8_e7ce1423fa", "glory_equipment_gun9_d2426d05e9"
+      ]
+    },
     "buys_all_unbound_items": true
   },
   "repeatable_task": {

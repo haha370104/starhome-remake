@@ -15,7 +15,7 @@ const COMMAND_TYPES := [
 ]
 
 var _catalog: ItemCatalog
-var _merchant
+var _merchants: Dictionary = {}
 var _task
 var _mapper: PlayerStateMapper
 var _projector: PlayerPanelProjector
@@ -29,11 +29,15 @@ func initialize() -> DomainResult:
 	var items_loaded := _catalog.initialize()
 	if not items_loaded.is_ok:
 		return items_loaded
-	_merchant = MerchantCatalogScript.new()
-	var merchant_loaded: DomainResult = _merchant.initialize(_catalog)
-	if not merchant_loaded.is_ok:
-		return merchant_loaded
-	var task_definition: Dictionary = _merchant.config().get("repeatable_task", {})
+	_merchants.clear()
+	for merchant_id: String in ["weapon_merchant", "special_weapon_merchant"]:
+		var merchant = MerchantCatalogScript.new()
+		var merchant_loaded: DomainResult = merchant.initialize(_catalog, merchant_id)
+		if not merchant_loaded.is_ok:
+			return merchant_loaded
+		_merchants[merchant_id] = merchant
+	var weapon_merchant = _merchants["weapon_merchant"]
+	var task_definition: Dictionary = weapon_merchant.config().get("repeatable_task", {})
 	_task_id = String(task_definition.get("id", ""))
 	if _task_id.is_empty():
 		return DomainResult.failure(&"commerce.invalid_config", "task identity is missing")
@@ -63,10 +67,16 @@ func execute(state: PlayerStateRecord, command: Dictionary) -> DomainResult:
 		return mapped
 	var player: Player = mapped.value
 	var command_type := String(command.get("type", ""))
+	var merchant_id := String(command.get("merchant_id", "weapon_merchant"))
+	var merchant = _merchants.get(merchant_id)
+	if merchant == null:
+		return DomainResult.failure(&"commerce.merchant_missing", "merchant is not registered")
 	var changed := command_type != "query_weapon_merchant"
-	var operation := _execute_command(player, command_type, command)
+	var operation := _execute_command(player, command_type, command, merchant_id, merchant)
 	if not operation.is_ok:
 		return operation
+	if operation.value is Dictionary:
+		operation.value["merchant_id"] = merchant_id
 	var candidate: PlayerStateRecord = state.duplicate_record()
 	if changed:
 		var persisted := _mapper.to_record(player)
@@ -77,7 +87,7 @@ func execute(state: PlayerStateRecord, command: Dictionary) -> DomainResult:
 		"candidate": candidate,
 		"changed": changed,
 		"operation": operation.value,
-		"panel_bundle": _build_bundle(player, operation.value),
+		"panel_bundle": _build_bundle(player, operation.value, merchant_id),
 	})
 
 
@@ -87,30 +97,51 @@ func build_bundle(state: PlayerStateRecord, operation: Dictionary = {}) -> Dicti
 	var mapped: DomainResult = _mapper.to_domain(state) if state != null else DomainResult.failure(
 		&"commerce.state_missing", "player state is missing"
 	)
-	return _build_bundle(mapped.value, operation) if mapped.is_ok else {}
+	var merchant_id := String(operation.get("merchant_id", "weapon_merchant"))
+	return _build_bundle(mapped.value, operation, merchant_id) if mapped.is_ok else {}
 
 
-func _execute_command(player: Player, command_type: String, command: Dictionary) -> DomainResult:
+## 把已验证会话命令分派给指定商人的权威交易或普通武器商人任务。
+## [param player] 当前权威玩家聚合。
+## [param command_type] 客户端命令类型。
+## [param command] 未可信的命令参数。
+## [param merchant_id] 当前交互的商人标识。
+## [param merchant] 已从服务端注册表解析的商人目录。
+## 返回交易、查询或任务结果。
+func _execute_command(
+	player: Player,
+	command_type: String,
+	command: Dictionary,
+	merchant_id: String,
+	merchant,
+) -> DomainResult:
 	match command_type:
 		"query_weapon_merchant":
-			return DomainResult.ok({"action": "query"})
+			return DomainResult.ok({"action": "query", "merchant_id": merchant_id})
 		"buy_from_weapon_merchant":
-			return _buy(player, command)
+			return _buy(player, command, merchant)
 		"sell_to_weapon_merchant":
-			return _sell(player, command)
+			return _sell(player, command, merchant)
 		"accept_weapon_merchant_task":
-			return _accept_task(player)
+			return _accept_task(player) if merchant_id == "weapon_merchant" \
+				else DomainResult.failure(&"commerce.task_unavailable", "merchant has no task")
 		"turn_in_weapon_merchant_task":
-			return _turn_in_task(player, command)
+			return _turn_in_task(player, command) if merchant_id == "weapon_merchant" \
+				else DomainResult.failure(&"commerce.task_unavailable", "merchant has no task")
 	return DomainResult.failure(&"commerce.unknown_command", "unknown commerce command")
 
 
-func _buy(player: Player, command: Dictionary) -> DomainResult:
+## 校验背包版本、商品白名单与货币后完成一次买入。
+## [param player] 当前权威玩家聚合。
+## [param command] 买入意图。
+## [param merchant] 当前商人目录。
+## 返回购买结果或明确拒绝原因。
+func _buy(player: Player, command: Dictionary, merchant) -> DomainResult:
 	var revision_result := player.inventory.require_revision(int(command.get("inventory_revision", -1)))
 	if not revision_result.is_ok:
 		return revision_result
 	var definition_id := String(command.get("definition_id", ""))
-	var offer: Dictionary = _merchant.offer(definition_id)
+	var offer: Dictionary = merchant.offer(definition_id)
 	if offer.is_empty():
 		return DomainResult.failure(&"commerce.item_not_offered", "merchant does not sell this item")
 	var price := int(offer["price"])
@@ -128,7 +159,12 @@ func _buy(player: Player, command: Dictionary) -> DomainResult:
 	return DomainResult.ok({"action": "buy", "definition_id": definition_id, "price": price})
 
 
-func _sell(player: Player, command: Dictionary) -> DomainResult:
+## 校验背包版本和物品所有权后完成一次卖出。
+## [param player] 当前权威玩家聚合。
+## [param command] 卖出意图。
+## [param merchant] 当前商人目录，用于计算收购价。
+## 返回卖出结果或明确拒绝原因。
+func _sell(player: Player, command: Dictionary, merchant) -> DomainResult:
 	var revision_result := player.inventory.require_revision(int(command.get("inventory_revision", -1)))
 	if not revision_result.is_ok:
 		return revision_result
@@ -137,7 +173,7 @@ func _sell(player: Player, command: Dictionary) -> DomainResult:
 	var item := player.inventory.find(instance_id)
 	if item == null:
 		return DomainResult.failure(&"inventory.item_not_found", "inventory item does not exist")
-	var unit_price: int = _merchant.purchase_price(item.definition_id)
+	var unit_price: int = merchant.purchase_price(item.definition_id)
 	var removed := player.inventory.remove_quantity(instance_id, quantity)
 	if not removed.is_ok:
 		return removed
@@ -148,6 +184,9 @@ func _sell(player: Player, command: Dictionary) -> DomainResult:
 	})
 
 
+## 领取普通武器商人的循环材料任务。
+## [param player] 当前权威玩家聚合。
+## 返回更新后的任务状态结果。
 func _accept_task(player: Player) -> DomainResult:
 	var current: Dictionary = player.quest_states.get(_task_id, {})
 	var accepted: DomainResult = _task.accept(current)
@@ -157,6 +196,10 @@ func _accept_task(player: Player) -> DomainResult:
 	return DomainResult.ok({"action": "accept_task"})
 
 
+## 消耗任务材料并由权威服务结算金币和里程碑装备。
+## [param player] 当前权威玩家聚合。
+## [param command] 包含背包 revision 的交付意图。
+## 返回交付结算结果。
 func _turn_in_task(player: Player, command: Dictionary) -> DomainResult:
 	var revision_result := player.inventory.require_revision(int(command.get("inventory_revision", -1)))
 	if not revision_result.is_ok:
@@ -186,25 +229,41 @@ func _turn_in_task(player: Player, command: Dictionary) -> DomainResult:
 	})
 
 
-func _build_bundle(player: Player, operation: Dictionary = {}) -> Dictionary:
+## 构造玩家面板与当前商人共用的响应快照。
+## [param player] 当前权威玩家聚合。
+## [param operation] 最近一次命令结果。
+## [param merchant_id] 要展示的商人标识。
+## 返回客户端只读 bundle。
+func _build_bundle(
+	player: Player,
+	operation: Dictionary = {},
+	merchant_id := "weapon_merchant",
+) -> Dictionary:
+	var merchant = _merchants.get(merchant_id, _merchants.get("weapon_merchant"))
+	if merchant == null:
+		return {}
 	var bundle := _projector.build_bundle(player)
 	var sell_items: Array[Dictionary] = []
 	for item: GameItem in player.inventory.items():
 		var view := item.to_view_dictionary()
 		view["quantity"] = item.quantity
-		view["unit_price"] = _merchant.purchase_price(item.definition_id)
+		view["unit_price"] = merchant.purchase_price(item.definition_id)
 		view["presentation"] = item.presentation.duplicate(true)
 		sell_items.append(view)
 	bundle["commerce"] = {
-		"merchant": (_merchant.config().get("merchant", {}) as Dictionary).duplicate(true),
-		"offers": _merchant.offers(),
+		"merchant": merchant.merchant_config(),
+		"offers": merchant.offers(),
 		"sell_items": sell_items,
-		"task": _task.snapshot(player.inventory, player.quest_states.get(_task_id, {})),
+		"task": _task.snapshot(player.inventory, player.quest_states.get(_task_id, {})) \
+			if merchant_id == "weapon_merchant" else {},
 		"operation": operation.duplicate(true),
 	}
 	return bundle
 
 
+## 生成仅在当前服务进程内唯一的新物品实例标识。
+## [param definition_id] 被创建物品的定义标识。
+## 返回带顺序号的实例 ID。
 func _new_instance_id(definition_id: String) -> String:
 	var value := "shop.%d.%s" % [_next_instance_serial, definition_id]
 	_next_instance_serial += 1

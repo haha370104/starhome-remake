@@ -14,11 +14,13 @@ func _initialize() -> void:
 		_finish()
 		return
 	var definition: Dictionary = {}
-	for raw_npc: Variant in parsed.get("npcs", []):
+	var maps: Dictionary = parsed.get("maps", {})
+	for raw_npc: Variant in maps.get("glory_nft_bl_weaponshop1", []):
 		if raw_npc is Dictionary and String(raw_npc.get("id", "")) == "weapon_merchant":
 			definition = raw_npc
 			break
-	_expect(not definition.is_empty(), "大厅应登记武器商人")
+	_expect(not definition.is_empty(), "武器店应登记武器商人")
+	_expect(not _contains_npc(parsed, "npcs", "weapon_merchant"), "基地大厅不应再生成武器商人")
 	var merchant = ShopNpcModelScript.new()
 	var configured: DomainResult = merchant.configure(definition)
 	_expect(configured.is_ok, "武器商人领域模型应可配置")
@@ -29,6 +31,18 @@ func _initialize() -> void:
 			ids.append(String(action.get("id", "")))
 		_expect(ids == PackedStringArray(["buy", "sell", "task"]), "菜单应依次为买、卖、中级任务")
 	_finish()
+
+
+## 判断指定 NPC 配置数组是否包含目标标识。
+## [param parsed] 完整 NPC 配置。
+## [param key] 要读取的顶层数组键。
+## [param npc_id] 目标 NPC 标识。
+## 返回是否找到该 NPC。
+func _contains_npc(parsed: Dictionary, key: String, npc_id: String) -> bool:
+	for value: Variant in parsed.get(key, []):
+		if value is Dictionary and String(value.get("id", "")) == npc_id:
+			return true
+	return false
 
 
 func _expect(condition: bool, message: String) -> void:

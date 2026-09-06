@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "merchant": {
+    "id": "special_weapon_merchant",
+    "display_name": "特殊武器商人",
+    "maximum_required_level": 280,
+    "sell_categories": ["rocket_weapon", "missile_weapon", "stealth_device", "radar_device"],
+    "official_whitelist_ids": {
+      "rocket_weapon": [
+        "glory_equipment_space_firegun1_49553e4065", "official_rocket_firegun_2",
+        "official_rocket_firegun_3", "official_rocket_firegun_4", "official_rocket_firegun_5",
+        "official_rocket_firegun_6", "official_rocket_firegun_7"
+      ],
+      "missile_weapon": [
+        "glory_equipment_missile1_e5d9c3dd47", "glory_equipment_missile2_ff175e4bd2",
+        "glory_equipment_missile3_8a548551df", "glory_equipment_missile4_9861000063",
+        "glory_equipment_missile5_15584171c6"
+      ],
+      "stealth_device": [
+        "glory_equipment_hermit1_f6fc3abab1", "glory_equipment_hermit2_be93b37a3b",
+        "glory_equipment_hermit3_6cc56176f5", "glory_equipment_hermit4_8c106d5a91",
+        "glory_equipment_hermit5_8fa522ec70"
+      ],
+      "radar_device": [
+        "glory_equipment_radar1_f2644a77fb", "glory_equipment_radar2_8acc8d9020",
+        "glory_equipment_radar3_cf3a58a093", "glory_equipment_radar4_b1e1fb3849",
+        "glory_equipment_radar5_defef339ea"
+      ]
+    },
+    "buys_all_unbound_items": true
+  },
+  "source_evidence": [
+    "https://jz.ftxjjy.com/EquiIntro_Missle_1.shtml",
+    "https://jz.ftxjjy.com/EquiIntro_Hermit_1.shtml",
+    "https://jz.ftxjjy.com/EquiIntro_Radar_1.shtml",
+    "starhome_lz_ry_fcc_source/cltobj/fireguncltclass.fcc:1-399"
+  ]
+}
