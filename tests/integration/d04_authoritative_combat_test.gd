@@ -2,8 +2,10 @@ extends SceneTree
 
 const MapInstanceScript := preload("res://scripts/server/authoritative_map_instance.gd")
 const CombatCatalogScript := preload("res://scripts/domain/combat/combat_definition_catalog.gd")
+const MoveIntentContract := preload("res://scripts/network/contracts/move_intent.gd")
 const PLAYER_ID := "player.d04.test"
 const MAP_PATH := "res://data/maps/d04_field_zone.json"
+const CHARACTER_MAP_PATH := "res://data/maps/yian_harbor_hall_floor_1.json"
 
 var failures: Array[String] = []
 var assertions := 0
@@ -26,9 +28,70 @@ func _initialize() -> void:
 	_expect(bool(configured.get("ok", false)), "D04 战斗应由正式地图实例配置")
 	if bool(configured.get("ok", false)):
 		_test_population_and_routes(instance)
+		_test_driving_progression_scope(instance, catalog_result.value)
 		_test_authoritative_player_attack(instance)
 		_test_zero_attack_is_not_invented(instance)
 	_finish()
+
+
+## 验证只有战车形态的权威有效位移会产生驾驶经验，人物步行不产生任何经验。
+## [param vehicle_instance] 已加载并配置战斗的 D04 战车地图实例。
+## [param combat_catalog] 服务端用于给人物地图装配相同战车状态的战斗目录。
+## 设计：故意让两张地图都持有战车装配，证明经验边界取决于地图人物表现而非装配是否存在。
+func _test_driving_progression_scope(vehicle_instance: AuthoritativeMapInstance, combat_catalog) -> void:
+	var vehicle_entity: AuthoritativeEntity = vehicle_instance.entities[PLAYER_ID]
+	var vehicle_target: Vector2 = vehicle_instance.navigation.closest_reachable_position(
+		vehicle_entity.position,
+		vehicle_entity.position + Vector2(192, 0),
+	)
+	var vehicle_move := vehicle_instance.handle_move_intent(
+		PLAYER_ID,
+		MoveIntentContract.new(vehicle_instance.instance_id, vehicle_target, 10).to_dictionary(),
+	)
+	_expect(vehicle_move.ok, "D04 战车移动夹具必须被权威导航接受")
+	vehicle_instance.simulate(0.5)
+	var vehicle_events := vehicle_instance.drain_skill_progression_events()
+	_expect(vehicle_events.any(func(event: Dictionary) -> bool:
+		return String(event.get("source", "")) == "accepted_driving_movement" \
+			and String(event.get("skill_id", "")) == "driving" \
+			and float(event.get("distance", 0.0)) > 0.0
+	), "战车在野外的权威有效位移必须产生驾驶经验事件")
+
+	var character_instance: AuthoritativeMapInstance = MapInstanceScript.new()
+	var loaded := character_instance.load_map(CHARACTER_MAP_PATH)
+	_expect(loaded.ok, "人物步行经验夹具必须加载基地大厅")
+	if not loaded.ok:
+		return
+	var configured := character_instance.configure_combat(combat_catalog, 20)
+	_expect(configured.ok, "人物地图必须配置与正式服务器相同的战车资源状态")
+	var spawned := character_instance.spawn_entity("player.walking.test", Vector2(730, 1330), 203.0)
+	_expect(spawned.ok, "人物步行经验夹具必须生成玩家")
+	if not configured.ok or not spawned.ok:
+		return
+	var character_entity: AuthoritativeEntity = spawned.value
+	var character_before := character_entity.position
+	var character_target: Vector2 = character_instance.navigation.closest_reachable_position(
+		character_entity.position,
+		character_entity.position + Vector2(192, 0),
+	)
+	var character_move := character_instance.handle_move_intent(
+		character_entity.entity_id,
+		MoveIntentContract.new(
+			character_instance.instance_id,
+			character_target,
+			1,
+		).to_dictionary(),
+	)
+	_expect(character_move.ok, "基地大厅人物移动夹具必须被权威导航接受")
+	character_instance.simulate(0.5)
+	_expect(
+		character_entity.position.distance_to(character_before) > 0.0,
+		"人物必须实际完成位移后再验证零经验",
+	)
+	_expect(
+		character_instance.drain_skill_progression_events().is_empty(),
+		"非战斗地图的人物步行不得产生驾驶或其他技能经验事件",
+	)
 
 
 ## 验证 D04 配置化种群、资源和正式地图 AStar 游荡路线。

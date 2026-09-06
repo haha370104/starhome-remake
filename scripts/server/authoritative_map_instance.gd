@@ -397,7 +397,7 @@ func simulate(delta: float) -> void:
 				)
 			):
 				_restore_motion_state(entity, motion_state)
-		if not entity.position.is_equal_approx(previous_position):
+		if is_vehicle_combat_active() and not entity.position.is_equal_approx(previous_position):
 			_accepted_movement_distance[entity_id] = float(
 				_accepted_movement_distance.get(entity_id, 0.0)
 			) + previous_position.distance_to(entity.position)
@@ -492,22 +492,23 @@ func _random_monster_spawn_position(spawn_sequence: int) -> Vector2:
 
 
 ## 提取自上次调用后产生的技能成长事件，并清空已消费的移动累计。
-## 返回按玩家拆分的正常驾驶位移与最终有效能量炮伤害事件。
-## 设计：只观察权威模拟结果；受阻回滚、传送和客户端声明的距离都不会进入事件。
+## 返回战车地图中的正常驾驶位移与最终有效战斗行为事件；人物步行永远不产生经验。
+## 设计：地图的 player_presentation 是人物/战车形态的权威边界；非战斗地图只能由对应生活系统发放经验。
 func drain_skill_progression_events() -> Array[Dictionary]:
 	var events: Array[Dictionary] = []
 	var entity_ids := _accepted_movement_distance.keys()
 	entity_ids.sort()
-	for entity_id: String in entity_ids:
-		var distance := float(_accepted_movement_distance[entity_id])
-		if distance > 0.0 and _combat_assembly.has("total_weight"):
-			events.append({
-				"entity_id": entity_id,
-				"source": "accepted_driving_movement",
-				"skill_id": "driving",
-				"distance": distance,
-				"vehicle_weight": float(_combat_assembly.get("total_weight", 0.0)),
-			})
+	if is_vehicle_combat_active():
+		for entity_id: String in entity_ids:
+			var distance := float(_accepted_movement_distance[entity_id])
+			if distance > 0.0 and _combat_assembly.has("total_weight"):
+				events.append({
+					"entity_id": entity_id,
+					"source": "accepted_driving_movement",
+					"skill_id": "driving",
+					"distance": distance,
+					"vehicle_weight": float(_combat_assembly.get("total_weight", 0.0)),
+				})
 	_accepted_movement_distance.clear()
 	if combat_module == null:
 		return events
