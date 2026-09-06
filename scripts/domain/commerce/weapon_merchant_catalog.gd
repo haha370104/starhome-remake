@@ -48,7 +48,8 @@ func initialize(item_catalog: ItemCatalog, merchant_id := "weapon_merchant") -> 
 	return DomainResult.ok(self)
 
 
-## 返回客户端商店所需的安全商品 DTO。
+## 列出客户端商店所需的安全商品投影。
+## 返回不含领域对象引用的商品字典数组。
 func offers() -> Array[Dictionary]:
 	return _offers.duplicate(true)
 
@@ -76,12 +77,14 @@ func purchase_price(definition_id: String) -> int:
 	return maxi(1, maxi(original_sell_value, floori(float(original_purchase_value) / 2.0)))
 
 
-## 返回武器商人及循环任务配置的防御性副本。
+## 读取普通武器商人及循环任务配置的防御性副本。
+## 返回调用方可安全修改的配置副本。
 func config() -> Dictionary:
 	return _config.duplicate(true)
 
 
-## 返回当前商人的安全配置副本。
+## 读取当前商人的安全配置副本。
+## 返回调用方可安全修改的配置副本。
 func merchant_config() -> Dictionary:
 	return _merchant_config.duplicate(true)
 
@@ -167,7 +170,7 @@ func _offer(definition: Dictionary, category: String) -> Dictionary:
 	}
 
 
-## 返回分类在商人配置中的稳定顺序。
+## 查询分类在商人配置中的稳定顺序。
 ## [param category] 商品分类标识。
 ## 返回从零开始的顺序；未知分类排在末尾。
 func _category_order(category: String) -> int:

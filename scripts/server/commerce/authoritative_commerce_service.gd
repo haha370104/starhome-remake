@@ -24,6 +24,7 @@ var _next_instance_serial := 1
 
 
 ## 初始化统一物品、商店、任务、存档映射和面板投影依赖。
+## 返回初始化后的服务或具体配置错误。
 func initialize() -> DomainResult:
 	_catalog = ItemCatalogScript.new()
 	var items_loaded := _catalog.initialize()
@@ -52,6 +53,7 @@ func initialize() -> DomainResult:
 
 ## 判断面板命令是否属于商店/任务事务。
 ## [param command_type] 命令 type 字段。
+## 返回本服务能否处理该命令。
 static func handles(command_type: String) -> bool:
 	return command_type in COMMAND_TYPES
 
@@ -59,6 +61,7 @@ static func handles(command_type: String) -> bool:
 ## 执行一次由会话绑定玩家身份的权威交易或任务命令。
 ## [param state] 当前持久化玩家聚合。
 ## [param command] 不可信客户端意图。
+## 返回待提交存档、操作结果和统一面板快照。
 func execute(state: PlayerStateRecord, command: Dictionary) -> DomainResult:
 	if state == null or _mapper == null or _projector == null:
 		return DomainResult.failure(&"commerce.service_unavailable", "commerce service is unavailable")
@@ -93,6 +96,8 @@ func execute(state: PlayerStateRecord, command: Dictionary) -> DomainResult:
 
 ## 从已提交存档重建玩家面板和商店/任务快照。
 ## [param state] 仓储返回的最新 revision 状态。
+## [param operation] 最近一次交易或任务操作结果。
+## 返回客户端只读面板组合数据。
 func build_bundle(state: PlayerStateRecord, operation: Dictionary = {}) -> Dictionary:
 	var mapped: DomainResult = _mapper.to_domain(state) if state != null else DomainResult.failure(
 		&"commerce.state_missing", "player state is missing"

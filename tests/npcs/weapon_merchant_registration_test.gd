@@ -7,6 +7,7 @@ var failures := PackedStringArray()
 var assertions := 0
 
 
+## 验证两类武器商人只登记在荣耀版武器店地图。
 func _initialize() -> void:
 	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(CONFIG_PATH))
 	_expect(parsed is Dictionary, "大厅 NPC 配置应为字典")
@@ -45,12 +46,16 @@ func _contains_npc(parsed: Dictionary, key: String, npc_id: String) -> bool:
 	return false
 
 
+## 记录一条测试断言。
+## [param condition] 条件是否成立。
+## [param message] 失败说明。
 func _expect(condition: bool, message: String) -> void:
 	assertions += 1
 	if not condition:
 		failures.append(message)
 
 
+## 输出测试结果并结束进程。
 func _finish() -> void:
 	if failures.is_empty():
 		print("WEAPON_MERCHANT_REGISTRATION_OK (%d assertions)" % assertions)

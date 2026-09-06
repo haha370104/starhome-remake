@@ -287,6 +287,7 @@ func _build_popup() -> void:
 
 
 ## 右键点菜单关闭且不触发移动；点菜单外则先关闭，再由地图处理移动。
+## [param event] 当前视口输入事件。
 func _input(event: InputEvent) -> void:
 	if not popup or not popup.visible or not event is InputEventMouseButton:
 		return
@@ -314,6 +315,10 @@ func _panel_style(background: Color, border: Color) -> StyleBoxFlat:
 	return style
 
 
+## 创建指定颜色的 HUD 按钮状态样式。
+## [param background] 背景颜色。
+## [param border] 描边颜色。
+## 返回按钮状态样式。
 func _button_style(background: Color, border: Color) -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
 	style.bg_color = background

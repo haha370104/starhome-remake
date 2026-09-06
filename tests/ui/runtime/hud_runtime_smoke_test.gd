@@ -112,6 +112,7 @@ func _assert_state_updates(hud: CanvasLayer) -> void:
 
 
 ## 验证 NPC 菜单采用原版贴身纵向动作布局，并支持右键关闭。
+## [param hud] 测试中的真实 HUD 节点。
 func _assert_npc_popup(hud: CanvasLayer) -> void:
 	hud.show_npc_popup({
 		"title": "武器商人",

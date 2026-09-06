@@ -8,6 +8,7 @@ var failures := PackedStringArray()
 var assertions := 0
 
 
+## 验证普通与特殊武器商人的官网白名单、分组排序和等级上限。
 func _initialize() -> void:
 	var items = ItemCatalogScript.new()
 	var loaded: DomainResult = items.initialize()
@@ -57,6 +58,9 @@ func _initialize() -> void:
 	_finish()
 
 
+## 检查所有商品是否满足价格、等级和展示字段约束。
+## [param offers] 服务端商品投影数组。
+## 返回全部商品是否合法。
 func _all_offers_valid(offers: Array[Dictionary]) -> bool:
 	var categories := ["vehicle_chassis", "energy_cannon", "vehicle_engine", "repair_arm", "mining_arm"]
 	for offer: Dictionary in offers:
@@ -65,12 +69,16 @@ func _all_offers_valid(offers: Array[Dictionary]) -> bool:
 	return true
 
 
+## 记录一条测试断言。
+## [param condition] 条件是否成立。
+## [param message] 失败说明。
 func _expect(condition: bool, message: String) -> void:
 	assertions += 1
 	if not condition:
 		failures.append(message)
 
 
+## 输出测试结果并结束进程。
 func _finish() -> void:
 	if failures.is_empty():
 		print("WEAPON_MERCHANT_DOMAIN_OK (%d assertions)" % assertions)

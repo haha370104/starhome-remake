@@ -108,7 +108,7 @@ static func special_row(location: int) -> int:
 	return int(definition.get("special_row", -1))
 
 
-## 返回旧客户端 `EquipInDlg()` 为该逻辑 Location 指定的面板业务锚点。
+## 查询旧客户端 `EquipInDlg()` 为该逻辑 Location 指定的面板业务锚点。
 ## [param location] 荣耀客户端 Location 编号。
 ## [param fallback] 尚未逆向的扩展位置使用的兼容锚点。
 ## 返回不包含 ALE 帧 origin 的面板坐标；渲染器应将两者相加得到纹理左上角。

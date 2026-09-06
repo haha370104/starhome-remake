@@ -54,6 +54,7 @@ func open_mode(mode: String, merchant_id := "weapon_merchant") -> void:
 
 
 ## 应用服务器随玩家面板一并返回的交易快照。
+## [param bundle] 含 commerce 与 inventory 投影的权威面板数据。
 func apply_commerce_bundle(bundle: Dictionary) -> void:
 	var commerce_value: Variant = bundle.get("commerce", {})
 	if not commerce_value is Dictionary:
@@ -67,10 +68,12 @@ func apply_commerce_bundle(bundle: Dictionary) -> void:
 
 
 ## 提供给自动化测试和窗口管理器的当前模式。
+## 返回 buy、sell 或 task。
 func current_mode() -> String:
 	return _mode
 
 
+## 创建免费版商店窗口的外框与标题区域。
 func _build_chrome() -> void:
 	var panel := Panel.new()
 	panel.name = "LegacyMaxFormChrome"
@@ -84,6 +87,7 @@ func _build_chrome() -> void:
 	_title_label.add_theme_color_override("font_color", CYAN_TEXT)
 
 
+## 创建买卖模式共用的商品列表、说明和货币区域。
 func _build_trade_view() -> void:
 	_column_header = _label("ColumnHeader", Vector2(20, 56), Vector2(287, 20), 12, REGULAR_FONT)
 	var list_frame := Panel.new()
@@ -123,6 +127,7 @@ func _build_trade_view() -> void:
 	_currency_label = _label("Currency", Vector2(28, 416), Vector2(280, 18), 12, REGULAR_FONT)
 
 
+## 创建循环任务的正文、进度与动作区域。
 func _build_task_view() -> void:
 	_task_root = Control.new()
 	_task_root.name = "TaskMessage"
@@ -148,6 +153,7 @@ func _build_task_view() -> void:
 	frame.add_child(cancel_button)
 
 
+## 根据当前模式和最新权威快照刷新窗口内容。
 func _render() -> void:
 	if not is_node_ready():
 		return
@@ -163,6 +169,7 @@ func _render() -> void:
 		_render_trade()
 
 
+## 使用当前商人目录刷新买入或卖出商品列表。
 func _render_trade() -> void:
 	var merchant: Dictionary = _commerce.get("merchant", {})
 	_title_label.text = String(merchant.get("display_name", "武器商人"))
@@ -178,6 +185,9 @@ func _render_trade() -> void:
 	_currency_label.text = "金币：%d" % _currency
 
 
+## 创建一行可悬浮和点击的交易商品。
+## [param entry] 服务端下发的安全商品投影。
+## 返回带商品字段与交互信号的行容器。
 func _trade_row(entry: Dictionary) -> PanelContainer:
 	var row := PanelContainer.new()
 	row.custom_minimum_size = Vector2(273, 22)
@@ -203,6 +213,9 @@ func _trade_row(entry: Dictionary) -> PanelContainer:
 	return row
 
 
+## 高亮悬浮商品并显示图标、说明、等级与价格。
+## [param row] 当前商品行。
+## [param entry] 当前商品投影。
 func _on_row_entered(row: PanelContainer, entry: Dictionary) -> void:
 	var style := StyleBoxFlat.new()
 	style.bg_color = HOVER_COLOR
@@ -224,12 +237,16 @@ func _on_row_entered(row: PanelContainer, entry: Dictionary) -> void:
 	_preview.texture = resolved.get("texture") as Texture2D
 
 
+## 清除离开商品行后的高亮背景。
+## [param row] 已失去悬浮状态的商品行。
 func _on_row_exited(row: PanelContainer) -> void:
 	var style := StyleBoxFlat.new()
 	style.bg_color = Color.TRANSPARENT
 	row.add_theme_stylebox_override("panel", style)
 
 
+## 把当前商品转换为只含稳定标识和 revision 的交易意图。
+## [param entry] 被点击的商品投影。
 func _request_trade(entry: Dictionary) -> void:
 	if _inventory_revision < 0:
 		return
@@ -250,6 +267,7 @@ func _request_trade(entry: Dictionary) -> void:
 		})
 
 
+## 刷新普通武器商人的循环任务正文和材料进度。
 func _render_task() -> void:
 	_title_label.text = "中级任务"
 	for child in _task_progress.get_children():
@@ -293,6 +311,7 @@ func _render_task() -> void:
 	_task_primary_button.disabled = exhausted or (accepted and not can_turn_in)
 
 
+## 根据当前任务状态提交接受或交付意图。
 func _request_task_action() -> void:
 	var task: Dictionary = _commerce.get("task", {})
 	if bool(task.get("accepted", false)):
@@ -309,12 +328,20 @@ func _request_task_action() -> void:
 		})
 
 
+## 把交易说明区恢复到未选择商品的状态。
 func _clear_description() -> void:
 	_description_title.text = ""
 	_description_body.text = "将鼠标移到物品上查看说明"
 	_preview.texture = null
 
 
+## 在窗口内容根节点创建统一文本控件。
+## [param label_name] 节点名称。
+## [param label_position] 窗口局部坐标。
+## [param label_size] 控件尺寸。
+## [param font_size] 字号。
+## [param font] 字体资源。
+## 返回已加入内容根节点的文本控件。
 func _label(
 	label_name: String, label_position: Vector2, label_size: Vector2,
 	font_size: int, font: Font,
@@ -322,6 +349,14 @@ func _label(
 	return _label_on(content_root, label_name, label_position, label_size, font_size, font)
 
 
+## 在指定父节点创建统一文本控件。
+## [param parent] 接收文本控件的父节点。
+## [param label_name] 节点名称。
+## [param label_position] 父节点局部坐标。
+## [param label_size] 控件尺寸。
+## [param font_size] 字号。
+## [param font] 字体资源。
+## 返回已加入父节点的文本控件。
 func _label_on(
 	parent: Node, label_name: String, label_position: Vector2, label_size: Vector2,
 	font_size: int, font: Font,
@@ -341,6 +376,11 @@ func _label_on(
 	return label
 
 
+## 创建商品行内固定宽度的文本字段。
+## [param text] 显示内容。
+## [param width] 字段宽度。
+## [param alignment] 水平对齐方式。
+## 返回配置完成的文本控件。
 func _inline_label(text: String, width: float, alignment := HORIZONTAL_ALIGNMENT_LEFT) -> Label:
 	var label := Label.new()
 	label.text = text
@@ -354,6 +394,11 @@ func _inline_label(text: String, width: float, alignment := HORIZONTAL_ALIGNMENT
 	return label
 
 
+## 创建免费版商店风格的文字按钮。
+## [param text] 按钮文案。
+## [param button_position] 父节点局部坐标。
+## [param button_size] 按钮尺寸。
+## 返回配置完成的按钮。
 func _legacy_button(text: String, button_position: Vector2, button_size: Vector2) -> Button:
 	var button := Button.new()
 	button.text = text
@@ -370,6 +415,8 @@ func _legacy_button(text: String, button_position: Vector2, button_size: Vector2
 	return button
 
 
+## 创建商店主窗口的深蓝描边背景。
+## 返回主窗口样式。
 func _panel_style() -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
 	style.bg_color = Color("00182df4")
@@ -384,6 +431,8 @@ func _panel_style() -> StyleBoxFlat:
 	return style
 
 
+## 创建商店列表和说明区的半透明内框背景。
+## 返回内框样式。
 func _inner_style() -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
 	style.bg_color = Color("06111dcc")
@@ -392,6 +441,10 @@ func _inner_style() -> StyleBoxFlat:
 	return style
 
 
+## 创建指定颜色的商店按钮状态样式。
+## [param background] 背景颜色。
+## [param border] 描边颜色。
+## 返回按钮状态样式。
 func _button_style(background: Color, border: Color) -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
 	style.bg_color = background

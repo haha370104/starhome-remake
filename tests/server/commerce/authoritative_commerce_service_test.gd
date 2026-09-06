@@ -9,6 +9,7 @@ var failures := PackedStringArray()
 var assertions := 0
 
 
+## 验证权威商店查询、买卖和循环任务事务。
 func _initialize() -> void:
 	var fixture = PanelFixtureScript.new()
 	var fixture_loaded: DomainResult = fixture.initialize()
@@ -59,12 +60,16 @@ func _initialize() -> void:
 	_finish()
 
 
+## 记录一条测试断言。
+## [param condition] 条件是否成立。
+## [param message] 失败说明。
 func _expect(condition: bool, message: String) -> void:
 	assertions += 1
 	if not condition:
 		failures.append(message)
 
 
+## 输出测试结果并结束进程。
 func _finish() -> void:
 	if failures.is_empty():
 		print("AUTHORITATIVE_COMMERCE_OK (%d assertions)" % assertions)

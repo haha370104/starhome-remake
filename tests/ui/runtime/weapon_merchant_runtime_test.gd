@@ -12,6 +12,7 @@ var _state: PlayerStateRecord
 var _service
 
 
+## 延迟启动商店窗口运行时测试，等待场景树可安全挂载控件。
 func _initialize() -> void:
 	call_deferred("_run")
 
@@ -68,6 +69,9 @@ func _run() -> void:
 	_finish(manager)
 
 
+## 把窗口命令同步交给真实权威服务并回灌最新面板快照。
+## [param command] 窗口发出的交易或任务意图。
+## [param manager] 接收权威组合数据的窗口管理器。
 func _dispatch(command: Dictionary, manager: GameWindowManager) -> void:
 	var result: DomainResult = _service.execute(_state, command)
 	if not result.is_ok:
@@ -77,12 +81,17 @@ func _dispatch(command: Dictionary, manager: GameWindowManager) -> void:
 	manager.apply_bundle(result.value.panel_bundle)
 
 
+## 记录一条测试断言。
+## [param condition] 条件是否成立。
+## [param message] 失败说明。
 func _expect(condition: bool, message: String) -> void:
 	assertions += 1
 	if not condition:
 		failures.append(message)
 
 
+## 释放测试窗口并输出测试结果。
+## [param manager] 本次测试创建的窗口管理器。
 func _finish(manager: Control) -> void:
 	if failures.is_empty():
 		print("WEAPON_MERCHANT_RUNTIME_OK (%d assertions)" % assertions)

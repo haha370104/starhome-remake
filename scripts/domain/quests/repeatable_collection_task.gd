@@ -13,6 +13,7 @@ func _init(definition: Dictionary) -> void:
 ## 构建当前玩家可见的任务状态和材料进度。
 ## [param inventory] 玩家权威背包。
 ## [param state] 持久化任务状态。
+## 返回不含领域对象引用的任务投影。
 func snapshot(inventory: Inventory, state: Dictionary) -> Dictionary:
 	var accepted := bool(state.get("accepted", false))
 	var completions := maxi(0, int(state.get("completions", 0)))
@@ -47,6 +48,7 @@ func snapshot(inventory: Inventory, state: Dictionary) -> Dictionary:
 
 ## 验证任务可接受，并返回更新状态。
 ## [param state] 当前持久化任务状态。
+## 返回更新后的任务状态或准入失败原因。
 func accept(state: Dictionary) -> DomainResult:
 	var completions := maxi(0, int(state.get("completions", 0)))
 	var maximum := int(_definition.get("maximum_completions", 0))
@@ -60,6 +62,7 @@ func accept(state: Dictionary) -> DomainResult:
 ## 消耗任务材料并计算本轮固定和里程碑奖励。
 ## [param inventory] 玩家权威背包。
 ## [param state] 当前持久化任务状态。
+## 返回消费摘要、奖励与更新后的任务状态。
 func turn_in(inventory: Inventory, state: Dictionary) -> DomainResult:
 	var current := snapshot(inventory, state)
 	if not bool(current["accepted"]):
