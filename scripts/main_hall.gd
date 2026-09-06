@@ -153,6 +153,9 @@ var player: Node2D
 var npc_instances: Array[Node2D]:
 	get:
 		return active_world_controller.npc_instances if active_world_controller else []
+var facility_instances: Array[Node2D]:
+	get:
+		return active_world_controller.facility_instances if active_world_controller else []
 var active_npc: Node2D
 var camera: Camera2D
 var movement_click_effects: MovementClickEffectPresenter
@@ -1191,18 +1194,23 @@ func _world_input_locked() -> bool:
 	return multiplayer_presenter.session.is_map_change_pending()
 
 
-## 执行 `nearest_npc` 对应的模块操作。
-## [param world_position] 调用方传入的参数；具体约束由函数签名和所在模块定义。
-## [param maximum_distance] 调用方传入的参数；具体约束由函数签名和所在模块定义。
-## 返回该函数计算、查询或操作得到的结果。
+## 查找鼠标点命中的最近 NPC 或生产设施。
+## [param world_position] 鼠标对应的地图世界坐标。
+## [param maximum_distance] NPC 默认点选距离；设施使用各自配置的命中半径。
+## 返回最近的可交互节点；没有命中时返回 null。
 func _nearest_npc(world_position: Vector2, maximum_distance: float) -> Node2D:
 	var result: Node2D
-	var closest_distance := maximum_distance
+	var closest_distance := INF
 	for npc in npc_instances:
 		var distance := npc.position.distance_to(world_position)
-		if distance <= closest_distance:
+		if distance <= maximum_distance and distance < closest_distance:
 			closest_distance = distance
 			result = npc
+	for facility in facility_instances:
+		var distance := facility.position.distance_to(world_position)
+		if facility.hit_test(world_position) and distance < closest_distance:
+			closest_distance = distance
+			result = facility
 	return result
 
 
@@ -1237,10 +1245,17 @@ func _on_npc_action_requested(action_id: String) -> void:
 			_move_to(transition.approach_point, transition.transition_id)
 		return
 	if active_npc:
-		if active_npc.npc_id in ["weapon_merchant", "special_weapon_merchant"] \
+		var station_id := String(active_npc.get("station_id"))
+		if action_id == "manufacture" and not station_id.is_empty():
+			hud.hide_popup()
+			game_window_manager.open_manufacturing(station_id)
+			hint_label.text = "正在使用%s" % String(active_npc.get_interaction_data()["title"])
+			return
+		var npc_id := String(active_npc.get("npc_id"))
+		if npc_id in ["weapon_merchant", "special_weapon_merchant"] \
 				and action_id in ["buy", "sell", "task"]:
 			hud.hide_popup()
-			game_window_manager.open_weapon_merchant(action_id, active_npc.npc_id)
+			game_window_manager.open_weapon_merchant(action_id, npc_id)
 			hint_label.text = "正在与%s交互" % String(active_npc.get_interaction_data()["title"])
 			return
 		hint_label.text = active_npc.handle_action(action_id)

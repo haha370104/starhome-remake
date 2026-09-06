@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "maps": {
+    "glory_nft_bl_clothshop1": [
+      {"facility_id":"dragon_city_tailor_1","station_id":"tailoring","name":"裁缝机","position":[264,156],"interaction_radius":52},
+      {"facility_id":"dragon_city_tailor_2","station_id":"tailoring","name":"裁缝机","position":[576,192],"interaction_radius":52},
+      {"facility_id":"dragon_city_tailor_3","station_id":"tailoring","name":"裁缝机","position":[144,216],"interaction_radius":52},
+      {"facility_id":"dragon_city_tailor_4","station_id":"tailoring","name":"裁缝机","position":[624,216],"interaction_radius":52}
+    ],
+    "glory_nft_bl_foodroom1": [
+      {"facility_id":"dragon_city_cooking_1","station_id":"cooking","name":"烹饪台","position":[1032,420],"interaction_radius":72},
+      {"facility_id":"dragon_city_cooking_2","station_id":"cooking","name":"烹饪台","position":[576,648],"interaction_radius":72}
+    ]
+  },
+  "source_audit": {
+    "source_release": "starhome_lz_ry",
+    "tailoring_source": "NFT_BL/map/clothshop1.fcc AddImgEx('SewSysSvr', ...)",
+    "cooking_source": "NFT_BL/map/foodroom1.fcc food preparation display anchors",
+    "note": "食品店荣耀地图未保留 CookSysSvr 处理器名，首版热点锚定到可见烹饪陈列，权威配方仍来自 cltobj/stuffclt2.fcc。"
+  }
+}

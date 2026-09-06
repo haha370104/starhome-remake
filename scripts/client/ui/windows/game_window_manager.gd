@@ -11,6 +11,9 @@ const SkillLevelPanelScript := preload("res://scripts/client/ui/windows/skills/s
 const WeaponMerchantWindowScript := preload(
 	"res://scripts/client/ui/windows/commerce/weapon_merchant_window.gd"
 )
+const ManufacturingWindowScript := preload(
+	"res://scripts/client/ui/windows/manufacturing/manufacturing_window.gd"
+)
 const CurrentPlayerScript := preload("res://scripts/client/state/current_player.gd")
 
 var character_panel: CharacterPanel
@@ -18,6 +21,7 @@ var inventory_panel: InventoryPanel
 var vehicle_panel: VehicleEquipmentPanel
 var skill_panel: SkillLevelPanel
 var weapon_merchant_window: WeaponMerchantWindow
+var manufacturing_window: Control
 
 ## 【重点 Review】当前登录人物的客户端只读全局投影；业务 UI 必须从这里读取同版本人物与战车状态。
 ## 设计：属性值仍由权威服务器产生，本对象只负责跨面板共享与信号通知。
@@ -68,6 +72,11 @@ func configure(
 	weapon_merchant_window.position = Vector2(170, 80)
 	weapon_merchant_window.command_requested.connect(_dispatch)
 	_add_window(weapon_merchant_window)
+	manufacturing_window = ManufacturingWindowScript.new()
+	manufacturing_window.name = "ManufacturingWindow"
+	manufacturing_window.position = Vector2(190, 90)
+	manufacturing_window.command_requested.connect(_dispatch)
+	_add_window(manufacturing_window)
 
 	return true
 
@@ -123,6 +132,8 @@ func toggle(action_id: String) -> bool:
 func apply_bundle(bundle: Dictionary) -> void:
 	if weapon_merchant_window != null and bundle.get("commerce") is Dictionary:
 		weapon_merchant_window.apply_commerce_bundle(bundle)
+	if manufacturing_window != null and bundle.get("manufacturing") is Dictionary:
+		manufacturing_window.apply_manufacturing_bundle(bundle)
 	if current_player == null or not current_player.apply_bundle(bundle):
 		return
 	_bundle = current_player.snapshot_bundle()
@@ -141,6 +152,13 @@ func apply_bundle(bundle: Dictionary) -> void:
 func open_weapon_merchant(mode: String, merchant_id := "weapon_merchant") -> void:
 	weapon_merchant_window.open_mode(mode, merchant_id)
 	weapon_merchant_window.clamp_to_viewport(size)
+
+
+## 打开地图机器对应的裁缝或烹饪窗口并请求权威配方。
+## [param station_id] tailoring 或 cooking。
+func open_manufacturing(station_id: String) -> void:
+	manufacturing_window.open_station(station_id)
+	manufacturing_window.clamp_to_viewport(size)
 
 
 ## 切换非模态技能等级窗口并保持其处于可见区域。
@@ -178,6 +196,7 @@ func _add_window(window: Control) -> void:
 func _clamp_windows() -> void:
 	for window: Control in [
 		character_panel, inventory_panel, vehicle_panel, skill_panel, weapon_merchant_window,
+		manufacturing_window,
 	]:
 		if window != null:
 			window.call("clamp_to_viewport", size)

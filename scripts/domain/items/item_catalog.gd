@@ -16,6 +16,7 @@ const PRESENTATION_PATHS := [
 ]
 
 var _definitions: Dictionary = {}
+var _definition_ids_by_display_name: Dictionary = {}
 
 
 ## 读取所有当前启用的物品定义和语义化表现目录。
@@ -23,6 +24,7 @@ var _definitions: Dictionary = {}
 ## 设计：目录负责“配置到具体类型”的组装；领域对象本身不读取文件，也不知道服务端或客户端。
 func initialize() -> DomainResult:
 	_definitions.clear()
+	_definition_ids_by_display_name.clear()
 	for path: String in GAMEPLAY_PATHS:
 		var loaded := _load_gameplay_file(path)
 		if not loaded.is_ok:
@@ -40,6 +42,7 @@ func initialize() -> DomainResult:
 			var current: Dictionary = _definitions[item_id].get("presentation", {})
 			current.merge(presentation_result.value[definition_id], true)
 			_definitions[item_id]["presentation"] = current
+	_index_display_names()
 	return DomainResult.ok(self)
 
 
@@ -95,6 +98,39 @@ func definition_ids() -> PackedStringArray:
 func definition(definition_id: String) -> Dictionary:
 	var value: Variant = _definitions.get(definition_id)
 	return value.duplicate(true) if value is Dictionary else {}
+
+
+## 按玩家可见名称解析稳定物品定义，供旧配方中的中文材料名接入新领域模型。
+## [param display_name_value] 荣耀配方记录中的物品显示名。
+## [param accepted_kinds] 可选的物品类型白名单；空数组表示接受任意类型。
+## 返回首个满足类型要求的稳定定义 ID；没有匹配时返回空字符串。
+## 设计：名称只在旧内容适配边界使用，背包、存档和网络协议仍只保存稳定 ID。
+func definition_id_by_display_name(
+	display_name_value: String,
+	accepted_kinds: PackedStringArray = PackedStringArray(),
+) -> String:
+	var normalized := display_name_value.strip_edges()
+	for definition_id: String in _definition_ids_by_display_name.get(normalized, PackedStringArray()):
+		var kind := String((_definitions[definition_id] as Dictionary).get("kind", ""))
+		if accepted_kinds.is_empty() or kind in accepted_kinds:
+			return definition_id
+	return ""
+
+
+## 为旧内容适配建立显示名到稳定 ID 的只读多值索引。
+## 设计：索引保留同名定义，具体用例可用 accepted_kinds 消除歧义。
+func _index_display_names() -> void:
+	for definition_id: String in _definitions:
+		var item_definition: Dictionary = _definitions[definition_id]
+		var display_name_value := String(item_definition.get("display_name", "")).strip_edges()
+		if display_name_value.is_empty():
+			continue
+		var ids: PackedStringArray = _definition_ids_by_display_name.get(
+			display_name_value, PackedStringArray()
+		)
+		ids.append(definition_id)
+		ids.sort()
+		_definition_ids_by_display_name[display_name_value] = ids
 
 
 ## 读取单个玩法定义文件并合并到目录。

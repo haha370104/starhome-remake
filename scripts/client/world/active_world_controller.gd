@@ -12,6 +12,10 @@ const NpcBaseScript := preload("res://scripts/npcs/npc_base.gd")
 const ShopNpcScript := preload("res://scripts/npcs/shop_npc.gd")
 const QuestNpcScript := preload("res://scripts/npcs/quest_npc.gd")
 const TransitionViewScript := preload("res://scripts/client/world/map_transition_view.gd")
+const FacilityInteractionScript := preload(
+	"res://scripts/client/world/world_facility_interaction.gd"
+)
+const FACILITY_CATALOG_PATH := "res://data/world/manufacturing_facilities_v1.json"
 const TransitionMarkerCatalogScript := preload(
 	"res://scripts/client/world/map_transition_marker_catalog.gd"
 )
@@ -22,6 +26,7 @@ var map_manifest: Dictionary = {}
 var map_size := Vector2.ZERO
 var scene_nodes: Array[Node2D] = []
 var npc_instances: Array[Node2D] = []
+var facility_instances: Array[Node2D] = []
 var transition_views: Array[Node2D] = []
 
 var _world_root: Node2D
@@ -33,6 +38,7 @@ var _camera: Camera2D
 var _hud: CanvasLayer
 var _character_catalog: Dictionary = {}
 var _npc_catalog: Dictionary = {}
+var _facility_catalog: Dictionary = {}
 var _transition_marker_catalog: RefCounted
 
 
@@ -77,6 +83,14 @@ func configure(
 	_hud = hud
 	_character_catalog = character_catalog
 	_npc_catalog = npc_catalog
+	if not FileAccess.file_exists(FACILITY_CATALOG_PATH):
+		return ERR_CANT_OPEN
+	var facility_value: Variant = JSON.parse_string(
+		FileAccess.get_file_as_string(FACILITY_CATALOG_PATH)
+	)
+	if not facility_value is Dictionary:
+		return ERR_INVALID_DATA
+	_facility_catalog = facility_value
 	_transition_marker_catalog = TransitionMarkerCatalogScript.new()
 	if _transition_marker_catalog.load_default() != OK:
 		_transition_marker_catalog = null
@@ -130,6 +144,7 @@ func commit_bundle(bundle: Dictionary, spawn_position: Vector2) -> bool:
 	map_size = definition.world_size
 	scene_nodes = staged["scene_nodes"]
 	npc_instances = staged["npc_instances"]
+	facility_instances = staged["facility_instances"]
 	transition_views = staged["transition_views"]
 	_adopt_staged_nodes(staged["container"])
 	_background.texture = staged["floor_texture"]
@@ -189,11 +204,15 @@ func _stage_bundle(bundle: Dictionary, spawn_position: Vector2) -> Dictionary:
 	container.name = "StagedMapContent"
 	var staged_scene_nodes: Array[Node2D] = []
 	var staged_npcs: Array[Node2D] = []
+	var staged_facilities: Array[Node2D] = []
 	var staged_transition_views: Array[Node2D] = []
 	if not _stage_scene_nodes(staged_manifest, container, staged_scene_nodes):
 		container.free()
 		return {}
 	if not _stage_npcs(staged_definition, staged_navigation, container, staged_npcs):
+		container.free()
+		return {}
+	if not _stage_facilities(staged_definition, container, staged_facilities):
 		container.free()
 		return {}
 	if not _stage_transition_views(staged_definition, container, staged_transition_views):
@@ -209,8 +228,37 @@ func _stage_bundle(bundle: Dictionary, spawn_position: Vector2) -> Dictionary:
 		"container": container,
 		"scene_nodes": staged_scene_nodes,
 		"npc_instances": staged_npcs,
+		"facility_instances": staged_facilities,
 		"transition_views": staged_transition_views,
 	}
+
+
+## 为当前地图恢复原 AddImgEx 机器处理器对应的透明交互热点。
+## [param staged_definition] 正在离树暂存的地图定义。
+## [param container] 暂存地图节点容器。
+## [param output] 成功创建的设施节点输出数组。
+## 返回配置是否完整有效。
+func _stage_facilities(
+	staged_definition: MapDefinition,
+	container: Node2D,
+	output: Array[Node2D],
+) -> bool:
+	var maps_value: Variant = _facility_catalog.get("maps", {})
+	if not maps_value is Dictionary:
+		return false
+	var definitions: Variant = (maps_value as Dictionary).get(String(staged_definition.map_id), [])
+	if not definitions is Array:
+		return false
+	for definition_value: Variant in definitions:
+		if not definition_value is Dictionary:
+			return false
+		var facility: Node2D = FacilityInteractionScript.new()
+		if facility.configure(definition_value) != OK:
+			facility.free()
+			return false
+		container.add_child(facility)
+		output.append(facility)
+	return true
 
 
 ## 执行 `stage_scene_nodes` 对应的模块操作。
@@ -352,11 +400,12 @@ func _create_npc_for_kind(kind: String) -> Node2D:
 ## 清理当前活动地图的场景、NPC 和传送视图，不触碰玩家或远端玩家节点。
 func _clear_active_nodes() -> void:
 	_hud.hide_popup()
-	for node in scene_nodes + npc_instances + transition_views:
+	for node in scene_nodes + npc_instances + facility_instances + transition_views:
 		if is_instance_valid(node):
 			node.free()
 	scene_nodes.clear()
 	npc_instances.clear()
+	facility_instances.clear()
 	transition_views.clear()
 
 

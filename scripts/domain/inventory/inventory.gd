@@ -120,6 +120,52 @@ func add_from_transfer(item: GameItem) -> DomainResult:
 ## 返回合并后的实例或容量、布局、数量错误。
 ## 设计：一次调用要么完整接收数量并推进 revision，要么完全不修改背包。
 func add_reward(item: GameItem) -> DomainResult:
+	var added := _add_reward_uncommitted(item)
+	if added.is_ok:
+		revision += 1
+	return added
+
+
+## 原子消耗一组配方材料，并只推进一次背包 revision。
+## [param requirements] 含 definition_id 与 quantity 的材料要求数组。
+## 返回各材料的消费摘要，或在任一材料不足时保持背包完全不变。
+func consume_requirements(requirements: Array[Dictionary]) -> DomainResult:
+	var checked := _validate_requirements(requirements)
+	if not checked.is_ok:
+		return checked
+	var consumed := _consume_requirements_uncommitted(requirements)
+	revision += 1
+	return DomainResult.ok(consumed)
+
+
+## 在一个背包事务中消耗材料并加入制作产物。
+## [param requirements] 含 definition_id 与 quantity 的材料要求数组。
+## [param product] 已由物品目录创建的产物实例。
+## 返回产物实例；材料不足、背包无空间或实例冲突时回滚全部变化。
+## 设计：配方结算不能暴露“材料已扣但产物未入包”的中间状态。
+func craft_product(requirements: Array[Dictionary], product: GameItem) -> DomainResult:
+	var checked := _validate_requirements(requirements)
+	if not checked.is_ok:
+		return checked
+	var previous_items := _items.duplicate()
+	var previous_quantities: Dictionary = {}
+	for item: GameItem in previous_items:
+		previous_quantities[item.instance_id] = item.quantity
+	_consume_requirements_uncommitted(requirements)
+	var added := _add_reward_uncommitted(product)
+	if not added.is_ok:
+		_items = previous_items
+		for item: GameItem in _items:
+			item.quantity = int(previous_quantities[item.instance_id])
+		return added
+	revision += 1
+	return added
+
+
+## 在不推进 revision 的前提下合并或放置奖励；仅供复合背包事务调用。
+## [param item] 已通过目录创建的待入包实例。
+## 返回合并后的物品或容量、布局、实例错误。
+func _add_reward_uncommitted(item: GameItem) -> DomainResult:
 	if item == null or item.instance_id.is_empty() or item.quantity <= 0 \
 		or item.quantity > item.max_stack:
 		return DomainResult.failure(&"inventory.invalid_reward", "reward item identity or quantity is invalid")
@@ -130,7 +176,6 @@ func add_reward(item: GameItem) -> DomainResult:
 			or current.locked or current.quantity + item.quantity > current.max_stack:
 			continue
 		current.quantity += item.quantity
-		revision += 1
 		return DomainResult.ok(current)
 	var position_result := transfer_position(item)
 	if not position_result.is_ok:
@@ -138,8 +183,51 @@ func add_reward(item: GameItem) -> DomainResult:
 	item.container_id = InventoryLayoutScript.MAIN_CONTAINER_ID
 	item.position_px = position_result.value
 	_items.append(item)
-	revision += 1
 	return DomainResult.ok(item)
+
+
+## 预检配方材料格式、非锁定数量及重复定义。
+## [param requirements] 待消费的配方材料数组。
+## 返回规范化检查结果；失败不修改背包。
+func _validate_requirements(requirements: Array[Dictionary]) -> DomainResult:
+	var requested: Dictionary = {}
+	for requirement: Dictionary in requirements:
+		var definition_id := String(requirement.get("definition_id", ""))
+		var quantity := int(requirement.get("quantity", 0))
+		if definition_id.is_empty() or quantity <= 0 or requested.has(definition_id):
+			return DomainResult.failure(&"manufacturing.invalid_requirements", "recipe requirements are invalid")
+		requested[definition_id] = quantity
+	for definition_id: String in requested:
+		var available := 0
+		for item: GameItem in _items:
+			if item.definition_id == definition_id and not item.locked:
+				available += item.quantity
+		if available < int(requested[definition_id]):
+			return DomainResult.failure(&"manufacturing.material_missing", "required material quantity is insufficient")
+	return DomainResult.ok(requested)
+
+
+## 扣除已经整体预检通过的材料，不推进 revision。
+## [param requirements] 已通过 _validate_requirements 的材料数组。
+## 返回各定义的实际扣除数量。
+func _consume_requirements_uncommitted(requirements: Array[Dictionary]) -> Array[Dictionary]:
+	var consumed: Array[Dictionary] = []
+	for requirement: Dictionary in requirements:
+		var definition_id := String(requirement["definition_id"])
+		var remaining := int(requirement["quantity"])
+		for index: int in range(_items.size() - 1, -1, -1):
+			var item: GameItem = _items[index]
+			if item.definition_id != definition_id or item.locked:
+				continue
+			var amount := mini(item.quantity, remaining)
+			item.quantity -= amount
+			remaining -= amount
+			if item.quantity == 0:
+				_items.remove_at(index)
+			if remaining == 0:
+				break
+		consumed.append({"definition_id": definition_id, "quantity": int(requirement["quantity"])})
+	return consumed
 
 
 ## 按实例移除可交易物品，并推进背包 revision。
@@ -177,6 +265,17 @@ func count_definition(definition_id: String) -> int:
 	var total := 0
 	for item: GameItem in _items:
 		if item.definition_id == definition_id:
+			total += item.quantity
+	return total
+
+
+## 统计背包内能够被生产事务消耗的指定物品数量。
+## [param definition_id] 稳定物品定义标识。
+## 返回所有未锁定堆叠的合计数量。
+func count_consumable_definition(definition_id: String) -> int:
+	var total := 0
+	for item: GameItem in _items:
+		if item.definition_id == definition_id and not item.locked:
 			total += item.quantity
 	return total
 

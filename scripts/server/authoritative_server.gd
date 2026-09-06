@@ -26,6 +26,9 @@ const PlayerPanelServiceScript := preload("res://scripts/server/player_panels/au
 const CommerceServiceScript := preload(
 	"res://scripts/server/commerce/authoritative_commerce_service.gd"
 )
+const ManufacturingServiceScript := preload(
+	"res://scripts/server/manufacturing/authoritative_manufacturing_service.gd"
+)
 const DomainResultScript := preload("res://scripts/core/domain_result.gd")
 const RuntimeContentBootstrapScript := preload(
 	"res://scripts/content/runtime_content_bootstrap.gd"
@@ -64,6 +67,7 @@ var player_state_repository: PlayerStateRepository
 var autosave_service: AuthoritativeAutosaveService
 var player_panel_service: AuthoritativePlayerPanelService
 var commerce_service
+var manufacturing_service
 var _pending_vehicle_recoveries: Dictionary = {}
 var _runtime_definition_paths_by_map_id: Dictionary = {}
 var _runtime_map_ids_by_legacy_world: Dictionary = {}
@@ -164,6 +168,10 @@ func initialize(
 	var commerce_result: DomainResult = commerce_service.initialize()
 	if not commerce_result.is_ok:
 		return _failure(commerce_result.error_code, commerce_result.error_message)
+	manufacturing_service = ManufacturingServiceScript.new()
+	var manufacturing_result: DomainResult = manufacturing_service.initialize()
+	if not manufacturing_result.is_ok:
+		return _failure(manufacturing_result.error_code, manufacturing_result.error_message)
 	_ticks_per_snapshot = floori(float(config.simulation_hz) / float(config.snapshot_hz))
 	return _success(_default_map_id)
 
@@ -721,15 +729,22 @@ func handle_peer_player_panel_command(peer_id: int, command: Dictionary) -> Dict
 	var session: ServerSession = sessions.session_for_peer(peer_id)
 	if session == null:
 		return _failure(&"panels.session_missing", "peer has no active authoritative session")
-	if autosave_service == null or player_panel_service == null or commerce_service == null:
+	if autosave_service == null or player_panel_service == null or commerce_service == null \
+			or manufacturing_service == null:
 		return _failure(&"panels.persistence_required", "player panels require authoritative persistence")
 	var current := autosave_service.state_for(session.entity_id)
 	if current == null:
 		return _failure(&"panels.state_missing", "authoritative player state is not registered")
 	var command_type := String(command.get("type", ""))
 	var is_commerce: bool = commerce_service.handles(command_type)
-	var executed: DomainResult = commerce_service.execute(current, command) \
-		if is_commerce else player_panel_service.execute(current, command)
+	var is_manufacturing: bool = manufacturing_service.handles(command_type)
+	var executed: DomainResult
+	if is_commerce:
+		executed = commerce_service.execute(current, command)
+	elif is_manufacturing:
+		executed = manufacturing_service.execute(current, command)
+	else:
+		executed = player_panel_service.execute(current, command)
 	if not executed.is_ok:
 		return _failure(executed.error_code, executed.error_message)
 	var value: Dictionary = executed.value
@@ -745,10 +760,13 @@ func handle_peer_player_panel_command(peer_id: int, command: Dictionary) -> Dict
 		)
 		if not refreshed_loadout.ok:
 			return refreshed_loadout
-	return _success(
-		commerce_service.build_bundle(committed.value, value.get("operation", {}))
-		if is_commerce else player_panel_service.build_bundle(committed.value)
-	)
+	if is_commerce:
+		return _success(commerce_service.build_bundle(committed.value, value.get("operation", {})))
+	if is_manufacturing:
+		return _success(manufacturing_service.build_bundle(
+			committed.value, value.get("operation", {})
+		))
+	return _success(player_panel_service.build_bundle(committed.value))
 
 
 ## 应用地图实例产出的权威技能成长事件，并按升级语义选择即时提交或自动存档。

@@ -1,7 +1,6 @@
 class_name GloryRecipeCatalog
 extends RefCounted
 
-const DomainResult := preload("res://scripts/core/domain_result.gd")
 const DEFAULT_PATH := "res://data/gameplay/glory/glory_recipes_v1.json"
 const GROUP_ORDER := [
 	"local_crafting",
@@ -42,12 +41,12 @@ func initialize(path := DEFAULT_PATH) -> DomainResult:
 		for index: int in range(rows.size()):
 			if not rows[index] is Dictionary:
 				return DomainResult.failure(&"recipes.catalog_invalid", "Glory recipe row is invalid")
-			var recipe := _normalize(group_name, index, rows[index])
-			var recipe_id := String(recipe["id"])
-			_by_id[recipe_id] = recipe
+			var recipe_definition := _normalize(group_name, index, rows[index])
+			var recipe_id := String(recipe_definition["id"])
+			_by_id[recipe_id] = recipe_definition
 			group_ids.append(recipe_id)
-			_index_product_key(String(recipe.get("product_class", "")), recipe_id)
-			_index_product_key(String(recipe.get("product_name", "")), recipe_id)
+			_index_product_key(String(recipe_definition.get("product_class", "")), recipe_id)
+			_index_product_key(String(recipe_definition.get("product_name", "")), recipe_id)
 		_ids_by_group[group_name] = group_ids
 	return DomainResult.ok(self)
 
@@ -124,18 +123,18 @@ func _normalize(group_name: String, index: int, source: Dictionary) -> Dictionar
 
 ## 执行 `settlement_ready` 对应的模块操作。
 ## [param group_name] 调用方传入的 `group_name` 参数。
-## [param recipe] 调用方传入的 `recipe` 参数。
+## [param recipe_definition] 待检查的规范化配方定义。
 ## 返回该函数计算、查询或操作得到的结果。
-func _settlement_ready(group_name: String, recipe: Dictionary) -> bool:
+func _settlement_ready(group_name: String, recipe_definition: Dictionary) -> bool:
 	if group_name in ["equipment_upgrade", "equipment_dismantle"]:
 		return false
-	var materials: Variant = recipe.get("materials", [])
+	var materials: Variant = recipe_definition.get("materials", [])
 	if not materials is Array or materials.is_empty():
 		return false
 	for material: Variant in materials:
 		if not material is Dictionary or not material.has("amount") or int(material["amount"]) <= 0:
 			return false
-	return not String(recipe.get("product_class", "")).is_empty()
+	return not String(recipe_definition.get("product_class", "")).is_empty()
 
 
 ## 执行 `parse_embedded_materials` 对应的模块操作。
