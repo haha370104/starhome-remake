@@ -6,7 +6,7 @@
         "transition_id": "return_to_yian_harbor_city",
         "kind": "standard",
         "enabled": true,
-        "label": "返回易安港城区",
+        "label": "返回龙之城",
         "source_anchor": [1176, 1260],
         "approach_point": [1200, 1248],
         "presentation": {
@@ -35,7 +35,7 @@
         "transition_id": "return_to_yian_harbor_city",
         "kind": "standard",
         "enabled": true,
-        "label": "返回易安港城区",
+        "label": "返回龙之城",
         "source_anchor": [648, 1188],
         "approach_point": [672, 1176],
         "presentation": {
@@ -64,7 +64,7 @@
         "transition_id": "return_to_yian_harbor_city",
         "kind": "standard",
         "enabled": true,
-        "label": "返回易安港城区",
+        "label": "返回龙之城",
         "source_anchor": [1152, 1896],
         "approach_point": [1200, 1872],
         "presentation": {
@@ -93,7 +93,7 @@
         "transition_id": "return_to_yian_harbor_city",
         "kind": "standard",
         "enabled": true,
-        "label": "返回易安港城区",
+        "label": "返回龙之城",
         "source_anchor": [1656, 3348],
         "approach_point": [1680, 3336],
         "presentation": {
@@ -122,7 +122,7 @@
         "transition_id": "return_to_yian_harbor_city",
         "kind": "standard",
         "enabled": true,
-        "label": "返回易安港城区",
+        "label": "返回龙之城",
         "source_anchor": [1152, 2376],
         "approach_point": [1176, 2364],
         "presentation": {
@@ -151,7 +151,7 @@
         "transition_id": "return_to_yian_harbor_city",
         "kind": "standard",
         "enabled": true,
-        "label": "返回易安港城区",
+        "label": "返回龙之城",
         "source_anchor": [1008, 1656],
         "approach_point": [1032, 1644],
         "presentation": {

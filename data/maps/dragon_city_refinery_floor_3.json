@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "map_id": "dragon_city_refinery_floor_3",
+  "display_name": "龙之城提炼厂三层",
+  "category": "city_interior",
+  "legacy": {"codes": ["factory3"]},
+  "world": {"id":"buli","size":[2376,1920],"navigation":{"grid_size":[50,320],"cell_size":[48,12],"data_path":"res://content/glory/maps/factory1/navigation_grid.bin"}},
+  "assets": {"ids":{"floor":"maps/dragon_city/refinery/floor_3/floor","minimap":"maps/dragon_city/refinery/floor_3/minimap","scene_manifest":"maps/dragon_city/refinery/floor_3/scene_manifest"},"resources":{"floor":"res://content/glory/maps/factory1/floor.png","minimap":"res://content/glory/maps/factory1/minimap.jpg","scene_manifest":"res://content/glory/maps/factory1/scene_manifest.json"}},
+  "spawn_points": {"default_id":"arrival","points":[{"spawn_id":"arrival","entry_number":0,"position":[1200,960],"enabled":true,"evidence_level":"navigation_derived","source_audit":{"source_release":"starhome_lz_ry","source_map_code":"factory3","source_output":"cltmap/city1svr.fcc"}}]},
+  "navigation_overrides": [],
+  "player_presentation": {"kind":"character"},
+  "transitions": [{"transition_id":"return_to_dragon_city","kind":"standard","enabled":true,"label":"返回龙之城","source_anchor":[1152,1896],"approach_point":[1200,1872],"presentation":{"kind":"directional_transition","orientation":"south","activation":"enabled_transition"},"destination":{"map_id":"yian_harbor_city","world_id":"buli","legacy_code":"city1svr","entry_number":0,"external":false},"source_audit":{"source_release":"starhome_lz_ry","source_map_code":"factory3","source_output":"cltmap/city1svr.fcc"}}],
+  "source_audit": {"source_release":"starhome_lz_ry","source_map_code":"factory3","source_output":"cltmap/city1svr.fcc","status":"source_script_missing","temporary_presentation_fallback":"荣耀包缺少 factory3 地图脚本和素材，暂复用 factory1 空间，保留独立地图/存档标识供后续替换"}
+}

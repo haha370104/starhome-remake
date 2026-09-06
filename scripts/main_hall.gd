@@ -174,6 +174,7 @@ var pending_map_bundle: Dictionary = {}
 var pending_authoritative_join: Dictionary = {}
 var map_commit_failure_locked := false
 var selected_transition_id: StringName = &""
+var transition_choice_ids: Dictionary = {}
 var combat_attack_controller: Node
 var combat_attack_controllers: Dictionary = {}
 var monster_world_controller: MonsterWorldController
@@ -495,6 +496,10 @@ func _handle_world_right_click(world_position: Vector2) -> void:
 	movement_click_effects.present(world_position)
 	var transition_view: Node2D = active_world_controller.transition_view_at(world_position)
 	if transition_view != null:
+		var transition: MapTransition = map_definition.transition_by_id(transition_view.transition_id)
+		if transition != null and transition.kind == MapTransition.Kind.MULTI_CHOICE:
+			_show_transition_choices(transition, world_position)
+			return
 		_move_to(transition_view.approach_point, transition_view.transition_id)
 	else:
 		_move_to(world_position)
@@ -864,6 +869,7 @@ func _on_active_world_will_replace() -> void:
 		active_npc.set_interaction_active(false)
 	active_npc = null
 	selected_transition_id = &""
+	transition_choice_ids.clear()
 	if movement_click_effects != null:
 		movement_click_effects.clear_effects()
 	for controller: Node in combat_attack_controllers.values():
@@ -1222,13 +1228,44 @@ func _on_npc_popup_closed() -> void:
 ## 处理 `_on_npc_action_requested` 对应的信号回调。
 ## [param action_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _on_npc_action_requested(action_id: String) -> void:
+	if transition_choice_ids.has(action_id):
+		var transition_id := StringName(transition_choice_ids[action_id])
+		var transition: MapTransition = map_definition.transition_by_id(transition_id)
+		transition_choice_ids.clear()
+		hud.hide_popup()
+		if transition != null:
+			_move_to(transition.approach_point, transition.transition_id)
+		return
 	if active_npc:
-		if active_npc.npc_id == "weapon_merchant" and action_id in ["buy", "sell", "task"]:
+		if active_npc.npc_id in ["weapon_merchant", "special_weapon_merchant"] \
+				and action_id in ["buy", "sell", "task"]:
 			hud.hide_popup()
-			game_window_manager.open_weapon_merchant(action_id)
-			hint_label.text = "正在与武器商人交互"
+			game_window_manager.open_weapon_merchant(action_id, active_npc.npc_id)
+			hint_label.text = "正在与%s交互" % String(active_npc.get_interaction_data()["title"])
 			return
 		hint_label.text = active_npc.handle_action(action_id)
+
+
+## 显示同一原版 transport2 锚点的目标选择菜单。
+## [param selected] 鼠标命中的任一多目标传送定义。
+## [param world_position] 右键点击的地图世界坐标。
+## 设计：选择只决定 transition_id；寻路、预载和最终切图仍走既有权威传送链。
+func _show_transition_choices(selected: MapTransition, world_position: Vector2) -> void:
+	transition_choice_ids.clear()
+	var actions: Array[Dictionary] = []
+	for transition: MapTransition in map_definition.enabled_transitions():
+		if transition.kind != MapTransition.Kind.MULTI_CHOICE \
+				or not transition.source_anchor.is_equal_approx(selected.source_anchor):
+			continue
+		var action_id := "transition_%s" % String(transition.transition_id)
+		transition_choice_ids[action_id] = transition.transition_id
+		actions.append({"id": action_id, "label": transition.label})
+	var screen_position := get_viewport().get_canvas_transform() * world_position
+	hud.show_npc_popup({
+		"title": "选择目的地",
+		"body": "",
+		"actions": actions,
+	}, screen_position)
 
 
 ## 将底栏人物、背包和战车按钮交给窗口管理器，其余动作保持 HUD 原有提示。

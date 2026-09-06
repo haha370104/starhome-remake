@@ -32,7 +32,7 @@ func initialize() -> DomainResult:
 		"character_sex": "male",
 		"character_level": 10,
 		"character_profession": "殖民战士",
-		"character_faction": "易安港",
+		"character_faction": "龙之城",
 		"character_residence": "基地大厅一层",
 		"character_description": "荣耀版复刻工程的面板测试角色。",
 		"inventory_stacks": [{

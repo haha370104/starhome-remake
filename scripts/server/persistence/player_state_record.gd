@@ -20,8 +20,8 @@ var currency := 0
 var character_sex := "male"
 var character_level := 10
 var character_profession := "新兵"
-var character_faction := "易安港"
-var character_residence := "易安港基地"
+var character_faction := "龙之城"
+var character_residence := "龙之城基地"
 var character_description := ""
 var character_max_health := 1
 var character_health := 1
@@ -67,8 +67,12 @@ static func from_dictionary(raw: Variant) -> DomainResult:
 	record.character_sex = String(raw.get("character_sex", "male"))
 	record.character_level = int(raw.get("character_level", 10))
 	record.character_profession = String(raw.get("character_profession", "新兵"))
-	record.character_faction = String(raw.get("character_faction", "易安港"))
-	record.character_residence = String(raw.get("character_residence", "易安港基地"))
+	record.character_faction = String(raw.get("character_faction", "龙之城"))
+	record.character_residence = String(raw.get("character_residence", "龙之城基地"))
+	if record.character_faction == "易安港":
+		record.character_faction = "龙之城"
+	if record.character_residence == "易安港基地":
+		record.character_residence = "龙之城基地"
 	record.character_description = String(raw.get("character_description", ""))
 	record.character_max_health = int(raw.get("character_max_health", 0))
 	record.character_health = int(raw.get("character_health", -1))

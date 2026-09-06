@@ -120,7 +120,7 @@ func _test_definitions(directory: Dictionary) -> void:
 		"大厅出口必须忠实采用源 as4 的屏幕左上方向",
 	)
 	var city = definitions_by_id["yian_harbor_city"]
-	_expect(city.transitions.size() == 13, "City1Svr 应提升大厅、四条 D04 边和八个服务设施入口")
+	_expect(city.transitions.size() == 21, "City1Svr 应提升全部已识别的地图边、服务设施入口和提炼厂楼层选项")
 	for entry_number in range(5):
 		_expect(city.spawn_for_entry(entry_number) != null, "City1Svr 缺少入口 %d 出生点" % entry_number)
 	var city_hall_transition: MapTransition = city.transition_by_id(&"enter_base_hall_floor_1")

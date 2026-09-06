@@ -86,7 +86,7 @@ func _run() -> void:
 
 	_test_failed_bundle_isolation(hall, active)
 	_test_city_transition_views(active)
-	_expect(assertions == 63, "组合回归必须执行完整的 63 条业务断言")
+	_expect(assertions == 79, "组合回归必须执行完整的 79 条前置业务断言")
 	_finish(hall)
 
 
@@ -137,7 +137,7 @@ func _test_city_transition_views(active: Node) -> void:
 	if city_bundle.is_empty():
 		return
 	_expect(active.commit_bundle(city_bundle, Vector2(1399, 954)), "城区 bundle 必须可原子提交")
-	_expect(active.transition_views.size() == 13, "城区十三个已启用出口必须全部显示传送动画")
+	_expect(active.transition_views.size() == 21, "龙之城二十一个已启用出口必须全部显示传送动画")
 	var expected_orientations := {
 		&"enter_base_hall_floor_1": "north_east",
 		&"exit_to_d04_northwest_gate": "north_west",
@@ -152,6 +152,14 @@ func _test_city_transition_views(active: Node) -> void:
 		&"enter_trade_center": "north_east",
 		&"enter_botanical_garden": "north_east",
 		&"enter_weapon_shop": "north_west",
+		&"enter_refinery_2": "north_east",
+		&"enter_refinery_3": "north_east",
+		&"enter_chemical_plant": "north_east",
+		&"enter_research_center": "north_east",
+		&"enter_beauty_shop": "north_west",
+		&"enter_flower_shop": "north_east",
+		&"enter_armory": "north_east",
+		&"enter_space_center": "north_west",
 	}
 	for transition_id: StringName in expected_orientations:
 		var view: Node2D = active.transition_view_by_id(transition_id)

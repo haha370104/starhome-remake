@@ -1169,8 +1169,8 @@ func _register_persistent_player(
 		"character_sex": "male",
 		"character_level": 10,
 		"character_profession": "新兵",
-		"character_faction": "易安港",
-		"character_residence": "易安港基地",
+		"character_faction": "龙之城",
+		"character_residence": "龙之城基地",
 		"character_description": "正在探索蓝古星的年轻殖民者。",
 		"inventory_stacks": [{
 			"stack_id": "inventory.%s.spare_engine" % entity.entity_id,

@@ -24,7 +24,7 @@ func _run() -> void:
 	_expect(manifest["minimap_chrome"].get("map_content_source", "") == "current_glory_map", "小地图内容仍必须来自荣耀版地图")
 
 	var hud: CanvasLayer = HallHudScript.new()
-	hud.configure(Vector2(1944, 1920), load(MINIMAP_PATH), "易安港基地大厅一层")
+	hud.configure(Vector2(1944, 1920), load(MINIMAP_PATH), "龙之城基地大厅一层")
 	root.add_child(hud)
 	await process_frame
 	await process_frame
@@ -145,7 +145,7 @@ func _assert_map_rebinding(hud: CanvasLayer) -> void:
 	_expect(hud.minimap_dock.map_name_label.text == "G08", "切图后必须更新地图名")
 	_expect(hud.minimap_dock.map_image.position == Vector2(-15, -15), "切图后应按新尺寸重新投影现有玩家点")
 	_expect(hud.shortcut_bar.visible, "切图不得重置玩家的 HUD 显隐偏好")
-	hud.set_map(Vector2(1944, 1920), minimap_texture, "易安港基地大厅一层")
+	hud.set_map(Vector2(1944, 1920), minimap_texture, "龙之城基地大厅一层")
 
 
 ## 执行 `assert_minimap_modes` 对应的模块操作。
@@ -193,7 +193,7 @@ func _assert_transition_markers(hud: CanvasLayer) -> void:
 	_expect(not dock.marker_layer.is_visible_in_tree(), "收起小地图必须隐藏传送标记")
 	hud.state.set_minimap_collapsed(false)
 	hud.state.set_minimap_size("small")
-	hud.set_map(Vector2(1944, 1920), dock.map_image.texture, "易安港基地大厅一层")
+	hud.set_map(Vector2(1944, 1920), dock.map_image.texture, "龙之城基地大厅一层")
 	_expect(dock.marker_layer.marker_positions().is_empty(), "切到没有出口的地图必须清除旧传送标记")
 
 
