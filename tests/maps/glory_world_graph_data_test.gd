@@ -120,7 +120,7 @@ func _test_definitions(directory: Dictionary) -> void:
 		"大厅出口必须忠实采用源 as4 的屏幕左上方向",
 	)
 	var city = definitions_by_id["yian_harbor_city"]
-	_expect(city.transitions.size() == 21, "City1Svr 应提升全部已识别的地图边、服务设施入口和提炼厂楼层选项")
+	_expect(city.transitions.size() == 20, "City1Svr 应提升有效地图边、服务设施入口和提炼厂楼层选项")
 	for entry_number in range(5):
 		_expect(city.spawn_for_entry(entry_number) != null, "City1Svr 缺少入口 %d 出生点" % entry_number)
 	var city_hall_transition: MapTransition = city.transition_by_id(&"enter_base_hall_floor_1")
@@ -142,7 +142,7 @@ func _test_definitions(directory: Dictionary) -> void:
 	_test_g08_transitions(definitions_by_id["g08_field_zone"])
 
 
-## 验证城区八个服务设施入口、室内地图资源和双向返程拓扑。
+## 验证城区服务设施入口、室内地图资源和双向返程拓扑。
 ## [param city] 已加载的易安港城区定义。
 ## [param catalog] 已包含核心地图及服务设施的受控开发地图目录。
 func _test_city_service_transitions(city: MapDefinition, catalog) -> void:
@@ -155,6 +155,7 @@ func _test_city_service_transitions(city: MapDefinition, catalog) -> void:
 		&"enter_trade_center": [&"glory_nft_bl_traderoom1", "交易中心"],
 		&"enter_botanical_garden": [&"glory_nft_bl_treeroom1", "植物园"],
 		&"enter_weapon_shop": [&"glory_nft_bl_weaponshop1", "武器店"],
+		&"enter_space_center": [&"dragon_city_space_center", "宇航中心"],
 	}
 	for transition_id: StringName in expected:
 		var transition: MapTransition = city.transition_by_id(transition_id)

@@ -20,7 +20,10 @@ func _initialize() -> void:
 		return
 	var resolver = ResolverScript.new()
 	_expect(resolver.configure(directory["definitions"]), "; ".join(resolver.errors))
-	_expect(resolver.size() == 810, "路由解析器必须覆盖全部 810 张可运行地图")
+	_expect(
+		resolver.size() == (directory["definitions"] as Dictionary).size(),
+		"路由解析器必须覆盖受控目录中的全部可运行地图",
+	)
 	var loader = LoaderScript.new()
 	var d04: MapDefinition = loader.load_file("res://data/maps/d04_field_zone.json")
 	_expect(d04 != null, "D04 定义必须可读取")

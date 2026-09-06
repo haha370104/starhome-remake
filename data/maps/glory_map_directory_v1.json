@@ -2,6 +2,7 @@
   "schema_version": 1,
   "directory_id": "glory_all_runtime_maps",
   "definitions": {
+    "dragon_city_space_center": "res://data/maps/dragon_city_space_center.json",
     "dragon_city_refinery_floor_2": "res://data/maps/dragon_city_refinery_floor_2.json",
     "dragon_city_refinery_floor_3": "res://data/maps/dragon_city_refinery_floor_3.json",
     "buli_c03_field_zone": "res://data/maps/buli_c03_field_zone.json",
@@ -100,7 +101,6 @@
     "glory_nft_bl_i08": "res://content/glory/map_definitions/glory_nft_bl_i08.json",
     "glory_nft_bl_i09": "res://content/glory/map_definitions/glory_nft_bl_i09.json",
     "glory_nft_bl_lz_np_d05": "res://content/glory/map_definitions/glory_nft_bl_lz_np_d05.json",
-    "glory_nft_bl_nasa1": "res://content/glory/map_definitions/glory_nft_bl_nasa1.json",
     "glory_nft_bl_np_room": "res://content/glory/map_definitions/glory_nft_bl_np_room.json",
     "glory_nft_bl_np_skill": "res://content/glory/map_definitions/glory_nft_bl_np_skill.json",
     "glory_nft_bl_np_zbdt": "res://content/glory/map_definitions/glory_nft_bl_np_zbdt.json",

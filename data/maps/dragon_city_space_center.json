@@ -1,0 +1,92 @@
+{
+  "schema_version": 1,
+  "map_id": "dragon_city_space_center",
+  "display_name": "宇航中心",
+  "category": "city_interior",
+  "legacy": {
+    "codes": ["nasa1"]
+  },
+  "world": {
+    "id": "buli",
+    "size": [2808, 1920],
+    "navigation": {
+      "grid_size": [59, 320],
+      "cell_size": [48, 12],
+      "data_path": "res://assets/maps/dragon_city/space_center/navigation_grid.bin"
+    }
+  },
+  "assets": {
+    "ids": {
+      "floor": "maps/dragon_city/space_center/floor",
+      "minimap": "maps/dragon_city/space_center/minimap",
+      "scene_manifest": "maps/dragon_city/space_center/scene_manifest"
+    },
+    "resources": {
+      "floor": "res://assets/maps/dragon_city/space_center/floor.jpg",
+      "minimap": "res://assets/maps/dragon_city/space_center/minimap.jpg",
+      "scene_manifest": "res://assets/maps/dragon_city/space_center/map_manifest.json"
+    }
+  },
+  "spawn_points": {
+    "default_id": "arrival_from_dragon_city",
+    "points": [
+      {
+        "spawn_id": "arrival_from_dragon_city",
+        "entry_number": 0,
+        "position": [1008, 1464],
+        "enabled": true,
+        "evidence_level": "navigation_derived",
+        "source_audit": {
+          "source_release": "starhome_lz_ry",
+          "source_map_code": "NASA1",
+          "source_output": "assets/maps/dragon_city/space_center/navigation_grid.bin",
+          "derivation": "宇航中心南端出口内侧的已确认可行走网格"
+        }
+      }
+    ]
+  },
+  "navigation_overrides": [],
+  "player_presentation": {
+    "kind": "character"
+  },
+  "transitions": [
+    {
+      "transition_id": "return_to_dragon_city",
+      "kind": "standard",
+      "enabled": true,
+      "label": "返回龙之城",
+      "source_anchor": [980, 1468],
+      "approach_point": [1008, 1512],
+      "presentation": {
+        "kind": "directional_transition",
+        "orientation": "south",
+        "activation": "enabled_transition"
+      },
+      "destination": {
+        "map_id": "yian_harbor_city",
+        "world_id": "buli",
+        "legacy_code": "city1svr",
+        "entry_number": 0,
+        "external": false
+      },
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_map_code": "NASA1",
+        "source_output": "NFT_BL/map/NASA1.fcc",
+        "evidence_level": "navigation_and_reciprocal_edge_reconstruction",
+        "derivation": "原 FCC 未声明 Transport；按南端唯一可行走尖端和城区入口的反向边恢复返程点"
+      }
+    }
+  ],
+  "source_audit": {
+    "source_release": "starhome_lz_ry",
+    "source_world": "NFT_BL",
+    "source_map_code": "NASA1",
+    "source_map_name": "宇航中心",
+    "source_output": "NFT_BL/map/NASA1.fcc",
+    "presentation_state": "glory_fcc_img_restored",
+    "base_image_source": "map/mapimg/jpg/NASA1.jpg",
+    "navigation_source": "nasa1/variant_01_nft_bl/navigation_grid.bin",
+    "transition_recovery": "reciprocal_exit_reconstructed_from_navigation"
+  }
+}

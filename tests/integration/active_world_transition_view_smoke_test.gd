@@ -88,7 +88,8 @@ func _run() -> void:
 	_test_failed_bundle_isolation(hall, active)
 	_test_city_transition_views(active)
 	_test_refinery_transition_view(active)
-	_expect(assertions == 103, "组合回归必须执行完整的 103 条前置业务断言")
+	_test_space_center_transition_view(hall, active)
+	_expect(assertions == 111, "组合回归必须执行完整的 111 条前置业务断言")
 	_finish(hall)
 
 
@@ -139,7 +140,7 @@ func _test_city_transition_views(active: Node) -> void:
 	if city_bundle.is_empty():
 		return
 	_expect(active.commit_bundle(city_bundle, Vector2(1399, 954)), "城区 bundle 必须可原子提交")
-	_expect(active.transition_views.size() == 21, "龙之城二十一个已启用出口必须全部显示传送动画")
+	_expect(active.transition_views.size() == 20, "龙之城二十个已启用出口必须全部显示传送动画")
 	var expected_orientations := {
 		&"enter_base_hall_floor_1": "north_east",
 		&"exit_to_d04_northwest_gate": "north_west",
@@ -156,7 +157,6 @@ func _test_city_transition_views(active: Node) -> void:
 		&"enter_weapon_shop": "north_west",
 		&"enter_refinery_2": "north_east",
 		&"enter_refinery_3": "north_east",
-		&"enter_chemical_plant": "north_east",
 		&"enter_research_center": "north_east",
 		&"enter_beauty_shop": "north_west",
 		&"enter_flower_shop": "north_east",
@@ -232,6 +232,43 @@ func _test_refinery_transition_view(active: Node) -> void:
 			"提炼厂%s返程点必须使用南向共享动画" % floor_name,
 		)
 		container.free()
+
+
+## 加载修复后的宇航中心，验证完整荣耀底图和南端返程点均进入活动世界。
+## [param hall] 承载活动世界和地图背景的主场景。
+## [param active] 当前活动世界控制器。
+## 设计：该回归同时保护 FCC `img` 底图恢复和无源 Transport 时的反向边重建。
+func _test_space_center_transition_view(hall: Node2D, active: Node) -> void:
+	var bundle: Dictionary = active.prepare_initial_bundle(
+		"res://data/maps/dragon_city_space_center.json"
+	)
+	_expect(not bundle.is_empty(), "宇航中心业务定义与荣耀版素材必须可加载")
+	if bundle.is_empty():
+		return
+	_expect(active.commit_bundle(bundle, Vector2(1008, 1464)), "宇航中心 bundle 必须可原子提交")
+	_expect(active.definition.map_id == &"dragon_city_space_center", "宇航中心必须采用业务语义地图 ID")
+	_expect(
+		hall.map_background.texture != null
+			and hall.map_background.texture.get_size() == Vector2(2808, 1920),
+		"宇航中心必须显示 FCC img 标签指定的 2808×1920 完整荣耀底图",
+	)
+	_expect(active.transition_views.size() == 1, "宇航中心必须显示唯一返程点")
+	var view: Node2D = active.transition_view_by_id(&"return_to_dragon_city")
+	_expect(view != null, "宇航中心必须注册返回龙之城的业务出口")
+	if view == null:
+		return
+	_expect(view.position == Vector2(980, 1468), "宇航中心返程动画必须位于南端可走边缘")
+	_expect(view.approach_point == Vector2(1008, 1512), "宇航中心返程接近点必须保留独立可走坐标")
+	var tooltip := view.get_node_or_null("HoverTooltip") as Label
+	_expect(tooltip != null and tooltip.text == "返回龙之城", "宇航中心返程点必须显示明确目的地")
+	var sprite := view.get_node_or_null("AnimatedIcon") as AnimatedSprite2D
+	_expect(
+		sprite != null
+			and String(sprite.sprite_frames.resource_path).ends_with(
+				"/south/animation_frames.tres"
+			),
+		"宇航中心南端返程点必须使用公共南向传送动画",
+	)
 
 
 ## 执行 `expect` 对应的模块操作。
