@@ -1,6 +1,7 @@
 extends SceneTree
 
 const MainHallScene := preload("res://scenes/main_hall.tscn")
+const MapDefinitionLoaderScript := preload("res://scripts/maps/map_definition_loader.gd")
 
 class TestMapPreloader:
 	extends Node
@@ -86,7 +87,8 @@ func _run() -> void:
 
 	_test_failed_bundle_isolation(hall, active)
 	_test_city_transition_views(active)
-	_expect(assertions == 79, "组合回归必须执行完整的 79 条前置业务断言")
+	_test_refinery_transition_view(active)
+	_expect(assertions == 103, "组合回归必须执行完整的 103 条前置业务断言")
 	_finish(hall)
 
 
@@ -172,6 +174,64 @@ func _test_city_transition_views(active: Node) -> void:
 			sprite != null and String(sprite.sprite_frames.resource_path).ends_with(expected_fragment),
 			"城区传送点必须使用对应方向的共享 as1-as8 动画：%s" % transition_id,
 		)
+
+
+## 加载提炼厂各楼层并验证重建返程点的动画完整处于地图边界内。
+## [param active] 当前活动世界控制器。
+## 设计：返程逻辑接近点和动画左上角是两个坐标；边缘出口不得直接把接近点当作图片锚点。
+func _test_refinery_transition_view(active: Node) -> void:
+	var cases: Array[Dictionary] = [
+		{
+			"name": "一层",
+			"path": "res://content/glory/map_definitions/glory_nft_bl_factory1.json",
+		},
+		{"name": "二层", "path": "res://data/maps/dragon_city_refinery_floor_2.json"},
+		{"name": "三层", "path": "res://data/maps/dragon_city_refinery_floor_3.json"},
+	]
+	for test_case: Dictionary in cases:
+		var floor_name := String(test_case["name"])
+		var loader: RefCounted = MapDefinitionLoaderScript.new()
+		var refinery_definition: MapDefinition = loader.load_file(String(test_case["path"]))
+		_expect(refinery_definition != null, "提炼厂%s定义与返程覆盖必须可加载" % floor_name)
+		if refinery_definition == null:
+			continue
+		var container := Node2D.new()
+		var views: Array[Node2D] = []
+		_expect(
+			bool(active.call("_stage_transition_views", refinery_definition, container, views)),
+			"提炼厂%s必须能从地图定义构建返程动画" % floor_name,
+		)
+		_expect(views.size() == 1, "提炼厂%s必须显示唯一返程动画" % floor_name)
+		var view: Node2D = views[0] if not views.is_empty() else null
+		_expect(view != null, "提炼厂%s的返程逻辑必须存在对应传送视图" % floor_name)
+		if view == null:
+			container.free()
+			continue
+		_expect(
+			view.position == Vector2(1172, 1828),
+			"提炼厂%s返程动画必须以完整可见的左上角定位" % floor_name,
+		)
+		_expect(
+			view.approach_point == Vector2(1200, 1872),
+			"提炼厂%s返程交互必须保留独立可行走点" % floor_name,
+		)
+		var sprite := view.get_node_or_null("AnimatedIcon") as AnimatedSprite2D
+		var frame_size := Vector2.ZERO
+		if sprite != null and sprite.sprite_frames != null:
+			frame_size = sprite.sprite_frames.get_frame_texture(&"active", 0).get_size()
+		_expect(
+			view.position.x + frame_size.x <= refinery_definition.world_size.x
+				and view.position.y + frame_size.y <= refinery_definition.world_size.y,
+			"提炼厂%s返程动画全部像素必须位于地图边界内" % floor_name,
+		)
+		_expect(
+			sprite != null
+				and String(sprite.sprite_frames.resource_path).ends_with(
+					"/south/animation_frames.tres"
+				),
+			"提炼厂%s返程点必须使用南向共享动画" % floor_name,
+		)
+		container.free()
 
 
 ## 执行 `expect` 对应的模块操作。

@@ -65,7 +65,7 @@
         "kind": "standard",
         "enabled": true,
         "label": "返回龙之城",
-        "source_anchor": [1152, 1896],
+        "source_anchor": [1172, 1828],
         "approach_point": [1200, 1872],
         "presentation": {
           "kind": "directional_transition",
@@ -84,7 +84,7 @@
           "source_map_code": "factory1",
           "source_output": "maps/factory1/navigation_grid.bin",
           "evidence_level": "navigation_derived",
-          "derivation": "荣耀版合成图南侧门洞中心，并校验为可行走导航格"
+          "derivation": "荣耀版合成图南侧门洞的可行走点为 [1200,1872]；按南向 56x44 动画左上角反推 [1172,1828]，确保图标完整位于地图内"
         }
       }
     ],
