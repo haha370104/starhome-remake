@@ -405,12 +405,21 @@ def main() -> int:
     try:
         catalog = load_json(CATALOG_PATH)
         documents: dict[str, dict[str, Any]] = {}
+        expected_versions = {
+            "starter_loadout": "stage3_v1",
+            "monsters": "stage3_v1",
+            "d04_encounters": "stage3_v1",
+            "glory_monsters": "glory-runtime-v1",
+            "glory_encounters": "glory-runtime-v1",
+        }
         for key, reference in catalog["definitions"].items():
             path = resolve_project_reference(reference)
             if not path.is_file():
                 raise AuditFailure(f"missing catalog definition {key}: {path}")
             documents[key] = load_json(path)
-            assert_equal(documents[key]["content_version"], "stage3_v1", f"{key} version")
+            assert_equal(
+                documents[key]["content_version"], expected_versions[key], f"{key} version"
+            )
         for source_key in ("equipment_catalog", "monster_catalog"):
             source_path = resolve_project_reference(catalog["source_audit"][source_key])
             expected_hash = catalog["source_audit"][f"{source_key}_sha256"]
@@ -424,7 +433,12 @@ def main() -> int:
         monster_ids = {item["id"] for item in documents["monsters"]["definitions"]}
         encounter_groups = audit_encounters(documents["d04_encounters"], monster_ids)
         runtime_strings = audit_runtime_names(
-            [("catalog", catalog), *documents.items()]
+            [
+                ("catalog", catalog),
+                ("starter_loadout", documents["starter_loadout"]),
+                ("monsters", documents["monsters"]),
+                ("d04_encounters", documents["d04_encounters"]),
+            ]
         )
     except (AuditFailure, KeyError, TypeError, ValueError) as error:
         print(f"STAGE3 AUDIT FAILED: {error}", file=sys.stderr)
