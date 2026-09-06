@@ -4,6 +4,7 @@ extends Node2D
 const HOVER_GLOW_SHADER := preload(
 	"res://scripts/client/presentation/combat/ground_loot_hover_glow.gdshader"
 )
+const WorldHoverTooltipScript := preload("res://scripts/client/ui/world_hover_tooltip.gd")
 const HOVER_GLOW_COLOR := Color("33ff00")
 const HOVER_GLOW_RADIUS := 4.0
 
@@ -13,7 +14,7 @@ var remaining := 0
 var required_mining_level := 0
 var visual_variant := 0
 var _sprite: Sprite2D
-var _tooltip: Label
+var _tooltip
 var _hover_material: ShaderMaterial
 var _local_hit_rect := Rect2()
 
@@ -58,16 +59,7 @@ func configure(snapshot: Dictionary, presentation: Dictionary) -> Error:
 	_sprite.material = _hover_material
 	add_child(_sprite)
 	_local_hit_rect = Rect2(origin, cell_size)
-	_tooltip = Label.new()
-	_tooltip.name = "HoverTooltip"
-	_tooltip.position = Vector2(origin.x + cell_size.x + 6.0, origin.y)
-	_tooltip.z_index = 100
-	_tooltip.visible = false
-	_tooltip.add_theme_font_size_override("font_size", 13)
-	_tooltip.add_theme_color_override("font_color", Color(0.72, 1.0, 0.58))
-	_tooltip.add_theme_color_override("font_shadow_color", Color.BLACK)
-	_tooltip.add_theme_constant_override("shadow_offset_x", 1)
-	_tooltip.add_theme_constant_override("shadow_offset_y", 1)
+	_tooltip = WorldHoverTooltipScript.new()
 	add_child(_tooltip)
 	apply_snapshot(snapshot)
 	return OK
@@ -119,16 +111,7 @@ func _create_visual_nodes(
 	_sprite.material = _hover_material
 	add_child(_sprite)
 	_local_hit_rect = Rect2(origin if not hit_origin.is_finite() else hit_origin, size)
-	_tooltip = Label.new()
-	_tooltip.name = "HoverTooltip"
-	_tooltip.position = Vector2(origin.x + size.x + 6.0, origin.y)
-	_tooltip.z_index = 100
-	_tooltip.visible = false
-	_tooltip.add_theme_font_size_override("font_size", 13)
-	_tooltip.add_theme_color_override("font_color", Color(0.72, 1.0, 0.58))
-	_tooltip.add_theme_color_override("font_shadow_color", Color.BLACK)
-	_tooltip.add_theme_constant_override("shadow_offset_x", 1)
-	_tooltip.add_theme_constant_override("shadow_offset_y", 1)
+	_tooltip = WorldHoverTooltipScript.new()
 	add_child(_tooltip)
 
 
@@ -144,10 +127,10 @@ func apply_snapshot(snapshot: Dictionary) -> void:
 		position = Vector2(float(point_value[0]), float(point_value[1]))
 	modulate.a = clampf(float(snapshot.get("alpha", 1.0)), 0.0, 1.0)
 	if _tooltip != null:
-		_tooltip.text = "%s，需要采矿等级%d级" % [
+		_tooltip.set_content("%s，需要采矿等级%d级" % [
 			String(snapshot.get("display_name", mineral_id)),
 			required_mining_level,
-		]
+		])
 
 
 ## 判断世界坐标是否命中此矿点的原始 ALE 帧矩形。
@@ -163,7 +146,10 @@ func set_hovered(hovered: bool) -> void:
 	if _hover_material != null:
 		_hover_material.set_shader_parameter("hover_amount", 1.0 if hovered else 0.0)
 	if _tooltip != null:
-		_tooltip.visible = hovered
+		if hovered:
+			_tooltip.show_near(to_local(get_global_mouse_position()))
+		else:
+			_tooltip.visible = false
 
 
 ## 返回当前 ALE 图集帧，供表现回归测试读取。

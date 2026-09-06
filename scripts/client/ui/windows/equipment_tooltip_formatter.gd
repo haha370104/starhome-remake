@@ -26,8 +26,9 @@ const STAT_NAMES := {
 
 ## 按旧客户端物品说明顺序构造装备悬浮文本。
 ## [param equipment] 权威快照中的装备表现与属性字典。
+## [param action_hint] 提示框末尾的交互说明；装备槽与背包可传入不同文案。
 ## 返回名称、说明、有效属性和耐久组成的多行文本。
-static func format(equipment: Dictionary) -> String:
+static func format(equipment: Dictionary, action_hint: String = "双击卸下") -> String:
 	var lines := PackedStringArray()
 	lines.append(String(equipment.get("display_name", "未知装备")))
 	var description := String(equipment.get("description", ""))
@@ -45,7 +46,8 @@ static func format(equipment: Dictionary) -> String:
 	var maximum := int(equipment.get("max_durability", 0))
 	if maximum > 0:
 		lines.append("耐久：%d / %d" % [durability, maximum])
-	lines.append("双击卸下")
+	if not action_hint.is_empty():
+		lines.append(action_hint)
 	return "\n".join(lines)
 
 

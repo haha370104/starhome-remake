@@ -50,6 +50,25 @@ func _run() -> void:
 			first.name_label.position.y + first.name_label.size.y < first.health_bar.position.y,
 			"怪物名称必须位于血条正上方",
 		)
+		_expect(
+			is_equal_approx(
+				first.health_bar.position.y
+					- (first.name_label.position.y + first.name_label.size.y),
+				4.0,
+			),
+			"怪物名称下沿必须与血条上沿保持 4px 间距",
+		)
+		_expect(
+			is_equal_approx(
+				first.name_label.position.x + first.name_label.size.x * 0.5,
+				first.health_bar.position.x,
+			),
+			"怪物名称与血条必须沿同一水平中心线对齐",
+		)
+		_expect(
+			(first.name_label.get_theme_font("font") as SystemFont).font_weight == 400,
+			"怪物名称必须使用常规字重",
+		)
 		var first_hover_point: Vector2 = first.position + first.visual_collision_offset
 		_expect(controller.update_hover_at(first_hover_point) == "monster.first", "应命中第一个怪物")
 		_expect(first.name_label.visible and not second.name_label.visible, "只显示第一个悬浮名称")

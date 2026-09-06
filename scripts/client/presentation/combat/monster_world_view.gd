@@ -6,12 +6,13 @@ const AleCombatVisualPresenterScript := preload(
 	"res://scripts/client/presentation/combat/ale_combat_visual_presenter.gd"
 )
 const WorldCombatStatusBarScript := preload("res://scripts/client/presentation/combat/world_combat_status_bar.gd")
+const REGULAR_FONT := preload("res://assets/ui/fonts/legacy_panel_font.tres")
 
 const NAME_LABEL_SIZE := Vector2(100.0, 18.0)
-const NAME_FONT_SIZE := 11
+const NAME_FONT_SIZE := 12
 const HEALTH_BAR_WIDTH := 50.0
 const HEALTH_BAR_OFFSET := Vector2(0.0, 20.0)
-const NAME_TO_HEALTH_GAP := 2.0
+const NAME_TO_HEALTH_GAP := 4.0
 
 var entity_id := ""
 var combat_actor_id := ""
@@ -67,6 +68,7 @@ func configure(
 	name_label.name = "HoverName"
 	name_label.size = NAME_LABEL_SIZE
 	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	name_label.add_theme_font_override("font", REGULAR_FONT)
 	name_label.add_theme_font_size_override("font_size", NAME_FONT_SIZE)
 	name_label.add_theme_color_override("font_color", Color.RED)
 	name_label.add_theme_color_override("font_shadow_color", Color.BLACK)

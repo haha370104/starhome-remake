@@ -11,6 +11,7 @@ const ItemHoverHighlightScript := preload(
 const ItemTextureResolver := preload(
 	"res://scripts/client/presentation/items/item_presentation_texture_resolver.gd"
 )
+const TooltipFormatter := preload("res://scripts/client/ui/windows/equipment_tooltip_formatter.gd")
 
 var item_snapshot: Dictionary = {}
 var item: GameItem
@@ -37,6 +38,8 @@ func configure(domain_item: GameItem) -> void:
 		item.display_name,
 		item.description,
 	]
+	if item is Equipment:
+		item_tooltip = TooltipFormatter.format(item.to_view_dictionary(), "双击装备")
 	gui_input.connect(_on_gui_input)
 
 	_icon = TextureRect.new()

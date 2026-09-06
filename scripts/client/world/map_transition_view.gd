@@ -3,12 +3,13 @@ extends Node2D
 
 const GROUND_MARKER_Z_INDEX := -1
 const TOOLTIP_Z_INDEX := 100
+const WorldHoverTooltipScript := preload("res://scripts/client/ui/world_hover_tooltip.gd")
 
 var transition_id: StringName = &""
 var approach_point := Vector2.ZERO
 
 var _sprite: AnimatedSprite2D
-var _tooltip: Label
+var _tooltip
 var _interaction_rect := Rect2()
 
 
@@ -88,7 +89,10 @@ func hit_test(world_position: Vector2) -> bool:
 func update_hover(world_position: Vector2) -> bool:
 	var hovered := hit_test(world_position)
 	if _tooltip != null:
-		_tooltip.visible = hovered
+		if hovered:
+			_tooltip.show_near(to_local(world_position))
+		else:
+			_tooltip.visible = false
 	return hovered
 
 
@@ -104,21 +108,9 @@ func _process(_delta: float) -> void:
 ## 返回：无。
 ## 设计：提示使用独立高层级；地表图标保持低层级，但提示文字仍可显示在角色之上。
 func _create_tooltip(destination_label: String) -> void:
-	_tooltip = Label.new()
-	_tooltip.name = "HoverTooltip"
-	_tooltip.text = destination_label
-	_tooltip.visible = false
-	_tooltip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_tooltip = WorldHoverTooltipScript.new()
 	_tooltip.z_index = TOOLTIP_Z_INDEX
-	_tooltip.position = _sprite.position + Vector2(
-		_interaction_rect.end.x + 6.0,
-		_interaction_rect.position.y - 2.0,
-	)
-	_tooltip.add_theme_font_size_override("font_size", 13)
-	_tooltip.add_theme_color_override("font_color", Color(0.72, 1.0, 0.58))
-	_tooltip.add_theme_color_override("font_shadow_color", Color.BLACK)
-	_tooltip.add_theme_constant_override("shadow_offset_x", 1)
-	_tooltip.add_theme_constant_override("shadow_offset_y", 1)
+	_tooltip.set_content(destination_label)
 	add_child(_tooltip)
 
 
