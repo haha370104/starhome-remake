@@ -56,6 +56,26 @@ func _test_authoritative_collection_transaction() -> void:
 		1,
 	)
 	var started: Dictionary = server.handle_peer_use_ability(41, intent.to_dictionary())
+	_expect(not started.ok and started.code == &"mining.arm_required", "仅装能量炮不得采矿")
+	var initial = server.autosave_service.state_for(entity_id)
+	var original_weapon_id := ""
+	for equipment in initial.equipment_slots:
+		if equipment.slot_location == 1:
+			original_weapon_id = equipment.item_instance_id
+	var granted: DomainResult = server.player_panel_service.grant_loot(initial, {
+		"loot_id": "test.mining.arm", "item_definition_id": "glory_equipment_collector_ac947ee094", "quantity": 1,
+	})
+	_expect(granted.is_ok, "测试采掘臂入包")
+	server.autosave_service.commit_player_state(entity_id, granted.value.candidate)
+	started = server.handle_peer_use_ability(41, intent.to_dictionary())
+	_expect(not started.ok and started.code == &"mining.arm_required", "放在背包里的采掘臂不算装备")
+	var arm_id := ""
+	for stack in server.autosave_service.state_for(entity_id).inventory_stacks:
+		if stack.item_definition_id == "glory_equipment_collector_ac947ee094":
+			arm_id = stack.stack_id
+	_expect(_equip(server, entity_id, arm_id).ok, "野外可以把主炮替换为采掘臂")
+	_expect(not server.map_instance.combat_module.actors[entity_id].weapons.has("energy_cannon.primary"), "采掘臂不注册能量炮能力")
+	started = server.handle_peer_use_ability(41, intent.to_dictionary())
 	_expect(started.ok and StringName(started.value.event_type) == &"mining_started", "server should accept an eligible mine selection")
 	server.advance_simulation(2.95)
 	var before = server.autosave_service.state_for(entity_id)
@@ -72,7 +92,33 @@ func _test_authoritative_collection_transaction() -> void:
 	)
 	var combat_snapshot: Dictionary = server.snapshot_for_peer(41).get("combat", {})
 	_expect((combat_snapshot.get("mine_sources", []) as Array).size() == 20, "peer snapshot should publish all twenty authoritative mine sources")
+	_expect(_equip(server, entity_id, original_weapon_id).ok, "采矿中途切回能量炮")
+	server.advance_simulation(3.0)
+	after = server.autosave_service.state_for(entity_id)
+	_expect(source.remaining == 49 and _inventory_quantity(after, "iron_ore") == 1, "换炮后到期结算不能扣矿或产矿")
+	_expect(_equip(server, entity_id, arm_id).ok, "可重新装备采掘臂")
+	var damaged = server.autosave_service.state_for(entity_id)
+	for equipment in damaged.equipment_slots:
+		if equipment.slot_location == 1:
+			equipment.durability = 0
+	server.autosave_service.commit_player_state(entity_id, damaged)
+	intent.input_sequence = 2
+	started = server.handle_peer_use_ability(41, intent.to_dictionary())
+	_expect(not started.ok and started.code == &"mining.arm_broken", "损坏的采掘臂不能采矿")
 	server.free()
+
+
+## 经真实权威面板命令替换主装置，不绕过背包与换装事务。
+## [param server] 测试权威服务器。
+## [param entity_id] 会话对应的玩家实体。
+## [param instance_id] 背包内要安装的装备实例。
+## 返回服务端换装结果。
+func _equip(server: AuthoritativeServer, entity_id: String, instance_id: String) -> Dictionary:
+	var state := server.autosave_service.state_for(entity_id)
+	return server.handle_peer_player_panel_command(41, {
+		"type": "equip_vehicle_item", "instance_id": instance_id, "location": 1,
+		"inventory_revision": state.inventory_revision, "loadout_revision": state.vehicle_loadout_revision,
+	})
 
 
 ## 执行 `inventory_quantity` 对应的模块操作。

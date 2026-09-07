@@ -50,7 +50,7 @@ func initialize() -> DomainResult:
 ## 按定义与实例状态创建具体业务类型的物品。
 ## [param definition_id] 配置表定义标识。
 ## [param state] 存档中的实例状态。
-## 返回 Clothing、VehicleChassis、VehicleEngine、VehicleWeapon、VehicleEquipment 或 GameItem。
+## 返回服装、战车底盘、引擎、武器、采掘臂、通用装备或普通物品的具体实例。
 func create(definition_id: String, state: Dictionary) -> DomainResult:
 	if not _definitions.has(definition_id):
 		return DomainResult.failure(&"items.definition_missing", "item definition does not exist")
@@ -67,6 +67,8 @@ func create(definition_id: String, state: Dictionary) -> DomainResult:
 			return DomainResult.ok(VehicleWeapon.new(item_definition, state))
 		"vehicle_equipment":
 			return DomainResult.ok(VehicleEquipment.new(item_definition, state))
+		"mining_arm":
+			return DomainResult.ok(VehicleMiningArm.new(item_definition, state))
 		"equipment":
 			return DomainResult.ok(Equipment.new(item_definition, state))
 		_:
@@ -171,6 +173,12 @@ func _load_presentation_file(path: String) -> DomainResult:
 ## [param item_definition] 即将进入目录的可变定义副本。
 func _apply_equipment_contract(item_definition: Dictionary) -> void:
 	var kind := String(item_definition.get("kind", ""))
+	# 荣耀 CollecTor 基类声明 Location=1、EquipKind2=4；子类导出未展开继承字段。
+	var legacy: Dictionary = item_definition.get("stats", {}).get("legacy_properties", {})
+	if kind == "mining_arm" or (kind == "vehicle_equipment" and int(legacy.get("m_nEquipKind2", -1)) == 4):
+		kind = "mining_arm"
+		item_definition["kind"] = kind
+		item_definition["equipment_location"] = 1
 	var definition_id := String(item_definition.get("id", ""))
 	if kind == "character_clothing":
 		return
@@ -184,6 +192,7 @@ func _apply_equipment_contract(item_definition: Dictionary) -> void:
 		"vehicle_chassis": 0,
 		"energy_cannon": 1,
 		"vehicle_engine": 3,
+		"mining_arm": 4,
 	}.get(kind, -1)
 	_normalize_legacy_vehicle_stats(item_definition)
 

@@ -128,6 +128,17 @@ func _test_equipped_vehicle_replaces_map_placeholder(player: Node2D) -> void:
 		"撒玛王底盘应完成实际帧渲染")
 	_expect(player.combat_presenter.layer_frame(&"primary_weapon") >= 0,
 		"天神之怒主炮应完成实际帧渲染")
+	var config := JsonConfigLoader.load_dictionary("res://data/gameplay/commerce/weapon_merchant_v1.json")
+	for definition_id: String in config.value.merchant.official_whitelist_ids.mining_arm:
+		var created := catalog.create(definition_id, {"instance_id": "presentation.arm"})
+		_expect(created.is_ok and created.value is VehicleMiningArm, "商人采掘臂应构造为工程臂模型")
+		if not created.is_ok:
+			continue
+		vehicle.loadout.equip(created.value, 1, vehicle.loadout.revision)
+		_expect(player.apply_vehicle_equipment(vehicle), "采掘臂换装应更新真实场景模型")
+		var installed: Array = player.combat_presenter._actor.installed_components
+		_expect(String(installed[1]).begins_with("mining_arm_level_"), "采掘臂不得残留上一把能量炮贴图")
+		_expect(player.combat_presenter.layer_frame(&"primary_weapon") >= 0, "采掘臂八向资源应可渲染")
 
 
 ## 执行 `test_eight_way_idle_and_move` 对应的模块操作。

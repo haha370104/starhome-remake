@@ -194,7 +194,7 @@ func starter_secondary_weapons(simulation_hz: int) -> DomainResult:
 ## [param player] 已由共享持久化映射器还原的 Player 聚合。
 ## [param simulation_hz] 权威服务器每秒模拟刻数。
 ## [param movement_config] 战车重量、推进力到移动速度的服务器规则。
-## 返回 assembly 与 weapons 字典；缺少底盘或主炮时返回领域错误。
+## 返回 assembly 与 weapons 字典；缺少底盘或主装置时返回领域错误，采掘臂不登记主炮攻击。
 ## 设计：loadout 是唯一装备事实来源；新兵目录只为未装备的副武器和待证实弹道常量提供回退。
 func vehicle_combat_loadout(
 	player: Player,
@@ -204,13 +204,13 @@ func vehicle_combat_loadout(
 	if player == null or simulation_hz <= 0:
 		return DomainResult.failure(&"combat.invalid_player_loadout", "player combat loadout is unavailable")
 	var chassis := player.vehicle.loadout.at(0) as VehicleChassis
-	var primary_weapon := player.vehicle.loadout.at(1) as VehicleWeapon
+	var primary_weapon := player.vehicle.loadout.at(1)
 	if chassis == null:
 		return DomainResult.failure(
 			&"equipment.chassis_required_for_field",
 			"a vehicle chassis is required before entering a field map",
 		)
-	if primary_weapon == null:
+	if not primary_weapon is VehicleWeapon and not primary_weapon is VehicleMiningArm:
 		return DomainResult.failure(
 			&"equipment.primary_weapon_required_for_field",
 			"a primary weapon is required before entering a field map",
@@ -257,10 +257,12 @@ func vehicle_combat_loadout(
 	assembly["self_repair_required_skill_level"] = chassis.required_repair_skill_level
 	assembly["equipment_hardiness"] = equipment_hardiness
 	assembly["unknown_fields"] = []
-	var weapon_result := _primary_weapon_definition(primary_weapon, simulation_hz)
-	if not weapon_result.is_ok:
-		return weapon_result
-	var weapons := {STARTER_ABILITY_ID: weapon_result.value}
+	var weapons: Dictionary = {}
+	if primary_weapon is VehicleWeapon:
+		var weapon_result := _primary_weapon_definition(primary_weapon, simulation_hz)
+		if not weapon_result.is_ok:
+			return weapon_result
+		weapons[STARTER_ABILITY_ID] = weapon_result.value
 	var secondary_result := starter_secondary_weapons(simulation_hz)
 	if not secondary_result.is_ok:
 		return secondary_result

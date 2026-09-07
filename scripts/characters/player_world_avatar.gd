@@ -183,7 +183,7 @@ func apply_vehicle_equipment(vehicle: PlayerVehicle) -> bool:
 	if vehicle == null or combat_presenter == null:
 		return false
 	var chassis := vehicle.loadout.at(0) as VehicleChassis
-	var primary_weapon := vehicle.loadout.at(1) as VehicleWeapon
+	var primary_weapon := vehicle.loadout.at(1)
 	if chassis == null or primary_weapon == null:
 		return false
 	var component_map: Dictionary = _combat_manifest.get(

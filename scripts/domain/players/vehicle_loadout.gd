@@ -73,6 +73,18 @@ func has_chassis() -> bool:
 	return _equipped.get(0) is VehicleChassis
 
 
+## 校验固定主装置槽内的采掘臂，背包持有或其他槽位装备不算安装。
+## [param mining_level] 角色当前采矿技能等级。
+## 返回可采矿或明确的装备/技能错误。
+func validate_mining(mining_level: int) -> DomainResult:
+	if not has_chassis():
+		return DomainResult.failure(&"equipment.chassis_required", "mining requires a vehicle chassis")
+	var arm := at(1) as VehicleMiningArm
+	if arm == null:
+		return DomainResult.failure(&"mining.arm_required", "a mining arm must be installed in the primary slot")
+	return arm.validate_collection(mining_level)
+
+
 ## 除底盘外是否仍安装了任意战车装备。
 ## 更换或卸下底盘前必须先清空这些槽位，避免产生悬空装配。
 ## 返回至少一个非底盘槽位仍有装备时为真。

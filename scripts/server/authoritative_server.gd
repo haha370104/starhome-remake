@@ -389,6 +389,12 @@ func handle_peer_use_ability(peer_id: int, intent: Dictionary) -> Dictionary:
 		var current := autosave_service.state_for(session.entity_id)
 		if current == null:
 			return _failure(&"ability.player_state_missing", "ability player state is unavailable")
+		if ability_id == MiningModuleScript.COLLECT_ABILITY_ID:
+			var allowed := _validate_mining_equipment(current)
+			if not allowed.is_ok:
+				var rejected := _failure(allowed.error_code, allowed.error_message)
+				_trace_ability_command_result(peer_id, session.entity_id, intent, rejected)
+				return rejected
 		var skill_id := "repair" if ability_id == AuthoritativeCombatModule.SELF_REPAIR_ABILITY_ID \
 			else "mining"
 		var skill_state: Variant = current.character_skills.get(skill_id, {})
@@ -873,6 +879,11 @@ func _settle_mining_cycles(instance: AuthoritativeMapInstance) -> void:
 		if token.is_empty() or current == null:
 			instance.reject_mining_cycle(token)
 			continue
+		var allowed := _validate_mining_equipment(current)
+		if not allowed.is_ok:
+			instance.reject_mining_cycle(token)
+			_send_mining_rejection(entity_id, allowed.error_code, allowed.error_message)
+			continue
 		var granted := player_panel_service.grant_loot(current, {
 			"loot_id": token,
 			"item_definition_id": String(cycle.get("item_definition_id", "")),
@@ -911,6 +922,19 @@ func _settle_mining_cycles(instance: AuthoritativeMapInstance) -> void:
 					),
 				})),
 			})
+
+
+## 复用完整玩家聚合校验采矿装配，不信任客户端声明的武器类型。
+## [param state] 服务器保存的最新角色状态。
+## 返回开始和结算阶段共用的装备校验结果。
+func _validate_mining_equipment(state: PlayerStateRecord) -> DomainResult:
+	if player_panel_service == null:
+		return DomainResult.failure(&"mining.state_unavailable", "mining player aggregate is unavailable")
+	var restored := player_panel_service.restore_player(state)
+	if not restored.is_ok:
+		return restored
+	var player: Player = restored.value
+	return player.vehicle.loadout.validate_mining(player.skills.base_level("mining"))
 
 
 ## 向仍在线的采矿者报告异步背包/存档拒绝。
