@@ -27,6 +27,7 @@ func _initialize() -> void:
 	_test_monster_projectile_timing()
 	_test_monster_projectile_can_be_dodged()
 	_test_secondary_weapon_modes()
+	_test_line_projectile_uses_live_geometry()
 	if failures.is_empty():
 		print("AUTHORITATIVE_COMBAT_MODULE_OK (%d assertions)" % assertions)
 		quit(0)
@@ -127,7 +128,7 @@ func _test_energy_cannon_authority_state_machine() -> void:
 	_expect(empty_shot.is_ok and String(empty_shot.value["target_entity_id"]).is_empty(), "shooting empty space should still create a clamped projectile")
 	_settle_all_projectiles(module)
 	_expect(StringName(module.combat_events[-1]["event_type"]) == &"energy_cannon_projectile_expired", "empty shot should expire without damage")
-	_expect(StringName(module.combat_events[-1].get("expiration_reason", &"")) == &"no_target_at_fire_tick",
+	_expect(StringName(module.combat_events[-1].get("expiration_reason", &"")) == &"no_target_during_flight",
 		"empty projectile should expose why the server applied no damage")
 	state_a.working_energy = 5.0
 	module.advance_ticks(20)
@@ -140,6 +141,33 @@ func _test_energy_cannon_authority_state_machine() -> void:
 	_expect(module.register_vehicle("player.overloaded", MAP_INSTANCE_ID, Vector2.ZERO, overloaded, {ABILITY_ID: _weapon_definition()}).is_ok, "overloaded fixture should remain inspectable")
 	var power_rejected := module.handle_energy_cannon_attack("player.overloaded", _attack_intent(Vector2(250.0, 0.0), 1))
 	_expect(not power_rejected.is_ok and power_rejected.error_code == &"combat.insufficient_power_output", "overloaded output budget should prevent activation")
+
+
+## 验证能量炮飞行中重查目标：可以躲开旧交点，也可以命中新进入弹道的怪物。
+func _test_line_projectile_uses_live_geometry() -> void:
+	var module := _new_module(77)
+	var weapon := _fixed_damage_weapon(7)
+	weapon["projectile_speed"] = 100.0
+	weapon["range"] = 400.0
+	weapon["weapon_id"] = "glory_equipment_gun1000_c4c24e2500"
+	module.register_vehicle("player.a", MAP_INSTANCE_ID, Vector2.ZERO,
+		_assembly_result().value, {ABILITY_ID: weapon})
+	module.register_monster(_monster_definition("dodger", 30, Vector2(100, 0)))
+	module.register_monster(_monster_definition("interceptor", 30, Vector2(180, 100)))
+	var shot := module.handle_energy_cannon_attack("player.a", _attack_intent(Vector2(400, 0), 1))
+	_expect(shot.is_ok, "直线弹体夹具应成功发射")
+	module.monster_for("dodger").position = Vector2(100, 100)
+	module.advance_ticks(int(shot.value["impact_tick"]), false)
+	_expect(module.monster_for("dodger").health == 30, "离开旧交点的怪物不得按预约时间扣血")
+	_expect(module.pending_projectiles.size() == 1, "未碰撞弹体应继续飞向终点")
+	module.monster_for("interceptor").position = Vector2(180, 0)
+	module.advance_ticks(80, false)
+	_expect(module.monster_for("interceptor").health == 23, "发射时不在弹道上的怪物进入后应被命中")
+	_expect(module.pending_projectiles.is_empty(), "命中后弹体应完成结算")
+	var flight: Dictionary = module.snapshot_for_actor("player.a")["local_weapon_flight"][ABILITY_ID]
+	_expect(flight["weapon_id"] == weapon["weapon_id"] and float(flight["range"]) == 400.0,
+		"表现协议必须导出实际天神之怒装备标识与四百射程")
+	_expect(float(flight["projectile_speed"]) == 100.0, "表现协议必须导出服务端实际弹速")
 
 
 ## 执行 `test_single_death_and_thirty_second_respawn` 对应的模块操作。

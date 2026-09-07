@@ -17,6 +17,7 @@ var _impacts: Array[Dictionary] = []
 var _muzzles: Array[Dictionary] = []
 var _visual_collision_resolver := Callable()
 var _visual_shot_sequence := 0
+var _last_authoritative_event_id := 0
 
 
 ## 执行 `configure` 对应的模块操作。
@@ -103,7 +104,7 @@ func request_fire(
 	var resolved_target := origin + direction * resolved_distance
 	var muzzle_values: Array = _weapon["muzzle_offset"]
 	var muzzle_offset := Vector2(float(muzzle_values[0]), float(muzzle_values[1]))
-	var forward_offset := minf(MUZZLE_FORWARD_OFFSET, resolved_distance * 0.5)
+	var forward_offset := minf(float(_weapon.get("muzzle_forward_offset", MUZZLE_FORWARD_OFFSET)), resolved_distance * 0.5)
 	var muzzle_position := origin + muzzle_offset + direction * forward_offset
 	_visual_shot_sequence += 1
 	var visual_shot_id := "%s.visual.%d.%d.%d" % [
@@ -141,6 +142,100 @@ func request_fire(
 	}
 
 
+## 将本地预测弹体绑定到真正发送的能力意图序号，供权威结果对账。
+## [param visual_shot_id] request_fire 返回的本地唯一标识。
+## [param input_sequence] 已发送意图的序号；无效序号不绑定。
+func bind_input_sequence(visual_shot_id: String, input_sequence: int) -> void:
+	if input_sequence < 0:
+		return
+	for state: Dictionary in _projectiles:
+		if String(state["visual_shot_id"]) == visual_shot_id:
+			state["input_sequence"] = input_sequence
+			return
+
+
+## 接收本玩家的权威弹道参数和最终结果，同步后续发射并终结尚在飞行的对应弹体。
+## [param snapshot] 已通过会话边界的战斗快照；不允许服务端指定表现资源路径。
+## [param ability_id] 此控制器对应的能力槽位。
+## 设计：当前在途弹体保留发射时参数；只有匹配本玩家和意图序号的最终事件能结束它，不改生命值。
+func apply_authoritative_snapshot(snapshot: Dictionary, ability_id: String) -> void:
+	var flights: Variant = snapshot.get("local_weapon_flight", {})
+	if flights is Dictionary and flights.get(ability_id) is Dictionary:
+		_apply_flight_parameters(flights[ability_id])
+	var local_id := String(snapshot.get("local_entity_id", ""))
+	if local_id.is_empty():
+		return
+	for raw_event: Variant in snapshot.get("recent_events", []):
+		if not raw_event is Dictionary:
+			continue
+		var event: Dictionary = raw_event
+		var event_id := int(event.get("event_id", 0))
+		if event_id <= _last_authoritative_event_id:
+			continue
+		_last_authoritative_event_id = event_id
+		if String(event.get("attacker_id", "")) != local_id:
+			continue
+		var event_type := String(event.get("event_type", ""))
+		if event_type.ends_with("_hit") or event_type.ends_with("_projectile_expired"):
+			_finish_authoritative_projectile(event)
+
+
+## 校验并原子应用权威弹道参数；保持本地受控的动画资源选择不变。
+## [param flight] 包含武器标识、射程、速度、冷却与炮口偏移的协议数据。
+func _apply_flight_parameters(flight: Dictionary) -> void:
+	if _weapon.is_empty():
+		return
+	var reach := float(flight.get("range", 0.0))
+	var minimum := float(flight.get("minimum_range", 0.0))
+	var speed := float(flight.get("projectile_speed", 0.0))
+	var cooldown := float(flight.get("cooldown_seconds", 0.0))
+	var forward := float(flight.get("muzzle_forward_offset", -1.0))
+	var offset: Variant = flight.get("muzzle_offset", [])
+	var weapon_id := StringName(flight.get("weapon_id", ""))
+	if weapon_id == &"" or not is_finite(reach) or not is_finite(minimum) \
+			or not is_finite(speed) or not is_finite(cooldown) or not is_finite(forward) \
+			or reach <= 0.0 or minimum < 0.0 or minimum >= reach or speed <= 0.0 \
+			or cooldown <= 0.0 or forward < 0.0 or not offset is Array or offset.size() != 2:
+		return
+	if not Vector2(float(offset[0]), float(offset[1])).is_finite():
+		return
+	_weapon_id = weapon_id
+	_weapon["maximum_visual_range"] = reach
+	_weapon["minimum_visual_range"] = minimum
+	_weapon["cooldown_seconds"] = cooldown
+	_weapon["muzzle_offset"] = offset.duplicate()
+	_weapon["muzzle_forward_offset"] = forward
+	_weapon["projectile"]["travel_pixels_per_second"] = speed
+
+
+## 让尚未发生预测爆炸的同一发炮弹，在收到权威命中或失效时结束，避免穿过已死亡目标继续飞。
+## [param event] 包含本玩家意图序号、最终交点的权威事件。
+func _finish_authoritative_projectile(event: Dictionary) -> void:
+	var sequence := int(event.get("input_sequence", -1))
+	var point: Variant = event.get("impact_position", [])
+	if sequence < 0 or not point is Array or point.size() != 2:
+		return
+	var impact := Vector2(float(point[0]), float(point[1]))
+	if not impact.is_finite():
+		return
+	for index in range(_projectiles.size() - 1, -1, -1):
+		var state: Dictionary = _projectiles[index]
+		if int(state["input_sequence"]) != sequence:
+			continue
+		var wrapper := state["node"] as Node2D
+		CombatTraceLogger.record(&"client", &"visual_projectile_authoritative_finish", {
+			"visual_shot_id": state["visual_shot_id"], "input_sequence": sequence,
+			"shot_id": event.get("shot_id", ""), "weapon_id": state["weapon_id"],
+			"visual_position": wrapper.position, "impact_position": impact,
+			"correction_distance": wrapper.position.distance_to(impact),
+			"elapsed_seconds": state["elapsed"], "event_type": event["event_type"],
+		})
+		_free_state_node(state)
+		_projectiles.remove_at(index)
+		_spawn_impact(impact)
+		return
+
+
 ## 执行 `advance` 对应的模块操作。
 ## [param delta_seconds] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## 设计：该显式入口使测试无需依赖真实帧时钟；节点 `_process` 只负责转发。
@@ -164,6 +259,7 @@ func clear_effects() -> void:
 	for state in _muzzles:
 		_free_state_node(state)
 	_projectiles.clear()
+	_last_authoritative_event_id = 0
 	_impacts.clear()
 	_muzzles.clear()
 	_cooldown_remaining = 0.0
@@ -273,6 +369,9 @@ func _spawn_projectile(
 	wrapper.rotation = (target - origin).angle()
 	_projectiles.append({
 		"visual_shot_id": visual_shot_id,
+		"input_sequence": -1,
+		"weapon_id": String(_weapon_id),
+		"speed": float(projectile["travel_pixels_per_second"]),
 		"node": wrapper,
 		"origin": origin,
 		"position": origin,
@@ -386,7 +485,7 @@ func _advance_homing_projectile(index: int, state: Dictionary, delta_seconds: fl
 	var previous_position: Vector2 = state["position"]
 	var target: Vector2 = state["target"]
 	var delta := target - previous_position
-	var speed := float((_weapon["projectile"] as Dictionary)["travel_pixels_per_second"])
+	var speed := float(state["speed"])
 	var next_position := previous_position + delta.limit_length(speed * delta_seconds)
 	state["position"] = next_position
 	var wrapper := state["node"] as Node2D

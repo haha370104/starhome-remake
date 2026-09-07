@@ -274,6 +274,11 @@ func handle_weapon_attack(actor_id: String, raw_intent: Variant) -> DomainResult
 	var target_id := String(collision.get("target_entity_id", ""))
 	pending_projectiles.append({
 		"shot_id": shot_id,
+		"spawn_tick": current_tick,
+		"map_instance_id": map_instance_id,
+		"origin": origin,
+		"position": origin,
+		"endpoint": endpoint,
 		"input_sequence": command_sequence,
 		"impact_tick": current_tick + travel_ticks,
 		"attacker_id": actor_id,
@@ -303,6 +308,10 @@ func handle_weapon_attack(actor_id: String, raw_intent: Variant) -> DomainResult
 		"cooldown_ready_tick": actor["cooldown_ready_ticks"][ability_id],
 	})
 	CombatTraceLogger.record(&"server", &"authoritative_projectile_scheduled", {
+		"weapon_id": weapon["weapon_id"],
+		"projectile_speed": weapon["projectile_speed"],
+		"simulation_hz": simulation_hz,
+		"impact_is_estimate": attack_mode == &"line_projectile",
 		"combat_tick": current_tick,
 		"impact_tick": current_tick + travel_ticks,
 		"shot_id": shot_id,
@@ -443,12 +452,12 @@ func _projectile_origin(
 	return actor_position + muzzle_offset + direction * forward_offset
 
 
-## 在发射瞬间的权威怪物位置中查找最先与弹道相交的存活怪物。
+## 在当前权威怪物位置中查找最先与指定线段相交的存活怪物。
 ## [param map_instance_id] 发射者当前权威地图实例。
 ## [param origin] 权威弹体起点。
 ## [param endpoint] 由瞄准方向和当前射程确定的弹道终点。
 ## 返回首个交点及目标；整段无目标时返回 `hit=false`。
-## 设计：复杂度为每次开火 O(当前地图怪物数)，不随弹体飞行帧数增长。
+## 设计：按实体标识稳定排序以确定同时相交的优先级；发射预估和固定 tick 扫掠共用该查询。
 func _first_projectile_collision(
 	map_instance_id: String,
 	origin: Vector2,
@@ -514,21 +523,47 @@ func _projectile_collision_audit(
 	return candidates
 
 
-## 在当前权威 tick 结算所有已经飞抵预计算交点的炮弹。
-## 设计：弹体不逐帧推进；命中对象在发射时确定，扣血只在 `impact_tick` 发生。
+## 推进直线炮弹，并结算已命中的弹体和其他已到期的攻击。
+## 设计：直线炮弹按固定 tick 扫掠当前怪物碰撞体；发射时的交点只用于诊断预估，不预约扣血。
 func _settle_due_projectiles() -> void:
 	var index := 0
 	while index < pending_projectiles.size():
 		var projectile: Dictionary = pending_projectiles[index]
-		if int(projectile["impact_tick"]) > current_tick:
+		var is_line := StringName(projectile.get("attack_mode", &"")) == &"line_projectile"
+		var ready := _advance_line_projectile(projectile) if is_line else int(projectile["impact_tick"]) <= current_tick
+		if not ready:
 			index += 1
 			continue
 		pending_projectiles.remove_at(index)
 		_settle_projectile(projectile)
 
 
+## 按从发射起累计的模拟时间推进直线弹体，并扫掠本刻真实怪物位置。
+## [param projectile] 保留固定起点、终点和上一位置的在途攻击；仅更新该弹体状态。
+## 返回是否应当结算命中或无目标到达终点。
+func _advance_line_projectile(projectile: Dictionary) -> bool:
+	var weapon: Dictionary = projectile["weapon"]
+	var origin: Vector2 = projectile["origin"]
+	var endpoint: Vector2 = projectile["endpoint"]
+	var previous: Vector2 = projectile["position"]
+	var age := float(current_tick - int(projectile["spawn_tick"])) / float(simulation_hz)
+	var next := origin.move_toward(endpoint, age * float(weapon["projectile_speed"]))
+	var collision := _first_projectile_collision(String(projectile["map_instance_id"]), previous, next)
+	projectile["position"] = next
+	if not bool(collision.get("hit", false)) and not next.is_equal_approx(endpoint):
+		return false
+	projectile["target_entity_id"] = String(collision.get("target_entity_id", ""))
+	projectile["impact_position"] = Vector2(collision.get("position", endpoint))
+	CombatTraceLogger.record(&"server", &"authoritative_projectile_sweep_finished", {
+		"shot_id": projectile["shot_id"], "input_sequence": projectile["input_sequence"],
+		"combat_tick": current_tick, "elapsed_seconds": age,
+		"segment_start": previous, "segment_end": next, "collision": collision,
+	})
+	return true
+
+
 ## 结算一颗到达交点的炮弹，并产生可去重的命中、失效及死亡事件。
-## [param projectile] 发射时冻结的权威弹体预约。
+## [param projectile] 已确定最终交点的权威弹体状态，或已到期的范围/追踪攻击预约。
 func _settle_projectile(projectile: Dictionary) -> void:
 	if StringName(projectile.get("attack_mode", &"")) == &"rocket_aoe":
 		_settle_rocket_projectile(projectile)
@@ -536,7 +571,8 @@ func _settle_projectile(projectile: Dictionary) -> void:
 	var target_id := String(projectile["target_entity_id"])
 	var impact_position: Vector2 = projectile["impact_position"]
 	if target_id.is_empty():
-		_record_projectile_expired(projectile, impact_position, &"no_target_at_fire_tick")
+		var reason := &"no_target_during_flight" if StringName(projectile.get("attack_mode", &"")) == &"line_projectile" else &"no_target_at_fire_tick"
+		_record_projectile_expired(projectile, impact_position, reason)
 		return
 	if not monsters.has(target_id):
 		_record_projectile_expired(projectile, impact_position, &"target_missing_at_impact_tick")
@@ -814,11 +850,30 @@ func snapshot_for_actor(actor_id: String) -> Dictionary:
 	return {
 		"server_tick": current_tick,
 		"local_entity_id": actor_id,
+		"local_weapon_flight": _weapon_flight_snapshot(actor),
 		"local_vehicle": local_vehicle,
 		"monsters": monster_snapshots,
 		"ground_loot": _ground_loot_for_map(map_instance_id),
 		"recent_events": combat_events.slice(maxi(0, combat_events.size() - 32)).duplicate(true),
 	}
+
+
+## 导出本玩家各武器的表现弹道参数，不传递服务端伤害公式或资源路径。
+## [param actor] 已认证玩家的权威战斗记录。
+## 返回按能力标识索引的只读协议数据；客户端不得反向写回装备属性。
+func _weapon_flight_snapshot(actor: Dictionary) -> Dictionary:
+	var result := {}
+	for ability_id: String in actor["weapons"]:
+		var weapon: Dictionary = actor["weapons"][ability_id]
+		result[ability_id] = {
+			"weapon_id": weapon["weapon_id"], "range": weapon["range"],
+			"minimum_range": weapon.get("minimum_range", 0.0),
+			"projectile_speed": weapon["projectile_speed"],
+			"cooldown_seconds": float(weapon["cooldown_ticks"]) / float(simulation_hz),
+			"muzzle_offset": weapon["muzzle_offset"].duplicate(),
+			"muzzle_forward_offset": weapon["muzzle_forward_offset"],
+		}
+	return result
 
 
 ## 预检玩家拾取地面掉落物的身份、地图和距离。

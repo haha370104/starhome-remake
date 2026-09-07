@@ -391,6 +391,9 @@ func _handle_world_combat_left_click(world_position: Vector2) -> void:
 		CombatTraceLogger.record(&"client", &"ability_intent_not_submitted", trace_fields)
 		return
 	CombatTraceLogger.record(&"client", &"ability_intent_submitted", trace_fields)
+	attack_controller.bind_input_sequence(
+		String(result["visual_shot_id"]), int(ability_payload["input_sequence"])
+	)
 	var was_moving: bool = local_player_controller.has_active_route()
 	var direction: Vector2 = result["direction"]
 	var weapon_direction := _direction_index(direction)
@@ -1081,6 +1084,9 @@ func _commit_map_bundle(
 ## 处理 `_on_combat_snapshot_received` 对应的信号回调。
 ## [param snapshot] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _on_combat_snapshot_received(snapshot: Dictionary) -> void:
+	for mode_id: String in combat_attack_controllers:
+		var mode: Dictionary = WEAPON_MODES[mode_id]
+		combat_attack_controllers[mode_id].apply_authoritative_snapshot(snapshot, String(mode["ability_id"]))
 	monster_world_controller.apply_snapshot(snapshot)
 	if ground_loot_world_controller != null:
 		ground_loot_world_controller.apply_snapshot(snapshot)

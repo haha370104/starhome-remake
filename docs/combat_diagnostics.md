@@ -1,7 +1,5 @@
 # 战斗命中差异诊断
 
-## 目的
-
 ## 2026-09-07：进程内重复时钟修复
 
 本地传输原先在 `_process` 调用服务端 `advance_simulation`，同时其子节点服务端又在
@@ -9,6 +7,19 @@
 进程内和独立服务器统一由 `AuthoritativeServer._physics_process` 驱动固定 tick。
 确定性测试仍可手动推进，但必须先暂停服务端物理处理。传输集成测试覆盖真实场景树的
 物理帧累计时间与服务端 tick 对齐，不能只靠手动调用业务方法验证该边界。
+
+### 实际装备与命中模型
+
+- 权威快照新增 `local_weapon_flight`，按能力槽位下发实际武器 ID、射程、最小射程、弹速、
+  冷却和炮口偏移。表现层仅消费数值，不允许协议提供资源路径；在途弹体冻结发射时参数。
+  天神之怒不再沿用新兵炮的 250 射程和冷却，使用服务器装备定义的 400 射程。
+- 能量炮直线弹体按每个权威固定 tick 从上一位置扫掠到下一位置，检测当前存活怪物。
+  发射事件的 `target_entity_id` / `impact_tick` 只是初始静态几何估计，不代表锁定或预约扣血。
+  离开弹道的怪物可以躲开，发射后进入弹道的怪物可以被接住。
+- 客户端以本玩家身份及 `input_sequence` 对账最终命中/失效事件。若对应弹体还在飞行，
+  就在权威交点结束并播放爆炸；已预测爆炸的不重复播放。此过程不产生任何客户端伤害。
+- 以上是复刻版实现选择，不是已证实的原服务端算法。火箭范围攻击、导弹追踪算法本轮未重写。
+  本轮也未替换具体武器的动画素材；参数同步不等于已还原所有武器特效。
 
 ## 诊断范围
 
@@ -60,6 +71,12 @@ C:\Users\<用户名>\AppData\Roaming\Godot\app_userdata\starhome_remake\diagnost
 | `visual_projectile_collision` | 客户端逐帧扫掠提前碰撞时的线段和怪物快照碰撞圆 |
 | `authoritative_projectile_event_recorded` | 服务端最终命中或无伤害失效，以及稳定的失效原因 |
 | `authoritative_projectile_event_observed` | 客户端实际收到最终权威事件的时刻 |
+| `authoritative_projectile_sweep_finished` | 直线炮弹实际结算 tick、飞行秒数、最后扫掠线段与命中对象 |
+| `visual_projectile_authoritative_finish` | 收到最终事件时仍在途的视觉位置、权威交点及修正距离 |
+
+`authoritative_projectile_scheduled` 额外记录实际 `weapon_id`、`projectile_speed`、
+`simulation_hz` 与 `impact_is_estimate`。直线弹体飞完全程未撞到目标的失效原因改为
+`no_target_during_flight`，避免错误地归因于发射时没有目标。
 
 ## 复现要求
 

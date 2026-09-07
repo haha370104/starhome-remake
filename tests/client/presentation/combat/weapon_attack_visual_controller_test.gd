@@ -28,6 +28,7 @@ func _initialize() -> void:
 		)
 		_test_fire_lifecycle(controller)
 		_test_secondary_weapons(controller, world_parent, manifest_value)
+		_test_authoritative_flight(controller, world_parent, manifest_value)
 	controller.free()
 	world_parent.free()
 	_finish()
@@ -120,6 +121,51 @@ func _test_secondary_weapons(controller: Node, world_parent: Node2D, manifest: D
 		missile_node != null and missile_node.rotation > 0.0,
 		"missile should turn toward the target's current position",
 	)
+	controller.clear_effects()
+
+
+## 验证实际装备参数同步、在途速度冻结、权威终结以及同序号其他玩家事件隔离。
+## [param controller] 待测武器表现控制器。
+## [param world_parent] 特效所在测试世界。
+## [param manifest] 本地受控特效清单。
+func _test_authoritative_flight(controller: Node, world_parent: Node2D, manifest: Dictionary) -> void:
+	controller.configure(manifest, world_parent, WEAPON_ID)
+	var snapshot := {"local_entity_id": "player.a", "local_weapon_flight": {
+		"energy_cannon.primary": {"weapon_id": "glory_equipment_gun1000_c4c24e2500",
+			"range": 400.0, "projectile_speed": 100.0, "cooldown_seconds": 0.2,
+			"muzzle_offset": [0, 0], "muzzle_forward_offset": 0.0}}, "recent_events": []}
+	controller.apply_authoritative_snapshot(snapshot, "energy_cannon.primary")
+	var shot: Dictionary = controller.request_fire(Vector2.ZERO, Vector2(350, 0))
+	_expect(shot["ok"] and not shot["range_clamped"], "天神之怒应使用实际四百射程而非新兵二百五十")
+	controller.bind_input_sequence(shot["visual_shot_id"], 42)
+	snapshot["local_weapon_flight"]["energy_cannon.primary"]["projectile_speed"] = 500.0
+	controller.apply_authoritative_snapshot(snapshot, "energy_cannon.primary")
+	controller.advance(0.2)
+	var projectile := world_parent.get_node_or_null("WeaponProjectile") as Node2D
+	_expect(projectile != null and projectile.position.is_equal_approx(Vector2(20, 0)),
+		"在途弹体必须保留原弹速，后续装备快照不可使其加速")
+	_expect(is_zero_approx(controller.cooldown_remaining()), "冷却应跟随实际装备")
+	var event := {"event_id": 1, "attacker_id": "player.b", "input_sequence": 42,
+		"event_type": "energy_cannon_hit", "impact_position": [80, 0], "shot_id": "shot.42"}
+	snapshot["recent_events"] = [event]
+	controller.apply_authoritative_snapshot(snapshot, "energy_cannon.primary")
+	_expect(controller.active_projectile_count() == 1, "其他玩家同序号的命中不能结束本玩家弹体")
+	event["event_id"] = 2
+	event["attacker_id"] = "player.a"
+	controller.apply_authoritative_snapshot(snapshot, "energy_cannon.primary")
+	_expect(controller.active_projectile_count() == 0 and controller.active_impact_count() == 1,
+		"权威击杀到达时必须结束在途弹体，不能等待已消失的怪物碰撞")
+	controller.apply_authoritative_snapshot(snapshot, "energy_cannon.primary")
+	_expect(controller.active_impact_count() == 1, "重发快照不得重复产生爆炸")
+	controller.clear_effects()
+	controller.set_visual_collision_resolver(_fake_visual_collision)
+	shot = controller.request_fire(Vector2.ZERO, Vector2(350, 0))
+	controller.bind_input_sequence(shot["visual_shot_id"], 43)
+	controller.advance(0.2)
+	event["event_id"] = 3
+	event["input_sequence"] = 43
+	controller.apply_authoritative_snapshot(snapshot, "energy_cannon.primary")
+	_expect(controller.active_impact_count() == 1, "已预测爆炸的弹体收到权威命中时不得重复爆炸")
 	controller.clear_effects()
 
 
