@@ -71,6 +71,7 @@ var manufacturing_service
 var _pending_vehicle_recoveries: Dictionary = {}
 var _runtime_definition_paths_by_map_id: Dictionary = {}
 var _runtime_map_ids_by_legacy_world: Dictionary = {}
+var _runtime_legacy_location_by_map_id: Dictionary = {}
 var _default_map_id := ""
 
 
@@ -1334,11 +1335,15 @@ func _restore_persistent_player_state(
 	state: PlayerStateRecord,
 ) -> bool:
 	var source := map_registry.instance_by_id(session.map_instance_id)
-	var target := map_registry.instance_by_id(state.map_instance_id)
+	var canonical_map_id := _canonical_persisted_map_id(state.map_id)
+	var target: AuthoritativeMapInstance
+	# 业务地图替换旧运行地图后，旧 instance_id 也属于旧定义，不能优先恢复它。
+	if canonical_map_id == state.map_id:
+		target = map_registry.instance_by_id(state.map_instance_id)
 	if target == null:
-		target = map_registry.instance_by_map_id(state.map_id)
+		target = map_registry.instance_by_map_id(canonical_map_id)
 	if target == null:
-		var ensured := ensure_runtime_map(state.map_id)
+		var ensured := ensure_runtime_map(canonical_map_id)
 		if ensured.ok:
 			target = ensured.value
 	if source == null or target == null:
@@ -1435,6 +1440,7 @@ func _exit_tree() -> void:
 func _load_runtime_map_index() -> Dictionary:
 	_runtime_definition_paths_by_map_id.clear()
 	_runtime_map_ids_by_legacy_world.clear()
+	_runtime_legacy_location_by_map_id.clear()
 	if not FileAccess.file_exists(GLORY_RUNTIME_MAP_INDEX_PATH):
 		return _failure(&"runtime_map_index_missing", "Glory runtime map index is missing")
 	var parsed: Variant = JSON.parse_string(
@@ -1457,6 +1463,10 @@ func _load_runtime_map_index() -> Dictionary:
 		if _runtime_definition_paths_by_map_id.has(map_id):
 			return _failure(&"runtime_map_index_duplicate", "runtime map ID is duplicated")
 		_runtime_definition_paths_by_map_id[map_id] = definition_path
+		_runtime_legacy_location_by_map_id[map_id] = {
+			"world_id": world_id,
+			"legacy_code": legacy_code,
+		}
 		if not _runtime_map_ids_by_legacy_world.has(world_id):
 			_runtime_map_ids_by_legacy_world[world_id] = {}
 		var world_index: Dictionary = _runtime_map_ids_by_legacy_world[world_id]
@@ -1464,6 +1474,20 @@ func _load_runtime_map_index() -> Dictionary:
 			return _failure(&"runtime_map_index_duplicate", "runtime legacy map key is duplicated")
 		world_index[legacy_code] = map_id
 	return _success(_runtime_definition_paths_by_map_id.size())
+
+
+## 将旧内容包运行地图 ID 解析为当前受控目录采用的业务地图 ID。
+## [param persisted_map_id] 玩家存档中上次提交的地图标识。
+## 返回当前目录对应的地图标识；没有替代项时保持原值。
+## 设计：映射由荣耀运行索引的世界/旧代码与当前地图目录共同推导，避免为每次地图业务化手写迁移补丁。
+func _canonical_persisted_map_id(persisted_map_id: String) -> String:
+	var legacy_location: Variant = _runtime_legacy_location_by_map_id.get(persisted_map_id)
+	if not legacy_location is Dictionary:
+		return persisted_map_id
+	var world_id := String(legacy_location.get("world_id", ""))
+	var legacy_code := String(legacy_location.get("legacy_code", ""))
+	var current_world_index: Dictionary = _runtime_map_ids_by_legacy_world.get(world_id, {})
+	return String(current_world_index.get(legacy_code, persisted_map_id))
 
 
 ## 确保受控索引中的地图存在权威实例；未知客户端 ID 无法注入文件路径。

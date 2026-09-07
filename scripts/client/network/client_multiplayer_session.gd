@@ -449,6 +449,10 @@ func _on_local_predictor_presentation_changed(state: Dictionary) -> void:
 ## 设计：该函数位于客户端交互或表现边界，最终状态以服务器权威结果为准。
 func _on_command_rejected(code: StringName, message: String) -> void:
 	command_rejected.emit(code, message)
+	if not network_adapter.session_ready:
+		connection_failed.emit(message if not message.is_empty() else String(code))
+		network_adapter.disconnect_from_server()
+		return
 	# The adapter's compact signal intentionally excludes protocol context. Inspect the last
 	# reliable envelope so map-change completion still requires an exact command/sequence match.
 	# Context-aware handling is performed in `_on_server_message_received`.

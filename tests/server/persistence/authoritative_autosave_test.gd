@@ -115,6 +115,43 @@ func _test_three_second_authoritative_autosave() -> void:
 		restored_combat != null and is_equal_approx(restored_combat.working_energy, expected_working),
 		"新服务器应恢复当前能量",
 	)
+
+	var legacy_state_result = second_server.player_state_repository.load_player(entity_id)
+	_expect(legacy_state_result.is_ok, "地图 ID 迁移夹具必须能读取现有角色")
+	if legacy_state_result.is_ok:
+		var legacy_state: PlayerStateRecord = legacy_state_result.value
+		legacy_state.map_id = "glory_nft_bl_nasa1"
+		legacy_state.map_instance_id = "glory_nft_bl_nasa1.instance.1"
+		legacy_state.position = Vector2(1381.0, 918.0)
+		var staged_legacy = second_server.player_state_repository.save_player(
+			legacy_state, legacy_state.revision
+		)
+		_expect(staged_legacy.is_ok, "测试必须能写入业务化前的宇航中心地图 ID")
+		if staged_legacy.is_ok:
+			var migrated_server = ServerScript.new()
+			var migrated_initialized: Dictionary = migrated_server.initialize(
+				_full_server_config()
+			)
+			_expect(migrated_initialized.ok, "完整地图目录服务器应接受旧地图存档")
+			if migrated_initialized.ok:
+				var migrated_session: Dictionary = migrated_server.open_session(
+					73, _handshake(), 6000
+				)
+				_expect(migrated_session.ok, "旧地图 ID 不得阻塞角色会话恢复")
+				if migrated_session.ok:
+					_expect(
+						String(migrated_session.value.map_joined.map_id) \
+						== "dragon_city_space_center",
+						"旧宇航中心 ID 必须迁移为当前业务地图 ID",
+					)
+					_expect(
+						Vector2(
+							migrated_session.value.map_joined.spawn_position.x,
+							migrated_session.value.map_joined.spawn_position.y,
+						).is_equal_approx(Vector2(1381.0, 918.0)),
+						"地图 ID 迁移必须保留仍然可达的角色坐标",
+					)
+			migrated_server.free()
 	first_server.free()
 	second_server.free()
 
@@ -129,6 +166,18 @@ func _server_config():
 	config.map_config_path = "res://data/maps/d04_field_zone.json"
 	config.map_catalog_path = "res://tests/fixtures/nonexistent_map_catalog.json"
 	config.default_spawn = Vector2(2412.0, 2400.0)
+	config.dynamic_blocking_enabled = false
+	return config
+
+
+## 构造包含当前业务化地图目录的进程内权威服务器配置。
+## 返回使用同一测试仓储、但允许恢复宇航中心等正式地图的配置。
+func _full_server_config():
+	var config := ConfigScript.new()
+	config.network_enabled = false
+	config.persistence_enabled = true
+	config.player_state_store_path = database_path
+	config.autosave_interval_seconds = 3.0
 	config.dynamic_blocking_enabled = false
 	return config
 

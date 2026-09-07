@@ -1169,6 +1169,8 @@ func _on_combat_event_received(event: Dictionary) -> void:
 func _handle_map_commit_failure(message: String) -> void:
 	map_commit_failure_locked = true
 	_stop_moving(message)
+	if not _initial_authoritative_world_ready and initial_loading_screen != null:
+		initial_loading_screen.set_status("读取角色与地图失败：%s" % message)
 	pending_map_transition.clear()
 	pending_map_bundle.clear()
 	pending_authoritative_join.clear()

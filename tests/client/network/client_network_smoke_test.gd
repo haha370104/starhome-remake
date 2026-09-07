@@ -353,6 +353,30 @@ func _test_session_integration() -> void:
 		"invalid initial map join closes the client session",
 	)
 	invalid_session.queue_free()
+	var rejected_session := Session.new()
+	rejected_session.offline_debug_enabled = true
+	root.add_child(rejected_session)
+	await process_frame
+	var rejected_handshake_failures: Array[String] = []
+	rejected_session.connection_failed.connect(
+		func(message: String) -> void: rejected_handshake_failures.append(message)
+	)
+	rejected_session.network_adapter.receive_server_message({
+		"type": "command_rejected",
+		"result": {
+			"ok": false,
+			"code": "persistence.invalid_database",
+			"message": "角色存档无法恢复",
+		},
+	})
+	_expect_equal(rejected_handshake_failures, ["角色存档无法恢复"],
+		"握手阶段的服务端拒绝必须转成可见连接失败")
+	_expect_equal(
+		rejected_session.network_adapter.connection_state,
+		Adapter.ConnectionState.DISCONNECTED,
+		"握手被拒绝后客户端不得永久停留在加载状态",
+	)
+	rejected_session.queue_free()
 	session.disconnect_from_server()
 	session.queue_free()
 	for path: String in [
