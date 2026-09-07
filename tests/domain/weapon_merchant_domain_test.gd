@@ -34,6 +34,8 @@ func _initialize() -> void:
 		_expect(String(special_offers[0]["category"]) == "rocket_weapon", "特殊商店必须先列火箭")
 		_expect(not special.offer("official_rocket_firegun_7").is_empty(), "240级劲弩式火箭应在售")
 		_expect(not special.offer("glory_equipment_missile5_15584171c6").is_empty(), "280级大力神导弹应在售")
+		_test_equipment_prices(merchant, special, items)
+	_test_ground_mining_arms(offers, items)
 	var inventory := Inventory.new(40, 0, 0)
 	for definition_id: String in [
 		"low_grade_gel",
@@ -56,6 +58,49 @@ func _initialize() -> void:
 	_expect(int((completed.value["state"] as Dictionary)["completions"]) == 1, "交付应累计完成次数")
 	_expect(inventory.count_definition("low_grade_gel") == 0, "交付应消耗材料")
 	_finish()
+
+
+## 校验用户确认的翻倍定价及跨商人一致的回收价，并确保原始数据仍可溯源。
+## [param merchant] 出售地面装备的普通武器商人。
+## [param special] 同样可以回收物品的特殊武器商人。
+## [param items] 保留原始源码字段的统一物品目录。
+func _test_equipment_prices(merchant: WeaponMerchantCatalog, special: WeaponMerchantCatalog, items: ItemCatalog) -> void:
+	var expected := {
+		"glory_equipment_tank7_6dce9d1c52": 100000,
+		"glory_equipment_tank8_eccf445ff5": 200000,
+		"glory_equipment_engine7_24246159c0": 50000,
+		"glory_equipment_engine8_df38922e4b": 100000,
+		"glory_equipment_gun8_e7ce1423fa": 80000,
+		"glory_equipment_gun9_d2426d05e9": 160000,
+	}
+	for definition_id: String in expected:
+		var price: int = expected[definition_id]
+		var offer := merchant.offer(definition_id)
+		_expect(int(offer.get("price", 0)) == price, "高档装备应按前档翻倍定价：%s" % definition_id)
+		var sell_price := price >> 1
+		_expect(int(offer.get("sell_price", 0)) == sell_price, "商品投影应给出对应回收价")
+		_expect(merchant.purchase_price(definition_id) == sell_price, "普通商人回收价应为售价一半")
+		_expect(special.purchase_price(definition_id) == sell_price, "特殊商人必须共用同一回收价")
+		_expect(int(items.definition(definition_id)["stats"]["legacy_properties"]["m_nWorth"]) == 2000,
+			"复刻经济调整不得篡改原始源码价格证据")
+	_expect(int(merchant.offer("glory_equipment_tank6_bb6cdb6f5c")["price"]) == 50000,
+		"作为翻倍基准的190级战车价格应保持不变")
+
+
+## 验证本期只出售普通地面挖掘臂，排除太空分支、特殊型号及超等级型号。
+## [param offers] 当前商人商品列表。
+## [param items] 用于核对装备类别的统一物品目录。
+func _test_ground_mining_arms(offers: Array[Dictionary], items: ItemCatalog) -> void:
+	var names: Array[String] = []
+	for offer: Dictionary in offers:
+		if offer["category"] != "mining_arm":
+			continue
+		names.append(String(offer["display_name"]))
+		var definition := items.definition(String(offer["definition_id"]))
+		_expect(int(definition["stats"]["legacy_properties"]["m_nEquipKind2"]) == 4,
+			"在售挖掘臂必须属于地面类别4，不能混入太空类别102")
+	_expect(names == ["初级挖掘臂", "改式挖掘臂", "精度挖掘臂", "多空挖掘臂", "磁性挖掘臂", "电磁挖掘臂", "磁导挖掘臂"],
+		"挖掘臂应仅保留10至250级七档普通地面型号，并按等级排列")
 
 
 ## 检查所有商品是否满足价格、等级和展示字段约束。

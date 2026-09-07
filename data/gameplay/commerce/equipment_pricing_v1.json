@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "item_prices": {
+    "glory_equipment_tank7_6dce9d1c52": {"purchase_value":100000,"sell_value":50000},
+    "glory_equipment_tank8_eccf445ff5": {"purchase_value":200000,"sell_value":100000},
+    "glory_equipment_engine7_24246159c0": {"purchase_value":50000,"sell_value":25000},
+    "glory_equipment_engine8_df38922e4b": {"purchase_value":100000,"sell_value":50000},
+    "glory_equipment_gun8_e7ce1423fa": {"purchase_value":80000,"sell_value":40000},
+    "glory_equipment_gun9_d2426d05e9": {"purchase_value":160000,"sell_value":80000}
+  },
+  "source_audit": {
+    "evidence_level": "remake_design",
+    "decision_date": "2026-09-07",
+    "rule": "用户确认沿用前档翻倍的定价规律；各类最高两档逐档乘二，回收价为售价的一半。所有商人共享。",
+    "source_release": "starhome_lz_ry",
+    "source_file": "cltobj/equipcltclass.fcc",
+    "source_original_values": {"purchase_value":2000,"sell_value":1000},
+    "source_baselines": {
+      "vehicle_chassis": {"source_class":"tank6","required_level":190,"purchase_value":50000},
+      "vehicle_engine": {"source_class":"engine6","required_level":180,"purchase_value":25000},
+      "energy_cannon": {"source_class":"gun7","required_level":200,"purchase_value":40000}
+    }
+  }
+}

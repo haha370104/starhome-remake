@@ -5,11 +5,13 @@ const CONFIG_PATHS := {
 	"weapon_merchant": "res://data/gameplay/commerce/weapon_merchant_v1.json",
 	"special_weapon_merchant": "res://data/gameplay/commerce/special_weapon_merchant_v1.json",
 }
+const PRICING_CONFIG_PATH := "res://data/gameplay/commerce/equipment_pricing_v1.json"
 
 var _item_catalog: ItemCatalog
 var _config: Dictionary = {}
 var _merchant_config: Dictionary = {}
 var _offers: Array[Dictionary] = []
+var _item_prices: Dictionary = {}
 
 
 ## 读取荣耀装备目录并建立武器商人可售清单。
@@ -18,6 +20,9 @@ var _offers: Array[Dictionary] = []
 ## 返回目录实例或配置错误。
 func initialize(item_catalog: ItemCatalog, merchant_id := "weapon_merchant") -> DomainResult:
 	_item_catalog = item_catalog
+	var pricing_loaded := _load_item_prices()
+	if not pricing_loaded.is_ok:
+		return pricing_loaded
 	var config_path := String(CONFIG_PATHS.get(merchant_id, ""))
 	if config_path.is_empty():
 		return DomainResult.failure(&"commerce.merchant_missing", "merchant is not registered")
@@ -64,17 +69,58 @@ func offer(definition_id: String) -> Dictionary:
 	return {}
 
 
-## 按原版 m_nSell 计算玩家物品收购价。
+## 按共享经济配置计算收购价，未调整的物品沿用原有收购规则。
 ## [param definition_id] 统一物品定义标识。
 ## 返回非负单价；未知物品或禁交易物品为 0。
 func purchase_price(definition_id: String) -> int:
 	var definition := _item_catalog.definition(definition_id)
 	if definition.is_empty():
 		return 0
+	if _item_prices.has(definition_id):
+		return int(_item_prices[definition_id]["sell_value"])
 	var stats: Dictionary = definition.get("stats", {})
 	var original_sell_value := int(stats.get("sell_value", 0))
 	var original_purchase_value := int(stats.get("purchase_value", 0))
 	return maxi(1, maxi(original_sell_value, floori(float(original_purchase_value) / 2.0)))
+
+
+## 加载并校验各商人共享的复刻版交易价格。
+## 返回加载成功或物品标识、价格格式错误。
+## 设计：原始物品目录保留源码证据；经济调整由权威商店配置统一覆盖买卖投影及结算。
+func _load_item_prices() -> DomainResult:
+	_item_prices.clear()
+	var loaded := JsonConfigLoader.load_dictionary(PRICING_CONFIG_PATH)
+	if not loaded.is_ok:
+		return loaded
+	var prices: Variant = loaded.value.get("item_prices")
+	if not prices is Dictionary:
+		return DomainResult.failure(&"commerce.invalid_prices", "item_prices must be an object")
+	for definition_id: String in prices:
+		var entry: Variant = prices[definition_id]
+		if _item_catalog.definition(definition_id).is_empty() or not entry is Dictionary:
+			return DomainResult.failure(&"commerce.invalid_prices", "unknown item or invalid price entry")
+		for key: String in ["purchase_value", "sell_value"]:
+			var amount: Variant = entry.get(key)
+			if not (amount is int or amount is float):
+				return DomainResult.failure(&"commerce.invalid_prices", "price must be numeric")
+			if not is_finite(float(amount)) or float(amount) != floorf(float(amount)) or float(amount) < 0:
+				return DomainResult.failure(&"commerce.invalid_prices", "price must be a nonnegative integer")
+		if int(entry["purchase_value"]) <= 0 or int(entry["sell_value"]) > int(entry["purchase_value"]):
+			return DomainResult.failure(&"commerce.invalid_prices", "invalid buy/sell price relationship")
+		_item_prices[definition_id] = {
+			"purchase_value": int(entry["purchase_value"]), "sell_value": int(entry["sell_value"]),
+		}
+	return DomainResult.ok()
+
+
+## 查询玩家购买物品的单价，优先采用经过校验的共享经济配置。
+## [param definition] 统一物品目录中的装备定义。
+## 返回商店展示和权威扣款共用的单价。
+func _sale_price(definition: Dictionary) -> int:
+	var definition_id := String(definition.get("id", ""))
+	if _item_prices.has(definition_id):
+		return int(_item_prices[definition_id]["purchase_value"])
+	return int((definition.get("stats", {}) as Dictionary).get("purchase_value", 0))
 
 
 ## 读取普通武器商人及循环任务配置的防御性副本。
@@ -95,7 +141,7 @@ func merchant_config() -> Dictionary:
 func _is_sellable(definition: Dictionary) -> bool:
 	var stats: Dictionary = definition.get("stats", {})
 	var properties: Dictionary = stats.get("legacy_properties", {})
-	var price := int(stats.get("purchase_value", 0))
+	var price := _sale_price(definition)
 	var level_cap := int(_merchant_config.get("maximum_required_level", 280))
 	var name := String(definition.get("display_name", ""))
 	var category := _merchant_category(definition)
@@ -164,8 +210,8 @@ func _offer(definition: Dictionary, category: String) -> Dictionary:
 		"description": String(definition.get("description", "")),
 		"category": category,
 		"required_level": _required_level(properties),
-		"price": int(stats.get("purchase_value", 0)),
-		"sell_price": int(stats.get("sell_value", 0)),
+		"price": _sale_price(definition),
+		"sell_price": purchase_price(String(definition.get("id", ""))),
 		"presentation": presentation.duplicate(true),
 	}
 

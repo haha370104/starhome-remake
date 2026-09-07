@@ -30,6 +30,7 @@ func _run() -> void:
 		return
 	_state = fixture._state
 	_state.currency = 100000
+	_test_high_tier_and_space_purchase()
 	var manager = ManagerScript.new()
 	root.add_child(manager)
 	manager.configure(Callable(self, "_dispatch").bind(manager))
@@ -67,6 +68,50 @@ func _run() -> void:
 	_expect(bool(_state.quest_states.arms_npc_supply.accepted), "接受任务应写入权威任务状态")
 	_expect(window._task_primary_button.disabled, "材料不足时完成任务按钮应禁用")
 	_finish(manager)
+
+
+## 通过真实权威服务校验高档价格扣款、跨商人回收和太空挖掘臂禁售。
+## 设计：使用独立内存存档副本；客户端伪造低价不能改变结算，拒绝交易不得写入原状态。
+func _test_high_tier_and_space_purchase() -> void:
+	var state := _state.duplicate_record()
+	var command := {
+		"type": "buy_from_weapon_merchant",
+		"definition_id": "glory_equipment_tank8_eccf445ff5",
+		"inventory_revision": state.inventory_revision,
+		"price": 2000,
+	}
+	var rejected: DomainResult = _service.execute(state, command)
+	_expect(not rejected.is_ok and rejected.error_code == &"commerce.insufficient_currency",
+		"十万金币应买不起二十万的征服者，客户端低价参数不得生效")
+	_expect(state.currency == 100000, "被拒绝的交易不得扣款")
+	state.currency = 300000
+	var bought: DomainResult = _service.execute(state, command)
+	_expect(bought.is_ok, "足额资金应能购买征服者战车")
+	if not bought.is_ok:
+		return
+	var candidate: PlayerStateRecord = bought.value.candidate
+	_expect(candidate.currency == 100000, "购买必须实际扣除二十万金币")
+	var instance_id := ""
+	for stack: InventoryStackRecord in candidate.inventory_stacks:
+		if stack.item_definition_id == command["definition_id"]:
+			instance_id = stack.stack_id
+	var sold: DomainResult = _service.execute(candidate, {
+		"type": "sell_to_weapon_merchant", "merchant_id": "special_weapon_merchant",
+		"instance_id": instance_id, "quantity": 1,
+		"inventory_revision": candidate.inventory_revision,
+	})
+	_expect(sold.is_ok and sold.value.candidate.currency == 200000,
+		"在特殊武器商人处回收也应得到十万金币")
+	for forbidden_id: String in [
+		"glory_equipment_space_collector_2_6e0591d35a",
+		"glory_equipment_space_collector_3_dbc34d1181",
+		"glory_equipment_space_collector_4_369ba95071",
+		"glory_equipment_collector1000_3a487132c5",
+	]:
+		command["definition_id"] = forbidden_id
+		var blocked: DomainResult = _service.execute(state, command)
+		_expect(not blocked.is_ok and blocked.error_code == &"commerce.item_not_offered",
+			"直接提交购买命令也不得买到本期未上架的挖掘臂")
 
 
 ## 把窗口命令同步交给真实权威服务并回灌最新面板快照。

@@ -18,6 +18,12 @@
         "glory_equipment_tank5_1c18f7410d", "glory_equipment_tank6_bb6cdb6f5c",
         "glory_equipment_tank7_6dce9d1c52", "glory_equipment_tank8_eccf445ff5"
       ],
+      "mining_arm": [
+        "glory_equipment_collector_ac947ee094", "glory_equipment_collector2_21f80f2164",
+        "glory_equipment_collector3_87154ee651", "glory_equipment_collector4_62b573e9d7",
+        "glory_equipment_collector5_840acf4362", "glory_equipment_collector6_ac4d3e4b7b",
+        "glory_equipment_collector7_76bbb2cfae"
+      ],
       "energy_cannon": [
         "glory_equipment_gun1_216568dc50", "glory_equipment_gun3_3599e6f3f0",
         "glory_equipment_gun4_d045d0a572", "glory_equipment_gun5_550f30177d",
