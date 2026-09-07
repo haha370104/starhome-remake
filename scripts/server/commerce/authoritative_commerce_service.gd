@@ -3,7 +3,7 @@ extends RefCounted
 
 const ItemCatalogScript := preload("res://scripts/domain/items/item_catalog.gd")
 const MerchantCatalogScript := preload("res://scripts/domain/commerce/weapon_merchant_catalog.gd")
-const TaskScript := preload("res://scripts/domain/quests/repeatable_collection_task.gd")
+const QuestServiceScript := preload("res://scripts/server/commerce/repeatable_quest_service.gd")
 const PlayerStateMapperScript := preload("res://scripts/server/persistence/player_state_mapper.gd")
 const PlayerPanelProjectorScript := preload(
 	"res://scripts/server/player_panels/player_panel_projector.gd"
@@ -16,10 +16,9 @@ const COMMAND_TYPES := [
 
 var _catalog: ItemCatalog
 var _merchants: Dictionary = {}
-var _task
+var quests = QuestServiceScript.new()
 var _mapper: PlayerStateMapper
 var _projector: PlayerPanelProjector
-var _task_id := ""
 var _next_instance_serial := 1
 
 
@@ -31,18 +30,15 @@ func initialize() -> DomainResult:
 	if not items_loaded.is_ok:
 		return items_loaded
 	_merchants.clear()
-	for merchant_id: String in ["weapon_merchant", "special_weapon_merchant"]:
+	var quests_loaded: DomainResult = quests.initialize(_catalog)
+	if not quests_loaded.is_ok:
+		return quests_loaded
+	for merchant_id: String in quests.catalog.providers:
 		var merchant = MerchantCatalogScript.new()
 		var merchant_loaded: DomainResult = merchant.initialize(_catalog, merchant_id)
 		if not merchant_loaded.is_ok:
 			return merchant_loaded
 		_merchants[merchant_id] = merchant
-	var weapon_merchant = _merchants["weapon_merchant"]
-	var task_definition: Dictionary = weapon_merchant.config().get("repeatable_task", {})
-	_task_id = String(task_definition.get("id", ""))
-	if _task_id.is_empty():
-		return DomainResult.failure(&"commerce.invalid_config", "task identity is missing")
-	_task = TaskScript.new(task_definition)
 	_mapper = PlayerStateMapperScript.new(_catalog)
 	var skill_config := JsonConfigLoader.load_dictionary("res://data/gameplay/skill_progression.json")
 	if not skill_config.is_ok:
@@ -127,12 +123,8 @@ func _execute_command(
 			return _buy(player, command, merchant)
 		"sell_to_weapon_merchant":
 			return _sell(player, command, merchant)
-		"accept_weapon_merchant_task":
-			return _accept_task(player) if merchant_id == "weapon_merchant" \
-				else DomainResult.failure(&"commerce.task_unavailable", "merchant has no task")
-		"turn_in_weapon_merchant_task":
-			return _turn_in_task(player, command) if merchant_id == "weapon_merchant" \
-				else DomainResult.failure(&"commerce.task_unavailable", "merchant has no task")
+		"accept_weapon_merchant_task", "turn_in_weapon_merchant_task":
+			return quests.execute(player, merchant_id, command)
 	return DomainResult.failure(&"commerce.unknown_command", "unknown commerce command")
 
 
@@ -189,49 +181,6 @@ func _sell(player: Player, command: Dictionary, merchant) -> DomainResult:
 	})
 
 
-## 领取普通武器商人的循环材料任务。
-## [param player] 当前权威玩家聚合。
-## 返回更新后的任务状态结果。
-func _accept_task(player: Player) -> DomainResult:
-	var current: Dictionary = player.quest_states.get(_task_id, {})
-	var accepted: DomainResult = _task.accept(current)
-	if not accepted.is_ok:
-		return accepted
-	player.quest_states[_task_id] = accepted.value
-	return DomainResult.ok({"action": "accept_task"})
-
-
-## 消耗任务材料并由权威服务结算金币和里程碑装备。
-## [param player] 当前权威玩家聚合。
-## [param command] 包含背包 revision 的交付意图。
-## 返回交付结算结果。
-func _turn_in_task(player: Player, command: Dictionary) -> DomainResult:
-	var revision_result := player.inventory.require_revision(int(command.get("inventory_revision", -1)))
-	if not revision_result.is_ok:
-		return revision_result
-	var current: Dictionary = player.quest_states.get(_task_id, {})
-	var completed: DomainResult = _task.turn_in(player.inventory, current)
-	if not completed.is_ok:
-		return completed
-	var result: Dictionary = completed.value
-	var milestone: Dictionary = result.get("milestone_reward", {})
-	if not milestone.is_empty():
-		var created := _catalog.create(String(milestone["definition_id"]), {
-			"instance_id": _new_instance_id(String(milestone["definition_id"])),
-			"quantity": int(milestone.get("quantity", 1)),
-		})
-		if not created.is_ok:
-			return created
-		var added := player.inventory.add_reward(created.value)
-		if not added.is_ok:
-			return added
-	player.inventory.currency += int(result["currency_reward"])
-	player.quest_states[_task_id] = result["state"]
-	return DomainResult.ok({
-		"action": "turn_in_task",
-		"currency_reward": int(result["currency_reward"]),
-		"milestone_reward": milestone.duplicate(true),
-	})
 
 
 ## 构造玩家面板与当前商人共用的响应快照。
@@ -248,6 +197,7 @@ func _build_bundle(
 	if merchant == null:
 		return {}
 	var bundle := _projector.build_bundle(player)
+	var tasks: Array[Dictionary] = quests.snapshots(player, merchant_id)
 	var sell_items: Array[Dictionary] = []
 	for item: GameItem in player.inventory.items():
 		var view := item.to_view_dictionary()
@@ -259,8 +209,8 @@ func _build_bundle(
 		"merchant": merchant.merchant_config(),
 		"offers": merchant.offers(),
 		"sell_items": sell_items,
-		"task": _task.snapshot(player.inventory, player.quest_states.get(_task_id, {})) \
-			if merchant_id == "weapon_merchant" else {},
+		"task": tasks[0] if not tasks.is_empty() else {},
+		"tasks": tasks,
 		"operation": operation.duplicate(true),
 	}
 	return bundle

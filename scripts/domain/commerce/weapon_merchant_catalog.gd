@@ -24,12 +24,22 @@ func initialize(item_catalog: ItemCatalog, merchant_id := "weapon_merchant") -> 
 	if not pricing_loaded.is_ok:
 		return pricing_loaded
 	var config_path := String(CONFIG_PATHS.get(merchant_id, ""))
-	if config_path.is_empty():
+	var quests := RepeatableQuestCatalog.new()
+	var quests_loaded := quests.initialize(item_catalog)
+	if not quests_loaded.is_ok:
+		return quests_loaded
+	if not quests.providers.has(merchant_id):
 		return DomainResult.failure(&"commerce.merchant_missing", "merchant is not registered")
-	var loaded := JsonConfigLoader.load_dictionary(config_path)
-	if not loaded.is_ok:
-		return loaded
-	_config = loaded.value
+	if config_path.is_empty():
+		_config = {"merchant": quests.providers[merchant_id].duplicate(true)}
+	else:
+		var loaded := JsonConfigLoader.load_dictionary(config_path)
+		if not loaded.is_ok:
+			return loaded
+		_config = loaded.value
+	var task_definitions := quests.tasks_for(merchant_id)
+	if task_definitions.size() == 1:
+		_config["repeatable_task"] = task_definitions[0]
 	var merchant_value: Variant = _config.get("merchant")
 	if not merchant_value is Dictionary:
 		return DomainResult.failure(&"commerce.invalid_config", "merchant definition is missing")

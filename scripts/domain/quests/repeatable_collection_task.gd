@@ -42,6 +42,8 @@ func snapshot(inventory: Inventory, state: Dictionary) -> Dictionary:
 		"ready_to_turn_in": ready,
 		"requirements": requirements,
 		"currency_reward": int(_definition.get("currency_reward", 0)),
+		"next_milestone_rewards": RepeatableQuestCatalog.rewards_at(_definition, (floori(float(completions) / 5.0) + 1) * 5),
+		"provider_id": String(_definition.get("provider_id", "")),
 		"dialogue": (_definition.get("dialogue", {}) as Dictionary).duplicate(true),
 	}
 
@@ -67,6 +69,8 @@ func turn_in(inventory: Inventory, state: Dictionary) -> DomainResult:
 	var current := snapshot(inventory, state)
 	if not bool(current["accepted"]):
 		return DomainResult.failure(&"quest.not_accepted", "task is not active")
+	if bool(current["exhausted"]):
+		return DomainResult.failure(&"quest.exhausted", "任务完成次数已达上限")
 	if not bool(current["ready_to_turn_in"]):
 		return DomainResult.failure(&"quest.requirements_missing", "task materials are incomplete")
 	for raw_requirement: Variant in _definition.get("requirements", []):
@@ -77,10 +81,10 @@ func turn_in(inventory: Inventory, state: Dictionary) -> DomainResult:
 		if not consumed.is_ok:
 			return consumed
 	var completion := int(current["completions"]) + 1
-	var milestone_rewards: Dictionary = _definition.get("milestone_rewards", {})
-	var milestone: Dictionary = milestone_rewards.get(str(completion), {})
+	var rewards := RepeatableQuestCatalog.rewards_at(_definition, completion)
 	return DomainResult.ok({
 		"state": {"accepted": false, "completions": completion},
 		"currency_reward": int(_definition.get("currency_reward", 0)),
-		"milestone_reward": milestone.duplicate(true),
+		"milestone_reward": rewards[0] if not rewards.is_empty() else {},
+		"milestone_rewards": rewards,
 	})

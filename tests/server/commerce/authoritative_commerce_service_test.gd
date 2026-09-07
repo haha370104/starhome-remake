@@ -20,6 +20,7 @@ func _initialize() -> void:
 		_finish()
 		return
 	var state: PlayerStateRecord = fixture._state
+	state.map_id = "glory_nft_bl_weaponshop1"
 	state.currency = 100000
 	var queried: DomainResult = service.execute(state, {"type": "query_weapon_merchant"})
 	_expect(queried.is_ok and queried.value.panel_bundle.has("commerce"), "查询应返回交易快照")

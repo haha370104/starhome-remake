@@ -29,6 +29,7 @@ func _run() -> void:
 		_finish(null)
 		return
 	_state = fixture._state
+	_state.map_id = "glory_nft_bl_weaponshop1"
 	_state.currency = 100000
 	_test_equipment_purchase_scope()
 	var manager = ManagerScript.new()

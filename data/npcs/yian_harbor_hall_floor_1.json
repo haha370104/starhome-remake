@@ -3,6 +3,11 @@
   "map": "龙之城基地大厅一层",
   "npcs": [
     {
+      "id": "ore_merchant", "name": "卖矿商人", "kind": "quest",
+      "appearance": "npc_blue", "spawn": [700, 1210],
+      "interaction": {"body": "收集铁矿可以换取金币、能量包和挖掘臂。", "actions": [{"id":"task","label":"矿物收集任务"}]}
+    },
+    {
       "id": "matrix_chip_exchange",
       "name": "兑换矩阵校验晶片",
       "kind": "shop",
@@ -169,6 +174,13 @@
     }
   ],
   "maps": {
+    "glory_nft_bl_armshop1": [
+      {
+        "id": "armor_smith", "name": "兵器锻造师", "kind": "quest",
+        "appearance": "npc_red", "spawn": [768, 720],
+        "interaction": {"body": "带来低级四足甲的壳，我会为你准备护甲。", "actions": [{"id":"task","label":"护甲材料任务"}]}
+      }
+    ],
     "glory_nft_bl_weaponshop1": [
       {
         "id": "weapon_merchant",
@@ -181,12 +193,12 @@
       },
       {
         "id": "special_weapon_merchant",
-        "name": "特殊武器商人",
+        "name": "特种武器商人",
         "kind": "shop",
         "appearance": "npc_blue",
         "spawn": [864, 720],
         "patrol": {"speed": 203, "animation_speed_scale": 1.0, "initial_delay": [1.0, 2.0], "points": [{"position": [864, 720], "dwell": [5.0, 8.0]}]},
-        "interaction": {"body": "这里出售火箭、导弹、隐身器和雷达。", "actions": [{"id":"buy","label":"买东西"},{"id":"sell","label":"卖东西"}]}
+        "interaction": {"body": "这里出售火箭、导弹、隐身器和雷达。", "actions": [{"id":"buy","label":"买东西"},{"id":"sell","label":"卖东西"},{"id":"task","label":"特种武器材料任务"}]}
       }
     ]
   }

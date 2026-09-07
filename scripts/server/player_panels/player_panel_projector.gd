@@ -14,10 +14,9 @@ var _journal_tasks: Dictionary = {}
 func _init(catalog: ItemCatalog, skill_progression_config: Dictionary = {}) -> void:
 	_catalog = catalog
 	_skill_progression_config = skill_progression_config.duplicate(true)
-	var config := JsonConfigLoader.load_dictionary("res://data/gameplay/commerce/weapon_merchant_v1.json")
-	if config.is_ok:
-		var definition: Dictionary = config.value.get("repeatable_task", {})
-		if not definition.is_empty():
+	var quests := RepeatableQuestCatalog.new()
+	if quests.initialize(catalog).is_ok:
+		for definition: Dictionary in quests.definitions.values():
 			_journal_tasks[String(definition["id"])] = RepeatableCollectionTask.new(definition)
 
 

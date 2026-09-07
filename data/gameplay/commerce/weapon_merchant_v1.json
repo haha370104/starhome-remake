@@ -4,67 +4,62 @@
     "id": "weapon_merchant",
     "display_name": "武器商人",
     "maximum_required_level": 280,
-    "sell_categories": ["vehicle_engine", "vehicle_chassis", "energy_cannon", "mining_arm", "repair_arm"],
+    "sell_categories": [
+      "vehicle_engine",
+      "vehicle_chassis",
+      "energy_cannon",
+      "mining_arm",
+      "repair_arm"
+    ],
     "official_whitelist_ids": {
       "vehicle_engine": [
-        "glory_equipment_engine1_8030b9773a", "glory_equipment_engine2_115bae65ed",
-        "glory_equipment_engine3_7a19d8f6cd", "glory_equipment_engine4_7fba1b4794",
-        "glory_equipment_engine5_30d0085696", "glory_equipment_engine6_da0065d620",
-        "glory_equipment_engine7_24246159c0", "glory_equipment_engine8_df38922e4b"
+        "glory_equipment_engine1_8030b9773a",
+        "glory_equipment_engine2_115bae65ed",
+        "glory_equipment_engine3_7a19d8f6cd",
+        "glory_equipment_engine4_7fba1b4794",
+        "glory_equipment_engine5_30d0085696",
+        "glory_equipment_engine6_da0065d620",
+        "glory_equipment_engine7_24246159c0",
+        "glory_equipment_engine8_df38922e4b"
       ],
       "vehicle_chassis": [
-        "glory_equipment_tank1_c2ba1ac5af", "glory_equipment_tank2_b58e433608",
-        "glory_equipment_tank3_bd8a6a14d1", "glory_equipment_tank4_1aae1fdcc4",
-        "glory_equipment_tank5_1c18f7410d", "glory_equipment_tank6_bb6cdb6f5c",
-        "glory_equipment_tank7_6dce9d1c52", "glory_equipment_tank8_eccf445ff5"
+        "glory_equipment_tank1_c2ba1ac5af",
+        "glory_equipment_tank2_b58e433608",
+        "glory_equipment_tank3_bd8a6a14d1",
+        "glory_equipment_tank4_1aae1fdcc4",
+        "glory_equipment_tank5_1c18f7410d",
+        "glory_equipment_tank6_bb6cdb6f5c",
+        "glory_equipment_tank7_6dce9d1c52",
+        "glory_equipment_tank8_eccf445ff5"
       ],
       "mining_arm": [
-        "glory_equipment_collector_ac947ee094", "glory_equipment_collector2_21f80f2164",
-        "glory_equipment_collector3_87154ee651", "glory_equipment_collector4_62b573e9d7",
-        "glory_equipment_collector5_840acf4362", "glory_equipment_collector6_ac4d3e4b7b",
+        "glory_equipment_collector_ac947ee094",
+        "glory_equipment_collector2_21f80f2164",
+        "glory_equipment_collector3_87154ee651",
+        "glory_equipment_collector4_62b573e9d7",
+        "glory_equipment_collector5_840acf4362",
+        "glory_equipment_collector6_ac4d3e4b7b",
         "glory_equipment_collector7_76bbb2cfae"
       ],
       "repair_arm": [
-        "glory_equipment_repair_aab7d81665", "glory_equipment_repair2_eda809fe71",
-        "glory_equipment_repair3_41cbcf4e1c", "glory_equipment_repair4_488106f12c",
-        "glory_equipment_repair5_728341bcfb", "glory_equipment_repair6_b9eff11a48"
+        "glory_equipment_repair_aab7d81665",
+        "glory_equipment_repair2_eda809fe71",
+        "glory_equipment_repair3_41cbcf4e1c",
+        "glory_equipment_repair4_488106f12c",
+        "glory_equipment_repair5_728341bcfb",
+        "glory_equipment_repair6_b9eff11a48"
       ],
       "energy_cannon": [
-        "glory_equipment_gun1_216568dc50", "glory_equipment_gun3_3599e6f3f0",
-        "glory_equipment_gun4_d045d0a572", "glory_equipment_gun5_550f30177d",
-        "glory_equipment_gun6_e2c0fdc60c", "glory_equipment_gun7_0705215c72",
-        "glory_equipment_gun8_e7ce1423fa", "glory_equipment_gun9_d2426d05e9"
+        "glory_equipment_gun1_216568dc50",
+        "glory_equipment_gun3_3599e6f3f0",
+        "glory_equipment_gun4_d045d0a572",
+        "glory_equipment_gun5_550f30177d",
+        "glory_equipment_gun6_e2c0fdc60c",
+        "glory_equipment_gun7_0705215c72",
+        "glory_equipment_gun8_e7ce1423fa",
+        "glory_equipment_gun9_d2426d05e9"
       ]
     },
     "buys_all_unbound_items": true
-  },
-  "repeatable_task": {
-    "id": "arms_npc_supply",
-    "title": "武器店材料收集",
-    "maximum_completions": 30,
-    "requirements": [
-      {"definition_id": "low_grade_gel", "display_name": "低级类胶", "quantity": 20},
-      {"definition_id": "low_grade_energy_catalyst", "display_name": "低级能量催化剂", "quantity": 20},
-      {"definition_id": "low_grade_biosilicon", "display_name": "低级生物硅", "quantity": 20}
-    ],
-    "currency_reward": 1500,
-    "milestone_rewards": {
-      "5": {"definition_id": "glory_equipment_gun2_baf92d19b5", "display_name": "加强能量炮", "quantity": 1},
-      "10": {"definition_id": "glory_equipment_engine2_115bae65ed", "display_name": "改式引擎", "quantity": 1},
-      "15": {"definition_id": "glory_equipment_tank2_b58e433608", "display_name": "领航者战车", "quantity": 1},
-      "20": {"definition_id": "glory_equipment_gun3_3599e6f3f0", "display_name": "突袭能量炮", "quantity": 1},
-      "25": {"definition_id": "glory_equipment_engine3_7a19d8f6cd", "display_name": "多能引擎", "quantity": 1},
-      "30": {"definition_id": "glory_equipment_tank3_bd8a6a14d1", "display_name": "勇敢者战车", "quantity": 1}
-    },
-    "dialogue": {
-      "offer": "根据我们的最新消息，在我们的太空基地附近有一些太空生物，体内含有我们制造武器装备的重要材料。希望你能在探险中收集低级类胶、低级能量催化剂和低级生物硅各20个，拿给我，我一定不会让你白干的！",
-      "turn_in": "我将收走你20个低级类胶、20个低级能量催化剂、20个低级生物硅。",
-      "complete": "不错，就是这些。我一定信守诺言，这些报酬送给你；不断努力，你会得到更多。",
-      "exhausted": "您已经做太多这样的任务了！"
-    },
-    "source_evidence": [
-      "starhome_lz_ry_fcc_source/sellorclt.fcc:276-304",
-      "starhome_lz_ry_fcc_source/great/code_string.fcc:457-460"
-    ]
   }
 }

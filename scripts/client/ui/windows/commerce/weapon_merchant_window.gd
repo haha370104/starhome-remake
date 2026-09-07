@@ -47,6 +47,8 @@ func _ready() -> void:
 func open_mode(mode: String, merchant_id := "weapon_merchant") -> void:
 	_mode = mode if mode in ["buy", "sell", "task"] else "buy"
 	_merchant_id = merchant_id
+	_commerce = {}
+	_inventory_revision = -1
 	visible = true
 	move_to_front()
 	_render()
@@ -269,7 +271,7 @@ func _request_trade(entry: Dictionary) -> void:
 
 ## 刷新普通武器商人的循环任务正文和材料进度。
 func _render_task() -> void:
-	_title_label.text = "中级任务"
+	_title_label.text = String((_commerce.get("task", {}) as Dictionary).get("title", "循环任务"))
 	for child in _task_progress.get_children():
 		child.queue_free()
 	var task: Dictionary = _commerce.get("task", {})
@@ -287,6 +289,17 @@ func _render_task() -> void:
 		_task_message.text = String(dialogue.get("turn_in", "材料已经齐备。"))
 	else:
 		_task_message.text = String(dialogue.get("offer", ""))
+	var reward_names := PackedStringArray()
+	for reward: Dictionary in task.get("next_milestone_rewards", []):
+		reward_names.append("%s×%d" % [reward["display_name"], reward["quantity"]])
+	if not reward_names.is_empty():
+		_task_message.text += "\n下次里程碑奖励：" + "、".join(reward_names)
+	if just_completed:
+		var received := PackedStringArray()
+		for reward: Dictionary in operation.get("milestone_rewards", []):
+			received.append("%s×%d" % [reward["display_name"], reward["quantity"]])
+		if not received.is_empty():
+			_task_message.text += "\n本次获得：" + "、".join(received)
 	for value: Variant in task.get("requirements", []):
 		if not value is Dictionary:
 			continue
@@ -308,7 +321,7 @@ func _render_task() -> void:
 		], 390
 	))
 	_task_primary_button.text = "完成任务" if accepted else "接受任务"
-	_task_primary_button.disabled = exhausted or (accepted and not can_turn_in)
+	_task_primary_button.disabled = task.is_empty() or exhausted or (accepted and not can_turn_in)
 
 
 ## 根据当前任务状态提交接受或交付意图。
