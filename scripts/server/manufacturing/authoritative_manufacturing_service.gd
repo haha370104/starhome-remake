@@ -11,7 +11,11 @@ const PlayerPanelProjectorScript := preload(
 )
 
 const COMMAND_TYPES := ["query_manufacturing", "craft_recipe"]
-const STATION_NAMES := {"tailoring": "裁缝机", "cooking": "烹饪台"}
+const STATION_NAMES := {
+	"tailoring": "裁缝机", "cooking": "烹饪台", "refining": "提炼机",
+	"alloy": "合金制造机", "maintenance": "维护包制造机",
+	"equipment_manufacturing": "主装备制造机", "auxiliary_manufacturing": "附属装备制造机",
+}
 
 var _item_catalog: ItemCatalog
 var _recipe_book: RefCounted
@@ -20,6 +24,7 @@ var _projector: PlayerPanelProjector
 var _progression_config: Dictionary = {}
 var _random := RandomNumberGenerator.new()
 var _next_instance_serial := 1
+var _facility_maps: Dictionary = {}
 
 
 ## 初始化权威制造所需的物品、配方、技能和持久化映射边界。
@@ -41,6 +46,10 @@ func initialize() -> DomainResult:
 	_progression_config = skill_result.value
 	_mapper = PlayerStateMapperScript.new(_item_catalog)
 	_projector = PlayerPanelProjectorScript.new(_item_catalog, _progression_config)
+	var facilities := JsonConfigLoader.load_dictionary("res://data/world/manufacturing_facilities_v1.json")
+	if not facilities.is_ok:
+		return facilities
+	_facility_maps = facilities.value.get("maps", {})
 	_random.randomize()
 	return DomainResult.ok(self)
 
@@ -62,6 +71,8 @@ func execute(state: PlayerStateRecord, command: Dictionary) -> DomainResult:
 	var station_id := String(command.get("station_id", ""))
 	if not STATION_NAMES.has(station_id):
 		return DomainResult.failure(&"manufacturing.station_invalid", "manufacturing station is invalid")
+	if not _map_has_station(state.map_id, station_id):
+		return DomainResult.failure(&"manufacturing.station_unavailable", "当前地图没有该生产设施")
 	var mapped := _mapper.to_domain(state)
 	if not mapped.is_ok:
 		return mapped
@@ -118,7 +129,7 @@ func build_bundle(state: PlayerStateRecord, operation: Dictionary = {}) -> Dicti
 
 ## 构造生产设施配方、玩家材料进度和三面板一致快照。
 ## [param player] 当前事务内玩家聚合。
-## [param station_id] tailoring 或 cooking。
+## [param station_id] 已验证的生产设施类型。
 ## [param operation] 最近一次生产结果。
 ## 返回可经 JSON/RPC 传输的纯字典。
 func _build_bundle(
@@ -143,6 +154,17 @@ func _build_bundle(
 ## [param definition_id] 产物稳定定义标识。
 ## 返回不依赖客户端输入的实例标识。
 func _new_instance_id(definition_id: String) -> String:
-	var value := "crafted.%d.%s" % [_next_instance_serial, definition_id]
+	var value := "crafted.%s.%d.%s" % [Crypto.new().generate_random_bytes(16).hex_encode(), _next_instance_serial, definition_id]
 	_next_instance_serial += 1
 	return value
+
+
+## 核验权威存档所在地图是否登记了所请求的设施。
+## [param map_id] 服务端持有的当前位置地图，不接受客户端覆盖。
+## [param station_id] 请求的设施类型。
+## 返回是否允许查询和生产；保留旧快照不能绕过换图限制。
+func _map_has_station(map_id: String, station_id: String) -> bool:
+	for facility: Dictionary in _facility_maps.get(map_id, []):
+		if String(facility.get("station_id", "")) == station_id:
+			return true
+	return false

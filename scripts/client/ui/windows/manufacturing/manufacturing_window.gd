@@ -43,9 +43,11 @@ func _ready() -> void:
 
 
 ## 打开指定设施窗口并请求权威配方与背包状态。
-## [param requested_station_id] tailoring 或 cooking。
+## [param requested_station_id] 由当前地图机器声明的生产设施类型。
 func open_station(requested_station_id: String) -> void:
 	_station_id = requested_station_id
+	_snapshot.clear()
+	_inventory_revision = -1
 	visible = true
 	move_to_front()
 	_render()
@@ -58,6 +60,8 @@ func apply_manufacturing_bundle(bundle: Dictionary) -> void:
 	var value: Variant = bundle.get("manufacturing", {})
 	if not value is Dictionary:
 		return
+	if String(value.get("station_id", "")) != _station_id:
+		return
 	_snapshot = (value as Dictionary).duplicate(true)
 	_station_id = String(_snapshot.get("station_id", _station_id))
 	var inventory_value: Variant = bundle.get("inventory", {})
@@ -67,7 +71,7 @@ func apply_manufacturing_bundle(bundle: Dictionary) -> void:
 
 
 ## 读取当前生产窗口绑定的设施标识，供运行时回归测试使用。
-## 返回 tailoring 或 cooking。
+## 返回当前生产设施类型。
 func station_id() -> String:
 	return _station_id
 
@@ -77,7 +81,7 @@ func _render() -> void:
 	if not is_node_ready():
 		return
 	_title_label.text = String(_snapshot.get(
-		"display_name", "裁缝机" if _station_id == "tailoring" else "烹饪台"
+		"display_name", "正在读取生产配方…"
 	))
 	for child: Node in _recipe_list.get_children():
 		child.queue_free()

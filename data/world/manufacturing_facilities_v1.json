@@ -1,6 +1,25 @@
 {
   "schema_version": 1,
   "maps": {
+    "glory_nft_bl_factory1": [
+      {"facility_id":"dragon_city_refiner_1","station_id":"refining","name":"提炼机","position":[1224,372],"interaction_radius":96,"show_label":true},
+      {"facility_id":"dragon_city_refiner_2","station_id":"refining","name":"提炼机","position":[1488,504],"interaction_radius":96,"show_label":true},
+      {"facility_id":"dragon_city_refiner_3","station_id":"refining","name":"提炼机","position":[1752,636],"interaction_radius":96,"show_label":true},
+      {"facility_id":"dragon_city_refiner_4","station_id":"refining","name":"提炼机","position":[2016,768],"interaction_radius":96,"show_label":true},
+      {"facility_id":"dragon_city_refiner_5","station_id":"refining","name":"提炼机","position":[2280,900],"interaction_radius":96,"show_label":true}
+    ],
+    "dragon_city_refinery_floor_2": [
+      {"facility_id":"dragon_city_refiner_floor_2","station_id":"refining","name":"提炼机","position":[1488,504],"interaction_radius":96,"show_label":true}
+    ],
+    "dragon_city_refinery_floor_3": [
+      {"facility_id":"dragon_city_refiner_floor_3","station_id":"refining","name":"提炼机","position":[1488,504],"interaction_radius":96,"show_label":true}
+    ],
+    "glory_nft_bl_armshop1": [
+      {"facility_id":"dragon_city_main_equipment_machine","station_id":"equipment_manufacturing","name":"主装备制造机","position":[1128,180],"interaction_radius":96,"show_label":true},
+      {"facility_id":"dragon_city_auxiliary_machine","station_id":"auxiliary_manufacturing","name":"附属装备制造机","position":[816,336],"interaction_radius":96,"show_label":true},
+      {"facility_id":"dragon_city_alloy_machine","station_id":"alloy","name":"合金制造机","position":[432,528],"interaction_radius":96,"show_label":true},
+      {"facility_id":"dragon_city_maintenance_machine","station_id":"maintenance","name":"维护包制造机","position":[48,720],"interaction_radius":96,"show_label":true}
+    ],
     "glory_nft_bl_clothshop1": [
       {"facility_id":"dragon_city_tailor_1","station_id":"tailoring","name":"裁缝机","position":[264,156],"interaction_radius":52},
       {"facility_id":"dragon_city_tailor_2","station_id":"tailoring","name":"裁缝机","position":[576,192],"interaction_radius":52},
@@ -14,6 +33,7 @@
   },
   "source_audit": {
     "source_release": "starhome_lz_ry",
+    "industrial_source": "NFT_BL/map/factory1.fcc:357-367 提炼设备、armshop1.fcc:367/383/403/424 设备锚点。处理器分配为复刻配置，不冒充原服机器分工；二三层随既有 factory1 临时空间共用。",
     "tailoring_source": "NFT_BL/map/clothshop1.fcc AddImgEx('SewSysSvr', ...)",
     "cooking_source": "NFT_BL/map/foodroom1.fcc food preparation display anchors",
     "note": "食品店荣耀地图未保留 CookSysSvr 处理器名，首版热点锚定到可见烹饪陈列，权威配方仍来自 cltobj/stuffclt2.fcc。"

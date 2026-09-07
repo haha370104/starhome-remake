@@ -9,6 +9,7 @@ const GAMEPLAY_PATHS := [
 	"res://data/gameplay/material_items_v1.json",
 	"res://data/gameplay/official_rocket_items_v1.json",
 	"res://data/gameplay/glory/glory_items_v1.json",
+	"res://data/gameplay/industrial_materials_v1.json",
 ]
 const PRESENTATION_PATHS := [
 	"res://data/presentation/player_equipment_v1.json",

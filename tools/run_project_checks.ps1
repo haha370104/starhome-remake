@@ -86,6 +86,7 @@ $testScripts = @(
 	"res://tests/server/persistence/authoritative_autosave_test.gd",
 	"res://tests/server/player_panels/player_panel_service_test.gd",
 	"res://tests/server/manufacturing/authoritative_manufacturing_service_test.gd",
+	"res://tests/server/manufacturing/industrial_manufacturing_test.gd",
 	"res://tests/domain/player_rich_model_test.gd",
 	"res://tests/integration/map_transition_scene_smoke_test.gd",
 	"res://tests/integration/active_world_transition_view_smoke_test.gd",

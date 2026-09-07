@@ -10,7 +10,7 @@ var _recipes_by_id: Dictionary = {}
 var _recipe_ids_by_station: Dictionary = {}
 
 
-## 从荣耀配方证据和稳定物品目录组装可执行的裁缝、烹饪配方。
+## 从荣耀配方证据和稳定物品目录组装生活技能与工业配方。
 ## [param item_catalog] 已完成初始化的共享物品目录。
 ## 返回可执行配方书；无法解析的证据行会被安全排除而不会生成伪物品。
 ## 设计：原始类名和目录结构止于本适配器，领域配方只保存业务设施与稳定物品 ID。
@@ -38,6 +38,21 @@ func initialize(item_catalog: ItemCatalog) -> DomainResult:
 		)
 		station_ids.append(recipe_model.recipe_id)
 		_recipe_ids_by_station[station_id] = station_ids
+	var industrial := JsonConfigLoader.load_dictionary("res://data/gameplay/industrial_recipes_v1.json")
+	if not industrial.is_ok:
+		return industrial
+	for definition: Dictionary in industrial.value.get("recipes", []):
+		var model = ManufacturingRecipeScript.new(definition)
+		if _recipes_by_id.has(model.recipe_id) or item_catalog.definition(model.product_definition_id).is_empty():
+			return DomainResult.failure(&"manufacturing.catalog_invalid", "duplicate recipe or unknown industrial product")
+		for requirement: Dictionary in model.materials:
+			if item_catalog.definition(String(requirement.get("definition_id", ""))).is_empty() \
+					or int(requirement.get("quantity", 0)) <= 0:
+				return DomainResult.failure(&"manufacturing.catalog_invalid", "invalid industrial material")
+		_recipes_by_id[model.recipe_id] = model
+		var ids: PackedStringArray = _recipe_ids_by_station.get(model.station_id, PackedStringArray())
+		ids.append(model.recipe_id)
+		_recipe_ids_by_station[model.station_id] = ids
 	return DomainResult.ok(self)
 
 
@@ -49,7 +64,7 @@ func recipe(recipe_id: String) -> RefCounted:
 
 
 ## 列出指定设施按等级、名称稳定排序的配方对象。
-## [param station_id] tailoring 或 cooking。
+## [param station_id] 裁缝、烹饪、提炼或工业制造设施标识。
 ## 返回独立数组，调用方不能修改配方书索引。
 func recipes_for_station(station_id: String) -> Array[RefCounted]:
 	var result: Array[RefCounted] = []

@@ -17,6 +17,10 @@ func _initialize() -> void:
 	var maps: Dictionary = parsed.get("maps", {})
 	_expect((maps.get("glory_nft_bl_clothshop1", []) as Array).size() == 4, "服装店应恢复四台裁缝机")
 	_expect((maps.get("glory_nft_bl_foodroom1", []) as Array).size() == 2, "食品店应登记两处烹饪交互锚点")
+	_expect((maps.get("glory_nft_bl_factory1", []) as Array).size() == 5, "提炼厂一层应登记五处原图设备")
+	_expect((maps.get("glory_nft_bl_armshop1", []) as Array).size() == 4, "兵工厂应有四类制造设施")
+	for map_id: String in ["dragon_city_refinery_floor_2", "dragon_city_refinery_floor_3"]:
+		_expect(not (maps.get(map_id, []) as Array).is_empty(), "提炼厂分层均应有可点击设施")
 	var facility: Node2D = FacilityScript.new()
 	root.add_child(facility)
 	var configured: Error = facility.configure({

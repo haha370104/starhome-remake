@@ -40,10 +40,10 @@ func belongs_to_station(requested_station_id: String) -> bool:
 ## 计算当前有效技能等级下的单次成功率。
 ## [param effective_skill_level] 含人物装备加成的技能等级。
 ## 返回 0 到 1 的概率。
-## 设计：裁缝为硬门槛；烹饪允许越级且每差一级降低 10%。
+## 设计：烹饪允许越级且每差一级降低 10%；工业首版采用等级门槛和确定产出，非原服概率结论。
 func success_probability(effective_skill_level: int) -> float:
-	if station_id == "tailoring":
-		return 1.0 if effective_skill_level >= required_skill_level else 0.0
+	if station_id != "cooking":
+		return 1.0 if effective_skill_level >= _execution_skill_level() else 0.0
 	var missing_levels := maxi(0, required_skill_level - effective_skill_level)
 	return clampf(1.0 - float(missing_levels) * 0.1, 0.0, 1.0)
 
@@ -66,9 +66,9 @@ func execute(
 		return DomainResult.failure(&"manufacturing.recipe_invalid", "recipe is unavailable")
 	var effective_level := player.skills.effective_level(skill_id, player.character_equipment)
 	var probability := success_probability(effective_level)
-	if station_id == "tailoring" and probability <= 0.0:
-		return DomainResult.failure(&"manufacturing.skill_insufficient", "tailoring level is insufficient")
-	var succeeded := clampf(random_roll, 0.0, 1.0) < probability
+	if station_id != "cooking" and probability <= 0.0:
+		return DomainResult.failure(&"manufacturing.skill_insufficient", "生产技能等级不足")
+	var succeeded := probability >= 1.0 or clampf(random_roll, 0.0, 1.0) < probability
 	if not succeeded:
 		var consumed := player.inventory.consume_requirements(materials)
 		if not consumed.is_ok:
@@ -93,6 +93,8 @@ func execute(
 	var progression := player.grant_skill_experience(
 		skill_id, skill_experience, progression_config
 	)
+	if not progression.is_ok and progression.error_code == &"skill_maximum_level":
+		progression = DomainResult.ok({"upgraded": false, "maximum_level_reached": true})
 	if not progression.is_ok:
 		return progression
 	return DomainResult.ok({
@@ -132,10 +134,20 @@ func to_view_dictionary(player: Player, item_catalog: ItemCatalog) -> Dictionary
 		"product_definition_id": product_definition_id,
 		"output_quantity": output_quantity,
 		"skill_id": skill_id,
-		"required_skill_level": required_skill_level,
+		"required_skill_level": _execution_skill_level(),
+		"source_required_skill_level": required_skill_level,
 		"effective_skill_level": effective_level,
 		"skill_experience": skill_experience,
 		"success_probability": probability,
 		"can_craft": ready and probability > 0.0,
 		"materials": material_views,
 	}
+
+
+## 计算复刻运行时技能门槛，保持原始配方等级独立可追溯。
+## 返回最低可操作等级；工业原表十级及以下的入门配方允许零级学习。
+## 设计：现有存档生活技能初始为零，此兼容规则避免无法通过生产获得第一点经验，不改变存档等级。
+func _execution_skill_level() -> int:
+	if station_id not in ["tailoring", "cooking"] and required_skill_level <= 10:
+		return 0
+	return required_skill_level

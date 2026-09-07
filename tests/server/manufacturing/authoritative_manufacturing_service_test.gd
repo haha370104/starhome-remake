@@ -21,6 +21,7 @@ func _initialize() -> void:
 		_finish()
 		return
 	var state: PlayerStateRecord = fixture._state
+	state.map_id = "glory_nft_bl_clothshop1"
 	state.character_skills["tailoring"] = {
 		"level": 110, "current_exp": 0, "fractional_exp": 0.0,
 	}
@@ -47,6 +48,7 @@ func _initialize() -> void:
 		_expect(_stack_quantity(candidate, "item:material:8f615d2ef879") == 0, "制作应原子消耗5个铁")
 		_expect(_stack_quantity(candidate, "glory_equipment_1_09f6c8233d") == 1, "产物应作为同一物品对象进入背包")
 		_expect(int(candidate.character_skills.tailoring.current_exp) == 33, "成功裁缝应发放配方记录的33点经验")
+	state.map_id = "glory_nft_bl_foodroom1"
 	var cooking: DomainResult = service.execute(state, {
 		"type": "query_manufacturing", "station_id": "cooking",
 	})

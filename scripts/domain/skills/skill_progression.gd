@@ -21,9 +21,8 @@ static func get_need_points(skill_id: StringName, current_level: int, config: Di
 	var coefficient: int = int(coefficient_result.value)
 	var next_level: int = formula_level + 1
 	var need_points: int = int(floor(float(next_level * next_level * coefficient) / 100.0))
-	if need_points <= 0:
-		return DomainResult.failure(&"invalid_skill_threshold", "Skill threshold must be positive")
-	return DomainResult.ok(need_points)
+	# 初始零级技能代入旧公式会向下取整为零；最低一点经验，避免生活技能无法起步。
+	return DomainResult.ok(maxi(1, need_points))
 
 
 ## 设置或恢复 `apply_exp` 对应的模块状态。

@@ -21,6 +21,20 @@ func configure(definition: Dictionary) -> Error:
 			or (point as Array).size() != 2:
 		return ERR_INVALID_DATA
 	position = Vector2(float(point[0]), float(point[1]))
+	if bool(definition.get("show_label", false)):
+		var label := Label.new()
+		label.text = display_name
+		label.position = Vector2(-80, -30)
+		label.size = Vector2(160, 24)
+		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		label.add_theme_font_override("font", preload("res://assets/ui/fonts/legacy_panel_font.tres"))
+		label.add_theme_font_size_override("font_size", 12)
+		label.add_theme_color_override("font_color", Color("ffffa0"))
+		label.add_theme_color_override("font_outline_color", Color.BLACK)
+		label.add_theme_constant_override("outline_size", 2)
+		label.z_index = 100
+		add_child(label)
 	return OK
 
 
