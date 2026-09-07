@@ -54,10 +54,14 @@ func _run() -> void:
 			is_equal_approx(
 				first.health_bar.position.y
 					- (first.name_label.position.y + first.name_label.size.y),
-				4.0,
+				1.0,
 			),
-			"怪物名称下沿必须与血条上沿保持 4px 间距",
+			"怪物名称下移 3px 后，下沿与血条上沿保持 1px 间距",
 		)
+		_expect(first.health_bar._bar_width == 60.0,
+			"怪物血条应从 50px 增加 20% 至 60px")
+		_expect(first.health_bar.position.x == 0.0,
+			"血条以怪物脚点为水平中心，左右各延伸 30px")
 		_expect(
 			is_equal_approx(
 				first.name_label.position.x + first.name_label.size.x * 0.5,

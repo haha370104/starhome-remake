@@ -10,9 +10,9 @@ const REGULAR_FONT := preload("res://assets/ui/fonts/legacy_panel_font.tres")
 
 const NAME_LABEL_SIZE := Vector2(100.0, 18.0)
 const NAME_FONT_SIZE := 12
-const HEALTH_BAR_WIDTH := 50.0
+const HEALTH_BAR_WIDTH := 60.0
 const HEALTH_BAR_OFFSET := Vector2(0.0, 20.0)
-const NAME_TO_HEALTH_GAP := 4.0
+const NAME_TO_HEALTH_GAP := 1.0
 
 var entity_id := ""
 var combat_actor_id := ""
