@@ -194,7 +194,12 @@ func spawn_entity(entity_id: String, requested_position: Vector2, movement_speed
 		return _failure(ErrorCodes.INVALID_IDENTIFIER, "entity_id must be non-empty and unique")
 	if not requested_position.is_finite():
 		return _failure(&"invalid_position", "spawn position must be finite")
-	if movement_speed <= 0.0 or movement_speed > movement_speed_cap:
+	var effective_movement_speed := movement_speed
+	if is_vehicle_combat_active() and _combat_loadout_by_entity.has(entity_id):
+		var cached_loadout: Dictionary = _combat_loadout_by_entity[entity_id]
+		var cached_assembly: Dictionary = cached_loadout.get("assembly", {})
+		effective_movement_speed = float(cached_assembly.get("movement_speed", 0.0))
+	if effective_movement_speed < 0.0 or effective_movement_speed > movement_speed_cap:
 		return _failure(&"invalid_speed", "movement speed exceeds the server cap")
 	var spawn_position := admitted_spawn_position(requested_position, StringName(entity_id))
 	if not spawn_position.is_finite():
@@ -204,7 +209,7 @@ func spawn_entity(entity_id: String, requested_position: Vector2, movement_speed
 	entity.map_instance_id = instance_id
 	entity.position = spawn_position
 	entity.target_position = spawn_position
-	entity.movement_speed = movement_speed
+	entity.movement_speed = effective_movement_speed
 	entities[entity_id] = entity
 	if combat_module != null:
 		var combat_result := _register_vehicle_combat(entity_id)
@@ -326,6 +331,8 @@ func handle_move_intent(entity_id: String, raw_intent: Variant) -> Dictionary:
 	var vehicle_state := vehicle_combat_state_for(entity_id)
 	if is_vehicle_combat_active() and vehicle_state != null and vehicle_state.health <= 0:
 		return _failure(&"combat.vehicle_destroyed", "destroyed vehicle cannot move")
+	if is_vehicle_combat_active() and entity.movement_speed <= 0.0:
+		return _failure(&"movement.no_propulsion", "vehicle has no usable propulsion")
 	var intent_result = MoveIntentContract.from_dictionary(raw_intent)
 	if not intent_result.is_ok:
 		return _failure(intent_result.error_code, intent_result.error_message)
@@ -778,6 +785,14 @@ func set_vehicle_combat_loadout(entity_id: String, loadout: Dictionary) -> Dicti
 			or not loadout.get("weapons") is Dictionary:
 		return _failure(&"combat.invalid_player_loadout", "player combat loadout is invalid")
 	_combat_loadout_by_entity[entity_id] = loadout.duplicate(true)
+	var entity: AuthoritativeEntity = entities.get(entity_id)
+	if entity != null and is_vehicle_combat_active():
+		var assembly: Dictionary = loadout["assembly"]
+		entity.movement_speed = clampf(
+			float(assembly.get("movement_speed", 0.0)), 0.0, movement_speed_cap
+		)
+		if entity.movement_speed <= 0.0:
+			entity.stop_moving()
 	if combat_module == null or not entities.has(entity_id):
 		return _success(true)
 	var old_state := vehicle_combat_state_for(entity_id)

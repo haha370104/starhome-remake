@@ -67,6 +67,20 @@ func at(location: int) -> VehicleEquipment:
 	return _equipped.get(location)
 
 
+## 当前装配是否包含战车底盘。
+func has_chassis() -> bool:
+	return _equipped.get(0) is VehicleChassis
+
+
+## 除底盘外是否仍安装了任意战车装备。
+## 更换或卸下底盘前必须先清空这些槽位，避免产生悬空装配。
+func has_non_chassis_equipment() -> bool:
+	for location: int in _equipped:
+		if location != 0:
+			return true
+	return false
+
+
 ## 按稳定 Location 顺序导出全部已安装装备。
 ## 返回装备数组的防御性副本。
 func items() -> Array[VehicleEquipment]:

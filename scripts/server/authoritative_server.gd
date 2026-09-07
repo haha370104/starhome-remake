@@ -536,8 +536,11 @@ func handle_peer_map_transition(peer_id: int, raw_intent: Variant) -> Dictionary
 			)
 			if not prepared_loadout.ok:
 				return prepared_loadout
+		var destination_speed := entity.movement_speed \
+			if destination_instance.is_vehicle_combat_active() \
+			else config.default_movement_speed
 		var destination_spawn_result := destination_instance.spawn_entity(
-			session.entity_id, destination_spawn, entity.movement_speed
+			session.entity_id, destination_spawn, destination_speed
 		)
 		if not destination_spawn_result.ok:
 			return _failure(
@@ -675,9 +678,9 @@ func _recover_destroyed_vehicle_to_base(entity_id: String, pending: Dictionary) 
 			)
 			if not prepared_loadout.ok:
 				return prepared_loadout
-		var spawned := destination.spawn_entity(
-			entity_id, spawn_position, source_entity.movement_speed
-		)
+		var destination_speed := source_entity.movement_speed \
+			if destination.is_vehicle_combat_active() else config.default_movement_speed
+		var spawned := destination.spawn_entity(entity_id, spawn_position, destination_speed)
 		if not spawned.ok:
 			return _failure(&"vehicle_recovery.spawn_blocked", "base rejected rescue spawn")
 		recovered_entity = spawned.value
@@ -741,25 +744,34 @@ func handle_peer_player_panel_command(peer_id: int, command: Dictionary) -> Dict
 	var command_type := String(command.get("type", ""))
 	var is_commerce: bool = commerce_service.handles(command_type)
 	var is_manufacturing: bool = manufacturing_service.handles(command_type)
+	var current_map := map_registry.instance_by_id(session.map_instance_id)
+	var trusted_command := command.duplicate(true)
+	trusted_command["_authoritative_vehicle_combat_active"] = current_map != null \
+		and current_map.is_vehicle_combat_active()
 	var executed: DomainResult
 	if is_commerce:
-		executed = commerce_service.execute(current, command)
+		executed = commerce_service.execute(current, trusted_command)
 	elif is_manufacturing:
-		executed = manufacturing_service.execute(current, command)
+		executed = manufacturing_service.execute(current, trusted_command)
 	else:
-		executed = player_panel_service.execute(current, command)
+		executed = player_panel_service.execute(current, trusted_command)
 	if not executed.is_ok:
 		return _failure(executed.error_code, executed.error_message)
 	var value: Dictionary = executed.value
 	if not bool(value.get("changed", false)):
 		return _success(value["panel_bundle"])
+	var prepared_loadout: Dictionary = {}
+	if current_map != null and current_map.is_vehicle_combat_active():
+		var built_loadout := _build_entity_combat_loadout(current_map, value["candidate"])
+		if not built_loadout.is_ok:
+			return _failure(built_loadout.error_code, built_loadout.error_message)
+		prepared_loadout = built_loadout.value
 	var committed = autosave_service.commit_player_state(session.entity_id, value["candidate"])
 	if not committed.is_ok:
 		return _failure(committed.error_code, committed.error_message)
-	var current_map := map_registry.instance_by_id(session.map_instance_id)
-	if current_map != null:
-		var refreshed_loadout := _prepare_entity_combat_loadout(
-			current_map, session.entity_id, committed.value
+	if current_map != null and current_map.is_vehicle_combat_active():
+		var refreshed_loadout := current_map.set_vehicle_combat_loadout(
+			session.entity_id, prepared_loadout
 		)
 		if not refreshed_loadout.ok:
 			return refreshed_loadout
@@ -1364,10 +1376,12 @@ func _restore_persistent_player_state(
 	if not prepared_loadout.ok:
 		return false
 	if target != source:
+		var restored_speed := source_entity.movement_speed \
+			if target.is_vehicle_combat_active() else config.default_movement_speed
 		var spawn_result := target.spawn_entity(
 			session.entity_id,
 			restored_position,
-			source_entity.movement_speed,
+			restored_speed,
 		)
 		if not spawn_result.ok:
 			return false
@@ -1402,9 +1416,30 @@ func _prepare_entity_combat_loadout(
 ) -> Dictionary:
 	if target == null or state == null or player_panel_service == null or _combat_catalog == null:
 		return _failure(&"combat.player_loadout_unavailable", "player combat loadout dependencies are unavailable")
+	var loadout := _build_entity_combat_loadout(target, state)
+	if not loadout.is_ok:
+		if not target.is_vehicle_combat_active() and loadout.error_code in [
+			&"equipment.chassis_required_for_field",
+			&"equipment.primary_weapon_required_for_field",
+		]:
+			return _success(true)
+		return _failure(loadout.error_code, loadout.error_message)
+	return target.set_vehicle_combat_loadout(entity_id, loadout.value)
+
+
+## 仅构造并校验候选战斗装配，不写地图运行时；用于持久化提交前预检。
+func _build_entity_combat_loadout(
+	target: AuthoritativeMapInstance,
+	state: PlayerStateRecord,
+) -> DomainResult:
+	if target == null or state == null or player_panel_service == null or _combat_catalog == null:
+		return DomainResult.failure(
+			&"combat.player_loadout_unavailable",
+			"player combat loadout dependencies are unavailable",
+		)
 	var restored := player_panel_service.restore_player(state)
 	if not restored.is_ok:
-		return _failure(restored.error_code, restored.error_message)
+		return restored
 	var player: Player = restored.value
 	var loadout: DomainResult = _combat_catalog.vehicle_combat_loadout(
 		player,
@@ -1415,8 +1450,8 @@ func _prepare_entity_combat_loadout(
 		},
 	)
 	if not loadout.is_ok:
-		return _failure(loadout.error_code, loadout.error_message)
-	return target.set_vehicle_combat_loadout(entity_id, loadout.value)
+		return loadout
+	return DomainResult.ok(loadout.value)
 
 
 ## 立即提交全部已登记角色，未启用持久化时安全忽略。
@@ -1625,7 +1660,6 @@ func _copy_transitioned_entity_state(
 ) -> void:
 	destination.last_input_sequence = source.last_input_sequence
 	destination.facing_index = source.facing_index
-	destination.movement_speed = source.movement_speed
 	destination.state_revision = source.state_revision + 1
 	destination.action = &"idle"
 	destination.path = PackedVector2Array([destination.position])

@@ -248,12 +248,14 @@ func _execute_domain_command(
 				int(command.get("location", -1)),
 				int(command.get("inventory_revision", -1)),
 				int(command.get("loadout_revision", -1)),
+				bool(command.get("_authoritative_vehicle_combat_active", false)),
 			)
 		&"unequip_vehicle_item":
 			return player.unequip_vehicle_item(
 				int(command.get("location", -1)),
 				int(command.get("inventory_revision", -1)),
 				int(command.get("loadout_revision", -1)),
+				bool(command.get("_authoritative_vehicle_combat_active", false)),
 			)
 		&"equip_character_item":
 			return player.equip_character_item(

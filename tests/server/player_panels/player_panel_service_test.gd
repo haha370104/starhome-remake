@@ -137,6 +137,68 @@ func _initialize() -> void:
 			"升级后当前经验与溢出应归零")
 		_expect(upgraded.value.panel_bundle.character.level == 10,
 			"单个半权重技能提升一级时综合等级仍应向下取整为十")
+
+	var spare_chassis := authority.grant_loot({
+		"loot_id": "inventory.spare_chassis",
+		"item_definition_id": "glory_equipment_tank1_c2ba1ac5af",
+		"quantity": 1,
+	})
+	_expect(spare_chassis.is_ok, "测试夹具应能获得第二个荣耀战车底盘")
+	if spare_chassis.is_ok:
+		bundle = spare_chassis.value
+		var field_swap := authority.execute({
+			"type": "equip_vehicle_item",
+			"instance_id": "inventory.spare_chassis",
+			"location": 0,
+			"inventory_revision": int(bundle.inventory.revision),
+			"loadout_revision": int(bundle.vehicle.revision),
+			"_authoritative_vehicle_combat_active": true,
+		})
+		_expect(not field_swap.is_ok and field_swap.error_code \
+				== &"equipment.chassis_change_forbidden_in_field",
+			"野外地图必须拒绝更换战车底盘")
+		var occupied_swap := authority.execute({
+			"type": "equip_vehicle_item",
+			"instance_id": "inventory.spare_chassis",
+			"location": 0,
+			"inventory_revision": int(bundle.inventory.revision),
+			"loadout_revision": int(bundle.vehicle.revision),
+		})
+		_expect(not occupied_swap.is_ok and occupied_swap.error_code \
+				== &"equipment.chassis_change_requires_empty_loadout",
+			"室内更换底盘前必须先卸下全部其他战车装备")
+
+		for location: int in [3, 1, 0]:
+			var latest := authority.execute({"type": "query"})
+			_expect(latest.is_ok, "连续卸装前应能读取最新 revision")
+			if not latest.is_ok:
+				break
+			bundle = latest.value
+			var unloaded := authority.execute({
+				"type": "unequip_vehicle_item",
+				"location": location,
+				"inventory_revision": int(bundle.inventory.revision),
+				"loadout_revision": int(bundle.vehicle.revision),
+			})
+			_expect(unloaded.is_ok, "按推进器、主炮、底盘顺序应可在室内清空装配")
+		var empty_bundle_result := authority.execute({"type": "query"})
+		if empty_bundle_result.is_ok:
+			bundle = empty_bundle_result.value
+			var engine_instance_id := ""
+			for item: Dictionary in bundle.inventory.items:
+				if String(item.get("definition_id", "")) == "beginner_engine":
+					engine_instance_id = String(item.get("instance_id", ""))
+					break
+			var engine_without_chassis := authority.execute({
+				"type": "equip_vehicle_item",
+				"instance_id": engine_instance_id,
+				"location": 3,
+				"inventory_revision": int(bundle.inventory.revision),
+				"loadout_revision": int(bundle.vehicle.revision),
+			})
+			_expect(not engine_without_chassis.is_ok and engine_without_chassis.error_code \
+					== &"equipment.chassis_required",
+				"没有底盘时必须拒绝安装推进器等其他装备")
 	_finish()
 
 

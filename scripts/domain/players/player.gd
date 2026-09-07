@@ -142,6 +142,7 @@ func equip_vehicle_item(
 	location: int,
 	expected_inventory_revision: int,
 	expected_loadout_revision: int,
+	vehicle_combat_active: bool = false,
 ) -> DomainResult:
 	var inventory_revision_result := inventory.require_revision(expected_inventory_revision)
 	if not inventory_revision_result.is_ok:
@@ -154,6 +155,22 @@ func equip_vehicle_item(
 		return DomainResult.failure(&"equipment.location_rejected", "inventory item is not vehicle equipment")
 	if not (item as VehicleEquipment).accepts_location(location):
 		return DomainResult.failure(&"equipment.location_rejected", "item cannot be installed in requested location")
+	if location == 0:
+		if vehicle_combat_active:
+			return DomainResult.failure(
+				&"equipment.chassis_change_forbidden_in_field",
+				"vehicle chassis cannot be changed on a field map",
+			)
+		if vehicle.loadout.has_non_chassis_equipment():
+			return DomainResult.failure(
+				&"equipment.chassis_change_requires_empty_loadout",
+				"unequip every non-chassis component before changing chassis",
+			)
+	elif not vehicle.loadout.has_chassis():
+		return DomainResult.failure(
+			&"equipment.chassis_required",
+			"equip a vehicle chassis before installing other components",
+		)
 	var replaced := vehicle.loadout.at(location)
 	if replaced != null:
 		var position_result := inventory.transfer_position(replaced, instance_id)
@@ -184,6 +201,7 @@ func unequip_vehicle_item(
 	location: int,
 	expected_inventory_revision: int,
 	expected_loadout_revision: int,
+	vehicle_combat_active: bool = false,
 ) -> DomainResult:
 	var inventory_revision_result := inventory.require_revision(expected_inventory_revision)
 	if not inventory_revision_result.is_ok:
@@ -191,6 +209,17 @@ func unequip_vehicle_item(
 	var equipped := vehicle.loadout.at(location)
 	if equipped == null:
 		return DomainResult.failure(&"equipment.slot_empty", "vehicle equipment slot is empty")
+	if location == 0:
+		if vehicle_combat_active:
+			return DomainResult.failure(
+				&"equipment.chassis_change_forbidden_in_field",
+				"vehicle chassis cannot be changed on a field map",
+			)
+		if vehicle.loadout.has_non_chassis_equipment():
+			return DomainResult.failure(
+				&"equipment.chassis_change_requires_empty_loadout",
+				"unequip every non-chassis component before removing chassis",
+			)
 	var position_result := inventory.transfer_position(equipped)
 	if not position_result.is_ok:
 		return position_result

@@ -31,6 +31,18 @@ func set_path(new_path: PackedVector2Array, target: Vector2, input_sequence: int
 	_update_facing_to_next_point()
 
 
+## 立即停止当前权威路线；用于推进力归零等服务端状态变化。
+func stop_moving() -> void:
+	var was_moving := action == &"walking" or path_index < path.size() \
+		or not target_position.is_equal_approx(position)
+	path = PackedVector2Array([position])
+	path_index = path.size()
+	target_position = position
+	action = &"idle"
+	if was_moving:
+		state_revision += 1
+
+
 ## 推进并更新 `simulate` 对应的模块状态。
 ## [param delta] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## 设计：该函数位于权威服务器边界，客户端不得覆盖其计算结果。

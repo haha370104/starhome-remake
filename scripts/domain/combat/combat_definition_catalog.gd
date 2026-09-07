@@ -205,8 +205,16 @@ func vehicle_combat_loadout(
 		return DomainResult.failure(&"combat.invalid_player_loadout", "player combat loadout is unavailable")
 	var chassis := player.vehicle.loadout.at(0) as VehicleChassis
 	var primary_weapon := player.vehicle.loadout.at(1) as VehicleWeapon
-	if chassis == null or primary_weapon == null:
-		return DomainResult.failure(&"combat.invalid_player_loadout", "vehicle chassis and primary weapon are required")
+	if chassis == null:
+		return DomainResult.failure(
+			&"equipment.chassis_required_for_field",
+			"a vehicle chassis is required before entering a field map",
+		)
+	if primary_weapon == null:
+		return DomainResult.failure(
+			&"equipment.primary_weapon_required_for_field",
+			"a primary weapon is required before entering a field map",
+		)
 	var calculator_chassis := {
 		"weight": chassis.weight,
 		"max_health": chassis.base_max_health,
