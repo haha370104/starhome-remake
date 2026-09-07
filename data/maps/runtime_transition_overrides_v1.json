@@ -174,12 +174,44 @@
           "derivation": "荣耀版合成图南侧门洞中心，并校验为可行走导航格"
         }
       }
+    ],
+    "glory_nft_bl_armshop1": [
+      {
+        "transition_id": "return_to_yian_harbor_city",
+        "kind": "standard",
+        "enabled": true,
+        "label": "返回龙之城",
+        "source_anchor": [1584, 1752],
+        "approach_point": [1605, 1744],
+        "presentation": {
+          "kind": "directional_transition",
+          "orientation": "south_east",
+          "activation": "enabled_transition"
+        },
+        "destination": {
+          "map_id": "yian_harbor_city",
+          "world_id": "buli",
+          "legacy_code": "city1svr",
+          "entry_number": 0,
+          "external": false
+        },
+        "source_audit": {
+          "source_release": "starhome_lz_ry",
+          "source_map_code": "armshop1",
+          "source_output": "maps/armshop1/navigation_grid.bin",
+          "reference_map_code": "2armshop1",
+          "reference_source_line": 48,
+          "reference_icon_ale": "../../map/mapimg/house/CHN_2005_06_28_19_30_52_38/as8.ale",
+          "evidence_level": "sibling_layout_derived",
+          "derivation": "armshop1 原 FCC 未保存返程调用；复用荣耀版同系列 2armshop1 的原始 as8 出口锚点与接近点，并校验该点位于当前地图连通可行走区域"
+        }
+      }
     ]
   },
   "source_audit": {
     "source_release": "starhome_lz_ry",
     "source_map_code": "city1_service_interiors",
     "source_output": "starhome_lz_ry_maps_parsed/maps",
-    "note": "仅补原 FCC 未保存返程 Transport 的室内图；原始武器店和裁缝店出口不覆盖"
+    "note": "仅补原 FCC 未保存返程 Transport 的室内图；裁缝店出口仍使用原始定义，兵工厂返程依据同系列 2armshop1 原版出口恢复"
   }
 }

@@ -155,6 +155,7 @@ func _test_city_service_transitions(city: MapDefinition, catalog) -> void:
 		&"enter_trade_center": [&"glory_nft_bl_traderoom1", "交易中心"],
 		&"enter_botanical_garden": [&"glory_nft_bl_treeroom1", "植物园"],
 		&"enter_weapon_shop": [&"glory_nft_bl_weaponshop1", "武器店"],
+		&"enter_armory": [&"glory_nft_bl_armshop1", "兵工厂"],
 		&"enter_space_center": [&"dragon_city_space_center", "宇航中心"],
 	}
 	for transition_id: StringName in expected:
