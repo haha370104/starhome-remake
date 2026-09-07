@@ -1235,8 +1235,9 @@ func _on_npc_popup_closed() -> void:
 		active_npc = null
 
 
-## 处理 `_on_npc_action_requested` 对应的信号回调。
-## [param action_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 将交互菜单动作分派到传送、制造、商店或 NPC 业务处理器。
+## [param action_id] 当前菜单发出的业务动作标识。
+## 设计：关闭菜单会同步清空 active_npc，窗口所需的标识和标题必须在关闭前读取。
 func _on_npc_action_requested(action_id: String) -> void:
 	if transition_choice_ids.has(action_id):
 		var transition_id := StringName(transition_choice_ids[action_id])
@@ -1246,19 +1247,22 @@ func _on_npc_action_requested(action_id: String) -> void:
 		if transition != null:
 			_move_to(transition.approach_point, transition.transition_id)
 		return
-	if active_npc:
-		var station_id := String(active_npc.get("station_id"))
-		if action_id == "manufacture" and not station_id.is_empty():
+	if is_instance_valid(active_npc):
+		var interaction_title := String(active_npc.get_interaction_data()["title"])
+		if action_id == "manufacture" and active_npc is WorldFacilityInteraction:
+			var station_id := (active_npc as WorldFacilityInteraction).station_id
+			if station_id.is_empty():
+				return
 			hud.hide_popup()
 			game_window_manager.open_manufacturing(station_id)
-			hint_label.text = "正在使用%s" % String(active_npc.get_interaction_data()["title"])
+			hint_label.text = "正在使用%s" % interaction_title
 			return
 		var npc_id := String(active_npc.get("npc_id"))
 		if npc_id in ["weapon_merchant", "special_weapon_merchant"] \
 				and action_id in ["buy", "sell", "task"]:
 			hud.hide_popup()
 			game_window_manager.open_weapon_merchant(action_id, npc_id)
-			hint_label.text = "正在与%s交互" % String(active_npc.get_interaction_data()["title"])
+			hint_label.text = "正在与%s交互" % interaction_title
 			return
 		hint_label.text = active_npc.handle_action(action_id)
 

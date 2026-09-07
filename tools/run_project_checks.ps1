@@ -72,6 +72,7 @@ $testScripts = @(
 	"res://tests/client/presentation/combat/monster_hover_name_test.gd",
 	"res://tests/client/presentation/combat/ground_loot_world_controller_test.gd",
 	"res://tests/client/world/world_facility_interaction_test.gd",
+	"res://tests/integration/npc_action_window_handoff_test.gd",
 	"res://tests/server/authoritative_server_smoke_test.gd",
 	"res://tests/server/lazy_glory_map_loading_test.gd",
 	"res://tests/server/map_residency_test.gd",
