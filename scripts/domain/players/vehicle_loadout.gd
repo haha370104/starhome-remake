@@ -68,12 +68,14 @@ func at(location: int) -> VehicleEquipment:
 
 
 ## 当前装配是否包含战车底盘。
+## 返回底盘槽装有战车底盘实例时为真。
 func has_chassis() -> bool:
 	return _equipped.get(0) is VehicleChassis
 
 
 ## 除底盘外是否仍安装了任意战车装备。
 ## 更换或卸下底盘前必须先清空这些槽位，避免产生悬空装配。
+## 返回至少一个非底盘槽位仍有装备时为真。
 func has_non_chassis_equipment() -> bool:
 	for location: int in _equipped:
 		if location != 0:

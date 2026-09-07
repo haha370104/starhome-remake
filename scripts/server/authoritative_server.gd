@@ -1428,6 +1428,9 @@ func _prepare_entity_combat_loadout(
 
 
 ## 仅构造并校验候选战斗装配，不写地图运行时；用于持久化提交前预检。
+## [param target] 用于确定是否要求完整战车装配的权威地图实例。
+## [param state] 即将提交的玩家候选持久化状态。
+## 返回已校验的装配定义，或依赖、角色还原和装备规则错误。
 func _build_entity_combat_loadout(
 	target: AuthoritativeMapInstance,
 	state: PlayerStateRecord,

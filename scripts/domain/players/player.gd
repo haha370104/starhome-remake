@@ -137,6 +137,7 @@ func receive_loot(item: GameItem) -> DomainResult:
 ## [param expected_inventory_revision] 客户端背包 revision。
 ## [param expected_loadout_revision] 客户端装配 revision。
 ## 返回成功或类型、槽位、容量与版本错误。
+## [param vehicle_combat_active] 当前是否在战斗地图使用战车，用于限制关键装备的更换。
 func equip_vehicle_item(
 	instance_id: String,
 	location: int,
@@ -197,6 +198,7 @@ func equip_vehicle_item(
 ## [param expected_inventory_revision] 客户端背包 revision。
 ## [param expected_loadout_revision] 客户端装配 revision。
 ## 返回成功或空槽、容量与版本错误。
+## [param vehicle_combat_active] 当前是否在战斗地图使用战车，用于限制关键装备的卸载。
 func unequip_vehicle_item(
 	location: int,
 	expected_inventory_revision: int,
