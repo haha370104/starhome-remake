@@ -19,6 +19,7 @@ signal skill_level_up_received(event: Dictionary)
 signal vehicle_recovery_scheduled(delay_seconds: float)
 signal vehicle_recovery_failed(code: StringName, message: String)
 signal connection_failed(message: String)
+signal system_message_requested(message: String)
 
 const SessionScript := preload("res://scripts/client/network/client_multiplayer_session.gd")
 const CharacterFactoryScript := preload("res://scripts/characters/character_factory.gd")
@@ -293,6 +294,7 @@ func _on_connection_failed(message: String) -> void:
 func _on_command_rejected(code: StringName, message: String) -> void:
 	var detail := message if not message.is_empty() else String(code)
 	_show_temporary_status("请求被拒绝：%s" % detail, 4.0)
+	system_message_requested.emit(_player_error_message(code, message))
 
 
 ## 处理 `_on_map_change_failed` 对应的信号回调。
@@ -308,6 +310,23 @@ func _on_map_change_failed(
 	map_change_failed.emit(transition_id, code, message)
 	var detail := message if not message.is_empty() else String(code)
 	_show_temporary_status("切换地图失败：%s" % detail, 4.0)
+	system_message_requested.emit(_player_error_message(code, message))
+
+
+## 将稳定服务端错误码转换为中央系统提示使用的玩家文案。
+func _player_error_message(code: StringName, message: String) -> String:
+	match code:
+		&"movement.no_propulsion": return "未安装可用推进器，战车无法移动"
+		&"equipment.chassis_change_forbidden_in_field": return "野外地图中不能更换战车"
+		&"equipment.chassis_change_requires_empty_loadout": \
+			return "更换战车前请先卸下其他战车装备"
+		&"equipment.chassis_required": return "请先装备战车，再安装其他装备"
+		&"equipment.chassis_required_for_field": return "未装备战车，无法进入野外地图"
+		&"equipment.primary_weapon_required_for_field": return "未装备主武器，无法进入野外地图"
+		&"inventory.revision_conflict", &"equipment.revision_conflict": \
+			return "装备状态已经更新，请重试"
+	var detail := message if not message.is_empty() else String(code)
+	return "操作失败：%s" % detail
 
 
 ## 执行 `create_remote_character` 对应的模块操作。

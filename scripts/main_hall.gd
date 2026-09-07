@@ -522,7 +522,14 @@ func _move_to(world_position: Vector2, transition_id: StringName = &"") -> void:
 	var target_text := "%d, %d" % [roundi(world_position.x), roundi(world_position.y)]
 	var result: Dictionary = local_player_controller.request_move(world_position)
 	if not bool(result.get("ok", false)):
-		if StringName(result.get("code", &"")) == &"no_reachable_point":
+		var error_code := StringName(result.get("code", &""))
+		if error_code == &"movement.no_propulsion":
+			var error_message := String(result.get(
+				"message", "未安装可用推进器，战车无法移动"
+			))
+			hint_label.text = error_message
+			hud.show_system_message(error_message)
+		elif error_code == &"no_reachable_point":
 			hint_label.text = "目标 %s 不可到达，附近也没有可达点" % target_text
 		else:
 			hint_label.text = "无法找到前往 %s 的路径" % target_text
@@ -767,6 +774,7 @@ func _build_multiplayer_presentation() -> void:
 		_on_vehicle_recovery_scheduled
 	)
 	multiplayer_presenter.vehicle_recovery_failed.connect(_on_vehicle_recovery_failed)
+	multiplayer_presenter.system_message_requested.connect(hud.show_system_message)
 	add_child(multiplayer_presenter)
 	var start_error: Error = multiplayer_presenter.start({
 		"offline_debug_enabled": multiplayer_offline_debug_enabled,
@@ -829,6 +837,22 @@ func _on_current_player_changed(current_player: Player) -> void:
 			TACTICAL_ACTION_BY_DEFINITION.get(tactical_equipment.definition_id, "")
 		)
 		hud.set_tactical_action(action_id)
+	_refresh_local_movement_availability(current_player)
+
+
+## 根据活动地图与权威玩家装配刷新本地预测移动许可。
+## 室内始终按人物移动；野外必须存在提供正推进力的引擎。
+func _refresh_local_movement_availability(current_player: Player = null) -> void:
+	if local_player_controller == null or map_definition == null:
+		return
+	var player_state := current_player
+	if player_state == null and game_window_manager != null:
+		player_state = game_window_manager.current_player
+	var movement_enabled := true
+	if map_definition.category == "field":
+		movement_enabled = player_state != null \
+			and int(player_state.calculate_vehicle_stats().get("propulsion", 0)) > 0
+	local_player_controller.set_movement_enabled(movement_enabled)
 
 
 ## 读取受控地图目录的 `definitions` 映射，格式错误时返回仅包含当前大厅的安全目录。
@@ -1071,6 +1095,7 @@ func _commit_map_bundle(
 ) -> bool:
 	if not active_world_controller.commit_bundle(bundle, spawn_position):
 		return false
+	_refresh_local_movement_availability()
 	multiplayer_map_instance_id = map_instance_id
 	_set_player_action("stand")
 	hint_label.text = "已进入%s" % map_definition.display_name

@@ -14,6 +14,7 @@ var _character: Node2D
 var _navigation: RefCounted
 var _multiplayer_presenter: Node
 var _movement_speed := 140.0
+var _movement_enabled := true
 var _target_position := Vector2.ZERO
 var _has_target := false
 var _authority_position_held := false
@@ -56,6 +57,13 @@ func set_navigation(navigation: RefCounted) -> void:
 	_navigation = navigation
 
 
+## 切换当前地图上的移动许可；野外战车没有有效推进力时关闭。
+func set_movement_enabled(enabled: bool) -> void:
+	_movement_enabled = enabled
+	if not enabled:
+		cancel_route()
+
+
 ## 执行 `position` 对应的模块操作。
 ## 返回该函数计算、查询或操作得到的结果。
 func position() -> Vector2:
@@ -74,6 +82,12 @@ func has_active_route() -> bool:
 func request_move(requested_position: Vector2) -> Dictionary:
 	if _character == null or _navigation == null:
 		return {"ok": false, "code": &"unconfigured", "message": "本地移动尚未初始化"}
+	if not _movement_enabled:
+		return {
+			"ok": false,
+			"code": &"movement.no_propulsion",
+			"message": "未安装可用推进器，战车无法移动",
+		}
 	var resolved_position := requested_position
 	var used_nearest_walkable := false
 	if not _navigation.is_walkable(requested_position):

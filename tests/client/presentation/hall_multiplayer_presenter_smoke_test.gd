@@ -38,8 +38,12 @@ func _run() -> void:
 	var presenter = PresenterScript.new()
 	presenter.configure(local_character, world, character_catalog, status_label)
 	var local_states: Array[Dictionary] = []
+	var system_messages: Array[String] = []
 	presenter.local_character_state_applied.connect(
 		func(state: Dictionary) -> void: local_states.append(state)
+	)
+	presenter.system_message_requested.connect(
+		func(message: String) -> void: system_messages.append(message)
 	)
 	root.add_child(presenter)
 	var start_error: Error = presenter.start({
@@ -54,6 +58,10 @@ func _run() -> void:
 	_expect_equal(start_error, OK, "presenter starts without owning a transport fixture")
 	presenter.session.network_adapter._ensure_transport_endpoint()
 	presenter.session.network_adapter._set_connection_state(AdapterScript.ConnectionState.CONNECTED)
+	presenter.session.network_adapter.session_ready = true
+	presenter.session.network_adapter.entity_id = "player.me"
+	presenter.session.network_adapter.map_id = "yian_harbor_hall_floor_1"
+	presenter.session.network_adapter.map_instance_id = "yian_harbor_hall_floor_1.instance.1"
 	_expect_equal(
 		presenter.session.network_adapter.connection_state,
 		AdapterScript.ConnectionState.CONNECTED,
@@ -89,8 +97,10 @@ func _run() -> void:
 		_entity("player.me", Vector2(12.0, 20.0), 2, "idle", 1, 2),
 	]))
 	_expect_equal(presenter.remote_character_count(), 0, "absent remote entity is removed")
-	presenter.session.network_adapter.command_rejected.emit(&"unreachable_target", "目标不可到达")
+	presenter.show_rejection(&"unreachable_target", "目标不可到达")
 	_expect_equal(status_label.text, "请求被拒绝：目标不可到达", "rejection reason is visible")
+	_expect_equal(system_messages[-1], "操作失败：目标不可到达",
+		"ordinary rejection also uses the primary central message channel")
 	var loot_payload: Dictionary = presenter.request_loot_pickup("loot.test.1")
 	_expect_equal(loot_payload.get("loot_id", ""), "loot.test.1", "presenter forwards loot pickup intent")
 
@@ -132,6 +142,13 @@ func _run() -> void:
 	})
 	_expect_equal(failed_transitions, [&"exit_to_city"], "presenter republishes correlated map failure")
 	_expect_equal(status_label.text, "切换地图失败：距离出口太远", "map failure has specific status feedback")
+	_expect_equal(system_messages[-1], "操作失败：距离出口太远",
+		"map failure also uses the central hold-float-fade message channel")
+	presenter.show_rejection(
+		&"equipment.chassis_change_forbidden_in_field", "internal detail"
+	)
+	_expect_equal(system_messages[-1], "野外地图中不能更换战车",
+		"equipment rejection maps its stable code to player-facing Chinese text")
 
 	presenter.stop()
 	presenter.queue_free()
