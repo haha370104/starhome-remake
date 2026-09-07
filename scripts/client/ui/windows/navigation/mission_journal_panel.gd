@@ -52,9 +52,13 @@ func _select_category(category: int) -> void:
 ## [param index] 当前分类内的任务行号。
 func _show_detail(index: int) -> void:
 	var entry: Dictionary = listing.get_item_metadata(index)
-	var lines := PackedStringArray([String(entry["title"]), "完成次数：%d / %d" % [entry["completions"], entry["maximum_completions"]]])
+	var lines := PackedStringArray([String(entry["title"])])
+	var training := String(entry.get("kind", "")) == "kill_training"
+	lines.append("今日接取：%d / %d" % [entry.get("daily_accepted", 0), entry.get("daily_accept_limit", 0)] if training \
+		else "完成次数：%d / %d" % [entry["completions"], entry["maximum_completions"]])
 	for requirement: Dictionary in entry.get("requirements", []):
 		lines.append("%s：%d / %d" % [requirement["display_name"], requirement["owned"], requirement["required"]])
-	lines.append("报酬：%d 金币" % int(entry.get("currency_reward", 0)))
-	lines.append("请前往武器店，与武器商人交付或领取下一轮。")
+	lines.append("奖励：%s等级 +1" % String(entry["title"]).trim_suffix("训练") if training \
+		else "报酬：%d 金币" % int(entry.get("currency_reward", 0)))
+	lines.append("请返回任务发布者处交付或领取下一轮。")
 	details.text = "\n".join(lines)

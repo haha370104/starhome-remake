@@ -1290,7 +1290,10 @@ func _on_npc_action_requested(action_id: String) -> void:
 			hint_label.text = "正在使用%s" % interaction_title
 			return
 		var npc_id := String(active_npc.get("npc_id"))
-		if npc_id in ["weapon_merchant", "special_weapon_merchant", "ore_merchant", "armor_smith", "combat_trainer"] \
+		var npc_definition: Variant = active_npc.get("npc_definition")
+		var interaction_service := String(npc_definition.get("interaction_service", "")) \
+			if npc_definition is Dictionary else ""
+		if interaction_service == "commerce" \
 				and action_id in ["buy", "sell", "task"]:
 			hud.hide_popup()
 			game_window_manager.open_weapon_merchant(action_id, npc_id)

@@ -2,7 +2,7 @@
   "schema_version": 1,
   "merchant": {
     "id": "special_weapon_merchant",
-    "display_name": "特殊武器商人",
+    "display_name": "特种武器商人",
     "maximum_required_level": 280,
     "sell_categories": ["rocket_weapon", "missile_weapon", "stealth_device", "radar_device"],
     "official_whitelist_ids": {

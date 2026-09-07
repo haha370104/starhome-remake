@@ -31,6 +31,8 @@ var _task_root: Control
 var _task_message: Label
 var _task_progress: VBoxContainer
 var _task_primary_button: Button
+var _task_selector: OptionButton
+var _selected_task_id := ""
 
 
 ## 创建原版 530×450 买卖窗；任务消息复用相同 MaxForm 外框。
@@ -48,6 +50,7 @@ func open_mode(mode: String, merchant_id := "weapon_merchant") -> void:
 	_mode = mode if mode in ["buy", "sell", "task"] else "buy"
 	_merchant_id = merchant_id
 	_commerce = {}
+	_selected_task_id = ""
 	_inventory_revision = -1
 	visible = true
 	move_to_front()
@@ -60,6 +63,9 @@ func open_mode(mode: String, merchant_id := "weapon_merchant") -> void:
 func apply_commerce_bundle(bundle: Dictionary) -> void:
 	var commerce_value: Variant = bundle.get("commerce", {})
 	if not commerce_value is Dictionary:
+		return
+	var response_provider := String(commerce_value.get("merchant", {}).get("id", ""))
+	if not response_provider.is_empty() and response_provider != _merchant_id:
 		return
 	_commerce = (commerce_value as Dictionary).duplicate(true)
 	var inventory_value: Variant = bundle.get("inventory", {})
@@ -142,6 +148,13 @@ func _build_task_view() -> void:
 	_task_root.add_child(frame)
 	_task_message = _label_on(frame, "Message", Vector2(22, 20), Vector2(410, 118), 13, REGULAR_FONT)
 	_task_message.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_task_selector = OptionButton.new()
+	_task_selector.position = Vector2(22, 12)
+	_task_selector.size = Vector2(410, 28)
+	_task_selector.add_theme_font_override("font", REGULAR_FONT)
+	_task_selector.add_theme_font_size_override("font_size", 13)
+	_task_selector.item_selected.connect(_select_task)
+	frame.add_child(_task_selector)
 	_task_progress = VBoxContainer.new()
 	_task_progress.position = Vector2(22, 150)
 	_task_progress.size = Vector2(410, 104)
@@ -271,6 +284,20 @@ func _request_trade(entry: Dictionary) -> void:
 
 ## 刷新普通武器商人的循环任务正文和材料进度。
 func _render_task() -> void:
+	var tasks: Array = _commerce.get("tasks", [])
+	_task_selector.clear()
+	var selected := 0
+	for index in range(tasks.size()):
+		_task_selector.add_item(String(tasks[index]["title"]))
+		if String(tasks[index]["task_id"]) == _selected_task_id:
+			selected = index
+	if not tasks.is_empty():
+		_task_selector.select(selected)
+		_commerce["task"] = tasks[selected]
+		_selected_task_id = String(tasks[selected]["task_id"])
+	_task_selector.visible = tasks.size() > 1
+	_task_message.position.y = 50 if _task_selector.visible else 20
+	_task_message.size.y = 88 if _task_selector.visible else 118
 	_title_label.text = String((_commerce.get("task", {}) as Dictionary).get("title", "循环任务"))
 	for child in _task_progress.get_children():
 		child.queue_free()
@@ -280,7 +307,8 @@ func _render_task() -> void:
 	var accepted := bool(task.get("accepted", false))
 	var can_turn_in := bool(task.get("ready_to_turn_in", false))
 	var operation: Dictionary = _commerce.get("operation", {})
-	var just_completed := String(operation.get("action", "")) == "turn_in_task"
+	var just_completed := String(operation.get("action", "")) == "turn_in_task" \
+		and String(operation.get("task_id", "")) == String(task.get("task_id", ""))
 	if exhausted:
 		_task_message.text = String(dialogue.get("exhausted", "任务次数已经用尽。"))
 	elif just_completed:
@@ -315,13 +343,24 @@ func _render_task() -> void:
 		_task_progress.add_child(progress)
 	var completions := int(task.get("completions", 0))
 	var maximum := int(task.get("maximum_completions", 0))
-	_task_progress.add_child(_inline_label(
-		"完成次数：%d / %d　报酬：%d 金币" % [
-			completions, maximum, int(task.get("currency_reward", 0)),
-		], 390
-	))
+	if String(task.get("kind", "")) == "kill_training":
+		_task_progress.add_child(_inline_label("今日接取：%d / %d　累计完成：%d" % [
+			int(task.get("daily_accepted", 0)), int(task.get("daily_accept_limit", 0)), completions], 390))
+		_task_progress.add_child(_inline_label("奖励：%s等级 +1" % String(task.get("title", "")).trim_suffix("训练"), 390))
+	else:
+		_task_progress.add_child(_inline_label("完成次数：%d / %d　报酬：%d 金币" % [
+			completions, maximum, int(task.get("currency_reward", 0))], 390))
 	_task_primary_button.text = "完成任务" if accepted else "接受任务"
 	_task_primary_button.disabled = task.is_empty() or exhausted or (accepted and not can_turn_in)
+
+
+## 五种训练共用原版任务窗，切换只读详情，不自动接取或重抽目标。
+func _select_task(index: int) -> void:
+	var tasks: Array = _commerce.get("tasks", [])
+	if index < 0 or index >= tasks.size():
+		return
+	_selected_task_id = String(tasks[index]["task_id"])
+	_render_task()
 
 
 ## 根据当前任务状态提交接受或交付意图。
@@ -331,12 +370,14 @@ func _request_task_action() -> void:
 		if _inventory_revision >= 0:
 			command_requested.emit({
 				"type": "turn_in_weapon_merchant_task",
+				"task_id": String(task.get("task_id", "")),
 				"merchant_id": _merchant_id,
 				"inventory_revision": _inventory_revision,
 			})
 	else:
 		command_requested.emit({
 			"type": "accept_weapon_merchant_task",
+			"task_id": String(task.get("task_id", "")),
 			"merchant_id": _merchant_id,
 		})
 

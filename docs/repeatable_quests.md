@@ -95,8 +95,6 @@
 - 不复制原版收集任务的推测经验奖励；只发已配置金币和每五次额外物品。
 - 当前沿用商店 RPC 名称以兼容现有客户端，但任务业务不再硬编码到武器商人。
 
-## 验证
-
 ## 每日战斗训练
 
 配置：`data/gameplay/quests/training_tasks_v1.json`。基地大厅一层增加战斗训练师；五个稳定任务 ID 为 `training_energy_cannon`、`training_driving`、`training_missile`、`training_rocket_launcher`、`training_repair`。
@@ -124,10 +122,18 @@
 
 升级复用 `skill_level_up` 消息及屏幕中央停留、上浮淡出的系统提示，不另加左上角提示。
 
+## 窗口与 NPC 注册
+
+NPC 在 `data/npcs/yian_harbor_hall_floor_1.json` 注册位置、动作以及 `interaction_service: "commerce"`。客户端按服务标记路由，不再维护任务 NPC ID 白名单；规则、限额、奖励均来自两个任务 JSON。原版商店/任务窗继续共用，训练师通过选择框切换五种任务；任务日志显示每日额度、击杀进度与技能奖励。
+
+新增 NPC 坐标经实际地图导航数据校验：卖矿商人 `(700,1210)`、战斗训练师 `(760,1270)` 位于基地大厅一层；兵器锻造师 `(768,720)` 位于 `glory_nft_bl_armshop1` 兵工厂。武器商人及特种武器商人仍在武器店。
+
 ### 验证入口
 
 `tests/server/commerce/training_tasks_test.gd` 覆盖全部等级边界、五类各十轮、每日限额、跨日未完成状态、去重、错误物种/击杀者、存档往返、满级拒绝及奖励原子性。
 
 `tests/server/combat/authoritative_combat_module_test.gd` 增加真实炮弹死亡归属和单次火箭击杀75只的独立进度队列测试。
+
+`tests/ui/runtime/training_tasks_runtime_test.gd` 用真实服务驱动选择任务、并行接取、完成领奖与日志展示，并挂载资源包校验五位 NPC 的地图导航落点。
 
 `tests/server/commerce/repeatable_collection_tasks_test.gd` 遍历四套完整轮次、奖励、拒绝超限、旧存档续接、跨 NPC 与跨地图拒绝。原有 commerce 与窗口运行测试继续通过。
