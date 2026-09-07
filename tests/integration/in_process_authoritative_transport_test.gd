@@ -54,6 +54,7 @@ func _run() -> void:
 	var map_instance_id := String(joined["map_instance_id"])
 	_expect(entity_id.begins_with("player."), "玩家身份必须由正式服务器会话分配")
 	_expect(not map_instance_id.is_empty(), "握手必须携带正式地图实例标识")
+	await _test_single_simulation_clock(transport, config.simulation_hz)
 
 	transport.send_player_panel_command({"type": "query", "command_sequence": 1})
 	await process_frame
@@ -72,7 +73,9 @@ func _run() -> void:
 		"input_sequence": 1,
 	})
 	await process_frame
+	transport.authoritative_server.set_physics_process(false)
 	transport.advance_simulation(0.2)
+	transport.authoritative_server.set_physics_process(true)
 	_expect(not snapshots.is_empty(), "本地服务器必须按正式快照频率发布 peer 权威快照")
 	if not snapshots.is_empty():
 		var entities: Array = snapshots[-1].get("entities", [])
@@ -99,6 +102,24 @@ func _run() -> void:
 			"进程内传输不得自行推导目标地图或落点")
 	await _test_close_during_server_signal()
 	_finish(transport)
+
+
+## 在真实场景树中验证本地服务端仅由物理帧推进，防止传输渲染帧重复加速。
+## [param transport] 已完成握手且正在自动推进的进程内传输。
+## [param simulation_hz] 服务端每秒固定模拟刻数。
+func _test_single_simulation_clock(transport: InProcessAuthoritativeTransport, simulation_hz: int) -> void:
+	_expect(not transport.is_processing(), "传输层不得通过渲染帧重复推进服务端")
+	_expect(transport.authoritative_server.is_physics_processing(), "本地与独立服务端必须共用物理帧时钟")
+	await physics_frame
+	var start_tick := transport.authoritative_server.server_tick
+	var elapsed := 0.0
+	for _frame in range(18):
+		await physics_frame
+		elapsed += transport.authoritative_server.get_physics_process_delta_time()
+	var actual_ticks := transport.authoritative_server.server_tick - start_tick
+	var expected_ticks := elapsed * float(simulation_hz)
+	_expect(absf(float(actual_ticks) - expected_ticks) <= 1.0,
+		"模拟刻必须匹配物理时间而非双倍速度：实际 %d，预期 %.2f" % [actual_ticks, expected_ticks])
 
 
 ## 验证客户端在服务端可靠消息回调内关闭本地会话时采用延迟释放，不会释放被信号锁定的发送者。

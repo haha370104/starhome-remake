@@ -121,17 +121,12 @@ func send_player_panel_command(command: Dictionary) -> void:
 	_enqueue(AuthoritativeServer.TRANSPORT_PLAYER_PANEL_COMMAND, command)
 
 
-## 确定性推进进程内权威服务器，供渲染循环和测试共同调用。
+## 显式推进进程内权威服务器，供暂停自动时钟的确定性测试调用。
 ## [param elapsed_seconds] 本次累计模拟时间，单位为秒。
+## 设计：运行时只由服务端物理帧驱动；手动推进时调用方必须暂停服务端物理处理，不能叠加两套时钟。
 func advance_simulation(elapsed_seconds: float) -> void:
 	if _connected and authoritative_server != null:
 		authoritative_server.advance_simulation(elapsed_seconds)
-
-
-## 按渲染帧驱动本地服务器，游戏规则仍以服务器固定 tick 执行。
-## [param delta] 当前渲染帧耗时，单位为秒。
-func _process(delta: float) -> void:
-	advance_simulation(delta)
 
 
 ## 节点退出场景树时关闭本地权威服务器并提交最终存档。
