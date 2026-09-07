@@ -284,16 +284,18 @@ func _on_connection_state_changed(state: ClientNetworkAdapter.ConnectionState) -
 ## 处理 `_on_connection_failed` 对应的信号回调。
 ## [param message] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _on_connection_failed(message: String) -> void:
-	_show_temporary_status("连接失败：%s" % message, 4.0)
-	connection_failed.emit(message)
+	push_warning("Connection failed: %s" % message)
+	var notice := PlayerErrorMessages.describe(&"connection.failed", message)
+	_show_temporary_status(notice, 4.0)
+	connection_failed.emit(notice)
 
 
 ## 处理 `_on_command_rejected` 对应的信号回调。
 ## [param code] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## [param message] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _on_command_rejected(code: StringName, message: String) -> void:
-	var detail := message if not message.is_empty() else String(code)
-	_show_temporary_status("请求被拒绝：%s" % detail, 4.0)
+	push_warning("Command rejected [%s]: %s" % [code, message])
+	_show_temporary_status(_player_error_message(code, message), 4.0)
 	system_message_requested.emit(_player_error_message(code, message))
 
 
@@ -308,25 +310,17 @@ func _on_map_change_failed(
 	message: String,
 ) -> void:
 	map_change_failed.emit(transition_id, code, message)
-	var detail := message if not message.is_empty() else String(code)
-	_show_temporary_status("切换地图失败：%s" % detail, 4.0)
+	push_warning("Map change failed [%s]: %s" % [code, message])
+	_show_temporary_status(_player_error_message(code, message), 4.0)
 	system_message_requested.emit(_player_error_message(code, message))
 
 
 ## 将稳定服务端错误码转换为中央系统提示使用的玩家文案。
+## [param code] 服务端错误码。
+## [param message] 原始诊断详情，不直接拼接到界面。
+## 返回统一中文提示。
 func _player_error_message(code: StringName, message: String) -> String:
-	match code:
-		&"movement.no_propulsion": return "未安装可用推进器，战车无法移动"
-		&"equipment.chassis_change_forbidden_in_field": return "野外地图中不能更换战车"
-		&"equipment.chassis_change_requires_empty_loadout": \
-			return "更换战车前请先卸下其他战车装备"
-		&"equipment.chassis_required": return "请先装备战车，再安装其他装备"
-		&"equipment.chassis_required_for_field": return "未装备战车，无法进入野外地图"
-		&"equipment.primary_weapon_required_for_field": return "未装备主武器，无法进入野外地图"
-		&"inventory.revision_conflict", &"equipment.revision_conflict": \
-			return "装备状态已经更新，请重试"
-	var detail := message if not message.is_empty() else String(code)
-	return "操作失败：%s" % detail
+	return PlayerErrorMessages.describe(code, message)
 
 
 ## 执行 `create_remote_character` 对应的模块操作。

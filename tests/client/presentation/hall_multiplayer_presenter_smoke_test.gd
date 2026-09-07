@@ -98,8 +98,8 @@ func _run() -> void:
 	]))
 	_expect_equal(presenter.remote_character_count(), 0, "absent remote entity is removed")
 	presenter.show_rejection(&"unreachable_target", "目标不可到达")
-	_expect_equal(status_label.text, "请求被拒绝：目标不可到达", "rejection reason is visible")
-	_expect_equal(system_messages[-1], "操作失败：目标不可到达",
+	_expect_equal(status_label.text, "目标不可到达", "rejection reason is visible")
+	_expect_equal(system_messages[-1], "目标不可到达",
 		"ordinary rejection also uses the primary central message channel")
 	var loot_payload: Dictionary = presenter.request_loot_pickup("loot.test.1")
 	_expect_equal(loot_payload.get("loot_id", ""), "loot.test.1", "presenter forwards loot pickup intent")
@@ -141,8 +141,8 @@ func _run() -> void:
 		},
 	})
 	_expect_equal(failed_transitions, [&"exit_to_city"], "presenter republishes correlated map failure")
-	_expect_equal(status_label.text, "切换地图失败：距离出口太远", "map failure has specific status feedback")
-	_expect_equal(system_messages[-1], "操作失败：距离出口太远",
+	_expect_equal(status_label.text, "距离出口太远", "map failure has specific status feedback")
+	_expect_equal(system_messages[-1], "距离出口太远",
 		"map failure also uses the central hold-float-fade message channel")
 	presenter.show_rejection(
 		&"equipment.chassis_change_forbidden_in_field", "internal detail"

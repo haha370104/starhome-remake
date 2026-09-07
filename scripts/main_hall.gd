@@ -260,7 +260,8 @@ func _finish_initial_loading() -> void:
 func _on_initial_connection_failed(message: String) -> void:
 	if _initial_authoritative_world_ready or initial_loading_screen == null:
 		return
-	initial_loading_screen.set_status("连接服务器失败：%s" % message)
+	push_warning("Initial connection failed: %s" % message)
+	initial_loading_screen.set_status(PlayerErrorMessages.describe(&"connection.failed", message))
 
 
 ## 执行 `apply_multiplayer_command_line` 对应的模块操作。
@@ -340,6 +341,12 @@ func _handle_world_combat_left_click(world_position: Vector2) -> void:
 				hint_label.text = "正在准备采矿"
 			return
 	var selected_mode := String(hud.state.selected_action_slot)
+	if selected_mode == "energy_cannon" and game_window_manager != null \
+			and game_window_manager.current_player != null \
+			and game_window_manager.current_player.vehicle != null \
+			and game_window_manager.current_player.vehicle.loadout.at(1) is VehicleMiningArm:
+		hud.show_system_message("当前装备的是采掘臂，请点击矿物采集，或换上能量炮再开火")
+		return
 	var mode: Dictionary = WEAPON_MODES.get(selected_mode, {})
 	var attack_controller: Node = combat_attack_controllers.get(selected_mode)
 	if mode.is_empty() or attack_controller == null:
@@ -524,9 +531,7 @@ func _move_to(world_position: Vector2, transition_id: StringName = &"") -> void:
 	if not bool(result.get("ok", false)):
 		var error_code := StringName(result.get("code", &""))
 		if error_code == &"movement.no_propulsion":
-			var error_message := String(result.get(
-				"message", "未安装可用推进器，战车无法移动"
-			))
+			var error_message := PlayerErrorMessages.describe(error_code)
 			hint_label.text = error_message
 			hud.show_system_message(error_message)
 		elif error_code == &"no_reachable_point":
@@ -1005,11 +1010,13 @@ func _on_map_preload_ready(map_id: StringName, bundle: Dictionary) -> void:
 ## [param map_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## [param message] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _on_map_preload_failed(map_id: StringName, message: String) -> void:
+	push_warning("Map preload failed [%s]: %s" % [map_id, message])
+	var notice := PlayerErrorMessages.describe(&"map.load_failed")
 	if not pending_authoritative_join.is_empty():
 		pending_authoritative_join.clear()
-		_handle_map_commit_failure("地图%s加载失败：%s" % [map_id, message])
+		_handle_map_commit_failure(notice)
 		return
-	hint_label.text = "地图%s尚不可用：%s" % [map_id, message]
+	hint_label.text = notice
 	pending_map_transition.clear()
 	pending_map_bundle.clear()
 
@@ -1199,10 +1206,12 @@ func _on_combat_event_received(event: Dictionary) -> void:
 ## 执行 `handle_map_commit_failure` 对应的模块操作。
 ## [param message] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _handle_map_commit_failure(message: String) -> void:
+	push_warning("Map commit failed: %s" % message)
+	var notice := PlayerErrorMessages.describe(&"map.load_failed", message)
 	map_commit_failure_locked = true
-	_stop_moving(message)
+	_stop_moving(notice)
 	if not _initial_authoritative_world_ready and initial_loading_screen != null:
-		initial_loading_screen.set_status("读取角色与地图失败：%s" % message)
+		initial_loading_screen.set_status(notice)
 	pending_map_transition.clear()
 	pending_map_bundle.clear()
 	pending_authoritative_join.clear()
