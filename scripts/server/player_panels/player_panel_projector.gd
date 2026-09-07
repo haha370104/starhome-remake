@@ -5,6 +5,7 @@ const InventoryLayoutScript := preload("res://scripts/domain/inventory/inventory
 
 var _catalog: ItemCatalog
 var _skill_progression_config: Dictionary
+var _journal_tasks: Dictionary = {}
 
 
 ## 初始化领域玩家到网络面板 DTO 的投影器。
@@ -13,6 +14,11 @@ var _skill_progression_config: Dictionary
 func _init(catalog: ItemCatalog, skill_progression_config: Dictionary = {}) -> void:
 	_catalog = catalog
 	_skill_progression_config = skill_progression_config.duplicate(true)
+	var config := JsonConfigLoader.load_dictionary("res://data/gameplay/commerce/weapon_merchant_v1.json")
+	if config.is_ok:
+		var definition: Dictionary = config.value.get("repeatable_task", {})
+		if not definition.is_empty():
+			_journal_tasks[String(definition["id"])] = RepeatableCollectionTask.new(definition)
 
 
 ## 从同一 Player 聚合构建人物、背包和战车三份一致快照。
@@ -25,7 +31,24 @@ func build_bundle(player: Player) -> Dictionary:
 		"character": _character_snapshot(player),
 		"inventory": _inventory_snapshot(player.inventory),
 		"vehicle": _vehicle_snapshot(player),
+		"mission_journal": _journal_snapshot(player),
 	}
+
+
+## 从持久化任务状态生成日志，材料进度复用收集任务领域规则。
+## [param player] 权威玩家聚合；只查询，不接取或交付任务。
+## 返回已接取或曾完成的任务列表，未登记分类保持空白。
+func _journal_snapshot(player: Player) -> Array[Dictionary]:
+	var entries: Array[Dictionary] = []
+	for task_id: String in _journal_tasks:
+		var state: Dictionary = player.quest_states.get(task_id, {})
+		if not state.get("accepted", false) and int(state.get("completions", 0)) == 0:
+			continue
+		var task: RepeatableCollectionTask = _journal_tasks[task_id]
+		var entry := task.snapshot(player.inventory, state)
+		entry["category"] = 0
+		entries.append(entry)
+	return entries
 
 
 ## 构建人物面板 DTO。

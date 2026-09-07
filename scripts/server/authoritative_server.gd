@@ -742,6 +742,10 @@ func handle_peer_player_panel_command(peer_id: int, command: Dictionary) -> Dict
 	if current == null:
 		return _failure(&"panels.state_missing", "authoritative player state is not registered")
 	var command_type := String(command.get("type", ""))
+	if command_type == "query_scene_players":
+		return _success({"scene_players": ScenePlayerListProjector.build(
+			session.map_instance_id, sessions, autosave_service
+		)})
 	var is_commerce: bool = commerce_service.handles(command_type)
 	var is_manufacturing: bool = manufacturing_service.handles(command_type)
 	var current_map := map_registry.instance_by_id(session.map_instance_id)
