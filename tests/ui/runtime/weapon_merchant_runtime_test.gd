@@ -30,7 +30,7 @@ func _run() -> void:
 		return
 	_state = fixture._state
 	_state.currency = 100000
-	_test_high_tier_and_space_purchase()
+	_test_equipment_purchase_scope()
 	var manager = ManagerScript.new()
 	root.add_child(manager)
 	manager.configure(Callable(self, "_dispatch").bind(manager))
@@ -70,9 +70,9 @@ func _run() -> void:
 	_finish(manager)
 
 
-## 通过真实权威服务校验高档价格扣款、跨商人回收和太空挖掘臂禁售。
+## 通过真实权威服务校验高档价格、地面维修臂购买和太空工程臂禁售。
 ## 设计：使用独立内存存档副本；客户端伪造低价不能改变结算，拒绝交易不得写入原状态。
-func _test_high_tier_and_space_purchase() -> void:
+func _test_equipment_purchase_scope() -> void:
 	var state := _state.duplicate_record()
 	var command := {
 		"type": "buy_from_weapon_merchant",
@@ -107,11 +107,37 @@ func _test_high_tier_and_space_purchase() -> void:
 		"glory_equipment_space_collector_3_dbc34d1181",
 		"glory_equipment_space_collector_4_369ba95071",
 		"glory_equipment_collector1000_3a487132c5",
+		"glory_equipment_space_repair_2_a6f8e7197f",
+		"glory_equipment_space_repair_3_1df2183e34",
+		"glory_equipment_space_repair_4_0ee1f33f15",
+		"glory_equipment_space_repair_5_91446308fd",
 	]:
 		command["definition_id"] = forbidden_id
 		var blocked: DomainResult = _service.execute(state, command)
 		_expect(not blocked.is_ok and blocked.error_code == &"commerce.item_not_offered",
-			"直接提交购买命令也不得买到本期未上架的挖掘臂")
+			"直接提交购买命令也不得买到本期未上架的工程臂")
+	var repair_prices := {
+		"glory_equipment_repair_aab7d81665": 500,
+		"glory_equipment_repair2_eda809fe71": 5000,
+		"glory_equipment_repair3_41cbcf4e1c": 10000,
+		"glory_equipment_repair4_488106f12c": 20000,
+		"glory_equipment_repair5_728341bcfb": 25000,
+		"glory_equipment_repair6_b9eff11a48": 60000,
+	}
+	for definition_id: String in repair_prices:
+		command["definition_id"] = definition_id
+		var purchase_result: DomainResult = _service.execute(state, command)
+		_expect(purchase_result.is_ok, "地面维修臂必须能通过权威购买：%s" % definition_id)
+		if not purchase_result.is_ok:
+			continue
+		var purchased: PlayerStateRecord = purchase_result.value.candidate
+		_expect(purchased.currency == state.currency - int(repair_prices[definition_id]),
+			"地面维修臂应按原始售价扣款")
+		var found := false
+		for stack: InventoryStackRecord in purchased.inventory_stacks:
+			if stack.item_definition_id == definition_id:
+				found = true
+		_expect(found, "购买结果应把正确的地面维修臂加入背包")
 
 
 ## 把窗口命令同步交给真实权威服务并回灌最新面板快照。

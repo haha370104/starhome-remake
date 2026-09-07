@@ -158,6 +158,7 @@ func _is_sellable(definition: Dictionary) -> bool:
 ## 将领域物品类型归入当前商人支持的商品分组。
 ## [param definition] 统一物品定义。
 ## 返回配置中启用的分类标识；不属于商人经营范围时返回空字符串。
+## 设计：工程臂按原始类型区分地面与太空；Repair 属于武器继承链，不能仅筛 vehicle_equipment 或中文名。
 func _merchant_category(definition: Dictionary) -> String:
 	var category := ""
 	match String(definition.get("kind", "")):
@@ -166,11 +167,14 @@ func _merchant_category(definition: Dictionary) -> String:
 		"vehicle_engine": category = "vehicle_engine"
 		"missile_weapon": category = "missile_weapon"
 		"rocket_weapon": category = "rocket_weapon"
-		"vehicle_equipment":
+		"vehicle_weapon", "vehicle_equipment":
 			var name := String(definition.get("display_name", ""))
-			if "维修臂" in name:
+			var stats: Dictionary = definition.get("stats", {})
+			var properties: Dictionary = stats.get("legacy_properties", {})
+			var equipment_type := int(properties.get("m_nEquipKind2", -1))
+			if equipment_type == 3:
 				category = "repair_arm"
-			elif "挖掘臂" in name:
+			elif equipment_type == 4:
 				category = "mining_arm"
 			elif "隐身装置" in name:
 				category = "stealth_device"

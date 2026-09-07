@@ -24,6 +24,11 @@
         "glory_equipment_collector5_840acf4362", "glory_equipment_collector6_ac4d3e4b7b",
         "glory_equipment_collector7_76bbb2cfae"
       ],
+      "repair_arm": [
+        "glory_equipment_repair_aab7d81665", "glory_equipment_repair2_eda809fe71",
+        "glory_equipment_repair3_41cbcf4e1c", "glory_equipment_repair4_488106f12c",
+        "glory_equipment_repair5_728341bcfb", "glory_equipment_repair6_b9eff11a48"
+      ],
       "energy_cannon": [
         "glory_equipment_gun1_216568dc50", "glory_equipment_gun3_3599e6f3f0",
         "glory_equipment_gun4_d045d0a572", "glory_equipment_gun5_550f30177d",

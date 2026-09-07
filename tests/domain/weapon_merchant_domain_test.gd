@@ -36,6 +36,7 @@ func _initialize() -> void:
 		_expect(not special.offer("glory_equipment_missile5_15584171c6").is_empty(), "280级大力神导弹应在售")
 		_test_equipment_prices(merchant, special, items)
 	_test_ground_mining_arms(offers, items)
+	_test_ground_repair_arms(offers, items)
 	var inventory := Inventory.new(40, 0, 0)
 	for definition_id: String in [
 		"low_grade_gel",
@@ -101,6 +102,30 @@ func _test_ground_mining_arms(offers: Array[Dictionary], items: ItemCatalog) -> 
 			"在售挖掘臂必须属于地面类别4，不能混入太空类别102")
 	_expect(names == ["初级挖掘臂", "改式挖掘臂", "精度挖掘臂", "多空挖掘臂", "磁性挖掘臂", "电磁挖掘臂", "磁导挖掘臂"],
 		"挖掘臂应仅保留10至250级七档普通地面型号，并按等级排列")
+
+
+## 验证维修臂使用普通 Repair 系列，保留原始等级和价格并排除太空型号。
+## [param offers] 按分类和等级排序的商品投影。
+## [param items] 用于校验继承链和装备类型的统一物品目录。
+func _test_ground_repair_arms(offers: Array[Dictionary], items: ItemCatalog) -> void:
+	var names: Array[String] = []
+	var levels: Array[int] = []
+	var prices: Array[int] = []
+	for offer: Dictionary in offers:
+		if offer["category"] != "repair_arm":
+			continue
+		names.append(String(offer["display_name"]))
+		levels.append(int(offer["required_level"]))
+		prices.append(int(offer["price"]))
+		var definition := items.definition(String(offer["definition_id"]))
+		_expect(int(definition["stats"]["legacy_properties"]["m_nEquipKind2"]) == 3,
+			"在售维修臂必须属于地面类别3，不能混入太空类别104")
+		_expect(String(definition["source_audit"]["inheritance"]).contains(" > Repair > "),
+			"地面维修臂应来自原始 Repair 继承链")
+	_expect(names == ["初级维修臂", "加强维修臂", "精密维修臂", "超导维修臂", "磁性维修臂", "电磁维修臂"],
+		"必须出售repair至repair6六款地面维修臂")
+	_expect(levels == [10, 50, 100, 150, 200, 250], "维修臂应按原始使用等级递增排序")
+	_expect(prices == [500, 5000, 10000, 20000, 25000, 60000], "维修臂应保留原始目录价格")
 
 
 ## 检查所有商品是否满足价格、等级和展示字段约束。
