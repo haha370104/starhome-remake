@@ -629,7 +629,7 @@
           ]
         },
         "position": [
-          598,
+          595,
           0
         ]
       },
@@ -669,7 +669,7 @@
           ]
         },
         "position": [
-          711,
+          633,
           0
         ]
       },
@@ -709,7 +709,7 @@
           ]
         },
         "position": [
-          753,
+          671,
           0
         ]
       },
@@ -749,47 +749,7 @@
           ]
         },
         "position": [
-          790,
-          0
-        ]
-      },
-      "star_map": {
-        "available": true,
-        "states": {
-          "normal": "res://assets/ui/free_hud/bottom_main/menu_buttons/star_map/normal.png",
-          "hover": "res://assets/ui/free_hud/bottom_main/menu_buttons/star_map/hover.png",
-          "pressed": "res://assets/ui/free_hud/bottom_main/menu_buttons/star_map/pressed.png"
-        },
-        "state_sizes": {
-          "normal": [
-            29,
-            29
-          ],
-          "hover": [
-            29,
-            29
-          ],
-          "pressed": [
-            29,
-            29
-          ]
-        },
-        "state_origins": {
-          "normal": [
-            0,
-            0
-          ],
-          "hover": [
-            0,
-            0
-          ],
-          "pressed": [
-            0,
-            0
-          ]
-        },
-        "position": [
-          827,
+          709,
           0
         ]
       },
@@ -829,7 +789,47 @@
           ]
         },
         "position": [
-          903,
+          747,
+          0
+        ]
+      },
+      "premium_shop": {
+        "available": true,
+        "states": {
+          "normal": "res://assets/ui/free_hud/bottom_main/menu_buttons/premium_shop/normal.png",
+          "hover": "res://assets/ui/free_hud/bottom_main/menu_buttons/premium_shop/hover.png",
+          "pressed": "res://assets/ui/free_hud/bottom_main/menu_buttons/premium_shop/pressed.png"
+        },
+        "state_origins": {
+          "normal": [
+            1,
+            2
+          ],
+          "hover": [
+            1,
+            2
+          ],
+          "pressed": [
+            1,
+            2
+          ]
+        },
+        "state_sizes": {
+          "normal": [
+            31,
+            27
+          ],
+          "hover": [
+            31,
+            27
+          ],
+          "pressed": [
+            31,
+            27
+          ]
+        },
+        "position": [
+          785,
           0
         ]
       }

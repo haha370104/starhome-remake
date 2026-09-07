@@ -1,0 +1,43 @@
+# 底栏导航与窗口（2026-09-07）
+
+## 当前入口
+
+用户原始 12 个槽位删除 4、5、9、10 后，紧凑排列为：人物属性、背包、战车装备、好友列表、当前场景玩家、任务日志、系统设置、商城。
+按钮保持原像素大小；从 1024px 设计面 x=519 开始，每项间距 38px。删除的是入口，不更改顶部工具栏。
+
+人物、背包、战车沿用已有窗口。好友点击中央提示未实现。其他四窗归 `GameWindowManager` 管理，可右键关闭，除小型系统菜单外可拖动，不用系统模态弹窗阻断地图操作。
+
+## 原版证据与实现边界
+
+源码位置相对仓库上一级 `outputs`，只用于离线逆向，不属于运行时资源路径。
+
+| 功能 | 本地原版源码 | 已接入 / 明确保留 |
+|---|---|---|
+| 底栏顺序与入口 | `starhome_lz_fr_fcc_source/menupart_main_common_dzl.fcc`，`base_ctrlpad`、`ShowPlayerTask`、`OnEnterShopping` | 8 个独立状态按钮；去除天阵、命运、星图、GM 反馈 |
+| 用户列表 | `starhome_lz_ry_fcc_source/chatctrl_main.fcc`，`great/code_string.fcc` | 320×450；用户列表/当前区域在线用户列表；用户名、性别、战果、战斗积分四列和列头排序 |
+| 任务日志 | `starhome_lz_fr_fcc_source/bool/role/userrolewnd.fcc`、`great/bool_great.fcc` | 250×350；新兵任务、中级任务、高级任务、家园活动四页；名称、状态、材料、完成次数和奖励 |
+| 系统菜单 | `starhome_lz_fr_fcc_source/menupart_main_common_dzl.fcc`，`CtrlPad_SystemWnd` | 原 65×178 九行按钮图、逐项点击；仅提示，不实际退出、改设置或打开外链 |
+| 商城 | `starhome_lz_fr_fcc_source/hp/adorn/adorn_ui.fcc`，`shopping_ui/InitUi/BtnWnd` | 原 720×502 背景，三大类及各子类、进入确认、搜索、翻页、物品信息区、退出 |
+
+用户列表高级社交操作、战果和战斗积分尚无模型支持：后两项显示“—”，双击用户明确提示未实现。不是伪造 0，也不泄露账号信息。
+
+任务日志只显示真实已接取或有完成记录的任务。目前目录只有武器店材料循环任务，暂归新兵页（复刻分类选择，非原版等级结论）。详情为同窗下半部分，可滚动；原版另开详情的方式未照搬。其他分类为空，不生成占位任务，不允许日志远程领取/交付。
+
+商城售卖清单未定：分类与搜索返回明确空态，翻页保持 0/0；充值、查询紫晶、兑换和购买只提示待实现。不导入旧商品、不定义汇率、不调用外链或支付服务。原图顶部有六个页签轮廓，原源码仅前三项有分类，其余保持空白。文字控件统一宋体常规 12px，功能控件用项目按钮样式，不宣称全部按钮像素级还原。
+
+## 权威边界
+
+- 玩家列表：`query_scene_players` 经过现有 `player_panel_command` 传输；服务器只认发起会话的 `map_instance_id`。排除其他实例和已断线宽限会话，返回实体 ID、显示名、性别及未实现值。客户端请求不得指定任意地图。
+- 任务日志：`PlayerPanelProjector` 从同一 `Player.quest_states` 与 `Inventory` 调用 `RepeatableCollectionTask.snapshot`。没有客户端任务规则副本，没有额外持久化表；领取与提交仍由商人权威服务处理。
+- 名单/日志仅在窗口可见时每 2 秒查询；普通物品与任务事务仍即时更新日志。查询不写数据库、不增加状态 revision。离线和 ENet 共用同一服务器处理器。
+- 窗口投影只负责展示/排序。数据来源是服务器，商城和系统占位不会发出游戏状态变更命令。
+
+## 素材与维护
+
+导入脚本 `tools/import_bottom_menu_windows.py` 使用帧元数据裁切、拼接边框，不拉伸源图。运行时路径为 `assets/ui/windows/navigation` 和 `assets/ui/free_hud/bottom_main/menu_buttons/premium_shop`，来源审计在 `assets/ui/source_audit/bottom_menu_windows.json`。
+
+用户此次指定的免费版任务日志、商城、系统菜单，以及荣耀本地找不到边框时的用户列表回退，是窄范围 UI 豁免；不能推广到地图、装备、怪物或其他窗口。`tools/import_free_hud_assets.py` 同步维护这 8 项，重新导入不会恢复已删除入口。
+
+## 验证
+
+`tests/ui/runtime/navigation_windows_test.gd` 已纳入总门禁：验证名单地图隔离和断线过滤、字段隐私、任务持久化进度、8 项顺序、窗口开关、商城确认/分类/空搜索、按可见性轮询。可选 `--capture-navigation` 使用真实渲染器输出 `.godot/navigation_windows.png` 供视觉检查。

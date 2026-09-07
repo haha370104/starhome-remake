@@ -39,12 +39,12 @@ TOP_BUTTONS = {
 BOTTOM_MENU_BUTTONS = {
     "character": ("pic2/ctrlpad/btn_humanwnd", [519, 0]),
     "inventory": ("pic2/ctrlpad/btn_humanbag", [557, 0]),
-    "vehicle_equipment": ("pic2/ctrlpad/btn_humanequip", [598, 0]),
-    "friends": ("pic2/ctrlpad/btn_playerfriend", [711, 0]),
-    "scene_players": ("pic2/ctrlpad/btn_look", [753, 0]),
-    "missions": ("pic2/ctrlpad/btn_playertask", [790, 0]),
-    "star_map": ("pic2/ctrlpad/btn_spacemap", [827, 0]),
-    "system": ("pic2/ctrlpad/btn_system", [903, 0]),
+    "vehicle_equipment": ("pic2/ctrlpad/btn_humanequip", [595, 0]),
+    "friends": ("pic2/ctrlpad/btn_playerfriend", [633, 0]),
+    "scene_players": ("pic2/ctrlpad/btn_look", [671, 0]),
+    "missions": ("pic2/ctrlpad/btn_playertask", [709, 0]),
+    "system": ("pic2/ctrlpad/btn_system", [747, 0]),
+    "premium_shop": ("pic2/ctrlpad/shopping", [785, 0]),
 }
 
 
