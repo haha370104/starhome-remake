@@ -102,6 +102,19 @@ func build_bundle(state: PlayerStateRecord, operation: Dictionary = {}) -> Dicti
 	return _build_bundle(mapped.value, operation, merchant_id) if mapped.is_ok else {}
 
 
+## 把内部死亡事件应用到隔离聚合；进度由自动存档写入，领奖仍走即时事务提交。
+func record_monster_kill(state: PlayerStateRecord, event: Dictionary) -> DomainResult:
+	var mapped := _mapper.to_domain(state)
+	if not mapped.is_ok:
+		return mapped
+	if not quests.record_monster_kill(mapped.value, event):
+		return DomainResult.ok({"changed": false})
+	var persisted := _mapper.to_record(mapped.value)
+	if not persisted.is_ok:
+		return persisted
+	return DomainResult.ok({"changed": true, "candidate": persisted.value})
+
+
 ## 把已验证会话命令分派给指定商人的权威交易或普通武器商人任务。
 ## [param player] 当前权威玩家聚合。
 ## [param command_type] 客户端命令类型。

@@ -30,6 +30,8 @@ var _monster_route_resolver := Callable()
 var _shot_sequence := 0
 var _monster_attack_sequence := 0
 var _loot_sequence := 0
+var _quest_kills: Array[Dictionary] = []
+var _quest_event_namespace := ""
 
 
 ## 配置并初始化 `configure` 对应的模块状态。
@@ -50,6 +52,8 @@ func configure(
 	_shot_sequence = 0
 	_monster_attack_sequence = 0
 	_loot_sequence = 0
+	_quest_kills.clear()
+	_quest_event_namespace = Crypto.new().generate_random_bytes(16).hex_encode()
 	working_energy_regen_factor = regen_factor
 	_random.seed = random_seed
 	actors.clear()
@@ -617,6 +621,7 @@ func _settle_projectile(projectile: Dictionary) -> void:
 			"loot_drops": spawned_loot,
 		}
 		death_events.append(death_event)
+		_record_quest_kill(monster, attacker_id)
 		event["death"] = death_event.duplicate(true)
 
 
@@ -668,9 +673,23 @@ func _settle_rocket_projectile(projectile: Dictionary) -> void:
 				"loot_drops": spawned_loot,
 			}
 			death_events.append(death_event)
+			_record_quest_kill(monster, String(projectile["attacker_id"]))
 			event["death"] = death_event.duplicate(true)
 	if not hit_any:
 		_record_projectile_expired(projectile, impact_position, &"no_aoe_target_at_impact_tick")
+
+
+## 死亡进度独立于仅保留64条的表现事件环；群攻大量击杀也不会丢失训练计数。
+func _record_quest_kill(monster: MonsterLifecycle, killer_id: String) -> void:
+	_quest_kills.append({"killer_id": killer_id, "species_id": monster.species_id,
+		"death_id": "%s.%s.%d" % [_quest_event_namespace, monster.monster_id, monster.death_generation]})
+
+
+## 每次推进后由权威服务器提取且清空，不对网络客户端开放写入口。
+func drain_quest_kills() -> Array[Dictionary]:
+	var result := _quest_kills
+	_quest_kills = []
+	return result
 
 
 ## 记录飞满射程或预定目标已消失的无伤害结束事件。

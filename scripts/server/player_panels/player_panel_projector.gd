@@ -5,7 +5,7 @@ const InventoryLayoutScript := preload("res://scripts/domain/inventory/inventory
 
 var _catalog: ItemCatalog
 var _skill_progression_config: Dictionary
-var _journal_tasks: Dictionary = {}
+var _quest_catalog := RepeatableQuestCatalog.new()
 
 
 ## 初始化领域玩家到网络面板 DTO 的投影器。
@@ -14,10 +14,7 @@ var _journal_tasks: Dictionary = {}
 func _init(catalog: ItemCatalog, skill_progression_config: Dictionary = {}) -> void:
 	_catalog = catalog
 	_skill_progression_config = skill_progression_config.duplicate(true)
-	var quests := RepeatableQuestCatalog.new()
-	if quests.initialize(catalog).is_ok:
-		for definition: Dictionary in quests.definitions.values():
-			_journal_tasks[String(definition["id"])] = RepeatableCollectionTask.new(definition)
+	_quest_catalog.initialize(catalog)
 
 
 ## 从同一 Player 聚合构建人物、背包和战车三份一致快照。
@@ -39,12 +36,12 @@ func build_bundle(player: Player) -> Dictionary:
 ## 返回已接取或曾完成的任务列表，未登记分类保持空白。
 func _journal_snapshot(player: Player) -> Array[Dictionary]:
 	var entries: Array[Dictionary] = []
-	for task_id: String in _journal_tasks:
+	for task_id: String in _quest_catalog.definitions:
 		var state: Dictionary = player.quest_states.get(task_id, {})
 		if not state.get("accepted", false) and int(state.get("completions", 0)) == 0:
 			continue
-		var task: RepeatableCollectionTask = _journal_tasks[task_id]
-		var entry := task.snapshot(player.inventory, state)
+		var entry := _quest_catalog.snapshot(player, _quest_catalog.definitions[task_id],
+			_quest_catalog.day_key(int(Time.get_unix_time_from_system())))
 		entry["category"] = 0
 		entries.append(entry)
 	return entries

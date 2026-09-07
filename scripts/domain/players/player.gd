@@ -65,6 +65,16 @@ func _init(state: Dictionary = {}) -> void:
 	quest_states = (quest_value as Dictionary).duplicate(true) if quest_value is Dictionary else {}
 
 
+## 任务奖励使技能恰好升一级，复用经验清零与综合等级同步，满级时拒绝领奖。
+func grant_skill_level_reward(skill_id: String, progression_config: Dictionary) -> DomainResult:
+	if skills.base_level(skill_id) >= int(progression_config.get("maximum_level", 700)):
+		return DomainResult.failure(&"quest.skill_maximum", "该技能已满级，无法领取升级奖励")
+	var threshold := SkillProgression.get_need_points(StringName(skill_id), skills.base_level(skill_id), progression_config)
+	if not threshold.is_ok:
+		return threshold
+	return grant_skill_experience(skill_id, float(threshold.value), progression_config)
+
+
 ## 向指定技能发放一次权威经验，并在升级后同步重算综合等级。
 ## [param skill_id] 接收经验的技能稳定标识。
 ## [param amount] 已由服务器玩法规则换算出的本次经验。

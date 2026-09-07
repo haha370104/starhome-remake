@@ -1,0 +1,171 @@
+{
+  "schema_version": 1,
+  "providers": {
+    "combat_trainer": {
+      "id": "combat_trainer",
+      "display_name": "战斗训练师",
+      "map_ids": [
+        "yian_harbor_hall_floor_1"
+      ],
+      "sell_categories": []
+    }
+  },
+  "training_policy": {
+    "timezone_offset_seconds": 28800,
+    "level_bands": [
+      {
+        "maximum_level": 50,
+        "tiers": [
+          1,
+          2
+        ]
+      },
+      {
+        "maximum_level": 100,
+        "tiers": [
+          2,
+          3,
+          4
+        ]
+      },
+      {
+        "maximum_level": 150,
+        "tiers": [
+          3,
+          4,
+          5
+        ]
+      },
+      {
+        "maximum_level": 200,
+        "tiers": [
+          4,
+          5,
+          6
+        ]
+      },
+      {
+        "maximum_level": 300,
+        "tiers": [
+          5,
+          6,
+          7
+        ]
+      },
+      {
+        "maximum_level": 400,
+        "tiers": [
+          6,
+          7,
+          8
+        ]
+      },
+      {
+        "maximum_level": 500,
+        "tiers": [
+          7,
+          8,
+          9
+        ]
+      },
+      {
+        "maximum_level": 2147483647,
+        "tiers": [
+          10
+        ]
+      }
+    ]
+  },
+  "tasks": [
+    {
+      "id": "training_energy_cannon",
+      "provider_id": "combat_trainer",
+      "kind": "kill_training",
+      "title": "能量炮训练",
+      "daily_accept_limit": 10,
+      "maximum_completions": 0,
+      "kill_count": 20,
+      "skill_id": "energy_cannon",
+      "skill_level_reward": 1,
+      "currency_reward": 0,
+      "dialogue": {
+        "offer": "接取后按你的能量炮基础等级指定一种怪物。击杀20只后回来领取奖励，能量炮等级提升1级。",
+        "turn_in": "训练目标已经完成，请领取奖励。",
+        "complete": "能量炮训练完成，技能等级提升1级！",
+        "exhausted": "今日该项训练接取次数已用尽，请明天再来。"
+      }
+    },
+    {
+      "id": "training_driving",
+      "provider_id": "combat_trainer",
+      "kind": "kill_training",
+      "title": "驾驶训练",
+      "daily_accept_limit": 10,
+      "maximum_completions": 0,
+      "kill_count": 20,
+      "skill_id": "driving",
+      "skill_level_reward": 1,
+      "currency_reward": 0,
+      "dialogue": {
+        "offer": "接取后按你的驾驶基础等级指定一种怪物。击杀20只后回来领取奖励，驾驶等级提升1级。",
+        "turn_in": "训练目标已经完成，请领取奖励。",
+        "complete": "驾驶训练完成，技能等级提升1级！",
+        "exhausted": "今日该项训练接取次数已用尽，请明天再来。"
+      }
+    },
+    {
+      "id": "training_missile",
+      "provider_id": "combat_trainer",
+      "kind": "kill_training",
+      "title": "导弹训练",
+      "daily_accept_limit": 10,
+      "maximum_completions": 0,
+      "kill_count": 20,
+      "skill_id": "missile",
+      "skill_level_reward": 1,
+      "currency_reward": 0,
+      "dialogue": {
+        "offer": "接取后按你的导弹基础等级指定一种怪物。击杀20只后回来领取奖励，导弹等级提升1级。",
+        "turn_in": "训练目标已经完成，请领取奖励。",
+        "complete": "导弹训练完成，技能等级提升1级！",
+        "exhausted": "今日该项训练接取次数已用尽，请明天再来。"
+      }
+    },
+    {
+      "id": "training_rocket_launcher",
+      "provider_id": "combat_trainer",
+      "kind": "kill_training",
+      "title": "火箭炮训练",
+      "daily_accept_limit": 10,
+      "maximum_completions": 0,
+      "kill_count": 20,
+      "skill_id": "rocket_launcher",
+      "skill_level_reward": 1,
+      "currency_reward": 0,
+      "dialogue": {
+        "offer": "接取后按你的火箭炮基础等级指定一种怪物。击杀20只后回来领取奖励，火箭炮等级提升1级。",
+        "turn_in": "训练目标已经完成，请领取奖励。",
+        "complete": "火箭炮训练完成，技能等级提升1级！",
+        "exhausted": "今日该项训练接取次数已用尽，请明天再来。"
+      }
+    },
+    {
+      "id": "training_repair",
+      "provider_id": "combat_trainer",
+      "kind": "kill_training",
+      "title": "维修训练",
+      "daily_accept_limit": 10,
+      "maximum_completions": 0,
+      "kill_count": 20,
+      "skill_id": "repair",
+      "skill_level_reward": 1,
+      "currency_reward": 0,
+      "dialogue": {
+        "offer": "接取后按你的维修基础等级指定一种怪物。击杀20只后回来领取奖励，维修等级提升1级。",
+        "turn_in": "训练目标已经完成，请领取奖励。",
+        "complete": "维修训练完成，技能等级提升1级！",
+        "exhausted": "今日该项训练接取次数已用尽，请明天再来。"
+      }
+    }
+  ]
+}

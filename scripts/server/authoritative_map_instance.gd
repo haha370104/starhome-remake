@@ -545,6 +545,11 @@ func drain_skill_progression_events() -> Array[Dictionary]:
 	return events
 
 
+## 提取本地图内部击杀事件，与技能经验和客户端表现事件分别消费。
+func drain_quest_kills() -> Array[Dictionary]:
+	return combat_module.drain_quest_kills() if combat_module != null else []
+
+
 ## 执行 `closest_dynamically_available_position` 对应的模块操作。
 ## [param requested_position] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## [param excluded_entity_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。

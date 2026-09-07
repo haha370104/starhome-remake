@@ -42,7 +42,7 @@ func snapshot(inventory: Inventory, state: Dictionary) -> Dictionary:
 		"ready_to_turn_in": ready,
 		"requirements": requirements,
 		"currency_reward": int(_definition.get("currency_reward", 0)),
-		"next_milestone_rewards": RepeatableQuestCatalog.rewards_at(_definition, (floori(float(completions) / 5.0) + 1) * 5),
+		"next_milestone_rewards": RepeatableQuestCatalog.next_rewards(_definition, completions),
 		"provider_id": String(_definition.get("provider_id", "")),
 		"dialogue": (_definition.get("dialogue", {}) as Dictionary).duplicate(true),
 	}

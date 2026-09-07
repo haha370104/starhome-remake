@@ -254,6 +254,8 @@ func advance_simulation(elapsed_seconds: float, now_msec := -1) -> void:
 			_settle_mining_cycles(registered_instance)
 			for progression_event: Dictionary in registered_instance.drain_skill_progression_events():
 				_apply_skill_progression_event(progression_event)
+			for quest_kill: Dictionary in registered_instance.drain_quest_kills():
+				_apply_quest_kill(quest_kill)
 		_complete_due_vehicle_recoveries()
 		if server_tick % _ticks_per_snapshot == 0:
 			_emit_snapshot()
@@ -780,12 +782,37 @@ func handle_peer_player_panel_command(peer_id: int, command: Dictionary) -> Dict
 		if not refreshed_loadout.ok:
 			return refreshed_loadout
 	if is_commerce:
+		var operation: Dictionary = value.get("operation", {})
+		if operation.get("skill_level_up") is Dictionary and session.has_active_peer():
+			_send_reliable(session.peer_id, {"type": "skill_level_up",
+				"result": _wire_result(_success(operation["skill_level_up"]))})
 		return _success(commerce_service.build_bundle(committed.value, value.get("operation", {})))
 	if is_manufacturing:
 		return _success(manufacturing_service.build_bundle(
 			committed.value, value.get("operation", {})
 		))
 	return _success(player_panel_service.build_bundle(committed.value))
+
+
+## 消费仅来自战斗模块的死亡事件，进度进入同一玩家存档并推送任务日志。
+func _apply_quest_kill(event: Dictionary) -> void:
+	if autosave_service == null or commerce_service == null:
+		return
+	var entity_id := String(event.get("killer_id", ""))
+	var current := autosave_service.state_for(entity_id)
+	if current == null:
+		return
+	var result: DomainResult = commerce_service.record_monster_kill(current, event)
+	if not result.is_ok or not bool(result.value.get("changed", false)):
+		return
+	var stored := autosave_service.update_runtime_state(entity_id, result.value["candidate"])
+	if not stored.is_ok:
+		push_error("训练进度存档失败：" + stored.error_message)
+		return
+	var session: ServerSession = sessions.session_for_entity(entity_id)
+	if session != null and session.has_active_peer():
+		_send_reliable(session.peer_id, {"type": "player_panels",
+			"result": _wire_result(_success(player_panel_service.build_bundle(stored.value)))})
 
 
 ## 应用地图实例产出的权威技能成长事件，并按升级语义选择即时提交或自动存档。

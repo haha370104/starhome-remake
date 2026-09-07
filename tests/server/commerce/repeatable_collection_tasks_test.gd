@@ -9,8 +9,11 @@ func _initialize() -> void:
 	var items := ItemCatalog.new()
 	_expect(items.initialize().is_ok, "物品目录加载")
 	var service := RepeatableQuestService.new()
-	_expect(service.initialize(items).is_ok, "循环任务配置加载")
+	var loaded := service.initialize(items)
+	_expect(loaded.is_ok, "循环任务配置加载：" + loaded.error_message)
 	for task: Dictionary in service.catalog.definitions.values():
+		if String(task.get("kind", "")) != "collection":
+			continue
 		var provider := String(task["provider_id"])
 		var player := Player.new({"map_id": service.catalog.providers[provider]["map_ids"][0], "inventory_capacity": 200})
 		for round_number in range(1, int(task["maximum_completions"]) + 1):

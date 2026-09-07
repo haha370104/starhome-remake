@@ -17,6 +17,7 @@ func _initialize() -> void:
 	_test_vehicle_assembly_and_energy_domains()
 	_test_energy_cannon_authority_state_machine()
 	_test_single_death_and_thirty_second_respawn()
+	_test_training_kill_queue()
 	_test_seeded_damage_is_reproducible()
 	_test_three_engagement_policies()
 	_test_five_second_wander_interval()
@@ -182,6 +183,9 @@ func _test_single_death_and_thirty_second_respawn() -> void:
 	_expect(first_shot.is_ok and second_shot.is_ok, "simultaneous shots may be in flight before either death is settled")
 	_settle_all_projectiles(module)
 	_expect(module.death_events.size() == 1, "one monster generation should emit exactly one death event")
+	var quest_kills := module.drain_quest_kills()
+	_expect(quest_kills.size() == 1 and quest_kills[0]["killer_id"] == "player.a", "训练击杀只能归属真实击杀者一次")
+	_expect(quest_kills[0]["species_id"] == "om_adult" and module.drain_quest_kills().is_empty(), "训练记录物种并只消费一次")
 	var monster: MonsterLifecycle = module.monster_for("monster.shared")
 	_expect(monster.death_generation == 1 and monster.last_killer_id == "player.a", "first killer should own the settled generation")
 	var expected_respawn_tick := module.current_tick + 600
@@ -192,6 +196,27 @@ func _test_single_death_and_thirty_second_respawn() -> void:
 	_expect(respawns.is_ok and respawns.value.size() == 1, "monster should respawn exactly 600 ticks after impact")
 	_expect(monster.is_alive() and monster.health == monster.max_health, "respawn should restore full health")
 	_expect(module.death_events.size() == 1 and module.respawn_events.size() == 1, "respawn should not duplicate prior death settlement")
+
+
+## 群攻一次超过客户端64条事件环也必须完整保留训练击杀。
+func _test_training_kill_queue() -> void:
+	var module := _new_module(123)
+	var weapon := _secondary_weapon("rocket_launcher", &"rocket_aoe", 30, 600.0)
+	weapon["area_radius"] = 36.0
+	var registered := module.register_vehicle("training.rocket", MAP_INSTANCE_ID, Vector2.ZERO, _assembly_result().value,
+		{"rocket_launcher.primary": weapon})
+	_expect(registered.is_ok, "训练战车注册：" + registered.error_message)
+	for index in range(75):
+		module.register_monster(_monster_definition("training.%d" % index, 7, Vector2(210, 0)))
+	var shot := module.handle_weapon_attack("training.rocket", _ability_intent("rocket_launcher.primary", Vector2(210, 0), 1))
+	_expect(shot.is_ok, "训练群攻发射：" + shot.error_message)
+	_settle_all_projectiles(module)
+	var kills := module.drain_quest_kills()
+	_expect(kills.size() == 75, "75只范围击杀不可被64条表现环截断")
+	var identities: Dictionary = {}
+	for event: Dictionary in kills:
+		identities[event["death_id"]] = true
+	_expect(identities.size() == 75 and module.drain_quest_kills().is_empty(), "死亡标识唯一且消费后清空")
 
 
 ## 执行 `test_seeded_damage_is_reproducible` 对应的模块操作。
@@ -737,6 +762,7 @@ func _fixed_damage_weapon(damage: int) -> Dictionary:
 func _monster_definition(monster_id: String, health: int, position: Vector2) -> Dictionary:
 	return {
 		"monster_id": monster_id,
+		"species_id": "om_adult",
 		"map_instance_id": MAP_INSTANCE_ID,
 		"position": position,
 		"max_health": health,
