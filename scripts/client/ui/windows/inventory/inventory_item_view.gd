@@ -23,8 +23,14 @@ var _hover_material: ShaderMaterial
 
 ## 使用权威物品快照配置一个可拖动背包视图。
 ## [param domain_item] 当前玩家背包内的具体领域物品实例。
+## [param display_size] 五列八行网格中的统一单元格尺寸。
+## [param padding] 图标相对单元格四边的留白。
 ## 设计：拖动只移动本地幽灵节点，释放后提交意图；下一次权威快照决定最终位置。
-func configure(domain_item: GameItem) -> void:
+func configure(
+	domain_item: GameItem,
+	display_size: Vector2 = Vector2.ZERO,
+	padding: float = 0.0,
+) -> void:
 	item = domain_item
 	item_snapshot = item.to_view_dictionary()
 	var inventory_presentation := item.presentation_for("inventory")
@@ -32,7 +38,12 @@ func configure(domain_item: GameItem) -> void:
 	var native_size := item.visual_size_for("inventory")
 	if not resolved_visual.is_empty() and not inventory_presentation.has("native_size"):
 		native_size = Vector2i(resolved_visual["size"])
-	size = Vector2(native_size)
+	var resolved_display_size := display_size if display_size.x > 0.0 and display_size.y > 0.0 \
+		else Vector2(native_size)
+	var safe_padding := clampf(
+		padding, 0.0, minf(resolved_display_size.x, resolved_display_size.y) * 0.5
+	)
+	size = resolved_display_size
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	var item_tooltip := "%s\n%s" % [
 		item.display_name,
@@ -44,11 +55,11 @@ func configure(domain_item: GameItem) -> void:
 
 	_icon = TextureRect.new()
 	_icon.name = "Icon"
-	_icon.texture = resolved_visual.get("texture") as Texture2D
-	_icon.position = Vector2.ZERO
-	_icon.size = Vector2(native_size)
 	_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	_icon.stretch_mode = TextureRect.STRETCH_KEEP
+	_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	_icon.texture = resolved_visual.get("texture") as Texture2D
+	_icon.position = Vector2(safe_padding, safe_padding)
+	_icon.size = resolved_display_size - Vector2.ONE * safe_padding * 2.0
 	_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_icon)
 	_hover_material = ItemHoverHighlightScript.bind(self, _icon, item_tooltip)

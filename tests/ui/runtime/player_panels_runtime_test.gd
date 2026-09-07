@@ -96,9 +96,13 @@ func _run() -> void:
 		var material_icon := material_view.get_node("Icon") as TextureRect
 		_expect(material_icon.texture != null,
 			"低级生物硅进入背包后应使用 inventory 表现素材")
-		_expect(material_view.size == Vector2(50, 42) \
-				and material_icon.size == Vector2(50, 42),
-			"低级生物硅应与地面表现一样按 50×42 原尺寸绘制")
+		_expect(material_view.size.is_equal_approx(InventoryPanel.CELL_SIZE) \
+				and material_icon.size.is_equal_approx(
+					InventoryPanel.CELL_SIZE - Vector2(10, 10)
+				),
+			"低级生物硅应进入统一五列八行单元格并保留 5px 内边距，实际 %s / %s" % [
+				material_view.size, material_icon.size,
+			])
 	var damage_progress = panel_fixture.grant_skill_progression({
 		"entity_id": "player.local",
 		"source": "effective_damage",
@@ -128,9 +132,14 @@ func _run() -> void:
 	var inventory_item := manager.inventory_panel._item_canvas.get_child(0) as InventoryItemView
 	var inventory_icon := inventory_item.get_node("Icon") as TextureRect
 	_expect(inventory_item.item.definition_id == "beginner_engine" \
-			and inventory_item.size == Vector2(36, 32) \
-			and inventory_icon.size == Vector2(36, 32),
-		"初级引擎应按原客户端 ALE 帧 36×32 原尺寸绘制")
+			and inventory_item.size.is_equal_approx(InventoryPanel.CELL_SIZE) \
+			and inventory_icon.position == Vector2(5, 5) \
+			and inventory_icon.size.is_equal_approx(
+				InventoryPanel.CELL_SIZE - Vector2(10, 10)
+			),
+		"初级引擎也应使用统一单元格和 5px 内边距，实际 %s / %s / %s" % [
+			inventory_item.size, inventory_icon.position, inventory_icon.size,
+		])
 	inventory_item.mouse_entered.emit()
 	_expect(_is_item_highlighted(inventory_icon), "背包物品悬停应启用原版绿色发光")
 	var legacy_tooltip := ItemHoverHighlightScript.active_tooltip()
@@ -182,7 +191,10 @@ func _run() -> void:
 	var engine_visual := manager.vehicle_panel._slot_root.get_node("Location_3_beginner_engine") as TextureRect
 	_expect(chassis_visual.position == Vector2(93, 208), "底盘应使用旧客户端对话框坐标")
 	_expect(weapon_visual.position == Vector2(138, 184), "主武器应叠在底盘对应锚点")
-	_expect(engine_visual.position == Vector2(97, 370), "推进器应落在原版底部装备槽")
+	_expect(chassis_visual.size == Vector2(199, 104), "不同底盘应填充统一整车预览区域")
+	_expect(engine_visual.position == Vector2(96, 329) \
+			and engine_visual.size == Vector2(68, 68),
+		"推进器应在底部槽位中放大并视觉居中")
 	weapon_visual.mouse_entered.emit()
 	_expect(_is_item_highlighted(weapon_visual), "战车装备应使用同一物品悬停发光")
 	weapon_visual.mouse_exited.emit()
@@ -197,8 +209,10 @@ func _run() -> void:
 	var moved_found := false
 	for item in manager.inventory_panel._item_canvas.get_children():
 		if String(item.item_snapshot.get("instance_id", "")) == "inventory.spare_engine":
-			moved_found = item.position == Vector2(90, 60)
-	_expect(moved_found, "权威回包应将拖动位置吸附到 15 像素网格")
+			moved_found = item.position.x >= 0.0 and item.position.y >= 0.0 \
+				and item.position.x < InventoryPanel.GRID_SIZE.x \
+				and item.position.y < InventoryPanel.GRID_SIZE.y
+	_expect(moved_found, "权威回包后物品应重新进入固定五列八行视觉网格")
 	manager.character_panel.position = Vector2(5000, 5000)
 	manager.character_panel.clamp_to_viewport(Vector2(1280, 720))
 	_expect(manager.character_panel.position == Vector2(925, 270), "拖动窗口必须限制在当前视口")

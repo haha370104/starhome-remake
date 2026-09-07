@@ -8,6 +8,12 @@ const ARRANGE_NORMAL := preload("res://assets/ui/windows/inventory/arrange/norma
 const ARRANGE_HOVER := preload("res://assets/ui/windows/inventory/arrange/hover.png")
 const ARRANGE_PRESSED := preload("res://assets/ui/windows/inventory/arrange/pressed.png")
 const ItemViewScript := preload("res://scripts/client/ui/windows/inventory/inventory_item_view.gd")
+const GRID_COLUMNS := 5
+const GRID_ROWS := 8
+const GRID_CAPACITY := GRID_COLUMNS * GRID_ROWS
+const GRID_SIZE := Vector2(276, 295)
+const CELL_SIZE := Vector2(GRID_SIZE.x / GRID_COLUMNS, GRID_SIZE.y / GRID_ROWS)
+const CELL_PADDING := 5.0
 
 var _item_canvas: Control
 var _count_label: Label
@@ -21,7 +27,7 @@ func _ready() -> void:
 	_item_canvas = Control.new()
 	_item_canvas.name = "ItemCanvas"
 	_item_canvas.position = Vector2(28, 70)
-	_item_canvas.size = Vector2(276, 295)
+	_item_canvas.size = GRID_SIZE
 	_item_canvas.clip_contents = true
 	_item_canvas.mouse_filter = Control.MOUSE_FILTER_PASS
 	content_root.add_child(_item_canvas)
@@ -49,17 +55,28 @@ func apply_inventory(inventory: Inventory) -> void:
 		return
 	_revision = inventory.revision
 	var items := inventory.items()
+	items.sort_custom(func(left: GameItem, right: GameItem) -> bool:
+		if left.position_px.y != right.position_px.y:
+			return left.position_px.y < right.position_px.y
+		if left.position_px.x != right.position_px.x:
+			return left.position_px.x < right.position_px.x
+		return left.instance_id < right.instance_id
+	)
 	_count_label.text = "物品：%d / %d" % [
 		items.size(), inventory.capacity,
 	]
 	_currency_label.text = "金币：%d" % inventory.currency
 	for child in _item_canvas.get_children():
 		child.queue_free()
-	for domain_item: GameItem in items:
+	for item_index: int in mini(items.size(), GRID_CAPACITY):
+		var domain_item: GameItem = items[item_index]
 		var item := ItemViewScript.new()
 		item.name = "Item_%s" % domain_item.instance_id.validate_node_name()
-		item.configure(domain_item)
-		item.position = Vector2(domain_item.position_px)
+		item.configure(domain_item, CELL_SIZE, CELL_PADDING)
+		item.position = Vector2(
+			float(item_index % GRID_COLUMNS) * CELL_SIZE.x,
+			floorf(float(item_index) / float(GRID_COLUMNS)) * CELL_SIZE.y,
+		)
 		item.move_requested.connect(_request_move)
 		item.equip_requested.connect(_request_equip)
 		item.character_equip_requested.connect(_request_character_equip)
