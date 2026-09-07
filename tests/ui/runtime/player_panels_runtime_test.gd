@@ -232,10 +232,8 @@ func _run() -> void:
 	var moved_found := false
 	for item in manager.inventory_panel._item_canvas.get_children():
 		if String(item.item_snapshot.get("instance_id", "")) == "inventory.spare_engine":
-			moved_found = item.position.x >= 0.0 and item.position.y >= 0.0 \
-				and item.position.x < InventoryPanel.GRID_SIZE.x \
-				and item.position.y < InventoryPanel.GRID_SIZE.y
-	_expect(moved_found, "权威回包后物品应重新进入固定五列八行视觉网格")
+			moved_found = item.position == Vector2(92, 61)
+	_expect(moved_found, "权威回包后物品应保持用户指定坐标，不自动整理到格子")
 	manager.character_panel.position = Vector2(5000, 5000)
 	manager.character_panel.clamp_to_viewport(Vector2(1280, 720))
 	_expect(manager.character_panel.position == Vector2(925, 270), "拖动窗口必须限制在当前视口")

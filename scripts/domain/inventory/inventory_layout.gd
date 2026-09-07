@@ -4,42 +4,39 @@ extends RefCounted
 
 const MAIN_CONTAINER_ID := "main"
 const MAIN_SIZE := Vector2i(276, 295)
-const SNAP_SIZE := 15
-const ITEM_LIMIT := 40
+const SNAP_SIZE := 1
+const GRID_COLUMNS := 5
+const GRID_ROWS := 8
+const ITEM_LIMIT := GRID_COLUMNS * GRID_ROWS
 
 
-## 校验整份像素背包布局，保证所有物品位于容器内且互不重叠。
-## [param items] 包含 position_px、footprint_px 与 container_id 的物品字典数组。
-## 返回成功结果或首个可解释的布局错误。
-## 设计：客户端可用本函数绘制拖动预览，权威服务器必须对命令结果再次执行同一规则。
+## 校验背包容量、实例身份和坐标边界；不同物品可以使用相同坐标。
+## [param items] 包含 position_px、container_id 与稳定实例标识的物品数组。
+## 返回成功或容量、身份、坐标错误；旧 footprint_px 仅作为兼容元数据保留。
 static func validate(items: Array) -> DomainResult:
 	if items.size() > ITEM_LIMIT:
 		return DomainResult.failure(&"inventory.capacity_exceeded", "inventory contains more than 40 items")
 	var ids: Dictionary = {}
-	for item_index in items.size():
-		var item: Variant = items[item_index]
+	for item: Variant in items:
 		if not item is Dictionary:
 			return DomainResult.failure(&"inventory.invalid_item", "inventory item must be a dictionary")
 		var item_id := String(item.get("instance_id", item.get("stack_id", "")))
 		if item_id.is_empty() or ids.has(item_id):
 			return DomainResult.failure(&"inventory.duplicate_item", "inventory item identity is empty or duplicated")
 		ids[item_id] = true
-		var geometry := _geometry(item)
-		if not geometry.is_ok:
-			return geometry
-		var item_rect: Rect2i = geometry.value
-		for prior_index in item_index:
-			var prior_geometry := _geometry(items[prior_index])
-			if prior_geometry.is_ok and item_rect.intersects(prior_geometry.value):
-				return DomainResult.failure(&"inventory.overlap", "inventory items overlap")
+		if String(item.get("container_id", MAIN_CONTAINER_ID)) != MAIN_CONTAINER_ID:
+			return DomainResult.failure(&"inventory.invalid_container", "only the main inventory container is currently enabled")
+		var position := _vector(item.get("position_px", []), Vector2i(-1, -1))
+		if position.x < 0 or position.y < 0 or position.x >= MAIN_SIZE.x or position.y >= MAIN_SIZE.y:
+			return DomainResult.failure(&"inventory.out_of_bounds", "inventory position exceeds the main container")
 	return DomainResult.ok()
 
 
-## 将物品移动到新的网格像素点，并返回不修改输入数组的布局副本。
+## 只修改目标物品的坐标，不吸附、不挤开其他物品、不拒绝重叠。
 ## [param items] 当前权威物品布局。
 ## [param instance_id] 待移动的稳定物品实例标识。
-## [param requested_position] 客户端请求的容器局部像素坐标。
-## 返回包含新布局的成功结果，或锁定、越界、重叠等错误。
+## [param requested_position] 容器局部像素坐标。
+## 返回布局副本，失败保持输入不变。
 static func move_item(items: Array, instance_id: String, requested_position: Vector2i) -> DomainResult:
 	var candidate: Array = items.duplicate(true)
 	var found := false
@@ -48,10 +45,7 @@ static func move_item(items: Array, instance_id: String, requested_position: Vec
 			continue
 		if bool(item.get("locked", false)):
 			return DomainResult.failure(&"inventory.item_locked", "locked inventory item cannot be moved")
-		item["position_px"] = [
-			snappedi(requested_position.x, SNAP_SIZE),
-			snappedi(requested_position.y, SNAP_SIZE),
-		]
+		item["position_px"] = [requested_position.x, requested_position.y]
 		found = true
 		break
 	if not found:
@@ -60,68 +54,54 @@ static func move_item(items: Array, instance_id: String, requested_position: Vec
 	return DomainResult.ok(candidate) if validation.is_ok else validation
 
 
-## 按稳定实例标识重新紧凑排列主背包。
-## [param items] 当前物品布局。
-## 返回完整的新布局；无法容纳时返回容量错误。
+## 仅在用户点整理时，按稳定实例标识将物品坐标对齐到五列八行虚拟网格。
+## [param items] 当前自由坐标布局。
+## 返回完整的新布局，不改变物品身份、数量和其他状态。
 static func arrange(items: Array) -> DomainResult:
+	var validation := validate(items)
+	if not validation.is_ok:
+		return validation
 	var pending: Array = items.duplicate(true)
 	pending.sort_custom(func(left: Dictionary, right: Dictionary) -> bool:
 		return String(left.get("instance_id", left.get("stack_id", ""))) \
 			< String(right.get("instance_id", right.get("stack_id", "")))
 	)
-	var placed: Array = []
-	for item: Dictionary in pending:
-		var footprint := _vector(item.get("footprint_px", [30, 30]), Vector2i(30, 30))
-		var position := _first_available_position(placed, footprint)
-		if position.x < 0:
-			return DomainResult.failure(&"inventory.no_space", "inventory has no rectangle large enough for the item")
-		item["container_id"] = MAIN_CONTAINER_ID
-		item["position_px"] = [position.x, position.y]
-		placed.append(item)
-	return DomainResult.ok(placed)
+	for index: int in pending.size():
+		var position := grid_position(index)
+		pending[index]["position_px"] = [position.x, position.y]
+	return DomainResult.ok(pending)
 
 
-## 查找可放置给定尺寸物品的首个网格位置。
-## [param items] 已占用布局。
-## [param footprint] 待放置物品像素尺寸。
-## 返回可用坐标；不存在时返回 (-1,-1)。
-static func first_available_position(items: Array, footprint: Vector2i) -> Vector2i:
-	return _first_available_position(items, footprint)
+## 为新入包物品优先选择未被其他图标盖住的虚拟格子，不重排已有物品。
+## [param items] 当前背包布局。
+## [param _footprint] 保留旧调用签名；图标尺寸不再影响容量或落位合法性。
+## 返回推荐坐标；只有达到物品数量上限时返回 (-1,-1)。
+static func first_available_position(items: Array, _footprint: Vector2i) -> Vector2i:
+	if items.size() >= ITEM_LIMIT:
+		return Vector2i(-1, -1)
+	var cell_size := (Vector2(MAIN_SIZE) / Vector2(GRID_COLUMNS, GRID_ROWS)).floor()
+	for index: int in ITEM_LIMIT:
+		var candidate := grid_position(index)
+		var obscured := false
+		for item: Dictionary in items:
+			var position := _vector(item.get("position_px", []), Vector2i(-1, -1))
+			if Rect2(Vector2(candidate), cell_size).intersects(Rect2(Vector2(position), cell_size)):
+				obscured = true
+				break
+		if not obscured:
+			return candidate
+	# 自由摆放可能覆盖所有虚拟格子，但只要未满四十件，就仍然允许入包。
+	return grid_position(items.size())
 
 
-## 解析并校验一个物品的矩形几何。
-## [param item] 待解析物品字典。
-## 返回 Rect2i 或领域错误。
-static func _geometry(item: Dictionary) -> DomainResult:
-	if String(item.get("container_id", MAIN_CONTAINER_ID)) != MAIN_CONTAINER_ID:
-		return DomainResult.failure(&"inventory.invalid_container", "only the main inventory container is currently enabled")
-	var position := _vector(item.get("position_px", []), Vector2i(-1, -1))
-	var footprint := _vector(item.get("footprint_px", []), Vector2i.ZERO)
-	if position.x < 0 or position.y < 0 or footprint.x <= 0 or footprint.y <= 0:
-		return DomainResult.failure(&"inventory.invalid_geometry", "inventory geometry is invalid")
-	var rectangle := Rect2i(position, footprint)
-	if rectangle.end.x > MAIN_SIZE.x or rectangle.end.y > MAIN_SIZE.y:
-		return DomainResult.failure(&"inventory.out_of_bounds", "inventory item exceeds the main container")
-	return DomainResult.ok(rectangle)
-
-
-## 扫描主容器中的首个可用网格位置。
-## [param items] 已放置物品数组。
-## [param footprint] 待放置物品尺寸。
-## 返回可用位置或 (-1,-1)。
-static func _first_available_position(items: Array, footprint: Vector2i) -> Vector2i:
-	for y in range(0, MAIN_SIZE.y - footprint.y + 1, SNAP_SIZE):
-		for x in range(0, MAIN_SIZE.x - footprint.x + 1, SNAP_SIZE):
-			var candidate := Rect2i(Vector2i(x, y), footprint)
-			var blocked := false
-			for item: Dictionary in items:
-				var geometry := _geometry(item)
-				if geometry.is_ok and candidate.intersects(geometry.value):
-					blocked = true
-					break
-			if not blocked:
-				return candidate.position
-	return Vector2i(-1, -1)
+## 返回虚拟格子的左上角整数坐标，只供整理和新物品默认落位使用。
+## [param index] 范围为 0..39 的格子索引。
+## 返回与 UI 五列八行划分一致的坐标。
+static func grid_position(index: int) -> Vector2i:
+	return Vector2i(
+		floori(float(index % GRID_COLUMNS) * MAIN_SIZE.x / GRID_COLUMNS),
+		floori(floorf(float(index) / GRID_COLUMNS) * MAIN_SIZE.y / GRID_ROWS),
+	)
 
 
 ## 将二元素数组安全转换为整数向量。

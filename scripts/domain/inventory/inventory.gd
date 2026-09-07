@@ -53,7 +53,7 @@ func find(instance_id: String) -> GameItem:
 ## [param instance_id] 待移动物品实例标识。
 ## [param requested_position] 请求的容器局部像素坐标。
 ## [param expected_revision] 客户端读取到的背包 revision。
-## 返回成功或版本、锁定、越界、重叠错误。
+## 返回成功或版本、锁定、越界错误；允许与其他物品重叠。
 func move_item(
 	instance_id: String,
 	requested_position: Vector2i,
@@ -329,7 +329,7 @@ func transfer_position(item: GameItem, excluding_instance_id: String = "") -> Do
 		return DomainResult.failure(&"inventory.no_space", "inventory has no room for equipment")
 	var position := InventoryLayoutScript.first_available_position(layouts, item.footprint_px)
 	if position.x < 0:
-		return DomainResult.failure(&"inventory.no_space", "inventory has no rectangle large enough for equipment")
+		return DomainResult.failure(&"inventory.no_space", "inventory has no room for equipment")
 	return DomainResult.ok(position)
 
 

@@ -8,8 +8,8 @@ const ARRANGE_NORMAL := preload("res://assets/ui/windows/inventory/arrange/norma
 const ARRANGE_HOVER := preload("res://assets/ui/windows/inventory/arrange/hover.png")
 const ARRANGE_PRESSED := preload("res://assets/ui/windows/inventory/arrange/pressed.png")
 const ItemViewScript := preload("res://scripts/client/ui/windows/inventory/inventory_item_view.gd")
-const GRID_COLUMNS := 5
-const GRID_ROWS := 8
+const GRID_COLUMNS := InventoryLayout.GRID_COLUMNS
+const GRID_ROWS := InventoryLayout.GRID_ROWS
 const GRID_CAPACITY := GRID_COLUMNS * GRID_ROWS
 const GRID_SIZE := Vector2(276, 295)
 const CELL_SIZE := Vector2(GRID_SIZE.x / GRID_COLUMNS, GRID_SIZE.y / GRID_ROWS)
@@ -55,13 +55,6 @@ func apply_inventory(inventory: Inventory) -> void:
 		return
 	_revision = inventory.revision
 	var items := inventory.items()
-	items.sort_custom(func(left: GameItem, right: GameItem) -> bool:
-		if left.position_px.y != right.position_px.y:
-			return left.position_px.y < right.position_px.y
-		if left.position_px.x != right.position_px.x:
-			return left.position_px.x < right.position_px.x
-		return left.instance_id < right.instance_id
-	)
 	_count_label.text = "物品：%d / %d" % [
 		items.size(), inventory.capacity,
 	]
@@ -73,10 +66,7 @@ func apply_inventory(inventory: Inventory) -> void:
 		var item := ItemViewScript.new()
 		item.name = "Item_%s" % domain_item.instance_id.validate_node_name()
 		item.configure(domain_item, CELL_SIZE, CELL_PADDING)
-		item.position = Vector2(
-			float(item_index % GRID_COLUMNS) * CELL_SIZE.x,
-			floorf(float(item_index) / float(GRID_COLUMNS)) * CELL_SIZE.y,
-		)
+		item.position = Vector2(domain_item.position_px)
 		item.move_requested.connect(_request_move)
 		item.equip_requested.connect(_request_equip)
 		item.character_equip_requested.connect(_request_character_equip)
@@ -93,10 +83,12 @@ func _request_arrange() -> void:
 	})
 
 
-## 提交单个物品移动意图。
+## 提交自由坐标移动意图，不自动吸附，也不检查其他物品是否重叠。
 ## [param instance_id] 稳定物品实例标识。
-## [param requested_position] 容器局部像素坐标。
+## [param requested_position] 物品左上角的容器局部坐标；容器外落点取消拖动。
 func _request_move(instance_id: String, requested_position: Vector2i) -> void:
+	if _revision < 0 or not Rect2(Vector2.ZERO, GRID_SIZE).has_point(Vector2(requested_position)):
+		return
 	command_requested.emit({
 		"type": "move_inventory_item",
 		"instance_id": instance_id,

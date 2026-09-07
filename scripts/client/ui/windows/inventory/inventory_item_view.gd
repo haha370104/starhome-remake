@@ -16,7 +16,11 @@ const TooltipFormatter := preload("res://scripts/client/ui/windows/equipment_too
 var item_snapshot: Dictionary = {}
 var item: GameItem
 var _dragging := false
+var _pointer_down := false
+var _drag_origin := Vector2.ZERO
+var _drag_delta := Vector2.ZERO
 var _drag_offset := Vector2.ZERO
+const DRAG_THRESHOLD := 5.0
 var _icon: TextureRect
 var _hover_material: ShaderMaterial
 
@@ -87,6 +91,7 @@ func configure(
 func _on_gui_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
 		if event.double_click and event.pressed:
+			_cancel_drag()
 			var location := int(item_snapshot.get("equipment_location", -1))
 			if location >= 0:
 				equip_requested.emit(String(item_snapshot.get("instance_id", "")), location)
@@ -98,16 +103,32 @@ func _on_gui_input(event: InputEvent) -> void:
 			accept_event()
 			return
 		if event.pressed and not item.locked:
-			_dragging = true
+			_pointer_down = true
+			_drag_origin = position
 			_drag_offset = event.position
-			modulate.a = 0.65
+			_drag_delta = Vector2.ZERO
 		else:
-			if _dragging:
-				var requested := Vector2i((position + event.position - _drag_offset).round())
+			var should_move := _dragging
+			var requested := Vector2i((position + event.position - _drag_offset).round())
+			_cancel_drag()
+			if should_move:
 				move_requested.emit(String(item_snapshot.get("instance_id", "")), requested)
-			_dragging = false
-			modulate.a = 1.0
 		accept_event()
-	elif event is InputEventMouseMotion and _dragging:
-		position += event.relative
+	elif event is InputEventMouseMotion and _pointer_down:
+		_drag_delta += event.relative
+		if _drag_delta.length() >= DRAG_THRESHOLD:
+			_dragging = true
+		if _dragging:
+			position = _drag_origin + _drag_delta
+			modulate.a = 0.65
 		accept_event()
+
+
+## 复位本地拖动预览；最终落位始终由权威回包决定。
+func _cancel_drag() -> void:
+	if _pointer_down:
+		position = _drag_origin
+	_pointer_down = false
+	_dragging = false
+	_drag_delta = Vector2.ZERO
+	modulate.a = 1.0

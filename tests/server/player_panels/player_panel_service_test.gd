@@ -8,6 +8,7 @@ var assertions := 0
 
 ## 验证三面板查询、像素移动、revision 冲突和原子换装。
 func _initialize() -> void:
+	_test_overlap_transaction()
 	var authority = PanelFixtureScript.new()
 	var initialized := authority.initialize()
 	_expect(initialized.is_ok, "离线权威夹具应完成初始化")
@@ -46,7 +47,7 @@ func _initialize() -> void:
 	_expect(moved.is_ok, "合法像素移动应成功")
 	if moved.is_ok:
 		bundle = moved.value
-		_expect(bundle.inventory.items[0].position_px == [90, 60], "服务器应按 15 像素网格吸附")
+		_expect(bundle.inventory.items[0].position_px == [92, 61], "服务器应原样保留自由像素坐标")
 	var stale := authority.execute({
 		"type": "move_inventory_item",
 		"instance_id": "inventory.spare_engine",
@@ -200,6 +201,26 @@ func _initialize() -> void:
 					== &"equipment.chassis_required",
 				"没有底盘时必须拒绝安装推进器等其他装备")
 	_finish()
+
+
+## 验证真实面板事务允许移动到已占用坐标，并可再次映射为查询回包。
+func _test_overlap_transaction() -> void:
+	var authority = PanelFixtureScript.new()
+	_expect(authority.initialize().is_ok, "重叠事务夹具初始化")
+	var bundle: Dictionary = authority.execute({"type": "query"}).value
+	var shared_position: Array = bundle.inventory.items[1].position_px
+	var moved := authority.execute({
+		"type": "move_inventory_item", "instance_id": "inventory.spare_engine",
+		"position_px": shared_position,
+		"inventory_revision": int(bundle.inventory.revision),
+	})
+	_expect(moved.is_ok, "服务端应接受完全重叠的移动")
+	var queried := authority.execute({"type": "query"})
+	_expect(queried.is_ok, "重叠布局可重新映射成领域对象和面板快照")
+	if queried.is_ok:
+		_expect(queried.value.inventory.items[0].position_px == shared_position \
+			and queried.value.inventory.items[1].position_px == shared_position,
+			"查询不会自动推开重叠物品")
 
 
 ## 汇总断言并退出独立测试进程。

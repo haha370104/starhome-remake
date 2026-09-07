@@ -85,7 +85,7 @@ func _test_three_second_authoritative_autosave() -> void:
 		_expect(panel_move.ok, "背包移动应由权威服务器立即原子提交")
 		var panel_committed = first_server.player_state_repository.load_player(entity_id)
 		_expect(panel_committed.is_ok and panel_committed.value.revision == 2, "面板事务应立即推进玩家聚合 revision")
-		_expect(panel_committed.value.inventory_stacks[0].position_px == Vector2i(90, 60), "面板事务应持久化吸附后的像素坐标")
+		_expect(panel_committed.value.inventory_stacks[0].position_px == Vector2i(92, 61), "面板事务应持久化原始自由像素坐标")
 
 	var second_server = ServerScript.new()
 	var reopened: Dictionary = second_server.initialize(_server_config())
@@ -104,7 +104,7 @@ func _test_three_second_authoritative_autosave() -> void:
 	var restored_panel_state = second_server.player_state_repository.load_player(entity_id)
 	_expect(
 		restored_panel_state.is_ok \
-		and restored_panel_state.value.inventory_stacks[0].position_px == Vector2i(90, 60),
+		and restored_panel_state.value.inventory_stacks[0].position_px == Vector2i(92, 61),
 		"服务器重建后应恢复背包像素布局",
 	)
 	_expect(
