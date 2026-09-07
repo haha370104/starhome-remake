@@ -157,3 +157,11 @@ follow:=mouse();
 - 阴影：源码没有为这些 `ButtonText` 添加文字阴影；
 - 交互：只有 `装置1` 的 `OnMouseIn` 将颜色改为 `#FFCC00`，其余十三条进入/离开都保持 `#FFFFFF`；
 - 槽位文字没有 tooltip，业务语义仍由装备物品自己的复杂说明展示。
+
+## 7. 首次显示的尺寸计算
+
+`LegacyItemTooltip.set_content()` 必须先把标题和正文 Label 的实际宽度设为内容宽度 218px，再赋值文本、测量高度及定位。不能假设首次创建时 VBoxContainer 已完成排序：此时 Label 默认宽度为 0，自动换行可能把十三行装备说明误算成 1576px 高；下一次悬停才因布局宽度已确定而恢复正常。
+
+保持即时显示，不通过延迟一帧或第二次悬停来修正尺寸。宽度仍为 234px（内容 218px + 左右各 8px），高度随文本收缩/扩展。此修复只影响共享说明窗布局，不改变字体、悬浮时机和业务数据。
+
+回归：`tests/ui/runtime/item_tooltip_layout_test.gd` 检查冷启动首次显示、布局稳定后、再次显示、长短说明切换及仅标题说明；非 headless 运行附加 `-- --capture` 可生成 `.godot/item_tooltip_layout.png`。

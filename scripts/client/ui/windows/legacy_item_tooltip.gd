@@ -48,6 +48,10 @@ func _init() -> void:
 ## 更新物品说明内容，首行使用原版 SETFONT2 粗体标题。
 ## [param text] TooltipFormatter 生成的多行说明。
 func set_content(text: String) -> void:
+	# 容器首次排序尚未执行时 Label 宽度为 0，自动换行会按近似一字一行
+	# 计算出巨大最小高度。先给定最终内容宽度，再排字和测量，首帧即能定位。
+	_title_label.size.x = CONTENT_WIDTH
+	_body_label.size.x = CONTENT_WIDTH
 	var line_break := text.find("\n")
 	if line_break < 0:
 		_title_label.text = text
