@@ -802,6 +802,7 @@ func _build_game_windows() -> void:
 	game_window_manager.name = "GameWindowManager"
 	hud.root_control.add_child(game_window_manager)
 	game_window_manager.current_player_changed.connect(_on_current_player_changed)
+	game_window_manager.notice_requested.connect(hud.show_system_message)
 	game_window_manager.configure(
 		Callable(multiplayer_presenter, "request_player_panel_command"),
 		item_catalog,
@@ -1320,9 +1321,12 @@ func _show_transition_choices(selected: MapTransition, world_position: Vector2) 
 	}, screen_position)
 
 
-## 将底栏人物、背包和战车按钮交给窗口管理器，其余动作保持 HUD 原有提示。
+## 将底栏导航交给窗口管理器；好友功能未开放时显示屏幕中央提示。
 ## [param action_id] 免费版底栏发出的业务动作标识。
 func _on_hud_action_requested(action_id: String) -> void:
+	if action_id == "friends":
+		hud.show_system_message("好友列表暂未实现")
+		return
 	if action_id == "return_base" and _vehicle_destroyed:
 		_request_vehicle_recovery()
 		return
@@ -1330,11 +1334,7 @@ func _on_hud_action_requested(action_id: String) -> void:
 		_request_self_repair()
 		return
 	if game_window_manager != null and game_window_manager.toggle(action_id):
-		hint_label.text = "已切换%s面板" % {
-			"character": "人物",
-			"inventory": "背包",
-			"vehicle_equipment": "战车",
-		}.get(action_id, action_id)
+		return
 
 
 ## 响应底栏武器槽选择并切换玩家战车的可见武器图层。

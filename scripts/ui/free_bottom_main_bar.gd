@@ -6,14 +6,14 @@ signal action_requested(action_id: String)
 const LegacyStateButtonScript := preload("res://scripts/ui/legacy_state_button.gd")
 const DESIGN_SIZE := Vector2(1024, 29)
 const MENU_BUTTONS := {
-	"character": "人物",
+	"character": "人物属性",
 	"inventory": "背包",
 	"vehicle_equipment": "战车装备",
-	"friends": "好友",
+	"friends": "好友列表",
 	"scene_players": "当前场景玩家",
-	"missions": "任务",
-	"star_map": "星图",
-	"system": "系统",
+	"missions": "任务日志",
+	"system": "系统设置",
+	"premium_shop": "商城",
 }
 const WEAPON_TOOLTIPS := {
 	"energy_cannon": "能量炮",

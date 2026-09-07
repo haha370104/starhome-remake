@@ -3,6 +3,7 @@ extends Control
 
 signal command_dispatched(command: Dictionary)
 signal current_player_changed(player: Player)
+signal notice_requested(message: String)
 
 const CharacterPanelScript := preload("res://scripts/client/ui/windows/character/character_panel.gd")
 const InventoryPanelScript := preload("res://scripts/client/ui/windows/inventory/inventory_panel.gd")
@@ -29,6 +30,7 @@ var current_player: CurrentPlayer
 
 var _dispatcher: Callable
 var _bundle: Dictionary = {}
+var navigation_windows: Dictionary = {}
 
 
 ## 创建三个单例窗口并绑定统一客户端会话。
@@ -77,6 +79,23 @@ func configure(
 	manufacturing_window.position = Vector2(190, 90)
 	manufacturing_window.command_requested.connect(_dispatch)
 	_add_window(manufacturing_window)
+	var navigation_scripts := {
+		"scene_players": preload("res://scripts/client/ui/windows/navigation/scene_players_panel.gd"),
+		"missions": preload("res://scripts/client/ui/windows/navigation/mission_journal_panel.gd"),
+		"system": preload("res://scripts/client/ui/windows/navigation/system_menu_panel.gd"),
+		"premium_shop": preload("res://scripts/client/ui/windows/navigation/premium_shop_panel.gd"),
+	}
+	for action: String in navigation_scripts:
+		var window: NavigationWindow = navigation_scripts[action].new()
+		window.position = Vector2(120, 70)
+		window.notice_requested.connect(notice_requested.emit)
+		navigation_windows[action] = window
+		_add_window(window)
+	var refresh := Timer.new()
+	refresh.wait_time = 2.0
+	refresh.timeout.connect(_refresh_navigation)
+	add_child(refresh)
+	refresh.start()
 
 	return true
 
@@ -110,7 +129,7 @@ func _topmost_window_at(viewport_position: Vector2) -> DraggableGameWindow:
 
 
 ## 按底栏 action_id 切换对应窗口，并在打开时拉取权威快照。
-## [param action_id] character、inventory 或 vehicle_equipment。
+## [param action_id] 底栏业务动作标识；未知动作不消费。
 ## 返回动作是否被窗口管理器消费。
 func toggle(action_id: String) -> bool:
 	var window: Control
@@ -118,24 +137,46 @@ func toggle(action_id: String) -> bool:
 		"character": window = character_panel
 		"inventory": window = inventory_panel
 		"vehicle_equipment": window = vehicle_panel
-		_: return false
+		_:
+			if not navigation_windows.has(action_id):
+				return false
+			window = navigation_windows[action_id]
 	window.visible = not window.visible
 	if window.visible:
+		if action_id == "system":
+			window.position = Vector2(size.x / 2.0 + 235, size.y - 29 - window.size.y)
+		if action_id == "premium_shop":
+			window.open_shop()
 		window.move_to_front()
 		window.call("clamp_to_viewport", size)
-		_dispatch({"type": "query"})
+		if action_id == "scene_players":
+			_dispatch({"type": "query_scene_players"})
+		elif action_id not in ["system", "premium_shop"]:
+			_dispatch({"type": "query"})
 	return true
+
+
+## 仅在用户列表或任务日志可见时刷新只读查询，关闭窗口不产生轮询。
+func _refresh_navigation() -> void:
+	if navigation_windows["scene_players"].visible:
+		_dispatch({"type": "query_scene_players"})
+	if navigation_windows["missions"].visible:
+		_dispatch({"type": "query"})
 
 
 ## 原子应用服务端返回的三面板快照。
 ## [param bundle] 含 character、inventory、vehicle 与 transaction_revision 的快照组。
 func apply_bundle(bundle: Dictionary) -> void:
+	if bundle.get("scene_players") is Dictionary:
+		navigation_windows["scene_players"].apply_snapshot(bundle["scene_players"])
 	if weapon_merchant_window != null and bundle.get("commerce") is Dictionary:
 		weapon_merchant_window.apply_commerce_bundle(bundle)
 	if manufacturing_window != null and bundle.get("manufacturing") is Dictionary:
 		manufacturing_window.apply_manufacturing_bundle(bundle)
 	if current_player == null or not current_player.apply_bundle(bundle):
 		return
+	if bundle.get("mission_journal") is Array:
+		navigation_windows["missions"].apply_entries(bundle["mission_journal"])
 	_bundle = current_player.snapshot_bundle()
 	character_panel.apply_snapshot(_bundle["character"])
 	inventory_panel.apply_inventory(current_player.inventory)
@@ -194,6 +235,8 @@ func _add_window(window: Control) -> void:
 
 ## 视口变化时把所有窗口重新限制在可见区域。
 func _clamp_windows() -> void:
+	for window: Control in navigation_windows.values():
+		window.call("clamp_to_viewport", size)
 	for window: Control in [
 		character_panel, inventory_panel, vehicle_panel, skill_panel, weapon_merchant_window,
 		manufacturing_window,

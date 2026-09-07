@@ -41,3 +41,5 @@
 ## 验证
 
 `tests/ui/runtime/navigation_windows_test.gd` 已纳入总门禁：验证名单地图隔离和断线过滤、字段隐私、任务持久化进度、8 项顺序、窗口开关、商城确认/分类/空搜索、按可见性轮询。可选 `--capture-navigation` 使用真实渲染器输出 `.godot/navigation_windows.png` 供视觉检查。
+
+本轮：导航 30 项断言、原有三面板 72 项断言通过；入口脚本扫描 0 warning / 0 error，真实渲染截图已检查。未宣称全库测试通过：全库函数注释门禁还报告其他在改文件中的缺参/返回说明，未并入此次 HUD 改动。

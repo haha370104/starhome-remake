@@ -96,6 +96,7 @@ $testScripts = @(
 	"res://tests/integration/in_process_authoritative_transport_test.gd",
 	"res://tests/ui/runtime/hud_runtime_smoke_test.gd",
 	"res://tests/ui/runtime/player_panels_runtime_test.gd",
+	"res://tests/ui/runtime/navigation_windows_test.gd",
     "res://tests/maps/map_runtime_smoke_test.gd",
 	"res://tests/maps/glory_world_graph_data_test.gd",
     "res://tests/navigation/diamond_navigation_smoke_test.gd",
