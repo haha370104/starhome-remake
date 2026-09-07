@@ -97,7 +97,41 @@ func _run() -> void:
 		var transitioned_value: Dictionary = transitioned["result"]["value"]["map_joined"]
 		_expect(String(transitioned_value.get("map_id", "")) == "yian_harbor_city",
 			"进程内传输不得自行推导目标地图或落点")
+	await _test_close_during_server_signal()
 	_finish(transport)
+
+
+## 验证客户端在服务端可靠消息回调内关闭本地会话时采用延迟释放，不会释放被信号锁定的发送者。
+func _test_close_during_server_signal() -> void:
+	var transport := TransportScript.new()
+	var config := ServerConfigScript.new()
+	config.network_enabled = false
+	config.persistence_enabled = false
+	_expect(transport.configure_server(config), "信号内关闭夹具必须接收本地服务器配置")
+	var server_references: Array[WeakRef] = []
+	transport.server_message_received.connect(func(message: Dictionary) -> void:
+		if StringName(message.get("type", "")) != &"session_opened":
+			return
+		server_references.append(weakref(transport.authoritative_server))
+		transport.close()
+	)
+	root.add_child(transport)
+	_expect(transport.connect_client("ignored", 0) == OK, "信号内关闭夹具必须建立进程内连接")
+	await process_frame
+	transport.request_session({
+		"protocol_version": Protocol.PROTOCOL_VERSION,
+		"content_version": Protocol.PUBLIC_CONTENT_VERSION,
+	})
+	await process_frame
+	_expect(not transport._connected and transport.authoritative_server == null,
+		"close 必须在信号回调内立即阻止后续命令和消息转发")
+	_expect(server_references.size() == 1, "信号内关闭夹具必须捕获本地权威服务器引用")
+	var queued_server: Object = server_references[0].get_ref() if not server_references.is_empty() else null
+	_expect(queued_server == null or queued_server.is_queued_for_deletion(),
+		"信号回调内必须安全释放或标记延迟释放本地权威服务器")
+	transport.free()
+	_expect(not server_references.is_empty() and server_references[0].get_ref() == null,
+		"传输所有者退出后必须连同本地权威服务器一起释放")
 
 
 ## 查找首条指定类型的可靠服务器消息。

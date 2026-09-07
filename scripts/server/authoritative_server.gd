@@ -75,8 +75,10 @@ var _default_map_id := ""
 
 
 ## 节点进入场景树后初始化运行依赖。
-## 设计：该函数位于权威服务器边界，客户端不得覆盖其计算结果。
+## 设计：独立服务器在此初始化；进程内传输可先显式初始化再挂为子节点，且不得重复构建权威状态。
 func _ready() -> void:
+	if map_registry != null:
+		return
 	if config == null:
 		config = ConfigScript.from_command_line(OS.get_cmdline_user_args())
 	var result := initialize(config)

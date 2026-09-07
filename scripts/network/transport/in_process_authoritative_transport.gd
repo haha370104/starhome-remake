@@ -41,10 +41,12 @@ func initialize() -> Error:
 	var initialized := authoritative_server.initialize(config, [], _repository)
 	if not bool(initialized.get("ok", false)):
 		_initialization_error = String(initialized.get("message", "unknown server initialization error"))
+		authoritative_server.free()
 		authoritative_server = null
 		return ERR_CANT_CREATE
 	authoritative_server.server_message_generated.connect(_on_server_message_generated)
 	authoritative_server.peer_snapshot_generated.connect(_on_peer_snapshot_generated)
+	add_child(authoritative_server)
 	return OK
 
 
@@ -62,15 +64,19 @@ func connect_client(_host: String, _port: int) -> Error:
 
 
 ## 关闭本地会话并触发与正式服务器相同的存档收尾。
+## 设计：先切断传输对服务端的可达引用，再同步完成断线和存档，最后延迟释放；允许从服务端信号回调内安全调用。
 func close() -> void:
-	if authoritative_server != null:
-		if _connected:
-			authoritative_server.disconnect_session(LOCAL_PEER_ID)
-		authoritative_server.stop_network()
-		authoritative_server.free()
+	var server_to_release := authoritative_server
+	var was_connected := _connected
 	_connected = false
 	authoritative_server = null
 	_repository = null
+	if server_to_release == null:
+		return
+	if was_connected:
+		server_to_release.disconnect_session(LOCAL_PEER_ID)
+	server_to_release.stop_network()
+	server_to_release.queue_free()
 
 
 ## 发送会话握手请求。
