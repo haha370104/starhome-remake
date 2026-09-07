@@ -42,14 +42,23 @@ func _init(definition: Dictionary = {}, state: Dictionary = {}) -> void:
 
 
 ## 按使用场景读取当前物品的表现配置。
-## [param mode] inventory、world 或未来的 dialog 等业务表现模式。
-## 返回该模式的防御性配置副本；旧平铺配置仅作为兼容回退。
+## [param mode] inventory、world 或 dialog 等业务表现模式。
+## 返回该模式的防御性配置副本；兼容旧平铺配置时隔离背包图与对话框图。
 ## 设计：同一个物品实例持有一份业务定义，各视图只选择表现模式，不再维护独立物品目录。
 func presentation_for(mode: String) -> Dictionary:
 	var mode_value: Variant = presentation.get(mode, {})
 	if mode_value is Dictionary and not (mode_value as Dictionary).is_empty():
 		return (mode_value as Dictionary).duplicate(true)
-	return presentation.duplicate(true)
+	if presentation.has("inventory") or presentation.has("dialog") or presentation.has("world"):
+		return {}
+	var legacy_mode := presentation.duplicate(true)
+	if mode == "dialog":
+		# 平铺配置的 icon/native_size 属于背包，不能遮蔽独立的 dialog_texture。
+		legacy_mode.erase("icon")
+		legacy_mode.erase("native_size")
+	else:
+		legacy_mode.erase("dialog_texture")
+	return legacy_mode
 
 
 ## 查询指定表现模式在原客户端中的原生像素尺寸。

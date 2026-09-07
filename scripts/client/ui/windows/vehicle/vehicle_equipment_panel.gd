@@ -15,8 +15,7 @@ const LEGACY_PANEL_FONT := preload("res://assets/ui/fonts/legacy_panel_font.tres
 const TEXT_COLOR := Color("f6f3e8")
 const SLOT_HOVER_COLOR := Color("ffcc00")
 const TEXT_FONT_SIZE := 12
-const CHASSIS_PREVIEW_RECT := Rect2(93, 208, 199, 104)
-const PROPULSION_SLOT_RECT := Rect2(96, 329, 68, 68)
+const PROPULSION_SLOT_RECT := Rect2(96, 360, 68, 68)
 const DISPLAY_LABELS := [
 	{"id": 0, "text": "装置0", "position": Vector2(30, 122)},
 	{"id": 1, "text": "装置1", "position": Vector2(101, 122), "hover_yellow": true},
@@ -176,15 +175,12 @@ func _add_equipment_visual(equipment: Dictionary) -> void:
 	visual.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	visual.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	visual.texture = texture
-	if location == 0:
-		# 背包缩略图尺寸不可泄漏到整车预览；所有底盘都消费统一的 dialog 舞台。
-		visual.position = CHASSIS_PREVIEW_RECT.position
-		visual.size = CHASSIS_PREVIEW_RECT.size
-	elif location == 3:
-		# 原始 ALE 锚点会把推进器下沿推到窗外，按可见槽位居中并略放大。
+	if location == 3:
+		# 使用独立 dialog 大图，在推进器标题下方的槽内居中。
 		visual.position = PROPULSION_SLOT_RECT.position
 		visual.size = PROPULSION_SLOT_RECT.size
 	else:
+		# 底盘和炮使用各自大图的原始尺寸/原点，共用安装锚点，不放大背包图。
 		visual.position = Vector2(
 			float(anchor_value[0]) + resolved_origin.x,
 			float(anchor_value[1]) + resolved_origin.y,

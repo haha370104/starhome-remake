@@ -131,6 +131,8 @@ func _run() -> void:
 		"驾驶经验提速后应立即刷新为当前十一级可见进度")
 	var inventory_item := manager.inventory_panel._item_canvas.get_child(0) as InventoryItemView
 	var inventory_icon := inventory_item.get_node("Icon") as TextureRect
+	_expect(inventory_icon.texture.get_size() == Vector2(36, 32),
+		"背包仍应加载推进器 36x32 小图，而不是装备窗大图")
 	_expect(inventory_item.item.definition_id == "beginner_engine" \
 			and inventory_item.size.is_equal_approx(InventoryPanel.CELL_SIZE) \
 			and inventory_icon.position == Vector2(5, 5) \
@@ -191,10 +193,31 @@ func _run() -> void:
 	var engine_visual := manager.vehicle_panel._slot_root.get_node("Location_3_beginner_engine") as TextureRect
 	_expect(chassis_visual.position == Vector2(93, 208), "底盘应使用旧客户端对话框坐标")
 	_expect(weapon_visual.position == Vector2(138, 184), "主武器应叠在底盘对应锚点")
-	_expect(chassis_visual.size == Vector2(199, 104), "不同底盘应填充统一整车预览区域")
-	_expect(engine_visual.position == Vector2(96, 329) \
+	_expect(chassis_visual.size == Vector2(199, 104), "新兵底盘应按 dialog 大图原始尺寸绘制")
+	_expect(chassis_visual.texture.resource_path == "res://assets/ui/windows/vehicle/preview/chassis.png" \
+			and chassis_visual.texture.get_size() == chassis_visual.size,
+		"底盘必须使用真正的 199x104 装备窗大图，不能把背包小图拉伸成同样尺寸")
+	_expect(weapon_visual.texture.resource_path == "res://assets/ui/windows/vehicle/preview/primary_weapon.png" \
+			and weapon_visual.texture.get_size() == weapon_visual.size \
+			and weapon_visual.size.x > 40,
+		"能量炮必须使用独立大图按原生尺寸叠加，而不是 40x21 背包图")
+	_expect(engine_visual.texture.resource_path == "res://assets/ui/windows/vehicle/preview/engine.png" \
+			and engine_visual.texture.get_size() == Vector2(64, 57),
+		"推进器必须使用独立的 64x57 装备窗图")
+	_expect(engine_visual.position == Vector2(96, 360) \
 			and engine_visual.size == Vector2(68, 68),
-		"推进器应在底部槽位中放大并视觉居中")
+		"推进器应下移到标题下方，在底部槽内视觉居中")
+	if "--capture-equipment" in OS.get_cmdline_user_args():
+		manager.character_panel.hide()
+		manager.inventory_panel.hide()
+		manager.skill_panel.hide()
+		manager.vehicle_panel.position = Vector2(24, 24)
+		await process_frame
+		await RenderingServer.frame_post_draw
+		var capture_error := root.get_texture().get_image().save_png(
+			"res://.godot/equipment_panel_regression.png"
+		)
+		_expect(capture_error == OK, "实际渲染截图应保存成功")
 	weapon_visual.mouse_entered.emit()
 	_expect(_is_item_highlighted(weapon_visual), "战车装备应使用同一物品悬停发光")
 	weapon_visual.mouse_exited.emit()
@@ -217,7 +240,35 @@ func _run() -> void:
 	manager.character_panel.clamp_to_viewport(Vector2(1280, 720))
 	_expect(manager.character_panel.position == Vector2(925, 270), "拖动窗口必须限制在当前视口")
 	_test_right_click_close(manager)
+	_test_imported_dialog_geometry()
 	_finish(manager)
+
+
+## 检查荣耀目录中不同底盘使用自己的大图尺寸和原点，而非固定新兵矩形。
+func _test_imported_dialog_geometry() -> void:
+	var catalog := ItemCatalog.new()
+	_expect(catalog.initialize().is_ok, "导入装备几何回归应加载目录")
+	var projector := PlayerPanelProjector.new(catalog)
+	for definition_id: String in [
+		"glory_equipment_tank1_c2ba1ac5af", "glory_equipment_tank1000_27ae5e8059",
+	]:
+		var equipment: Equipment = catalog.create(definition_id, {}).value
+		var view := projector._equipment_view(equipment, "vehicle")
+		var resolved := ItemPresentationTextureResolver.resolve(equipment.presentation_for("dialog"))
+		var panel := VehicleEquipmentPanel.new()
+		root.add_child(panel)
+		panel.apply_snapshot({"equipped": [view]})
+		var visual := panel._slot_root.get_child(0) as TextureRect
+		var actual_atlas := visual.texture as AtlasTexture
+		var expected_atlas := resolved["texture"] as AtlasTexture
+		_expect(actual_atlas != null and expected_atlas != null \
+				and actual_atlas.atlas.resource_path == expected_atlas.atlas.resource_path \
+				and actual_atlas.region == expected_atlas.region \
+				and visual.size == resolved["size"],
+			"%s 应以自己的 dialog 贴图原生尺寸绘制" % definition_id)
+		_expect(visual.position == Vector2(170, 200) + Vector2(resolved["origin"]),
+			"%s 应按 ALE 原点叠加到安装锚点" % definition_id)
+		panel.free()
 
 
 ## 将窗口命令交给测试夹具并像客户端会话一样应用完整权威回包。

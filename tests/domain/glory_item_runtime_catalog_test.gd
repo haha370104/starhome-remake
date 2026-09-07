@@ -43,6 +43,22 @@ func _initialize() -> void:
 	var hair_icon := ItemTextureResolver.resolve(hair.value.presentation_for("inventory"))
 	_expect(chassis_icon.get("texture") is AtlasTexture, "战车背包图应从荣耀 ALE 包加载")
 	_expect(chassis_dialog.get("texture") is AtlasTexture, "战车装备面板图应从独立 dialog ALE 加载")
+	_expect(chassis_icon.get("size") == Vector2(67, 46) \
+			and chassis_dialog.get("size") == Vector2(199, 104),
+		"荣耀目录的新兵战车应分别解析小图和独立大图")
+	_expect(chassis_dialog.get("origin") == Vector2(-77, 8), "大图必须保留独立原点")
+	for source_class: String in ["tank1", "tank1000", "gun1", "engine1"]:
+		for definition_id: String in catalog.definition_ids():
+			if catalog.definition(definition_id).get("source_class", "") != source_class:
+				continue
+			var item: GameItem = catalog.create(definition_id, {}).value
+			var bag := ItemTextureResolver.resolve(item.presentation_for("inventory"))
+			var dialog := ItemTextureResolver.resolve(item.presentation_for("dialog"))
+			var world := ItemTextureResolver.resolve(item.presentation_for("world"))
+			_expect("/bag/" in String(bag.get("logical_id", "")), "%s 使用 bag 小图" % source_class)
+			_expect("/dlg/" in String(dialog.get("logical_id", "")), "%s 使用 dlg 大图" % source_class)
+			_expect("/body/" in String(world.get("logical_id", "")), "%s 使用 body 场景图" % source_class)
+			break
 	_expect(hair_icon.get("texture") is AtlasTexture, "服装背包图应从荣耀 ALE 包加载")
 	_expect(Vector2(chassis_dialog.get("origin", Vector2.ZERO)).is_finite(), "ALE 对话框原点应可供面板叠图")
 	var energy_ore: Variant = catalog.create(ENERGY_ORE_ID, {"instance_id": "test.energy_ore"})
