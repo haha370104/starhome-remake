@@ -239,6 +239,7 @@ func _run() -> void:
 	_expect(manager.character_panel.position == Vector2(925, 270), "拖动窗口必须限制在当前视口")
 	_test_right_click_close(manager)
 	_test_imported_dialog_geometry()
+	_test_mining_arm_layering()
 	_finish(manager)
 
 
@@ -267,6 +268,26 @@ func _test_imported_dialog_geometry() -> void:
 		_expect(visual.position == Vector2(170, 200) + Vector2(resolved["origin"]),
 			"%s 应按 ALE 原点叠加到安装锚点" % definition_id)
 		panel.free()
+
+
+## 验证旧 PNG 底盘及荣耀 ALE 底盘都不能盖住七档采掘臂。
+func _test_mining_arm_layering() -> void:
+	var catalog := ItemCatalog.new()
+	_expect(catalog.initialize().is_ok, "采掘臂面板测试加载物品目录")
+	var projector := PlayerPanelProjector.new(catalog)
+	var merchant: Dictionary = JsonConfigLoader.load_dictionary("res://data/gameplay/commerce/weapon_merchant_v1.json").value
+	for chassis_id: String in ["recruit_tank", "glory_equipment_tank1000_27ae5e8059"]:
+		var chassis: Equipment = catalog.create(chassis_id, {}).value
+		for arm_id: String in merchant.merchant.official_whitelist_ids.mining_arm:
+			var arm: Equipment = catalog.create(arm_id, {}).value
+			var panel := VehicleEquipmentPanel.new()
+			root.add_child(panel)
+			# 特意把底盘放在后面，确保不是碰巧依赖节点创建顺序。
+			panel.apply_snapshot({"equipped": [projector._equipment_view(arm, "vehicle"), projector._equipment_view(chassis, "vehicle")]})
+			var arm_visual := panel._slot_root.get_node("Location_1_%s" % arm_id) as TextureRect
+			var chassis_visual := panel._slot_root.get_node("Location_0_%s" % chassis_id) as TextureRect
+			_expect(arm_visual.z_index > chassis_visual.z_index, "%s 必须覆盖 %s" % [arm_id, chassis_id])
+			panel.free()
 
 
 ## 将窗口命令交给测试夹具并像客户端会话一样应用完整权威回包。

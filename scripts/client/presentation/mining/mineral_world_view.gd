@@ -56,6 +56,7 @@ func configure(snapshot: Dictionary, presentation: Dictionary) -> Error:
 	_hover_material.set_shader_parameter("glow_color", HOVER_GLOW_COLOR)
 	_hover_material.set_shader_parameter("glow_radius", HOVER_GLOW_RADIUS)
 	_hover_material.set_shader_parameter("hover_amount", 0.0)
+	_set_shader_frame_region(atlas)
 	_sprite.material = _hover_material
 	add_child(_sprite)
 	_local_hit_rect = Rect2(origin, cell_size)
@@ -108,11 +109,24 @@ func _create_visual_nodes(
 	_hover_material.set_shader_parameter("glow_color", HOVER_GLOW_COLOR)
 	_hover_material.set_shader_parameter("glow_radius", HOVER_GLOW_RADIUS)
 	_hover_material.set_shader_parameter("hover_amount", 0.0)
+	_set_shader_frame_region(texture)
 	_sprite.material = _hover_material
 	add_child(_sprite)
 	_local_hit_rect = Rect2(origin if not hit_origin.is_finite() else hit_origin, size)
 	_tooltip = WorldHoverTooltipScript.new()
 	add_child(_tooltip)
+
+
+## 将当前图集帧边界交给晕染材质，防止采样其它随机款式或挤压整个图集。
+## [param texture] 当前 ALE 帧或独立矿物纹理。
+func _set_shader_frame_region(texture: Texture2D) -> void:
+	if texture is AtlasTexture:
+		var atlas := texture as AtlasTexture
+		var page_size := atlas.atlas.get_size()
+		_hover_material.set_shader_parameter("source_region", Vector4(
+			atlas.region.position.x / page_size.x, atlas.region.position.y / page_size.y,
+			atlas.region.size.x / page_size.x, atlas.region.size.y / page_size.y
+		))
 
 
 ## 应用矿源的可变权威状态；储量变化不切换 ALE 外观帧。

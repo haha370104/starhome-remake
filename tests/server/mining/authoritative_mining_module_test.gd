@@ -35,9 +35,13 @@ func _test_catalog_and_initial_population() -> void:
 		return
 	var module = _module(catalog_result.value, "d04_field_zone", "d04.instance.test")
 	_expect(module.sources.size() == 20, "each enabled map should start with twenty mine sources")
+	var variants := {}
 	for source in module.sources.values():
+		variants[source.visual_variant] = true
+		_expect(source.visual_variant >= 0 and source.visual_variant < 7, "矿源随机款式必须落在七帧范围内")
 		_expect(source.capacity == 50 and source.remaining == 50, "every new mine source should contain fifty units")
 		_expect(source.mineral_id == "iron_ore", "D04 beginner pool should currently contain iron")
+	_expect(variants.size() > 1, "同批生成的铁矿不能全部固定为同一款式")
 	var disabled = _module(catalog_result.value, "yian_harbor_city", "city.instance.test")
 	_expect(disabled.sources.is_empty(), "non-field city maps should not grow mine sources")
 

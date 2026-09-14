@@ -1,6 +1,7 @@
 param(
     [Parameter(Mandatory = $true)]
-    [string]$GodotExecutable
+    [string]$GodotExecutable,
+    [switch]$IncludeGpuVisualTests
 )
 
 $ErrorActionPreference = "Stop"
@@ -196,6 +197,16 @@ Write-Output "Auditing Glory self-repair presentation assets"
 & python (Join-Path $PSScriptRoot "import_glory_self_repair_assets.py")
 if ($LASTEXITCODE -ne 0) {
     throw "Self-repair presentation asset audit failed"
+}
+
+if ($IncludeGpuVisualTests) {
+    Write-Output "Comparing mineral and loot pixels using the real GPU renderer"
+    & $godot --path $projectRoot --rendering-method gl_compatibility --position "-10000,-10000" --script "res://tests/visual/mineral_color_render_test.gd"
+    if ($LASTEXITCODE -ne 0) {
+        throw "Mineral GPU color comparison failed"
+    }
+} else {
+    Write-Output "GPU mineral pixel check skipped (enable -IncludeGpuVisualTests on a graphics host)"
 }
 
 Write-Output "All project checks passed."

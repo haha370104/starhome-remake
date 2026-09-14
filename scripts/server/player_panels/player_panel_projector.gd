@@ -141,6 +141,9 @@ func _equipment_view(equipment: Equipment, owner_kind: String) -> Dictionary:
 	)
 	view["dialog_origin"] = _int_pair(dialog_presentation.get("dialog_origin", [0, 0]), [0, 0])
 	view["z_layer"] = int(dialog_presentation.get("z_layer", location))
+	if equipment is VehicleEquipment and location in [0, 1]:
+		# 中央组合预览的层次按槽位统一，不能混用旧 PNG 的 10/20 与 ALE 的 0/1。
+		view["z_layer"] = {0: 10, 1: 20}[location]
 	return view
 
 ## 将 JSON 数值对规范化为旧 UI 契约使用的整数数组。
