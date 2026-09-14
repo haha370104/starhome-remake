@@ -37,6 +37,7 @@
 | --- | --- |
 | [评审导读](./review_guide.md) | 当前职责图、源码入口、优先级、检查清单与已知缺口 |
 | [工程规范](engineering_standards.md) | 分层、状态所有权、组件复用、测试与提交要求 |
+| [客户端结构与阅读顺序](client_architecture.md) | 入口拆分、控制器、共享组件、状态链路及本轮验证范围 |
 | [技术架构](./technical_architecture.md) | 架构决策、目标依赖、协议和完成定义；含尚未实现的目标设计 |
 | [双运行模式架构](./runtime_modes_architecture.md) | 进程边界、启动握手、传输/模拟差异、状态归属、保存与验证 |
 | [人物/背包/战车](./player_panels_architecture.md) | Player 聚合、同版本投影、换装事务、背包几何 |

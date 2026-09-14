@@ -66,7 +66,7 @@ MainHall → HallMultiplayerPresenter → ClientMultiplayerSession
 
 主要代码入口：
 
-- [MainHall](../scripts/main_hall.gd)：启动参数、世界/UI 组装及输入接缝。
+- [MainHall](../scripts/main_hall.gd)：启动参数和依赖组装；输入、切图、战斗与玩家投影见[客户端架构](client_architecture.md)。
 - [HallMultiplayerPresenter](../scripts/client/presentation/hall_multiplayer_presenter.gd)：组装客户端会话与表现信号。
 - [ClientMultiplayerSession](../scripts/client/network/client_multiplayer_session.gd)：序列、契约、预测/快照、切图与玩法消息。
 - [ClientNetworkAdapter](../scripts/client/network/client_network_adapter.gd)：连接状态与端点选择。

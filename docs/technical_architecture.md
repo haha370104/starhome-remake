@@ -137,16 +137,16 @@ tests/
   unit/ integration/ fixtures/
 ```
 
-现有 `scripts/main_hall.gd` 是原型编排器。迁移时应逐项抽出移动控制、地图加载、联机适配与
-交互用例，并保持当前大厅可运行；不以一次大改名或一次性重写作为里程碑。
+2026-09-14 已按职责逐项拆分客户端入口，实际结构见
+[客户端架构](client_architecture.md)。上方目录树仍包含尚未实现的长期目标。
 
 ### 3.1 当前状态与渐进重构边界
 
-`main_hall.gd` 目前并非“仅编排”：它仍组装世界和 HUD、处理输入和 NPC
-交互，并接入联机表现；路线状态已交给 `LocalPlayerController`，地图提交交给
-`ActiveWorldController`。该现状是可运行的迁移基线，不是目标架构。重构时每次只抽取一个
-可独立测试的职责，`AuthoritativeServer` 同样先作为兼容 facade 保留；禁止先做全仓目录
-搬迁，再期待文件位置自动形成边界。
+`main_hall.gd` 只保留启动和依赖组装。输入/NPC 交互、切图事务、战斗意图分别进入
+`WorldInteractionController`、`MapTravelController`、`CombatInteractionController`；
+`PlayerPresentationBinding` 负责玩家投影，`PlayerPanelSession` 独立于窗口管理器拥有玩家状态。
+移动单写入者和活动地图原子提交仍保留原有边界。`AuthoritativeServer` 继续作为服务端 facade，
+不能把客户端拆分视为服务端重构已经完成。
 
 目标运行时所有权如下：
 
@@ -158,7 +158,7 @@ tests/
 | 远端玩家、NPC、怪物视图生命周期 | 当前分散于 presenter/controller；统一 `EntityViewRegistry` 尚为目标 | 快照/领域事件驱动，不反写权威状态 |
 | 联机会话身份、序列和消息 | `ClientMultiplayerSession` | 不创建或直接修改具体场景节点 |
 | 当前登录人物、背包与战车的同版本客户端投影 | `CurrentPlayer : Player` | UI/HUD 只读订阅；命令仍经会话提交权威服务器 |
-| HUD 内部控件与通知频道 | 当前 `HallHud`；完全封装仍是迁移目标 | 外部应只调用语义 API 和订阅业务信号 |
+| HUD 内部控件与通知频道 | `HallHud` | 业务调用方仅调用语义 API 和订阅业务信号 |
 | 服务端世界与玩法结果 | server application/modules | RPC 层只鉴权、验证、路由和序列化 |
 | 账户、角色、背包、装备、战车和位置存档 | `PlayerStateRepository` | 用例开启事务；驱动适配器负责 SQLite/开发文件细节 |
 

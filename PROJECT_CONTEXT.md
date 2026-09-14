@@ -54,9 +54,9 @@
 权威地图实例等可用基础，但模块拆分尚未等同于状态所有权已经清晰。后续必须保留可运行大厅，
 按下列边界渐进重构，不做一次性目录搬迁或整体重写：
 
-1. `scripts/main_hall.gd` 当前仍实际持有地图、交互、HUD 和联机会话接缝，不能描述为
-   “只做编排”。本地移动状态已在 R2 抽出；目标是让入口最终只负责启动配置、依赖组装和
-   `ClientApplication` 生命周期。
+1. `scripts/main_hall.gd` 已收敛为启动配置、依赖组装和生命周期入口。切图、战斗、世界交互、
+   玩家投影分别由独立模块负责，禁止重新加入业务回调或测试兼容转发方法。
+   实际结构与验证见 [客户端架构](./docs/client_architecture.md)。
 2. 本地玩家的目标、路径、当前路径段、方向、预测序号和表现位置只能由
    `LocalPlayerController` 写入；权威校正必须同时取消或重算旧路线，入口脚本和 presenter
    不得形成多个位置写入者。
@@ -64,8 +64,8 @@
    `ActiveWorldController` 原子替换。`map_joined` 不能只更新会话 ID 而让画面继续停在旧地图。
 4. 裸 `Dictionary` 只允许停留在 JSON 和 RPC 信任边界；通过验证后立即转换为类型化定义、
    命令或 bundle。模块内部不得把自由形态字典当作长期 API。
-5. HUD 对外只暴露 `show_movement_status`、`show_network_notice`、
-   `show_npc_interaction`、`set_map` 等语义 API 与业务信号；调用方不得持有或改写
+5. HUD 对外只暴露 `show_status`、`show_network_notice`、
+   `show_npc_popup`、`set_map` 等语义 API 与业务信号；调用方不得持有或改写
    `Label`、弹窗、玩家点等内部控件。
 6. NPC 已拆为 `NpcBase` 领域对象与 `NpcWorldView` 场景表现；商店/任务节点子类只选择对应领域
    子类，不得自行保存商品、任务进度或经济状态。后续有状态交互继续调用权威 action service；

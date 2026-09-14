@@ -154,8 +154,8 @@ func _refresh_navigation() -> void:
 		panel_session.dispatch({"type": "query"})
 
 
-## 原子应用服务端返回的三面板快照。
-## [param bundle] 含 character、inventory、vehicle 与 transaction_revision 的快照组。
+## 将会话消息中的名单、商店、制造和任务日志分发到对应窗口。
+## [param bundle] 已由玩家会话接收的权威消息；可能只包含某个辅助窗口的数据。
 func _apply_auxiliary_bundle(bundle: Dictionary) -> void:
 	if bundle.get("scene_players") is Dictionary:
 		navigation_windows["scene_players"].apply_snapshot(bundle["scene_players"])

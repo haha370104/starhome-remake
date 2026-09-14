@@ -36,10 +36,10 @@ var _remote_appearance_key := "player"
 var _remote_animation_speed_scale := 1.0
 
 
-## 绑定本地角色、远端角色父节点、角色素材目录及临时状态文字载体。
-## [param local_character] 调用方传入的参数；具体约束由函数签名和所在模块定义。
-## [param remote_parent] 调用方传入的参数；具体约束由函数签名和所在模块定义。
-## [param character_catalog] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 绑定本地角色和远端角色渲染依赖；状态提示通过业务信号交给 HUD。
+## [param local_character] 接收本地会话表现的玩家锚点。
+## [param remote_parent] 远端角色视图所在的世界排序层。
+## [param character_catalog] 已加载的角色动画与外观目录。
 ## 设计：表现器只投影会话状态，不拥有路径规划、输入采样或传输协议。
 func configure(
 	local_character: Node2D,

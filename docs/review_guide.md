@@ -1,7 +1,8 @@
 # 代码评审导读
 
 核对日期：2026-09-14。文档整理前基线 HEAD：`fa2e54b`；同时核对当前工作树的源码与配置。
-本次是文档与职责梳理，不是完整逐行审计，也没有重跑全量游戏回归。
+随后已完成客户端职责拆分；当前入口与本轮实测范围见 [客户端架构](client_architecture.md)。
+此处其他模块的评审清单仍不代表逐行审计或全量游戏回归已经完成。
 新对话先读 [项目交接](project_handoff.md)；该页记录未纳入文档提交的业务改动和外部档案边界。
 
 ## 1. 先看结论
@@ -21,8 +22,9 @@
 main_hall.tscn / main_hall.gd                  dedicated_server.tscn
   ├─ LocalPlayerController（预测和移动）                  │
   ├─ ActiveWorldController（活动地图）                    │
+  ├─ 世界交互 / 切图 / 战斗控制器                        │
   ├─ 世界表现 / HUD / GameWindowManager                  │
-  │                      └─ CurrentPlayer : Player     │
+  ├─ PlayerPanelSession → CurrentPlayer : Player         │
   └─ ClientMultiplayerSession                           │
        └─ ClientTransportEndpoint                       │
             ├─ InProcessAuthoritativeTransport ─┐       │
@@ -78,7 +80,7 @@ main_hall.tscn / main_hall.gd                  dedicated_server.tscn
 - [ ] 跨进程只有相同业务身份，不要求同一内存指针；跨容器转移不能复制物品或丢失耐久。
 - [ ] 面板裸模与场景衣服都读 `CharacterEquipment`；战车面板和战斗是否使用同一装配结果。
 - [ ] `CurrentPlayer.apply_bundle()` 在无效快照时是否能保留旧完整状态，同一 revision 才一起发布。
-- [ ] 客户端依赖 `server/player_panels` 下的纯投影器是否值得移动到共享位置；只 review 依赖，不先搬目录。
+- [x] 纯面板投影器已移到 `scripts/shared`，客户端不再直接依赖服务器目录；共享依赖方向已纳入门禁。
 - [ ] `Dictionary` 仍广泛存在，不能认为已完全收紧为类型契约；重点看配置加载/协议边界以外的裸字段。
 
 测试：[充血模型](../tests/domain/player_rich_model_test.gd)、
@@ -226,13 +228,13 @@ main_hall.tscn / main_hall.gd                  dedicated_server.tscn
 | P0（部署前） | `open_session` 按顺序分配 `player.N`；无正式账户认证 | 身份归属稳定、不能因连接顺序读到别人的角色 |
 | P0（生产经济前） | 已有经济玩法但仍使用开发文件仓储；SQLite 端口/SQL 不等于适配器 | 真驱动事务、幂等回执、备份及异常重启恢复 |
 | P1 | 聚合、地图中的战车状态、客户端投影各有副本 | 明确每一阶段写入者，换装/受伤/保存不覆盖彼此 |
-| P1 | 主入口、服务端 facade、战斗模块仍集中多种职责 | 按状态所有权和失败边界继续拆分，不以历史行数当现状 |
+| P1 | 客户端入口已拆分；服务端 facade 和权威战斗模块仍集中多种职责 | 后续按服务端状态所有权和失败边界继续拆分 |
 | P1 | 全量精灵索引/包仍保留历史命名债务；旧报告曾计 500 个引用 | 生成器、包内路径和索引一起审计/迁移，不放宽门禁；旧数量不作本轮测量结果 |
-| P1 | 总门禁显式列出 46 个 GDScript 测试，新增模块仍未全纳入 | 补全量内容、落点、每日训练等覆盖；采矿现已在门禁，不再列为未接入 |
+| P1 | 总门禁仍未覆盖全部测试；本轮组件测试和架构检查已接入 | 补全量内容、落点等覆盖；完整清单以检查脚本为准 |
 | P1 | 432 张野外采用基础四怪复刻默认；463 项物品素材缺失 | 持续保留来源/缺失标记，具体地图/物品逐项验收 |
 | P2 | Dictionary、Node 动态建树、低信息函数注释仍多 | 在 R4—R8 中按模块收紧，不能声称已完成纯类型化重构 |
 
-46 项来自本轮读取总门禁；资源数字为保存的完整性清单口径，不是长期固定指标。
+资源数字为保存的完整性清单口径，不是长期固定指标。
 详见 [运行内容说明](./runtime_content.md)。
 
 ## 6. 验证入口与本次验证范围
@@ -243,7 +245,7 @@ main_hall.tscn / main_hall.gd                  dedicated_server.tscn
 ./tools/run_project_checks.ps1 -GodotExecutable 'C:/Users/tomato/Downloads/Godot_v4.7.2-stable_win64_console.exe'
 ```
 
-它会执行暂存变更规模、LFS、注释检查、Godot 导入、入口警告检查、列出的 46 个脚本测试、
+它会执行暂存变更规模、LFS、客户端架构、注释检查、Godot 导入、入口警告检查、脚本测试、
 真实 ENet 双客户端/重连/切图及资源来源审计。会生成 `.godot/` 缓存/日志，部分步骤调用导入器；
 不把它当成纯只读命令。测试清单以[脚本本身](../tools/run_project_checks.ps1)为准。
 

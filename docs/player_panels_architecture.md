@@ -22,7 +22,7 @@
 
 ## 2. 权威状态链路
 
-> **重点 Review：当前人物全局对象。** `GameWindowManager.current_player` 是当前登录人物在
+> **重点 Review：当前人物全局对象。** `PlayerPanelSession.current_player` 是当前登录人物在
 > 客户端场景中的唯一共享对象，具体类型为 `CurrentPlayer extends Player`。网络 DTO 到达后，
 > 它会重建 `Inventory`、`CharacterEquipment`、`PlayerVehicle/VehicleLoadout` 和 `SkillBook`；
 > 客户端不再长期保存三份可变 `Dictionary`。面板需要旧协议格式时从这个对象即时投影，世界
@@ -31,7 +31,7 @@
 
 ```text
 底栏 / 面板手势
-  -> GameWindowManager（补全本地已知 revision）
+  -> PlayerPanelSession（补全本地已知 revision；生命周期独立于窗口）
   -> ClientMultiplayerSession
   -> reliable panel command RPC
   -> peer 绑定的 ServerSession
@@ -80,6 +80,10 @@
   `PlayerStateMapper` 是 DTO 与领域模型之间唯一映射边界。
 
 ## 3. 背包几何规则
+
+2026-09-14：人物与战车共享 `EquipmentLayerView`，背包物品区域抽为 `InventoryCanvas`；
+窗口管理器订阅独立的 `PlayerPanelSession`。具体依赖和组件复用方式见
+[客户端架构](client_architecture.md)，展示尺寸和权威事务保持原有行为。
 
 持久化物品除旧版兼容的 `slot_index` 外，还记录 `container_id`、`position_px`、
 `footprint_px`、锁定、绑定和耐久。共享 `InventoryLayout` 负责：
