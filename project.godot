@@ -25,6 +25,10 @@ window/size/min_height=540
 window/size/resizable=true
 window/stretch/mode="disabled"
 
+[gui]
+
+theme/custom_font="res://assets/ui/fonts/legacy_panel_font.tres"
+
 [rendering]
 
 renderer/rendering_method="gl_compatibility"

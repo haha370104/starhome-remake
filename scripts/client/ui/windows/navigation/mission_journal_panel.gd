@@ -11,9 +11,6 @@ var _category_buttons: Array[Button] = []
 ## 创建免费版四分类任务日志，当前已登记任务归入新兵任务。
 func _ready() -> void:
 	build_window(Vector2(380, 520), null, "")
-	var journal_font := SystemFont.new()
-	journal_font.font_names = PackedStringArray(["Microsoft YaHei UI", "Microsoft YaHei", "Noto Sans CJK SC", "sans-serif"])
-	theme.default_font = journal_font
 	theme.default_font_size = 16
 	theme.set_color("font_color", "Label", Color("e4edf4"))
 	theme.set_color("default_color", "RichTextLabel", Color("c3d0dc"))

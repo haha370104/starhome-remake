@@ -50,7 +50,7 @@ func _run() -> void:
 		"ButtonText 源码坐标应作为文字左上角直接使用")
 	_expect(slot_zero.horizontal_alignment == HORIZONTAL_ALIGNMENT_LEFT \
 		and slot_zero.get_theme_font_size("font_size") == 12,
-		"槽位文字应为左对齐宋体 12px")
+		"槽位文字应为左对齐的共享字体 12px")
 	_expect((slot_zero.get_theme_font("font") as SystemFont).font_weight == 400 \
 		and not slot_zero.has_theme_constant_override("shadow_offset_x"),
 		"槽位文字应使用常规字重且不添加源码不存在的阴影")
@@ -151,7 +151,7 @@ func _run() -> void:
 	var tooltip_body := legacy_tooltip.get_node("Content/Body") as Label
 	_expect(tooltip_title.get_theme_font_size("font_size") == 12 \
 		and tooltip_body.get_theme_font_size("font_size") == 12,
-		"物品说明标题和正文应使用原版宋体 12px 高度")
+		"物品说明标题和正文应保留 12px 字号")
 	_expect((tooltip_title.get_theme_font("font") as SystemFont).font_weight == 800,
 		"物品说明标题应使用 SETFONT2 对应的粗体字重")
 	_expect(is_equal_approx(inventory_item.modulate.a, 1.0),
