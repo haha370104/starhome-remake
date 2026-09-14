@@ -27,9 +27,9 @@ func _capture() -> void:
 		push_error("Could not commit D04 bundle")
 		quit(1)
 		return
-	hall.player.set_action("stand", 7)
-	hall.camera.position = spawn.position
-	hall.camera.reset_smoothing()
+	hall.world_view.player.set_action("stand", 7)
+	hall.world_view.camera.position = spawn.position
+	hall.world_view.camera.reset_smoothing()
 	hall._sync_player_nodes()
 	await process_frame
 	await process_frame

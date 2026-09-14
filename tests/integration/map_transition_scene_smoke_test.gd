@@ -75,7 +75,7 @@ func _run() -> void:
 
 	# Reconnect may join a map whose resources were not preloaded. The old scene must
 	# hold its player position and stop its route until the authoritative bundle commits.
-	var held_position: Vector2 = hall.player.position
+	var held_position: Vector2 = hall.world_view.player.position
 	hall.path_points = PackedVector2Array([held_position, held_position + Vector2(100, 0)])
 	hall.path_index = 1
 	hall.active_movement_input_sequence = 7
@@ -87,16 +87,16 @@ func _run() -> void:
 	)
 	_expect(hall.path_points.is_empty(), "异步权威切图必须立即终止旧地图路径")
 	_expect(hall.active_movement_input_sequence == 0, "异步权威切图必须停止记录旧地图预测输入")
-	hall.player.position = Vector2(1399, 954)
+	hall.world_view.player.position = Vector2(1399, 954)
 	hall.call("_on_multiplayer_local_character_state_applied", {})
-	_expect(hall.player.position == held_position, "资源提交前旧地图必须保持原角色位置")
+	_expect(hall.world_view.player.position == held_position, "资源提交前旧地图必须保持原角色位置")
 	hall.pending_authoritative_join.clear()
 
 	_place_authoritative_player(hall, Vector2(480, 370))
 	hall.call("_try_begin_nearby_map_transition")
 	await _wait_for_map(hall, &"yian_harbor_city")
 	_expect(hall.map_definition.map_id == &"yian_harbor_city", "大厅出口必须进入真实 City1Svr 业务图")
-	_expect(hall.player.position == Vector2(1399, 954), "城市入口0必须采用配置化权威落点")
+	_expect(hall.world_view.player.position == Vector2(1399, 954), "城市入口0必须采用配置化权威落点")
 	_expect(hall.navigation.grid_size == Vector2i(71, 560), "城市必须切换到自己的荣耀导航")
 	_expect(hall.map_scene_nodes.size() == 888, "城市必须提交当前荣耀清单中的全部语义遮挡层")
 	_expect(hall.npc_instances.is_empty(), "大厅 NPC 不得泄漏到城市")
@@ -106,20 +106,20 @@ func _run() -> void:
 	hall.call("_try_begin_nearby_map_transition")
 	await _wait_for_map(hall, &"d04_field_zone")
 	_expect(hall.map_definition.map_id == &"d04_field_zone", "城市西北门必须进入 D04")
-	_expect(hall.player.position == Vector2(1290, 2562), "D04入口1必须采用配置化权威落点")
+	_expect(hall.world_view.player.position == Vector2(1290, 2562), "D04入口1必须采用配置化权威落点")
 	_expect(hall.navigation.grid_size == Vector2i(101, 800), "D04必须切换到自己的荣耀导航")
 	_expect(hall.map_scene_nodes.size() == 117, "D04必须提交官网惰性资源恢复后的荣耀语义遮挡层")
 	_expect(hall.hud.minimap_dock.map_name_label.text == "D04区", "HUD 必须原子更新 D04 名称")
 	_expect(hall.hud.minimap_dock.marker_layer.marker_positions().size() == 12, "D04 小地图必须显示当前地图的十二个传送点")
 	_expect(hall.multiplayer_presenter.session.current_map_id == &"d04_field_zone", "离线调试会话也必须同步当前业务地图")
 	await _assert_current_map_monsters(hall)
-	_expect(hall.monster_world_controller._views.size() == 200, "D04 的200只怪物应通过权威快照进入客户端")
+	_expect(hall.world_view.monster_world_controller._views.size() == 200, "D04 的200只怪物应通过权威快照进入客户端")
 
 	_place_authoritative_player(hall, Vector2(130, 2553))
 	hall.call("_try_begin_nearby_map_transition")
 	await _wait_for_map(hall, &"buli_c04_field_zone")
 	_expect(hall.map_definition.map_id == &"buli_c04_field_zone", "D04 西侧出口必须进入布里 C04")
-	_expect(hall.player.position == Vector2(4687, 2525), "D04→C04 必须落在 C04 指回 D04 的边缘出口")
+	_expect(hall.world_view.player.position == Vector2(4687, 2525), "D04→C04 必须落在 C04 指回 D04 的边缘出口")
 	_expect(hall.navigation.grid_size == Vector2i(101, 800), "C04 必须提交自己的荣耀导航")
 	_expect(not hall.map_scene_nodes.is_empty(), "C04 必须提交已打包的场景表现")
 	_expect(hall.hud.minimap_dock.map_name_label.text.contains("C04"), "HUD 必须原子更新 C04 名称")
@@ -133,7 +133,7 @@ func _run() -> void:
 	hall.call("_try_begin_nearby_map_transition")
 	await _wait_for_map(hall, &"buli_c03_field_zone")
 	_expect(hall.map_definition.map_id == &"buli_c03_field_zone", "C04 北侧出口必须进入布里 C03")
-	_expect(hall.player.position == Vector2(2426, 4565), "C04→C03 必须落在 C03 正下方反向出口")
+	_expect(hall.world_view.player.position == Vector2(2426, 4565), "C04→C03 必须落在 C03 正下方反向出口")
 	_expect(not hall.map_scene_nodes.is_empty(), "C03 必须提交已打包的场景表现")
 	_expect(hall.hud.minimap_dock.map_name_label.text.contains("C03"), "HUD 必须原子更新 C03 名称")
 	_expect(hall.hud.minimap_dock.marker_layer.marker_positions().size() == 3, "C03 小地图必须替换为本图三个传送点，不残留 D04 标记")
@@ -187,14 +187,14 @@ func _assert_current_map_monsters(hall: Node2D) -> void:
 	var server: AuthoritativeServer = transport.authoritative_server
 	var instance: AuthoritativeMapInstance = server.map_registry.instance_by_map_id(hall.map_definition.map_id)
 	for _frame in range(120):
-		if hall.monster_world_controller._views.size() == instance.combat_module.monsters.size():
+		if hall.world_view.monster_world_controller._views.size() == instance.combat_module.monsters.size():
 			break
 		await physics_frame
 	_expect(
-		hall.monster_world_controller._views.size() == instance.combat_module.monsters.size(),
+		hall.world_view.monster_world_controller._views.size() == instance.combat_module.monsters.size(),
 		"当前地图客户端怪物数必须与权威种群一致",
 	)
-	for monster_id: String in hall.monster_world_controller._views:
+	for monster_id: String in hall.world_view.monster_world_controller._views:
 		_expect(instance.combat_module.monsters.has(monster_id), "客户端不得残留上一地图的怪物")
 
 

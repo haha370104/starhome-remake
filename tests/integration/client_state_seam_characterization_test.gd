@@ -45,15 +45,15 @@ func _test_route_policy_after_authoritative_correction() -> void:
 			expected_replanned,
 			"平滑权威校正必须保留目标并从校正位置重算路线",
 		)
-		_expect(hall.movement_click_effects.active_effect_count() == 0, "权威校正不得生成鼠标落点反馈")
+		_expect(hall.world_view.movement_click_effects.active_effect_count() == 0, "权威校正不得生成鼠标落点反馈")
 
 	# Re-establish a route so the forced correction assertion is independent from
 	# the small-correction result above.
 	hall.call("_move_to", target)
 	_expect(not hall.path_points.is_empty(), "强制校正前必须存在活动路线")
 	var forced_position: Vector2 = hall.navigation.closest_reachable_position(
-		hall.player.position,
-		hall.player.position + Vector2(180.0, 120.0),
+		hall.world_view.player.position,
+		hall.world_view.player.position + Vector2(180.0, 120.0),
 	)
 	hall.call("_on_multiplayer_local_character_state_applied", {
 		"position": forced_position,
@@ -61,7 +61,7 @@ func _test_route_policy_after_authoritative_correction() -> void:
 	})
 	_expect(hall.path_points.is_empty(), "强制权威校正必须取消旧地图路线")
 	_expect(hall.active_movement_input_sequence == 0, "强制权威校正必须清除旧移动输入序号")
-	_expect(hall.movement_click_effects.active_effect_count() == 0, "强制权威校正不得生成鼠标落点反馈")
+	_expect(hall.world_view.movement_click_effects.active_effect_count() == 0, "强制权威校正不得生成鼠标落点反馈")
 	hall.free()
 
 
@@ -70,7 +70,7 @@ func _test_pre_authority_preload_failure_keeps_old_world_active() -> void:
 	var hall := await _create_hall()
 	var old_map_id: StringName = hall.map_definition.map_id
 	var old_instance_id: String = hall.multiplayer_presenter.session.current_map_instance_id
-	var old_floor: Texture2D = hall.map_background.texture
+	var old_floor: Texture2D = hall.world_view.map_background.texture
 	var old_navigation: RefCounted = hall.navigation
 	var old_npc_count: int = hall.npc_instances.size()
 	hall.pending_map_transition = {
@@ -81,7 +81,7 @@ func _test_pre_authority_preload_failure_keeps_old_world_active() -> void:
 	_expect(hall.pending_map_transition.is_empty(), "请求前预载失败必须清空暂存切图")
 	_expect(not hall.call("_world_input_locked"), "请求前预载失败必须恢复旧地图输入")
 	_expect(hall.map_definition.map_id == old_map_id, "请求前预载失败必须保留旧活动地图")
-	_expect(hall.map_background.texture == old_floor, "请求前预载失败必须保留旧地图画面")
+	_expect(hall.world_view.map_background.texture == old_floor, "请求前预载失败必须保留旧地图画面")
 	_expect(hall.navigation == old_navigation, "请求前预载失败必须保留旧导航实例")
 	_expect(hall.npc_instances.size() == old_npc_count, "请求前预载失败必须保留旧地图实体")
 	_expect(hall.multiplayer_presenter.session.current_map_id == old_map_id, "请求前预载失败必须保留旧会话地图")
@@ -102,7 +102,7 @@ func _test_pre_authority_preload_failure_keeps_old_world_active() -> void:
 func _test_post_authority_preload_failure_locks_old_world() -> void:
 	var hall := await _create_hall()
 	var old_map_id: StringName = hall.map_definition.map_id
-	var old_floor: Texture2D = hall.map_background.texture
+	var old_floor: Texture2D = hall.world_view.map_background.texture
 	var old_navigation: RefCounted = hall.navigation
 	var old_npc_count: int = hall.npc_instances.size()
 	var session = hall.multiplayer_presenter.session
@@ -117,7 +117,7 @@ func _test_post_authority_preload_failure_locks_old_world() -> void:
 		1,
 	)
 	_expect(hall.map_definition.map_id == old_map_id, "权威后预载失败必须保留旧活动画面身份")
-	_expect(hall.map_background.texture == old_floor, "权威后预载失败必须保留旧底图")
+	_expect(hall.world_view.map_background.texture == old_floor, "权威后预载失败必须保留旧底图")
 	_expect(hall.navigation == old_navigation, "权威后预载失败不得半提交新导航")
 	_expect(hall.npc_instances.size() == old_npc_count, "权威后预载失败不得半清理旧地图实体")
 	_expect(hall.map_commit_failure_locked, "权威后预载失败必须进入不可恢复锁定状态")
@@ -126,7 +126,7 @@ func _test_post_authority_preload_failure_locks_old_world() -> void:
 	_expect(hall.active_movement_input_sequence == 0, "权威后预载失败必须清除旧输入序号")
 	_expect(session.current_map_id == MISSING_TEST_MAP_ID, "权威会话地图必须保持服务端已提交目标")
 	_expect(session.current_map_instance_id == "test_missing_authoritative_map.instance.review", "权威会话实例必须保持服务端已提交目标")
-	hall.call("_move_to", hall.player.position + Vector2(32.0, 0.0))
+	hall.call("_move_to", hall.world_view.player.position + Vector2(32.0, 0.0))
 	_expect(
 		session.local_predictor.next_input_sequence == before_sequence,
 		"锁定旧画面不得向新会话创建移动输入",
@@ -150,7 +150,7 @@ func _create_hall() -> Node2D:
 ## [param hall] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## 返回该函数计算、查询或操作得到的结果。
 func _find_route_target(hall: Node2D) -> Vector2:
-	var origin: Vector2 = hall.player.position
+	var origin: Vector2 = hall.world_view.player.position
 	var offsets := [
 		Vector2(240.0, 0.0),
 		Vector2(-240.0, 0.0),
@@ -176,7 +176,7 @@ func _find_small_correction_with_distinct_path(
 	target: Vector2,
 	original_path: PackedVector2Array,
 ) -> Vector2:
-	var origin: Vector2 = hall.player.position
+	var origin: Vector2 = hall.world_view.player.position
 	var offsets := [
 		Vector2(16.0, 0.0),
 		Vector2(-16.0, 0.0),

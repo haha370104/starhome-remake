@@ -21,8 +21,8 @@ func _run() -> void:
 	root.add_child(hall)
 	await process_frame
 	await process_frame
-	var player: Node2D = hall.player
-	_expect(hall.camera.zoom == Vector2.ONE, "世界摄像机必须保持原客户端 1:1 像素比例")
+	var player: Node2D = hall.world_view.player
+	_expect(hall.world_view.camera.zoom == Vector2.ONE, "世界摄像机必须保持原客户端 1:1 像素比例")
 	_expect(player.presentation_kind == &"character", "大厅出生必须保持人形玩家")
 	_expect(player.human_character.visible, "大厅必须显示人形合成层")
 	_expect(
@@ -188,13 +188,13 @@ func _test_cannon_mining_click_is_rejected(hall: Node2D) -> void:
 		_expect(created.is_ok and current.vehicle.loadout.restore(created.value).is_ok, "装配点击测试车炮")
 	hall._request_mining(Vector2(1200, 1200))
 	_expect(hall.hint_label.text.contains("能量炮不能采矿"), "真实矿物点击入口应立即中文拒绝，不能显示正在准备采矿")
-	_expect(hall.player.apply_vehicle_equipment(current.vehicle), "点击测试应同步真实炮的外观")
-	hall.mining_visual_controller.apply_snapshot({"local_vehicle": {"health": 70}, "local_mining": {
+	_expect(hall.world_view.player.apply_vehicle_equipment(current.vehicle), "点击测试应同步真实炮的外观")
+	hall.world_view.mining_visual_controller.apply_snapshot({"local_vehicle": {"health": 70}, "local_mining": {
 		"active": true, "target_position": [0.0, 100.0],
 	}})
-	_expect(not hall.player.combat_presenter._layer_action_overrides.has(&"primary_weapon"),
+	_expect(not hall.world_view.player.combat_presenter._layer_action_overrides.has(&"primary_weapon"),
 		"陈旧的活动快照也不得让能量炮播放采矿")
-	_expect(not hall.player.combat_presenter._layer_direction_overrides.has(&"primary_weapon"),
+	_expect(not hall.world_view.player.combat_presenter._layer_direction_overrides.has(&"primary_weapon"),
 		"拒绝不支持的采矿动画时不能遗留炮管朝向覆盖")
 
 
@@ -223,7 +223,7 @@ func _test_eight_way_idle_and_move(player: Node2D, controller: Node) -> void:
 ## 执行 `test_move_and_fire_keeps_route` 对应的模块操作。
 ## [param hall] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _test_move_and_fire_keeps_route(hall: Node2D) -> void:
-	var origin: Vector2 = hall.player.position
+	var origin: Vector2 = hall.world_view.player.position
 	var requested_target := origin + Vector2(180, 90)
 	var movement_target: Vector2 = hall.navigation.closest_reachable_position(
 		origin,
@@ -238,7 +238,7 @@ func _test_move_and_fire_keeps_route(hall: Node2D) -> void:
 	hall._handle_world_combat_left_click(origin + Vector2(120, 0))
 	_expect(hall.local_player_controller.has_active_route(), "开火不得停止活动路线")
 	_expect(hall.path_points == route_before_fire, "开火不得改写尚未完成的路径折线")
-	_expect(hall.combat_attack_controller.active_projectile_count() == 1, "移动中开火仍须生成弹体")
+	_expect(hall.world_view.combat_attack_controller.active_projectile_count() == 1, "移动中开火仍须生成弹体")
 
 
 ## 验证真实目录构建的工程臂空地点击静默，不产生弹体，也不提交网络能力意图。
@@ -250,7 +250,7 @@ func _test_engineering_arm_empty_click(hall: Node2D) -> void:
 	var vehicle := current.vehicle
 	var original_loadout := vehicle.loadout
 	var config: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/gameplay/commerce/weapon_merchant_v1.json"))
-	var projectile_count: int = hall.combat_attack_controller.active_projectile_count()
+	var projectile_count: int = hall.world_view.combat_attack_controller.active_projectile_count()
 	var ability_sequence: int = hall.multiplayer_presenter.session._next_ability_sequence
 	var feed: CentralSystemMessageFeed = hall.hud.system_message_feed
 	var message_count := feed.queued_message_count()
@@ -274,7 +274,7 @@ func _test_engineering_arm_empty_click(hall: Node2D) -> void:
 				"空地点击不能向中央消息队列添加错误")
 			_expect(hall.multiplayer_presenter.session._next_ability_sequence == ability_sequence,
 				"空地点击不得提交开炮意图")
-			_expect(hall.combat_attack_controller.active_projectile_count() == projectile_count, "工程臂不产生炮弹")
+			_expect(hall.world_view.combat_attack_controller.active_projectile_count() == projectile_count, "工程臂不产生炮弹")
 	vehicle.loadout = original_loadout
 	hall._on_current_player_changed(current)
 

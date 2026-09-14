@@ -14,8 +14,8 @@ func _capture() -> void:
 	root.add_child(hall)
 	await process_frame
 	await process_frame
-	hall.player.position = Vector2(972, 960)
-	hall.camera.position = hall.player.position
+	hall.world_view.player.position = Vector2(972, 960)
+	hall.world_view.camera.position = hall.world_view.player.position
 	hall._sync_player_nodes()
 	await process_frame
 	await process_frame

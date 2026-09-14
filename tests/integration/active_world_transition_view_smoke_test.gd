@@ -45,7 +45,7 @@ func _run() -> void:
 		return
 	_expect(view.position == Vector2(408, 348), "传送表现必须采用数据声明的业务锚点")
 	_expect(view.approach_point == Vector2(480, 370), "传送交互必须保留独立的可行走接近点")
-	_expect(view.z_index < hall.player.z_index, "地表传送动画必须始终渲染在人物和战车下方")
+	_expect(view.z_index < hall.world_view.player.z_index, "地表传送动画必须始终渲染在人物和战车下方")
 	var tooltip := view.get_node_or_null("HoverTooltip") as Label
 	_expect(tooltip != null, "传送视图必须创建目的地悬浮提示")
 	_expect(tooltip != null and tooltip.text == "通往城市", "悬浮提示必须采用地图出口配置中的目的地标签")
@@ -58,10 +58,10 @@ func _run() -> void:
 
 	hall.call("_handle_world_right_click", Vector2(420, 360))
 	_expect(hall.selected_transition_id == &"exit_to_city", "右键传送图标必须记录具体业务出口")
-	_expect(hall.movement_click_effects.frame_count() == 6, "荣耀版右键落点反馈必须保留完整 6 帧")
-	_expect(hall.movement_click_effects.active_effect_count() == 1, "右键点击必须立即创建一次落点反馈")
+	_expect(hall.world_view.movement_click_effects.frame_count() == 6, "荣耀版右键落点反馈必须保留完整 6 帧")
+	_expect(hall.world_view.movement_click_effects.active_effect_count() == 1, "右键点击必须立即创建一次落点反馈")
 	_expect(
-		hall.movement_click_effects.last_presented_position == Vector2(420, 360),
+		hall.world_view.movement_click_effects.last_presented_position == Vector2(420, 360),
 		"落点反馈必须留在实际点击点，不得跟随寻路接近点",
 	)
 	_expect(not hall.path_points.is_empty(), "命中传送图标必须生成可行路线")
@@ -69,7 +69,7 @@ func _run() -> void:
 		_expect(hall.path_points[-1].is_equal_approx(Vector2(480, 370)), "传送路线终点必须是 approach_point")
 	_expect(hall.pending_map_transition.is_empty(), "玩家到达前不得提交地图切换")
 	await create_timer(0.65).timeout
-	_expect(hall.movement_click_effects.active_effect_count() == 0, "落点反馈必须在约 600ms 后自动删除")
+	_expect(hall.world_view.movement_click_effects.active_effect_count() == 0, "落点反馈必须在约 600ms 后自动删除")
 
 	var test_preloader := TestMapPreloader.new()
 	hall.add_child(test_preloader)
@@ -99,10 +99,10 @@ func _run() -> void:
 func _test_failed_bundle_isolation(hall: Node2D, active: Node) -> void:
 	var old_definition: RefCounted = active.definition
 	var old_navigation: RefCounted = active.navigation
-	var old_background: Texture2D = hall.map_background.texture
-	var old_player_position: Vector2 = hall.player.position
+	var old_background: Texture2D = hall.world_view.map_background.texture
+	var old_player_position: Vector2 = hall.world_view.player.position
 	var old_map_name: String = hall.hud.minimap_dock.map_name_label.text
-	var old_camera_limit := Vector2i(hall.camera.limit_right, hall.camera.limit_bottom)
+	var old_camera_limit := Vector2i(hall.world_view.camera.limit_right, hall.world_view.camera.limit_bottom)
 	var old_scene_count: int = active.scene_nodes.size()
 	var old_npc_count: int = active.npc_instances.size()
 	var old_first_scene: Node2D = active.scene_nodes[0] if old_scene_count > 0 else null
@@ -123,10 +123,10 @@ func _test_failed_bundle_isolation(hall: Node2D, active: Node) -> void:
 
 	_expect(active.definition == old_definition, "提交失败必须保留旧地图定义")
 	_expect(active.navigation == old_navigation, "提交失败必须保留旧导航实例")
-	_expect(hall.map_background.texture == old_background, "提交失败必须保留旧背景")
-	_expect(hall.player.position == old_player_position, "提交失败必须保留旧玩家位置")
+	_expect(hall.world_view.map_background.texture == old_background, "提交失败必须保留旧背景")
+	_expect(hall.world_view.player.position == old_player_position, "提交失败必须保留旧玩家位置")
 	_expect(hall.hud.minimap_dock.map_name_label.text == old_map_name, "提交失败必须保留旧 HUD 地图名")
-	_expect(Vector2i(hall.camera.limit_right, hall.camera.limit_bottom) == old_camera_limit, "提交失败必须保留旧摄像机边界")
+	_expect(Vector2i(hall.world_view.camera.limit_right, hall.world_view.camera.limit_bottom) == old_camera_limit, "提交失败必须保留旧摄像机边界")
 	_expect(active.scene_nodes.size() == old_scene_count, "提交失败必须保留旧语义层数量")
 	_expect(active.npc_instances.size() == old_npc_count, "提交失败必须保留旧 NPC 集合")
 	_expect(old_first_scene == null or is_instance_valid(old_first_scene), "提交失败不得释放旧场景节点")
@@ -248,8 +248,8 @@ func _test_space_center_transition_view(hall: Node2D, active: Node) -> void:
 	_expect(active.commit_bundle(bundle, Vector2(1008, 1464)), "宇航中心 bundle 必须可原子提交")
 	_expect(active.definition.map_id == &"dragon_city_space_center", "宇航中心必须采用业务语义地图 ID")
 	_expect(
-		hall.map_background.texture != null
-			and hall.map_background.texture.get_size() == Vector2(2808, 1920),
+		hall.world_view.map_background.texture != null
+			and hall.world_view.map_background.texture.get_size() == Vector2(2808, 1920),
 		"宇航中心必须显示 FCC img 标签指定的 2808×1920 完整荣耀底图",
 	)
 	_expect(active.transition_views.size() == 1, "宇航中心必须显示唯一返程点")

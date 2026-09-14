@@ -1,8 +1,6 @@
 extends Node2D
 
 const CHARACTER_CATALOG_PATH := "res://assets/characters/character_atlases.json"
-const COMBAT_VISUAL_MANIFEST_PATH := "res://assets/equipment_world/combat_visual_manifest.json"
-const MINING_VISUAL_MANIFEST_PATH := "res://assets/minerals/mining_asset_manifest.json"
 const NPC_CONFIG_PATH := "res://data/npcs/yian_harbor_hall_floor_1.json"
 const MAP_DEFINITION_PATH := "res://data/maps/yian_harbor_hall_floor_1.json"
 const MAP_DIRECTORY_PATH := "res://data/maps/glory_map_directory_v1.json"
@@ -10,8 +8,6 @@ const RuntimeContentBootstrapScript := preload(
 	"res://scripts/content/runtime_content_bootstrap.gd"
 )
 const DiamondNavigationScript := preload("res://scripts/navigation/diamond_navigation.gd")
-const CharacterFactoryScript := preload("res://scripts/characters/character_factory.gd")
-const PlayerWorldAvatarScript := preload("res://scripts/characters/player_world_avatar.gd")
 const HallHudScript := preload("res://scripts/ui/hall_hud.gd")
 const HallMultiplayerPresenterScript := preload(
 	"res://scripts/client/presentation/hall_multiplayer_presenter.gd"
@@ -25,26 +21,8 @@ const RuntimeMapRouteResolverScript := preload(
 const LocalPlayerControllerScript := preload(
 	"res://scripts/client/gameplay/local_player_controller.gd"
 )
-const MovementClickEffectPresenterScript := preload(
-	"res://scripts/client/presentation/movement_click_effect_presenter.gd"
-)
 const ActiveWorldControllerScript := preload(
 	"res://scripts/client/world/active_world_controller.gd"
-)
-const WeaponAttackVisualControllerScript := preload(
-	"res://scripts/client/presentation/combat/weapon_attack_visual_controller.gd"
-)
-const MonsterWorldControllerScript := preload(
-	"res://scripts/client/presentation/combat/monster_world_controller.gd"
-)
-const GroundLootWorldControllerScript := preload(
-	"res://scripts/client/presentation/combat/ground_loot_world_controller.gd"
-)
-const MineralWorldControllerScript := preload(
-	"res://scripts/client/presentation/mining/mineral_world_controller.gd"
-)
-const SelfRepairVisualControllerScript := preload(
-	"res://scripts/client/presentation/combat/self_repair_visual_controller.gd"
 )
 const GameWindowManagerScript := preload(
 	"res://scripts/client/ui/windows/game_window_manager.gd"
@@ -55,35 +33,14 @@ const InitialLoadingScreenScript := preload(
 const VehicleDestroyedDialogScript := preload(
 	"res://scripts/ui/vehicle_destroyed_dialog.gd"
 )
-const ItemCatalogScript := preload("res://scripts/domain/items/item_catalog.gd")
-const WEAPON_MODES := {
-	"energy_cannon": {
-		"weapon_id": &"recruit_energy_cannon",
-		"ability_id": "energy_cannon.primary",
-		"layer_id": &"primary_weapon",
-		"display_name": "新兵能量炮",
-	},
-	"missile": {
-		"weapon_id": &"starter_missile",
-		"ability_id": "missile.primary",
-		"layer_id": &"missile_weapon",
-		"display_name": "初级导弹",
-	},
-	"rocket_launcher": {
-		"weapon_id": &"starter_rocket_launcher",
-		"ability_id": "rocket_launcher.primary",
-		"layer_id": &"rocket_weapon",
-		"display_name": "初级火箭",
-	},
-}
+const CombatActions := preload("res://scripts/client/gameplay/client_combat_actions.gd")
 const TACTICAL_ACTION_BY_DEFINITION := {
 	"starter_rocket_launcher": "rocket_launcher",
 	"starter_missile": "missile",
 }
-const SELF_REPAIR_ABILITY_ID := "self_repair"
 
-# Player tuning is intentionally local to the player. NPC patrol motion has its
-# own configuration and must not inherit these values when player progression,
+# Player tuning is intentionally local to the world_view.player. NPC patrol motion has its
+# own configuration and must not inherit these values when world_view.player progression,
 # equipment or accessibility settings change them later.
 @export_range(1.0, 600.0, 1.0) var player_movement_speed := 203.0
 @export_range(0.1, 4.0, 0.05) var player_animation_speed_scale := 1.0
@@ -97,6 +54,7 @@ const SELF_REPAIR_ABILITY_ID := "self_repair"
 @export var multiplayer_map_instance_id := "yian_harbor_hall_floor_1.instance.1"
 @export_range(1.0, 200.0, 1.0) var map_transition_trigger_radius := 64.0
 
+var world_view: ClientWorldView
 var character_catalog: Dictionary
 var npc_catalog: Dictionary
 var active_world_controller: Node
@@ -144,12 +102,9 @@ var current_direction: int:
 		if local_player_controller:
 			local_player_controller.current_direction = value
 
-var sortable_world: Node2D
-var map_background: Sprite2D
 var map_scene_nodes: Array[Node2D]:
 	get:
 		return active_world_controller.scene_nodes if active_world_controller else []
-var player: Node2D
 var npc_instances: Array[Node2D]:
 	get:
 		return active_world_controller.npc_instances if active_world_controller else []
@@ -157,8 +112,6 @@ var facility_instances: Array[Node2D]:
 	get:
 		return active_world_controller.facility_instances if active_world_controller else []
 var active_npc: Node2D
-var camera: Camera2D
-var movement_click_effects: MovementClickEffectPresenter
 var hud: CanvasLayer
 var hint_label: Label
 var popup: PanelContainer
@@ -178,16 +131,8 @@ var pending_authoritative_join: Dictionary = {}
 var map_commit_failure_locked := false
 var selected_transition_id: StringName = &""
 var transition_choice_ids: Dictionary = {}
-var combat_attack_controller: Node
-var combat_attack_controllers: Dictionary = {}
-var monster_world_controller: MonsterWorldController
-var ground_loot_world_controller: GroundLootWorldController
-var mineral_world_controller: MineralWorldController
-var self_repair_visual_controller: SelfRepairVisualController
-var mining_visual_controller = preload("res://scripts/client/presentation/mining/mining_visual_controller.gd").new()
 var panel_session: PlayerPanelSession
 var game_window_manager: GameWindowManager
-var item_catalog: ItemCatalog
 var initial_loading_screen: CanvasLayer
 var vehicle_destroyed_dialog: VehicleDestroyedDialog
 var _vehicle_destroyed := false
@@ -212,15 +157,23 @@ func _ready() -> void:
 	if initial_bundle.is_empty():
 		push_error("Unable to prepare initial map bundle")
 		return
-	_build_world()
+	world_view = ClientWorldView.new()
+	add_child(world_view)
+	world_view.configure(character_catalog, player_animation_speed_scale)
+	local_player_controller = LocalPlayerControllerScript.new()
+	add_child(local_player_controller)
+	local_player_controller.configure(world_view.player, DiamondNavigationScript.new(), player_movement_speed, Vector2.ZERO)
+	local_player_controller.position_changed.connect(_on_local_player_position_changed)
+	local_player_controller.route_finished.connect(_on_local_player_route_finished)
+	local_player_controller.route_stopped.connect(_on_local_player_route_stopped)
 	_build_hud(initial_bundle)
 	var configure_error: Error = active_world_controller.configure(
 		self,
-		sortable_world,
-		map_background,
-		player,
+		world_view.sortable_world,
+		world_view.map_background,
+		world_view.player,
 		local_player_controller,
-		camera,
+		world_view.camera,
 		hud,
 		character_catalog,
 		npc_catalog,
@@ -315,7 +268,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		var npc := _nearest_npc(world_position, 55.0)
 		if npc:
 			_show_npc_popup(npc)
-		elif player != null and player.is_combat_actor_active():
+		elif world_view.player != null and world_view.player.is_combat_actor_active():
 			_handle_world_combat_left_click(world_position)
 		else:
 			hud.hide_popup()
@@ -346,15 +299,15 @@ func _request_mining(source_position: Vector2) -> void:
 ## [param world_position] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## 设计：当前切片立即反馈弹体与命中特效；伤害、能耗和真实命中仍只接受服务端事件。
 func _handle_world_combat_left_click(world_position: Vector2) -> void:
-	if ground_loot_world_controller != null:
-		var loot_id := ground_loot_world_controller.loot_at(world_position)
+	if world_view.ground_loot_world_controller != null:
+		var loot_id := world_view.ground_loot_world_controller.loot_at(world_position)
 		if not loot_id.is_empty():
 			_request_ground_loot_pickup(loot_id)
 			return
-	if mineral_world_controller != null:
-		var source_id := mineral_world_controller.source_at(world_position)
+	if world_view.mineral_world_controller != null:
+		var source_id := world_view.mineral_world_controller.source_at(world_position)
 		if not source_id.is_empty():
-			var source_position := mineral_world_controller.source_position(source_id)
+			var source_position := world_view.mineral_world_controller.source_position(source_id)
 			_request_mining(source_position)
 			return
 	var selected_mode := String(hud.state.selected_action_slot)
@@ -365,18 +318,18 @@ func _handle_world_combat_left_click(world_position: Vector2) -> void:
 		if primary_device != null and primary_device.primary_device_kind() in ["mining_arm", "repair_arm"]:
 			# 工程臂点击空地不提交开炮意图；上面的拾取和矿物选择仍保留各自的交互。
 			return
-	var mode: Dictionary = WEAPON_MODES.get(selected_mode, {})
-	var attack_controller: Node = combat_attack_controllers.get(selected_mode)
+	var mode: Dictionary = CombatActions.WEAPON_MODES.get(selected_mode, {})
+	var attack_controller: Node = world_view.combat_attack_controllers.get(selected_mode)
 	if mode.is_empty() or attack_controller == null:
 		hint_label.text = "武器表现尚未初始化"
 		return
-	var target_entity_id := monster_world_controller.nearest_target(world_position)
+	var target_entity_id := world_view.monster_world_controller.nearest_target(world_position)
 	if selected_mode == "missile" and target_entity_id.is_empty():
 		hint_label.text = "导弹需要锁定一个怪物"
 		return
 	var authoritative_target := world_position
 	if not target_entity_id.is_empty():
-		authoritative_target = monster_world_controller.target_position(target_entity_id)
+		authoritative_target = world_view.monster_world_controller.target_position(target_entity_id)
 	if not authoritative_target.is_finite():
 		hint_label.text = "目标已离开当前地图"
 		return
@@ -384,7 +337,7 @@ func _handle_world_combat_left_click(world_position: Vector2) -> void:
 	if selected_mode == "missile":
 		tracking_resolver = _combat_target_position.bind(target_entity_id)
 	var result: Dictionary = attack_controller.request_fire(
-		player.position, authoritative_target, tracking_resolver
+		world_view.player.position, authoritative_target, tracking_resolver
 	)
 	if not bool(result.get("ok", false)):
 		var code := StringName(result.get("code", &""))
@@ -405,7 +358,7 @@ func _handle_world_combat_left_click(world_position: Vector2) -> void:
 		"ability_id": String(mode["ability_id"]),
 		"weapon_mode": selected_mode,
 		"map_instance_id": multiplayer_map_instance_id,
-		"actor_view_position": player.position,
+		"actor_view_position": world_view.player.position,
 		"clicked_world_position": world_position,
 		"submitted_aim_position": resolved_target,
 		"client_selected_target_entity_id": target_entity_id,
@@ -423,8 +376,8 @@ func _handle_world_combat_left_click(world_position: Vector2) -> void:
 	var direction: Vector2 = result["direction"]
 	var weapon_direction := _direction_index(direction)
 	var layer_id := StringName(mode["layer_id"])
-	player.set_combat_weapon_layer(layer_id)
-	player.set_combat_layer_pose(layer_id, &"attack", weapon_direction)
+	world_view.player.set_combat_weapon_layer(layer_id)
+	world_view.player.set_combat_layer_pose(layer_id, &"attack", weapon_direction)
 	if bool(result.get("range_clamped", false)):
 		hint_label.text = "目标超出射程，向极限点 %d, %d 开火" % [
 			roundi(resolved_target.x),
@@ -442,8 +395,8 @@ func _handle_world_combat_left_click(world_position: Vector2) -> void:
 ## [param target_entity_id] 需要跟踪的权威实体标识。
 ## 返回目标坐标；目标不可见时返回无穷坐标。
 func _combat_target_position(target_entity_id: String) -> Vector2:
-	return monster_world_controller.target_position(target_entity_id) \
-		if monster_world_controller != null else Vector2.INF
+	return world_view.monster_world_controller.target_position(target_entity_id) \
+		if world_view.monster_world_controller != null else Vector2.INF
 
 
 ## 向当前权威边界提交一次地面掉落拾取意图。
@@ -495,11 +448,11 @@ func _combat_rejection_text(code: StringName) -> String:
 ## 通过离线或正式网络权威边界请求开始战车自维修。
 ## 设计：`Z` 与顶部按钮复用此入口；客户端只读取离线调试等级，不自行修改生命或能量。
 func _request_self_repair() -> void:
-	if _world_input_locked() or player == null or not player.is_combat_actor_active():
+	if _world_input_locked() or world_view.player == null or not world_view.player.is_combat_actor_active():
 		hint_label.text = "当前地图不能使用自维修"
 		return
 	var submitted: bool = not multiplayer_presenter.request_use_ability(
-		SELF_REPAIR_ABILITY_ID, player.position
+		CombatActions.SELF_REPAIR_ABILITY_ID, world_view.player.position
 	).is_empty()
 	if submitted:
 		hint_label.text = "已开始自维修：每3秒恢复一次生命"
@@ -511,9 +464,9 @@ func _request_self_repair() -> void:
 ## 设计：等待期间若路线自然结束则恢复站立；仍在移动时从当前路径段重算朝向。
 func _restore_locomotion_after_attack(was_moving: bool, layer_id: StringName) -> void:
 	await get_tree().create_timer(0.16).timeout
-	if player == null or not player.is_combat_actor_active():
+	if world_view.player == null or not world_view.player.is_combat_actor_active():
 		return
-	player.clear_combat_layer_action(layer_id)
+	world_view.player.clear_combat_layer_action(layer_id)
 	if was_moving and local_player_controller.has_active_route():
 		local_player_controller.refresh_route_direction()
 	else:
@@ -524,7 +477,7 @@ func _restore_locomotion_after_attack(was_moving: bool, layer_id: StringName) ->
 ## [param world_position] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## 设计：先在实际点击点播放原版反馈；图标锚点仅用于命中，不能替代可行走接近点。
 func _handle_world_right_click(world_position: Vector2) -> void:
-	movement_click_effects.present(world_position)
+	world_view.movement_click_effects.present(world_position)
 	var transition_view: Node2D = active_world_controller.transition_view_at(world_position)
 	if transition_view != null:
 		var transition: MapTransition = map_definition.transition_by_id(transition_view.transition_id)
@@ -602,134 +555,10 @@ func _set_player_action(action: String) -> void:
 
 ## 执行 `sync_player_nodes` 对应的模块操作。
 func _sync_player_nodes() -> void:
-	if not player:
+	if not world_view.player:
 		return
-	camera.position = player.position
+	world_view.camera.position = world_view.player.position
 	_update_minimap_dot()
-
-
-## 创建共享玩家锚点，并同时准备人形与按地图切换的战车表现。
-func _build_world() -> void:
-	map_background = Sprite2D.new()
-	map_background.name = "MapBase"
-	map_background.centered = false
-	map_background.position = Vector2.ZERO
-	map_background.z_index = -100
-	add_child(map_background)
-
-	movement_click_effects = MovementClickEffectPresenterScript.new()
-	movement_click_effects.name = "MovementClickEffects"
-	movement_click_effects.z_index = -20
-	add_child(movement_click_effects)
-
-	sortable_world = Node2D.new()
-	sortable_world.name = "YSortedWorld"
-	sortable_world.y_sort_enabled = true
-	add_child(sortable_world)
-
-	player = PlayerWorldAvatarScript.new()
-	player.name = "Player"
-	var combat_manifest_value: Variant = JSON.parse_string(
-		FileAccess.get_file_as_string(COMBAT_VISUAL_MANIFEST_PATH)
-	)
-	var combat_manifest: Dictionary = {}
-	if combat_manifest_value is Dictionary:
-		combat_manifest = combat_manifest_value
-	var avatar_error: Error = player.configure(
-		CharacterFactoryScript.build_character_set(character_catalog, "player"),
-		combat_manifest,
-		"H番茄花园",
-		Color(0.35, 1.0, 0.92),
-		PlayerWorldAvatarScript.HUMAN_NAME_LABEL_POSITION,
-	)
-	if avatar_error != OK:
-		push_error("Unable to configure player avatar: %s" % error_string(avatar_error))
-	player.set_animation_speed_scale(player_animation_speed_scale)
-	sortable_world.add_child(player)
-
-	for mode_id: String in WEAPON_MODES:
-		var mode: Dictionary = WEAPON_MODES[mode_id]
-		var controller := WeaponAttackVisualControllerScript.new()
-		controller.name = "%sAttackVisualController" % mode_id.to_pascal_case()
-		add_child(controller)
-		var attack_visual_error: Error = controller.configure(
-			combat_manifest, sortable_world, StringName(mode["weapon_id"])
-		)
-		if attack_visual_error != OK:
-			push_error("Unable to configure %s visuals: %s" % [
-				mode_id, error_string(attack_visual_error),
-			])
-			controller.free()
-			continue
-		combat_attack_controllers[mode_id] = controller
-	combat_attack_controller = combat_attack_controllers.get("energy_cannon")
-	monster_world_controller = MonsterWorldControllerScript.new()
-	monster_world_controller.name = "MonsterWorldController"
-	add_child(monster_world_controller)
-	var monster_error := monster_world_controller.configure(sortable_world, combat_manifest, player)
-	if monster_error != OK:
-		push_error("Unable to configure monster world presentation: %s" % error_string(monster_error))
-	else:
-		for controller: Node in combat_attack_controllers.values():
-			controller.set_visual_collision_resolver(monster_world_controller.first_visual_collision)
-	item_catalog = ItemCatalogScript.new()
-	var item_catalog_result := item_catalog.initialize()
-	if item_catalog_result.is_ok:
-		ground_loot_world_controller = GroundLootWorldControllerScript.new()
-		ground_loot_world_controller.name = "GroundLootWorldController"
-		add_child(ground_loot_world_controller)
-		var loot_error := ground_loot_world_controller.configure(
-			sortable_world,
-			item_catalog,
-		)
-		if loot_error != OK:
-			push_error("Unable to configure ground loot presentation: %s" % error_string(loot_error))
-	else:
-		push_error("Unable to load shared item catalog: %s" % item_catalog_result.error_message)
-	var mining_manifest_value: Variant = JSON.parse_string(
-		FileAccess.get_file_as_string(MINING_VISUAL_MANIFEST_PATH)
-	)
-	if mining_manifest_value is Dictionary:
-		mineral_world_controller = MineralWorldControllerScript.new()
-		mineral_world_controller.name = "MineralWorldController"
-		add_child(mineral_world_controller)
-		var mining_error := mineral_world_controller.configure(
-			sortable_world,
-			mining_manifest_value,
-		)
-		if mining_error != OK:
-			push_error("Unable to configure mineral presentation: %s" % error_string(mining_error))
-	else:
-		push_error("Unable to load mineral presentation manifest")
-
-	local_player_controller = LocalPlayerControllerScript.new()
-	local_player_controller.name = "LocalPlayerController"
-	add_child(local_player_controller)
-	var controller_error: Error = local_player_controller.configure(
-		player,
-		DiamondNavigationScript.new(),
-		player_movement_speed,
-		Vector2.ZERO,
-	)
-	if controller_error != OK:
-		push_error("Unable to configure local player controller: %s" % error_string(controller_error))
-
-	camera = Camera2D.new()
-	camera.name = "PlayerCamera"
-	camera.position = player.position
-	# 原客户端按 ALE 与地图像素 1:1 绘制；窗口变大只扩大视野，不缩放世界内容。
-	camera.zoom = Vector2.ONE
-	camera.limit_left = 0
-	camera.limit_top = 0
-	camera.limit_right = 0
-	camera.limit_bottom = 0
-	camera.position_smoothing_enabled = true
-	camera.position_smoothing_speed = 7.5
-	add_child(camera)
-	camera.make_current()
-	local_player_controller.position_changed.connect(_on_local_player_position_changed)
-	local_player_controller.route_finished.connect(_on_local_player_route_finished)
-	local_player_controller.route_stopped.connect(_on_local_player_route_stopped)
 
 
 ## 执行 `build_hud` 对应的模块操作。
@@ -762,13 +591,6 @@ func _build_hud(initial_bundle: Dictionary) -> void:
 ## 创建大厅客户端会话表现器，并以显式配置选择离线调试或真实网络入口。
 ## 设计：大厅保留输入、导航与动画职责；表现器仅将预测/权威状态投影到角色节点。
 func _build_multiplayer_presentation() -> void:
-	mining_visual_controller.configure(player)
-	self_repair_visual_controller = SelfRepairVisualControllerScript.new()
-	self_repair_visual_controller.name = "SelfRepairVisualController"
-	add_child(self_repair_visual_controller)
-	var repair_visual_error := self_repair_visual_controller.configure(player)
-	if repair_visual_error != OK:
-		push_error("Unable to configure self-repair presentation: %s" % error_string(repair_visual_error))
 
 	map_preloader = ClientMapPreloaderScript.new()
 	map_preloader.name = "ClientMapPreloader"
@@ -785,7 +607,7 @@ func _build_multiplayer_presentation() -> void:
 
 	multiplayer_presenter = HallMultiplayerPresenterScript.new()
 	multiplayer_presenter.name = "HallMultiplayerPresenter"
-	multiplayer_presenter.configure(player, sortable_world, character_catalog, hint_label)
+	multiplayer_presenter.configure(world_view.player, world_view.sortable_world, character_catalog, hint_label)
 	multiplayer_presenter.local_character_state_applied.connect(
 		_on_multiplayer_local_character_state_applied
 	)
@@ -808,7 +630,7 @@ func _build_multiplayer_presentation() -> void:
 		"local_entity_id": multiplayer_local_entity_id,
 		"map_id": map_definition.map_id,
 		"map_instance_id": multiplayer_map_instance_id,
-		"initial_position": player.position,
+		"initial_position": world_view.player.position,
 		"remote_appearance": "player",
 		"remote_animation_speed_scale": player_animation_speed_scale,
 	})
@@ -828,7 +650,7 @@ func _build_game_windows() -> void:
 	game_window_manager.notice_requested.connect(hud.show_system_message)
 	panel_session = PlayerPanelSession.new(
 		Callable(multiplayer_presenter, "request_player_panel_command"),
-		item_catalog,
+		world_view.item_catalog,
 	)
 	multiplayer_presenter.player_panel_bundle_received.connect(
 		panel_session.apply_bundle
@@ -851,12 +673,12 @@ func _on_skill_level_up(event: Dictionary) -> void:
 ## 将客户端唯一 CurrentPlayer 的服装对象同步到世界人物表现。
 ## [param current_player] 刚应用同事务权威快照的当前玩家聚合。
 func _on_current_player_changed(current_player: Player) -> void:
-	if player != null:
-		player.apply_character_equipment(
+	if world_view.player != null:
+		world_view.player.apply_character_equipment(
 			current_player.character_equipment,
 			character_catalog,
 		)
-		player.apply_vehicle_equipment(current_player.vehicle)
+		world_view.player.apply_vehicle_equipment(current_player.vehicle)
 	if hud != null:
 		var primary_device: VehicleEquipment = current_player.vehicle.loadout.at(1)
 		hud.set_primary_device("" if primary_device == null else primary_device.primary_device_kind())
@@ -929,15 +751,15 @@ func _on_active_world_will_replace() -> void:
 	active_npc = null
 	selected_transition_id = &""
 	transition_choice_ids.clear()
-	if movement_click_effects != null:
-		movement_click_effects.clear_effects()
-	for controller: Node in combat_attack_controllers.values():
+	if world_view.movement_click_effects != null:
+		world_view.movement_click_effects.clear_effects()
+	for controller: Node in world_view.combat_attack_controllers.values():
 		controller.clear_effects()
-	if monster_world_controller != null:
-		monster_world_controller.clear()
-	if mineral_world_controller != null:
-		mineral_world_controller.clear()
-	mining_visual_controller.clear()
+	if world_view.monster_world_controller != null:
+		world_view.monster_world_controller.clear()
+	if world_view.mineral_world_controller != null:
+		world_view.mineral_world_controller.clear()
+	world_view.mining_visual_controller.clear()
 
 
 ## 在玩家停步后查找触发半径内最近的内部出口，并先预载其目标地图。
@@ -960,7 +782,7 @@ func _try_begin_nearby_map_transition() -> void:
 					requested_transition.destination_key().to_upper(),
 				]
 				return
-			var requested_distance := player.position.distance_to(requested_transition.approach_point)
+			var requested_distance := world_view.player.position.distance_to(requested_transition.approach_point)
 			if requested_distance <= selected_distance:
 				selected_transition = requested_transition
 				selected_destination_map_id = requested_destination_map_id
@@ -970,7 +792,7 @@ func _try_begin_nearby_map_transition() -> void:
 			var destination_map_id := _resolve_transition_destination_id(transition)
 			if destination_map_id.is_empty():
 				continue
-			var distance := player.position.distance_to(transition.approach_point)
+			var distance := world_view.player.position.distance_to(transition.approach_point)
 			if distance <= selected_distance:
 				selected_transition = transition
 				selected_destination_map_id = destination_map_id
@@ -1141,25 +963,25 @@ func _commit_map_bundle(
 ## 处理 `_on_combat_snapshot_received` 对应的信号回调。
 ## [param snapshot] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _on_combat_snapshot_received(snapshot: Dictionary) -> void:
-	mining_visual_controller.apply_snapshot(snapshot)
-	for mode_id: String in combat_attack_controllers:
-		var mode: Dictionary = WEAPON_MODES[mode_id]
-		combat_attack_controllers[mode_id].apply_authoritative_snapshot(snapshot, String(mode["ability_id"]))
-	monster_world_controller.apply_snapshot(snapshot)
-	if ground_loot_world_controller != null:
-		ground_loot_world_controller.apply_snapshot(snapshot)
-	if mineral_world_controller != null:
-		mineral_world_controller.apply_snapshot(snapshot)
+	world_view.mining_visual_controller.apply_snapshot(snapshot)
+	for mode_id: String in world_view.combat_attack_controllers:
+		var mode: Dictionary = CombatActions.WEAPON_MODES[mode_id]
+		world_view.combat_attack_controllers[mode_id].apply_authoritative_snapshot(snapshot, String(mode["ability_id"]))
+	world_view.monster_world_controller.apply_snapshot(snapshot)
+	if world_view.ground_loot_world_controller != null:
+		world_view.ground_loot_world_controller.apply_snapshot(snapshot)
+	if world_view.mineral_world_controller != null:
+		world_view.mineral_world_controller.apply_snapshot(snapshot)
 	var vehicle: Variant = snapshot.get("local_vehicle", {})
 	if vehicle is Dictionary:
-		player.set_combat_status(vehicle)
+		world_view.player.set_combat_status(vehicle)
 		hud.set_vehicle_combat_state(vehicle)
 		# 非战斗地图仍同步战车资源供 HUD/面板消费，但人物移动不受停放战车生命值影响。
 		var combat_vehicle_active := bool(
-			snapshot.get("vehicle_combat_active", player.is_combat_actor_active())
+			snapshot.get("vehicle_combat_active", world_view.player.is_combat_actor_active())
 		)
 		var destroyed := combat_vehicle_active and int(vehicle.get("health", 0)) <= 0
-		player.set_vehicle_destroyed(destroyed)
+		world_view.player.set_vehicle_destroyed(destroyed)
 		if destroyed and not _vehicle_destroyed:
 			_vehicle_destroyed = true
 			_stop_moving("战车已被击毁")
@@ -1167,8 +989,8 @@ func _on_combat_snapshot_received(snapshot: Dictionary) -> void:
 		elif not destroyed and _vehicle_destroyed:
 			_vehicle_destroyed = false
 			vehicle_destroyed_dialog.hide_dialog()
-		if self_repair_visual_controller != null:
-			self_repair_visual_controller.apply_snapshot(vehicle)
+		if world_view.self_repair_visual_controller != null:
+			world_view.self_repair_visual_controller.apply_snapshot(vehicle)
 
 
 ## 提交击毁后的回基地选择；目的地图、三秒等待和回血比例均由服务器决定。
@@ -1202,8 +1024,8 @@ func _on_destroyed_wait_selected() -> void:
 func _on_combat_event_received(event: Dictionary) -> void:
 	var event_type := StringName(event.get("event_type", ""))
 	if event_type == &"loot_picked_up":
-		if ground_loot_world_controller != null:
-			ground_loot_world_controller.remove_loot(String(event.get("loot_id", "")))
+		if world_view.ground_loot_world_controller != null:
+			world_view.ground_loot_world_controller.remove_loot(String(event.get("loot_id", "")))
 		hint_label.text = "拾取了 %d 个物品" % int(event.get("quantity", 1))
 	elif event_type == &"mining_started":
 		hint_label.text = "开始采矿，每3秒采集一次"
@@ -1367,7 +1189,7 @@ func _on_hud_action_requested(action_id: String) -> void:
 	if action_id == "return_base" and _vehicle_destroyed:
 		_request_vehicle_recovery()
 		return
-	if action_id == SELF_REPAIR_ABILITY_ID:
+	if action_id == CombatActions.SELF_REPAIR_ABILITY_ID:
 		_request_self_repair()
 		return
 	if game_window_manager != null and game_window_manager.toggle(action_id):
@@ -1377,15 +1199,15 @@ func _on_hud_action_requested(action_id: String) -> void:
 ## 响应底栏武器槽选择并切换玩家战车的可见武器图层。
 ## [param slot_id] 被选中的底栏武器槽标识。
 func _on_weapon_slot_selected(slot_id: String) -> void:
-	var mode: Dictionary = WEAPON_MODES.get(slot_id, {})
-	if player != null and not mode.is_empty():
-		player.set_combat_weapon_layer(StringName(mode["layer_id"]))
+	var mode: Dictionary = CombatActions.WEAPON_MODES.get(slot_id, {})
+	if world_view.player != null and not mode.is_empty():
+		world_view.player.set_combat_weapon_layer(StringName(mode["layer_id"]))
 
 
 ## 推进并更新 `update_minimap_dot` 对应的模块状态。
 func _update_minimap_dot() -> void:
-	if hud and player:
-		hud.update_player_dot(player.position)
+	if hud and world_view.player:
+		hud.update_player_dot(world_view.player.position)
 
 
 # Diagnostic compatibility wrappers keep map tests focused on behavior while

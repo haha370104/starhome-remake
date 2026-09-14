@@ -38,8 +38,8 @@ func _capture() -> void:
 ## [param output_path] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## 返回该函数计算、查询或操作得到的结果。
 func _capture_position(hall: Node, world_position: Vector2, output_path: String) -> Error:
-	hall.player.position = world_position
-	hall.camera.position = hall.player.position
+	hall.world_view.player.position = world_position
+	hall.world_view.camera.position = hall.world_view.player.position
 	hall._sync_player_nodes()
 	await process_frame
 	await process_frame

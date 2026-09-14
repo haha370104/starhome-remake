@@ -75,7 +75,7 @@ func _run() -> void:
 		"客户端必须加载当前业务化的宇航中心地图",
 	)
 	_expect(
-		hall.player.position.is_equal_approx(Vector2(1381.0, 918.0)),
+		hall.world_view.player.position.is_equal_approx(Vector2(1381.0, 918.0)),
 		"客户端必须恢复旧存档中仍可达的角色坐标",
 	)
 	_finish(hall, null)
