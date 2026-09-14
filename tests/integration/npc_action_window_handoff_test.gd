@@ -21,7 +21,7 @@ func _run() -> void:
 	hall.multiplayer_connect_automatically = false
 	root.add_child(hall)
 	await process_frame
-	hall.game_window_manager.command_dispatched.connect(_record_command)
+	hall.game_window_manager.panel_session.command_dispatched.connect(_record_command)
 	var facilities: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(
 		"res://data/world/manufacturing_facilities_v1.json"
 	))

@@ -62,8 +62,8 @@ func _run() -> void:
 	_expect(bundle.mission_journal[0].requirements[0].owned == 0, "材料来自同一背包聚合")
 	var manager := GameWindowManager.new()
 	root.add_child(manager)
-	manager.configure(_record_command)
-	manager.apply_bundle(bundle)
+	manager.configure(PlayerPanelSession.new(_record_command))
+	manager.panel_session.apply_bundle(bundle)
 	var order: Array[String] = []
 	for action: String in FreeBottomMainBar.MENU_BUTTONS:
 		order.append(action)
@@ -71,7 +71,7 @@ func _run() -> void:
 	_expect(not manager.toggle("star_map"), "删除星图入口")
 	_expect(manager.toggle("scene_players"), "打开当前区域玩家列表")
 	_expect(commands.back().type == "query_scene_players", "用户列表走统一权威命令")
-	manager.apply_bundle({"scene_players": roster})
+	manager.panel_session.apply_bundle({"scene_players": roster})
 	var players: ScenePlayersPanel = manager.navigation_windows.scene_players
 	_expect(players.listing.get_root().get_child_count() == 2, "列表渲染服务器行数")
 	players._sort_by_column(0, MOUSE_BUTTON_LEFT)

@@ -185,6 +185,7 @@ var ground_loot_world_controller: GroundLootWorldController
 var mineral_world_controller: MineralWorldController
 var self_repair_visual_controller: SelfRepairVisualController
 var mining_visual_controller = preload("res://scripts/client/presentation/mining/mining_visual_controller.gd").new()
+var panel_session: PlayerPanelSession
 var game_window_manager: GameWindowManager
 var item_catalog: ItemCatalog
 var initial_loading_screen: CanvasLayer
@@ -325,7 +326,7 @@ func _unhandled_input(event: InputEvent) -> void:
 ## [param source_position] 所点击矿源的世界坐标。
 ## 设计：客户端只做即时拒绝提示；许可、产出和经验仍由服务器再次校验。
 func _request_mining(source_position: Vector2) -> void:
-	var current_player: Player = game_window_manager.current_player if game_window_manager != null else null
+	var current_player: Player = panel_session.current_player if game_window_manager != null else null
 	if current_player == null or current_player.vehicle == null:
 		hud.show_system_message("角色装备数据尚未就绪，请稍后再试")
 		return
@@ -358,9 +359,9 @@ func _handle_world_combat_left_click(world_position: Vector2) -> void:
 			return
 	var selected_mode := String(hud.state.selected_action_slot)
 	if selected_mode == "energy_cannon" and game_window_manager != null \
-			and game_window_manager.current_player != null \
-			and game_window_manager.current_player.vehicle != null:
-		var primary_device: VehicleEquipment = game_window_manager.current_player.vehicle.loadout.at(1)
+			and panel_session.current_player != null \
+			and panel_session.current_player.vehicle != null:
+		var primary_device: VehicleEquipment = panel_session.current_player.vehicle.loadout.at(1)
 		if primary_device != null and primary_device.primary_device_kind() in ["mining_arm", "repair_arm"]:
 			# 工程臂点击空地不提交开炮意图；上面的拾取和矿物选择仍保留各自的交互。
 			return
@@ -824,15 +825,16 @@ func _build_game_windows() -> void:
 	game_window_manager = GameWindowManagerScript.new()
 	game_window_manager.name = "GameWindowManager"
 	hud.root_control.add_child(game_window_manager)
-	game_window_manager.current_player_changed.connect(_on_current_player_changed)
 	game_window_manager.notice_requested.connect(hud.show_system_message)
-	game_window_manager.configure(
+	panel_session = PlayerPanelSession.new(
 		Callable(multiplayer_presenter, "request_player_panel_command"),
 		item_catalog,
 	)
 	multiplayer_presenter.player_panel_bundle_received.connect(
-		game_window_manager.apply_bundle
+		panel_session.apply_bundle
 	)
+	panel_session.player_changed.connect(_on_current_player_changed)
+	game_window_manager.configure(panel_session)
 	multiplayer_presenter.skill_level_up_received.connect(_on_skill_level_up)
 
 
@@ -874,7 +876,7 @@ func _refresh_local_movement_availability(current_player: Player = null) -> void
 		return
 	var player_state := current_player
 	if player_state == null and game_window_manager != null:
-		player_state = game_window_manager.current_player
+		player_state = panel_session.current_player
 	var movement_enabled := true
 	if map_definition.category == "field":
 		movement_enabled = player_state != null \

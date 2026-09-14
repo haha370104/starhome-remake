@@ -181,7 +181,7 @@ func _test_mining_animation(player: Node2D) -> void:
 func _test_cannon_mining_click_is_rejected(hall: Node2D) -> void:
 	var catalog := ItemCatalogScript.new()
 	_expect(catalog.initialize().is_ok, "点击测试物品目录初始化")
-	var current: CurrentPlayer = hall.game_window_manager.current_player
+	var current: CurrentPlayer = hall.panel_session.current_player
 	current.vehicle.loadout = VehicleLoadout.new()
 	for definition_id: String in ["glory_equipment_tank1000_27ae5e8059", "glory_equipment_gun1000_c4c24e2500"]:
 		var created := catalog.create(definition_id, {"instance_id": "click.%s" % definition_id})
@@ -246,7 +246,7 @@ func _test_move_and_fire_keeps_route(hall: Node2D) -> void:
 func _test_engineering_arm_empty_click(hall: Node2D) -> void:
 	var catalog := ItemCatalogScript.new()
 	_expect(catalog.initialize().is_ok, "工程臂点击测试初始化目录")
-	var current: CurrentPlayer = hall.game_window_manager.current_player
+	var current: CurrentPlayer = hall.panel_session.current_player
 	var vehicle := current.vehicle
 	var original_loadout := vehicle.loadout
 	var config: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/gameplay/commerce/weapon_merchant_v1.json"))

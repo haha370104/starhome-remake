@@ -1,8 +1,6 @@
 class_name GameWindowManager
 extends Control
 
-signal command_dispatched(command: Dictionary)
-signal current_player_changed(player: Player)
 signal notice_requested(message: String)
 
 const CharacterPanelScript := preload("res://scripts/client/ui/windows/character/character_panel.gd")
@@ -15,7 +13,6 @@ const WeaponMerchantWindowScript := preload(
 const ManufacturingWindowScript := preload(
 	"res://scripts/client/ui/windows/manufacturing/manufacturing_window.gd"
 )
-const CurrentPlayerScript := preload("res://scripts/client/state/current_player.gd")
 
 var character_panel: CharacterPanel
 var inventory_panel: InventoryPanel
@@ -24,26 +21,17 @@ var skill_panel: SkillLevelPanel
 var weapon_merchant_window: WeaponMerchantWindow
 var manufacturing_window: Control
 
-## 【重点 Review】当前登录人物的客户端只读全局投影；业务 UI 必须从这里读取同版本人物与战车状态。
-## 设计：属性值仍由权威服务器产生，本对象只负责跨面板共享与信号通知。
-var current_player: CurrentPlayer
-
-var _dispatcher: Callable
-var _bundle: Dictionary = {}
+var panel_session: PlayerPanelSession
 var navigation_windows: Dictionary = {}
 
 
-## 创建三个单例窗口并绑定统一客户端会话。
-## [param dispatcher] 向客户端会话提交命令的回调。
-## [param item_catalog] 可选的共享物品目录；场景与背包借此消费同一套定义。
-## 返回初始化是否成功。
-## 设计：管理器只负责窗口生命周期和成组快照，不感知 ENet 或进程内传输。
-func configure(
-	dispatcher: Callable,
-	item_catalog: ItemCatalog = null,
-) -> bool:
-	_dispatcher = dispatcher
-	current_player = CurrentPlayerScript.new(item_catalog)
+## 创建窗口并订阅外部玩家会话；管理器不拥有玩家状态和命令版本。
+## [param session] 生命周期由客户端组合根管理的共享会话。
+## 返回窗口是否完成初始化。
+func configure(session: PlayerPanelSession) -> bool:
+	panel_session = session
+	panel_session.bundle_received.connect(_apply_auxiliary_bundle)
+	panel_session.player_changed.connect(_apply_player)
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	set_process_input(true)
@@ -52,18 +40,18 @@ func configure(
 	character_panel = CharacterPanelScript.new()
 	character_panel.name = "CharacterPanel"
 	character_panel.position = Vector2(80, 70)
-	character_panel.command_requested.connect(_dispatch)
+	character_panel.command_requested.connect(panel_session.dispatch)
 	character_panel.skill_panel_requested.connect(_toggle_skill_panel)
 	_add_window(character_panel)
 	inventory_panel = InventoryPanelScript.new()
 	inventory_panel.name = "InventoryPanel"
 	inventory_panel.position = Vector2(460, 70)
-	inventory_panel.command_requested.connect(_dispatch)
+	inventory_panel.command_requested.connect(panel_session.dispatch)
 	_add_window(inventory_panel)
 	vehicle_panel = VehiclePanelScript.new()
 	vehicle_panel.name = "VehicleEquipmentPanel"
 	vehicle_panel.position = Vector2(250, 120)
-	vehicle_panel.command_requested.connect(_dispatch)
+	vehicle_panel.command_requested.connect(panel_session.dispatch)
 	_add_window(vehicle_panel)
 	skill_panel = SkillLevelPanelScript.new()
 	skill_panel.name = "SkillLevelPanel"
@@ -72,12 +60,12 @@ func configure(
 	weapon_merchant_window = WeaponMerchantWindowScript.new()
 	weapon_merchant_window.name = "WeaponMerchantWindow"
 	weapon_merchant_window.position = Vector2(170, 80)
-	weapon_merchant_window.command_requested.connect(_dispatch)
+	weapon_merchant_window.command_requested.connect(panel_session.dispatch)
 	_add_window(weapon_merchant_window)
 	manufacturing_window = ManufacturingWindowScript.new()
 	manufacturing_window.name = "ManufacturingWindow"
 	manufacturing_window.position = Vector2(190, 90)
-	manufacturing_window.command_requested.connect(_dispatch)
+	manufacturing_window.command_requested.connect(panel_session.dispatch)
 	_add_window(manufacturing_window)
 	var navigation_scripts := {
 		"scene_players": preload("res://scripts/client/ui/windows/navigation/scene_players_panel.gd"),
@@ -97,6 +85,8 @@ func configure(
 	add_child(refresh)
 	refresh.start()
 
+	if not panel_session.snapshot_bundle().is_empty():
+		_apply_player(panel_session.current_player)
 	return true
 
 
@@ -150,41 +140,43 @@ func toggle(action_id: String) -> bool:
 		window.move_to_front()
 		window.call("clamp_to_viewport", size)
 		if action_id == "scene_players":
-			_dispatch({"type": "query_scene_players"})
+			panel_session.dispatch({"type": "query_scene_players"})
 		elif action_id not in ["system", "premium_shop"]:
-			_dispatch({"type": "query"})
+			panel_session.dispatch({"type": "query"})
 	return true
 
 
 ## 仅在用户列表或任务日志可见时刷新只读查询，关闭窗口不产生轮询。
 func _refresh_navigation() -> void:
 	if navigation_windows["scene_players"].visible:
-		_dispatch({"type": "query_scene_players"})
+		panel_session.dispatch({"type": "query_scene_players"})
 	if navigation_windows["missions"].visible:
-		_dispatch({"type": "query"})
+		panel_session.dispatch({"type": "query"})
 
 
 ## 原子应用服务端返回的三面板快照。
 ## [param bundle] 含 character、inventory、vehicle 与 transaction_revision 的快照组。
-func apply_bundle(bundle: Dictionary) -> void:
+func _apply_auxiliary_bundle(bundle: Dictionary) -> void:
 	if bundle.get("scene_players") is Dictionary:
 		navigation_windows["scene_players"].apply_snapshot(bundle["scene_players"])
 	if weapon_merchant_window != null and bundle.get("commerce") is Dictionary:
 		weapon_merchant_window.apply_commerce_bundle(bundle)
 	if manufacturing_window != null and bundle.get("manufacturing") is Dictionary:
 		manufacturing_window.apply_manufacturing_bundle(bundle)
-	if current_player == null or not current_player.apply_bundle(bundle):
-		return
 	if bundle.get("mission_journal") is Array:
 		navigation_windows["missions"].apply_entries(bundle["mission_journal"])
-	_bundle = current_player.snapshot_bundle()
-	character_panel.apply_snapshot(_bundle["character"])
-	inventory_panel.apply_inventory(current_player.inventory)
-	character_panel.set_inventory_revision(int(_bundle["inventory"].get("revision", -1)))
-	vehicle_panel.set_inventory_revision(int(_bundle["inventory"].get("revision", -1)))
-	vehicle_panel.apply_snapshot(_bundle["vehicle"])
-	skill_panel.apply_skills(_bundle["character"].get("skills", []))
-	current_player_changed.emit(current_player)
+
+
+## 用会话的同事务投影同步人物、战车、背包和技能展示。
+## [param player] 已完成权威快照还原的当前玩家。
+func _apply_player(player: Player) -> void:
+	var bundle := panel_session.snapshot_bundle()
+	character_panel.apply_snapshot(bundle["character"])
+	inventory_panel.apply_inventory(player.inventory)
+	character_panel.set_inventory_revision(int(bundle["inventory"].get("revision", -1)))
+	vehicle_panel.set_inventory_revision(int(bundle["inventory"].get("revision", -1)))
+	vehicle_panel.apply_snapshot(bundle["vehicle"])
+	skill_panel.apply_skills(bundle["character"].get("skills", []))
 
 
 ## 打开武器商人的购买、出售或任务窗口，并拉取同一事务快照。
@@ -209,20 +201,7 @@ func _toggle_skill_panel() -> void:
 	if skill_panel.visible:
 		skill_panel.move_to_front()
 		skill_panel.clamp_to_viewport(size)
-		_dispatch({"type": "query"})
-
-
-## 将面板命令补全双 revision 后发送到所选权威边界。
-## [param command] 面板产生的纯操作意图。
-func _dispatch(command: Dictionary) -> void:
-	var payload := command.duplicate(true)
-	if payload.erase("requires_loadout_revision") and _bundle.get("vehicle") is Dictionary:
-		payload["loadout_revision"] = int(_bundle["vehicle"].get("revision", -1))
-	if payload.erase("requires_state_revision"):
-		payload["state_revision"] = int(_bundle.get("transaction_revision", -1))
-	command_dispatched.emit(payload.duplicate(true))
-	if _dispatcher.is_valid():
-		_dispatcher.call(payload)
+		panel_session.dispatch({"type": "query"})
 
 
 ## 将新窗口加入管理层并建立关闭语义。

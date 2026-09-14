@@ -23,9 +23,9 @@ func _run() -> void:
 	root.add_child(manager)
 	panel_fixture = PanelFixtureScript.new()
 	_expect(panel_fixture.initialize().is_ok, "测试面板权威夹具应初始化")
-	_expect(manager.configure(Callable(self, "_dispatch_panel_command").bind(manager)),
+	_expect(manager.configure(PlayerPanelSession.new(Callable(self, "_dispatch_panel_command").bind(manager))),
 		"三面板管理器应只依赖统一命令分发器")
-	manager._dispatch({"type": "query"})
+	manager.panel_session.dispatch({"type": "query"})
 	await process_frame
 	_expect(not manager.character_panel.visible, "人物面板初始应隐藏")
 	_expect(not manager.inventory_panel.visible, "背包面板初始应隐藏")
@@ -61,7 +61,7 @@ func _run() -> void:
 	_expect(slot_one.get_theme_color("font_color") == Color("ffcc00"),
 		"只有装置1 应复现源码中的黄色悬停差异")
 	slot_one.mouse_exited.emit()
-	_expect(manager.current_player.is_ready(), "窗口管理器应维护当前登录人物的同版本全局投影")
+	_expect(manager.panel_session.current_player.is_ready(), "窗口管理器应维护当前登录人物的同版本全局投影")
 	_expect(manager.character_panel._portrait_body.position == Vector2(56, 64),
 		"男性裸体底模应包含人物预览子窗口偏移")
 	_expect(manager.character_panel._skill_button.text == "查看技能", "人物资料区应提供查看技能入口")
@@ -81,7 +81,7 @@ func _run() -> void:
 	})
 	_expect(material_grant.is_ok, "地面材料应以同一领域物品进入背包")
 	if material_grant.is_ok:
-		manager.apply_bundle(material_grant.value)
+		manager.panel_session.apply_bundle(material_grant.value)
 	await process_frame
 	var material_view: InventoryItemView = null
 	for raw_view: Node in manager.inventory_panel._item_canvas.get_children():
@@ -111,7 +111,7 @@ func _run() -> void:
 	})
 	_expect(damage_progress.is_ok, "能量炮有效命中应进入权威技能成长链路")
 	if damage_progress.is_ok:
-		manager.apply_bundle(damage_progress.value.panel_bundle)
+		manager.panel_session.apply_bundle(damage_progress.value.panel_bundle)
 	await process_frame
 	_expect((energy_row["experience"] as Label).text == "3%",
 		"七点有效伤害应立即刷新能量炮经验百分比")
@@ -124,7 +124,7 @@ func _run() -> void:
 	})
 	_expect(driving_progress.is_ok, "服务器接受的驾驶距离应进入驾驶成长链路")
 	if driving_progress.is_ok:
-		manager.apply_bundle(driving_progress.value.panel_bundle)
+		manager.panel_session.apply_bundle(driving_progress.value.panel_bundle)
 	await process_frame
 	var driving_row: Dictionary = manager.skill_panel._rows[2]
 	_expect((driving_row["experience"] as Label).text == "11%",
@@ -296,7 +296,7 @@ func _test_mining_arm_layering() -> void:
 func _dispatch_panel_command(command: Dictionary, manager: GameWindowManager) -> void:
 	var result = panel_fixture.execute(command)
 	if result.is_ok:
-		manager.apply_bundle(result.value)
+		manager.panel_session.apply_bundle(result.value)
 	else:
 		failures.append("面板命令被测试权威拒绝：%s" % result.error_message)
 

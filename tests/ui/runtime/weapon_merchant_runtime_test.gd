@@ -34,7 +34,7 @@ func _run() -> void:
 	_test_equipment_purchase_scope()
 	var manager = ManagerScript.new()
 	root.add_child(manager)
-	manager.configure(Callable(self, "_dispatch").bind(manager))
+	manager.configure(PlayerPanelSession.new(Callable(self, "_dispatch").bind(manager)))
 	manager.open_weapon_merchant("buy")
 	await process_frame
 	await process_frame
@@ -150,7 +150,7 @@ func _dispatch(command: Dictionary, manager: GameWindowManager) -> void:
 		failures.append("商店命令被拒绝：%s" % result.error_message)
 		return
 	_state = result.value.candidate
-	manager.apply_bundle(result.value.panel_bundle)
+	manager.panel_session.apply_bundle(result.value.panel_bundle)
 
 
 ## 记录一条测试断言。
