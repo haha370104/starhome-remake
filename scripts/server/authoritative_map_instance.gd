@@ -831,6 +831,19 @@ func set_vehicle_combat_loadout(entity_id: String, loadout: Dictionary) -> Dicti
 	return _success(new_state)
 
 
+## 仅刷新称号影响的装配字段，保持地图实体和战斗状态机连续。
+## [param entity_id] 当前地图内的权威玩家标识。
+## [param loadout] 已由领域目录计算的完整新装配。
+## 返回热更新结果；安全地图仅更新下次进入战斗所需的缓存。
+func refresh_achievement_loadout(entity_id: String, loadout: Dictionary) -> DomainResult:
+	if combat_module != null and combat_module.actors.has(entity_id):
+		var updated := combat_module.refresh_achievement_loadout(entity_id, loadout)
+		if not updated.is_ok:
+			return updated
+	_combat_loadout_by_entity[entity_id] = loadout.duplicate(true)
+	return DomainResult.ok()
+
+
 ## 执行 `register_vehicle_combat` 对应的模块操作。
 ## [param entity_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## 返回该函数计算、查询或操作得到的结果。

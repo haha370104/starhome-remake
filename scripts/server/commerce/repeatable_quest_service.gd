@@ -49,6 +49,8 @@ func execute(player: Player, provider_id: String, command: Dictionary) -> Domain
 			return granted
 	player.inventory.currency += int(result["currency_reward"])
 	player.quest_states[task_id] = result["state"]
+	player.record_achievement(AchievementEvent.new(AchievementEvent.Kind.QUEST_COMPLETED,
+		task_id, 1, "%s:%d" % [task_id, int(result["state"]["completions"])]))
 	result["action"] = "turn_in_task"
 	result["task_id"] = task_id
 	return DomainResult.ok(result)
@@ -88,6 +90,8 @@ func _execute_training(player: Player, definition: Dictionary, command: Dictiona
 	if not reward.is_ok:
 		return reward
 	player.quest_states[task_id] = completed.value
+	player.record_achievement(AchievementEvent.new(AchievementEvent.Kind.QUEST_COMPLETED,
+		task_id, 1, "%s:%d" % [task_id, int(completed.value["completions"])]))
 	return DomainResult.ok({"action": "turn_in_task", "task_id": task_id, "skill_level_up": reward.value,
 		"currency_reward": 0, "milestone_rewards": []})
 

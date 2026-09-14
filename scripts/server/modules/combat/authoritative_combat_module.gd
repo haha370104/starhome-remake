@@ -139,6 +139,35 @@ func register_vehicle(
 	return DomainResult.ok(vehicle_state)
 
 
+## 晋升只替换未来攻击和维修的数值，绝不注销角色或重置战斗时序。
+## [param actor_id] 已登记战车的玩家标识。
+## [param loadout] 领域目录计算的新装配与武器定义。
+## 返回校验结果；失败时现有状态保持不变。
+func refresh_achievement_loadout(actor_id: String, loadout: Dictionary) -> DomainResult:
+	if not actors.has(actor_id) or not loadout.get("assembly") is Dictionary \
+		or not loadout.get("weapons") is Dictionary:
+		return DomainResult.failure(&"combat.invalid_player_loadout", "achievement loadout unavailable")
+	var normalized: Dictionary = {}
+	for ability_id: String in loadout["weapons"]:
+		var checked := _normalize_energy_cannon(loadout["weapons"][ability_id])
+		if not checked.is_ok:
+			return checked
+		normalized[ability_id] = checked.value
+	var assembly: Dictionary = loadout["assembly"]
+	if int(assembly.get("max_health", 0)) <= 0:
+		return DomainResult.failure(&"combat.invalid_assembly", "achievement health is invalid")
+	var actor: Dictionary = actors[actor_id]
+	var state: VehicleCombatState = actor["vehicle_state"]
+	state.max_health = int(assembly["max_health"])
+	state.health = mini(state.health, state.max_health)
+	actor["weapons"] = normalized
+	actor["self_repair_bonus_strength"] = int(assembly.get("self_repair_bonus_strength", 0))
+	var repair: Dictionary = actor["self_repair"]
+	if bool(repair["active"]):
+		repair["health_per_cycle"] = int(actor["self_repair_base_strength"]) + int(actor["self_repair_bonus_strength"])
+	return DomainResult.ok()
+
+
 ## 执行 `register_monster` 对应的模块操作。
 ## [param definition] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## 返回该函数计算、查询或操作得到的结果。

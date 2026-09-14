@@ -107,12 +107,21 @@ func record_monster_kill(state: PlayerStateRecord, event: Dictionary) -> DomainR
 	var mapped := _mapper.to_domain(state)
 	if not mapped.is_ok:
 		return mapped
-	if not quests.record_monster_kill(mapped.value, event):
+	var player: Player = mapped.value
+	if String(event.get("killer_id", "")) != player.entity_id:
+		return DomainResult.ok({"changed": false})
+	var before := player.achievements.bonuses().to_dictionary()
+	var quest_changed := quests.record_monster_kill(player, event)
+	var achievement_changed := player.record_achievement(AchievementEvent.new(
+		AchievementEvent.Kind.MONSTER_KILLED, String(event.get("species_id", "")),
+		1, String(event.get("death_id", ""))))
+	if not quest_changed and not achievement_changed:
 		return DomainResult.ok({"changed": false})
 	var persisted := _mapper.to_record(mapped.value)
 	if not persisted.is_ok:
 		return persisted
-	return DomainResult.ok({"changed": true, "candidate": persisted.value})
+	return DomainResult.ok({"changed": true, "candidate": persisted.value,
+		"title_changed": before != player.achievements.bonuses().to_dictionary()})
 
 
 ## 把已验证会话命令分派给指定商人的权威交易或普通武器商人任务。

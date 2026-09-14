@@ -84,9 +84,11 @@ func _test_authoritative_collection_transaction() -> void:
 	server.advance_simulation(2.95)
 	var before = server.autosave_service.state_for(entity_id)
 	_expect(_inventory_quantity(before, "iron_ore") == 0, "inventory must not change before the third second")
+	_expect(int(before.achievements.get("counters", {}).get("mine:iron_ore", 0)) == 0, "采矿周期未完成前没有成就进度")
 	server.advance_simulation(0.05)
 	var after = server.autosave_service.state_for(entity_id)
 	_expect(_inventory_quantity(after, "iron_ore") == 1, "third-second settlement should add one iron ore")
+	_expect(int(after.achievements.get("counters", {}).get("mine:iron_ore", 0)) == 1, "真实采矿结算写入同一成就账本")
 	_expect(source.remaining == 49, "settled collection should reduce the selected source from fifty to forty-nine")
 	var mining_state: Dictionary = after.character_skills.get("mining", {})
 	_expect(
@@ -108,6 +110,7 @@ func _test_authoritative_collection_transaction() -> void:
 	server.advance_simulation(3.0)
 	after = server.autosave_service.state_for(entity_id)
 	_expect(source.remaining == 49 and _inventory_quantity(after, "iron_ore") == 1, "换炮后到期结算不能扣矿或产矿")
+	_expect(int(after.achievements.get("counters", {}).get("mine:iron_ore", 0)) == 1, "中断采矿不增加成就进度")
 	intent.input_sequence = 2
 	_expect(server.handle_peer_use_ability(41, intent.to_dictionary()).ok, "重新点击才重新开始采矿")
 	server.map_instance.mining_module.interrupt(entity_id, &"movement")
@@ -125,6 +128,7 @@ func _test_authoritative_collection_transaction() -> void:
 	entity_id = String(opened.value.session.entity_id)
 	var restored = server.autosave_service.state_for(entity_id)
 	_expect(_inventory_quantity(restored, "iron_ore") == 1, "重启确实保留旧矿石而非重置存档")
+	_expect(int(restored.achievements.get("counters", {}).get("mine:iron_ore", 0)) == 1, "真实仓储重启保留成就计数")
 	var existing_ore_id := ""
 	for stack in restored.inventory_stacks:
 		if stack.item_definition_id == "iron_ore":
@@ -146,6 +150,7 @@ func _test_authoritative_collection_transaction() -> void:
 	_expect(_inventory_quantity(server.autosave_service.state_for(entity_id), "iron_ore") == 3,
 		"重启后的两个连续周期应正常叠加到原存档矿石堆")
 	_expect(source.remaining == 48, "成功入账与矿量扣减保持一致")
+	_expect(int(server.autosave_service.state_for(entity_id).achievements.get("counters", {}).get("mine:iron_ore", 0)) == 3, "重启后成就继续累计")
 	server.map_instance.mining_module.interrupt(entity_id, &"test")
 	var damaged = server.autosave_service.state_for(entity_id)
 	for equipment in damaged.equipment_slots:
@@ -155,6 +160,13 @@ func _test_authoritative_collection_transaction() -> void:
 	intent.input_sequence = 3
 	started = server.handle_peer_use_ability(41, intent.to_dictionary())
 	_expect(not started.ok and started.code == &"mining.arm_broken", "损坏的采掘臂不能采矿")
+	var live_state: VehicleCombatState = server.map_instance.vehicle_combat_state_for(entity_id)
+	var old_health := live_state.health
+	var old_max := live_state.max_health
+	for index in range(100):
+		server._apply_quest_kill({"killer_id": entity_id, "species_id": "toxic_gel", "death_id": "achievement.integration.%d" % index})
+	_expect(live_state.max_health == old_max + 10 and live_state.health == old_health, "权威死亡消费链晋升后热更新原战车且不补血")
+	_expect(PlayerAchievements.new(server.autosave_service.state_for(entity_id).achievements).total_points() == 20, "服务器累计真实内部击杀事件的成就点")
 	server.free()
 
 

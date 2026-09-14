@@ -89,9 +89,10 @@ func restore_player(state: PlayerStateRecord) -> DomainResult:
 ## 将战斗模块预检通过的地面掉落加入权威玩家聚合。
 ## [param state] 自动存档服务持有的当前玩家记录副本。
 ## [param loot] 包含 loot_id、item_definition_id 与 quantity 的可信掉落 DTO。
+## [param achievement_event] 仅采矿结算入口提供的事实，与入包成功共享同一候选事务。
 ## 返回待原子提交的 candidate 以及更新后的三面板快照。
 ## 设计：目录组装和背包规则在共享领域层完成，本服务不信任客户端提供的物品内容。
-func grant_loot(state: PlayerStateRecord, loot: Dictionary) -> DomainResult:
+func grant_loot(state: PlayerStateRecord, loot: Dictionary, achievement_event: AchievementEvent = null) -> DomainResult:
 	if state == null or _mapper == null or _catalog == null or _projector == null:
 		return DomainResult.failure(&"loot.service_unavailable", "loot service is unavailable")
 	var mapped := _mapper.to_domain(state)
@@ -115,11 +116,19 @@ func grant_loot(state: PlayerStateRecord, loot: Dictionary) -> DomainResult:
 	var received := player.receive_loot(created.value)
 	if not received.is_ok:
 		return received
+	var before := player.achievements.bonuses().to_dictionary()
+	if achievement_event != null:
+		if not achievement_event.is_valid() or achievement_event.kind != AchievementEvent.Kind.MINERAL_COLLECTED \
+			or achievement_event.target_id != definition_id or achievement_event.quantity != quantity \
+			or achievement_event.event_id != loot_id:
+			return DomainResult.failure(&"achievements.invalid_event", "mining achievement must match the settled reward")
+		player.record_achievement(achievement_event)
 	var persisted := _mapper.to_record(player)
 	if not persisted.is_ok:
 		return persisted
 	return DomainResult.ok({
 		"candidate": persisted.value,
+		"title_changed": before != player.achievements.bonuses().to_dictionary(),
 		"panel_bundle": _projector.build_bundle(player),
 	})
 

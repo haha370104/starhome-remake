@@ -819,6 +819,8 @@ func _apply_quest_kill(event: Dictionary) -> void:
 	if not stored.is_ok:
 		push_error("训练进度存档失败：" + stored.error_message)
 		return
+	if bool(result.value.get("title_changed", false)):
+		_refresh_achievement_combat(entity_id, stored.value)
 	var session: ServerSession = sessions.session_for_entity(entity_id)
 	if session != null and session.has_active_peer():
 		_send_reliable(session.peer_id, {"type": "player_panels",
@@ -892,7 +894,8 @@ func _settle_mining_cycles(instance: AuthoritativeMapInstance) -> void:
 			"loot_id": token,
 			"item_definition_id": String(cycle.get("item_definition_id", "")),
 			"quantity": int(cycle.get("quantity", 0)),
-		})
+		}, AchievementEvent.new(AchievementEvent.Kind.MINERAL_COLLECTED,
+			String(cycle.get("item_definition_id", "")), int(cycle.get("quantity", 0)), token))
 		if not granted.is_ok:
 			instance.reject_mining_cycle(token)
 			_send_mining_rejection(entity_id, granted.error_code, granted.error_message)
@@ -908,6 +911,8 @@ func _settle_mining_cycles(instance: AuthoritativeMapInstance) -> void:
 			push_error("Mining source commit failed after inventory commit: %s" % committed.error_message)
 			continue
 		var event: Dictionary = committed.value
+		if bool(grant_value.get("title_changed", false)):
+			_refresh_achievement_combat(entity_id, stored.value)
 		_apply_skill_progression_event({
 			"entity_id": entity_id,
 			"source": "mined_material",
@@ -926,6 +931,24 @@ func _settle_mining_cycles(instance: AuthoritativeMapInstance) -> void:
 					),
 				})),
 			})
+
+
+## 晋升后热更新战斗增益，保留冷却、命令序号、维修周期和已发射弹体。
+## [param entity_id] 已完成权威结算的玩家。
+## [param state] 新称号所在的已提交状态。
+func _refresh_achievement_combat(entity_id: String, state: PlayerStateRecord) -> void:
+	if map_registry == null or _combat_catalog == null:
+		return
+	var target: AuthoritativeMapInstance = map_registry.instance_by_id(state.map_instance_id)
+	if target == null:
+		return
+	var loadout := _build_entity_combat_loadout(target, state)
+	if not loadout.is_ok:
+		push_error("Achievement combat update failed: " + loadout.error_message)
+		return
+	var updated := target.refresh_achievement_loadout(entity_id, loadout.value)
+	if not updated.is_ok:
+		push_error("Achievement combat update failed: " + updated.error_message)
 
 
 ## 复用完整玩家聚合校验采矿装配，不信任客户端声明的武器类型。
