@@ -22,9 +22,7 @@ func _run() -> void:
 	root.add_child(presenter)
 	var label := Label.new()
 	presenter.add_child(label)
-	presenter._status_label = label
-	presenter._status_timer = Timer.new()
-	presenter.add_child(presenter._status_timer)
+	presenter.network_notice_requested.connect(func(message: String, _duration: float) -> void: label.text = message)
 	var messages: Array[String] = []
 	presenter.system_message_requested.connect(func(message: String) -> void: messages.append(message))
 	presenter._on_command_rejected(&"commerce.insufficient_currency", "not enough currency")

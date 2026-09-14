@@ -36,7 +36,8 @@ func _run() -> void:
 	root.add_child(status_label)
 
 	var presenter = PresenterScript.new()
-	presenter.configure(local_character, world, character_catalog, status_label)
+	presenter.configure(local_character, world, character_catalog)
+	presenter.network_notice_requested.connect(func(message: String, _duration: float) -> void: status_label.text = message)
 	var local_states: Array[Dictionary] = []
 	var system_messages: Array[String] = []
 	presenter.local_character_state_applied.connect(

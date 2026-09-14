@@ -34,7 +34,7 @@ func _run() -> void:
 		_expect(hall.game_window_manager.manufacturing_window.visible, "制造菜单应打开生产窗口")
 		_expect(hall.game_window_manager.manufacturing_window.station_id() == facility.station_id,
 			"生产窗口应绑定被点击设施的类型")
-		_expect(hall.hint_label.text == "正在使用%s" % facility.display_name,
+		_expect(hall.hud.status_text() == "正在使用%s" % facility.display_name,
 			"关闭菜单后仍应显示正确的设施名称")
 		_expect(not commands.is_empty() and commands[-1].get("station_id") == facility.station_id,
 			"制造查询应携带被点击设施的类型")
@@ -51,7 +51,7 @@ func _run() -> void:
 			_expect(hall.game_window_manager.weapon_merchant_window.visible, "商人菜单应打开交易窗口")
 			_expect(hall.game_window_manager.weapon_merchant_window.current_mode() == actions[index]["id"],
 				"交易窗口应采用被点击的买卖或任务模式")
-			_expect(hall.hint_label.text == "正在与%s交互" % definition["name"],
+			_expect(hall.hud.status_text() == "正在与%s交互" % definition["name"],
 				"关闭菜单后仍应显示正确的商人名称")
 			_expect(not commands.is_empty() and commands[-1].get("merchant_id") == merchant.npc_id,
 				"商店查询应保留普通或特殊武器商人的身份")
@@ -75,7 +75,7 @@ func _run() -> void:
 func _click_action(hall: Node2D, target: Node2D, action_index: int) -> void:
 	hall._show_npc_popup(target)
 	commands.clear()
-	hall.hint_label.text = "等待菜单操作"
+	hall.hud.show_status("等待菜单操作")
 	hall.hud.popup_actions.get_child(action_index).pressed.emit()
 	_expect(hall.active_npc == null, "关闭菜单应同步清空当前交互对象")
 	_expect(not hall.hud.popup.visible, "打开业务窗口后上下文菜单应关闭")

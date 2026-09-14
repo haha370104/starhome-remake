@@ -1,6 +1,7 @@
 class_name HallHud
 extends CanvasLayer
 
+signal selected_action_changed(slot_id: String)
 signal popup_closed
 signal npc_action_requested(action_id: String)
 signal hud_action_requested(action_id: String)
@@ -15,6 +16,10 @@ const LEGACY_PANEL_FONT := preload("res://assets/ui/fonts/legacy_panel_font.tres
 const CentralSystemMessageFeedScript := preload(
 	"res://scripts/ui/central_system_message_feed.gd"
 )
+
+var _status_timer: Timer
+var _status_message := ""
+var _status_restore_text := ""
 
 var root_control: Control
 var hint_label: Label
@@ -41,6 +46,7 @@ func configure(world_map_size: Vector2, minimap_texture: Texture2D, map_name := 
 	layer = 50
 	name = "HallHud"
 	state = HudStateScript.new()
+	state.selected_action_slot_changed.connect(selected_action_changed.emit)
 	asset_manifest = _load_manifest()
 	set_process_input(true)
 
@@ -331,3 +337,65 @@ func _button_style(background: Color, border: Color) -> StyleBoxFlat:
 	style.border_color = border
 	style.set_border_width_all(1 if border.a > 0.0 else 0)
 	return style
+
+
+## 确保临时状态恢复计时器已创建并连接回调。
+func _ensure_status_timer() -> void:
+	if _status_timer != null:
+		return
+	_status_timer = Timer.new()
+	_status_timer.name = "StatusMessageTimer"
+	_status_timer.one_shot = true
+	_status_timer.timeout.connect(_on_status_timeout)
+	add_child(_status_timer)
+
+
+## 执行 `show_temporary_status` 对应的模块操作。
+## [param message] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param duration_seconds] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+func show_network_notice(message: String, duration_seconds: float) -> void:
+	if hint_label == null:
+		return
+	if hint_label.text != _status_message:
+		_status_restore_text = hint_label.text
+	_status_message = message
+	hint_label.text = message
+	_ensure_status_timer()
+	_status_timer.start(maxf(0.1, duration_seconds))
+
+
+## 在临时状态仍占用标签时恢复显示前的业务文字。
+func _on_status_timeout() -> void:
+	if hint_label != null and hint_label.text == _status_message:
+		hint_label.text = _status_restore_text
+	_status_message = ""
+
+
+## 更新持续状态提示；内部标签不向业务控制器传递。
+## [param message] 面向玩家的本地化文字。
+func show_status(message: String) -> void:
+	hint_label.text = message
+
+
+## 读取当前提示用于诊断和语义回归。
+## 返回当前状态提示文本。
+func status_text() -> String:
+	return hint_label.text
+
+
+## 将独立游戏窗口或对话框挂到 HUD 覆盖层。
+## [param overlay] 由组合根创建、由 HUD 场景生命周期释放的控件。
+func add_overlay(overlay: Control) -> void:
+	root_control.add_child(overlay)
+
+
+## 获取玩家当前选择的业务动作。
+## 返回能量炮、导弹等动作标识。
+func selected_action() -> String:
+	return state.selected_action_slot
+
+
+## 根据业务动作更新选择，组件自行同步图标与选中状态。
+## [param action_id] 已登记的动作标识。
+func select_action(action_id: String) -> void:
+	state.set_selected_action_slot(action_id)

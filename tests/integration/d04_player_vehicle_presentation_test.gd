@@ -187,7 +187,7 @@ func _test_cannon_mining_click_is_rejected(hall: Node2D) -> void:
 		var created := catalog.create(definition_id, {"instance_id": "click.%s" % definition_id})
 		_expect(created.is_ok and current.vehicle.loadout.restore(created.value).is_ok, "装配点击测试车炮")
 	hall._request_mining(Vector2(1200, 1200))
-	_expect(hall.hint_label.text.contains("能量炮不能采矿"), "真实矿物点击入口应立即中文拒绝，不能显示正在准备采矿")
+	_expect(hall.hud.status_text().contains("能量炮不能采矿"), "真实矿物点击入口应立即中文拒绝，不能显示正在准备采矿")
 	_expect(hall.world_view.player.apply_vehicle_equipment(current.vehicle), "点击测试应同步真实炮的外观")
 	hall.world_view.mining_visual_controller.apply_snapshot({"local_vehicle": {"health": 70}, "local_mining": {
 		"active": true, "target_position": [0.0, 100.0],
@@ -266,10 +266,10 @@ func _test_engineering_arm_empty_click(hall: Node2D) -> void:
 			_expect(created.value.primary_device_kind() == device_kind, "模型应提供正确主槽类型")
 			hall._on_current_player_changed(current)
 			_expect(hall.hud.state.primary_device_kind == device_kind, "当前玩家快照绑定必须刷新主槽图标")
-			hall.hint_label.text = "原提示保持不变"
+			hall.hud.show_status("原提示保持不变")
 			# 空图外坐标不包含矿物、掉落或怪物；若误入发射链将产生弹体或连接错误。
 			hall._handle_world_combat_left_click(Vector2(-10000, -10000))
-			_expect(hall.hint_label.text == "原提示保持不变", "空地点击不显示任何错误")
+			_expect(hall.hud.status_text() == "原提示保持不变", "空地点击不显示任何错误")
 			_expect(feed.queued_message_count() == message_count and feed.message_label.text == active_message,
 				"空地点击不能向中央消息队列添加错误")
 			_expect(hall.multiplayer_presenter.session._next_ability_sequence == ability_sequence,

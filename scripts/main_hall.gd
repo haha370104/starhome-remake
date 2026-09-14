@@ -113,9 +113,6 @@ var facility_instances: Array[Node2D]:
 		return active_world_controller.facility_instances if active_world_controller else []
 var active_npc: Node2D
 var hud: CanvasLayer
-var hint_label: Label
-var popup: PanelContainer
-var minimap_player_dot: ColorRect
 var multiplayer_presenter: Node
 var map_preloader: Node
 var map_route_resolver: RefCounted
@@ -286,13 +283,13 @@ func _request_mining(source_position: Vector2) -> void:
 	var allowed := current_player.vehicle.loadout.validate_mining(current_player.skills.base_level("mining"))
 	if not allowed.is_ok:
 		var notice := PlayerErrorMessages.describe(allowed.error_code, allowed.error_message)
-		hint_label.text = notice
+		hud.show_status(notice)
 		hud.show_system_message(notice)
 		return
 	# 本地传输可能同步收到拒绝或开始事件，不能在返回后用“正在准备”覆盖其结果。
-	hint_label.text = "正在请求采矿"
+	hud.show_status("正在请求采矿")
 	if multiplayer_presenter.request_use_ability("mining.collect", source_position).is_empty():
-		hint_label.text = "采矿请求发送失败"
+		hud.show_status("采矿请求发送失败")
 
 
 ## 执行 `handle_world_combat_left_click` 对应的模块操作。
@@ -310,7 +307,7 @@ func _handle_world_combat_left_click(world_position: Vector2) -> void:
 			var source_position := world_view.mineral_world_controller.source_position(source_id)
 			_request_mining(source_position)
 			return
-	var selected_mode := String(hud.state.selected_action_slot)
+	var selected_mode := String(hud.selected_action())
 	if selected_mode == "energy_cannon" and game_window_manager != null \
 			and panel_session.current_player != null \
 			and panel_session.current_player.vehicle != null:
@@ -321,17 +318,17 @@ func _handle_world_combat_left_click(world_position: Vector2) -> void:
 	var mode: Dictionary = CombatActions.WEAPON_MODES.get(selected_mode, {})
 	var attack_controller: Node = world_view.combat_attack_controllers.get(selected_mode)
 	if mode.is_empty() or attack_controller == null:
-		hint_label.text = "武器表现尚未初始化"
+		hud.show_status("武器表现尚未初始化")
 		return
 	var target_entity_id := world_view.monster_world_controller.nearest_target(world_position)
 	if selected_mode == "missile" and target_entity_id.is_empty():
-		hint_label.text = "导弹需要锁定一个怪物"
+		hud.show_status("导弹需要锁定一个怪物")
 		return
 	var authoritative_target := world_position
 	if not target_entity_id.is_empty():
 		authoritative_target = world_view.monster_world_controller.target_position(target_entity_id)
 	if not authoritative_target.is_finite():
-		hint_label.text = "目标已离开当前地图"
+		hud.show_status("目标已离开当前地图")
 		return
 	var tracking_resolver := Callable()
 	if selected_mode == "missile":
@@ -342,11 +339,11 @@ func _handle_world_combat_left_click(world_position: Vector2) -> void:
 	if not bool(result.get("ok", false)):
 		var code := StringName(result.get("code", &""))
 		if code == &"cooldown":
-			hint_label.text = "%s冷却中" % String(mode["display_name"])
+			hud.show_status("%s冷却中" % String(mode["display_name"]))
 		elif code == &"target_too_close":
-			hint_label.text = "射击目标距离过近"
+			hud.show_status("射击目标距离过近")
 		else:
-			hint_label.text = "当前无法开火"
+			hud.show_status("当前无法开火")
 		return
 	var resolved_target: Vector2 = result["resolved_target"]
 	var ability_payload: Dictionary = multiplayer_presenter.request_use_ability(
@@ -379,15 +376,15 @@ func _handle_world_combat_left_click(world_position: Vector2) -> void:
 	world_view.player.set_combat_weapon_layer(layer_id)
 	world_view.player.set_combat_layer_pose(layer_id, &"attack", weapon_direction)
 	if bool(result.get("range_clamped", false)):
-		hint_label.text = "目标超出射程，向极限点 %d, %d 开火" % [
+		hud.show_status("目标超出射程，向极限点 %d, %d 开火" % [
 			roundi(resolved_target.x),
 			roundi(resolved_target.y),
-		]
+		])
 	else:
-		hint_label.text = "向 %d, %d 开火" % [
+		hud.show_status("向 %d, %d 开火" % [
 			roundi(resolved_target.x),
 			roundi(resolved_target.y),
-		]
+		])
 	_restore_locomotion_after_attack(was_moving, layer_id)
 
 
@@ -404,7 +401,7 @@ func _combat_target_position(target_entity_id: String) -> Vector2:
 ## 设计：客户端只选择目标；距离、背包容量、入账和地面实体删除均由权威规则决定。
 func _request_ground_loot_pickup(loot_id: String) -> void:
 	if multiplayer_presenter.request_loot_pickup(loot_id).is_empty():
-		hint_label.text = "拾取请求发送失败"
+		hud.show_status("拾取请求发送失败")
 
 
 ## 将拾取领域错误转换为玩家可理解的状态文字。
@@ -449,13 +446,13 @@ func _combat_rejection_text(code: StringName) -> String:
 ## 设计：`Z` 与顶部按钮复用此入口；客户端只读取离线调试等级，不自行修改生命或能量。
 func _request_self_repair() -> void:
 	if _world_input_locked() or world_view.player == null or not world_view.player.is_combat_actor_active():
-		hint_label.text = "当前地图不能使用自维修"
+		hud.show_status("当前地图不能使用自维修")
 		return
 	var submitted: bool = not multiplayer_presenter.request_use_ability(
 		CombatActions.SELF_REPAIR_ABILITY_ID, world_view.player.position
 	).is_empty()
 	if submitted:
-		hint_label.text = "已开始自维修：每3秒恢复一次生命"
+		hud.show_status("已开始自维修：每3秒恢复一次生命")
 
 
 ## 在短促炮口动作结束后恢复开火前的移动状态。
@@ -503,23 +500,23 @@ func _move_to(world_position: Vector2, transition_id: StringName = &"") -> void:
 		var error_code := StringName(result.get("code", &""))
 		if error_code == &"movement.no_propulsion":
 			var error_message := PlayerErrorMessages.describe(error_code)
-			hint_label.text = error_message
+			hud.show_status(error_message)
 			hud.show_system_message(error_message)
 		elif error_code == &"no_reachable_point":
-			hint_label.text = "目标 %s 不可到达，附近也没有可达点" % target_text
+			hud.show_status("目标 %s 不可到达，附近也没有可达点" % target_text)
 		else:
-			hint_label.text = "无法找到前往 %s 的路径" % target_text
+			hud.show_status("无法找到前往 %s 的路径" % target_text)
 		return
 	var resolved_position: Vector2 = result["resolved_position"]
 	selected_transition_id = transition_id
 	if bool(result["used_nearest_walkable"]):
-		hint_label.text = "目标 %s 不可到达，正在前往附近 %d, %d" % [
+		hud.show_status("目标 %s 不可到达，正在前往附近 %d, %d" % [
 			target_text,
 			roundi(resolved_position.x),
 			roundi(resolved_position.y),
-		]
+		])
 	else:
-		hint_label.text = "正在前往 %s" % target_text
+		hud.show_status("正在前往 %s" % target_text)
 	hud.hide_popup()
 
 
@@ -535,8 +532,8 @@ func _stop_moving(message: String) -> void:
 	if local_player_controller:
 		local_player_controller.cancel_route()
 	selected_transition_id = &""
-	if hint_label:
-		hint_label.text = message
+	if hud:
+		hud.show_status(message)
 
 
 ## 执行 `direction_index` 对应的模块操作。
@@ -573,19 +570,16 @@ func _build_hud(initial_bundle: Dictionary) -> void:
 		String(initial_definition.display_name),
 	)
 	add_child(hud)
-	hint_label = hud.hint_label
-	popup = hud.popup
-	minimap_player_dot = hud.minimap_player_dot
 	hud.popup_closed.connect(_on_npc_popup_closed)
 	hud.npc_action_requested.connect(_on_npc_action_requested)
 	hud.hud_action_requested.connect(_on_hud_action_requested)
-	hud.state.selected_action_slot_changed.connect(_on_weapon_slot_selected)
-	_on_weapon_slot_selected(hud.state.selected_action_slot)
+	hud.selected_action_changed.connect(_on_weapon_slot_selected)
+	_on_weapon_slot_selected(hud.selected_action())
 	vehicle_destroyed_dialog = VehicleDestroyedDialogScript.new()
 	vehicle_destroyed_dialog.configure()
 	vehicle_destroyed_dialog.wait_selected.connect(_on_destroyed_wait_selected)
 	vehicle_destroyed_dialog.return_to_base_requested.connect(_request_vehicle_recovery)
-	hud.root_control.add_child(vehicle_destroyed_dialog)
+	hud.add_overlay(vehicle_destroyed_dialog)
 
 
 ## 创建大厅客户端会话表现器，并以显式配置选择离线调试或真实网络入口。
@@ -607,7 +601,8 @@ func _build_multiplayer_presentation() -> void:
 
 	multiplayer_presenter = HallMultiplayerPresenterScript.new()
 	multiplayer_presenter.name = "HallMultiplayerPresenter"
-	multiplayer_presenter.configure(world_view.player, world_view.sortable_world, character_catalog, hint_label)
+	multiplayer_presenter.configure(world_view.player, world_view.sortable_world, character_catalog)
+	multiplayer_presenter.network_notice_requested.connect(hud.show_network_notice)
 	multiplayer_presenter.local_character_state_applied.connect(
 		_on_multiplayer_local_character_state_applied
 	)
@@ -646,7 +641,7 @@ func _build_multiplayer_presentation() -> void:
 func _build_game_windows() -> void:
 	game_window_manager = GameWindowManagerScript.new()
 	game_window_manager.name = "GameWindowManager"
-	hud.root_control.add_child(game_window_manager)
+	hud.add_overlay(game_window_manager)
 	game_window_manager.notice_requested.connect(hud.show_system_message)
 	panel_session = PlayerPanelSession.new(
 		Callable(multiplayer_presenter, "request_player_panel_command"),
@@ -740,8 +735,8 @@ func _on_local_player_route_finished() -> void:
 ## [param message] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _on_local_player_route_stopped(message: String) -> void:
 	selected_transition_id = &""
-	if hint_label:
-		hint_label.text = message
+	if hud:
+		hud.show_status(message)
 
 
 ## 在活动世界原子替换前结束旧 NPC 交互，并清除仅属于旧地图的传送选择。
@@ -778,9 +773,9 @@ func _try_begin_nearby_map_transition() -> void:
 			)
 			if requested_destination_map_id.is_empty():
 				selected_transition_id = &""
-				hint_label.text = "地图%s已识别，但运行资源尚未导入" % [
+				hud.show_status("地图%s已识别，但运行资源尚未导入" % [
 					requested_transition.destination_key().to_upper(),
-				]
+				])
 				return
 			var requested_distance := world_view.player.position.distance_to(requested_transition.approach_point)
 			if requested_distance <= selected_distance:
@@ -805,7 +800,7 @@ func _try_begin_nearby_map_transition() -> void:
 		"destination_map_id": selected_destination_map_id,
 		"destination_entry_number": selected_transition.destination_entry_number,
 	}
-	hint_label.text = "正在准备前往%s…" % selected_transition.label
+	hud.show_status("正在准备前往%s…" % selected_transition.label)
 	var preload_error: Error = map_preloader.preload_map(
 		selected_destination_map_id
 	)
@@ -847,7 +842,7 @@ func _on_map_preload_ready(map_id: StringName, bundle: Dictionary) -> void:
 		int(pending_map_transition["destination_entry_number"]),
 	)
 	if request.is_empty():
-		hint_label.text = "当前无法提交地图切换请求"
+		hud.show_status("当前无法提交地图切换请求")
 		pending_map_transition.clear()
 		pending_map_bundle.clear()
 
@@ -862,7 +857,7 @@ func _on_map_preload_failed(map_id: StringName, message: String) -> void:
 		pending_authoritative_join.clear()
 		_handle_map_commit_failure(notice)
 		return
-	hint_label.text = notice
+	hud.show_status(notice)
 	pending_map_transition.clear()
 	pending_map_bundle.clear()
 
@@ -913,7 +908,7 @@ func _hold_old_map_for_authoritative_join(
 ) -> void:
 	var held_player_position: Vector2 = local_player_controller.position()
 	local_player_controller.hold_position_for_map_commit()
-	hint_label.text = "正在载入权威地图…"
+	hud.show_status("正在载入权威地图…")
 	pending_authoritative_join = {
 		"map_id": map_id,
 		"map_instance_id": map_instance_id,
@@ -952,7 +947,7 @@ func _commit_map_bundle(
 	_refresh_local_movement_availability()
 	multiplayer_map_instance_id = map_instance_id
 	_set_player_action("stand")
-	hint_label.text = "已进入%s" % map_definition.display_name
+	hud.show_status("已进入%s" % map_definition.display_name)
 	map_commit_failure_locked = false
 	pending_map_transition.clear()
 	pending_map_bundle.clear()
@@ -1016,7 +1011,7 @@ func _on_vehicle_recovery_failed(_code: StringName, _message: String) -> void:
 
 ## 原地等待只关闭选择窗，不解除击毁状态或恢复输入。
 func _on_destroyed_wait_selected() -> void:
-	hint_label.text = "正在原地等待其他玩家营救"
+	hud.show_status("正在原地等待其他玩家营救")
 
 
 ## 处理 `_on_combat_event_received` 对应的信号回调。
@@ -1026,28 +1021,28 @@ func _on_combat_event_received(event: Dictionary) -> void:
 	if event_type == &"loot_picked_up":
 		if world_view.ground_loot_world_controller != null:
 			world_view.ground_loot_world_controller.remove_loot(String(event.get("loot_id", "")))
-		hint_label.text = "拾取了 %d 个物品" % int(event.get("quantity", 1))
+		hud.show_status("拾取了 %d 个物品" % int(event.get("quantity", 1)))
 	elif event_type == &"mining_started":
-		hint_label.text = "开始采矿，每3秒采集一次"
+		hud.show_status("开始采矿，每3秒采集一次")
 	elif event_type == &"mining_collected":
-		hint_label.text = "采集到%s × %d（矿点剩余%d）" % [
+		hud.show_status("采集到%s × %d（矿点剩余%d）" % [
 			String(event.get("display_name", "矿物")),
 			int(event.get("quantity", 1)),
 			int(event.get("remaining", 0)),
-		]
+		])
 	elif event_type in [&"energy_cannon_hit", &"rocket_launcher_hit", &"missile_hit"]:
-		hint_label.text = "命中目标，造成%d点伤害（剩余%d）" % [
+		hud.show_status("命中目标，造成%d点伤害（剩余%d）" % [
 			int(event.get("damage", 0)),
 			int(event.get("target_health", 0)),
-		]
+		])
 	elif event_type == &"self_repair_resolved":
-		hint_label.text = "自维修恢复%d点生命（当前%d）" % [
+		hud.show_status("自维修恢复%d点生命（当前%d）" % [
 			int(event.get("healed", 0)),
 			int(event.get("target_health", 0)),
-		]
+		])
 	elif event_type == &"self_repair_stopped":
 		var reason := StringName(event.get("reason", &""))
-		hint_label.text = "战车已修复完成" if reason == &"full_health" else "自维修已停止"
+		hud.show_status("战车已修复完成" if reason == &"full_health" else "自维修已停止")
 
 
 ## 执行 `handle_map_commit_failure` 对应的模块操作。
@@ -1143,7 +1138,7 @@ func _on_npc_action_requested(action_id: String) -> void:
 				return
 			hud.hide_popup()
 			game_window_manager.open_manufacturing(station_id)
-			hint_label.text = "正在使用%s" % interaction_title
+			hud.show_status("正在使用%s" % interaction_title)
 			return
 		var npc_id := String(active_npc.get("npc_id"))
 		var npc_definition: Variant = active_npc.get("npc_definition")
@@ -1153,9 +1148,9 @@ func _on_npc_action_requested(action_id: String) -> void:
 				and action_id in ["buy", "sell", "task"]:
 			hud.hide_popup()
 			game_window_manager.open_weapon_merchant(action_id, npc_id)
-			hint_label.text = "正在与%s交互" % interaction_title
+			hud.show_status("正在与%s交互" % interaction_title)
 			return
-		hint_label.text = active_npc.handle_action(action_id)
+		hud.show_status(active_npc.handle_action(action_id))
 
 
 ## 显示同一原版 transport2 锚点的目标选择菜单。

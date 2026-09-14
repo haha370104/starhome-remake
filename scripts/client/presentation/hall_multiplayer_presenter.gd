@@ -20,6 +20,7 @@ signal vehicle_recovery_scheduled(delay_seconds: float)
 signal vehicle_recovery_failed(code: StringName, message: String)
 signal connection_failed(message: String)
 signal system_message_requested(message: String)
+signal network_notice_requested(message: String, duration_seconds: float)
 
 const SessionScript := preload("res://scripts/client/network/client_multiplayer_session.gd")
 const CharacterFactoryScript := preload("res://scripts/characters/character_factory.gd")
@@ -31,30 +32,23 @@ var remote_characters: Dictionary = {}
 var _local_character: Node2D
 var _remote_parent: Node2D
 var _character_catalog: Dictionary = {}
-var _status_label: Label
 var _remote_appearance_key := "player"
 var _remote_animation_speed_scale := 1.0
-var _status_timer: Timer
-var _status_message := ""
-var _status_restore_text := ""
 
 
 ## 绑定本地角色、远端角色父节点、角色素材目录及临时状态文字载体。
 ## [param local_character] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## [param remote_parent] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## [param character_catalog] 调用方传入的参数；具体约束由函数签名和所在模块定义。
-## [param status_label] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## 设计：表现器只投影会话状态，不拥有路径规划、输入采样或传输协议。
 func configure(
 	local_character: Node2D,
 	remote_parent: Node2D,
 	character_catalog: Dictionary,
-	status_label: Label = null,
 ) -> void:
 	_local_character = local_character
 	_remote_parent = remote_parent
 	_character_catalog = character_catalog
-	_status_label = status_label
 
 
 ## 执行 `start` 对应的模块操作。
@@ -71,7 +65,6 @@ func start(settings: Dictionary) -> Error:
 
 	_remote_appearance_key = String(settings.get("remote_appearance", "player"))
 	_remote_animation_speed_scale = float(settings.get("remote_animation_speed_scale", 1.0))
-	_ensure_status_timer()
 
 	session = SessionScript.new()
 	session.name = "ClientMultiplayerSession"
@@ -100,15 +93,15 @@ func start(settings: Dictionary) -> Error:
 	session.initialize_local_player(Vector2(settings.get("initial_position", _local_character.position)))
 
 	if not bool(settings.get("connect_automatically", true)):
-		_show_temporary_status("权威会话尚未连接", 1.5)
+		network_notice_requested.emit("权威会话尚未连接", 1.5)
 		return OK
 	var host := String(settings.get("server_host", "127.0.0.1"))
 	var port := int(settings.get("server_port", ClientNetworkAdapter.DEFAULT_PORT))
 	var connection_error := session.connect_to_server(host, port)
 	if connection_error != OK:
-		_show_temporary_status("连接失败：%s" % error_string(connection_error), 4.0)
+		network_notice_requested.emit("连接失败：%s" % error_string(connection_error), 4.0)
 	elif session.offline_debug_enabled:
-		_show_temporary_status("正在启动进程内权威服务器…", 1.5)
+		network_notice_requested.emit("正在启动进程内权威服务器…", 1.5)
 	return connection_error
 
 
@@ -274,11 +267,11 @@ func _on_mining_collected(event: Dictionary, panel_bundle: Dictionary) -> void:
 func _on_connection_state_changed(state: ClientNetworkAdapter.ConnectionState) -> void:
 	match state:
 		ClientNetworkAdapter.ConnectionState.CONNECTING:
-			_show_temporary_status("正在连接服务器…", 2.0)
+			network_notice_requested.emit("正在连接服务器…", 2.0)
 		ClientNetworkAdapter.ConnectionState.CONNECTED:
-			_show_temporary_status("已连接服务器", 1.5)
+			network_notice_requested.emit("已连接服务器", 1.5)
 		ClientNetworkAdapter.ConnectionState.DISCONNECTED:
-			_show_temporary_status("已与服务器断开", 3.0)
+			network_notice_requested.emit("已与服务器断开", 3.0)
 
 
 ## 处理 `_on_connection_failed` 对应的信号回调。
@@ -286,7 +279,7 @@ func _on_connection_state_changed(state: ClientNetworkAdapter.ConnectionState) -
 func _on_connection_failed(message: String) -> void:
 	push_warning("Connection failed: %s" % message)
 	var notice := PlayerErrorMessages.describe(&"connection.failed", message)
-	_show_temporary_status(notice, 4.0)
+	network_notice_requested.emit(notice, 4.0)
 	connection_failed.emit(notice)
 
 
@@ -295,7 +288,7 @@ func _on_connection_failed(message: String) -> void:
 ## [param message] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _on_command_rejected(code: StringName, message: String) -> void:
 	push_warning("Command rejected [%s]: %s" % [code, message])
-	_show_temporary_status(_player_error_message(code, message), 4.0)
+	network_notice_requested.emit(_player_error_message(code, message), 4.0)
 	system_message_requested.emit(_player_error_message(code, message))
 
 
@@ -311,7 +304,7 @@ func _on_map_change_failed(
 ) -> void:
 	map_change_failed.emit(transition_id, code, message)
 	push_warning("Map change failed [%s]: %s" % [code, message])
-	_show_temporary_status(_player_error_message(code, message), 4.0)
+	network_notice_requested.emit(_player_error_message(code, message), 4.0)
 	system_message_requested.emit(_player_error_message(code, message))
 
 
@@ -367,32 +360,3 @@ func _world_character_action(action_id: StringName) -> String:
 			return "stand"
 
 
-## 确保临时状态恢复计时器已创建并连接回调。
-func _ensure_status_timer() -> void:
-	if _status_timer != null:
-		return
-	_status_timer = Timer.new()
-	_status_timer.name = "StatusMessageTimer"
-	_status_timer.one_shot = true
-	_status_timer.timeout.connect(_on_status_timeout)
-	add_child(_status_timer)
-
-
-## 执行 `show_temporary_status` 对应的模块操作。
-## [param message] 调用方传入的参数；具体约束由函数签名和所在模块定义。
-## [param duration_seconds] 调用方传入的参数；具体约束由函数签名和所在模块定义。
-func _show_temporary_status(message: String, duration_seconds: float) -> void:
-	if _status_label == null:
-		return
-	if _status_label.text != _status_message:
-		_status_restore_text = _status_label.text
-	_status_message = message
-	_status_label.text = message
-	_status_timer.start(maxf(0.1, duration_seconds))
-
-
-## 在临时状态仍占用标签时恢复显示前的业务文字。
-func _on_status_timeout() -> void:
-	if _status_label != null and _status_label.text == _status_message:
-		_status_label.text = _status_restore_text
-	_status_message = ""

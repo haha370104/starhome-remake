@@ -170,7 +170,7 @@ func _wait_for_map(hall: Node2D, expected_map_id: StringName) -> void:
 		"等待地图提交超时：%s；提示=%s；待提交=%s；待权威提交=%s；预载包=%s；会话待确认=%s；事件=%s"
 		% [
 			expected_map_id,
-			hall.hint_label.text,
+			hall.hud.status_text(),
 			hall.pending_map_transition,
 			hall.pending_authoritative_join,
 			hall.pending_map_bundle.keys(),
