@@ -54,6 +54,7 @@ const TACTICAL_ACTION_BY_DEFINITION := {
 @export var multiplayer_map_instance_id := "yian_harbor_hall_floor_1.instance.1"
 @export_range(1.0, 200.0, 1.0) var map_transition_trigger_radius := 64.0
 
+var map_travel := MapTravelController.new()
 var world_view: ClientWorldView
 var character_catalog: Dictionary
 var npc_catalog: Dictionary
@@ -122,23 +123,18 @@ var active_movement_input_sequence: int:
 	set(value):
 		if local_player_controller:
 			local_player_controller.active_movement_input_sequence = value
-var pending_map_transition: Dictionary = {}
-var pending_map_bundle: Dictionary = {}
-var pending_authoritative_join: Dictionary = {}
-var map_commit_failure_locked := false
-var selected_transition_id: StringName = &""
 var transition_choice_ids: Dictionary = {}
 var panel_session: PlayerPanelSession
 var game_window_manager: GameWindowManager
 var initial_loading_screen: CanvasLayer
 var vehicle_destroyed_dialog: VehicleDestroyedDialog
 var _vehicle_destroyed := false
-var _initial_authoritative_world_ready := false
 
 
 ## 节点进入场景树后初始化运行依赖。
 func _ready() -> void:
 	_apply_multiplayer_command_line(OS.get_cmdline_user_args())
+	add_child(map_travel)
 	_build_initial_loading_screen()
 	var content_result: Dictionary = RuntimeContentBootstrapScript.mount_default()
 	if not bool(content_result.get("ok", false)):
@@ -187,7 +183,7 @@ func _ready() -> void:
 	_set_player_action("stand")
 	_sync_player_nodes()
 	if not multiplayer_connect_automatically:
-		_finish_initial_loading()
+		map_travel.finish_initial_loading()
 
 
 ## 创建启动遮罩，阻止默认大厅在持久化角色地图尚未恢复时提前露出。
@@ -196,24 +192,6 @@ func _build_initial_loading_screen() -> void:
 	initial_loading_screen.name = "InitialLoadingScreen"
 	add_child(initial_loading_screen)
 	initial_loading_screen.show_loading("正在读取角色与地图数据")
-
-
-## 在首份权威地图完成原子提交后移除启动遮罩；重复调用不会影响后续地图切换。
-func _finish_initial_loading() -> void:
-	if _initial_authoritative_world_ready:
-		return
-	_initial_authoritative_world_ready = true
-	if initial_loading_screen != null:
-		initial_loading_screen.finish_loading()
-
-
-## 在初始权威会话失败时保留遮罩并展示可读错误，避免回退到并非玩家存档位置的大厅。
-## [param message] 传输层或权威握手返回的失败原因。
-func _on_initial_connection_failed(message: String) -> void:
-	if _initial_authoritative_world_ready or initial_loading_screen == null:
-		return
-	push_warning("Initial connection failed: %s" % message)
-	initial_loading_screen.set_status(PlayerErrorMessages.describe(&"connection.failed", message))
 
 
 ## 执行 `apply_multiplayer_command_line` 对应的模块操作。
@@ -354,7 +332,7 @@ func _handle_world_combat_left_click(world_position: Vector2) -> void:
 		"input_sequence": int(ability_payload.get("input_sequence", -1)),
 		"ability_id": String(mode["ability_id"]),
 		"weapon_mode": selected_mode,
-		"map_instance_id": multiplayer_map_instance_id,
+		"map_instance_id": map_travel.multiplayer_map_instance_id,
 		"actor_view_position": world_view.player.position,
 		"clicked_world_position": world_position,
 		"submitted_aim_position": resolved_target,
@@ -491,9 +469,9 @@ func _handle_world_right_click(world_position: Vector2) -> void:
 ## [param transition_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _move_to(world_position: Vector2, transition_id: StringName = &"") -> void:
 	if _world_input_locked():
-		_stop_moving("地图切换中，暂时不能移动")
+		map_travel.stop_moving("地图切换中，暂时不能移动")
 		return
-	selected_transition_id = &""
+	map_travel.selected_transition_id = &""
 	var target_text := "%d, %d" % [roundi(world_position.x), roundi(world_position.y)]
 	var result: Dictionary = local_player_controller.request_move(world_position)
 	if not bool(result.get("ok", false)):
@@ -508,7 +486,7 @@ func _move_to(world_position: Vector2, transition_id: StringName = &"") -> void:
 			hud.show_status("无法找到前往 %s 的路径" % target_text)
 		return
 	var resolved_position: Vector2 = result["resolved_position"]
-	selected_transition_id = transition_id
+	map_travel.selected_transition_id = transition_id
 	if bool(result["used_nearest_walkable"]):
 		hud.show_status("目标 %s 不可到达，正在前往附近 %d, %d" % [
 			target_text,
@@ -524,16 +502,6 @@ func _move_to(world_position: Vector2, transition_id: StringName = &"") -> void:
 func _begin_current_path_segment() -> void:
 	if local_player_controller:
 		local_player_controller.refresh_route_direction()
-
-
-## 执行 `stop_moving` 对应的模块操作。
-## [param message] 调用方传入的参数；具体约束由函数签名和所在模块定义。
-func _stop_moving(message: String) -> void:
-	if local_player_controller:
-		local_player_controller.cancel_route()
-	selected_transition_id = &""
-	if hud:
-		hud.show_status(message)
 
 
 ## 执行 `direction_index` 对应的模块操作。
@@ -590,8 +558,8 @@ func _build_multiplayer_presentation() -> void:
 	map_preloader.name = "ClientMapPreloader"
 	var map_definition_paths := _load_map_directory_definitions()
 	map_preloader.configure(map_definition_paths)
-	map_preloader.map_preload_ready.connect(_on_map_preload_ready)
-	map_preloader.map_preload_failed.connect(_on_map_preload_failed)
+	map_preloader.map_preload_ready.connect(map_travel.on_map_preload_ready)
+	map_preloader.map_preload_failed.connect(map_travel.on_map_preload_failed)
 	add_child(map_preloader)
 	map_route_resolver = RuntimeMapRouteResolverScript.new()
 	if not map_route_resolver.configure(map_definition_paths):
@@ -606,9 +574,9 @@ func _build_multiplayer_presentation() -> void:
 	multiplayer_presenter.local_character_state_applied.connect(
 		_on_multiplayer_local_character_state_applied
 	)
-	multiplayer_presenter.map_joined.connect(_on_authoritative_map_joined)
-	multiplayer_presenter.connection_failed.connect(_on_initial_connection_failed)
-	multiplayer_presenter.map_change_failed.connect(_on_authoritative_map_change_failed)
+	multiplayer_presenter.map_joined.connect(map_travel.on_authoritative_map_joined)
+	multiplayer_presenter.connection_failed.connect(map_travel.on_initial_connection_failed)
+	multiplayer_presenter.map_change_failed.connect(map_travel.on_authoritative_map_change_failed)
 	multiplayer_presenter.combat_snapshot_received.connect(_on_combat_snapshot_received)
 	multiplayer_presenter.combat_event_received.connect(_on_combat_event_received)
 	multiplayer_presenter.vehicle_recovery_scheduled.connect(
@@ -617,6 +585,11 @@ func _build_multiplayer_presentation() -> void:
 	multiplayer_presenter.vehicle_recovery_failed.connect(_on_vehicle_recovery_failed)
 	multiplayer_presenter.system_message_requested.connect(hud.show_system_message)
 	add_child(multiplayer_presenter)
+	map_travel.configure(active_world_controller, local_player_controller, world_view.player, hud)
+	map_travel.bind_session(multiplayer_presenter, map_preloader, map_route_resolver, initial_loading_screen)
+	map_travel.multiplayer_map_instance_id = multiplayer_map_instance_id
+	map_travel.map_transition_trigger_radius = map_transition_trigger_radius
+	map_travel.map_committed.connect(_refresh_local_movement_availability)
 	var start_error: Error = multiplayer_presenter.start({
 		"offline_debug_enabled": multiplayer_offline_debug_enabled,
 		"connect_automatically": multiplayer_connect_automatically,
@@ -631,7 +604,7 @@ func _build_multiplayer_presentation() -> void:
 	})
 	if start_error != OK:
 		push_warning("Unable to start hall multiplayer presentation: %s" % error_string(start_error))
-		_on_initial_connection_failed(error_string(start_error))
+		map_travel.on_initial_connection_failed(error_string(start_error))
 	local_player_controller.set_multiplayer_presenter(multiplayer_presenter)
 	_build_game_windows()
 
@@ -728,13 +701,13 @@ func _on_local_player_position_changed(_position: Vector2) -> void:
 
 ## 在本地路线自然完成后检查脚点附近是否存在地图出口。
 func _on_local_player_route_finished() -> void:
-	_try_begin_nearby_map_transition()
+	map_travel.try_begin_nearby_map_transition()
 
 
 ## 处理 `_on_local_player_route_stopped` 对应的信号回调。
 ## [param message] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _on_local_player_route_stopped(message: String) -> void:
-	selected_transition_id = &""
+	map_travel.selected_transition_id = &""
 	if hud:
 		hud.show_status(message)
 
@@ -744,7 +717,7 @@ func _on_active_world_will_replace() -> void:
 	if active_npc and is_instance_valid(active_npc):
 		active_npc.set_interaction_active(false)
 	active_npc = null
-	selected_transition_id = &""
+	map_travel.selected_transition_id = &""
 	transition_choice_ids.clear()
 	if world_view.movement_click_effects != null:
 		world_view.movement_click_effects.clear_effects()
@@ -755,204 +728,6 @@ func _on_active_world_will_replace() -> void:
 	if world_view.mineral_world_controller != null:
 		world_view.mineral_world_controller.clear()
 	world_view.mining_visual_controller.clear()
-
-
-## 在玩家停步后查找触发半径内最近的内部出口，并先预载其目标地图。
-## 设计：客户端只从受控本地定义取得目标内容；真正的地图和落点仍由服务端裁决。
-func _try_begin_nearby_map_transition() -> void:
-	if not pending_map_transition.is_empty() or map_preloader == null:
-		return
-	var selected_transition: MapTransition
-	var selected_destination_map_id: StringName = &""
-	var selected_distance := map_transition_trigger_radius
-	if not selected_transition_id.is_empty():
-		var requested_transition: MapTransition = map_definition.transition_by_id(selected_transition_id)
-		if requested_transition != null:
-			var requested_destination_map_id := _resolve_transition_destination_id(
-				requested_transition
-			)
-			if requested_destination_map_id.is_empty():
-				selected_transition_id = &""
-				hud.show_status("地图%s已识别，但运行资源尚未导入" % [
-					requested_transition.destination_key().to_upper(),
-				])
-				return
-			var requested_distance := world_view.player.position.distance_to(requested_transition.approach_point)
-			if requested_distance <= selected_distance:
-				selected_transition = requested_transition
-				selected_destination_map_id = requested_destination_map_id
-				selected_distance = requested_distance
-	else:
-		for transition: MapTransition in map_definition.enabled_transitions():
-			var destination_map_id := _resolve_transition_destination_id(transition)
-			if destination_map_id.is_empty():
-				continue
-			var distance := world_view.player.position.distance_to(transition.approach_point)
-			if distance <= selected_distance:
-				selected_transition = transition
-				selected_destination_map_id = destination_map_id
-				selected_distance = distance
-	selected_transition_id = &""
-	if selected_transition == null:
-		return
-	pending_map_transition = {
-		"transition_id": selected_transition.transition_id,
-		"destination_map_id": selected_destination_map_id,
-		"destination_entry_number": selected_transition.destination_entry_number,
-	}
-	hud.show_status("正在准备前往%s…" % selected_transition.label)
-	var preload_error: Error = map_preloader.preload_map(
-		selected_destination_map_id
-	)
-	if preload_error != OK and not pending_map_transition.is_empty():
-		pending_map_transition.clear()
-
-
-## 使用与权威服务器相同的世界内旧代码规则解析预载目标，但仅返回受控内容目录中的地图。
-## [param transition] 当前活动地图内待解析的出口。
-## 返回允许客户端预载的运行时地图 ID；未导入目标返回空值。
-func _resolve_transition_destination_id(transition: MapTransition) -> StringName:
-	if map_route_resolver != null:
-		return map_route_resolver.resolve_target_id(transition, map_definition.world_id)
-	return transition.destination_map_id
-
-
-## 处理 `_on_map_preload_ready` 对应的信号回调。
-## [param map_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
-## [param bundle] 调用方传入的参数；具体约束由函数签名和所在模块定义。
-func _on_map_preload_ready(map_id: StringName, bundle: Dictionary) -> void:
-	if (
-		not pending_authoritative_join.is_empty()
-		and StringName(pending_authoritative_join.get("map_id", &"")) == map_id
-	):
-		var join := pending_authoritative_join.duplicate(true)
-		pending_authoritative_join.clear()
-		var joined_spawn_position: Vector2 = join["spawn_position"]
-		if not _commit_map_bundle(bundle, joined_spawn_position, String(join["map_instance_id"])):
-			_handle_map_commit_failure("权威地图资源提交失败")
-		return
-	if (
-		pending_map_transition.is_empty()
-		or StringName(pending_map_transition.get("destination_map_id", &"")) != map_id
-	):
-		return
-	pending_map_bundle = bundle
-	var request: Dictionary = multiplayer_presenter.request_map_change(
-		StringName(pending_map_transition["transition_id"]),
-		int(pending_map_transition["destination_entry_number"]),
-	)
-	if request.is_empty():
-		hud.show_status("当前无法提交地图切换请求")
-		pending_map_transition.clear()
-		pending_map_bundle.clear()
-
-
-## 处理 `_on_map_preload_failed` 对应的信号回调。
-## [param map_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
-## [param message] 调用方传入的参数；具体约束由函数签名和所在模块定义。
-func _on_map_preload_failed(map_id: StringName, message: String) -> void:
-	push_warning("Map preload failed [%s]: %s" % [map_id, message])
-	var notice := PlayerErrorMessages.describe(&"map.load_failed")
-	if not pending_authoritative_join.is_empty():
-		pending_authoritative_join.clear()
-		_handle_map_commit_failure(notice)
-		return
-	hud.show_status(notice)
-	pending_map_transition.clear()
-	pending_map_bundle.clear()
-
-
-## 处理 `_on_authoritative_map_joined` 对应的信号回调。
-## [param map_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
-## [param map_instance_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
-## [param spawn_position] 调用方传入的参数；具体约束由函数签名和所在模块定义。
-## [param _definition_version] 调用方传入的参数；具体约束由函数签名和所在模块定义。
-func _on_authoritative_map_joined(
-	map_id: StringName,
-	map_instance_id: String,
-	spawn_position: Vector2,
-	_definition_version: int,
-) -> void:
-	if map_definition.map_id == map_id:
-		_stop_moving("正在载入权威地图…")
-		map_commit_failure_locked = false
-		multiplayer_map_instance_id = map_instance_id
-		local_player_controller.set_position(spawn_position)
-		_stop_moving("已进入%s" % map_definition.display_name)
-		pending_map_transition.clear()
-		pending_map_bundle.clear()
-		_finish_initial_loading()
-		return
-	if (
-		not pending_map_bundle.is_empty()
-		and pending_map_bundle["definition"].map_id == map_id
-	):
-		if not _commit_map_bundle(pending_map_bundle, spawn_position, map_instance_id):
-			_handle_map_commit_failure("权威地图资源提交失败")
-		return
-	_hold_old_map_for_authoritative_join(map_id, map_instance_id, spawn_position)
-	var preload_error: Error = map_preloader.preload_map(map_id)
-	if preload_error != OK and not pending_authoritative_join.is_empty():
-		_handle_map_commit_failure("客户端缺少权威地图资源")
-
-
-## 执行 `hold_old_map_for_authoritative_join` 对应的模块操作。
-## [param map_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
-## [param map_instance_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
-## [param spawn_position] 调用方传入的参数；具体约束由函数签名和所在模块定义。
-## 设计：立即终止旧路径；新出生点由 session 持有，但旧场景直到 bundle 提交前不呈现它。
-func _hold_old_map_for_authoritative_join(
-	map_id: StringName,
-	map_instance_id: String,
-	spawn_position: Vector2,
-) -> void:
-	var held_player_position: Vector2 = local_player_controller.position()
-	local_player_controller.hold_position_for_map_commit()
-	hud.show_status("正在载入权威地图…")
-	pending_authoritative_join = {
-		"map_id": map_id,
-		"map_instance_id": map_instance_id,
-		"spawn_position": spawn_position,
-		"held_player_position": held_player_position,
-	}
-
-
-## 在权威切图拒绝时清空对应预载包；旧地图画面和导航保持不变。
-## [param _transition_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
-## [param _code] 调用方传入的参数；具体约束由函数签名和所在模块定义。
-## [param _message] 调用方传入的参数；具体约束由函数签名和所在模块定义。
-func _on_authoritative_map_change_failed(
-	_transition_id: StringName,
-	_code: StringName,
-	_message: String,
-) -> void:
-	pending_map_transition.clear()
-	pending_map_bundle.clear()
-	pending_authoritative_join.clear()
-
-
-## 执行 `commit_map_bundle` 对应的模块操作。
-## [param bundle] 调用方传入的参数；具体约束由函数签名和所在模块定义。
-## [param spawn_position] 调用方传入的参数；具体约束由函数签名和所在模块定义。
-## [param map_instance_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
-## 返回该函数计算、查询或操作得到的结果。
-## 设计：所有可失败加载均先暂存，当前场景直到验证完成才被清理。
-func _commit_map_bundle(
-	bundle: Dictionary,
-	spawn_position: Vector2,
-	map_instance_id: String,
-) -> bool:
-	if not active_world_controller.commit_bundle(bundle, spawn_position):
-		return false
-	_refresh_local_movement_availability()
-	multiplayer_map_instance_id = map_instance_id
-	_set_player_action("stand")
-	hud.show_status("已进入%s" % map_definition.display_name)
-	map_commit_failure_locked = false
-	pending_map_transition.clear()
-	pending_map_bundle.clear()
-	_finish_initial_loading()
-	return true
 
 
 ## 处理 `_on_combat_snapshot_received` 对应的信号回调。
@@ -979,7 +754,7 @@ func _on_combat_snapshot_received(snapshot: Dictionary) -> void:
 		world_view.player.set_vehicle_destroyed(destroyed)
 		if destroyed and not _vehicle_destroyed:
 			_vehicle_destroyed = true
-			_stop_moving("战车已被击毁")
+			map_travel.stop_moving("战车已被击毁")
 			vehicle_destroyed_dialog.show_destroyed()
 		elif not destroyed and _vehicle_destroyed:
 			_vehicle_destroyed = false
@@ -1045,40 +820,6 @@ func _on_combat_event_received(event: Dictionary) -> void:
 		hud.show_status("战车已修复完成" if reason == &"full_health" else "自维修已停止")
 
 
-## 执行 `handle_map_commit_failure` 对应的模块操作。
-## [param message] 调用方传入的参数；具体约束由函数签名和所在模块定义。
-func _handle_map_commit_failure(message: String) -> void:
-	push_warning("Map commit failed: %s" % message)
-	var notice := PlayerErrorMessages.describe(&"map.load_failed", message)
-	map_commit_failure_locked = true
-	_stop_moving(notice)
-	if not _initial_authoritative_world_ready and initial_loading_screen != null:
-		initial_loading_screen.set_status(notice)
-	pending_map_transition.clear()
-	pending_map_bundle.clear()
-	pending_authoritative_join.clear()
-	if multiplayer_presenter:
-		multiplayer_presenter.stop()
-
-
-## 报告旧地图世界输入是否必须暂停，直到切图完成、失败回滚或会话被安全关闭。
-## 返回该函数计算、查询或操作得到的结果。
-## 设计：闸门只冻结本地世界交互；服务端拒绝会清空 pending 并恢复旧地图输入。
-func _world_input_locked() -> bool:
-	if map_commit_failure_locked:
-		return true
-	if _vehicle_destroyed:
-		return true
-	if (
-		not pending_map_transition.is_empty()
-		or not pending_authoritative_join.is_empty()
-	):
-		return true
-	if multiplayer_presenter == null or multiplayer_presenter.session == null:
-		return false
-	return multiplayer_presenter.session.is_map_change_pending()
-
-
 ## 查找鼠标点命中的最近 NPC 或生产设施。
 ## [param world_position] 鼠标对应的地图世界坐标。
 ## [param maximum_distance] NPC 默认点选距离；设施使用各自配置的命中半径。
@@ -1102,7 +843,7 @@ func _nearest_npc(world_position: Vector2, maximum_distance: float) -> Node2D:
 ## 执行 `show_npc_popup` 对应的模块操作。
 ## [param npc] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _show_npc_popup(npc: Node2D) -> void:
-	_stop_moving("正在与%s交互" % String(npc.get_interaction_data()["title"]))
+	map_travel.stop_moving("正在与%s交互" % String(npc.get_interaction_data()["title"]))
 	if active_npc and active_npc != npc:
 		active_npc.set_interaction_active(false)
 	active_npc = npc
@@ -1255,3 +996,9 @@ func _simplify_path(raw_path: PackedVector2Array) -> PackedVector2Array:
 ## 返回该函数计算、查询或操作得到的结果。
 func _segment_is_walkable(from_position: Vector2, to_position: Vector2) -> bool:
 	return navigation.segment_is_walkable(from_position, to_position)
+
+
+## 合并切图冻结和战车击毁状态，供输入协调器使用。
+## 返回世界操作是否必须暂停。
+func _world_input_locked() -> bool:
+	return map_travel.is_locked() or _vehicle_destroyed

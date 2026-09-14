@@ -59,14 +59,13 @@ func _run() -> void:
 	_expect(not hall.call("_world_input_locked"), "大厅中的0血停放战车不得锁住人物移动")
 	_expect(not hall.vehicle_destroyed_dialog.visible, "非战斗地图不得弹出战车击毁选择")
 	var initial_sequence: int = hall.multiplayer_presenter.session.local_predictor.next_input_sequence
-	hall.pending_map_transition = {"transition_id": &"exit_to_city"}
+	hall.map_travel.pending_map_transition = {"transition_id": &"exit_to_city"}
 	hall.call("_move_to", Vector2(900, 1300))
 	_expect(
 		hall.multiplayer_presenter.session.local_predictor.next_input_sequence == initial_sequence,
 		"预载或等待切图期间不得继续提交旧地图移动",
 	)
-	hall.call(
-		"_on_authoritative_map_change_failed",
+	hall.map_travel.call("on_authoritative_map_change_failed",
 		&"exit_to_city",
 		&"map_transition.too_far_from_exit",
 		"距离出口太远",
@@ -79,8 +78,7 @@ func _run() -> void:
 	hall.path_points = PackedVector2Array([held_position, held_position + Vector2(100, 0)])
 	hall.path_index = 1
 	hall.active_movement_input_sequence = 7
-	hall.call(
-		"_hold_old_map_for_authoritative_join",
+	hall.map_travel.call("hold_old_map_for_authoritative_join",
 		&"yian_harbor_city",
 		"yian_harbor_city.instance.review",
 		Vector2(1399, 954),
@@ -90,10 +88,10 @@ func _run() -> void:
 	hall.world_view.player.position = Vector2(1399, 954)
 	hall.call("_on_multiplayer_local_character_state_applied", {})
 	_expect(hall.world_view.player.position == held_position, "资源提交前旧地图必须保持原角色位置")
-	hall.pending_authoritative_join.clear()
+	hall.map_travel.pending_authoritative_join.clear()
 
 	_place_authoritative_player(hall, Vector2(480, 370))
-	hall.call("_try_begin_nearby_map_transition")
+	hall.map_travel.call("try_begin_nearby_map_transition")
 	await _wait_for_map(hall, &"yian_harbor_city")
 	_expect(hall.map_definition.map_id == &"yian_harbor_city", "大厅出口必须进入真实 City1Svr 业务图")
 	_expect(hall.world_view.player.position == Vector2(1399, 954), "城市入口0必须采用配置化权威落点")
@@ -103,7 +101,7 @@ func _run() -> void:
 	_expect(hall.hud.minimap_dock.map_name_label.text == "龙之城", "HUD 必须原子更新城市名")
 
 	_place_authoritative_player(hall, Vector2(78, 170))
-	hall.call("_try_begin_nearby_map_transition")
+	hall.map_travel.call("try_begin_nearby_map_transition")
 	await _wait_for_map(hall, &"d04_field_zone")
 	_expect(hall.map_definition.map_id == &"d04_field_zone", "城市西北门必须进入 D04")
 	_expect(hall.world_view.player.position == Vector2(1290, 2562), "D04入口1必须采用配置化权威落点")
@@ -116,7 +114,7 @@ func _run() -> void:
 	_expect(hall.world_view.monster_world_controller._views.size() == 200, "D04 的200只怪物应通过权威快照进入客户端")
 
 	_place_authoritative_player(hall, Vector2(130, 2553))
-	hall.call("_try_begin_nearby_map_transition")
+	hall.map_travel.call("try_begin_nearby_map_transition")
 	await _wait_for_map(hall, &"buli_c04_field_zone")
 	_expect(hall.map_definition.map_id == &"buli_c04_field_zone", "D04 西侧出口必须进入布里 C04")
 	_expect(hall.world_view.player.position == Vector2(4687, 2525), "D04→C04 必须落在 C04 指回 D04 的边缘出口")
@@ -130,7 +128,7 @@ func _run() -> void:
 	await _assert_current_map_monsters(hall)
 
 	_place_authoritative_player(hall, Vector2(1825, 55))
-	hall.call("_try_begin_nearby_map_transition")
+	hall.map_travel.call("try_begin_nearby_map_transition")
 	await _wait_for_map(hall, &"buli_c03_field_zone")
 	_expect(hall.map_definition.map_id == &"buli_c03_field_zone", "C04 北侧出口必须进入布里 C03")
 	_expect(hall.world_view.player.position == Vector2(2426, 4565), "C04→C03 必须落在 C03 正下方反向出口")
@@ -139,7 +137,7 @@ func _run() -> void:
 	_expect(hall.hud.minimap_dock.marker_layer.marker_positions().size() == 3, "C03 小地图必须替换为本图三个传送点，不残留 D04 标记")
 	await _assert_current_map_monsters(hall)
 	var final_sequence: int = hall.multiplayer_presenter.session.local_predictor.next_input_sequence
-	hall.call("_handle_map_commit_failure", "测试不可恢复提交失败")
+	hall.map_travel.call("handle_map_commit_failure", "测试不可恢复提交失败")
 	hall.call("_move_to", Vector2(1200, 2500))
 	_expect(hall.call("_world_input_locked"), "权威已切图但客户端提交失败后必须锁住旧画面输入")
 	_expect(
@@ -171,9 +169,9 @@ func _wait_for_map(hall: Node2D, expected_map_id: StringName) -> void:
 		% [
 			expected_map_id,
 			hall.hud.status_text(),
-			hall.pending_map_transition,
-			hall.pending_authoritative_join,
-			hall.pending_map_bundle.keys(),
+			hall.map_travel.pending_map_transition,
+			hall.map_travel.pending_authoritative_join,
+			hall.map_travel.pending_map_bundle.keys(),
 			hall.multiplayer_presenter.session._pending_map_change,
 			transition_events,
 		]

@@ -52,7 +52,7 @@ func _run() -> void:
 	root.add_child(hall)
 	await process_frame
 	await process_frame
-	hall._initial_authoritative_world_ready = false
+	hall.map_travel._initial_authoritative_world_ready = false
 	hall.initial_loading_screen.show_loading("正在读取角色与地图数据")
 	_expect(
 		hall.multiplayer_presenter.session.network_adapter.configure_in_process_server(
@@ -65,10 +65,10 @@ func _run() -> void:
 		"完整启动夹具必须建立进程内权威会话",
 	)
 	for _frame in range(30):
-		if hall._initial_authoritative_world_ready:
+		if hall.map_travel._initial_authoritative_world_ready:
 			break
 		await process_frame
-	_expect(hall._initial_authoritative_world_ready, "旧地图存档必须在启动期间完成权威地图提交")
+	_expect(hall.map_travel._initial_authoritative_world_ready, "旧地图存档必须在启动期间完成权威地图提交")
 	_expect(not hall.initial_loading_screen.visible, "权威地图提交后必须关闭角色与地图加载遮罩")
 	_expect(
 		hall.map_definition.map_id == &"dragon_city_space_center",
