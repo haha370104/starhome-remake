@@ -1,6 +1,9 @@
 # Starhome Remake 技术架构
 
-> 状态：可执行基线，面向首期可玩版本。  
+> 定位：架构决策与目标约束，含渐进迁移中的设计，不是全部功能已实现的声明。
+>
+> 2026-09-14 当前状态：[项目交接](project_handoff.md)；代码入口与缺口：[评审导读](./review_guide.md)。
+>
 > 玩法依据：[游戏主要玩法与复刻规格](../../游戏主要玩法.md)  
 > 素材约束：[项目全局约定](../PROJECT_CONTEXT.md)、[Asset layout](../assets/README.md)  
 > 地图解析依据：[地图资源解析管线](./map_resource_pipeline.md)
@@ -21,12 +24,15 @@
   `docs/free_hud_rendering.md` 定义的 HUD 外观白名单外，正式素材仍只允许荣耀版。
 - 每个玩法纵切都能在无界面环境下做确定性的服务端测试。
 
-首期不做：大规模 MMO 分区、微服务、帧同步、客户端可信结算、运行时 ALE/FCC 解码、一次
-导入全部 497 张地图，以及在没有证据时补齐原版掉落或数值。
+不做：大规模 MMO 分区、微服务、帧同步、客户端可信结算、运行时原始 ALE/FCC 解密解码，
+以及在没有证据时把复刻默认冒充原版掉落或数值。早期按需导入已扩展为全量解码内容包，
+详见[运行内容](./runtime_content.md)；挂载包并不意味着同时模拟所有地图。
 
 ## 2. 架构决策
 
 ### 2.1 一个仓库、两个运行入口
+
+两种运行模式的当前启动、调用链、模拟与保存差异详见[双运行模式架构](./runtime_modes_architecture.md)。
 
 客户端与专用服务器先保持在同一个 Godot 工程中，分别使用客户端启动场景和服务端启动
 场景。服务端以 `--headless` 或专用服务器导出运行。这样可以共享导航坐标、协议 DTO、
@@ -39,8 +45,9 @@
 ### 2.2 Godot 高层多人 API + ENet
 
 实时连接使用 Godot `ENetMultiplayerPeer`。第一版直接使用高层 RPC，但 RPC 只能出现在
-网络适配层；领域服务接收普通命令对象，不能依赖远端节点路径。建议固定端口由启动配置
-提供，开发默认仅监听本机或局域网地址。
+网络适配层；领域服务接收普通命令对象，不能依赖远端节点路径。端口由启动配置提供。
+当前 `ServerConfig.listen_address` 默认 `*`，开发启动建议显式指定 `127.0.0.1`；
+未实现正式认证前不得把当前服务器作为可安全开放公网的服务。
 
 当前传输层在客户端与专用服务器进程中都安装固定节点
 `/root/StarhomeNetworkTransport`。所有高层 RPC 只声明在该节点上，业务场景名称和客户端
@@ -94,7 +101,9 @@ GDExtension 驱动，再实现仓储适配器并复用同一组事务测试。�
 
 ## 3. 目标目录与职责
 
-目录在相应纵切开始时按需创建；本文不要求一次生成空目录。
+下图是目标职责树，不是当前文件路径。现有共享模型在 `scripts/domain/`，契约在
+`scripts/network/contracts/`，地图在 `scripts/maps/`；真实导航见[评审导读](./review_guide.md)。
+不要求一次生成空目录或为了对齐这张图大规模搬迁文件。
 
 ```text
 scenes/
@@ -133,8 +142,9 @@ tests/
 
 ### 3.1 当前状态与渐进重构边界
 
-`main_hall.gd` 目前并非“仅编排”：它仍创建世界和 HUD、保存玩家路线、处理输入和 NPC
-交互，并接入联机表现。该现状是可运行的迁移基线，不是目标架构。重构时每次只抽取一个
+`main_hall.gd` 目前并非“仅编排”：它仍组装世界和 HUD、处理输入和 NPC
+交互，并接入联机表现；路线状态已交给 `LocalPlayerController`，地图提交交给
+`ActiveWorldController`。该现状是可运行的迁移基线，不是目标架构。重构时每次只抽取一个
 可独立测试的职责，`AuthoritativeServer` 同样先作为兼容 facade 保留；禁止先做全仓目录
 搬迁，再期待文件位置自动形成边界。
 
@@ -145,16 +155,16 @@ tests/
 | 本地目标、路径、方向、预测和表现位置 | `LocalPlayerController` | 输入层提交意图；角色节点只接受投影 |
 | 活动地图、导航、场景层、NPC、相机和地图 HUD 状态 | `ActiveWorldController` | preloader 提供完整 bundle；会话只提供确认状态 |
 | 玩家脚点与地图外观投影 | `PlayerWorldAvatar` | 移动控制器只写脚点；地图只声明人形或业务战斗 actor |
-| 远端玩家、NPC、怪物视图生命周期 | `EntityViewRegistry` | 快照/领域事件驱动，不反写权威状态 |
+| 远端玩家、NPC、怪物视图生命周期 | 当前分散于 presenter/controller；统一 `EntityViewRegistry` 尚为目标 | 快照/领域事件驱动，不反写权威状态 |
 | 联机会话身份、序列和消息 | `ClientMultiplayerSession` | 不创建或直接修改具体场景节点 |
-| 当前登录人物、背包与战车的同版本客户端投影 | `CurrentPlayerState` | UI/HUD 只读订阅；命令仍经会话提交权威服务器 |
-| HUD 内部控件与通知频道 | `HudController / HallHud` | 外部只调用语义 API 和订阅业务信号 |
+| 当前登录人物、背包与战车的同版本客户端投影 | `CurrentPlayer : Player` | UI/HUD 只读订阅；命令仍经会话提交权威服务器 |
+| HUD 内部控件与通知频道 | 当前 `HallHud`；完全封装仍是迁移目标 | 外部应只调用语义 API 和订阅业务信号 |
 | 服务端世界与玩法结果 | server application/modules | RPC 层只鉴权、验证、路由和序列化 |
 | 账户、角色、背包、装备、战车和位置存档 | `PlayerStateRepository` | 用例开启事务；驱动适配器负责 SQLite/开发文件细节 |
 
 权威位置校正到达时，由 `LocalPlayerController` 按原因选择从新位置重算目标或取消旧路线；
 大厅入口和 presenter 不得再次直接写同一角色位置。地图迁移必须由
-`ActiveWorldController.change_map(bundle, joined_state)` 原子提交，不能让会话身份与活动
+`ActiveWorldController.commit_bundle(bundle, spawn_position)` 原子提交，不能让会话身份与活动
 地图视图长期不一致。
 
 稳定的 HUD 和应用骨架最终落入 `.tscn`；动态工厂只创建地图实体和列表项。这个场景化步骤
@@ -322,9 +332,10 @@ payload
 
 权威服务器从 `map_directory.json.definitions` 建立地图实例注册表（同时接受提取工具使用的
 `world_graph_seed.json.definition_paths` 形状），并保留可注入的实例
-数组作为自动测试夹具。固定 tick 会推进全部已注册实例，但每个 peer 的快照只从其会话当前
+数组作为自动测试夹具。启动只注册轻量定义，玩家进入时才创建导航和地图实例；固定 tick
+只推进活跃地图，无人且在途事务结清后休眠。每个 peer 的快照只从其会话当前
 `map_instance_id` 生成；不同地图的实体不会互相广播。地图目录是部署准入边界，网络请求永远
-不能传入资源路径。
+不能传入资源路径。休眠保留与重载规则见[地图驻留](./map_residency_and_performance.md)。
 
 ## 7. 模块边界
 
@@ -420,7 +431,8 @@ D04 首条战斗纵切采用“每地图一个战斗世界”：`AuthoritativeMa
 ### 7.4 物品、装备与背包
 
 `ItemDefinition` 描述模板；`ItemInstance` 保存数量、耐久、绑定、强化点和随机属性。
-`Inventory` 是带 revision 的 40 格聚合，服务端负责堆叠、拆分、空间和槽位校验。
+`Inventory` 是带 revision 的容器聚合，服务端负责堆叠、拆分、空间和槽位校验。
+当前背包为像素自由布局，40 是历史逻辑容量参数，不能把 UI 实现成固定 40 个等尺寸图片格。
 
 人物装备与战车装备使用不同的装配上下文。客户端 22 槽只是协议容量线索，实际战车型号的
 可用槽必须来自定义。装备变更、强化、商店和拾取都通过库存事务服务，不允许模块分别改写
@@ -431,6 +443,9 @@ D04 首条战斗纵切采用“每地图一个战斗世界”：`AuthoritativeMa
 配方定义输入、输出、技能、耗时、成功规则和经验。生产作业是服务端状态机；批量生产拆成
 逐次事务，每次完成时重新校验材料和背包 revision。采矿同样由服务端周期结算，客户端
 动画结束不是成功依据。
+
+上述作业状态机是目标设计。当前已有裁缝/烹饪/工业单次即时生产和权威材料事务，
+尚未完整实现批量/等待/跨重启作业；玩家交易的下述状态机也不代表已接线。
 
 商店价格和回收价属于服务端经济配置。玩家交易使用 `proposed -> both_locked -> committed`
 状态机；双方锁定后任何内容变化都解除确认，最终在单一事务中交换。
@@ -443,8 +458,9 @@ NPC 定义仅声明外观、位置/巡逻和能力：`shop_id`、`quest_giver_id
 任务是服务端聚合，目标通过领域事件推进，例如 `monster_defeated`、`item_acquired`、
 `recipe_completed`、`map_entered`。普通掉落和任务掉落分别结算；任务 UI 只显示服务端投影。
 
-当前 `NpcBase` 的客户端巡逻和 `ShopNpc`/`QuestNpc` 占位子类只用于原型表现，不得直接扩展
-为正式商店或任务领域层。正式交互必须通过稳定 NPC ID、能力 ID 和服务端用例完成。
+客户端 `NpcWorldView` 巡逻仍只负责环境表现；领域 `NpcBase` 与 ShopNpc/QuestNpc 负责能力入口。
+当前正式商店、任务和生产已通过稳定 NPC/设施 ID 与服务端用例接通，不在巡逻 Node 中结算。
+目前部分设施权限只校验同地图，距离权限作为后续收紧项，不能把上方目标描述当作已经实现。
 
 ### 7.8 HUD 语义边界
 
@@ -541,8 +557,8 @@ JSON、SQLite 行和 RPC 字典只能作为边界 DTO。通过目录与 schema �
 ## 根据服务端确认位置修正本地预测状态。
 ## [param authoritative_position] 服务端返回的权威世界坐标。
 ## [param acknowledged_sequence] 服务端已处理的最后一个输入序号。
-## Returns 修正后仍需重放的输入数量。
-## Design: 校正策略只处理预测缓存，不直接驱动角色表现节点。
+## 返回修正后仍需重放的输入数量。
+## 设计：校正策略只处理预测缓存，不直接驱动角色表现节点。
 func reconcile(authoritative_position: Vector2, acknowledged_sequence: int) -> int:
 ```
 
@@ -550,8 +566,8 @@ func reconcile(authoritative_position: Vector2, acknowledged_sequence: int) -> i
 
 - 第一行必须说明函数对业务或模块承担的职责，不能只复述函数名。
 - 每个具名入参都必须在文档块中以 `[param 参数名]` 引用并解释；可独占一行，也可自然嵌入职责描述，无入参时省略。
-- 非 `void` 返回值必须使用 `Returns ...` 解释含义；构造/回调没有返回值时省略。
-- 涉及状态机、策略、适配器、权威边界、缓存一致性或可替换实现时，必须增加 `Design:` 段，解释抽象边界及不负责的内容。
+- 非 `void` 返回值必须使用中文“返回……”解释含义；构造/回调没有返回值时省略。
+- 涉及状态机、策略、适配器、权威边界、缓存一致性或可替换实现时，必须增加中文“设计：”段，解释抽象边界及不负责的内容。
 - 注释描述契约和原因，不逐行翻译实现；实现变化导致契约变化时必须同步更新注释。
 - `@rpc` 等注解可以位于文档块与函数声明之间；文档块仍归属于紧随其后的函数。
 - 工程检查通过 `tools/check_gdscript_doc_comments.py` 拒绝缺失参数或返回值说明的新函数。

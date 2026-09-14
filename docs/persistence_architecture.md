@@ -1,5 +1,7 @@
 # 服务端权威状态持久化基座
 
+文档定位：当前开发仓储与生产接缝；整体 review 见[评审导读](./review_guide.md)。
+
 ## 1. 当前能力结论
 
 本机 `Godot_v4.7.2-stable_win64` 运行时不包含 SQLite 类、单例或已安装 GDExtension。运行时
@@ -59,6 +61,10 @@ JSON 只存在于文件替身的信任边界。读取后立即转换为 `PlayerS
 外键、唯一索引和 `CHECK` 约束保护最小结构不变量。`command_receipts` 为后续拾取、出售和制造
 命令的幂等结果预留稳定落点。
 
+商店/任务/制造现已存在权威用例，但持久化 `command_receipts` 仍是生产目标，不能混淆。
+2026-09-14 修复了采矿周期编号跨服务器重启与旧矿石实例冲突；原存档无需清空，
+详见 [采矿身份修复](mining_equipment_and_player_messages.md)。此修复不等于全部经济操作已具备崩溃安全幂等。
+
 ## 4. 事务与恢复语义
 
 仓储提供两种写入口：
@@ -116,6 +122,11 @@ schema 表集合、schema 0 到 2 迁移、事务成功、回调回滚、过期 
   --script res://tests/server/persistence/authoritative_autosave_test.gd
 ```
 
-目前未接入正式登录账号，临时会话仍以服务器分配的 `player.N` 作为角色标识；这只足以验证
-单机和同一进程顺序重建。正式多人认证落地时，`open_session` 必须改为使用鉴权服务返回的稳定
-`character_id`，自动存档与仓储接口无需随之改变。
+目前未接入正式登录账号，`AuthoritativeServer.open_session()` 仍按连接顺序分配
+`player.N` 并用它加载存档。默认路径为 `user://server/player_states.json`，可用
+`--player-state-store=` 隔离测试。相同路径下重启后按相同顺序创建角色能恢复对应记录，
+但这不是稳定的账号归属：不同玩家调换连接顺序可能接管不同记录，不能用于正式多人身份。
+正式认证落地时必须使用鉴权服务返回的稳定 `character_id`，同时处理旧开发身份的迁移。
+
+地图休眠保存的怪物血量、矿量和地面掉落目前只在服务端进程内保留；不在玩家文件快照中，
+也没有世界数据库重启恢复能力。详见[地图驻留](./map_residency_and_performance.md)。

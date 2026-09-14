@@ -1,9 +1,11 @@
 # 技能成长与综合等级实现
 
+2026-08-31 核对事件来源；整体状态见[评审导读](./review_guide.md)。
+
 ## 1. 规则边界
 
 技能成长由权威服务器结算。客户端只能发送移动、攻击或生产意图，不能提交技能经验、技能等级或
-综合等级。当前启用 13 项技能：驾驶、能量炮、导弹、火箭炮、隐身、雷达、采矿、维修、制造、
+综合等级。当前登记并展示 13 项技能（不代表所有玩法经验源均已完成）：驾驶、能量炮、导弹、火箭炮、隐身、雷达、采矿、维修、制造、
 加工、提炼、裁缝和烹饪；飞行器保留稳定 ID，但首版不显示也不参与综合等级。
 
 `SkillBook` 持有每项技能的 `SkillState`：
@@ -26,8 +28,9 @@ L = min(当前技能等级, 700)
 
 ```text
 服务端认可的移动位移 ─┐
-                       ├─> AuthoritativePlayerPanelService
-最终有效武器伤害 ──────┘       -> Player.grant_skill_experience
+最终有效武器伤害 ─────┤
+有效维修 / 采矿产出 ──┴─> AuthoritativePlayerPanelService
+                              -> Player.grant_skill_experience
                                   -> SkillBook / SkillProgression
                                   -> 综合等级重算（仅升级时）
                                   -> PlayerStateRecord
@@ -38,8 +41,18 @@ L = min(当前技能等级, 700)
 - 驾驶：只累计 `AuthoritativeMapInstance.simulate()` 经静态导航和动态碰撞校验后真正接受的位移。
   经验原始量为 `距离 × min(整车重量, 计重上限) / 驾驶经验单位`。首版单位为 100000
   重量·像素、计重上限为 1000；受阻回滚、传送、地图切换和位置纠正不经过该事件入口。
-- 其余技能：领域层和 `authoritative_action` 服务端入口已经统一，待采矿、维修、制作、隐身、
-  雷达、导弹和火箭炮玩法模块落地后逐个接入客观结算事件，不能从 UI 按钮点击直接发经验。
+- 导弹/火箭炮：`missile_hit`、`rocket_launcher_hit` 与能量炮一样，从地图实例的最终有效
+  伤害事件进入对应技能，倍率由 `weapon_damage_multiplier` 配置。
+- 自维修：`self_repair_resolved` 的 `healed > 0` 时产生 `authoritative_action`，当前每个有效
+  周期发 1 点维修经验。维修量来自底盘能力与有效装备加成，技能等级用于准入，不直接决定维修量。
+- 采矿：物品入包并结算有效周期后发出 `mined_material`；经验由数量、矿种系数、当前级阈值和
+  `mining_iron_equivalent_per_level` 换算。
+- 制作、隐身、雷达等尚未形成完整玩法事件链；保留通用入口不等于这些经验已可获取。
+  无论哪一种技能，都不能从 UI 按钮点击直接发经验。
+
+当前接线入口是 `AuthoritativeMapInstance.drain_skill_progression_events()`、
+`AuthoritativeServer._settle_mining_cycles()` 和
+`AuthoritativePlayerPanelService._experience_from_event()`；修改来源时三处与配置一起核对。
 
 进程内调试模式运行真正的 `AuthoritativeServer`：地图实例产生内部事件，服务器应用技能成长，
 仓储保存玩家聚合，再通过与 ENet 相同的消息契约刷新客户端。因此客户端不存在离线经验公式、
