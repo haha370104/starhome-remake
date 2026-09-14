@@ -5,14 +5,4 @@
 *.jpeg binary
 *.bin binary
 
-# Large generated map layers grow with every imported map. Keep small sprites,
-# UI and minimaps in regular Git; only full-resolution map composites use LFS.
-assets/maps/**/floor.png filter=lfs diff=lfs merge=lfs -text
-assets/maps/**/semantic_layer_atlas.png filter=lfs diff=lfs merge=lfs -text
-assets/maps/**/scene_color.png filter=lfs diff=lfs merge=lfs -text
-assets/maps/**/static_composite.png filter=lfs diff=lfs merge=lfs -text
-assets/maps/**/source_order_reference.png filter=lfs diff=lfs merge=lfs -text
-
-# Decoded Glory runtime packs are deterministic build products. Keep them as
-# a small number of mountable LFS objects instead of thousands of loose files.
-assets/content_packs/glory_*.zip filter=lfs diff=lfs merge=lfs -text
+# Asset LFS rules belong to the independent assets/.gitattributes submodule.

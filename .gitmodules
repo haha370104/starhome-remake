@@ -1,0 +1,3 @@
+[submodule "assets"]
+	path = assets
+	url = git@github.com:haha370104/starhome-remake-asset.git

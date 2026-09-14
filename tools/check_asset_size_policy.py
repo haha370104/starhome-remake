@@ -26,11 +26,25 @@ def run_git(repository: Path, arguments: list[str]) -> str:
     return process.stdout.decode("utf-8", errors="surrogateescape")
 
 
+def asset_repository(repository: Path) -> Path:
+    """Resolve the initialized asset submodule without falling back to its parent."""
+    entry = run_git(repository, ["ls-files", "--stage", "--", "assets"]).strip()
+    if not entry.startswith("160000 "):
+        raise RuntimeError("assets must be tracked as a Git submodule (mode 160000)")
+    assets = repository / "assets"
+    if not (assets / ".git").exists():
+        raise RuntimeError("assets is not initialized; run git submodule update --init --recursive")
+    actual = Path(run_git(assets, ["rev-parse", "--show-toplevel"]).strip()).resolve()
+    if actual != assets.resolve():
+        raise RuntimeError("assets does not resolve to its own Git repository")
+    return assets
+
+
 def project_asset_paths(repository: Path) -> list[Path]:
-    """Return tracked and unignored untracked files below the business asset root."""
+    """Return tracked and unignored untracked files in the asset repository."""
     output = run_git(
         repository,
-        ["ls-files", "--cached", "--others", "--exclude-standard", "-z", "--", "assets"],
+        ["ls-files", "--cached", "--others", "--exclude-standard", "-z"],
     )
     return [repository / value for value in output.split("\0") if value]
 
@@ -45,10 +59,11 @@ def uses_lfs(repository: Path, path: Path) -> bool:
 def find_violations(repository: Path) -> list[str]:
     """Return oversized existing assets that are not protected by Git LFS."""
     failures: list[str] = []
-    for path in project_asset_paths(repository):
+    assets = asset_repository(repository)
+    for path in project_asset_paths(assets):
         if not path.is_file() or path.stat().st_size < MAX_REGULAR_GIT_BYTES:
             continue
-        if uses_lfs(repository, path):
+        if uses_lfs(assets, path):
             continue
         relative = path.relative_to(repository).as_posix()
         size_mib = path.stat().st_size / (1024 * 1024)

@@ -25,6 +25,10 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 Write-Output "Checking large-asset Git LFS policy"
+& python (Join-Path $PSScriptRoot "tests/test_check_asset_size_policy.py")
+if ($LASTEXITCODE -ne 0) {
+    throw "Large-asset Git LFS policy tests failed"
+}
 & python (Join-Path $PSScriptRoot "check_asset_size_policy.py")
 if ($LASTEXITCODE -ne 0) {
     throw "Large-asset Git LFS policy failed"
