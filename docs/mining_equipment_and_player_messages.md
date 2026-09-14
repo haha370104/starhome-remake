@@ -45,6 +45,35 @@
 
 当前动作表现接入本地玩家；远端玩家世界表现仍是现有独立范围，不能把该字段当作已完成全部远端采矿展示。
 
+## 2026-09-14：重启后采矿入账冲突与工程臂主槽
+
+- 实际用户日志中的错误为 `inventory.duplicate_item: reward item identity already exists`，
+  存档里仍有 `d04_field_zone.instance.1.cycle.0`。旧采集 token 只由地图实例和内存计数器组成，
+  重启或地图重建后从零计数，与已持久化矿石的实例编号重复；这不是背包容量问题。
+- 每个权威采矿模块现在生成 128 位随机命名空间，周期编号由地图、命名空间、计数器组成。
+  同一预约重试仍使用原 token；没有移除背包重复入账校验，也无需清空或迁移用户存档。
+  进程内传输与 ENet 继续共用同一服务端结算。若其他路径出现编号冲突，界面明确提示入账编号冲突，日志保留原错误。
+- `ItemCatalog` 将荣耀 `Repair`（主槽 Location 1、EquipKind2 3）从误分类的 `vehicle_weapon`
+  归一化为 `repair_arm`，构造普通 `VehicleEquipment`，不再作为 `VehicleWeapon` 注册开炮。
+  商店继续出售原来六档地面维修臂。此修复不代表已实现对其他玩家的主动维修能力。
+- `VehicleEquipment.primary_device_kind()` 为 HUD 与输入路由提供同一业务类型；
+  `CurrentPlayer → HallHud.set_primary_device → HudState → FreeBottomMainBar` 同步换装、卸下和选中态。
+  输入协议中 `energy_cannon` 暂保留为主槽兼容键，不再据此判断所装物品。
+- 主槽选中工程臂时，空地左键静默返回，不提交能力意图、不产生弹体、不改动移动路线。
+  拾取和点矿逻辑仍先处理；显式选择的导弹等战术槽不被工程臂拦截。
+- 底栏使用已批准的免费版 HUD 图标：`pic/equipface/tank_collent.ale` 与 `tank_repair.ale`，
+  两帧原尺寸 29×22，对应 normal/selected；运行时使用 `weapon_modes/mining_arm`、`repair_arm`
+  语义路径。荣耀对应 `cltobj/equipclt.fcc` 的 `m_sEquipFaceFile` 也确认两类有独立图标；
+  其 34×32 三帧版本不混入免费版 HUD。来源哈希与裁切帧已记入 `free_hud_sources.json`。
+
+本次回归包含真实测试存档重启后两周期累积产出、防重复校验仍拒绝旧编号、13 款工程臂模型/HUD/空点击、
+主槽换装/卸下/战术槽互不干扰及像素尺寸。未改动用户存档。
+
+验证结果：采矿服务器 31、采矿模块 81、进程内传输 22、D04 世界表现 438、HUD 89、
+物品目录 26、武器商人 74、人物装备面板 87、装配权威战斗 8、中文消息 76 项通过；
+主入口静态检查 0 warning / 0 error，35 项 HUD 来源审计与素材大小策略通过。
+这不是全库测试结论，工作区中其他模块的未提交改动未纳入本次提交。
+
 ## 历史验证（2026-09-07）
 
 - `authoritative_mining_server_test.gd`：17 项，含能量炮拒绝、背包臂拒绝、真实换装、三秒产出、换炮后拒绝后续产出、损坏臂拒绝。

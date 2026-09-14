@@ -359,10 +359,11 @@ func _handle_world_combat_left_click(world_position: Vector2) -> void:
 	var selected_mode := String(hud.state.selected_action_slot)
 	if selected_mode == "energy_cannon" and game_window_manager != null \
 			and game_window_manager.current_player != null \
-			and game_window_manager.current_player.vehicle != null \
-			and game_window_manager.current_player.vehicle.loadout.at(1) is VehicleMiningArm:
-		hud.show_system_message("当前装备的是采掘臂，请点击矿物采集，或换上能量炮再开火")
-		return
+			and game_window_manager.current_player.vehicle != null:
+		var primary_device: VehicleEquipment = game_window_manager.current_player.vehicle.loadout.at(1)
+		if primary_device != null and primary_device.primary_device_kind() in ["mining_arm", "repair_arm"]:
+			# 工程臂点击空地不提交开炮意图；上面的拾取和矿物选择仍保留各自的交互。
+			return
 	var mode: Dictionary = WEAPON_MODES.get(selected_mode, {})
 	var attack_controller: Node = combat_attack_controllers.get(selected_mode)
 	if mode.is_empty() or attack_controller == null:
@@ -855,6 +856,8 @@ func _on_current_player_changed(current_player: Player) -> void:
 		)
 		player.apply_vehicle_equipment(current_player.vehicle)
 	if hud != null:
+		var primary_device: VehicleEquipment = current_player.vehicle.loadout.at(1)
+		hud.set_primary_device("" if primary_device == null else primary_device.primary_device_kind())
 		var tactical_equipment: VehicleEquipment = current_player.vehicle.loadout.at(13)
 		var action_id := "" if tactical_equipment == null else String(
 			TACTICAL_ACTION_BY_DEFINITION.get(tactical_equipment.definition_id, "")

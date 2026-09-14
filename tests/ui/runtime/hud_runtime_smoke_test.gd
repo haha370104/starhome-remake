@@ -30,6 +30,7 @@ func _run() -> void:
 	await process_frame
 	_assert_1280_layout(hud)
 	_assert_state_updates(hud)
+	_assert_primary_devices(hud)
 	_assert_npc_popup(hud)
 	_assert_map_rebinding(hud)
 	_assert_minimap_modes(hud)
@@ -147,6 +148,29 @@ func _assert_map_rebinding(hud: CanvasLayer) -> void:
 	_expect(hud.minimap_dock.map_image.position == Vector2(-15, -15), "切图后应按新尺寸重新投影现有玩家点")
 	_expect(hud.shortcut_bar.visible, "切图不得重置玩家的 HUD 显隐偏好")
 	hud.set_map(Vector2(1944, 1920), minimap_texture, "龙之城基地大厅一层")
+
+
+## 验证主装置换装和卸下后图标、提示、选中态同步，不影响战术槽。
+## [param hud] 真实 HUD 实例。
+func _assert_primary_devices(hud: CanvasLayer) -> void:
+	hud.set_tactical_action("missile")
+	hud.state.set_selected_action_slot("energy_cannon")
+	for device_kind: String in ["mining_arm", "repair_arm", "energy_cannon"]:
+		hud.set_primary_device(device_kind)
+		var button: Control = hud.bottom_main_bar.weapon_buttons.energy_cannon
+		_expect(button.current_state == "selected", "换装后保留主槽选中态")
+		_expect(button.image_rect.texture.resource_path.contains("/%s/selected.png" % device_kind), "主槽应显示该类型原版图标")
+		_expect(button.size == Vector2(29, 22), "主槽图标保持免费版像素尺寸")
+		_expect(button.hit_button.tooltip_text == FreeBottomMainBar.WEAPON_TOOLTIPS[device_kind], "悬浮名称同步装备类别")
+		hud.state.set_selected_action_slot("missile")
+		_expect(button.current_state == "normal", "选中战术槽后主装置切回未选中图")
+		button.pressed.emit()
+		_expect(hud.state.selected_action_slot == "energy_cannon", "不同工程臂图标仍操作同一主槽")
+	hud.set_primary_device("")
+	_expect(not hud.bottom_main_bar.weapon_buttons.has("energy_cannon"), "卸下主装置不能遗留炮图标")
+	_expect(hud.bottom_main_bar.weapon_buttons.has("missile"), "卸下主装置不影响战术槽")
+	hud.set_primary_device("energy_cannon")
+	hud.set_tactical_action("")
 
 
 ## 执行 `assert_minimap_modes` 对应的模块操作。

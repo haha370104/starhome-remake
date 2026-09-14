@@ -179,6 +179,12 @@ func _apply_equipment_contract(item_definition: Dictionary) -> void:
 		kind = "mining_arm"
 		item_definition["kind"] = kind
 		item_definition["equipment_location"] = 1
+	# 荣耀 Repair 的 EquipKind2=3；导出器曾把维修臂归为 vehicle_weapon，不能作为炮发射。
+	if kind == "repair_arm" or (kind in ["vehicle_weapon", "vehicle_equipment"] \
+			and int(legacy.get("m_nEquipKind2", -1)) == 3 \
+			and int(item_definition.get("equipment_location", -1)) == 1):
+		kind = "repair_arm"
+		item_definition["kind"] = kind
 	var definition_id := String(item_definition.get("id", ""))
 	if kind == "character_clothing":
 		return
@@ -193,6 +199,7 @@ func _apply_equipment_contract(item_definition: Dictionary) -> void:
 		"energy_cannon": 1,
 		"vehicle_engine": 3,
 		"mining_arm": 4,
+		"repair_arm": 3,
 	}.get(kind, -1)
 	_normalize_legacy_vehicle_stats(item_definition)
 

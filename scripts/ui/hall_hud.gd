@@ -139,6 +139,12 @@ func set_tactical_action(action_id: String, count := -1) -> void:
 	state.set_tactical_action(action_id, count)
 
 
+## 将权威玩家的主装置类型同步到底栏，不暴露内部按钮。
+## [param device_kind] 主装置语义类型；空字符串清空主槽图标。
+func set_primary_device(device_kind: String) -> void:
+	state.set_primary_device(device_kind)
+
+
 ## 执行 `set_vehicle_combat_state` 对应的模块操作。
 ## [param snapshot] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func set_vehicle_combat_state(snapshot: Dictionary) -> void:

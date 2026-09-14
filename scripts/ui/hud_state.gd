@@ -13,6 +13,7 @@ signal vehicle_health_changed(current: int, capacity: int)
 signal working_energy_changed(current: float, capacity: float)
 signal selected_action_slot_changed(slot_id: String)
 signal tactical_action_changed(action_id: String, count: int)
+signal primary_device_changed(device_kind: String)
 
 const TACTICAL_ACTIONS := ["rocket_launcher", "missile", "stealth", "radar"]
 
@@ -20,6 +21,7 @@ var hud_visible := true
 var minimap_size := "small"
 var minimap_collapsed := false
 var selected_action_slot := "energy_cannon"
+var primary_device_kind := "energy_cannon"
 var tactical_action_id := ""
 var tactical_action_count := -1
 var top_menu_expanded := true
@@ -35,6 +37,17 @@ var vehicle_health := 70
 var vehicle_health_capacity := 70
 var working_energy := 100.0
 var working_energy_capacity := 100.0
+
+
+## 根据当前玩家主装置更新图标类型；不改变装备或战术槽的选中状态。
+## [param device_kind] 主装置领域模型给出的语义类型，空值表示没有主装置。
+## 设计：energy_cannon 仍是旧输入协议的主槽标识，不表示主槽始终装备能量炮。
+func set_primary_device(device_kind: String) -> void:
+	var normalized := device_kind if device_kind in ["energy_cannon", "mining_arm", "repair_arm"] else ""
+	if primary_device_kind == normalized:
+		return
+	primary_device_kind = normalized
+	primary_device_changed.emit(normalized)
 
 
 ## 执行 `set_hud_visible` 对应的模块操作。

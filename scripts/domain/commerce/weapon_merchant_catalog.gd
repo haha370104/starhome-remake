@@ -176,6 +176,7 @@ func _merchant_category(definition: Dictionary) -> String:
 		"energy_cannon": category = "energy_cannon"
 		"vehicle_engine": category = "vehicle_engine"
 		"mining_arm": category = "mining_arm"
+		"repair_arm": category = "repair_arm"
 		"missile_weapon": category = "missile_weapon"
 		"rocket_weapon": category = "rocket_weapon"
 		"vehicle_weapon", "vehicle_equipment":

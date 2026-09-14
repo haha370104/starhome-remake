@@ -17,6 +17,8 @@ const MENU_BUTTONS := {
 }
 const WEAPON_TOOLTIPS := {
 	"energy_cannon": "能量炮",
+	"mining_arm": "采掘臂",
+	"repair_arm": "维修臂",
 	"missile": "导弹",
 	"rocket_launcher": "火箭炮",
 	"stealth": "隐身器",
@@ -28,6 +30,8 @@ var design_surface: Control
 var reserve_energy_clip: Control
 var reserve_energy_fill: TextureRect
 var weapon_buttons: Dictionary = {}
+var primary_definitions: Dictionary = {}
+var primary_position := Vector2.ZERO
 var tactical_definition: Dictionary = {}
 var tactical_button: Control
 var tactical_count_label: Label
@@ -69,7 +73,9 @@ func configure(definition: Dictionary, shortcut_definition: Dictionary, state: H
 
 	_build_reserve_energy(definition.get("reserve_energy", {}))
 	var weapons: Dictionary = definition.get("weapons", {})
-	_build_weapon_button("energy_cannon", weapons.get("energy_cannon", {}))
+	primary_definitions = (weapons.get("primary_modes", {}) as Dictionary).duplicate(true)
+	primary_definitions["energy_cannon"] = weapons.get("energy_cannon", {})
+	primary_position = _vector_from_array(primary_definitions.energy_cannon.get("position", []), Vector2(178, 8))
 	tactical_definition = weapons.get("tactical", {})
 
 	var buttons: Dictionary = definition.get("menu_buttons", {})
@@ -99,9 +105,11 @@ func configure(definition: Dictionary, shortcut_definition: Dictionary, state: H
 	hud_state.reserve_energy_changed.connect(_update_reserve_energy)
 	hud_state.selected_action_slot_changed.connect(_update_selected_weapon)
 	hud_state.tactical_action_changed.connect(_update_tactical_action)
+	hud_state.primary_device_changed.connect(_update_primary_device)
 	hud_state.shortcut_visibility_changed.connect(_update_shortcut_visibility_button)
 	_update_reserve_energy(hud_state.reserve_energy, hud_state.reserve_energy_capacity)
 	_update_tactical_action(hud_state.tactical_action_id, hud_state.tactical_action_count)
+	_update_primary_device(hud_state.primary_device_kind)
 	_update_selected_weapon(hud_state.selected_action_slot)
 	_update_shortcut_visibility_button(hud_state.shortcut_visible)
 
@@ -175,6 +183,23 @@ func _update_tactical_action(action_id: String, count: int) -> void:
 		tactical_count_label.add_theme_color_override("font_color", Color.RED)
 		tactical_count_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		design_surface.add_child(tactical_count_label)
+	_update_selected_weapon(hud_state.selected_action_slot)
+
+
+## 按主装置类型重建主槽按钮，保留当前槽选中状态与既有输入协议。
+## [param device_kind] 主装置语义类型；空值或无素材时清空，不冒充能量炮。
+func _update_primary_device(device_kind: String) -> void:
+	var previous: Control = weapon_buttons.get("energy_cannon")
+	if previous != null:
+		weapon_buttons.erase("energy_cannon")
+		previous.hide()
+		previous.queue_free()
+	var definition: Dictionary = (primary_definitions.get(device_kind, {}) as Dictionary).duplicate(true)
+	if definition.is_empty():
+		return
+	definition["position"] = [primary_position.x, primary_position.y]
+	var button := _build_weapon_button("energy_cannon", definition)
+	button.hit_button.tooltip_text = WEAPON_TOOLTIPS[device_kind]
 	_update_selected_weapon(hud_state.selected_action_slot)
 
 

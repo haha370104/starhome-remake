@@ -75,6 +75,7 @@ func _run() -> void:
 	_test_evidence_contract(d04_definition, player.combat_presenter)
 	_test_equipped_vehicle_replaces_map_placeholder(player)
 	_test_cannon_mining_click_is_rejected(hall)
+	_test_engineering_arm_empty_click(hall)
 
 	_expect(
 		hall.active_world_controller.commit_bundle(city_bundle, Vector2(1399, 954)),
@@ -238,6 +239,44 @@ func _test_move_and_fire_keeps_route(hall: Node2D) -> void:
 	_expect(hall.local_player_controller.has_active_route(), "开火不得停止活动路线")
 	_expect(hall.path_points == route_before_fire, "开火不得改写尚未完成的路径折线")
 	_expect(hall.combat_attack_controller.active_projectile_count() == 1, "移动中开火仍须生成弹体")
+
+
+## 验证真实目录构建的工程臂空地点击静默，不产生弹体，也不提交网络能力意图。
+## [param hall] 已完成 D04 装配的真实大厅场景。
+func _test_engineering_arm_empty_click(hall: Node2D) -> void:
+	var catalog := ItemCatalogScript.new()
+	_expect(catalog.initialize().is_ok, "工程臂点击测试初始化目录")
+	var current: CurrentPlayer = hall.game_window_manager.current_player
+	var vehicle := current.vehicle
+	var original_loadout := vehicle.loadout
+	var config: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/gameplay/commerce/weapon_merchant_v1.json"))
+	var projectile_count: int = hall.combat_attack_controller.active_projectile_count()
+	var ability_sequence: int = hall.multiplayer_presenter.session._next_ability_sequence
+	var feed: CentralSystemMessageFeed = hall.hud.system_message_feed
+	var message_count := feed.queued_message_count()
+	var active_message := feed.message_label.text
+	hall.hud.state.set_selected_action_slot("energy_cannon")
+	for device_kind: String in ["mining_arm", "repair_arm"]:
+		for definition_id: String in config.merchant.official_whitelist_ids[device_kind]:
+			var created := catalog.create(definition_id, {"instance_id": "click.engineering"})
+			_expect(created.is_ok and created.value is VehicleEquipment and not created.value is VehicleWeapon,
+				"所有在售工程臂都不应构造成射击武器")
+			vehicle.loadout = VehicleLoadout.new()
+			_expect(vehicle.loadout.restore(created.value).is_ok, "工程臂可安装到主槽")
+			_expect(created.value.primary_device_kind() == device_kind, "模型应提供正确主槽类型")
+			hall._on_current_player_changed(current)
+			_expect(hall.hud.state.primary_device_kind == device_kind, "当前玩家快照绑定必须刷新主槽图标")
+			hall.hint_label.text = "原提示保持不变"
+			# 空图外坐标不包含矿物、掉落或怪物；若误入发射链将产生弹体或连接错误。
+			hall._handle_world_combat_left_click(Vector2(-10000, -10000))
+			_expect(hall.hint_label.text == "原提示保持不变", "空地点击不显示任何错误")
+			_expect(feed.queued_message_count() == message_count and feed.message_label.text == active_message,
+				"空地点击不能向中央消息队列添加错误")
+			_expect(hall.multiplayer_presenter.session._next_ability_sequence == ability_sequence,
+				"空地点击不得提交开炮意图")
+			_expect(hall.combat_attack_controller.active_projectile_count() == projectile_count, "工程臂不产生炮弹")
+	vehicle.loadout = original_loadout
+	hall._on_current_player_changed(current)
 
 
 ## 执行 `test_evidence_contract` 对应的模块操作。
