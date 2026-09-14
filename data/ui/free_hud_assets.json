@@ -510,6 +510,62 @@
             }
           }
         }
+      },
+      "primary_modes": {
+        "mining_arm": {
+          "available": true,
+          "states": {
+            "normal": "res://assets/ui/free_hud/bottom_main/weapon_modes/mining_arm/normal.png",
+            "selected": "res://assets/ui/free_hud/bottom_main/weapon_modes/mining_arm/selected.png"
+          },
+          "state_sizes": {
+            "normal": [
+              29,
+              22
+            ],
+            "selected": [
+              29,
+              22
+            ]
+          },
+          "state_origins": {
+            "normal": [
+              0,
+              0
+            ],
+            "selected": [
+              0,
+              0
+            ]
+          }
+        },
+        "repair_arm": {
+          "available": true,
+          "states": {
+            "normal": "res://assets/ui/free_hud/bottom_main/weapon_modes/repair_arm/normal.png",
+            "selected": "res://assets/ui/free_hud/bottom_main/weapon_modes/repair_arm/selected.png"
+          },
+          "state_sizes": {
+            "normal": [
+              29,
+              22
+            ],
+            "selected": [
+              29,
+              22
+            ]
+          },
+          "state_origins": {
+            "normal": [
+              0,
+              0
+            ],
+            "selected": [
+              0,
+              0
+            ]
+          }
+        }
       }
     },
     "menu_buttons": {

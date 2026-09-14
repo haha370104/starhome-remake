@@ -104,12 +104,19 @@ def main() -> int:
         "friends",
         "scene_players",
         "missions",
-        "star_map",
+        "premium_shop",
         "system",
     }
     for button in bottom["menu_buttons"].values():
         assert_states(button, ["normal", "hover", "pressed"])
     assert_states(bottom["weapons"]["energy_cannon"], ["normal", "selected"])
+    primary_modes = bottom["weapons"]["primary_modes"]
+    assert set(primary_modes) == {"mining_arm", "repair_arm"}
+    for device_kind, mode in primary_modes.items():
+        assert_states(mode, ["normal", "selected"])
+        for name, path in mode["states"].items():
+            assert png_size(asset_path(path)) == (29, 22)
+            assert f"/{device_kind}/{name}.png" in path
     tactical = bottom["weapons"]["tactical"]
     assert tactical["position"] == [206, 8]
     assert set(tactical["modes"]) == {
@@ -142,7 +149,7 @@ def main() -> int:
 
     assert sources["source_release"] == "starhome_lz_fr"
     assert sources["missing_assets"] == []
-    assert len(sources["sources"]) == 33
+    assert len(sources["sources"]) == 35
     expected_source_paths = {
         "pic2/topmenu/topmenuback_0.ale",
         "pic2/topmenu/btn_systemmsg.ale",
@@ -163,6 +170,8 @@ def main() -> int:
         "pic2/ctrlpad/btn_spacemap.ale",
         "pic2/ctrlpad/btn_system.ale",
         "pic/equipface/tank_gun.ale",
+        "pic/equipface/tank_collent.ale",
+        "pic/equipface/tank_repair.ale",
         "pic/equipface/firegun.ale",
         "pic/equipface/missile.ale",
         "pic/equipface/tank_hermit.ale",
@@ -191,7 +200,7 @@ def main() -> int:
         digest = source.get("source_ale_sha256", source.get("source_sha256", ""))
         assert len(digest) == 64
 
-    print("Free HUD asset audit passed: 33 allowlisted sources, no minimap JPG")
+    print("Free HUD asset audit passed: 35 allowlisted sources, no minimap JPG")
     return 0
 
 

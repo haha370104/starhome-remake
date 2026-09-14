@@ -292,6 +292,7 @@ def main() -> int:
         DESTINATION_ROOT / "bottom_main" / "weapon_modes" / "energy_cannon",
         ["normal.png", "selected.png"],
     )
+    primary_modes = export_primary_device_modes(session)
     tactical_modes: dict[str, Any] = {}
     for action_id, source_name in {
         "rocket_launcher": "firegun",
@@ -416,6 +417,7 @@ def main() -> int:
                 },
             },
             "weapons": {
+                "primary_modes": primary_modes,
                 "energy_cannon": positioned(
                     state_set(energy_cannon, ["normal", "selected"]), [178, 8]
                 ),
@@ -494,6 +496,20 @@ def main() -> int:
         )
     )
     return 0 if not session.missing else 2
+
+
+def export_primary_device_modes(session: ImportSession) -> dict[str, Any]:
+    """导出主槽工程臂图标；session 收集来源审计，返回原尺寸的按钮状态配置。"""
+    modes = {}
+    for device_kind, source_name in {"mining_arm": "tank_collent", "repair_arm": "tank_repair"}.items():
+        frames = session.export_ale_frames(
+            f"bottom_main.weapons.primary_modes.{device_kind}",
+            f"pic/equipface/{source_name}",
+            DESTINATION_ROOT / "bottom_main" / "weapon_modes" / device_kind,
+            ["normal.png", "selected.png"],
+        )
+        modes[device_kind] = state_set(frames, ["normal", "selected"])
+    return modes
 
 
 if __name__ == "__main__":
