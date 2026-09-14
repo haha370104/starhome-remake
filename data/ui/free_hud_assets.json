@@ -885,6 +885,46 @@
           ]
         },
         "position": [
+          823,
+          0
+        ]
+      },
+      "achievements": {
+        "available": true,
+        "states": {
+          "normal": "res://assets/ui/free_hud/bottom_main/menu_buttons/achievement_icon.tres",
+          "hover": "res://assets/ui/free_hud/bottom_main/menu_buttons/achievement_icon.tres",
+          "pressed": "res://assets/ui/free_hud/bottom_main/menu_buttons/achievement_icon.tres"
+        },
+        "state_sizes": {
+          "normal": [
+            31,
+            29
+          ],
+          "hover": [
+            31,
+            29
+          ],
+          "pressed": [
+            31,
+            29
+          ]
+        },
+        "state_origins": {
+          "normal": [
+            0,
+            0
+          ],
+          "hover": [
+            0,
+            0
+          ],
+          "pressed": [
+            0,
+            0
+          ]
+        },
+        "position": [
           785,
           0
         ]

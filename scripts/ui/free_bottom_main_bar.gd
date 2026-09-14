@@ -13,6 +13,7 @@ const MENU_BUTTONS := {
 	"scene_players": "当前场景玩家",
 	"missions": "任务日志",
 	"system": "系统设置",
+	"achievements": "成就系统",
 	"premium_shop": "商城",
 }
 const WEAPON_TOOLTIPS := {
@@ -81,6 +82,12 @@ func configure(definition: Dictionary, shortcut_definition: Dictionary, state: H
 	var buttons: Dictionary = definition.get("menu_buttons", {})
 	for action_id in MENU_BUTTONS:
 		var button_definition: Dictionary = buttons.get(action_id, {})
+		if action_id in ["achievements", "premium_shop"]:
+			var slot := TextureRect.new()
+			slot.texture = preload("res://assets/ui/free_hud/bottom_main/menu_buttons/empty_slot.tres")
+			slot.position = _vector_from_array(button_definition.get("position", []), Vector2.ZERO)
+			slot.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			design_surface.add_child(slot)
 		var button := _build_state_button(button_definition, action_id, MENU_BUTTONS[action_id])
 		button.place_at(_vector_from_array(button_definition.get("position", []), Vector2.ZERO))
 		button.pressed.connect(func() -> void: action_requested.emit(action_id))

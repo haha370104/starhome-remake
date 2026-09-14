@@ -11,6 +11,9 @@ import time
 
 ROOT = Path(__file__).resolve().parents[1]
 TESTS = (
+    "domain/achievements_test.gd",
+    "server/achievements_authority_test.gd",
+    "ui/runtime/achievements_panel_test.gd",
     "ui/runtime/reusable_player_ui_test.gd",
     "ui/runtime/player_panels_runtime_test.gd",
     "ui/runtime/inventory_drag_gesture_test.gd",

@@ -80,7 +80,13 @@ def main():
         states[state] = 'res://' + path.relative_to(ROOT).as_posix()
         origins[state], sizes[state] = list(point), list(image.size)
     buttons['premium_shop'] = {'available': True, 'states': states, 'state_origins': origins, 'state_sizes': sizes}
-    for index, key in enumerate(['character', 'inventory', 'vehicle_equipment', 'friends', 'scene_players', 'missions', 'system', 'premium_shop']):
+    buttons['achievements'] = {
+        'available': True,
+        'states': {state: 'res://assets/ui/free_hud/bottom_main/menu_buttons/achievement_icon.tres' for state in states},
+        'state_origins': {state: [0, 0] for state in states},
+        'state_sizes': {state: [31, 29] for state in states},
+    }
+    for index, key in enumerate(['character', 'inventory', 'vehicle_equipment', 'friends', 'scene_players', 'missions', 'system', 'achievements', 'premium_shop']):
         buttons[key]['position'] = [519 + index * 38, 0]
     hud_path.write_text(json.dumps(hud, ensure_ascii=False, indent=2)+'\n', encoding='utf-8')
     (ROOT / 'assets/ui/source_audit/bottom_menu_windows.json').write_text(json.dumps({

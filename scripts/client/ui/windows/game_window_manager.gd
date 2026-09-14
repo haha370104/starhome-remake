@@ -72,6 +72,7 @@ func configure(session: PlayerPanelSession) -> bool:
 		"missions": preload("res://scripts/client/ui/windows/navigation/mission_journal_panel.gd"),
 		"system": preload("res://scripts/client/ui/windows/navigation/system_menu_panel.gd"),
 		"premium_shop": preload("res://scripts/client/ui/windows/navigation/premium_shop_panel.gd"),
+		"achievements": preload("res://scripts/client/ui/windows/navigation/achievements_panel.gd"),
 	}
 	for action: String in navigation_scripts:
 		var window: NavigationWindow = navigation_scripts[action].new()
@@ -150,7 +151,7 @@ func toggle(action_id: String) -> bool:
 func _refresh_navigation() -> void:
 	if navigation_windows["scene_players"].visible:
 		panel_session.dispatch({"type": "query_scene_players"})
-	if navigation_windows["missions"].visible:
+	if navigation_windows["missions"].visible or navigation_windows["achievements"].visible:
 		panel_session.dispatch({"type": "query"})
 
 
@@ -177,6 +178,7 @@ func _apply_player(player: Player) -> void:
 	vehicle_panel.set_inventory_revision(int(bundle["inventory"].get("revision", -1)))
 	vehicle_panel.apply_snapshot(bundle["vehicle"])
 	skill_panel.apply_skills(bundle["character"].get("skills", []))
+	navigation_windows["achievements"].apply_snapshot(player.achievements.snapshot())
 
 
 ## 打开武器商人的购买、出售或任务窗口，并拉取同一事务快照。

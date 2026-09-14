@@ -67,7 +67,7 @@ func _run() -> void:
 	var order: Array[String] = []
 	for action: String in FreeBottomMainBar.MENU_BUTTONS:
 		order.append(action)
-	_expect(order == ["character", "inventory", "vehicle_equipment", "friends", "scene_players", "missions", "system", "premium_shop"], "底栏只保留八项并按要求排序")
+	_expect(order == ["character", "inventory", "vehicle_equipment", "friends", "scene_players", "missions", "system", "achievements", "premium_shop"], "成就位于商城左侧，商城移到原右侧按钮位置")
 	_expect(not manager.toggle("star_map"), "删除星图入口")
 	_expect(manager.toggle("scene_players"), "打开当前区域玩家列表")
 	_expect(commands.back().type == "query_scene_players", "用户列表走统一权威命令")

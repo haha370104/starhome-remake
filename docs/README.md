@@ -55,6 +55,7 @@
 | [矿物渲染与装备叠层](mineral_rendering_and_equipment_layers.md) | 重复乘色修复、矿源变体、采掘臂帧率与面板层级 |
 | [工业制造](industrial_manufacturing.md) | 提炼、主/附属装备、合金和维护包；83 条可执行规则与排除项 |
 | [循环任务与训练](repeatable_quests.md) | 四类材料任务、每日五类训练、权威奖励/去重/跨天保存 |
+| [成就与称号](achievements.md) | 击杀、采矿、任务成就，自动晋升与权威战斗增益 |
 | [底栏导航窗口](bottom_menu_windows.md) | 玩家名单、任务日志、系统菜单、商城 UI 及未实现功能 |
 | [系统消息规范](system_message_guidelines.md) | 面向用户中文提示、中央通知和日志分工 |
 | [素材目录与 Git](./asset_management.md) | 业务命名、版本白名单、普通 Git/LFS/缓存分工 |
