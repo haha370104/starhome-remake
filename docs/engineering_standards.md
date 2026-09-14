@@ -44,6 +44,28 @@
 本次替换保留各控件的字号和字重；任务日志使用正文 16px、标题 20px。
 原图中烘焙的按钮字样属于图片内容，不受运行时字体设置影响。
 
+### 地图导航
+
+地图导航由小地图和 `Tab` 当前地图窗口共同提供。展开的小地图（包括跟随玩家滚动的小尺寸模式）
+支持左键选点；`Tab` 打开或关闭地图面板，输入文字时保留输入控件的 Tab 行为。
+面板右侧显示当前 NPC、设施和启用传送点的名称、世界像素坐标，单击即规划路线。
+窗口保持打开也能行走，切图时替换底图和目的地集合；巡逻 NPC 坐标在面板可见时每 0.5 秒刷新。
+
+实现边界：
+
+- `MapProjection` 统一处理图片矩形、等比缩放、滚动偏移与世界坐标转换，底图外留白不发出移动。
+- `MapNavigationCanvas` 与 `MapDestinationList` 是可复用控件，`MapNavigationPanel` 只组合界面和发布意图。
+- `ActiveWorldController` 通过 `MapNavigationPoint` 发布不含节点引用的展示快照，地图提交后同步更新 HUD。
+- `WorldInteractionController.navigate_from_map` 在点击时重新解析实时目的地，经已有 `move_to` 进入
+  `LocalPlayerController` 的可达性校验、路径规划和网络移动意图流程，不新增位置写入者。
+- 传送点展示 `source_anchor` 坐标，寻路使用 `approach_point`，保留 `transition_id` 供到达后执行原切图流程。
+  同址多目的地保留独立列表项；旧地图失效标识不回退到旧坐标。
+- GUI 消费地图点击，避免误触世界攻击；切图、击毁和无推进器限制继续由现有移动流程执行。
+
+专项回归：`tests/ui/runtime/map_navigation_test.gd` 验证真实 GUI 输入与坐标投影，
+`tests/integration/map_navigation_scene_test.gd` 验证当前实体、移动意图、到达出口和地图替换。
+二者纳入 `tools/run_client_checks.py`。
+
 ### 检查与提交
 
 1. 改动前记录 Git 脏文件与可运行基线，保留用户尚未提交的修改。

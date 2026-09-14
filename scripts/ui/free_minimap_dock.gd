@@ -2,6 +2,7 @@ class_name FreeMinimapDock
 extends Control
 
 signal layout_width_changed(width: float)
+signal destination_requested(world_position: Vector2)
 
 const LegacyStateButtonScript := preload("res://scripts/ui/legacy_state_button.gd")
 const TransitionMarkersScript := preload("res://scripts/ui/minimap_transition_markers.gd")
@@ -72,7 +73,9 @@ func configure(
 	map_viewport = Control.new()
 	map_viewport.name = "MapViewport"
 	map_viewport.clip_contents = true
-	map_viewport.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	map_viewport.mouse_filter = Control.MOUSE_FILTER_STOP
+	map_viewport.tooltip_text = "左键点击地图，自动寻路 · Tab 打开地图面板"
+	map_viewport.gui_input.connect(_on_map_gui_input)
 	add_child(map_viewport)
 	map_image = TextureRect.new()
 	map_image.name = "DedicatedMapImage"
@@ -278,3 +281,18 @@ func _vector_from_array(value: Variant, fallback: Vector2) -> Vector2:
 	if value is Array and value.size() >= 2:
 		return Vector2(float(value[0]), float(value[1]))
 	return fallback
+
+
+## 使用当前底图偏移换算大小地图点击，忽略地图边缘的空白。
+## [param event] 地图视口局部输入；界面消费事件，避免触发世界左键攻击。
+func _on_map_gui_input(event: InputEvent) -> void:
+	if not event is InputEventMouseButton:
+		return
+	map_viewport.accept_event()
+	if event.button_index != MOUSE_BUTTON_LEFT or not event.pressed or hud_state.minimap_collapsed:
+		return
+	if map_texture == null or not Rect2(Vector2.ZERO, map_viewport.size).has_point(event.position):
+		return
+	var target := MapProjection.to_world(event.position, Rect2(map_image.position, map_image.size), world_size)
+	if target.is_finite():
+		destination_requested.emit(target)

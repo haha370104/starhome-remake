@@ -39,6 +39,7 @@ func configure(
 	hud = display
 	map_travel = travel
 	combat = battle
+	hud.map_navigation_requested.connect(navigate_from_map)
 	set_process_unhandled_input(true)
 
 
@@ -249,3 +250,20 @@ func on_local_player_route_stopped(message: String) -> void:
 	map_travel.selected_transition_id = &""
 	if hud:
 		hud.show_status(message)
+
+
+## 接收地图导航意图，重新解析实时目的地后进入唯一移动流程。
+## [param world_position] 普通地图点击的世界坐标。
+## [param point_id] 列表目的地的稳定标识；空值表示普通坐标导航。
+## 设计：旧地图失效标识不移动；切图、击毁、推进力及寻路校验仍由原流程负责。
+func navigate_from_map(world_position: Vector2, point_id: StringName) -> void:
+	if not point_id.is_empty():
+		for point: MapNavigationPoint in active_world_controller.navigation_points():
+			if point.id == point_id:
+				move_to(point.destination, point.transition_id)
+				return
+		hud.show_status("目的地已不在当前地图，请重新选择")
+		return
+	if world_position.is_finite() and active_world_controller.definition != null \
+			and Rect2(Vector2.ZERO, active_world_controller.map_size).has_point(world_position):
+		move_to(world_position)

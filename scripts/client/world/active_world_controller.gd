@@ -81,6 +81,7 @@ func configure(
 	_local_player_controller = local_player_controller
 	_camera = camera
 	_hud = hud
+	_hud.map_points_requested.connect(refresh_navigation_points)
 	_character_catalog = character_catalog
 	_npc_catalog = npc_catalog
 	if not FileAccess.file_exists(FACILITY_CATALOG_PATH):
@@ -153,6 +154,7 @@ func commit_bundle(bundle: Dictionary, spawn_position: Vector2) -> bool:
 	_camera.limit_bottom = int(map_size.y)
 	_camera.position = spawn_position
 	_hud.set_map(map_size, staged["minimap_texture"], definition.display_name, definition.enabled_transitions())
+	refresh_navigation_points()
 	return true
 
 
@@ -416,3 +418,16 @@ func _adopt_staged_nodes(container: Node2D) -> void:
 		container.remove_child(child)
 		_sortable_world.add_child(child)
 	container.free()
+
+
+## 查询当前地图的实时目的地快照；巡逻 NPC 使用当前位置。
+## 返回不含场景引用的 NPC、设施及启用传送点数据。
+func navigation_points() -> Array[MapNavigationPoint]:
+	if definition == null:
+		return []
+	return MapNavigationPoint.collect(npc_instances, facility_instances, definition.enabled_transitions())
+
+
+## 按面板请求刷新兴趣点，不在 UI 中暴露或保存世界节点。
+func refresh_navigation_points() -> void:
+	_hud.set_map_navigation_points(navigation_points())

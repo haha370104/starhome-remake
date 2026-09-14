@@ -5,6 +5,8 @@ signal selected_action_changed(slot_id: String)
 signal popup_closed
 signal npc_action_requested(action_id: String)
 signal hud_action_requested(action_id: String)
+signal map_navigation_requested(world_position: Vector2, point_id: StringName)
+signal map_points_requested
 
 const HUD_MANIFEST_PATH := "res://data/ui/free_hud_assets.json"
 const HudStateScript := preload("res://scripts/ui/hud_state.gd")
@@ -30,6 +32,7 @@ var popup_actions: VBoxContainer
 var minimap_player_dot: ColorRect
 var top_menu: Control
 var minimap_dock: Control
+var map_navigation_panel: MapNavigationPanel
 var shortcut_bar: Control
 var bottom_main_bar: Control
 var state: HudState
@@ -94,6 +97,15 @@ func configure(world_map_size: Vector2, minimap_texture: Texture2D, map_name := 
 	_build_popup()
 	_build_hint_label()
 	_build_system_message_feed()
+	map_navigation_panel = MapNavigationPanel.new()
+	map_navigation_panel.build()
+	map_navigation_panel.set_map(world_map_size, minimap_texture, map_name)
+	map_navigation_panel.navigation_requested.connect(map_navigation_requested.emit)
+	map_navigation_panel.points_refresh_requested.connect(map_points_requested.emit)
+	state.player_position_changed.connect(map_navigation_panel.update_player_position)
+	minimap_dock.destination_requested.connect(func(point: Vector2) -> void:
+		map_navigation_requested.emit(point, &""))
+	add_overlay(map_navigation_panel)
 
 
 ## 将系统提示加入顺序队列；每次技能升级都获得完整展示时间。
@@ -129,6 +141,7 @@ func set_map(
 ) -> void:
 	if minimap_dock:
 		minimap_dock.set_map(world_map_size, minimap_texture, map_name, transitions)
+	map_navigation_panel.set_map(world_map_size, minimap_texture, map_name)
 
 
 ## 执行 `set_reserve_energy` 对应的模块操作。
@@ -255,7 +268,7 @@ func _load_manifest() -> Dictionary:
 func _build_hint_label() -> void:
 	hint_label = Label.new()
 	hint_label.name = "HintLabel"
-	hint_label.text = "右键移动 · 左键点击 NPC"
+	hint_label.text = "右键移动 · 左键点击 NPC · Tab 地图"
 	hint_label.position = Vector2(12, 4)
 	hint_label.add_theme_font_size_override("font_size", 17)
 	hint_label.add_theme_color_override("font_color", Color(0.68, 0.95, 1.0))
@@ -399,3 +412,9 @@ func selected_action() -> String:
 ## [param action_id] 已登记的动作标识。
 func select_action(action_id: String) -> void:
 	state.set_selected_action_slot(action_id)
+
+
+## 发布当前地图目的地快照；HUD 不解析场景节点或移动规则。
+## [param points] 含当前 NPC 坐标和传送点入口的展示数据。
+func set_map_navigation_points(points: Array[MapNavigationPoint]) -> void:
+	map_navigation_panel.set_points(points)
