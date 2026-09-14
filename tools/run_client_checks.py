@@ -1,0 +1,84 @@
+#!/usr/bin/env python3
+"""Run isolated client regressions, rejecting script errors even on exit code zero."""
+import argparse
+import json
+import os
+from pathlib import Path
+import re
+import subprocess
+import sys
+import time
+
+ROOT = Path(__file__).resolve().parents[1]
+TESTS = (
+    "ui/runtime/reusable_player_ui_test.gd",
+    "ui/runtime/player_panels_runtime_test.gd",
+    "ui/runtime/inventory_drag_gesture_test.gd",
+    "ui/runtime/item_tooltip_layout_test.gd",
+    "ui/runtime/hud_runtime_smoke_test.gd",
+    "ui/runtime/navigation_windows_test.gd",
+    "ui/runtime/weapon_merchant_runtime_test.gd",
+    "ui/runtime/training_tasks_runtime_test.gd",
+    "client/network/client_network_smoke_test.gd",
+    "client/presentation/hall_multiplayer_presenter_smoke_test.gd",
+    "client/presentation/player_error_messages_test.gd",
+    "client/presentation/client_map_preloader_smoke_test.gd",
+    "client/presentation/combat/weapon_attack_visual_controller_test.gd",
+    "client/presentation/combat/ground_loot_world_controller_test.gd",
+    "client/presentation/mining/mineral_world_controller_test.gd",
+    "client/world/world_facility_interaction_test.gd",
+    "integration/client_state_seam_characterization_test.gd",
+    "integration/npc_action_window_handoff_test.gd",
+    "integration/active_world_transition_view_smoke_test.gd",
+    "integration/d04_player_vehicle_presentation_test.gd",
+    "integration/map_transition_scene_smoke_test.gd",
+    "integration/persisted_map_startup_scene_test.gd",
+    "integration/in_process_authoritative_transport_test.gd",
+)
+
+
+def main() -> int:
+    """Preserve complete logs and a machine readable summary of this exact run."""
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--godot", required=True, type=Path)
+    args = parser.parse_args()
+    if not args.godot.is_file():
+        parser.error("Godot executable does not exist")
+    for check in ("tests/test_check_client_architecture.py", "check_client_architecture.py"):
+        result = subprocess.run([sys.executable, "-X", "utf8", str(ROOT / "tools" / check)], cwd=ROOT)
+        if result.returncode:
+            return result.returncode
+    output_dir = ROOT / ".godot" / f"client-checks-{time.strftime('%Y%m%d-%H%M%S')}-{os.getpid()}"
+    output_dir.mkdir(parents=True)
+    environment = {**os.environ, "STARHOME_COMBAT_TRACE": "0"}
+    results = []
+    scripts = ["res://tools/check_gdscript_warnings.gd"] + [f"res://tests/{test}" for test in TESTS]
+    for script in scripts:
+        name = Path(script).stem
+        log_path = output_dir / f"{name}.log"
+        command = [str(args.godot.resolve()), "--headless", "--path", str(ROOT), "--log-file", str(log_path), "--script", script]
+        started = time.monotonic()
+        try:
+            process = subprocess.run(command, cwd=ROOT, env=environment, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=120)
+            output = process.stdout + process.stderr
+            fatal_lines = [line for line in output.splitlines() if re.search(r"SCRIPT ERROR:|Parse Error:|Failed to load script|^ERROR:", line)
+                           and line != "ERROR: Failed to read the root certificate store."]
+            passed = process.returncode == 0 and not fatal_lines
+            reason = "\n".join(fatal_lines) or f"exit={process.returncode}"
+            # Engine output files are retained separately from captured stdout/stderr.
+            log_path.with_suffix(".output.log").write_text(output, encoding="utf-8")
+        except subprocess.TimeoutExpired:
+            passed, reason = False, "timeout after 120s; subprocess terminated"
+        result = {"script": script, "passed": passed, "reason": reason, "seconds": round(time.monotonic() - started, 2)}
+        results.append(result)
+        print(f"{'PASS' if passed else 'FAIL'} {name} ({result['seconds']}s)", flush=True)
+        if not passed:
+            print(reason, flush=True)
+    report = output_dir / "summary.json"
+    report.write_text(json.dumps(results, ensure_ascii=False, indent=2), encoding="utf-8")
+    print(f"{sum(result['passed'] for result in results)}/{len(results)} passed; report: {report}", flush=True)
+    return 0 if all(result["passed"] for result in results) else 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

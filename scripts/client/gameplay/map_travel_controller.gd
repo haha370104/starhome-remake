@@ -26,7 +26,12 @@ var _initial_authoritative_world_ready := false
 ## [param movement] 唯一本地位置与路径所有者。
 ## [param avatar] 提供出口距离计算的玩家视图。
 ## [param display] 语义 HUD 接口。
-func configure(world: ActiveWorldController, movement: LocalPlayerController, avatar: PlayerWorldAvatar, display: HallHud) -> void:
+func configure(
+	world: ActiveWorldController,
+	movement: LocalPlayerController,
+	avatar: PlayerWorldAvatar,
+	display: HallHud,
+) -> void:
 	active_world_controller = world
 	local_player_controller = movement
 	player = avatar
@@ -38,7 +43,12 @@ func configure(world: ActiveWorldController, movement: LocalPlayerController, av
 ## [param preloader] 仅加载受控目录的地图资源。
 ## [param resolver] 将旧地图代码解析为受控业务 ID。
 ## [param loading] 首次权威世界就绪前的启动遮罩。
-func bind_session(presenter: HallMultiplayerPresenter, preloader: ClientMapPreloader, resolver: RuntimeMapRouteResolver, loading: CanvasLayer) -> void:
+func bind_session(
+	presenter: HallMultiplayerPresenter,
+	preloader: ClientMapPreloader,
+	resolver: RuntimeMapRouteResolver,
+	loading: CanvasLayer,
+) -> void:
 	multiplayer_presenter = presenter
 	map_preloader = preloader
 	map_route_resolver = resolver
@@ -123,9 +133,9 @@ func resolve_transition_destination_id(transition: MapTransition) -> StringName:
 	return transition.destination_map_id
 
 
-## 处理 `on_map_preload_ready` 对应的信号回调。
-## [param map_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
-## [param bundle] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 在资源就绪后提交切图意图，或完成已经确认的权威地图提交。
+## [param map_id] 受控目录中的业务地图标识。
+## [param bundle] 地图预载器返回的已准备资源包。
 func on_map_preload_ready(map_id: StringName, bundle: Dictionary) -> void:
 	if (
 		not pending_authoritative_join.is_empty()
@@ -153,9 +163,9 @@ func on_map_preload_ready(map_id: StringName, bundle: Dictionary) -> void:
 		pending_map_bundle.clear()
 
 
-## 处理 `on_map_preload_failed` 对应的信号回调。
-## [param map_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
-## [param message] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 区分权威确认前后的加载失败，分别回滚请求或冻结旧场景。
+## [param map_id] 受控目录中的业务地图标识。
+## [param message] 当前流程产生的失败或状态说明。
 func on_map_preload_failed(map_id: StringName, message: String) -> void:
 	push_warning("Map preload failed [%s]: %s" % [map_id, message])
 	var notice := PlayerErrorMessages.describe(&"map.load_failed")
@@ -168,11 +178,11 @@ func on_map_preload_failed(map_id: StringName, message: String) -> void:
 	pending_map_bundle.clear()
 
 
-## 处理 `on_authoritative_map_joined` 对应的信号回调。
-## [param map_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
-## [param map_instance_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
-## [param spawn_position] 调用方传入的参数；具体约束由函数签名和所在模块定义。
-## [param _definition_version] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 接受权威地图与落点；资源未就绪时保持旧画面直到预载完成。
+## [param map_id] 受控目录中的业务地图标识。
+## [param map_instance_id] 服务器确认的目标地图实例标识。
+## [param spawn_position] 服务器决定的目标世界坐标。
+## [param _definition_version] 权威地图定义版本，版本校验由会话层负责。
 func on_authoritative_map_joined(
 	map_id: StringName,
 	map_instance_id: String,
@@ -202,10 +212,10 @@ func on_authoritative_map_joined(
 		handle_map_commit_failure("客户端缺少权威地图资源")
 
 
-## 执行 `hold_old_map_for_authoritative_join` 对应的模块操作。
-## [param map_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
-## [param map_instance_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
-## [param spawn_position] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 记录待提交的权威落点并暂停旧地图的路径与预测。
+## [param map_id] 受控目录中的业务地图标识。
+## [param map_instance_id] 服务器确认的目标地图实例标识。
+## [param spawn_position] 服务器决定的目标世界坐标。
 ## 设计：立即终止旧路径；新出生点由 session 持有，但旧场景直到 bundle 提交前不呈现它。
 func hold_old_map_for_authoritative_join(
 	map_id: StringName,
@@ -224,9 +234,9 @@ func hold_old_map_for_authoritative_join(
 
 
 ## 在权威切图拒绝时清空对应预载包；旧地图画面和导航保持不变。
-## [param _transition_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
-## [param _code] 调用方传入的参数；具体约束由函数签名和所在模块定义。
-## [param _message] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param _transition_id] 被拒绝请求的出口标识。
+## [param _code] 权威边界返回的稳定错误码。
+## [param _message] 权威拒绝说明，界面通过错误映射呈现。
 func on_authoritative_map_change_failed(
 	_transition_id: StringName,
 	_code: StringName,
@@ -237,11 +247,11 @@ func on_authoritative_map_change_failed(
 	pending_authoritative_join.clear()
 
 
-## 执行 `commit_map_bundle` 对应的模块操作。
-## [param bundle] 调用方传入的参数；具体约束由函数签名和所在模块定义。
-## [param spawn_position] 调用方传入的参数；具体约束由函数签名和所在模块定义。
-## [param map_instance_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
-## 返回该函数计算、查询或操作得到的结果。
+## 通过活动世界执行原子替换，再更新会话标识、输入闸门与加载遮罩。
+## [param bundle] 地图预载器返回的已准备资源包。
+## [param spawn_position] 服务器决定的目标世界坐标。
+## [param map_instance_id] 服务器确认的目标地图实例标识。
+## 返回资源是否成功提交；失败时旧地图保持不变。
 ## 设计：所有可失败加载均先暂存，当前场景直到验证完成才被清理。
 func commit_map_bundle(
 	bundle: Dictionary,
@@ -261,8 +271,8 @@ func commit_map_bundle(
 	return true
 
 
-## 执行 `handle_map_commit_failure` 对应的模块操作。
-## [param message] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 终止无法呈现权威地图的会话，保留错误提示并锁住旧世界输入。
+## [param message] 当前流程产生的失败或状态说明。
 func handle_map_commit_failure(message: String) -> void:
 	push_warning("Map commit failed: %s" % message)
 	var notice := PlayerErrorMessages.describe(&"map.load_failed", message)
@@ -277,8 +287,8 @@ func handle_map_commit_failure(message: String) -> void:
 		multiplayer_presenter.stop()
 
 
-## 执行 `stop_moving` 对应的模块操作。
-## [param message] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 取消当前路线和出口选择，同时显示停步原因。
+## [param message] 当前流程产生的失败或状态说明。
 func stop_moving(message: String) -> void:
 	if local_player_controller:
 		local_player_controller.cancel_route()
@@ -288,7 +298,7 @@ func stop_moving(message: String) -> void:
 
 
 ## 报告旧地图世界输入是否必须暂停，直到切图完成、失败回滚或会话被安全关闭。
-## 返回该函数计算、查询或操作得到的结果。
+## 返回切图事务是否禁止新的世界操作。
 ## 设计：闸门只冻结本地世界交互；服务端拒绝会清空 pending 并恢复旧地图输入。
 func is_locked() -> bool:
 	if map_commit_failure_locked:

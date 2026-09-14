@@ -38,6 +38,10 @@ function Assert-NoRuntimeLoadErrors([string]$LogFile) {
 }
 
 Write-Output "Checking GDScript function documentation"
+& python (Join-Path $PSScriptRoot "tests/test_check_client_architecture.py")
+if ($LASTEXITCODE -ne 0) { throw "Client architecture guard tests failed" }
+& python (Join-Path $PSScriptRoot "check_client_architecture.py")
+if ($LASTEXITCODE -ne 0) { throw "Client architecture check failed" }
 & python (Join-Path $PSScriptRoot "check_gdscript_doc_comments.py")
 if ($LASTEXITCODE -ne 0) {
     throw "GDScript documentation check failed"
@@ -60,6 +64,7 @@ if ($LASTEXITCODE -ne 0) {
 Assert-NoRuntimeLoadErrors $warningLog
 
 $testScripts = @(
+	"res://tests/ui/runtime/reusable_player_ui_test.gd",
 	"res://tests/core/combat_trace_logger_test.gd",
     "res://tests/domain/run_domain_smoke_tests.gd",
     "res://tests/network/contracts/run_network_contract_tests.gd",

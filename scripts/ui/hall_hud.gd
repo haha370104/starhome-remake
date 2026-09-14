@@ -350,9 +350,9 @@ func _ensure_status_timer() -> void:
 	add_child(_status_timer)
 
 
-## 执行 `show_temporary_status` 对应的模块操作。
+## 临时显示网络状态，并在未被新操作覆盖时恢复此前提示。
 ## [param message] 调用方传入的参数；具体约束由函数签名和所在模块定义。
-## [param duration_seconds] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param duration_seconds] 提示最短停留时间，单位为秒。
 func show_network_notice(message: String, duration_seconds: float) -> void:
 	if hint_label == null:
 		return

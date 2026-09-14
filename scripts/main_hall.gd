@@ -106,8 +106,8 @@ func _build_initial_loading_screen() -> void:
 	initial_loading_screen.show_loading("正在读取角色与地图数据")
 
 
-## 执行 `apply_multiplayer_command_line` 对应的模块操作。
-## [param arguments] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 以命令行覆盖编辑器的运行模式与连接配置。
+## [param arguments] 用户传给游戏进程的参数列表。
 ## 设计：编辑器默认保持离线调试；正式联机必须显式传入 `--online`，避免无服务器时影响美术预览。
 func _apply_multiplayer_command_line(arguments: PackedStringArray) -> void:
 	for argument in arguments:
@@ -126,14 +126,14 @@ func _apply_multiplayer_command_line(arguments: PackedStringArray) -> void:
 
 
 ## 按渲染帧推进当前节点的表现状态。
-## [param delta] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param delta] 本次渲染帧经过的秒数，仅推进本地表现。
 func _process(delta: float) -> void:
 	if local_player_controller:
 		local_player_controller.advance(delta)
 
 
-## 执行 `build_hud` 对应的模块操作。
-## [param initial_bundle] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 创建地图 HUD、业务信号连接及战车击毁对话框。
+## [param initial_bundle] 初始地图已验证的定义和资源，用于构造 HUD。
 func _build_hud(initial_bundle: Dictionary) -> void:
 	var initial_definition: MapDefinition = initial_bundle["definition"]
 	var initial_resources: Dictionary = initial_bundle["resources"]
@@ -158,7 +158,7 @@ func _build_hud(initial_bundle: Dictionary) -> void:
 
 
 ## 创建大厅客户端会话表现器，并以显式配置选择离线调试或真实网络入口。
-## 设计：大厅保留输入、导航与动画职责；表现器仅将预测/权威状态投影到角色节点。
+## 设计：先连接全部状态订阅者再启动会话，允许进程内传输同步回调。
 func _build_multiplayer_presentation() -> void:
 
 	map_preloader = ClientMapPreloader.new()
@@ -239,7 +239,7 @@ func _build_game_windows() -> void:
 
 
 ## 读取受控地图目录的 `definitions` 映射，格式错误时返回仅包含当前大厅的安全目录。
-## 返回该函数计算、查询或操作得到的结果。
+## 返回业务地图 ID 到受控定义路径的映射。
 ## 设计：网络消息不能提供资源路径；所有预载目标必须先存在于版本化目录。
 func _load_map_directory_definitions() -> Dictionary:
 	var fallback := {StringName(active_world_controller.definition.map_id): MAP_DEFINITION_PATH}

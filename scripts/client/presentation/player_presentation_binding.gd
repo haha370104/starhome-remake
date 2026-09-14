@@ -20,7 +20,13 @@ var character_catalog: Dictionary
 ## [param world] 提供当前地图类别的世界所有者。
 ## [param display] HUD 语义接口。
 ## [param catalog] 已加载的人物服装表现目录。
-func configure(view: ClientWorldView, movement: LocalPlayerController, world: ActiveWorldController, display: HallHud, catalog: Dictionary) -> void:
+func configure(
+	view: ClientWorldView,
+	movement: LocalPlayerController,
+	world: ActiveWorldController,
+	display: HallHud,
+	catalog: Dictionary,
+) -> void:
 	world_view = view
 	local_player_controller = movement
 	active_world_controller = world

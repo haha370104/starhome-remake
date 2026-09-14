@@ -18,7 +18,12 @@ var panel_session: PlayerPanelSession
 ## [param movement] 管理移动与动作恢复的本地控制器。
 ## [param display] 语义状态提示和动作选择接口。
 ## [param travel] 切图输入冻结与停步协调器。
-func configure(view: ClientWorldView, movement: LocalPlayerController, display: HallHud, travel: MapTravelController) -> void:
+func configure(
+	view: ClientWorldView,
+	movement: LocalPlayerController,
+	display: HallHud,
+	travel: MapTravelController,
+) -> void:
 	world_view = view
 	local_player_controller = movement
 	hud = display
@@ -28,7 +33,10 @@ func configure(view: ClientWorldView, movement: LocalPlayerController, display: 
 ## 在会话启动前提供命令通道与共享玩家投影。
 ## [param presenter] 发送意图和接收权威结果的会话表现器。
 ## [param panels] 与所有窗口共享的玩家状态。
-func bind_session(presenter: HallMultiplayerPresenter, panels: PlayerPanelSession) -> void:
+func bind_session(
+	presenter: HallMultiplayerPresenter,
+	panels: PlayerPanelSession,
+) -> void:
 	multiplayer_presenter = presenter
 	panel_session = panels
 
@@ -53,8 +61,8 @@ func request_mining(source_position: Vector2) -> void:
 		hud.show_status("采矿请求发送失败")
 
 
-## 执行 `handle_world_combat_left_click` 对应的模块操作。
-## [param world_position] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 按掉落、矿物、武器目标的优先级处理点击并提交对应意图。
+## [param world_position] 鼠标命中的地图世界坐标。
 ## 设计：当前切片立即反馈弹体与命中特效；伤害、能耗和真实命中仍只接受服务端事件。
 func handle_world_combat_left_click(world_position: Vector2) -> void:
 	if world_view.ground_loot_world_controller != null:
@@ -166,7 +174,7 @@ func request_ground_loot_pickup(loot_id: String) -> void:
 
 
 ## 通过离线或正式网络权威边界请求开始战车自维修。
-## 设计：`Z` 与顶部按钮复用此入口；客户端只读取离线调试等级，不自行修改生命或能量。
+## 设计：键盘与顶部按钮复用此入口；生命、能量和技能许可仍由服务器决定。
 func request_self_repair() -> void:
 	if is_input_locked() or world_view.player == null or not world_view.player.is_combat_actor_active():
 		hud.show_status("当前地图不能使用自维修")
@@ -179,7 +187,7 @@ func request_self_repair() -> void:
 
 
 ## 在短促炮口动作结束后恢复开火前的移动状态。
-## [param was_moving] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param was_moving] 开火前是否正在沿路径移动。
 ## [param layer_id] 本次开火临时切换动作的武器图层标识。
 ## 设计：等待期间若路线自然结束则恢复站立；仍在移动时从当前路径段重算朝向。
 func _restore_locomotion_after_attack(was_moving: bool, layer_id: StringName) -> void:
@@ -193,8 +201,8 @@ func _restore_locomotion_after_attack(was_moving: bool, layer_id: StringName) ->
 		local_player_controller.set_character_action(&"stand")
 
 
-## 处理 `on_combat_snapshot_received` 对应的信号回调。
-## [param snapshot] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 把权威战斗快照分发给实体视图、HUD 和战车击毁状态。
+## [param snapshot] 会话已接收的战斗实体和本地战车快照。
 func on_combat_snapshot_received(snapshot: Dictionary) -> void:
 	world_view.mining_visual_controller.apply_snapshot(snapshot)
 	for mode_id: String in world_view.combat_attack_controllers:
@@ -235,14 +243,14 @@ func request_vehicle_recovery() -> void:
 
 
 ## 显示服务器确认的基地救援等待时间。
-## [param delay_seconds] 调用方传入的 `delay_seconds` 参数。
+## [param delay_seconds] 服务器安排的救援等待秒数。
 func on_vehicle_recovery_scheduled(delay_seconds: float) -> void:
 	vehicle_destroyed_dialog.show_recovery_scheduled(delay_seconds)
 
 
 ## 恢复被服务器拒绝的死亡窗选择。
-## [param _code] 调用方传入的 `_code` 参数。
-## [param _message] 调用方传入的 `_message` 参数。
+## [param _code] 权威边界返回的稳定错误码。
+## [param _message] 权威拒绝说明，界面通过错误映射呈现。
 func on_vehicle_recovery_failed(_code: StringName, _message: String) -> void:
 	vehicle_destroyed_dialog.show_recovery_failed("基地救援请求被拒绝，请重试")
 
@@ -252,8 +260,8 @@ func on_destroyed_wait_selected() -> void:
 	hud.show_status("正在原地等待其他玩家营救")
 
 
-## 处理 `on_combat_event_received` 对应的信号回调。
-## [param event] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 将已确认的战斗、维修、拾取和采矿事件转换为本地提示。
+## [param event] 会话下发的已确认业务事件。
 func on_combat_event_received(event: Dictionary) -> void:
 	var event_type := StringName(event.get("event_type", ""))
 	if event_type == &"loot_picked_up":

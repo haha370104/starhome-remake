@@ -25,7 +25,14 @@ func _init() -> void:
 ## [param display] 菜单和状态提示接口。
 ## [param travel] 出口选择与权威切图流程。
 ## [param battle] 战斗输入与击毁状态入口。
-func configure(view: ClientWorldView, world: ActiveWorldController, movement: LocalPlayerController, display: HallHud, travel: MapTravelController, battle: CombatInteractionController) -> void:
+func configure(
+	view: ClientWorldView,
+	world: ActiveWorldController,
+	movement: LocalPlayerController,
+	display: HallHud,
+	travel: MapTravelController,
+	battle: CombatInteractionController,
+) -> void:
 	world_view = view
 	active_world_controller = world
 	local_player_controller = movement
@@ -36,7 +43,7 @@ func configure(view: ClientWorldView, world: ActiveWorldController, movement: Lo
 
 
 ## 接收并分发当前节点负责的输入事件。
-## [param event] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param event] 视口中尚未被 GUI 消费的键鼠输入。
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey:
 		var key_event := event as InputEventKey
@@ -65,8 +72,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 
 
-## 执行 `handle_world_right_click` 对应的模块操作。
-## [param world_position] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 显示点击反馈，并选择传送接近点、多目标菜单或普通移动。
+## [param world_position] 鼠标命中的地图世界坐标。
 ## 设计：先在实际点击点播放原版反馈；图标锚点仅用于命中，不能替代可行走接近点。
 func handle_world_right_click(world_position: Vector2) -> void:
 	world_view.movement_click_effects.present(world_position)
@@ -81,9 +88,9 @@ func handle_world_right_click(world_position: Vector2) -> void:
 		move_to(world_position)
 
 
-## 执行 `move_to` 对应的模块操作。
-## [param world_position] 调用方传入的参数；具体约束由函数签名和所在模块定义。
-## [param transition_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 向移动控制器请求路径，记录选中出口并呈现不可达原因。
+## [param world_position] 鼠标命中的地图世界坐标。
+## [param transition_id] 明确选择的出口；空值表示普通移动。
 func move_to(world_position: Vector2, transition_id: StringName = &"") -> void:
 	if combat.is_input_locked():
 		map_travel.stop_moving("地图切换中，暂时不能移动")
@@ -135,8 +142,8 @@ func nearest_npc(world_position: Vector2, maximum_distance: float) -> Node2D:
 	return result
 
 
-## 执行 `show_npc_popup` 对应的模块操作。
-## [param npc] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 暂停移动，选中交互实体并将菜单定位到屏幕坐标。
+## [param npc] 当前鼠标选择的 NPC 或生产设施视图。
 func show_npc_popup(npc: Node2D) -> void:
 	map_travel.stop_moving("正在与%s交互" % String(npc.get_interaction_data()["title"]))
 	if active_npc and active_npc != npc:
@@ -147,7 +154,7 @@ func show_npc_popup(npc: Node2D) -> void:
 	hud.show_npc_popup(active_npc.get_interaction_data(), screen_position)
 
 
-## 处理 `on_npc_popup_closed` 对应的信号回调。
+## 解除当前实体的交互表现并清空选择。
 func on_npc_popup_closed() -> void:
 	if active_npc:
 		active_npc.set_interaction_active(false)
@@ -236,9 +243,8 @@ func clear_interaction() -> void:
 	transition_choice_ids.clear()
 
 
-
-## 处理 `on_local_player_route_stopped` 对应的信号回调。
-## [param message] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 在路线中断后清理出口选择并显示移动控制器的原因。
+## [param message] 当前流程产生的失败或状态说明。
 func on_local_player_route_stopped(message: String) -> void:
 	map_travel.selected_transition_id = &""
 	if hud:
