@@ -19,6 +19,9 @@ var _pending_cycles: Dictionary = {}
 var _ready_cycles: Array[Dictionary] = []
 var _spawn_sequence := 0
 var _cycle_sequence := 0
+# 每个权威矿源模块拥有独立的 128 位命名空间，避免重启或地图重建后与存档物品编号碰撞。
+# 同一预约重试仍使用原 token；不能移除背包的重复入账保护。
+var _reward_namespace := Crypto.new().generate_random_bytes(16).hex_encode()
 var _next_replenishment_tick := -1
 var _last_command_sequences: Dictionary = {}
 
@@ -248,7 +251,7 @@ func _reserve_due_cycles() -> void:
 			_actions.erase(actor_id)
 			continue
 		var quantity := mini(int(_policy["yield_per_cycle"]), source.remaining)
-		var token := "%s.cycle.%d" % [map_instance_id, _cycle_sequence]
+		var token := "%s.mining.%s.cycle.%d" % [map_instance_id, _reward_namespace, _cycle_sequence]
 		_cycle_sequence += 1
 		var reservation := {
 			"token": token,

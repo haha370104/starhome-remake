@@ -112,6 +112,41 @@ func _test_authoritative_collection_transaction() -> void:
 	_expect(server.handle_peer_use_ability(41, intent.to_dictionary()).ok, "重新点击才重新开始采矿")
 	server.map_instance.mining_module.interrupt(entity_id, &"movement")
 	_expect(not server.snapshot_for_peer(41).combat.local_mining.active, "移动中断后快照必须关闭采矿动画")
+	# 重启同地图服务器并读取真实测试存档，首个周期不能与旧背包矿石编号冲突。
+	server.stop_network()
+	server.free()
+	server = ServerScript.new()
+	_expect(server.initialize(config).ok, "持久化矿石后的服务器能够重新初始化")
+	opened = server.open_session(41, {
+		"protocol_version": Protocol.PROTOCOL_VERSION,
+		"content_version": Protocol.PUBLIC_CONTENT_VERSION,
+	}, 1000)
+	_expect(opened.ok, "重启后重新打开相同玩家存档")
+	entity_id = String(opened.value.session.entity_id)
+	var restored = server.autosave_service.state_for(entity_id)
+	_expect(_inventory_quantity(restored, "iron_ore") == 1, "重启确实保留旧矿石而非重置存档")
+	var existing_ore_id := ""
+	for stack in restored.inventory_stacks:
+		if stack.item_definition_id == "iron_ore":
+			existing_ore_id = stack.stack_id
+	var duplicate: DomainResult = server.player_panel_service.grant_loot(restored, {
+		"loot_id": existing_ore_id, "item_definition_id": "iron_ore", "quantity": 1,
+	})
+	_expect(not duplicate.is_ok and duplicate.error_code == &"inventory.duplicate_item", "保留重复入账保护，不能靠放行重复编号掩盖问题")
+	source = server.map_instance.mining_module.sources.values()[0]
+	entity = server.map_instance.entities[entity_id]
+	entity.position = source.position + Vector2(40, 0)
+	entity.target_position = entity.position
+	server.map_instance.combat_module.update_actor_position(entity_id, entity.position)
+	intent.map_instance_id = server.map_instance.instance_id
+	intent.aim_world_position = source.position
+	intent.input_sequence = 1
+	_expect(server.handle_peer_use_ability(41, intent.to_dictionary()).ok, "重启后首个采集命令应成功")
+	server.advance_simulation(6.0)
+	_expect(_inventory_quantity(server.autosave_service.state_for(entity_id), "iron_ore") == 3,
+		"重启后的两个连续周期应正常叠加到原存档矿石堆")
+	_expect(source.remaining == 48, "成功入账与矿量扣减保持一致")
+	server.map_instance.mining_module.interrupt(entity_id, &"test")
 	var damaged = server.autosave_service.state_for(entity_id)
 	for equipment in damaged.equipment_slots:
 		if equipment.slot_location == 1:

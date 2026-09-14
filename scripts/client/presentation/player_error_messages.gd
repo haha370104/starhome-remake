@@ -22,6 +22,7 @@ const MESSAGES := {
 	"equipment.revision_conflict": "装备状态已经更新，请重试",
 	"inventory.revision_conflict": "背包状态已经更新，请重试",
 	"inventory.no_space": "背包空间不足，请先整理背包",
+	"inventory.duplicate_item": "物品入账编号冲突，本次操作未完成，请重试",
 	"inventory.capacity_exceeded": "背包已满，请先腾出空间",
 	"inventory_full": "背包已满，请先腾出空间",
 	"inventory.item_not_found": "物品已不存在，请刷新背包后重试",
