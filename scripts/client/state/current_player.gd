@@ -5,7 +5,7 @@ signal changed(player: Player)
 
 const ItemCatalogScript := preload("res://scripts/domain/items/item_catalog.gd")
 const PlayerPanelProjectorScript := preload(
-	"res://scripts/server/player_panels/player_panel_projector.gd"
+	"res://scripts/shared/player_panel_projector.gd"
 )
 
 var _catalog: ItemCatalog

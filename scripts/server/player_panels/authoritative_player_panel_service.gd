@@ -5,7 +5,7 @@ const ItemCatalogScript := preload("res://scripts/domain/items/item_catalog.gd")
 const SkillProgressionScript := preload("res://scripts/domain/skills/skill_progression.gd")
 const PlayerStateMapperScript := preload("res://scripts/server/persistence/player_state_mapper.gd")
 const PlayerPanelProjectorScript := preload(
-	"res://scripts/server/player_panels/player_panel_projector.gd"
+	"res://scripts/shared/player_panel_projector.gd"
 )
 
 var _catalog: ItemCatalog

@@ -3,7 +3,7 @@ extends SceneTree
 const ItemCatalogScript := preload("res://scripts/domain/items/item_catalog.gd")
 const CurrentPlayerScript := preload("res://scripts/client/state/current_player.gd")
 const PlayerPanelProjectorScript := preload(
-	"res://scripts/server/player_panels/player_panel_projector.gd"
+	"res://scripts/shared/player_panel_projector.gd"
 )
 const EquipmentSlotRegistryScript := preload(
 	"res://scripts/domain/equipment/equipment_slot_registry.gd"

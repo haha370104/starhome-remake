@@ -70,7 +70,7 @@ main_hall.tscn / main_hall.gd                  dedicated_server.tscn
 - [Inventory](../scripts/domain/inventory/inventory.gd)、[CharacterEquipment](../scripts/domain/players/character_equipment.gd)、
   [PlayerVehicle](../scripts/domain/players/vehicle.gd)、[VehicleLoadout](../scripts/domain/players/vehicle_loadout.gd)：容器和固定槽位。
 - [CurrentPlayer](../scripts/client/state/current_player.gd)、[PlayerStateMapper](../scripts/server/persistence/player_state_mapper.gd)、
-  [PlayerPanelProjector](../scripts/server/player_panels/player_panel_projector.gd)：持久化、网络快照与对象之间的转换。
+  [PlayerPanelProjector](../scripts/shared/player_panel_projector.gd)：持久化、网络快照与对象之间的转换。
 
 检查重点：
 

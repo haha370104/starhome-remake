@@ -7,7 +7,7 @@ const RecipeBookScript := preload(
 )
 const PlayerStateMapperScript := preload("res://scripts/server/persistence/player_state_mapper.gd")
 const PlayerPanelProjectorScript := preload(
-	"res://scripts/server/player_panels/player_panel_projector.gd"
+	"res://scripts/shared/player_panel_projector.gd"
 )
 
 const COMMAND_TYPES := ["query_manufacturing", "craft_recipe"]

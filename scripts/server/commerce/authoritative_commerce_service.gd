@@ -6,7 +6,7 @@ const MerchantCatalogScript := preload("res://scripts/domain/commerce/weapon_mer
 const QuestServiceScript := preload("res://scripts/server/commerce/repeatable_quest_service.gd")
 const PlayerStateMapperScript := preload("res://scripts/server/persistence/player_state_mapper.gd")
 const PlayerPanelProjectorScript := preload(
-	"res://scripts/server/player_panels/player_panel_projector.gd"
+	"res://scripts/shared/player_panel_projector.gd"
 )
 
 const COMMAND_TYPES := [
