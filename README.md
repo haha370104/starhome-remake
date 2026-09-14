@@ -1,144 +1,65 @@
 # starhome_remake
 
-Godot 4 remake prototype of the FancyBoxII client. The default scene is an
-interactive reconstruction of 易安港基地大厅一层.
+Godot 4.7.2 纯 2D 联机复刻工程。共享领域规则与权威服务器，客户端负责输入、预测和呈现；
+本地调试通过进程内传输运行同一个服务器，不维护另一套离线玩法。
 
-## Run
+## 从哪里开始
 
-Open `project.godot` with Godot 4.7.2, or run the project from the command line.
-The window is freely resizable: HUD pixels stay fixed while a larger viewport
-reveals more of the map.
+- **新对话交接**：[项目交接](./docs/project_handoff.md)——先读此页，不重建原型。
+- **复刻方法**：[对齐方案](./docs/remake_alignment_plan.md)、[原客户端阅读指南](./docs/original_client_reading_guide.md)。
+- **整体 review**：[代码评审导读](./docs/review_guide.md)——当前状态、职责图、源码/测试入口与优先级。
+- **全部文档**：[文档导航](./docs/README.md)——区分当前模块、目标设计和原客户端证据。
+- **两种运行模式**：[双运行模式架构](./docs/runtime_modes_architecture.md)——独立服/进程内直连的共用逻辑与实际差异。
+- **开发规则**：[PROJECT_CONTEXT.md](./PROJECT_CONTEXT.md)——素材版本、业务命名、状态所有权、注释和提交约束。
+- **操作与调试**：[使用说明](./使用说明.md)。玩法需求在仓库外的[游戏主要玩法](../游戏主要玩法.md)。
 
-When using Godot's embedded game view, select `Stretch to Fit` from its size
-menu. This controls the editor preview container only; runtime pixels remain
-1:1, the HUD keeps its designed size, and larger windows reveal more map area.
+当前可装载 810 张地图；战斗、拾取、换装、技能、自维修及采矿已有基础链路。
+已有权威商店买卖、循环/训练任务和裁缝/烹饪/工业制造基础链路。
+数量不等于完整复刻：正式账号、SQLite 适配器、生产级经济幂等与世界持久化等仍未完成，
+详见[运行内容与资源包](./docs/runtime_content.md)及[开发路线图](./docs/development_roadmap.md)。
 
-## Multiplayer development run
+## 本地启动
 
-The editor and the default project launch stay in explicit offline-debug mode.
-To run the current server-authoritative two-player slice, start one headless
-server and then launch the client command twice:
+1. 如从 Git 克隆，先安装 Git LFS 并执行 `git lfs pull`；地图大图和内容 ZIP 不能只保留指针。
+2. 使用 Godot 4.7.2 打开 `project.godot`，等待首次素材导入完成。
+3. 运行默认场景 `scenes/main_hall.tscn`；默认连接进程内权威服。
 
-```powershell
-$godot = "C:\path\to\Godot_v4.7.2-stable_win64_console.exe"
-& $godot --headless --path . scenes/server/dedicated_server.tscn -- --port=24680
-& $godot --path . -- --online --server-host=127.0.0.1 --server-port=24680
-& $godot --path . -- --online --server-host=127.0.0.1 --server-port=24680
-```
+嵌入式调试窗口想撑满容器时，在运行窗口尺寸菜单选择 `Stretch to Fit`。
+游戏本身采用固定像素 HUD，放大窗口扩大地图视野，不整体放大按钮和角色。
 
-Each client receives its entity ID and map instance from the server handshake;
-the exported local IDs are only offline-preview defaults. The production-like
-loopback integration uses three independent Godot processes and can be run with:
+## 独立服务器与客户端
 
-```powershell
-& .\tools\run_enet_integration.ps1 -GodotExecutable $godot
-```
-
-That check covers two distinct entities, continuous snapshot replication,
-request rejection isolation, reconnect-token recovery, and removal after the
-second disconnect grace period.
-
-The Stage-2 world route follows the recovered Glory topology instead of a
-synthetic shortcut: `RoomSvr1 -> City1Svr -> D04`. City and D04 are loaded from
-business-named Glory assets and swapped only after authoritative `MapJoined`.
-The shared player anchor keeps its position ownership across the swap: halls and
-the city project a human character, while D04 projects the eight-way starter
-combat vehicle and restores the human view when returning to the city.
-The independent real-ENet transition check is:
+在本仓库目录执行。开发验证建议限定监听本机，并使用独立保存路径，避免覆盖平时调试进度：
 
 ```powershell
-& .\tools\run_enet_map_transition_integration.ps1 -GodotExecutable $godot
+$godotExe = 'C:/Users/tomato/Downloads/Godot_v4.7.2-stable_win64_console.exe'
+& $godotExe --headless --path . scenes/server/dedicated_server.tscn -- --listen-address=127.0.0.1 --port=24680 --player-state-store=user://review_server/player_states.json
 ```
 
-It verifies the reliable transition command, strict join payload, authoritative
-spawn, atomic map ownership transfer, and post-transfer snapshot isolation.
-
-## Runtime architecture
-
-- `scripts/main_hall.gd`: the current migration baseline. It still owns scene
-  construction, input routing, NPC interaction, HUD wiring, and part of the
-  multiplayer/map presentation flow; it is not yet an orchestration-only entry
-  point.
-- Current client ownership: `LocalPlayerController` is the sole writer of local
-  target, route, direction, prediction sequence, and player position.
-  `ActiveWorldController` atomically swaps map, navigation, entities, player
-  presentation, camera, and HUD map state; `HallHud` exposes semantic methods
-  instead of internal Controls.
-- `scripts/navigation/diamond_navigation.gd`: map-configured diamond collision,
-  eight-way A*, line-of-sight checks, nearest-walkable fallback, and path
-  string-pulling. The current Glory hall uses a 41×320 grid.
-- `scripts/characters/`: layered body, equipment, shadow, and name rendering.
-- `scripts/npcs/`: configurable patrol base plus shop and quest behavior subclasses.
-- `scripts/ui/hall_hud.gd`: viewport-anchored top menu, minimap, shortcut bar,
-  weapon slots, and interaction popup.
-- `scripts/world/y_sorted_prop.gd`: scene props sorted against actors by their
-  floor-contact Y coordinate.
-
-Runtime `Dictionary` values are permitted at JSON and RPC boundaries only.
-Loaders and adapters must validate them and hand typed definitions, commands,
-or presentation bundles to internal modules. NPC shops/quests will be server
-interaction services rather than behavior encoded in character-node subclasses.
-`AuthoritativeServer` remains a compatibility facade while map transfer,
-sessions, simulation scheduling, and RPC routing are extracted incrementally.
-
-The mandatory refactor order is R0 through R8: baseline/commit gate,
-composition regression tests, local-player ownership, active-world ownership,
-typed data entry, semantic HUD, server-facade decomposition, NPC boundaries,
-then resource caching and `.tscn` scene composition. See
-`docs/code_review_2026-08-27.md` and `docs/development_roadmap.md`.
-
-Stage 3 currently has versioned Glory-backed content definitions, vehicle and
-monster lifecycle rules, an authoritative energy-cannon module, presentation
-assets, D04 vehicle projection, and focused tests. It is still in progress: these foundations are not
-yet a complete real-session, two-client combat loop with AI, projectiles,
-drops, and skill experience.
-
-The persistence boundary now includes typed player aggregates, a repository
-contract, schema migrations, and a transactional development file repository.
-Production SQLite is intentionally not claimed until a pinned Godot 4
-GDExtension driver and its concrete repository adapter are installed and tested.
-
-See `assets/README.md` for the business-oriented asset layout and binary asset
-version-control policy. See `使用说明.md` for reverse-engineering and gameplay
-implementation details.
-
-The offline FCC/ALE/PKH map reconstruction pipeline, including the exact
-navigation record format and Godot coordinate transform, is documented in
-`docs/map_resource_pipeline.md`. `tools/map_pipeline/extract_navigation.py`
-reproduces the collision extraction with an explicitly selected client DLL.
-
-The selected free-version HUD composition, minimap chrome, individual toolbar
-buttons, and the separate reserve/working energy displays are documented in
-`docs/free_hud_rendering.md`. This is the project's only cross-version asset
-exception: non-HUD assets remain Glory-only.
-
-Hall NPC instances and their triangle patrol routes live in
-`data/npcs/yian_harbor_hall_floor_1.json`; see `data/npcs/README.md` for the
-extension contract.
-
-## Canonical source version
-
-All non-HUD assets added from now on must come from the 荣耀版
-(`starhome_lz_ry`) resource set. The free version (`starhome_lz_fr`) is allowed
-only for the top bar, bottom bar/shortcut bar, and minimap chrome listed in
-`docs/free_hud_rendering.md`; minimap map images and popup-window contents are
-not included. The battle version (`starhome_jznp`) remains research-only.
-
-See `PROJECT_CONTEXT.md` for the persistent project-wide source paths and rules.
-Imported files must also be renamed into the remake's business vocabulary;
-original `pic`/`pic2`, timestamp, hash, and client class-name paths are not
-allowed under `assets/`.
-
-Run `tools/check_asset_conventions.ps1` after importing assets to reject legacy
-path segments and runtime references before committing.
-
-The complete local gate is:
+另开终端启动客户端；重复运行可开第二个客户端：
 
 ```powershell
-& .\tools\run_project_checks.ps1 -GodotExecutable $godot
+$godotExe = 'C:/Users/tomato/Downloads/Godot_v4.7.2-stable_win64_console.exe'
+& $godotExe --path . -- --online --server-host=127.0.0.1 --server-port=24680
 ```
 
-Every commit must stay within 20 changed paths and 2000 total text additions
-plus deletions. Check `git diff --cached --name-only` and
-`git diff --cached --numstat`; do not combine bulk assets, offline extraction
-outputs, runtime code, and architecture refactors in one commit.
+当前 `ServerConfig` 未指定监听地址时默认 `*`。没有正式认证与生产数据库，
+不要直接开放公网，也不要把开发用 `player.N` 当成稳定账号身份。
+开发文件仓储默认 `user://server/player_states.json`，由服务器每 3 秒保存，
+不是 SQLite 数据库。详情见[持久化](./docs/persistence_architecture.md)。
+
+## 检查入口
+
+```powershell
+./tools/run_project_checks.ps1 -GodotExecutable 'C:/Users/tomato/Downloads/Godot_v4.7.2-stable_win64_console.exe'
+```
+
+门禁包含 Godot 导入、脚本/警告、分层测试、真实 ENet 集成和素材审计，会生成缓存/日志。
+当前新增测试尚未全部加入总门禁，全量精灵索引也存在命名债务；不能据历史通过记录
+宣称当前全绿。范围和单模块入口见[评审导读](./docs/review_guide.md)。
+
+## 素材与仓库边界
+
+正式素材以荣耀版为准；只有免费版 HUD 外观在明确白名单内豁免。
+原始解密档案留在仓库外，业务化运行素材/索引和 LFS 内容包进入仓库；`.godot/` 为本机缓存。
+细则见[素材管理](./assets/README.md)。原游戏素材的使用/再分发权利需另行确认，勿直接公开发布。
