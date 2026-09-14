@@ -2,6 +2,8 @@
 
 ## 文档入口与维护
 
+- 客户端重构与后续开发遵循 [工程规范](./docs/engineering_standards.md)，按状态所有权拆分，禁止用大型上下文对象或入口转发层替代模块边界。
+
 - 新对话从 [项目交接](./docs/project_handoff.md) 开始，再读
   [复刻对齐方案](./docs/remake_alignment_plan.md) 与 [原客户端阅读指南](./docs/original_client_reading_guide.md)。
 - 整体 review 从 [docs/review_guide.md](./docs/review_guide.md) 开始；全部文档分类见
