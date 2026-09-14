@@ -7,7 +7,7 @@ const BACKGROUND := preload("res://assets/ui/windows/inventory/background.png")
 const ARRANGE_NORMAL := preload("res://assets/ui/windows/inventory/arrange/normal.png")
 const ARRANGE_HOVER := preload("res://assets/ui/windows/inventory/arrange/hover.png")
 const ARRANGE_PRESSED := preload("res://assets/ui/windows/inventory/arrange/pressed.png")
-const ItemViewScript := preload("res://scripts/client/ui/windows/inventory/inventory_item_view.gd")
+const CanvasScript := preload("res://scripts/client/ui/components/inventory_canvas.gd")
 const GRID_COLUMNS := InventoryLayout.GRID_COLUMNS
 const GRID_ROWS := InventoryLayout.GRID_ROWS
 const GRID_CAPACITY := GRID_COLUMNS * GRID_ROWS
@@ -24,12 +24,15 @@ var _revision := -1
 ## 创建荣耀版像素背包固定布局和整理按钮。
 func _ready() -> void:
 	configure(Vector2(338, 469), BACKGROUND, Vector2(302, 40))
-	_item_canvas = Control.new()
+	_item_canvas = CanvasScript.new()
 	_item_canvas.name = "ItemCanvas"
 	_item_canvas.position = Vector2(28, 70)
 	_item_canvas.size = GRID_SIZE
 	_item_canvas.clip_contents = true
 	_item_canvas.mouse_filter = Control.MOUSE_FILTER_PASS
+	_item_canvas.move_requested.connect(_request_move)
+	_item_canvas.equip_requested.connect(_request_equip)
+	_item_canvas.character_equip_requested.connect(_request_character_equip)
 	content_root.add_child(_item_canvas)
 	_count_label = _label(Vector2(28, 407), Vector2(180, 18))
 	_currency_label = _label(Vector2(28, 423), Vector2(180, 18))
@@ -59,18 +62,7 @@ func apply_inventory(inventory: Inventory) -> void:
 		items.size(), inventory.capacity,
 	]
 	_currency_label.text = "金币：%d" % inventory.currency
-	for child in _item_canvas.get_children():
-		child.queue_free()
-	for item_index: int in mini(items.size(), GRID_CAPACITY):
-		var domain_item: GameItem = items[item_index]
-		var item := ItemViewScript.new()
-		item.name = "Item_%s" % domain_item.instance_id.validate_node_name()
-		item.configure(domain_item, CELL_SIZE, CELL_PADDING)
-		item.position = Vector2(domain_item.position_px)
-		item.move_requested.connect(_request_move)
-		item.equip_requested.connect(_request_equip)
-		item.character_equip_requested.connect(_request_character_equip)
-		_item_canvas.add_child(item)
+	_item_canvas.apply_inventory(inventory)
 
 
 ## 提交背包整理意图及当前 revision。

@@ -3,13 +3,7 @@ extends DraggableGameWindow
 
 signal command_requested(command: Dictionary)
 
-const TooltipFormatter := preload("res://scripts/client/ui/windows/equipment_tooltip_formatter.gd")
-const ItemHoverHighlightScript := preload(
-	"res://scripts/client/ui/windows/item_hover_highlight.gd"
-)
-const ItemTextureResolver := preload(
-	"res://scripts/client/presentation/items/item_presentation_texture_resolver.gd"
-)
+const EquipmentLayer := preload("res://scripts/client/ui/components/equipment_layer_view.gd")
 const BACKGROUND := preload("res://assets/ui/windows/vehicle/background.png")
 const LEGACY_PANEL_FONT := preload("res://assets/ui/fonts/legacy_panel_font.tres")
 const TEXT_COLOR := Color("f6f3e8")
@@ -155,43 +149,16 @@ func _build_stat_labels() -> void:
 ## 按旧客户端装备类提供的对话框锚点添加一件已装备物品。
 ## [param equipment] 带 dialog_texture、anchor、origin、层级和属性的装备快照。
 func _add_equipment_visual(equipment: Dictionary) -> void:
-	var dialog_presentation: Dictionary = equipment.get("dialog_presentation", {})
-	if dialog_presentation.is_empty():
-		dialog_presentation = {"dialog_texture": equipment.get("dialog_texture", "")}
-	var resolved_visual := ItemTextureResolver.resolve(dialog_presentation)
-	if resolved_visual.is_empty():
-		return
-	var anchor_value: Array = equipment.get("dialog_anchor", [170, 200])
-	var origin_value: Array = equipment.get("dialog_origin", [0, 0])
-	var texture := resolved_visual["texture"] as Texture2D
-	var resolved_origin: Vector2 = resolved_visual.get("origin", Vector2.ZERO)
-	if dialog_presentation.has("dialog_origin"):
-		resolved_origin = Vector2(float(origin_value[0]), float(origin_value[1]))
-	var visual := TextureRect.new()
+	var visual := EquipmentLayer.new()
 	var location := int(equipment.get("location", -1))
-	visual.name = "Location_%d_%s" % [
-		location, String(equipment.get("definition_id", "equipment")),
-	]
-	visual.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	visual.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	visual.texture = texture
-	if location == 3:
-		# 使用独立 dialog 大图，在推进器标题下方的槽内居中。
-		visual.position = PROPULSION_SLOT_RECT.position
-		visual.size = PROPULSION_SLOT_RECT.size
-	else:
-		# 底盘和炮使用各自大图的原始尺寸/原点，共用安装锚点，不放大背包图。
-		visual.position = Vector2(
-			float(anchor_value[0]) + resolved_origin.x,
-			float(anchor_value[1]) + resolved_origin.y,
-		)
-		visual.size = texture.get_size()
+	var slot_rect := PROPULSION_SLOT_RECT if location == 3 else Rect2()
+	if not visual.configure(equipment, Vector2(170, 200), slot_rect):
+		visual.free()
+		return
+	visual.name = "Location_%d_%s" % [location, String(equipment.get("definition_id", "equipment"))]
 	visual.z_index = int(equipment.get("z_layer", 0))
-	visual.mouse_filter = Control.MOUSE_FILTER_STOP
-	var item_description := TooltipFormatter.format(equipment)
 	visual.gui_input.connect(_on_equipment_gui_input.bind(location))
 	_slot_root.add_child(visual)
-	ItemHoverHighlightScript.bind(visual, visual, item_description)
 
 
 ## 处理装备表现双击并提交卸载意图。
