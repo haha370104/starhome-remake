@@ -68,6 +68,10 @@ func apply_bundle(bundle: Dictionary) -> bool:
 	experience = maxi(0, int(character.get("experience", 0)))
 	revision = maxi(0, int(bundle.get("transaction_revision", 0)))
 	skills = SkillBook.new(skill_states)
+	var achievement_snapshot: Dictionary = bundle.get("achievements", {})
+	if not PlayerAchievements.valid_state({"counters": achievement_snapshot.get("counters", {})}):
+		return false
+	achievements = PlayerAchievements.new({"counters": achievement_snapshot.get("counters", {})})
 	character_equipment = CharacterEquipment.new()
 	inventory = Inventory.new(
 		int(inventory_snapshot.get("capacity", 40)),
@@ -91,6 +95,7 @@ func apply_bundle(bundle: Dictionary) -> bool:
 	})
 	if not _restore_equipment(character.get("worn_items", []), vehicle_snapshot.get("equipped", [])):
 		return false
+	vehicle.achievement_bonuses = achievements.bonuses()
 	vehicle.reconcile_loadout_state(false)
 	changed.emit(self)
 	return true

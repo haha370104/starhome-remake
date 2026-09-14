@@ -11,6 +11,7 @@ var reserve_energy: float
 var working_energy_capacity: float
 var working_energy: float
 var output_power: float
+var achievement_bonuses := AchievementBonuses.new()
 
 
 ## 初始化玩家拥有的战车实体及其运行时资源。
@@ -44,7 +45,7 @@ func calculate_stats(
 	var armor_by_location := {5: 0, 6: 0, 7: 0, 8: 0}
 	var chassis_base_health := 0
 	var self_repair_base := 0
-	var self_repair_bonus := maxi(0, character_self_repair_bonus)
+	var self_repair_bonus := maxi(0, character_self_repair_bonus) + achievement_bonuses.self_repair
 	var extra_repair := maxi(0, character_external_repair_bonus)
 	var self_repair_energy_cost := 0.0
 	var required_repair_skill_level := 0
@@ -82,11 +83,12 @@ func calculate_stats(
 		"armor_left": int(armor_by_location[7]),
 		"armor_right": int(armor_by_location[8]),
 		"speed": propulsion,
-		"energy_cannon_attack": primary_attack,
+		"energy_cannon_attack": primary_attack + (achievement_bonuses.energy_cannon_attack if primary_attack > 0 else 0),
 		"energy_cannon_attack_base": primary_attack,
-		"energy_cannon_attack_bonus": 0,
-		"missile_attack": 0,
-		"rocket_attack": 0,
+		"energy_cannon_attack_bonus": achievement_bonuses.energy_cannon_attack if primary_attack > 0 else 0,
+		"energy_cannon_range_bonus": achievement_bonuses.energy_cannon_range,
+		"missile_attack": achievement_bonuses.missile_attack,
+		"rocket_attack": achievement_bonuses.rocket_attack,
 		"propulsion": propulsion,
 		"output_power": output_power,
 		"weight": total_weight,
@@ -115,7 +117,7 @@ func reconcile_loadout_state(preserve_resource_ratios := true) -> bool:
 	var reserve_ratio := _resource_ratio(reserve_energy, reserve_energy_capacity)
 	var working_ratio := _resource_ratio(working_energy, working_energy_capacity)
 	definition_id = chassis.definition_id
-	max_health = chassis.base_max_health
+	max_health = chassis.base_max_health + achievement_bonuses.max_health
 	reserve_energy_capacity = chassis.reserve_energy_capacity
 	working_energy_capacity = chassis.working_energy_capacity
 	output_power = chassis.output_power

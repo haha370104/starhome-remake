@@ -24,6 +24,7 @@ var character_equipment: CharacterEquipment
 var vehicle: PlayerVehicle
 var skills: SkillBook
 var quest_states: Dictionary
+var achievements: PlayerAchievements
 
 
 ## 初始化完整玩家聚合及其固定子对象。
@@ -63,6 +64,19 @@ func _init(state: Dictionary = {}) -> void:
 	skills = SkillBook.new(state.get("skills", {}))
 	var quest_value: Variant = state.get("quest_states", {})
 	quest_states = (quest_value as Dictionary).duplicate(true) if quest_value is Dictionary else {}
+	achievements = PlayerAchievements.new(state.get("achievements", {}))
+	vehicle.achievement_bonuses = achievements.bonuses()
+
+
+## 在玩家一致性边界内应用成就事实并同步当前称号的战车增益。
+## [param event] 服务器结算成功后产生的可信事实。
+## 返回是否改变进度；晋升只提高上限，不凭空恢复当前生命。
+func record_achievement(event: AchievementEvent) -> bool:
+	if not achievements.record(event):
+		return false
+	vehicle.achievement_bonuses = achievements.bonuses()
+	vehicle.reconcile_loadout_state(false)
+	return true
 
 
 ## 任务奖励使技能恰好升一级，复用经验清零与综合等级同步，满级时拒绝领奖。

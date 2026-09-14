@@ -1,0 +1,939 @@
+{
+  "schema_version": 1,
+  "milestones": {
+    "kill": [
+      {
+        "required": 10,
+        "points": 5
+      },
+      {
+        "required": 100,
+        "points": 15
+      },
+      {
+        "required": 1000,
+        "points": 30
+      }
+    ],
+    "mine": [
+      {
+        "required": 10,
+        "points": 5
+      },
+      {
+        "required": 100,
+        "points": 15
+      },
+      {
+        "required": 1000,
+        "points": 30
+      }
+    ],
+    "quest": [
+      {
+        "required": 1,
+        "points": 5
+      },
+      {
+        "required": 10,
+        "points": 15
+      },
+      {
+        "required": 50,
+        "points": 30
+      }
+    ]
+  },
+  "targets": [
+    {
+      "category": "kill",
+      "id": "toxic_gel",
+      "name": "毒胶"
+    },
+    {
+      "category": "kill",
+      "id": "photosensitive_orb",
+      "name": "感光质"
+    },
+    {
+      "category": "kill",
+      "id": "om_larva",
+      "name": "奥姆幼虫"
+    },
+    {
+      "category": "kill",
+      "id": "om_adult",
+      "name": "奥姆虫"
+    },
+    {
+      "category": "kill",
+      "id": "glory_monster_005",
+      "name": "低温毒胶"
+    },
+    {
+      "category": "kill",
+      "id": "glory_monster_006",
+      "name": "低温感光质"
+    },
+    {
+      "category": "kill",
+      "id": "glory_monster_007",
+      "name": "毒性奥姆幼虫"
+    },
+    {
+      "category": "kill",
+      "id": "glory_monster_008",
+      "name": "毒性奥姆虫"
+    },
+    {
+      "category": "kill",
+      "id": "glory_monster_009",
+      "name": "恶性毒胶"
+    },
+    {
+      "category": "kill",
+      "id": "glory_monster_010",
+      "name": "恶性感光质"
+    },
+    {
+      "category": "kill",
+      "id": "glory_monster_011",
+      "name": "血腥的奥姆幼虫"
+    },
+    {
+      "category": "kill",
+      "id": "glory_monster_012",
+      "name": "血腥的奥姆虫"
+    },
+    {
+      "category": "kill",
+      "id": "glory_monster_013",
+      "name": "胶虫"
+    },
+    {
+      "category": "kill",
+      "id": "glory_monster_014",
+      "name": "温和的罗格当虫"
+    },
+    {
+      "category": "kill",
+      "id": "glory_monster_015",
+      "name": "甲壳奥姆虫"
+    },
+    {
+      "category": "kill",
+      "id": "glory_monster_016",
+      "name": "温和的艾格丝虫"
+    },
+    {
+      "category": "kill",
+      "id": "glory_monster_017",
+      "name": "恶性胶虫"
+    },
+    {
+      "category": "kill",
+      "id": "glory_monster_018",
+      "name": "残酷的撒玛卫士"
+    },
+    {
+      "category": "kill",
+      "id": "glory_monster_019",
+      "name": "警觉的罗格当虫"
+    },
+    {
+      "category": "kill",
+      "id": "glory_monster_020",
+      "name": "警觉的撒玛近卫军"
+    },
+    {
+      "category": "kill",
+      "id": "glory_monster_021",
+      "name": "冷酷的甲壳奥姆虫"
+    },
+    {
+      "category": "kill",
+      "id": "glory_monster_022",
+      "name": "警觉的艾格丝虫"
+    },
+    {
+      "category": "kill",
+      "id": "glory_monster_023",
+      "name": "血腥的胶虫"
+    },
+    {
+      "category": "kill",
+      "id": "glory_monster_024",
+      "name": "暴戾的罗格当虫"
+    },
+    {
+      "category": "kill",
+      "id": "glory_monster_025",
+      "name": "嗜血的甲壳奥姆虫"
+    },
+    {
+      "category": "kill",
+      "id": "glory_monster_026",
+      "name": "暴戾的艾格丝虫"
+    },
+    {
+      "category": "kill",
+      "id": "glory_monster_027",
+      "name": "温和的骷髅龙"
+    },
+    {
+      "category": "kill",
+      "id": "glory_monster_028",
+      "name": "撒玛士兵"
+    },
+    {
+      "category": "kill",
+      "id": "glory_monster_029",
+      "name": "自走车"
+    },
+    {
+      "category": "kill",
+      "id": "glory_monster_030",
+      "name": "鱼鳞战车"
+    },
+    {
+      "category": "kill",
+      "id": "glory_monster_031",
+      "name": "韦德战车"
+    },
+    {
+      "category": "kill",
+      "id": "glory_monster_032",
+      "name": "撒玛卫士"
+    },
+    {
+      "category": "kill",
+      "id": "glory_monster_033",
+      "name": "警觉的骷髅龙"
+    },
+    {
+      "category": "kill",
+      "id": "glory_monster_034",
+      "name": "撒玛近卫军"
+    },
+    {
+      "category": "kill",
+      "id": "glory_monster_035",
+      "name": "冷酷的撒玛士兵"
+    },
+    {
+      "category": "kill",
+      "id": "glory_monster_036",
+      "name": "熔岩"
+    },
+    {
+      "category": "kill",
+      "id": "glory_monster_037",
+      "name": "暴戾的骷髅龙"
+    },
+    {
+      "category": "kill",
+      "id": "glory_monster_038",
+      "name": "警觉的鱼鳞战车"
+    },
+    {
+      "category": "kill",
+      "id": "glory_monster_039",
+      "name": "血腥的撒玛士兵"
+    },
+    {
+      "category": "kill",
+      "id": "glory_monster_040",
+      "name": "沙蝎"
+    },
+    {
+      "category": "kill",
+      "id": "glory_monster_041",
+      "name": "暴戾的鱼鳞战车"
+    },
+    {
+      "category": "kill",
+      "id": "glory_monster_042",
+      "name": "嗜血的撒玛卫士"
+    },
+    {
+      "category": "kill",
+      "id": "glory_monster_043",
+      "name": "暴戾的撒玛近卫军"
+    },
+    {
+      "category": "kill",
+      "id": "glory_monster_044",
+      "name": "钢锁"
+    },
+    {
+      "category": "kill",
+      "id": "glory_monster_045",
+      "name": "猛犸战车"
+    },
+    {
+      "category": "kill",
+      "id": "glory_monster_046",
+      "name": "机器爬虫"
+    },
+    {
+      "category": "kill",
+      "id": "glory_monster_047",
+      "name": "安格列蛛"
+    },
+    {
+      "category": "kill",
+      "id": "glory_monster_048",
+      "name": "悬浮兵"
+    },
+    {
+      "category": "kill",
+      "id": "glory_monster_049",
+      "name": "机枪兵"
+    },
+    {
+      "category": "kill",
+      "id": "glory_monster_050",
+      "name": "机械兵"
+    },
+    {
+      "category": "kill",
+      "id": "glory_monster_051",
+      "name": "重机甲"
+    },
+    {
+      "category": "kill",
+      "id": "glory_monster_052",
+      "name": "多足怪"
+    },
+    {
+      "category": "kill",
+      "id": "glory_monster_053",
+      "name": "狂暴甲"
+    },
+    {
+      "category": "kill",
+      "id": "glory_monster_054",
+      "name": "威猛的水晶吞噬者"
+    },
+    {
+      "category": "kill",
+      "id": "glory_monster_055",
+      "name": "凶恶的水晶吞噬者"
+    },
+    {
+      "category": "kill",
+      "id": "glory_monster_056",
+      "name": "嗜血的水晶变异者"
+    },
+    {
+      "category": "kill",
+      "id": "glory_monster_057",
+      "name": "残忍的水晶变异者"
+    },
+    {
+      "category": "kill",
+      "id": "glory_monster_058",
+      "name": "狂暴的水晶破坏者"
+    },
+    {
+      "category": "kill",
+      "id": "glory_monster_059",
+      "name": "冷酷的水晶破坏者"
+    },
+    {
+      "category": "kill",
+      "id": "glory_monster_060",
+      "name": "威猛的水晶吞噬者(精英)"
+    },
+    {
+      "category": "kill",
+      "id": "glory_monster_061",
+      "name": "凶恶的水晶吞噬者(精英)"
+    },
+    {
+      "category": "kill",
+      "id": "glory_monster_062",
+      "name": "嗜血的水晶变异者(精英)"
+    },
+    {
+      "category": "kill",
+      "id": "glory_monster_063",
+      "name": "残忍的水晶变异者(精英)"
+    },
+    {
+      "category": "kill",
+      "id": "glory_monster_064",
+      "name": "狂暴的水晶破坏者(精英)"
+    },
+    {
+      "category": "kill",
+      "id": "glory_monster_065",
+      "name": "冷酷的水晶破坏者(精英)"
+    },
+    {
+      "category": "kill",
+      "id": "glory_monster_067",
+      "name": "仿生毒胶"
+    },
+    {
+      "category": "kill",
+      "id": "glory_monster_068",
+      "name": "仿生感光质"
+    },
+    {
+      "category": "kill",
+      "id": "glory_monster_069",
+      "name": "仿生奥姆虫"
+    },
+    {
+      "category": "kill",
+      "id": "glory_monster_070",
+      "name": "变异毒胶"
+    },
+    {
+      "category": "kill",
+      "id": "glory_monster_071",
+      "name": "变异感光质"
+    },
+    {
+      "category": "kill",
+      "id": "glory_monster_072",
+      "name": "变异奥姆幼虫"
+    },
+    {
+      "category": "kill",
+      "id": "glory_monster_073",
+      "name": "变异奥姆虫"
+    },
+    {
+      "category": "kill",
+      "id": "glory_monster_074",
+      "name": "变异低温毒胶"
+    },
+    {
+      "category": "kill",
+      "id": "glory_monster_075",
+      "name": "变异低温感光质"
+    },
+    {
+      "category": "kill",
+      "id": "glory_monster_076",
+      "name": "变异毒性奥姆幼虫"
+    },
+    {
+      "category": "kill",
+      "id": "glory_monster_077",
+      "name": "变异毒性奥姆虫"
+    },
+    {
+      "category": "kill",
+      "id": "glory_monster_078",
+      "name": "变异恶性毒胶"
+    },
+    {
+      "category": "kill",
+      "id": "glory_monster_079",
+      "name": "变异恶性感光质"
+    },
+    {
+      "category": "kill",
+      "id": "glory_monster_080",
+      "name": "变异血腥奥姆幼虫"
+    },
+    {
+      "category": "kill",
+      "id": "glory_monster_081",
+      "name": "变异胶虫"
+    },
+    {
+      "category": "kill",
+      "id": "glory_monster_082",
+      "name": "变异罗格当虫"
+    },
+    {
+      "category": "kill",
+      "id": "glory_monster_083",
+      "name": "变异甲壳奥姆虫"
+    },
+    {
+      "category": "kill",
+      "id": "glory_monster_084",
+      "name": "变异艾格丝虫"
+    },
+    {
+      "category": "kill",
+      "id": "glory_monster_085",
+      "name": "变异恶性胶虫"
+    },
+    {
+      "category": "kill",
+      "id": "glory_monster_086",
+      "name": "变异毒性罗格当虫"
+    },
+    {
+      "category": "kill",
+      "id": "glory_monster_087",
+      "name": "变异冷酷甲壳奥姆虫"
+    },
+    {
+      "category": "kill",
+      "id": "glory_monster_088",
+      "name": "变异毒性艾格丝虫"
+    },
+    {
+      "category": "kill",
+      "id": "glory_monster_089",
+      "name": "变异熔岩"
+    },
+    {
+      "category": "kill",
+      "id": "glory_monster_090",
+      "name": "变异撒玛近卫军"
+    },
+    {
+      "category": "kill",
+      "id": "glory_monster_091",
+      "name": "变异撒玛士兵"
+    },
+    {
+      "category": "kill",
+      "id": "glory_monster_092",
+      "name": "变异骷髅龙"
+    },
+    {
+      "category": "kill",
+      "id": "glory_monster_093",
+      "name": "变异鱼鳞战车"
+    },
+    {
+      "category": "kill",
+      "id": "glory_monster_094",
+      "name": "变异撒玛卫士"
+    },
+    {
+      "category": "kill",
+      "id": "glory_monster_095",
+      "name": "变异韦德战车"
+    },
+    {
+      "category": "kill",
+      "id": "glory_monster_096",
+      "name": "变异沙蝎"
+    },
+    {
+      "category": "kill",
+      "id": "glory_monster_097",
+      "name": "恐怖的奥姆幼虫(精英)"
+    },
+    {
+      "category": "kill",
+      "id": "glory_monster_098",
+      "name": "凶猛的奥姆虫(精英)"
+    },
+    {
+      "category": "kill",
+      "id": "glory_monster_099",
+      "name": "狂热的胶虫(精英)"
+    },
+    {
+      "category": "kill",
+      "id": "glory_monster_100",
+      "name": "残暴的罗格当虫(精英)"
+    },
+    {
+      "category": "kill",
+      "id": "glory_monster_101",
+      "name": "暴怒甲壳奥姆虫(精英)"
+    },
+    {
+      "category": "kill",
+      "id": "glory_monster_102",
+      "name": "疯狂的艾格丝虫(精英)"
+    },
+    {
+      "category": "kill",
+      "id": "glory_monster_103",
+      "name": "残忍的熔岩(精英)"
+    },
+    {
+      "category": "kill",
+      "id": "glory_monster_104",
+      "name": "残忍撒玛近卫军(精英)"
+    },
+    {
+      "category": "kill",
+      "id": "glory_monster_105",
+      "name": "残忍的撒玛士兵(精英)"
+    },
+    {
+      "category": "kill",
+      "id": "glory_monster_106",
+      "name": "残忍的骷髅龙(精英)"
+    },
+    {
+      "category": "kill",
+      "id": "glory_monster_107",
+      "name": "残忍的鱼鳞战车(精英)"
+    },
+    {
+      "category": "kill",
+      "id": "glory_monster_108",
+      "name": "残忍的撒玛卫士(精英)"
+    },
+    {
+      "category": "kill",
+      "id": "glory_monster_109",
+      "name": "残忍的韦德战车(精英)"
+    },
+    {
+      "category": "kill",
+      "id": "glory_monster_110",
+      "name": "残忍的沙蝎(精英)"
+    },
+    {
+      "category": "kill",
+      "id": "glory_monster_111",
+      "name": "堕落的毒心虫（BOSS）"
+    },
+    {
+      "category": "kill",
+      "id": "glory_monster_112",
+      "name": "暴走邪恶机甲（BOSS）"
+    },
+    {
+      "category": "kill",
+      "id": "glory_monster_113",
+      "name": "漂浮机甲兵（BOSS）"
+    },
+    {
+      "category": "kill",
+      "id": "glory_monster_114",
+      "name": "被遗忘的爬虫（BOSS）"
+    },
+    {
+      "category": "kill",
+      "id": "glory_monster_115",
+      "name": "蜘蛛邪恶王（BOSS）"
+    },
+    {
+      "category": "kill",
+      "id": "glory_monster_116",
+      "name": "狂暴甲拉格（BOSS）"
+    },
+    {
+      "category": "kill",
+      "id": "glory_monster_127",
+      "name": "炽热重甲王（BOSS）"
+    },
+    {
+      "category": "kill",
+      "id": "glory_monster_128",
+      "name": "炼狱天灾怒火（BOSS）"
+    },
+    {
+      "category": "kill",
+      "id": "glory_monster_129",
+      "name": "电王阿希科瑞尔BOSS"
+    },
+    {
+      "category": "kill",
+      "id": "glory_monster_130",
+      "name": "撒玛议会咆哮者BOSS"
+    },
+    {
+      "category": "mine",
+      "id": "item:material:078bc4104cd1",
+      "name": "能量矿"
+    },
+    {
+      "category": "mine",
+      "id": "iron_ore",
+      "name": "铁矿"
+    },
+    {
+      "category": "mine",
+      "id": "item:material:1850770283a8",
+      "name": "铜矿"
+    },
+    {
+      "category": "mine",
+      "id": "silicon_ore",
+      "name": "硅矿"
+    },
+    {
+      "category": "mine",
+      "id": "graphite_ore",
+      "name": "石墨矿"
+    },
+    {
+      "category": "mine",
+      "id": "item:material:dbd4b5c8b82f",
+      "name": "银矿"
+    },
+    {
+      "category": "mine",
+      "id": "item:material:6b764a13c668",
+      "name": "金矿"
+    },
+    {
+      "category": "mine",
+      "id": "item:material:ba90bdec9217",
+      "name": "宝石矿"
+    },
+    {
+      "category": "mine",
+      "id": "item:material:8e82258ba743",
+      "name": "铬矿"
+    },
+    {
+      "category": "mine",
+      "id": "item:material:a039c10cf145",
+      "name": "红水晶矿"
+    },
+    {
+      "category": "mine",
+      "id": "item:material:f112d2e6b2a1",
+      "name": "蓝水晶矿"
+    },
+    {
+      "category": "mine",
+      "id": "item:material:39aa70e8697d",
+      "name": "镭矿"
+    },
+    {
+      "category": "mine",
+      "id": "item:material:32205fa18c6a",
+      "name": "绿水晶矿"
+    },
+    {
+      "category": "mine",
+      "id": "item:material:1342bef47b1c",
+      "name": "镍矿"
+    },
+    {
+      "category": "mine",
+      "id": "item:material:8e983c02db12",
+      "name": "锌矿"
+    },
+    {
+      "category": "mine",
+      "id": "item:material:639ecee21fb7",
+      "name": "紫水晶矿"
+    },
+    {
+      "category": "mine",
+      "id": "item:material:185cf7b29406",
+      "name": "镁矿"
+    },
+    {
+      "category": "mine",
+      "id": "item:material:6b0269b35f1b",
+      "name": "钡矿"
+    },
+    {
+      "category": "mine",
+      "id": "item:material:4f5c6d64fd5b",
+      "name": "钒矿"
+    },
+    {
+      "category": "mine",
+      "id": "item:material:8811cec57497",
+      "name": "钴矿"
+    },
+    {
+      "category": "mine",
+      "id": "item:material:283227001fe4",
+      "name": "钼矿"
+    },
+    {
+      "category": "mine",
+      "id": "item:material:1793569f3af3",
+      "name": "钽矿"
+    },
+    {
+      "category": "mine",
+      "id": "item:material:8d7632e7294c",
+      "name": "铂金矿"
+    },
+    {
+      "category": "mine",
+      "id": "item:material:6ce6d7cd8016",
+      "name": "藏宝矿"
+    },
+    {
+      "category": "mine",
+      "id": "item:material:5f3632e66566",
+      "name": "锆矿"
+    },
+    {
+      "category": "mine",
+      "id": "item:material:7289df5b1ab9",
+      "name": "合金矿"
+    },
+    {
+      "category": "mine",
+      "id": "item:material:3d9597ddfaa0",
+      "name": "钾矿"
+    },
+    {
+      "category": "mine",
+      "id": "item:material:ba72367493f5",
+      "name": "钪矿"
+    },
+    {
+      "category": "mine",
+      "id": "item:material:b739c1f3c1d8",
+      "name": "磷矿"
+    },
+    {
+      "category": "mine",
+      "id": "item:material:5479cbea59ce",
+      "name": "硫矿"
+    },
+    {
+      "category": "mine",
+      "id": "item:material:7c2a619313f6",
+      "name": "锰矿"
+    },
+    {
+      "category": "mine",
+      "id": "item:material:f5a20e4fbcd6",
+      "name": "钛矿"
+    },
+    {
+      "category": "mine",
+      "id": "item:material:a1d287e71f35",
+      "name": "钨矿"
+    },
+    {
+      "category": "mine",
+      "id": "item:material:aa7b06e40657",
+      "name": "铱矿"
+    },
+    {
+      "category": "quest",
+      "id": "arms_npc_supply",
+      "name": "武器店材料收集"
+    },
+    {
+      "category": "quest",
+      "id": "ore_npc_supply",
+      "name": "矿物收集"
+    },
+    {
+      "category": "quest",
+      "id": "armory_npc_supply",
+      "name": "护甲材料收集"
+    },
+    {
+      "category": "quest",
+      "id": "special_arms_npc_supply",
+      "name": "特种武器材料收集"
+    },
+    {
+      "category": "quest",
+      "id": "training_energy_cannon",
+      "name": "能量炮训练"
+    },
+    {
+      "category": "quest",
+      "id": "training_driving",
+      "name": "驾驶训练"
+    },
+    {
+      "category": "quest",
+      "id": "training_missile",
+      "name": "导弹训练"
+    },
+    {
+      "category": "quest",
+      "id": "training_rocket_launcher",
+      "name": "火箭炮训练"
+    },
+    {
+      "category": "quest",
+      "id": "training_repair",
+      "name": "维修训练"
+    }
+  ],
+  "titles": [
+    {
+      "id": "none",
+      "name": "未获得称号",
+      "required_points": 0,
+      "bonuses": {
+        "energy_cannon_attack": 0,
+        "energy_cannon_range": 0,
+        "rocket_attack": 0,
+        "missile_attack": 0,
+        "max_health": 0,
+        "self_repair": 0
+      }
+    },
+    {
+      "id": "rookie",
+      "name": "初露锋芒",
+      "required_points": 10,
+      "bonuses": {
+        "energy_cannon_attack": 1,
+        "energy_cannon_range": 5,
+        "rocket_attack": 1,
+        "missile_attack": 1,
+        "max_health": 10,
+        "self_repair": 1
+      }
+    },
+    {
+      "id": "pioneer",
+      "name": "星际开拓者",
+      "required_points": 50,
+      "bonuses": {
+        "energy_cannon_attack": 3,
+        "energy_cannon_range": 10,
+        "rocket_attack": 3,
+        "missile_attack": 3,
+        "max_health": 30,
+        "self_repair": 2
+      }
+    },
+    {
+      "id": "elite",
+      "name": "精英先锋",
+      "required_points": 150,
+      "bonuses": {
+        "energy_cannon_attack": 6,
+        "energy_cannon_range": 20,
+        "rocket_attack": 6,
+        "missile_attack": 6,
+        "max_health": 70,
+        "self_repair": 3
+      }
+    },
+    {
+      "id": "commander",
+      "name": "星际统领",
+      "required_points": 500,
+      "bonuses": {
+        "energy_cannon_attack": 12,
+        "energy_cannon_range": 35,
+        "rocket_attack": 12,
+        "missile_attack": 12,
+        "max_health": 150,
+        "self_repair": 5
+      }
+    },
+    {
+      "id": "legend",
+      "name": "星域传奇",
+      "required_points": 1500,
+      "bonuses": {
+        "energy_cannon_attack": 25,
+        "energy_cannon_range": 50,
+        "rocket_attack": 25,
+        "missile_attack": 25,
+        "max_health": 300,
+        "self_repair": 10
+      }
+    }
+  ]
+}

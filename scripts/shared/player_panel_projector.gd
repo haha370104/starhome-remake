@@ -28,6 +28,7 @@ func build_bundle(player: Player) -> Dictionary:
 		"inventory": _inventory_snapshot(player.inventory),
 		"vehicle": _vehicle_snapshot(player),
 		"mission_journal": _journal_snapshot(player),
+		"achievements": player.achievements.network_snapshot(),
 	}
 
 
@@ -67,6 +68,7 @@ func _character_snapshot(player: Player) -> Dictionary:
 		"health": player.health,
 		"max_health": player.max_health,
 		"description": player.description,
+		"achievement_title": player.achievements.network_snapshot()["title_name"],
 		"skills": player.skills.to_view_array(
 			player.character_equipment, _skill_progression_config
 		),

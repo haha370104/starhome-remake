@@ -217,7 +217,7 @@ func vehicle_combat_loadout(
 		)
 	var calculator_chassis := {
 		"weight": chassis.weight,
-		"max_health": chassis.base_max_health,
+		"max_health": chassis.base_max_health + player.vehicle.achievement_bonuses.max_health,
 		"max_durability": chassis.max_durability,
 		"working_energy_capacity": chassis.working_energy_capacity,
 		"reserve_energy_capacity": chassis.reserve_energy_capacity,
@@ -252,7 +252,7 @@ func vehicle_combat_loadout(
 	var assembly: Dictionary = assembly_result.value
 	assembly["vehicle_id"] = chassis.definition_id
 	assembly["self_repair_base_strength"] = chassis.self_repair_power()
-	assembly["self_repair_bonus_strength"] = self_repair_bonus
+	assembly["self_repair_bonus_strength"] = self_repair_bonus + player.vehicle.achievement_bonuses.self_repair
 	assembly["self_repair_energy_cost"] = chassis.self_repair_energy_cost
 	assembly["self_repair_required_skill_level"] = chassis.required_repair_skill_level
 	assembly["equipment_hardiness"] = equipment_hardiness
@@ -267,6 +267,8 @@ func vehicle_combat_loadout(
 	if not secondary_result.is_ok:
 		return secondary_result
 	weapons.merge(secondary_result.value)
+	for ability_id: String in weapons:
+		weapons[ability_id] = player.vehicle.achievement_bonuses.apply_weapon(weapons[ability_id])
 	return DomainResult.ok({"assembly": assembly, "weapons": weapons})
 
 

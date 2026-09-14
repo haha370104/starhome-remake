@@ -28,6 +28,7 @@ var character_health := 1
 var character_experience := 0
 var character_skills: Dictionary = {}
 var quest_states: Dictionary = {}
+var achievements: Dictionary = {}
 var vehicle_id := ""
 var vehicle_definition_id := ""
 var vehicle_max_health := 0
@@ -85,6 +86,10 @@ static func from_dictionary(raw: Variant) -> DomainResult:
 	if not quest_value is Dictionary:
 		return DomainResult.failure(&"persistence.invalid_player_state", "quest states must be a dictionary")
 	record.quest_states = (quest_value as Dictionary).duplicate(true)
+	var achievement_value: Variant = raw.get("achievements", {})
+	if not PlayerAchievements.valid_state(achievement_value):
+		return DomainResult.failure(&"persistence.invalid_player_state", "achievement state is invalid")
+	record.achievements = (achievement_value as Dictionary).duplicate(true)
 	record.vehicle_id = String(raw.get("vehicle_id", ""))
 	record.vehicle_definition_id = String(raw.get("vehicle_definition_id", ""))
 	record.vehicle_max_health = int(raw.get("vehicle_max_health", 0))
@@ -208,6 +213,7 @@ func to_dictionary() -> Dictionary:
 		"character_experience": character_experience,
 		"character_skills": character_skills.duplicate(true),
 		"quest_states": quest_states.duplicate(true),
+		"achievements": achievements.duplicate(true),
 		"vehicle_id": vehicle_id,
 		"vehicle_definition_id": vehicle_definition_id,
 		"vehicle_max_health": vehicle_max_health,
