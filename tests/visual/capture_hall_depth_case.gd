@@ -40,7 +40,7 @@ func _capture() -> void:
 func _capture_position(hall: Node, world_position: Vector2, output_path: String) -> Error:
 	hall.world_view.player.position = world_position
 	hall.world_view.camera.position = hall.world_view.player.position
-	hall._sync_player_nodes()
+	hall.player_binding.sync_position(hall.world_view.player.position)
 	await process_frame
 	await process_frame
 	RenderingServer.force_sync()

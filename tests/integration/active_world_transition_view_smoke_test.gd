@@ -4,7 +4,7 @@ const MainHallScene := preload("res://scenes/main_hall.tscn")
 const MapDefinitionLoaderScript := preload("res://scripts/maps/map_definition_loader.gd")
 
 class TestMapPreloader:
-	extends Node
+	extends ClientMapPreloader
 
 	var requested_map_id: StringName = &""
 
@@ -32,7 +32,7 @@ func _run() -> void:
 	root.add_child(hall)
 	await process_frame
 	await process_frame
-	if not hall.has_method("_handle_world_right_click") or hall.active_world_controller == null:
+	if hall.interactions == null or hall.active_world_controller == null:
 		_fail("主场景未提供活动世界与右键传送接缝")
 		_finish(hall)
 		return
@@ -56,7 +56,7 @@ func _run() -> void:
 	await create_timer(0.15).timeout
 	_expect(active.transition_view_at(Vector2(420, 360)) == view, "命中区不得随动画当前帧抖动")
 
-	hall.call("_handle_world_right_click", Vector2(420, 360))
+	hall.interactions.call("handle_world_right_click", Vector2(420, 360))
 	_expect(hall.map_travel.selected_transition_id == &"exit_to_city", "右键传送图标必须记录具体业务出口")
 	_expect(hall.world_view.movement_click_effects.frame_count() == 6, "荣耀版右键落点反馈必须保留完整 6 帧")
 	_expect(hall.world_view.movement_click_effects.active_effect_count() == 1, "右键点击必须立即创建一次落点反馈")
@@ -64,18 +64,18 @@ func _run() -> void:
 		hall.world_view.movement_click_effects.last_presented_position == Vector2(420, 360),
 		"落点反馈必须留在实际点击点，不得跟随寻路接近点",
 	)
-	_expect(not hall.path_points.is_empty(), "命中传送图标必须生成可行路线")
-	if not hall.path_points.is_empty():
-		_expect(hall.path_points[-1].is_equal_approx(Vector2(480, 370)), "传送路线终点必须是 approach_point")
+	_expect(not hall.local_player_controller.path_points.is_empty(), "命中传送图标必须生成可行路线")
+	if not hall.local_player_controller.path_points.is_empty():
+		_expect(hall.local_player_controller.path_points[-1].is_equal_approx(Vector2(480, 370)), "传送路线终点必须是 approach_point")
 	_expect(hall.map_travel.pending_map_transition.is_empty(), "玩家到达前不得提交地图切换")
 	await create_timer(0.65).timeout
 	_expect(hall.world_view.movement_click_effects.active_effect_count() == 0, "落点反馈必须在约 600ms 后自动删除")
 
 	var test_preloader := TestMapPreloader.new()
 	hall.add_child(test_preloader)
-	hall.map_preloader = test_preloader
+	hall.map_travel.map_preloader = test_preloader
 	hall.local_player_controller.set_position(Vector2(480, 370), false)
-	hall.call("_on_local_player_route_finished")
+	hall.map_travel.call("try_begin_nearby_map_transition")
 	_expect(not hall.map_travel.pending_map_transition.is_empty(), "玩家到达 approach_point 后必须启动现有权威切图管线")
 	_expect(
 		StringName(hall.map_travel.pending_map_transition.get("transition_id", &"")) == &"exit_to_city",

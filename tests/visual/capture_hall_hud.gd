@@ -16,7 +16,7 @@ func _capture() -> void:
 	await process_frame
 	hall.world_view.player.position = Vector2(972, 960)
 	hall.world_view.camera.position = hall.world_view.player.position
-	hall._sync_player_nodes()
+	hall.player_binding.sync_position(hall.world_view.player.position)
 	await process_frame
 	await process_frame
 	RenderingServer.force_sync()

@@ -225,7 +225,7 @@ func _test_eight_way_idle_and_move(player: Node2D, controller: Node) -> void:
 func _test_move_and_fire_keeps_route(hall: Node2D) -> void:
 	var origin: Vector2 = hall.world_view.player.position
 	var requested_target := origin + Vector2(180, 90)
-	var movement_target: Vector2 = hall.navigation.closest_reachable_position(
+	var movement_target: Vector2 = hall.active_world_controller.navigation.closest_reachable_position(
 		origin,
 		requested_target,
 	)
@@ -234,10 +234,10 @@ func _test_move_and_fire_keeps_route(hall: Node2D) -> void:
 		return
 	var movement_result: Dictionary = hall.local_player_controller.request_move(movement_target)
 	_expect(bool(movement_result.get("ok", false)), "战车必须先建立未完成路线")
-	var route_before_fire: PackedVector2Array = hall.path_points.duplicate()
+	var route_before_fire: PackedVector2Array = hall.local_player_controller.path_points.duplicate()
 	hall.combat.handle_world_combat_left_click(origin + Vector2(120, 0))
 	_expect(hall.local_player_controller.has_active_route(), "开火不得停止活动路线")
-	_expect(hall.path_points == route_before_fire, "开火不得改写尚未完成的路径折线")
+	_expect(hall.local_player_controller.path_points == route_before_fire, "开火不得改写尚未完成的路径折线")
 	_expect(hall.world_view.combat_attack_controller.active_projectile_count() == 1, "移动中开火仍须生成弹体")
 
 
@@ -264,7 +264,7 @@ func _test_engineering_arm_empty_click(hall: Node2D) -> void:
 			vehicle.loadout = VehicleLoadout.new()
 			_expect(vehicle.loadout.restore(created.value).is_ok, "工程臂可安装到主槽")
 			_expect(created.value.primary_device_kind() == device_kind, "模型应提供正确主槽类型")
-			hall._on_current_player_changed(current)
+			hall.player_binding.on_current_player_changed(current)
 			_expect(hall.hud.state.primary_device_kind == device_kind, "当前玩家快照绑定必须刷新主槽图标")
 			hall.hud.show_status("原提示保持不变")
 			# 空图外坐标不包含矿物、掉落或怪物；若误入发射链将产生弹体或连接错误。
@@ -276,7 +276,7 @@ func _test_engineering_arm_empty_click(hall: Node2D) -> void:
 				"空地点击不得提交开炮意图")
 			_expect(hall.world_view.combat_attack_controller.active_projectile_count() == projectile_count, "工程臂不产生炮弹")
 	vehicle.loadout = original_loadout
-	hall._on_current_player_changed(current)
+	hall.player_binding.on_current_player_changed(current)
 
 
 ## 执行 `test_evidence_contract` 对应的模块操作。

@@ -156,3 +156,16 @@ func configure(character_catalog: Dictionary, animation_speed: float) -> void:
 	var repair_error := self_repair_visual_controller.configure(player)
 	if repair_error != OK:
 		push_error("Unable to configure self-repair presentation: %s" % error_string(repair_error))
+
+
+## 在活动地图替换前清除旧世界的临时特效与实体视图。
+func clear_map_effects() -> void:
+	if movement_click_effects != null:
+		movement_click_effects.clear_effects()
+	for controller: Node in combat_attack_controllers.values():
+		controller.clear_effects()
+	if monster_world_controller != null:
+		monster_world_controller.clear()
+	if mineral_world_controller != null:
+		mineral_world_controller.clear()
+	mining_visual_controller.clear()

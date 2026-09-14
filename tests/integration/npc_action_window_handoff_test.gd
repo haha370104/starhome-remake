@@ -43,7 +43,7 @@ func _run() -> void:
 		var merchant := ShopScript.new()
 		merchant.configure_npc(FactoryScript.build_character_set(
 			hall.character_catalog, definition["appearance"]
-		), definition, hall.navigation)
+		), definition, hall.active_world_controller.navigation)
 		hall.add_child(merchant)
 		var actions: Array = merchant.get_interaction_data()["actions"]
 		for index in range(actions.size()):
@@ -73,11 +73,11 @@ func _run() -> void:
 ## [param target] 本次点击的生产设施或商人。
 ## [param action_index] 当前菜单内的动作按钮序号。
 func _click_action(hall: Node2D, target: Node2D, action_index: int) -> void:
-	hall._show_npc_popup(target)
+	hall.interactions.show_npc_popup(target)
 	commands.clear()
 	hall.hud.show_status("等待菜单操作")
 	hall.hud.popup_actions.get_child(action_index).pressed.emit()
-	_expect(hall.active_npc == null, "关闭菜单应同步清空当前交互对象")
+	_expect(hall.interactions.active_npc == null, "关闭菜单应同步清空当前交互对象")
 	_expect(not hall.hud.popup.visible, "打开业务窗口后上下文菜单应关闭")
 	_expect(commands.size() == 1, "一次菜单动作应只发出一条权威查询")
 

@@ -30,18 +30,18 @@ func _test_route_policy_after_authoritative_correction() -> void:
 	if not target.is_finite():
 		hall.free()
 		return
-	hall.call("_move_to", target)
-	var original_path: PackedVector2Array = hall.path_points.duplicate()
+	hall.interactions.call("move_to", target)
+	var original_path: PackedVector2Array = hall.local_player_controller.path_points.duplicate()
 	var corrected_position := _find_small_correction_with_distinct_path(hall, target, original_path)
 	_expect(corrected_position.is_finite(), "必须找到不超过平滑阈值且会改变路线起点的可走位置")
 	if corrected_position.is_finite():
-		var expected_replanned: PackedVector2Array = hall.navigation.find_path(corrected_position, target)
-		hall.call("_on_multiplayer_local_character_state_applied", {
+		var expected_replanned: PackedVector2Array = hall.active_world_controller.navigation.find_path(corrected_position, target)
+		hall.local_player_controller.call("apply_authoritative_presentation", {
 			"position": corrected_position,
 			"correction_mode": &"smooth",
 		})
 		_expect_path(
-			hall.path_points,
+			hall.local_player_controller.path_points,
 			expected_replanned,
 			"平滑权威校正必须保留目标并从校正位置重算路线",
 		)
@@ -49,18 +49,18 @@ func _test_route_policy_after_authoritative_correction() -> void:
 
 	# Re-establish a route so the forced correction assertion is independent from
 	# the small-correction result above.
-	hall.call("_move_to", target)
-	_expect(not hall.path_points.is_empty(), "强制校正前必须存在活动路线")
-	var forced_position: Vector2 = hall.navigation.closest_reachable_position(
+	hall.interactions.call("move_to", target)
+	_expect(not hall.local_player_controller.path_points.is_empty(), "强制校正前必须存在活动路线")
+	var forced_position: Vector2 = hall.active_world_controller.navigation.closest_reachable_position(
 		hall.world_view.player.position,
 		hall.world_view.player.position + Vector2(180.0, 120.0),
 	)
-	hall.call("_on_multiplayer_local_character_state_applied", {
+	hall.local_player_controller.call("apply_authoritative_presentation", {
 		"position": forced_position,
 		"correction_mode": &"forced",
 	})
-	_expect(hall.path_points.is_empty(), "强制权威校正必须取消旧地图路线")
-	_expect(hall.active_movement_input_sequence == 0, "强制权威校正必须清除旧移动输入序号")
+	_expect(hall.local_player_controller.path_points.is_empty(), "强制权威校正必须取消旧地图路线")
+	_expect(hall.local_player_controller.active_movement_input_sequence == 0, "强制权威校正必须清除旧移动输入序号")
 	_expect(hall.world_view.movement_click_effects.active_effect_count() == 0, "强制权威校正不得生成鼠标落点反馈")
 	hall.free()
 
@@ -68,11 +68,11 @@ func _test_route_policy_after_authoritative_correction() -> void:
 ## 验证权威请求提交前的预载失败保留旧地图、旧会话，并恢复该地图输入。
 func _test_pre_authority_preload_failure_keeps_old_world_active() -> void:
 	var hall := await _create_hall()
-	var old_map_id: StringName = hall.map_definition.map_id
+	var old_map_id: StringName = hall.active_world_controller.definition.map_id
 	var old_instance_id: String = hall.multiplayer_presenter.session.current_map_instance_id
 	var old_floor: Texture2D = hall.world_view.map_background.texture
-	var old_navigation: RefCounted = hall.navigation
-	var old_npc_count: int = hall.npc_instances.size()
+	var old_navigation: RefCounted = hall.active_world_controller.navigation
+	var old_npc_count: int = hall.active_world_controller.npc_instances.size()
 	hall.map_travel.pending_map_transition = {
 		"transition_id": &"review_missing_exit",
 		"destination_map_id": &"g08_field_zone",
@@ -80,16 +80,16 @@ func _test_pre_authority_preload_failure_keeps_old_world_active() -> void:
 	hall.map_travel.call("on_map_preload_failed", &"g08_field_zone", "测试资源缺失")
 	_expect(hall.map_travel.pending_map_transition.is_empty(), "请求前预载失败必须清空暂存切图")
 	_expect(not hall.combat.call("is_input_locked"), "请求前预载失败必须恢复旧地图输入")
-	_expect(hall.map_definition.map_id == old_map_id, "请求前预载失败必须保留旧活动地图")
+	_expect(hall.active_world_controller.definition.map_id == old_map_id, "请求前预载失败必须保留旧活动地图")
 	_expect(hall.world_view.map_background.texture == old_floor, "请求前预载失败必须保留旧地图画面")
-	_expect(hall.navigation == old_navigation, "请求前预载失败必须保留旧导航实例")
-	_expect(hall.npc_instances.size() == old_npc_count, "请求前预载失败必须保留旧地图实体")
+	_expect(hall.active_world_controller.navigation == old_navigation, "请求前预载失败必须保留旧导航实例")
+	_expect(hall.active_world_controller.npc_instances.size() == old_npc_count, "请求前预载失败必须保留旧地图实体")
 	_expect(hall.multiplayer_presenter.session.current_map_id == old_map_id, "请求前预载失败必须保留旧会话地图")
 	_expect(hall.multiplayer_presenter.session.current_map_instance_id == old_instance_id, "请求前预载失败必须保留旧会话实例")
 	var before_sequence: int = hall.multiplayer_presenter.session.local_predictor.next_input_sequence
 	var target := _find_route_target(hall)
 	if target.is_finite():
-		hall.call("_move_to", target)
+		hall.interactions.call("move_to", target)
 	_expect(
 		hall.multiplayer_presenter.session.local_predictor.next_input_sequence == before_sequence + 1,
 		"请求前预载失败后应能继续向旧会话提交移动",
@@ -101,10 +101,10 @@ func _test_pre_authority_preload_failure_keeps_old_world_active() -> void:
 ## 设计：服务端权威身份不可回滚；客户端只能保留旧画面作诊断并锁输入，等待重连或恢复资源。
 func _test_post_authority_preload_failure_locks_old_world() -> void:
 	var hall := await _create_hall()
-	var old_map_id: StringName = hall.map_definition.map_id
+	var old_map_id: StringName = hall.active_world_controller.definition.map_id
 	var old_floor: Texture2D = hall.world_view.map_background.texture
-	var old_navigation: RefCounted = hall.navigation
-	var old_npc_count: int = hall.npc_instances.size()
+	var old_navigation: RefCounted = hall.active_world_controller.navigation
+	var old_npc_count: int = hall.active_world_controller.npc_instances.size()
 	var session = hall.multiplayer_presenter.session
 	session.current_map_id = MISSING_TEST_MAP_ID
 	session.configure_map_instance("test_missing_authoritative_map.instance.review")
@@ -115,17 +115,17 @@ func _test_post_authority_preload_failure_locks_old_world() -> void:
 		Vector2(420.0, 520.0),
 		1,
 	)
-	_expect(hall.map_definition.map_id == old_map_id, "权威后预载失败必须保留旧活动画面身份")
+	_expect(hall.active_world_controller.definition.map_id == old_map_id, "权威后预载失败必须保留旧活动画面身份")
 	_expect(hall.world_view.map_background.texture == old_floor, "权威后预载失败必须保留旧底图")
-	_expect(hall.navigation == old_navigation, "权威后预载失败不得半提交新导航")
-	_expect(hall.npc_instances.size() == old_npc_count, "权威后预载失败不得半清理旧地图实体")
+	_expect(hall.active_world_controller.navigation == old_navigation, "权威后预载失败不得半提交新导航")
+	_expect(hall.active_world_controller.npc_instances.size() == old_npc_count, "权威后预载失败不得半清理旧地图实体")
 	_expect(hall.map_travel.map_commit_failure_locked, "权威后预载失败必须进入不可恢复锁定状态")
 	_expect(hall.combat.call("is_input_locked"), "权威后预载失败必须冻结旧画面输入")
-	_expect(hall.path_points.is_empty(), "权威后预载失败必须终止旧路线")
-	_expect(hall.active_movement_input_sequence == 0, "权威后预载失败必须清除旧输入序号")
+	_expect(hall.local_player_controller.path_points.is_empty(), "权威后预载失败必须终止旧路线")
+	_expect(hall.local_player_controller.active_movement_input_sequence == 0, "权威后预载失败必须清除旧输入序号")
 	_expect(session.current_map_id == MISSING_TEST_MAP_ID, "权威会话地图必须保持服务端已提交目标")
 	_expect(session.current_map_instance_id == "test_missing_authoritative_map.instance.review", "权威会话实例必须保持服务端已提交目标")
-	hall.call("_move_to", hall.world_view.player.position + Vector2(32.0, 0.0))
+	hall.interactions.call("move_to", hall.world_view.player.position + Vector2(32.0, 0.0))
 	_expect(
 		session.local_predictor.next_input_sequence == before_sequence,
 		"锁定旧画面不得向新会话创建移动输入",
@@ -158,8 +158,8 @@ func _find_route_target(hall: Node2D) -> Vector2:
 		Vector2(180.0, 180.0),
 	]
 	for offset in offsets:
-		var candidate: Vector2 = hall.navigation.closest_reachable_position(origin, origin + offset)
-		var route: PackedVector2Array = hall.navigation.find_path(origin, candidate)
+		var candidate: Vector2 = hall.active_world_controller.navigation.closest_reachable_position(origin, origin + offset)
+		var route: PackedVector2Array = hall.active_world_controller.navigation.find_path(origin, candidate)
 		if candidate.is_finite() and route.size() > 1:
 			return candidate
 	return Vector2(INF, INF)
@@ -186,9 +186,9 @@ func _find_small_correction_with_distinct_path(
 	]
 	for offset in offsets:
 		var candidate: Vector2 = origin + offset
-		if not hall.navigation.is_walkable(candidate):
+		if not hall.active_world_controller.navigation.is_walkable(candidate):
 			continue
-		var replanned: PackedVector2Array = hall.navigation.find_path(candidate, target)
+		var replanned: PackedVector2Array = hall.active_world_controller.navigation.find_path(candidate, target)
 		if not replanned.is_empty() and not _paths_equal(replanned, original_path):
 			return candidate
 	return Vector2(INF, INF)
