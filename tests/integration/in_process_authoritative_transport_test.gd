@@ -55,6 +55,15 @@ func _run() -> void:
 	_expect(entity_id.begins_with("player."), "玩家身份必须由正式服务器会话分配")
 	_expect(not map_instance_id.is_empty(), "握手必须携带正式地图实例标识")
 	await _test_single_simulation_clock(transport, config.simulation_hz)
+	transport.send_use_ability_intent({
+		"map_instance_id": map_instance_id, "ability_id": "mining.collect",
+		"aim_world_position": {"x": 1200.0, "y": 1200.0}, "input_sequence": 1,
+	})
+	await process_frame
+	await process_frame
+	var rejected := _first_message(&"command_rejected")
+	_expect(not rejected.is_empty() and String(rejected.get("result", {}).get("code", "")) == "mining.arm_required",
+		"进程内传输也必须返回能量炮不能采矿的权威拒绝，不能绕过装备验证")
 
 	transport.send_player_panel_command({"type": "query", "command_sequence": 1})
 	await process_frame

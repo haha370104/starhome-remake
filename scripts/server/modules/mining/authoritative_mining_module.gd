@@ -209,6 +209,21 @@ func reject_cycle(token: String) -> bool:
 	return true
 
 
+## 投影指定玩家的当前采矿动作，供客户端持续播放而非猜测动作状态。
+## [param actor_id] 服务器会话绑定的玩家标识。
+## 返回 active，以及活动时的矿源标识和世界目标坐标；没有动作时明确为 false。
+func action_snapshot(actor_id: String) -> Dictionary:
+	var action: Dictionary = _actions.get(actor_id, {})
+	var source = sources.get(String(action.get("source_id", "")))
+	if action.is_empty() or source == null or source.remaining <= 0:
+		return {"active": false}
+	return {
+		"active": true,
+		"source_id": source.source_id,
+		"target_position": [source.position.x, source.position.y],
+	}
+
+
 ## 返回按稳定标识排序的全部活动矿源快照。
 ## 构建 `snapshot` 对应的只读状态快照。
 func snapshot() -> Array[Dictionary]:

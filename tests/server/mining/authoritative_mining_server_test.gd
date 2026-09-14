@@ -57,6 +57,9 @@ func _test_authoritative_collection_transaction() -> void:
 	)
 	var started: Dictionary = server.handle_peer_use_ability(41, intent.to_dictionary())
 	_expect(not started.ok and started.code == &"mining.arm_required", "仅装能量炮不得采矿")
+	server.advance_simulation(3.0)
+	_expect(source.remaining == 50 and _inventory_quantity(server.autosave_service.state_for(entity_id), "iron_ore") == 0,
+		"能量炮点击后经过完整周期，矿源与背包都不得变化")
 	var initial = server.autosave_service.state_for(entity_id)
 	var original_weapon_id := ""
 	for equipment in initial.equipment_slots:
@@ -77,6 +80,7 @@ func _test_authoritative_collection_transaction() -> void:
 	_expect(not server.map_instance.combat_module.actors[entity_id].weapons.has("energy_cannon.primary"), "采掘臂不注册能量炮能力")
 	started = server.handle_peer_use_ability(41, intent.to_dictionary())
 	_expect(started.ok and StringName(started.value.event_type) == &"mining_started", "server should accept an eligible mine selection")
+	_expect(server.snapshot_for_peer(41).combat.local_mining.active, "开始后必须同步活动采矿状态")
 	server.advance_simulation(2.95)
 	var before = server.autosave_service.state_for(entity_id)
 	_expect(_inventory_quantity(before, "iron_ore") == 0, "inventory must not change before the third second")
@@ -92,17 +96,28 @@ func _test_authoritative_collection_transaction() -> void:
 	)
 	var combat_snapshot: Dictionary = server.snapshot_for_peer(41).get("combat", {})
 	_expect((combat_snapshot.get("mine_sources", []) as Array).size() == 20, "peer snapshot should publish all twenty authoritative mine sources")
+	var client = preload("res://scripts/client/network/client_multiplayer_session.gd").new()
+	_expect(client._is_valid_combat_snapshot(combat_snapshot), "真实服务端采矿快照必须通过客户端契约校验")
+	var invalid_snapshot := combat_snapshot.duplicate(true)
+	invalid_snapshot.local_mining.target_position = ["bad", 0]
+	_expect(not client._is_valid_combat_snapshot(invalid_snapshot), "畸形采矿目标不得进入表现层")
+	client.free()
 	_expect(_equip(server, entity_id, original_weapon_id).ok, "采矿中途切回能量炮")
+	_expect(not server.snapshot_for_peer(41).combat.local_mining.active, "换装当下立即停止，不等下一个三秒周期")
+	_expect(_equip(server, entity_id, arm_id).ok, "短暂切回采掘臂也不能恢复旧采矿动作")
 	server.advance_simulation(3.0)
 	after = server.autosave_service.state_for(entity_id)
 	_expect(source.remaining == 49 and _inventory_quantity(after, "iron_ore") == 1, "换炮后到期结算不能扣矿或产矿")
-	_expect(_equip(server, entity_id, arm_id).ok, "可重新装备采掘臂")
+	intent.input_sequence = 2
+	_expect(server.handle_peer_use_ability(41, intent.to_dictionary()).ok, "重新点击才重新开始采矿")
+	server.map_instance.mining_module.interrupt(entity_id, &"movement")
+	_expect(not server.snapshot_for_peer(41).combat.local_mining.active, "移动中断后快照必须关闭采矿动画")
 	var damaged = server.autosave_service.state_for(entity_id)
 	for equipment in damaged.equipment_slots:
 		if equipment.slot_location == 1:
 			equipment.durability = 0
 	server.autosave_service.commit_player_state(entity_id, damaged)
-	intent.input_sequence = 2
+	intent.input_sequence = 3
 	started = server.handle_peer_use_ability(41, intent.to_dictionary())
 	_expect(not started.ok and started.code == &"mining.arm_broken", "损坏的采掘臂不能采矿")
 	server.free()

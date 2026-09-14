@@ -387,6 +387,8 @@ func simulate(delta: float) -> void:
 		var previous_position: Vector2 = entity.position
 		var vehicle_state := vehicle_combat_state_for(entity_id)
 		if vehicle_state != null and vehicle_state.health <= 0:
+			if mining_module != null:
+				mining_module.interrupt(entity_id, &"destroyed")
 			entity.target_position = entity.position
 			entity.path = PackedVector2Array([entity.position])
 			entity.path_index = entity.path.size()
@@ -404,6 +406,8 @@ func simulate(delta: float) -> void:
 				)
 			):
 				_restore_motion_state(entity, motion_state)
+		if mining_module != null and not entity.position.is_equal_approx(previous_position):
+			mining_module.interrupt(entity_id, &"movement")
 		if is_vehicle_combat_active() and not entity.position.is_equal_approx(previous_position):
 			_accepted_movement_distance[entity_id] = float(
 				_accepted_movement_distance.get(entity_id, 0.0)
@@ -546,6 +550,7 @@ func drain_skill_progression_events() -> Array[Dictionary]:
 
 
 ## 提取本地图内部击杀事件，与技能经验和客户端表现事件分别消费。
+## 返回本次尚未消费的任务击杀事件，无战斗模块时为空数组。
 func drain_quest_kills() -> Array[Dictionary]:
 	return combat_module.drain_quest_kills() if combat_module != null else []
 
@@ -732,6 +737,8 @@ func snapshot_for_actor(server_tick: int, server_time_seconds: float, actor_id: 
 		var combat_snapshot: Dictionary = combat_module.snapshot_for_actor(actor_id)
 		combat_snapshot["vehicle_combat_active"] = is_vehicle_combat_active()
 		combat_snapshot["mine_sources"] = mining_module.snapshot() if mining_module != null else []
+		combat_snapshot["local_mining"] = mining_module.action_snapshot(actor_id) \
+			if mining_module != null else {"active": false}
 		result["combat"] = combat_snapshot
 	return result
 

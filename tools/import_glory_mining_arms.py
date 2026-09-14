@@ -3,6 +3,9 @@ import json
 import re
 from import_glory_starter_combat_assets import PROJECT_ROOT, GLORY_PARSED, TARGET_ROOT, _export_asset, _action, _atomic_json
 
+# 荣耀 CollecTor.PlayCollectAle 使用 PlayAni("move",60,...)，按 60 ms 帧间隔换算。
+COLLECTION_FRAME_INTERVAL_MS = 60
+
 
 def main():
     """从统一定义读取采掘臂来源；仅修改主装置组件映射，不覆盖其他已导入组件。"""
@@ -34,7 +37,11 @@ def main():
         audit.append(exported)
         manifest.setdefault('components', {})[component_id] = {
             'render_policy': 'world_layer',
-            'action': _action(exported['runtime_resource'], count // 8, offset=exported['coordinate_bounds'][:2]),
+            'action': _action(exported['runtime_resource'], count // 8,
+                              offset=exported['coordinate_bounds'][:2],
+                              fps=1000.0 / COLLECTION_FRAME_INTERVAL_MS),
+            'source_animation_timing': {'source_call': 'CollecTor.PlayCollectAle: PlayAni("move",60,"PlayCollectAle")',
+                                        'interpreted_frame_interval_ms': COLLECTION_FRAME_INTERVAL_MS},
         }
         manifest.setdefault('vehicle_component_by_equipment_definition', {})[item_id] = component_id
     _atomic_json(TARGET_ROOT / 'mining_arms/source_manifest.json', {'schema_version': 1, 'source_release': 'starhome_lz_ry', 'assets': audit})

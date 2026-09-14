@@ -184,6 +184,7 @@ var monster_world_controller: MonsterWorldController
 var ground_loot_world_controller: GroundLootWorldController
 var mineral_world_controller: MineralWorldController
 var self_repair_visual_controller: SelfRepairVisualController
+var mining_visual_controller = preload("res://scripts/client/presentation/mining/mining_visual_controller.gd").new()
 var game_window_manager: GameWindowManager
 var item_catalog: ItemCatalog
 var initial_loading_screen: CanvasLayer
@@ -320,6 +321,26 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 
 
+## 点击矿物前检查当前玩家聚合中的实际主装置，避免把背包内采掘臂当成已装备。
+## [param source_position] 所点击矿源的世界坐标。
+## 设计：客户端只做即时拒绝提示；许可、产出和经验仍由服务器再次校验。
+func _request_mining(source_position: Vector2) -> void:
+	var current_player: Player = game_window_manager.current_player if game_window_manager != null else null
+	if current_player == null or current_player.vehicle == null:
+		hud.show_system_message("角色装备数据尚未就绪，请稍后再试")
+		return
+	var allowed := current_player.vehicle.loadout.validate_mining(current_player.skills.base_level("mining"))
+	if not allowed.is_ok:
+		var notice := PlayerErrorMessages.describe(allowed.error_code, allowed.error_message)
+		hint_label.text = notice
+		hud.show_system_message(notice)
+		return
+	# 本地传输可能同步收到拒绝或开始事件，不能在返回后用“正在准备”覆盖其结果。
+	hint_label.text = "正在请求采矿"
+	if multiplayer_presenter.request_use_ability("mining.collect", source_position).is_empty():
+		hint_label.text = "采矿请求发送失败"
+
+
 ## 执行 `handle_world_combat_left_click` 对应的模块操作。
 ## [param world_position] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## 设计：当前切片立即反馈弹体与命中特效；伤害、能耗和真实命中仍只接受服务端事件。
@@ -333,12 +354,7 @@ func _handle_world_combat_left_click(world_position: Vector2) -> void:
 		var source_id := mineral_world_controller.source_at(world_position)
 		if not source_id.is_empty():
 			var source_position := mineral_world_controller.source_position(source_id)
-			if multiplayer_presenter.request_use_ability(
-				"mining.collect", source_position
-			).is_empty():
-				hint_label.text = "采矿请求发送失败"
-			else:
-				hint_label.text = "正在准备采矿"
+			_request_mining(source_position)
 			return
 	var selected_mode := String(hud.state.selected_action_slot)
 	if selected_mode == "energy_cannon" and game_window_manager != null \
@@ -744,6 +760,7 @@ func _build_hud(initial_bundle: Dictionary) -> void:
 ## 创建大厅客户端会话表现器，并以显式配置选择离线调试或真实网络入口。
 ## 设计：大厅保留输入、导航与动画职责；表现器仅将预测/权威状态投影到角色节点。
 func _build_multiplayer_presentation() -> void:
+	mining_visual_controller.configure(player)
 	self_repair_visual_controller = SelfRepairVisualControllerScript.new()
 	self_repair_visual_controller.name = "SelfRepairVisualController"
 	add_child(self_repair_visual_controller)
@@ -848,6 +865,7 @@ func _on_current_player_changed(current_player: Player) -> void:
 
 ## 根据活动地图与权威玩家装配刷新本地预测移动许可。
 ## 室内始终按人物移动；野外必须存在提供正推进力的引擎。
+## [param current_player] 最新玩家聚合；为空时从当前面板投影读取。
 func _refresh_local_movement_availability(current_player: Player = null) -> void:
 	if local_player_controller == null or map_definition == null:
 		return
@@ -914,6 +932,7 @@ func _on_active_world_will_replace() -> void:
 		monster_world_controller.clear()
 	if mineral_world_controller != null:
 		mineral_world_controller.clear()
+	mining_visual_controller.clear()
 
 
 ## 在玩家停步后查找触发半径内最近的内部出口，并先预载其目标地图。
@@ -1117,6 +1136,7 @@ func _commit_map_bundle(
 ## 处理 `_on_combat_snapshot_received` 对应的信号回调。
 ## [param snapshot] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _on_combat_snapshot_received(snapshot: Dictionary) -> void:
+	mining_visual_controller.apply_snapshot(snapshot)
 	for mode_id: String in combat_attack_controllers:
 		var mode: Dictionary = WEAPON_MODES[mode_id]
 		combat_attack_controllers[mode_id].apply_authoritative_snapshot(snapshot, String(mode["ability_id"]))

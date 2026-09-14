@@ -563,8 +563,20 @@ func _is_valid_combat_snapshot(snapshot: Dictionary) -> bool:
 		or not snapshot.get("monsters") is Array \
 		or not snapshot.get("ground_loot", []) is Array \
 		or not snapshot.get("mine_sources", []) is Array \
+		or not snapshot.get("local_mining", {}) is Dictionary \
 		or not snapshot.get("recent_events") is Array:
 		return false
+	var mining: Dictionary = snapshot.get("local_mining", {})
+	if not mining.is_empty():
+		if typeof(mining.get("active")) != TYPE_BOOL:
+			return false
+		if mining.active:
+			var target: Variant = mining.get("target_position")
+			if not target is Array or target.size() != 2:
+				return false
+			for coordinate: Variant in target:
+				if typeof(coordinate) not in [TYPE_INT, TYPE_FLOAT] or not is_finite(float(coordinate)):
+					return false
 	for raw_monster: Variant in snapshot["monsters"]:
 		if not raw_monster is Dictionary:
 			return false

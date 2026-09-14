@@ -74,6 +74,7 @@ func _run() -> void:
 	_test_move_and_fire_keeps_route(hall)
 	_test_evidence_contract(d04_definition, player.combat_presenter)
 	_test_equipped_vehicle_replaces_map_placeholder(player)
+	_test_cannon_mining_click_is_rejected(hall)
 
 	_expect(
 		hall.active_world_controller.commit_bundle(city_bundle, Vector2(1399, 954)),
@@ -139,6 +140,61 @@ func _test_equipped_vehicle_replaces_map_placeholder(player: Node2D) -> void:
 		var installed: Array = player.combat_presenter._actor.installed_components
 		_expect(String(installed[1]).begins_with("mining_arm_level_"), "采掘臂不得残留上一把能量炮贴图")
 		_expect(player.combat_presenter.layer_frame(&"primary_weapon") >= 0, "采掘臂八向资源应可渲染")
+		_test_mining_animation(player)
+
+
+## 验证所有在售采掘臂真正推进八向帧，而非仅加载第一张静态贴图。
+## [param player] 已装配当前采掘臂的世界表现节点。
+func _test_mining_animation(player: Node2D) -> void:
+	var controller = preload("res://scripts/client/presentation/mining/mining_visual_controller.gd").new()
+	controller.configure(player)
+	player.set_action("stand", 0)
+	var actions: Dictionary = player.combat_presenter._layer_configs[&"primary_weapon"].actions
+	_expect(is_equal_approx(float(actions.collect.fps), 1000.0 / 60.0), "采掘臂按原脚本 60ms 帧间隔播放，不沿用默认 10fps")
+	for direction: int in range(8):
+		var target: Vector2 = player.position + Vector2.RIGHT.rotated(-direction * PI / 4.0) * 40.0
+		var snapshot := {"local_vehicle": {"health": 70}, "local_mining": {
+			"active": true, "source_id": "test.mine", "target_position": [target.x, target.y],
+		}}
+		controller.apply_snapshot(snapshot)
+		var first: int = player.combat_presenter.layer_frame(&"primary_weapon")
+		# 重复的待机姿态和权威快照不能每帧把采矿动画重置到首帧。
+		for tick: int in range(4):
+			player.set_action("stand", 0)
+			controller.apply_snapshot(snapshot)
+			player.combat_presenter.advance(0.05)
+		var last: int = player.combat_presenter.layer_frame(&"primary_weapon")
+		_expect(first != last, "方向 %d 采矿动画必须实际变化" % direction)
+		_expect(player.combat_presenter._layer_direction_overrides[&"primary_weapon"] == direction,
+			"采掘臂应面向矿物且不改变车身朝向")
+		controller.apply_snapshot({"local_mining": {"active": false}})
+		first = player.combat_presenter.layer_frame(&"primary_weapon")
+		player.combat_presenter.advance(0.2)
+		_expect(first == player.combat_presenter.layer_frame(&"primary_weapon"), "停采后必须恢复静态帧")
+		_expect(not player.combat_presenter._layer_direction_overrides.has(&"primary_weapon"), "停采必须释放局部朝向")
+	controller.clear()
+
+
+## 验证真实大厅采矿入口在能量炮装配下给出拒绝提示，不发送采矿意图。
+## [param hall] 已初始化界面和客户端会话的大厅场景。
+func _test_cannon_mining_click_is_rejected(hall: Node2D) -> void:
+	var catalog := ItemCatalogScript.new()
+	_expect(catalog.initialize().is_ok, "点击测试物品目录初始化")
+	var current: CurrentPlayer = hall.game_window_manager.current_player
+	current.vehicle.loadout = VehicleLoadout.new()
+	for definition_id: String in ["glory_equipment_tank1000_27ae5e8059", "glory_equipment_gun1000_c4c24e2500"]:
+		var created := catalog.create(definition_id, {"instance_id": "click.%s" % definition_id})
+		_expect(created.is_ok and current.vehicle.loadout.restore(created.value).is_ok, "装配点击测试车炮")
+	hall._request_mining(Vector2(1200, 1200))
+	_expect(hall.hint_label.text.contains("能量炮不能采矿"), "真实矿物点击入口应立即中文拒绝，不能显示正在准备采矿")
+	_expect(hall.player.apply_vehicle_equipment(current.vehicle), "点击测试应同步真实炮的外观")
+	hall.mining_visual_controller.apply_snapshot({"local_vehicle": {"health": 70}, "local_mining": {
+		"active": true, "target_position": [0.0, 100.0],
+	}})
+	_expect(not hall.player.combat_presenter._layer_action_overrides.has(&"primary_weapon"),
+		"陈旧的活动快照也不得让能量炮播放采矿")
+	_expect(not hall.player.combat_presenter._layer_direction_overrides.has(&"primary_weapon"),
+		"拒绝不支持的采矿动画时不能遗留炮管朝向覆盖")
 
 
 ## 执行 `test_eight_way_idle_and_move` 对应的模块操作。

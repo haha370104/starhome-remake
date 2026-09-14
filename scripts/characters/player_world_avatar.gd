@@ -153,8 +153,8 @@ func set_combat_layer_pose(layer_id: StringName, action: StringName, direction: 
 	if not is_combat_actor_active():
 		return false
 	return (
-		combat_presenter.set_layer_direction(layer_id, direction)
-		and combat_presenter.set_layer_action(layer_id, action)
+		combat_presenter.set_layer_action(layer_id, action)
+		and combat_presenter.set_layer_direction(layer_id, direction)
 	)
 
 
@@ -205,7 +205,10 @@ func apply_vehicle_equipment(vehicle: PlayerVehicle) -> bool:
 			&"shadow", -1, components[shadow_component], false
 		))
 	layers.append(_vehicle_layer(&"chassis", 0, components[chassis_component], true))
-	layers.append(_vehicle_layer(&"primary_weapon", 1, components[weapon_component], false))
+	var primary_layer := _vehicle_layer(&"primary_weapon", 1, components[weapon_component], false)
+	if primary_weapon is VehicleMiningArm:
+		primary_layer["actions"]["collect"] = components[weapon_component]["action"].duplicate(true)
+	layers.append(primary_layer)
 	_append_secondary_weapon_layers(layers)
 	var actor_id := &"equipped_combat_vehicle"
 	var registered: Error = combat_presenter.register_actor(actor_id, {
@@ -341,6 +344,7 @@ func _process(delta: float) -> void:
 
 
 ## 将已缓存动作与朝向同步到当前可见表现。
+## 设计：相同动作不重置时间；客户端每帧同步待机姿态时，装备的采矿循环仍需继续推进。
 func _apply_active_pose() -> void:
 	if presentation_kind == CHARACTER_KIND:
 		if human_character != null:
@@ -349,7 +353,9 @@ func _apply_active_pose() -> void:
 	if combat_presenter == null or combat_presenter.current_actor_id == &"":
 		return
 	combat_presenter.set_direction(_current_direction)
-	combat_presenter.set_action(_combat_action(_current_action))
+	var desired_action := _combat_action(_current_action)
+	if combat_presenter.current_action_id != desired_action:
+		combat_presenter.set_action(desired_action)
 
 
 ## 执行 `human_action` 对应的模块操作。

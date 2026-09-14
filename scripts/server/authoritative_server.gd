@@ -781,6 +781,9 @@ func handle_peer_player_panel_command(peer_id: int, command: Dictionary) -> Dict
 	var committed = autosave_service.commit_player_state(session.entity_id, value["candidate"])
 	if not committed.is_ok:
 		return _failure(committed.error_code, committed.error_message)
+	if current_map != null and current_map.mining_module != null \
+			and current.vehicle_loadout_revision != committed.value.vehicle_loadout_revision:
+		current_map.mining_module.interrupt(session.entity_id, &"equipment_changed")
 	if current_map != null and current_map.is_vehicle_combat_active():
 		var refreshed_loadout := current_map.set_vehicle_combat_loadout(
 			session.entity_id, prepared_loadout
@@ -801,6 +804,7 @@ func handle_peer_player_panel_command(peer_id: int, command: Dictionary) -> Dict
 
 
 ## 消费仅来自战斗模块的死亡事件，进度进入同一玩家存档并推送任务日志。
+## [param event] 权威战斗模块确认的击杀事件。
 func _apply_quest_kill(event: Dictionary) -> void:
 	if autosave_service == null or commerce_service == null:
 		return
