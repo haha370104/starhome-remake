@@ -64,9 +64,9 @@ func _run() -> void:
 	_expect(player.combat_presenter.get_child_count() == 5, "战车应预载三种武器层并只显示当前模式")
 	_expect(player.combat_presenter._layers[&"primary_weapon"].visible, "默认应显示能量炮层")
 	_expect(not player.combat_presenter._layers[&"missile_weapon"].visible, "未选择时应隐藏导弹层")
-	hall.call("_on_weapon_slot_selected", "missile")
+	hall.combat.call("on_weapon_slot_selected", "missile")
 	_expect(player.combat_presenter._layers[&"missile_weapon"].visible, "选择导弹后应切换场景装备层")
-	hall.call("_on_weapon_slot_selected", "energy_cannon")
+	hall.combat.call("on_weapon_slot_selected", "energy_cannon")
 	_expect(player.combat_status_bar.position == Vector2(0, 45), "战车状态条应复原原客户端脚点下方 45 像素锚点")
 	_expect(is_equal_approx(player.combat_status_bar._bar_width, 50.0), "战车状态条应复原原客户端 50 像素宽度")
 	_expect(is_equal_approx(player.combat_status_bar._energy_offset_y, 4.0), "能量条应紧接生命条下方四像素")
@@ -186,7 +186,7 @@ func _test_cannon_mining_click_is_rejected(hall: Node2D) -> void:
 	for definition_id: String in ["glory_equipment_tank1000_27ae5e8059", "glory_equipment_gun1000_c4c24e2500"]:
 		var created := catalog.create(definition_id, {"instance_id": "click.%s" % definition_id})
 		_expect(created.is_ok and current.vehicle.loadout.restore(created.value).is_ok, "装配点击测试车炮")
-	hall._request_mining(Vector2(1200, 1200))
+	hall.combat.request_mining(Vector2(1200, 1200))
 	_expect(hall.hud.status_text().contains("能量炮不能采矿"), "真实矿物点击入口应立即中文拒绝，不能显示正在准备采矿")
 	_expect(hall.world_view.player.apply_vehicle_equipment(current.vehicle), "点击测试应同步真实炮的外观")
 	hall.world_view.mining_visual_controller.apply_snapshot({"local_vehicle": {"health": 70}, "local_mining": {
@@ -235,7 +235,7 @@ func _test_move_and_fire_keeps_route(hall: Node2D) -> void:
 	var movement_result: Dictionary = hall.local_player_controller.request_move(movement_target)
 	_expect(bool(movement_result.get("ok", false)), "战车必须先建立未完成路线")
 	var route_before_fire: PackedVector2Array = hall.path_points.duplicate()
-	hall._handle_world_combat_left_click(origin + Vector2(120, 0))
+	hall.combat.handle_world_combat_left_click(origin + Vector2(120, 0))
 	_expect(hall.local_player_controller.has_active_route(), "开火不得停止活动路线")
 	_expect(hall.path_points == route_before_fire, "开火不得改写尚未完成的路径折线")
 	_expect(hall.world_view.combat_attack_controller.active_projectile_count() == 1, "移动中开火仍须生成弹体")
@@ -268,7 +268,7 @@ func _test_engineering_arm_empty_click(hall: Node2D) -> void:
 			_expect(hall.hud.state.primary_device_kind == device_kind, "当前玩家快照绑定必须刷新主槽图标")
 			hall.hud.show_status("原提示保持不变")
 			# 空图外坐标不包含矿物、掉落或怪物；若误入发射链将产生弹体或连接错误。
-			hall._handle_world_combat_left_click(Vector2(-10000, -10000))
+			hall.combat.handle_world_combat_left_click(Vector2(-10000, -10000))
 			_expect(hall.hud.status_text() == "原提示保持不变", "空地点击不显示任何错误")
 			_expect(feed.queued_message_count() == message_count and feed.message_label.text == active_message,
 				"空地点击不能向中央消息队列添加错误")

@@ -41,7 +41,7 @@ func _run() -> void:
 			transition_events.append("failed:%s:%s:%s" % [transition_id, code, message])
 	)
 	_expect(hall.map_definition.map_id == &"yian_harbor_hall_floor_1", "测试必须从荣耀版大厅开始")
-	hall.call("_on_combat_snapshot_received", {
+	hall.combat.call("on_combat_snapshot_received", {
 		"vehicle_combat_active": false,
 		"local_vehicle": {
 			"health": 0,
@@ -55,9 +55,9 @@ func _run() -> void:
 		"ground_loot": [],
 		"recent_events": [],
 	})
-	_expect(not hall._vehicle_destroyed, "大厅中的0血停放战车不得把人物标记为击毁")
-	_expect(not hall.call("_world_input_locked"), "大厅中的0血停放战车不得锁住人物移动")
-	_expect(not hall.vehicle_destroyed_dialog.visible, "非战斗地图不得弹出战车击毁选择")
+	_expect(not hall.combat.vehicle_destroyed, "大厅中的0血停放战车不得把人物标记为击毁")
+	_expect(not hall.combat.call("is_input_locked"), "大厅中的0血停放战车不得锁住人物移动")
+	_expect(not hall.combat.vehicle_destroyed_dialog.visible, "非战斗地图不得弹出战车击毁选择")
 	var initial_sequence: int = hall.multiplayer_presenter.session.local_predictor.next_input_sequence
 	hall.map_travel.pending_map_transition = {"transition_id": &"exit_to_city"}
 	hall.call("_move_to", Vector2(900, 1300))
@@ -70,7 +70,7 @@ func _run() -> void:
 		&"map_transition.too_far_from_exit",
 		"距离出口太远",
 	)
-	_expect(not hall.call("_world_input_locked"), "权威拒绝后应恢复旧地图输入")
+	_expect(not hall.combat.call("is_input_locked"), "权威拒绝后应恢复旧地图输入")
 
 	# Reconnect may join a map whose resources were not preloaded. The old scene must
 	# hold its player position and stop its route until the authoritative bundle commits.
@@ -139,7 +139,7 @@ func _run() -> void:
 	var final_sequence: int = hall.multiplayer_presenter.session.local_predictor.next_input_sequence
 	hall.map_travel.call("handle_map_commit_failure", "测试不可恢复提交失败")
 	hall.call("_move_to", Vector2(1200, 2500))
-	_expect(hall.call("_world_input_locked"), "权威已切图但客户端提交失败后必须锁住旧画面输入")
+	_expect(hall.combat.call("is_input_locked"), "权威已切图但客户端提交失败后必须锁住旧画面输入")
 	_expect(
 		hall.multiplayer_presenter.session.local_predictor.next_input_sequence == final_sequence,
 		"不可恢复提交失败后不得再创建地图移动输入",

@@ -79,7 +79,7 @@ func _test_pre_authority_preload_failure_keeps_old_world_active() -> void:
 	}
 	hall.map_travel.call("on_map_preload_failed", &"g08_field_zone", "测试资源缺失")
 	_expect(hall.map_travel.pending_map_transition.is_empty(), "请求前预载失败必须清空暂存切图")
-	_expect(not hall.call("_world_input_locked"), "请求前预载失败必须恢复旧地图输入")
+	_expect(not hall.combat.call("is_input_locked"), "请求前预载失败必须恢复旧地图输入")
 	_expect(hall.map_definition.map_id == old_map_id, "请求前预载失败必须保留旧活动地图")
 	_expect(hall.world_view.map_background.texture == old_floor, "请求前预载失败必须保留旧地图画面")
 	_expect(hall.navigation == old_navigation, "请求前预载失败必须保留旧导航实例")
@@ -120,7 +120,7 @@ func _test_post_authority_preload_failure_locks_old_world() -> void:
 	_expect(hall.navigation == old_navigation, "权威后预载失败不得半提交新导航")
 	_expect(hall.npc_instances.size() == old_npc_count, "权威后预载失败不得半清理旧地图实体")
 	_expect(hall.map_travel.map_commit_failure_locked, "权威后预载失败必须进入不可恢复锁定状态")
-	_expect(hall.call("_world_input_locked"), "权威后预载失败必须冻结旧画面输入")
+	_expect(hall.combat.call("is_input_locked"), "权威后预载失败必须冻结旧画面输入")
 	_expect(hall.path_points.is_empty(), "权威后预载失败必须终止旧路线")
 	_expect(hall.active_movement_input_sequence == 0, "权威后预载失败必须清除旧输入序号")
 	_expect(session.current_map_id == MISSING_TEST_MAP_ID, "权威会话地图必须保持服务端已提交目标")
