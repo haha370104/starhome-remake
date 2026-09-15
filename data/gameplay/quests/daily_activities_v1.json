@@ -1,6 +1,7 @@
 {
   "timezone_offset": 28800,
-  "daily_limit": 20,
+  "daily_limit": 200,
+  "completion_limit": 100,
   "active_limit": 5,
   "board_size": 5,
   "grade_names": [

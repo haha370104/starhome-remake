@@ -89,8 +89,9 @@ func apply_activity_bundle(bundle: Dictionary) -> void:
 			return int(a.enabled) > int(b.enabled) if a.enabled != b.enabled else int(a.id) < int(b.id)
 		)
 	_active_rows = _snapshot.active
-	summary.text = "%s  ·  紫晶 %d  ·  今日领取 %d/%d  ·  完成 %d" % [_snapshot.day,
-		_snapshot.amethyst, _snapshot.accepted_today, _snapshot.daily_limit, _snapshot.completed_today]
+	summary.text = "%s  ·  紫晶 %d  ·  今日领取 %d/%d  ·  完成 %d/%d" % [_snapshot.day,
+		_snapshot.amethyst, _snapshot.accepted_today, _snapshot.daily_limit, _snapshot.completed_today, _snapshot.completion_limit]
+	summary.tooltip_text = "放弃任务不退还领取次数，也不占完成次数。北京时间0点重置，已接任务跨日保留。"
 	available.clear()
 	active.clear()
 	for row: Dictionary in _rows:
@@ -155,6 +156,15 @@ func _show_active(index: int) -> void:
 ## 根据选择和服务端进度禁用无效操作。
 func _update_buttons() -> void:
 	accept_button.disabled = available.get_selected_items().is_empty()
+	accept_button.tooltip_text = ""
+	complete_button.tooltip_text = ""
+	if mode == "mercenary" and not _snapshot.is_empty():
+		if int(_snapshot.accepted_today) >= int(_snapshot.daily_limit):
+			accept_button.disabled = true
+			accept_button.tooltip_text = "今日领取次数已达上限"
+		elif _active_rows.size() >= int(_snapshot.active_limit):
+			accept_button.disabled = true
+			accept_button.tooltip_text = "同时持有任务数已达上限"
 	if not accept_button.disabled and mode != "mercenary":
 		var row: Dictionary = _rows[available.get_selected_items()[0]]
 		accept_button.disabled = not bool(row.enabled) or int(row.progress) <= int(row.claimed)
@@ -162,6 +172,9 @@ func _update_buttons() -> void:
 	complete_button.disabled = abandon_button.disabled
 	if not complete_button.disabled:
 		complete_button.disabled = not bool(_active_rows[active.get_selected_items()[0]].ready)
+	if mode == "mercenary" and not _snapshot.is_empty() and int(_snapshot.completed_today) >= int(_snapshot.completion_limit):
+		complete_button.disabled = true
+		complete_button.tooltip_text = "今日完成次数已达上限，已接任务可明天交付"
 
 
 ## 发布接取委托或历练领奖意图。

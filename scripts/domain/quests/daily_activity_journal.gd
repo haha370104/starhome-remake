@@ -129,7 +129,7 @@ func abandon(ticket: String, revision: int) -> DomainResult:
 	return DomainResult.ok({"action": "mercenary_abandon"})
 
 
-## 验证进度并消费收集材料，关闭任务实例后返回唯一奖励凭据。
+## 先检查每日完成上限，再验证进度和消费材料，关闭实例后返回唯一奖励凭据。
 ## [param ticket] 本次接取的唯一实例 ID。
 ## [param revision] 客户端账本版本。
 ## [param catalog] 服务端定义目录。
@@ -138,6 +138,8 @@ func abandon(ticket: String, revision: int) -> DomainResult:
 func complete(ticket: String, revision: int, catalog: DailyActivityCatalog, inventory: Inventory) -> DomainResult:
 	if revision != int(_state.revision):
 		return _stale()
+	if int(_state.completed_today) >= int(catalog.policy.completion_limit):
+		return DomainResult.failure(&"daily.completion_limit", "今日已完成%d次佣兵任务，请明天再交付" % int(catalog.policy.completion_limit))
 	var row: Dictionary = _state.active.get(ticket, {})
 	var task: MercenaryDefinition = catalog.tasks.get(String(row.get("id", "")))
 	if task == null:

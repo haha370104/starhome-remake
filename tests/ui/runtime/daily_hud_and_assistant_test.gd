@@ -43,6 +43,7 @@ func _run() -> void:
 	var mercenary: DailyActivitiesPanel = manager.navigation_windows.mercenary
 	mercenary.position = Vector2(25, 110)
 	_expect(mercenary.visible and mercenary.available.item_count == 5, "真实 HUD 打开已生成五条委托的窗口")
+	_expect(mercenary.summary.text.contains("领取 0/200") and mercenary.summary.text.contains("完成 0/100"), "面板展示两项每日额度")
 	mercenary.available.select(0)
 	mercenary._show_available(0)
 	mercenary.accept_button.pressed.emit()
@@ -64,11 +65,30 @@ func _run() -> void:
 	var definition: MercenaryDefinition = service.daily.catalog.tasks["2"]
 	player.receive_loot(items.create(definition.target_id, {"instance_id": "ui.daily", "quantity": definition.quantity}).value)
 	state = mapper.to_record(player).value
+	state.daily_activities.completed_today = 99
 	_dispatch({"type": "query_daily_activities"})
 	mercenary.active.select(0)
 	mercenary._show_active(0)
 	mercenary.complete_button.pressed.emit()
 	_expect(state.amethyst == 15 and mercenary.summary.text.contains("15"), "真实交付回包显示15紫晶")
+	_expect(mercenary.summary.text.contains("完成 100/100"), "第100次完成后显示额度耗尽")
+	var saved := state.duplicate_record()
+	state.daily_activities.active = {"capped": {"id": "2", "progress": 0}}
+	player = mapper.to_domain(state).value
+	player.receive_loot(items.create(definition.target_id, {"instance_id": "ui.daily.capped", "quantity": definition.quantity}).value)
+	state = mapper.to_record(player).value
+	_dispatch({"type": "query_daily_activities"})
+	mercenary.active.select(0)
+	mercenary._show_active(0)
+	mercenary.available.select(0)
+	mercenary._show_available(0)
+	_expect(mercenary.complete_button.disabled and not mercenary.abandon_button.disabled and not mercenary.accept_button.disabled,
+		"完成额度耗尽时禁止交付达标任务，仍可领取或取消")
+	state.daily_activities.accepted_today = 200
+	_dispatch({"type": "query_daily_activities"})
+	_expect(mercenary.accept_button.disabled and mercenary.summary.text.contains("领取 200/200"), "领取额度耗尽时禁用领取按钮")
+	state = saved
+	_dispatch({"type": "query_daily_activities"})
 	top.action_buttons.experience.pressed.emit()
 	var experience: DailyActivitiesPanel = manager.navigation_windows.experience
 	experience.position = Vector2(590, 250)

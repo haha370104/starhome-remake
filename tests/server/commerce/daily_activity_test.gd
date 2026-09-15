@@ -35,6 +35,7 @@ func _initialize() -> void:
 	_expect(bands.size() == 8, "八档均有可完成任务")
 	print("DAILY_CATALOG available=%d grades=%d" % [catalog.tasks.size(), bands.size()])
 	_test_currency_donations(catalog)
+	_test_daily_limits(catalog)
 	_expect(catalog.tasks.has("2"), "低级类胶使用实际掉落 ID")
 	state.daily_activities.offers = ["2", "3", "4"]
 	var accepted := _command("accept_mercenary", {"task_id": "2", "reward": 9999})
@@ -87,9 +88,9 @@ func _initialize() -> void:
 		event.death_id = "daily.death.%d" % (index + 1)
 		state = service.record_monster_kill(state, event).value.candidate
 	_expect(_command("complete_mercenary", {"ticket": ticket}).is_ok and state.daily_activities.completed_today == 1, "昨日领取任务计入今日交付")
-	state.daily_activities.accepted_today = 20
+	state.daily_activities.accepted_today = 200
 	state.daily_activities.offers = ["2"]
-	_expect(_command("accept_mercenary", {"task_id": "2"}).error_code == &"daily.limit", "每日20次上限")
+	_expect(_command("accept_mercenary", {"task_id": "2"}).error_code == &"daily.limit", "每日200次领取上限")
 	state.daily_activities.accepted_today = 0
 	state.daily_activities.active = {}
 	for index in range(5):
@@ -173,6 +174,63 @@ func _test_currency_donations(catalog: DailyActivityCatalog) -> void:
 	_expect(not inventory.spend_currency(0).is_ok and not inventory.spend_currency(-1).is_ok and inventory.currency == 100
 		and inventory.revision == 2, "非法扣款数不能制造金币或修改版本")
 	state = saved
+
+
+## 验证领取与完成的独立上限、取消刷新成本、各类交付的原子拒绝及跨日恢复。
+## [param catalog] 当前权威任务定义。
+func _test_daily_limits(catalog: DailyActivityCatalog) -> void:
+	var saved := state.duplicate_record()
+	var saved_time := now
+	state.daily_activities.accepted_today = 199
+	state.daily_activities.offers = ["2"]
+	var accepted := _command("accept_mercenary", {"task_id": "2"})
+	_expect(accepted.is_ok and state.daily_activities.accepted_today == 200, "第200次领取允许且生成新备选区")
+	var ticket := String(accepted.value.operation.ticket)
+	_expect(not state.daily_activities.offers.has("2") and not state.daily_activities.offers.is_empty(), "领取后重新抽取且排除已接目标")
+	_expect(_command("abandon_mercenary", {"ticket": ticket}).is_ok and state.daily_activities.accepted_today == 200
+		and state.daily_activities.completed_today == 0, "取消占领取额度但不占完成额度")
+	var before := state.to_dictionary()
+	_expect(_command("accept_mercenary", {"task_id": state.daily_activities.offers[0]}).error_code == &"daily.limit"
+		and state.to_dictionary() == before, "第201次领取原子拒绝")
+	state.daily_activities.accepted_today = 150
+	state.daily_activities.completed_today = 99
+	var kill: MercenaryDefinition
+	for task: MercenaryDefinition in catalog.tasks.values():
+		if task.kind == 1 and task.grade == 1:
+			kill = task
+			break
+	state.daily_activities.active = {"kill": {"id": kill.id, "progress": kill.quantity},
+		"material": {"id": "2", "progress": 0}, "donation": {"id": "301", "progress": 0}}
+	state.currency = catalog.tasks["301"].quantity
+	var mapper := PlayerStateMapper.new(items)
+	var player: Player = mapper.to_domain(state).value
+	player.inventory.restore_items([])
+	player.receive_loot(items.create(catalog.tasks["2"].target_id, {"instance_id": "limit-material", "quantity": catalog.tasks["2"].quantity}).value)
+	state = mapper.to_record(player).value
+	var balance := state.amethyst
+	_expect(_command("complete_mercenary", {"ticket": "kill"}).is_ok and state.daily_activities.completed_today == 100
+		and state.amethyst == balance + kill.reward, "第100次完成正常结算")
+	state.daily_activities.active["extra-kill"] = {"id": kill.id, "progress": kill.quantity}
+	state = PlayerStateRecord.from_dictionary(JSON.parse_string(JSON.stringify(state.to_dictionary()))).value
+	before = state.to_dictionary()
+	for blocked: String in ["material", "donation", "extra-kill"]:
+		_expect(_command("complete_mercenary", {"ticket": blocked, "completion_limit": 9999, "completed_today": 0}).error_code == &"daily.completion_limit"
+			and state.to_dictionary() == before, "重启后超额交付不扣材料或金币、不发奖励、不删除任务，忽略客户端额度")
+	state.daily_activities.offers = ["3"]
+	accepted = _command("accept_mercenary", {"task_id": "3"})
+	_expect(accepted.is_ok and state.daily_activities.accepted_today == 151, "完成额度耗尽仍可使用剩余领取额度")
+	_expect(_command("abandon_mercenary", {"ticket": accepted.value.operation.ticket}).is_ok
+		and state.daily_activities.completed_today == 100, "完成上限不阻止取消且不退计数")
+	now += 86400
+	var query := _command("query_daily_activities", {})
+	_expect(query.is_ok and state.daily_activities.accepted_today == 0 and state.daily_activities.completed_today == 0
+		and state.daily_activities.active.size() == 3, "换日重置两项计数且保留未交付任务")
+	_expect(query.value.panel_bundle.daily_activities.daily_limit == 200
+		and query.value.panel_bundle.daily_activities.completion_limit == 100, "面板收到两项权威额度")
+	_expect(_command("complete_mercenary", {"ticket": "material"}).is_ok and _command("complete_mercenary", {"ticket": "donation"}).is_ok
+		and state.daily_activities.completed_today == 2, "昨日期满留下的材料和金币任务今日可正常交付")
+	state = saved
+	now = saved_time
 
 
 ## 模拟仓储接受成功候选，失败时保留原记录。

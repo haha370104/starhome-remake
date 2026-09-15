@@ -57,5 +57,6 @@ func snapshot(player: Player) -> Dictionary:
 	var result := player.daily_activities.snapshot(catalog, player.inventory)
 	result["amethyst"] = player.amethyst.balance()
 	result["daily_limit"] = catalog.policy.daily_limit
+	result["completion_limit"] = catalog.policy.completion_limit
 	result["active_limit"] = catalog.policy.active_limit
 	return result
