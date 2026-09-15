@@ -47,6 +47,7 @@ func to_domain(record: PlayerStateRecord) -> DomainResult:
 		"skills": record.character_skills,
 		"quest_states": record.quest_states,
 		"achievements": record.achievements,
+		"daily_activities": record.daily_activities,
 		"vehicle": {
 			"vehicle_id": record.vehicle_id,
 			"definition_id": record.vehicle_definition_id,
@@ -179,6 +180,7 @@ func to_record(player: Player) -> DomainResult:
 		"character_skills": player.skills.to_dictionary(),
 		"quest_states": player.quest_states.duplicate(true),
 		"achievements": player.achievements.to_dictionary(),
+		"daily_activities": player.daily_activities.to_dictionary(),
 		"vehicle_id": player.vehicle.vehicle_id,
 		"vehicle_definition_id": player.vehicle.definition_id,
 		"vehicle_max_health": player.vehicle.max_health,

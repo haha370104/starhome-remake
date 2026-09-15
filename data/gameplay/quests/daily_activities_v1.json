@@ -1,0 +1,153 @@
+{
+  "timezone_offset": 28800,
+  "daily_limit": 20,
+  "active_limit": 5,
+  "board_size": 5,
+  "grade_names": [
+    "F",
+    "E",
+    "D",
+    "C",
+    "B",
+    "A",
+    "S",
+    "SS"
+  ],
+  "minimum_levels": [
+    10,
+    50,
+    100,
+    150,
+    200,
+    300,
+    400,
+    500
+  ],
+  "rewards": [
+    15,
+    20,
+    25,
+    30,
+    35,
+    40,
+    45,
+    50
+  ],
+  "experience": [
+    {
+      "id": "1",
+      "title": "击杀撒玛飞船",
+      "limit": 6,
+      "description": "击杀1次撒玛飞船BOSS并在伤害排名前20",
+      "condition": [
+        "1",
+        "Boss",
+        "20"
+      ],
+      "reward": 2
+    },
+    {
+      "id": "2",
+      "title": "击杀撒玛机械部队",
+      "limit": 5,
+      "description": "击杀1次撒玛机械部队BOSS并在伤害排名前20",
+      "condition": [
+        "1",
+        "SaMaJXBoss",
+        "20"
+      ],
+      "reward": 4
+    },
+    {
+      "id": "3",
+      "title": "B型撒玛突击队长",
+      "limit": 4,
+      "description": "击杀一只B型撒玛突击队长",
+      "condition": [
+        "1",
+        "BSamtjdz",
+        "0"
+      ],
+      "reward": 5
+    },
+    {
+      "id": "4",
+      "title": "陨石带BOSS",
+      "limit": 4,
+      "description": "击杀1次陨石带BOSS并在伤害排名前20",
+      "condition": [
+        "1",
+        "OrgeSaMaBoss",
+        "0"
+      ],
+      "reward": 8
+    },
+    {
+      "id": "5",
+      "title": "A型撒玛突击队长",
+      "limit": 2,
+      "description": "击杀一只A型撒玛突击队长",
+      "condition": [
+        "1",
+        "ASamtjdz",
+        "0"
+      ],
+      "reward": 10
+    },
+    {
+      "id": "6",
+      "title": "星系探索",
+      "limit": 2,
+      "description": "普通探索时有10%几率获得",
+      "condition": [
+        "7",
+        "50"
+      ],
+      "reward": 10
+    },
+    {
+      "id": "7",
+      "title": "S型撒玛突击队长",
+      "limit": 1,
+      "description": "击杀一只S型撒玛突击队长",
+      "condition": [
+        "1",
+        "SSamtjdz",
+        "0"
+      ],
+      "reward": 20
+    },
+    {
+      "id": "8",
+      "title": "佣兵任务",
+      "limit": 1,
+      "description": "每日完成第10次佣兵任务",
+      "condition": [
+        "6",
+        "10"
+      ],
+      "reward": 20
+    },
+    {
+      "id": "9",
+      "title": "星际战场",
+      "limit": 1,
+      "description": "参加1次星际战场并获得1次积分",
+      "condition": [
+        "1"
+      ],
+      "reward": 20
+    },
+    {
+      "id": "10",
+      "title": "佣兵任务",
+      "limit": 1,
+      "description": "每日完成第20次佣兵任务",
+      "condition": [
+        "6",
+        "20"
+      ],
+      "reward": 40
+    }
+  ]
+}

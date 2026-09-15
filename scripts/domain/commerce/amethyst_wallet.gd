@@ -4,6 +4,13 @@ extends RefCounted
 var _balance: int
 
 
+## 接收已由玩家聚合确认且关闭领取凭据的任务奖励。
+## [param amount] 权威规则计算的正整数紫晶。
+func credit_reward(amount: int) -> void:
+	assert(amount > 0)
+	_balance += amount
+
+
 ## 从权威存档恢复紫晶；默认零，不提供充值或兑换入口。
 ## [param saved_balance] 已通过持久化边界校验的非负余额。
 func _init(saved_balance: int = 0) -> void:

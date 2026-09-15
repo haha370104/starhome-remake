@@ -287,13 +287,13 @@ func count_consumable_definition(definition_id: String) -> int:
 func consume_definition(definition_id: String, quantity: int) -> DomainResult:
 	if definition_id.is_empty() or quantity <= 0:
 		return DomainResult.failure(&"inventory.invalid_quantity", "positive quantity is required")
-	if count_definition(definition_id) < quantity:
+	if count_consumable_definition(definition_id) < quantity:
 		return DomainResult.failure(&"inventory.insufficient_quantity", "required item quantity is insufficient")
 	var remaining := quantity
 	var consumed_instances := PackedStringArray()
 	for index: int in range(_items.size() - 1, -1, -1):
 		var item: GameItem = _items[index]
-		if item.definition_id != definition_id:
+		if item.definition_id != definition_id or item.locked:
 			continue
 		var amount := mini(item.quantity, remaining)
 		item.quantity -= amount

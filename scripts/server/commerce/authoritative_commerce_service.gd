@@ -15,6 +15,7 @@ const COMMAND_TYPES := [
 	"accept_weapon_merchant_task", "turn_in_weapon_merchant_task",
 ]
 
+var daily := DailyActivityService.new()
 var _premium := PremiumShopService.new()
 var _catalog: ItemCatalog
 var _merchants: Dictionary = {}
@@ -34,6 +35,9 @@ func initialize() -> DomainResult:
 	var premium_loaded := _premium.initialize(_catalog)
 	if not premium_loaded.is_ok:
 		return premium_loaded
+	var daily_loaded := daily.initialize(_catalog)
+	if not daily_loaded.is_ok:
+		return daily_loaded
 	_merchants.clear()
 	var quests_loaded: DomainResult = quests.initialize(_catalog)
 	if not quests_loaded.is_ok:
@@ -56,7 +60,7 @@ func initialize() -> DomainResult:
 ## [param command_type] 命令 type 字段。
 ## 返回本服务能否处理该命令。
 static func handles(command_type: String) -> bool:
-	return command_type in COMMAND_TYPES
+	return command_type in COMMAND_TYPES or command_type in DailyActivityService.COMMANDS
 
 
 ## 执行一次由会话绑定玩家身份的权威交易或任务命令。
@@ -79,6 +83,8 @@ func execute(state: PlayerStateRecord, command: Dictionary) -> DomainResult:
 	var operation := _execute_command(player, command_type, command, merchant_id, merchant)
 	if not operation.is_ok:
 		return operation
+	if command_type == "query_daily_activities":
+		changed = state.daily_activities != player.daily_activities.to_dictionary()
 	if operation.value is Dictionary:
 		operation.value["merchant_id"] = merchant_id
 	var candidate: PlayerStateRecord = state.duplicate_record()
@@ -120,10 +126,11 @@ func record_monster_kill(state: PlayerStateRecord, event: Dictionary) -> DomainR
 		return DomainResult.ok({"changed": false})
 	var before := player.achievements.bonuses().to_dictionary()
 	var quest_changed := quests.record_monster_kill(player, event)
+	var daily_changed := daily.record_kill(player, event)
 	var achievement_changed := player.record_achievement(AchievementEvent.new(
 		AchievementEvent.Kind.MONSTER_KILLED, String(event.get("species_id", "")),
 		1, String(event.get("death_id", ""))))
-	if not quest_changed and not achievement_changed:
+	if not quest_changed and not achievement_changed and not daily_changed:
 		return DomainResult.ok({"changed": false})
 	var persisted := _mapper.to_record(mapped.value)
 	if not persisted.is_ok:
@@ -146,6 +153,8 @@ func _execute_command(
 	merchant_id: String,
 	merchant,
 ) -> DomainResult:
+	if command_type in DailyActivityService.COMMANDS:
+		return daily.execute(player, command)
 	match command_type:
 		"query_premium_shop":
 			return DomainResult.ok({"action": "premium_query"})
@@ -232,6 +241,7 @@ func _build_bundle(
 		return {}
 	var bundle := _projector.build_bundle(player)
 	bundle["premium_shop"] = _premium.snapshot(player, operation)
+	bundle["daily_activities"] = daily.snapshot(player)
 	var tasks: Array[Dictionary] = quests.snapshots(player, merchant_id)
 	var sell_items: Array[Dictionary] = []
 	for item: GameItem in player.inventory.items():

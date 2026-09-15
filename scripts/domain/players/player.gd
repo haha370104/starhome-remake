@@ -25,6 +25,7 @@ var vehicle: PlayerVehicle
 var skills: SkillBook
 var quest_states: Dictionary
 var achievements: PlayerAchievements
+var daily_activities: DailyActivityJournal
 var amethyst: AmethystWallet
 
 
@@ -83,6 +84,7 @@ func _init(state: Dictionary = {}) -> void:
 		int(state.get("currency", 0)),
 	)
 	amethyst = AmethystWallet.new(int(state.get("amethyst", 0)))
+	daily_activities = DailyActivityJournal.new(state.get("daily_activities", {}))
 	character_equipment = CharacterEquipment.new()
 	vehicle = PlayerVehicle.new(state.get("vehicle", {}))
 	skills = SkillBook.new(state.get("skills", {}))
@@ -378,3 +380,24 @@ func _require_character_revisions(
 	if expected_state_revision != revision:
 		return DomainResult.failure(&"equipment.revision_conflict", "character state revision changed")
 	return DomainResult.ok()
+
+
+## 在玩家一致性边界内领取任务奖励，关闭任务与紫晶入账同生共死。
+## [param command] 服务边界收到的任务领取意图。
+## [param catalog] 权威任务规则，奖励不取自客户端。
+## 返回本次奖励或拒绝原因。
+func claim_daily_reward(command: Dictionary, catalog: DailyActivityCatalog) -> DomainResult:
+	var revision_value := int(command.get("daily_revision", -1))
+	var result: DomainResult
+	if String(command.type) == "complete_mercenary":
+		var checked := inventory.require_revision(int(command.get("inventory_revision", -1)))
+		if not checked.is_ok:
+			return checked
+		result = daily_activities.complete(String(command.get("ticket", "")), revision_value, catalog, inventory)
+	else:
+		result = daily_activities.claim_experience(String(command.get("task_id", "")), revision_value, catalog)
+	if result.is_ok:
+		amethyst.credit_reward(int(result.value.reward))
+		if String(command.type) == "complete_mercenary":
+			record_achievement(AchievementEvent.new(AchievementEvent.Kind.QUEST_COMPLETED, "mercenary", 1, String(result.value.ticket)))
+	return result
