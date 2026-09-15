@@ -202,6 +202,7 @@ func _apply_equipment_contract(item_definition: Dictionary) -> void:
 		"repair_arm": 3,
 	}.get(kind, -1)
 	_normalize_legacy_vehicle_stats(item_definition)
+	VehicleAttachmentPolicy.adapt(item_definition)
 
 
 ## 将荣耀旧客户端字段提升为充血装备模型直接消费的统一战车属性。

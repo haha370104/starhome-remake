@@ -82,13 +82,13 @@ func calculate_stats(
 		"armor_rear": int(armor_by_location[6]),
 		"armor_left": int(armor_by_location[7]),
 		"armor_right": int(armor_by_location[8]),
-		"speed": propulsion,
-		"energy_cannon_attack": primary_attack + (achievement_bonuses.energy_cannon_attack if primary_attack > 0 else 0),
+		"speed": propulsion + (loadout.attachment_bonus("speed") if propulsion > 0 else 0),
+		"energy_cannon_attack": primary_attack + ((achievement_bonuses.energy_cannon_attack + loadout.attachment_bonus("energy_cannon_attack")) if primary_attack > 0 else 0),
 		"energy_cannon_attack_base": primary_attack,
-		"energy_cannon_attack_bonus": achievement_bonuses.energy_cannon_attack if primary_attack > 0 else 0,
+		"energy_cannon_attack_bonus": (achievement_bonuses.energy_cannon_attack + loadout.attachment_bonus("energy_cannon_attack")) if primary_attack > 0 else 0,
 		"energy_cannon_range_bonus": achievement_bonuses.energy_cannon_range,
-		"missile_attack": achievement_bonuses.missile_attack,
-		"rocket_attack": achievement_bonuses.rocket_attack,
+		"missile_attack": achievement_bonuses.missile_attack + loadout.attachment_bonus("missile_attack"),
+		"rocket_attack": achievement_bonuses.rocket_attack + loadout.attachment_bonus("rocket_attack"),
 		"propulsion": propulsion,
 		"output_power": output_power,
 		"weight": total_weight,
@@ -117,7 +117,7 @@ func reconcile_loadout_state(preserve_resource_ratios := true) -> bool:
 	var reserve_ratio := _resource_ratio(reserve_energy, reserve_energy_capacity)
 	var working_ratio := _resource_ratio(working_energy, working_energy_capacity)
 	definition_id = chassis.definition_id
-	max_health = chassis.base_max_health + achievement_bonuses.max_health
+	max_health = chassis.base_max_health + achievement_bonuses.max_health + loadout.attachment_bonus("max_health")
 	reserve_energy_capacity = chassis.reserve_energy_capacity
 	working_energy_capacity = chassis.working_energy_capacity
 	output_power = chassis.output_power

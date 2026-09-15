@@ -24,6 +24,7 @@ func _init(catalog: ItemCatalog, skill_progression_config: Dictionary = {}) -> v
 func build_bundle(player: Player) -> Dictionary:
 	return {
 		"transaction_revision": player.revision,
+		"wallet": {"amethyst": player.amethyst.balance()},
 		"character": _character_snapshot(player),
 		"inventory": _inventory_snapshot(player.inventory),
 		"vehicle": _vehicle_snapshot(player),

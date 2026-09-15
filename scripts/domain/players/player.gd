@@ -25,6 +25,29 @@ var vehicle: PlayerVehicle
 var skills: SkillBook
 var quest_states: Dictionary
 var achievements: PlayerAchievements
+var amethyst: AmethystWallet
+
+
+## 在玩家一致性边界内完成商城扣款和入包；失败不改变金币、紫晶或背包。
+## [param offer] 权威目录中的类型化商品。
+## [param item] 按商品定义创建的单件实例。
+## [param expected_inventory_revision] 客户端看到的背包版本，防止重复购买意图重放。
+## 返回实际商品和扣款金额。
+func purchase_premium_item(offer: PremiumShopOffer, item: GameItem, expected_inventory_revision: int) -> DomainResult:
+	var checked := inventory.require_revision(expected_inventory_revision)
+	if not checked.is_ok:
+		return checked
+	if item == null or item.definition_id != offer.definition_id or item.quantity != 1:
+		return DomainResult.failure(&"commerce.invalid_offer", "premium item does not match offer")
+	checked = amethyst.can_spend(offer.price)
+	if not checked.is_ok:
+		return checked
+	var added := inventory.add_reward(item)
+	if not added.is_ok:
+		return added
+	amethyst.spend(offer.price)
+	return DomainResult.ok({"action": "premium_buy", "definition_id": offer.definition_id,
+		"price": offer.price, "currency": "amethyst"})
 
 
 ## 初始化完整玩家聚合及其固定子对象。
@@ -59,6 +82,7 @@ func _init(state: Dictionary = {}) -> void:
 		int(state.get("inventory_revision", 0)),
 		int(state.get("currency", 0)),
 	)
+	amethyst = AmethystWallet.new(int(state.get("amethyst", 0)))
 	character_equipment = CharacterEquipment.new()
 	vehicle = PlayerVehicle.new(state.get("vehicle", {}))
 	skills = SkillBook.new(state.get("skills", {}))
@@ -80,6 +104,9 @@ func record_achievement(event: AchievementEvent) -> bool:
 
 
 ## 任务奖励使技能恰好升一级，复用经验清零与综合等级同步，满级时拒绝领奖。
+## [param skill_id] 获得奖励的技能。
+## [param progression_config] 权威技能成长配置。
+## 返回升级结果或满级拒绝原因。
 func grant_skill_level_reward(skill_id: String, progression_config: Dictionary) -> DomainResult:
 	if skills.base_level(skill_id) >= int(progression_config.get("maximum_level", 700)):
 		return DomainResult.failure(&"quest.skill_maximum", "该技能已满级，无法领取升级奖励")
@@ -178,6 +205,10 @@ func equip_vehicle_item(
 	var item := inventory.find(instance_id)
 	if not item is VehicleEquipment:
 		return DomainResult.failure(&"equipment.location_rejected", "inventory item is not vehicle equipment")
+	var target := vehicle.loadout.resolve_install_location(item as VehicleEquipment, location)
+	if not target.is_ok:
+		return target
+	location = int(target.value)
 	if not (item as VehicleEquipment).accepts_location(location):
 		return DomainResult.failure(&"equipment.location_rejected", "item cannot be installed in requested location")
 	if location == 0:

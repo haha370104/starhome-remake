@@ -43,6 +43,7 @@ func to_domain(record: PlayerStateRecord) -> DomainResult:
 		"inventory_capacity": record.inventory_capacity,
 		"inventory_revision": record.inventory_revision,
 		"currency": record.currency,
+		"amethyst": record.amethyst,
 		"skills": record.character_skills,
 		"quest_states": record.quest_states,
 		"achievements": record.achievements,
@@ -71,6 +72,7 @@ func to_domain(record: PlayerStateRecord) -> DomainResult:
 			"bound": stack.bound,
 			"max_durability": stack.max_durability,
 			"durability": stack.durability,
+			"upgrade_level": stack.upgrade_level,
 		})
 		if not created.is_ok:
 			return created
@@ -85,6 +87,7 @@ func to_domain(record: PlayerStateRecord) -> DomainResult:
 			"max_durability": slot.max_durability,
 			"durability": slot.durability,
 			"upgrade_level": slot.upgrade_level,
+			"equipment_location": slot.slot_location,
 			"footprint_px": [45, 45],
 		})
 		if not created.is_ok:
@@ -97,8 +100,10 @@ func to_domain(record: PlayerStateRecord) -> DomainResult:
 			if not restored_clothing.is_ok:
 				return restored_clothing
 		else:
-			if not created.value is VehicleEquipment \
-				or (created.value as VehicleEquipment).equipment_location != slot.slot_location:
+			if created.value is VehicleEquipment and created.value.attachment_family == "new_joint" and slot.slot_location in [16, 17]:
+				created.value.equipment_location = 32 if slot.slot_location == 16 else 33
+			elif not created.value is VehicleEquipment \
+				or not (created.value as VehicleEquipment).accepts_location(slot.slot_location):
 				return DomainResult.failure(&"player.invalid_vehicle_equipment", "persisted vehicle location does not match definition")
 			var restored_vehicle := player.vehicle.loadout.restore(created.value)
 			if not restored_vehicle.is_ok:
@@ -133,6 +138,7 @@ func to_record(player: Player) -> DomainResult:
 			"bound": item.bound,
 			"max_durability": max_durability,
 			"durability": durability,
+			"upgrade_level": (item as Equipment).upgrade_level if item is Equipment else 0,
 		})
 		stack_index += 1
 	var equipment_slots: Array[Dictionary] = []
@@ -158,6 +164,7 @@ func to_record(player: Player) -> DomainResult:
 		"vehicle_loadout_revision": player.vehicle.loadout.revision,
 		"inventory_capacity": player.inventory.capacity,
 		"currency": player.inventory.currency,
+		"amethyst": player.amethyst.balance(),
 		"character_sex": player.sex,
 		"character_level": player.level,
 		"character_profession": player.profession,

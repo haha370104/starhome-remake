@@ -13,6 +13,7 @@ var locked := false
 var bound := false
 var max_durability := 0
 var durability := 0
+var upgrade_level := 0
 
 
 ## 执行 `from_dictionary` 对应的模块操作。
@@ -41,12 +42,13 @@ static func from_dictionary(raw: Variant) -> DomainResult:
 	stack.bound = bool(raw.get("bound", false))
 	stack.max_durability = int(raw.get("max_durability", 0))
 	stack.durability = int(raw.get("durability", stack.max_durability))
+	stack.upgrade_level = int(raw.get("upgrade_level", 0))
 	if stack.stack_id.is_empty() or stack.item_definition_id.is_empty() \
 			or stack.quantity <= 0 or stack.slot_index < 0 or stack.container_id.is_empty() \
 			or stack.position_px.x < 0 or stack.position_px.y < 0 \
 			or stack.footprint_px.x <= 0 or stack.footprint_px.y <= 0 \
 			or stack.max_durability < 0 or stack.durability < 0 \
-			or stack.durability > stack.max_durability:
+			or stack.durability > stack.max_durability or stack.upgrade_level < 0:
 		return DomainResult.failure(&"persistence.invalid_inventory_stack", "inventory stack fields are invalid")
 	return DomainResult.ok(stack)
 
@@ -66,6 +68,7 @@ func to_dictionary() -> Dictionary:
 		"bound": bound,
 		"max_durability": max_durability,
 		"durability": durability,
+		"upgrade_level": upgrade_level,
 	}
 
 

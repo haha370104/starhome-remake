@@ -24,7 +24,7 @@ func _initialize() -> void:
 	if not initialized.is_ok:
 		_finish()
 		return
-	_expect(catalog.definition_ids().size() == 1290, "14项基础物品、6项官网火箭炮与1270项荣耀物品应全部可实例化")
+	_expect(catalog.definition_ids().size() >= 1290, "基础物品、荣耀物品和后续工业材料应完整注册")
 	var glory_chassis_id := "glory_equipment_tank1_c2ba1ac5af"
 	var glory_chassis_definition := catalog.definition(glory_chassis_id)
 	_expect(not glory_chassis_definition.is_empty(), "新兵战车源定义应进入统一物品目录")
@@ -78,10 +78,10 @@ func _initialize() -> void:
 	_expect(current is Player, "客户端全局自己应当就是 Player 子类")
 	_expect(current.character_equipment.at("upper_body") is Clothing, "客户端人物面板与场景应共享同一服装对象")
 	_expect(current.vehicle.loadout.at(1) is VehicleWeapon, "客户端战车槽应恢复具体武器类型")
-	_expect(EquipmentSlotRegistryScript.display_slot_id(19) == 10 \
-		and EquipmentSlotRegistryScript.display_slot_id(24) == 10 \
-		and EquipmentSlotRegistryScript.display_slot_id(28) == 10,
-		"三系特殊装备第一个逻辑槽应映射到同一视觉行")
+	_expect(EquipmentSlotRegistryScript.display_slot_id(19) == -1 \
+		and EquipmentSlotRegistryScript.display_slot_id(24) == -1 \
+		and EquipmentSlotRegistryScript.display_slot_id(28) == -1,
+		"三系特殊装备进入独立展开区，不再占用新式接合器格")
 	_expect(EquipmentSlotRegistryScript.special_series(22) == "sama" \
 		and EquipmentSlotRegistryScript.special_row(31) == 3,
 		"充血装配模型应保留特殊装备系列与四行语义")
@@ -121,6 +121,9 @@ func _equipped_view(equipped: Array, location: int) -> Dictionary:
 ## [param catalog] 已初始化的统一物品目录。
 ## [param player] 已装配新兵战车的测试玩家聚合。
 func _test_advanced_vehicle_loadout(catalog: ItemCatalog, player: Player) -> void:
+	for equipment: VehicleEquipment in player.vehicle.loadout.items():
+		if equipment.equipment_location != 0:
+			_expect(player.unequip_vehicle_item(equipment.equipment_location, player.inventory.revision, player.vehicle.loadout.revision).is_ok, "换底盘前卸下其他组件")
 	var chassis_id := "glory_equipment_tank1000_27ae5e8059"
 	var weapon_id := "glory_equipment_gun1000_c4c24e2500"
 	for specification: Dictionary in [
@@ -134,7 +137,7 @@ func _test_advanced_vehicle_loadout(catalog: ItemCatalog, player: Player) -> voi
 		})
 		_expect(created.is_ok, "高级战车装备应从荣耀目录组装")
 		if created.is_ok:
-			_expect(player.inventory.add_from_transfer(created.value).is_ok, "高级装备应进入同一玩家背包")
+			_expect(player.receive_loot(created.value).is_ok, "高级装备应进入同一玩家背包")
 	var chassis_equipped := player.equip_vehicle_item(
 		"item.sama_chassis", 0, player.inventory.revision, player.vehicle.loadout.revision
 	)

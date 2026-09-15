@@ -7,6 +7,33 @@ var revision: int
 var _equipped: Dictionary = {}
 
 
+## 汇总已装配且有耐久的接合器，背包中的物品不参与计算。
+## [param effect] 领域效果标识。
+## 返回各独立槽位的加值总和。
+func attachment_bonus(effect: String) -> int:
+	var total := 0
+	for equipment: VehicleEquipment in _equipped.values():
+		total += equipment.attachment_bonus(effect)
+	return total
+
+
+## 自动分配同类别空位，两个位置均满时要求先卸装，避免双击误替换。
+## [param equipment] 待安装装备。
+## [param requested] 客户端请求的位置；只能位于该装备的白名单中。
+## 返回合法目标位置或类别已满错误。
+func resolve_install_location(equipment: VehicleEquipment, requested: int) -> DomainResult:
+	if not equipment.accepts_location(requested):
+		return DomainResult.failure(&"equipment.location_rejected", "invalid attachment slot")
+	if equipment.attachment_family.is_empty():
+		return DomainResult.ok(requested)
+	if not _equipped.has(requested):
+		return DomainResult.ok(requested)
+	for location: int in equipment.allowed_locations:
+		if not _equipped.has(location):
+			return DomainResult.ok(location)
+	return DomainResult.failure(&"equipment.attachment_slots_full", "attachment family already has two items")
+
+
 ## 初始化战车固定 Location 装配集合。
 ## [param initial_revision] 当前装配 revision。
 func _init(initial_revision: int = 0) -> void:
@@ -41,6 +68,7 @@ func equip(
 	if equipment == null or not equipment.accepts_location(location):
 		return DomainResult.failure(&"equipment.location_rejected", "item cannot be installed in requested location")
 	var replaced: VehicleEquipment = _equipped.get(location)
+	equipment.equipment_location = location
 	_equipped[location] = equipment
 	return DomainResult.ok(replaced)
 

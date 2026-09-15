@@ -44,6 +44,7 @@ func apply_bundle(bundle: Dictionary) -> bool:
 		or not bundle.get("inventory") is Dictionary \
 		or not bundle.get("vehicle") is Dictionary:
 		return false
+	amethyst = AmethystWallet.new(int(bundle.get("wallet", {}).get("amethyst", 0)))
 	var character: Dictionary = bundle["character"]
 	var inventory_snapshot: Dictionary = bundle["inventory"]
 	var vehicle_snapshot: Dictionary = bundle["vehicle"]
@@ -134,6 +135,7 @@ func _restore_inventory(raw_items: Variant) -> bool:
 			"bound": raw_item.get("bound", false),
 			"max_durability": raw_item.get("max_durability", 0),
 			"durability": raw_item.get("durability", 0),
+			"upgrade_level": raw_item.get("upgrade_level", 0),
 		})
 		if not created.is_ok:
 			return false
@@ -171,6 +173,7 @@ func _create_equipment(raw_equipment: Variant) -> Equipment:
 		"max_durability": raw_equipment.get("max_durability", 1),
 		"durability": raw_equipment.get("durability", 1),
 		"upgrade_level": raw_equipment.get("upgrade_level", 0),
+		"equipment_location": raw_equipment.get("location", -1),
 		"footprint_px": [45, 45],
 	})
 	return created.value if created.is_ok and created.value is Equipment else null

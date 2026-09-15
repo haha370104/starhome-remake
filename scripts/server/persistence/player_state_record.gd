@@ -17,6 +17,7 @@ var inventory_capacity := 40
 var inventory_stacks: Array[InventoryStackRecord] = []
 var equipment_slots: Array[EquipmentSlotRecord] = []
 var currency := 0
+var amethyst := 0
 var character_sex := "male"
 var character_level := 10
 var character_profession := "新兵"
@@ -65,6 +66,7 @@ static func from_dictionary(raw: Variant) -> DomainResult:
 	record.vehicle_loadout_revision = int(raw.get("vehicle_loadout_revision", 0))
 	record.inventory_capacity = int(raw.get("inventory_capacity", 0))
 	record.currency = int(raw.get("currency", 0))
+	record.amethyst = int(raw.get("amethyst", 0))
 	record.character_sex = String(raw.get("character_sex", "male"))
 	record.character_level = int(raw.get("character_level", 10))
 	record.character_profession = String(raw.get("character_profession", "新兵"))
@@ -124,7 +126,7 @@ func validate() -> DomainResult:
 		or character_id.is_empty() or display_name.is_empty():
 		return DomainResult.failure(&"persistence.invalid_player_state", "account and character identity are required")
 	if revision < 0 or inventory_revision < 0 or vehicle_loadout_revision < 0 \
-			or inventory_capacity <= 0 or currency < 0:
+			or inventory_capacity <= 0 or currency < 0 or amethyst < 0:
 		return DomainResult.failure(&"persistence.invalid_player_state", "aggregate revisions or capacity are invalid")
 	if character_sex not in ["male", "female"] or character_level <= 0 \
 			or character_profession.is_empty() or character_faction.is_empty() \
@@ -200,6 +202,7 @@ func to_dictionary() -> Dictionary:
 		"vehicle_loadout_revision": vehicle_loadout_revision,
 		"inventory_capacity": inventory_capacity,
 		"currency": currency,
+		"amethyst": amethyst,
 		"character_sex": character_sex,
 		"character_level": character_level,
 		"character_profession": character_profession,
