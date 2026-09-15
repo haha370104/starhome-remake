@@ -27,7 +27,23 @@ func _run() -> void:
 	manager.toggle("premium_shop")
 	var shop: PremiumShopPanel = manager.navigation_windows.premium_shop
 	shop.position = Vector2(660, 20)
+	await process_frame
+	for child: Node in shop.confirmation.get_children():
+		if child is Label:
+			_expect(shop.confirmation.get_global_rect().encloses(child.get_global_rect()),
+				"16px进入提示在确认框内换行，不因最小宽度溢出")
+	if "--capture" in OS.get_cmdline_user_args():
+		await process_frame
+		await RenderingServer.frame_post_draw
+		root.get_texture().get_image().save_png("res://.godot/premium-shop-entry.png")
 	shop._confirm_entry()
+	await process_frame
+	_expect(shop.search_input.get_theme_font_size("font_size") == 16
+		and shop.subcategories.get_theme_font_size("font_size") == 16
+		and shop._buy_button.get_theme_font_size("font_size") == 16
+		and shop.empty_label.get_theme_font_size("font_size") == 16
+		and shop._detail_label.get_theme_font_size("normal_font_size") == 16,
+		"商城搜索、分类、购买、空状态及详情统一16px")
 	_expect(shop.listing.item_count == 9, "默认显示九件接合器")
 	shop._select_subcategory(1)
 	_expect(shop.listing.item_count == 4, "新式分类包含四件")
@@ -44,12 +60,23 @@ func _run() -> void:
 	_expect(commands.back().type == "buy_premium_item" and not commands.back().has("price"), "UI不提交可信价格")
 	shop._select_offer(0)
 	_expect(shop._detail_label.text.contains("1800 紫晶"), "接合器详情显示权威升级材料预算")
+	await process_frame
+	await process_frame
+	_expect(shop._detail_panel.get_global_rect().encloses(shop._detail_label.get_global_rect()),
+		"长商品详情完整位于侧栏内部")
+	_expect(shop._detail_label.get_global_rect().end.y <= shop._buy_button.global_position.y,
+		"滚动详情不覆盖购买按钮")
+	_expect(shop._detail_label.get_content_height() > shop._detail_label.size.y
+		and shop._detail_label.scroll_active, "完整升级说明通过内部滚动查看")
+	if "--capture" in OS.get_cmdline_user_args():
+		await RenderingServer.frame_post_draw
+		root.get_texture().get_image().save_png("res://.godot/premium-shop-detail.png")
 	shop._select_subcategory(3)
 	_expect(shop.listing.item_count == 7, "接合器升级材料分类显示七种材料")
 	shop.listing.select(0)
 	shop._select_offer(0)
 	shop._quantity.value = 3
-	_expect(shop._detail_label.text.contains("合计：900 紫晶") and not shop._buy_button.disabled, "批量选择更新材料总价")
+	_expect(shop._price_label.text.contains("合计：900 紫晶") and not shop._buy_button.disabled, "批量选择更新材料总价")
 	shop._request_purchase()
 	_expect(shop._purchase_dialog.dialog_text.contains("×3") and shop._purchase_dialog.dialog_text.contains("900"), "确认框明确材料数量与总价")
 	shop._purchase_dialog.hide()
@@ -64,8 +91,13 @@ func _run() -> void:
 	_expect(shop._buy_button.disabled, "批量总价超过余额时禁止提交")
 	shop._quantity.value = 3
 	if "--capture" in OS.get_cmdline_user_args():
+		await process_frame
 		await RenderingServer.frame_post_draw
 		root.get_texture().get_image().save_png("res://.godot/premium-upgrade-materials.png")
+		shop._select_category(2)
+		await process_frame
+		await RenderingServer.frame_post_draw
+		root.get_texture().get_image().save_png("res://.godot/premium-shop-empty.png")
 	var catalog := ItemCatalog.new()
 	catalog.initialize()
 	var mapper := PlayerStateMapper.new(catalog)

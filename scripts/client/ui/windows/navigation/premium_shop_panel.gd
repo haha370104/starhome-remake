@@ -5,6 +5,7 @@ signal command_requested(command: Dictionary)
 signal attachment_upgrade_requested
 
 const CATEGORIES := ["功能道具", "装饰特效", "充值物资", "接合器"]
+const SHOP_FONT_SIZE := 16
 const SUBCATEGORIES := [
 	["经验类", "修复类", "升级类", "维护类", "传送类", "通讯类", "生活类", "辅助类"],
 	["人物变形", "装备变形", "装备特效", "人物背景", "装备背景", "特效物品", "超炫信纸", "浓情贺卡", "Q版请柬"],
@@ -14,6 +15,8 @@ const SUBCATEGORIES := [
 var listing: ItemList
 var _balance_label: Label
 var _detail_label: RichTextLabel
+var _detail_panel: PanelContainer
+var _price_label: Label
 var _buy_button: Button
 var _purchase_dialog: ConfirmationDialog
 var _offers: Array[Dictionary] = []
@@ -36,9 +39,10 @@ var _category := 0
 ## 按免费版商城创建分类、物品列表、详情区、搜索及进入确认；商品及余额由权威商城快照提供。
 func _ready() -> void:
 	build_window(Vector2(720, 502), preload("res://assets/ui/windows/navigation/premium_shop.png"), "")
+	theme.default_font_size = SHOP_FONT_SIZE
 	get_node("CloseButton").position = Vector2(690, 58)
 	for index in range(CATEGORIES.size()):
-		make_button(CATEGORIES[index], Rect2(16 + index * 84, 31, 80, 23), _select_category.bind(index))
+		make_button(CATEGORIES[index], Rect2(16 + index * 84, 31, 80, 30), _select_category.bind(index))
 	subcategories = OptionButton.new()
 	subcategories.position = Vector2(24, 82)
 	subcategories.size = Vector2(220, 26)
@@ -47,34 +51,18 @@ func _ready() -> void:
 	listing = ItemList.new()
 	listing.name = "Offers"
 	listing.position = Vector2(24, 130)
-	listing.size = Vector2(510, 298)
-	listing.add_theme_font_size_override("font_size", 16)
+	listing.size = Vector2(434, 314)
+	var list_style := StyleBoxFlat.new()
+	list_style.bg_color = Color("17242deb")
+	listing.add_theme_stylebox_override("panel", list_style)
 	listing.add_theme_constant_override("v_separation", 8)
 	listing.item_selected.connect(_select_offer)
 	content_root.add_child(listing)
-	empty_label = make_label("", Rect2(42, 160, 470, 100))
+	empty_label = make_label("", Rect2(42, 160, 398, 100))
 	empty_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	empty_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_balance_label = make_label("紫晶：0", Rect2(500, 38, 175, 26))
-	_balance_label.add_theme_font_size_override("font_size", 16)
-	make_label("商品详情", Rect2(550, 132, 145, 25))
-	_detail_label = RichTextLabel.new()
-	_detail_label.position = Vector2(545, 165)
-	_detail_label.size = Vector2(125, 205)
-	_detail_label.add_theme_font_size_override("normal_font_size", 14)
-	_detail_label.text = "请选择接合器"
-	content_root.add_child(_detail_label)
-	_quantity = SpinBox.new()
-	_quantity.position = Vector2(548, 375)
-	_quantity.size = Vector2(120, 28)
-	_quantity.min_value = 1
-	_quantity.max_value = 99
-	_quantity.value = 1
-	_quantity.prefix = "数量 "
-	_quantity.value_changed.connect(_quantity_changed)
-	content_root.add_child(_quantity)
-	_buy_button = make_button("购买", Rect2(566, 410, 110, 30), _request_purchase)
-	_buy_button.disabled = true
+	_build_details()
 	make_button("刷新", Rect2(600, 82, 75, 26), _refresh_shop)
 	make_button("接合器强化", Rect2(354, 82, 136, 26), attachment_upgrade_requested.emit)
 	make_button("退出", Rect2(616, 467, 65, 23), request_close)
@@ -95,6 +83,53 @@ func _ready() -> void:
 	_select_category(3)
 
 
+## 用固定侧栏与纵向容器约束详情、数量和购买按钮，长文本只在详情内部滚动。
+func _build_details() -> void:
+	_detail_panel = PanelContainer.new()
+	_detail_panel.position = Vector2(470, 130)
+	_detail_panel.size = Vector2(206, 314)
+	_detail_panel.clip_contents = true
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color("17242d")
+	style.border_color = Color("4291a8")
+	style.set_border_width_all(1)
+	style.content_margin_left = 12
+	style.content_margin_right = 12
+	style.content_margin_top = 10
+	style.content_margin_bottom = 10
+	_detail_panel.add_theme_stylebox_override("panel", style)
+	content_root.add_child(_detail_panel)
+	var column := VBoxContainer.new()
+	column.add_theme_constant_override("separation", 8)
+	_detail_panel.add_child(column)
+	var heading := Label.new()
+	heading.text = "商品详情"
+	heading.add_theme_color_override("font_color", Color("91d4e4"))
+	column.add_child(heading)
+	_detail_label = RichTextLabel.new()
+	_detail_label.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_detail_label.fit_content = false
+	_detail_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_detail_label.scroll_active = true
+	_detail_label.add_theme_font_size_override("normal_font_size", SHOP_FONT_SIZE)
+	_detail_label.add_theme_constant_override("line_separation", 3)
+	_detail_label.text = "请选择商品"
+	column.add_child(_detail_label)
+	_price_label = Label.new()
+	column.add_child(_price_label)
+	_quantity = SpinBox.new()
+	_quantity.min_value = 1
+	_quantity.max_value = 99
+	_quantity.value = 1
+	_quantity.prefix = "数量 "
+	_quantity.value_changed.connect(_quantity_changed)
+	column.add_child(_quantity)
+	_buy_button = make_button("购买", Rect2(0, 0, 182, 30), _request_purchase)
+	_buy_button.reparent(column)
+	_buy_button.custom_minimum_size.y = 30
+	_buy_button.disabled = true
+
+
 ## 每次通过底栏打开时显示进入确认，不访问外链或触发付费业务。
 func open_shop() -> void:
 	_refresh_shop()
@@ -110,20 +145,20 @@ func _build_confirmation() -> void:
 	var panel := TextureRect.new()
 	panel.texture = preload("res://assets/ui/windows/navigation/shop_confirmation.png")
 	confirmation = panel
-	confirmation.position = Vector2(210, 170)
-	confirmation.size = Vector2(300, 150)
+	confirmation.position = Vector2(210, 155)
+	confirmation.size = Vector2(300, 180)
 	confirmation.mouse_filter = Control.MOUSE_FILTER_STOP
 	content_root.add_child(confirmation)
 	var message := Label.new()
+	message.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	message.text = "为了保障您角色的安全，建议您在安全的环境下进入游戏商城。\n您确定要进入游戏商城吗？"
 	message.position = Vector2(15, 18)
-	message.size = Vector2(270, 85)
-	message.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	message.size = Vector2(270, 105)
 	confirmation.add_child(message)
 	for index in range(2):
 		var button := Button.new()
 		button.text = ["确定", "取消"][index]
-		button.position = Vector2(65 + index * 95, 112)
+		button.position = Vector2(65 + index * 95, 140)
 		button.size = Vector2(75, 24)
 		button.pressed.connect(_confirm_entry if index == 0 else request_close)
 		confirmation.add_child(button)
@@ -198,6 +233,8 @@ func _render_offers() -> void:
 	empty_label.visible = _visible_offers.is_empty()
 	_buy_button.disabled = true
 	_detail_label.text = "请选择商品"
+	_price_label.text = ""
+	_price_label.hide()
 	_quantity.hide()
 	for index in range(_visible_offers.size()):
 		if _visible_offers[index].definition_id == _selected_id:
@@ -214,6 +251,7 @@ func _select_offer(index: int) -> void:
 	_quantity.set_value_no_signal(1)
 	_quantity.visible = offer.family == "upgrade_material"
 	_update_detail(offer)
+	_detail_label.scroll_to_line(0)
 
 
 ## 在选择购买数量时同步总价与余额检查，报价仍只用于展示。
@@ -233,7 +271,9 @@ func _update_detail(offer: Dictionary) -> void:
 	var series := "升级材料" if is_material else ("新式" if offer.family == "new_joint" else "旧式")
 	var amount := int(_quantity.value) if is_material else 1
 	var total := int(offer.price) * amount
-	_detail_label.text = "%s\n%s\n\n%s\n\n单价：%d 紫晶\n合计：%d 紫晶" % [series, offer.display_name, offer.description, int(offer.price), total]
+	_detail_label.text = "%s\n%s\n\n%s" % [series, offer.display_name, offer.description]
+	_price_label.text = "单价：%d 紫晶\n合计：%d 紫晶" % [int(offer.price), total]
+	_price_label.show()
 	if not is_material:
 		_detail_label.text += "\n同系列最多装备 2 个\n\n升级材料预算："
 		for plan: Dictionary in offer.get("upgrade_plans", []):
