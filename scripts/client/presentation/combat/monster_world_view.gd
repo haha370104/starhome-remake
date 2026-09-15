@@ -11,7 +11,7 @@ const REGULAR_FONT := preload("res://assets/ui/fonts/legacy_panel_font.tres")
 const NAME_LABEL_SIZE := Vector2(100.0, 18.0)
 const NAME_FONT_SIZE := 12
 const HEALTH_BAR_WIDTH := 60.0
-const HEALTH_BAR_OFFSET := Vector2(0.0, 20.0)
+const HEALTH_BAR_OFFSET := Vector2(0.0, 25.0)
 const NAME_TO_HEALTH_GAP := 1.0
 
 var entity_id := ""
@@ -68,9 +68,13 @@ func configure(
 	name_label.name = "HoverName"
 	name_label.size = NAME_LABEL_SIZE
 	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	name_label.add_theme_font_override("font", REGULAR_FONT)
+	var name_font := REGULAR_FONT.duplicate() as SystemFont
+	name_font.font_weight = 700
+	name_label.add_theme_font_override("font", name_font)
 	name_label.add_theme_font_size_override("font_size", NAME_FONT_SIZE)
 	name_label.add_theme_color_override("font_color", Color.RED)
+	name_label.add_theme_color_override("font_outline_color", Color.BLACK)
+	name_label.add_theme_constant_override("outline_size", 2)
 	name_label.add_theme_color_override("font_shadow_color", Color.BLACK)
 	name_label.add_theme_constant_override("shadow_offset_x", 1)
 	name_label.add_theme_constant_override("shadow_offset_y", 1)

@@ -56,7 +56,7 @@ func _run() -> void:
 					- (first.name_label.position.y + first.name_label.size.y),
 				1.0,
 			),
-			"怪物名称下移 3px 后，下沿与血条上沿保持 1px 间距",
+			"怪物名称与血条整体下移后仍保持 1px 间距",
 		)
 		_expect(first.health_bar._bar_width == 60.0,
 			"怪物血条应从 50px 增加 20% 至 60px")
@@ -70,12 +70,25 @@ func _run() -> void:
 			"怪物名称与血条必须沿同一水平中心线对齐",
 		)
 		_expect(
-			(first.name_label.get_theme_font("font") as SystemFont).font_weight == 400,
-			"怪物名称必须使用常规字重",
+			(first.name_label.get_theme_font("font") as SystemFont).font_weight == 700,
+			"怪物名称使用微软雅黑粗体提高辨识度",
 		)
+		_expect(first.name_label.get_theme_constant("outline_size") == 2, "名称使用黑色轮廓隔离地图背景")
+		_expect(first.health_bar.position.y == 25.0, "名称和血条从原20px基线整体下移5px")
 		var first_hover_point: Vector2 = first.position + first.visual_collision_offset
 		_expect(controller.update_hover_at(first_hover_point) == "monster.first", "应命中第一个怪物")
 		_expect(first.name_label.visible and not second.name_label.visible, "只显示第一个悬浮名称")
+		if "--capture" in OS.get_cmdline_user_args():
+			print("MONSTER_NAME_FONT: ", first.name_label.get_theme_font("font").get_font_name())
+			controller.set_process(false)
+			var backdrop := ColorRect.new()
+			backdrop.color = Color("827b60")
+			backdrop.size = Vector2(420, 320)
+			backdrop.z_index = -1
+			world.add_child(backdrop)
+			await process_frame
+			await RenderingServer.frame_post_draw
+			root.get_texture().get_image().save_png("res://.godot/monster-name-weight.png")
 		var second_hover_point: Vector2 = second.position + second.visual_collision_offset
 		_expect(controller.update_hover_at(second_hover_point) == "monster.second", "应切换至第二个怪物")
 		_expect(not first.name_label.visible and second.name_label.visible, "切换时必须隐藏旧名称")
