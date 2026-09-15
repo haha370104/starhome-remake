@@ -37,6 +37,7 @@ func initialize(items: ItemCatalog) -> DomainResult:
 		if rule.kind == 1:
 			rule.target_id = String(species_by_name.get(rule.title.trim_prefix("击杀"), ""))
 			rule.locations = places.get(rule.target_id, []).duplicate()
+			rule.description = "击杀 %d 只%s" % [rule.quantity, rule.title.trim_prefix("击杀")]
 		elif rule.kind == 2:
 			rule.target_id = String(available.get(String(raw.condition[1]), ""))
 			# 原版地图提示与复刻布怪不同，收集任务明确允许既有物品。

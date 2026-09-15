@@ -105,6 +105,26 @@ func _initialize() -> void:
 	_expect(not _command("claim_experience", {"task_id": "8"}).is_ok, "同日历练不能重复领奖")
 	_expect(not _command("claim_experience", {"task_id": "9"}).is_ok, "未实现战场不能伪造领奖")
 	_expect(PlayerStateRecord.from_dictionary(state.to_dictionary()).value.daily_activities == state.daily_activities, "含收据和领取状态的存档往返")
+	var decoded := PlayerStateRecord.from_dictionary(JSON.parse_string(JSON.stringify(state.to_dictionary())))
+	_expect(decoded.is_ok, "JSON将整数解析为浮点后仍能读取日常存档")
+	if decoded.is_ok:
+		_expect(mapper.to_domain(decoded.value).value.daily_activities.to_dictionary() == state.daily_activities, "JSON恢复所有进度、收据和领取状态")
+	for invalid: Variant in [1.5, "3", true, INF, -1]:
+		_expect(not DailyActivityJournal.valid_state({"accepted_today": invalid}), "坏数字不允许截断或转换成领取次数")
+	_expect(not DailyActivityJournal.valid_state({"active": {"bad": {"id": "2", "progress": "wrong"}}}), "损坏的已接进度被拒绝而非强制转整数")
+	_expect(not DailyActivityJournal.valid_state({"offers": [3]}), "任务ID类型错误在边界拒绝")
+	var path := "res://.godot/daily-persistence-%d.json" % Time.get_ticks_usec()
+	var repository := FilePlayerStateRepository.new(ProjectSettings.globalize_path(path))
+	var persisted := state.duplicate_record()
+	persisted.revision = 0
+	_expect(repository.initialize().is_ok and repository.create_player(persisted).is_ok, "真实文件仓储写入紫晶和日常账本")
+	var reopened := FilePlayerStateRepository.new(ProjectSettings.globalize_path(path))
+	var opened := reopened.initialize()
+	_expect(opened.is_ok, "重建仓储后可从磁盘读取日常存档")
+	if opened.is_ok:
+		var loaded: PlayerStateRecord = reopened.load_player(state.character_id).value
+		_expect(loaded.amethyst == state.amethyst and loaded.daily_activities == state.daily_activities, "重启后奖励、领取进度与死亡收据一致")
+		_expect(not service.execute(loaded, {"type": "claim_experience", "task_id": "8", "daily_revision": loaded.daily_activities.revision}).is_ok, "重启后不能重复领取历练奖励")
 	for failure: String in failures:
 		push_error(failure)
 	print("DAILY_ACTIVITIES checks=%d failures=%d" % [checks, failures.size()])

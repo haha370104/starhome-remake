@@ -96,7 +96,7 @@ static func from_dictionary(raw: Variant) -> DomainResult:
 	var daily_value: Variant = raw.get("daily_activities", {})
 	if not DailyActivityJournal.valid_state(daily_value):
 		return DomainResult.failure(&"persistence.invalid_player_state", "daily activity state is invalid")
-	record.daily_activities = daily_value.duplicate(true)
+	record.daily_activities = DailyActivityJournal.new(daily_value).to_dictionary() if not daily_value.is_empty() else {}
 	record.vehicle_id = String(raw.get("vehicle_id", ""))
 	record.vehicle_definition_id = String(raw.get("vehicle_definition_id", ""))
 	record.vehicle_max_health = int(raw.get("vehicle_max_health", 0))

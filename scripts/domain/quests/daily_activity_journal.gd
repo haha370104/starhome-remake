@@ -12,8 +12,12 @@ func _init(saved: Dictionary = {}) -> void:
 		if not _state.has(key):
 			_state[key] = {}
 	for key: String in ["revision", "serial", "accepted_today", "completed_today", "points"]:
-		if not _state.has(key):
-			_state[key] = 0
+		_state[key] = int(_state.get(key, 0))
+	for row: Dictionary in _state.active.values():
+		row.progress = int(row.progress)
+	for key: String in ["experience_counts", "experience_claims"]:
+		for id: String in _state[key]:
+			_state[key][id] = int(_state[key][id])
 	if not _state.has("offers"):
 		_state.offers = []
 	if not _state.has("day"):
@@ -29,19 +33,37 @@ static func valid_state(raw: Variant) -> bool:
 	for key: String in ["active", "experience_counts", "experience_claims", "receipts"]:
 		if not raw.get(key, {}) is Dictionary:
 			return false
+		for id: Variant in raw.get(key, {}):
+			if not id is String or String(id).is_empty():
+				return false
 	for key: String in ["revision", "serial", "accepted_today", "completed_today", "points"]:
-		if not raw.get(key, 0) is int or int(raw.get(key, 0)) < 0:
+		if not _valid_count(raw.get(key, 0)):
 			return false
 	if not raw.get("offers", []) is Array or not raw.get("day", "") is String:
 		return false
+	for id: Variant in raw.get("offers", []):
+		if not id is String or String(id).is_empty():
+			return false
 	for row: Variant in raw.get("active", {}).values():
-		if not row is Dictionary or not row.get("id", "") is String or int(row.get("progress", -1)) < 0:
+		if not row is Dictionary or not row.get("id", "") is String or String(row.get("id", "")).is_empty() \
+			or not _valid_count(row.get("progress", -1)):
 			return false
 	for key: String in ["experience_counts", "experience_claims"]:
 		for count: Variant in raw.get(key, {}).values():
-			if not count is int or count < 0:
+			if not _valid_count(count):
 				return false
+	for receipt: Variant in raw.get("receipts", {}).values():
+		if not receipt is bool or not receipt:
+			return false
 	return true
+
+
+## 接受 JSON 解码后的整数浮点表示，同时拒绝小数、字符串和溢出值。
+## [param value] 存档边界收到的计数。
+## 返回是否为可安全转换的非负整数。
+static func _valid_count(value: Variant) -> bool:
+	return (value is int or value is float) and is_finite(float(value)) and float(value) >= 0 \
+		and float(value) <= 1000000000000 and float(value) == floorf(float(value))
 
 
 ## 使用服务器日期换日；已接佣兵及击杀收据跨日保留，历练未领奖进度当日有效。
