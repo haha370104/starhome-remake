@@ -1,6 +1,7 @@
 class_name DraggableGameWindow
 extends Control
 
+
 signal close_requested
 
 const CLOSE_NORMAL := preload("res://assets/ui/windows/common/close/normal.png")
@@ -12,6 +13,12 @@ var _dragging := false
 var _drag_offset := Vector2.ZERO
 var _header_height := 38.0
 
+
+## 让具体窗口在通用右键关闭之前处理自己的上下文操作。
+## [param _point] 视口鼠标位置。
+## 返回是否已消费右键；默认交给窗口关闭逻辑。
+func handle_context_click(_point: Vector2) -> bool:
+	return false
 
 ## 创建保持原始像素尺寸的可拖动游戏窗口。
 ## [param window_size] 背景和交互区域尺寸。

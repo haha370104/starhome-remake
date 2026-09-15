@@ -55,6 +55,8 @@ func configure(
 	]
 	if item is Equipment:
 		item_tooltip = TooltipFormatter.format(item.to_view_dictionary(), "双击装备")
+	elif item is ConsumableItem:
+		item_tooltip = item.display_name + "\n" + (item as ConsumableItem).use_description() + "\n右键使用 / 拆分 / 合并"
 	gui_input.connect(_on_gui_input)
 
 	_icon = TextureRect.new()
@@ -84,6 +86,12 @@ func configure(
 
 	if item.locked:
 		modulate = Color(0.65, 0.65, 0.65)
+
+
+## 切入右键操作前撤销拖动预览并收起悬停说明。
+func prepare_context_menu() -> void:
+	_cancel_drag()
+	ItemHoverHighlight.dismiss_for(self)
 
 
 ## 处理物品拖动和双击装备手势。

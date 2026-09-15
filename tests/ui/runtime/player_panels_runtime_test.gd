@@ -317,8 +317,9 @@ func _test_right_click_close(manager: Control) -> void:
 	manager.inventory_panel.move_to_front()
 	var first_item := manager.inventory_panel._item_canvas.get_child(0) as Control
 	manager._input(_right_click(first_item.get_global_rect().get_center()))
-	_expect(not manager.inventory_panel.visible,
-		"右键命中背包物品子控件时也应关闭所属面板")
+	_expect(manager.inventory_panel.visible and manager.inventory_panel.context_menu.menu.visible,
+		"右键命中背包物品时打开菜单并保留背包")
+	manager.inventory_panel.context_menu.dismiss()
 
 	manager.vehicle_panel.visible = true
 	manager.skill_panel.visible = false

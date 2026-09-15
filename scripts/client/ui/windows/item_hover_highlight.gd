@@ -14,6 +14,12 @@ static var _active_target: Control
 static var _hide_revision := 0
 
 
+## 打开物品操作菜单时收起该物品的悬停说明，避免两种弹层重叠。
+## [param target] 即将交给上下文菜单的物品控件。
+static func dismiss_for(target: Control) -> void:
+	_hide_for_target(target)
+
+
 ## 给物品命中控件及其实际图像绑定荣耀版绿色发光。
 ## [param hit_target] 接收鼠标进入/离开的控件。
 ## [param visual] 应用发光材质的物品图像。

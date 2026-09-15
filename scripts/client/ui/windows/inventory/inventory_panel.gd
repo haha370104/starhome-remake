@@ -19,6 +19,8 @@ var _item_canvas: Control
 var _count_label: Label
 var _currency_label: Label
 var _revision := -1
+var context_menu: InventoryContextMenu
+var _food_label: Label
 
 
 ## 创建荣耀版像素背包固定布局和整理按钮。
@@ -36,6 +38,13 @@ func _ready() -> void:
 	content_root.add_child(_item_canvas)
 	_count_label = _label(Vector2(28, 407), Vector2(180, 18))
 	_currency_label = _label(Vector2(28, 423), Vector2(180, 18))
+	_food_label = _label(Vector2(182, 407), Vector2(134, 36))
+	context_menu = InventoryContextMenu.new()
+	context_menu.command_requested.connect(command_requested.emit)
+	add_child(context_menu)
+	visibility_changed.connect(func() -> void:
+		if not visible:
+			context_menu.dismiss())
 
 	var arrange_button := TextureButton.new()
 	arrange_button.name = "ArrangeButton"
@@ -63,6 +72,31 @@ func apply_inventory(inventory: Inventory) -> void:
 	]
 	_currency_label.text = "金币：%d" % inventory.currency
 	_item_canvas.apply_inventory(inventory)
+
+
+## 在物品区域优先打开上下文菜单，空白处保留右键关闭习惯。
+## [param point] 视口鼠标位置。
+## 返回物品菜单是否已消费点击。
+func handle_context_click(point: Vector2) -> bool:
+	var item: GameItem = _item_canvas.item_at(point)
+	if item == null:
+		return false
+	context_menu.open_for(item, _revision, point)
+	return true
+
+
+## 显示同事务体力和当前食品效果，具体数值放在悬停说明中。
+## [param status] 只读食品状态投影。
+func apply_food_status(status: FoodStatus) -> void:
+	context_menu.food_status = status
+	var descriptions := PackedStringArray()
+	var now := int(Time.get_unix_time_from_system())
+	for effect: FoodEffect in status.active:
+		if effect.expires_at > now:
+			descriptions.append("%s，剩余%d秒" % [effect.description(), effect.expires_at - now])
+	_food_label.text = "体力：%d/100\n食品效果：%d" % [status.physical, descriptions.size()]
+	_food_label.tooltip_text = "\n".join(descriptions)
+	_food_label.mouse_filter = Control.MOUSE_FILTER_STOP
 
 
 ## 提交背包整理意图及当前 revision。

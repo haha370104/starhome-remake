@@ -10,6 +10,20 @@ const GRID_SIZE := Vector2(276, 295)
 const CELL_SIZE := Vector2(GRID_SIZE.x / InventoryLayout.GRID_COLUMNS, GRID_SIZE.y / InventoryLayout.GRID_ROWS)
 
 
+## 按绘制顺序查找鼠标命中的最上层物品，容器裁切外不接受点击。
+## [param point] 视口坐标。
+## 返回命中的领域物品；空白处返回空。
+func item_at(point: Vector2) -> GameItem:
+	if not is_visible_in_tree() or not get_global_rect().has_point(point):
+		return null
+	for index in range(get_child_count() - 1, -1, -1):
+		var view := get_child(index) as InventoryItemView
+		if view != null and view.get_global_rect().has_point(point):
+			view.prepare_context_menu()
+			return view.item
+	return null
+
+
 ## 初始化可嵌入窗口、商店或其他容器的像素背包区域。
 func _init() -> void:
 	size = GRID_SIZE

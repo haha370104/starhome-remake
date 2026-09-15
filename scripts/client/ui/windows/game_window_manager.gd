@@ -100,9 +100,9 @@ func configure(session: PlayerPanelSession) -> bool:
 	return true
 
 
-## 在 GUI 分发前处理右键关闭，避免物品控件的 STOP 过滤吞掉事件。
+## 在 GUI 分发前优先交给命中窗口的物品菜单，否则关闭窗口。
 ## [param event] 视口派发的鼠标或键盘输入事件。
-## 设计：窗口管理器只关闭鼠标命中的最上层窗口，并标记事件已处理，防止同时触发地图移动。
+## 设计：只处理最上层窗口并消费点击，物品操作由窗口发布，防止同时触发地图移动。
 func _input(event: InputEvent) -> void:
 	if not event is InputEventMouseButton:
 		return
@@ -112,7 +112,8 @@ func _input(event: InputEvent) -> void:
 	var window := _topmost_window_at(mouse_event.position)
 	if window == null:
 		return
-	window.request_close()
+	if not window.handle_context_click(mouse_event.position):
+		window.request_close()
 	get_viewport().set_input_as_handled()
 
 
@@ -203,6 +204,7 @@ func _apply_player(player: Player) -> void:
 	var bundle := panel_session.snapshot_bundle()
 	character_panel.apply_snapshot(bundle["character"])
 	inventory_panel.apply_inventory(player.inventory)
+	inventory_panel.apply_food_status(player.food_status)
 	character_panel.set_inventory_revision(int(bundle["inventory"].get("revision", -1)))
 	vehicle_panel.set_inventory_revision(int(bundle["inventory"].get("revision", -1)))
 	vehicle_panel.apply_snapshot(bundle["vehicle"])
