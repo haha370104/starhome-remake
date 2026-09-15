@@ -25,6 +25,7 @@ func _initialize() -> void:
 	_test_session_reconnect_and_cleanup()
 	_test_authoritative_map_transition()
 	_test_destroyed_vehicle_recovery()
+	_test_live_return_to_base()
 	_test_fixed_tick_and_snapshot_rate()
 	if failures.is_empty():
 		print("AUTHORITATIVE_SERVER_SMOKE_OK (%d assertions)" % assertions)
@@ -437,8 +438,35 @@ func _snapshot_has_entity(snapshot: Dictionary, entity_id: String) -> bool:
 	return false
 
 
+## 验证未击毁的玩家同样通过权威三秒流程从城区回基地且不扣生命。
+func _test_live_return_to_base() -> void:
+	var server = _new_server()
+	server.open_session(63, _handshake(), 1000)
+	var session: ServerSession = server.sessions.session_for_peer(63)
+	var entity_id := session.entity_id
+	var hall: AuthoritativeMapInstance = server.map_registry.instance_by_map_id("yian_harbor_hall_floor_1")
+	var city: AuthoritativeMapInstance = server.ensure_runtime_map("yian_harbor_city").value
+	var source: AuthoritativeEntity = hall.entities[entity_id]
+	var spawn := city.admitted_spawn_position(city.definition.spawn_by_id(city.definition.default_spawn_id).position)
+	var placed := city.spawn_entity(entity_id, spawn, source.movement_speed)
+	server.call("_copy_transitioned_entity_state", source, placed.value)
+	hall.remove_entity(entity_id)
+	session.map_instance_id = city.instance_id
+	var health: int = city.vehicle_combat_state_for(entity_id).health
+	var request := VehicleRecoveryIntentContract.new(city.instance_id, VehicleRecoveryIntentContract.RETURN_TO_BASE, 1).to_dictionary()
+	var scheduled := server.handle_peer_vehicle_recovery(63, request)
+	_expect(scheduled.ok, "活着的玩家在非战斗城区也能回基地")
+	_expect(not server.handle_peer_vehicle_recovery(63, request).ok, "重复回城意图不创建多个计时器")
+	server.advance_simulation(3.0, 4000)
+	_expect(session.map_instance_id == hall.instance_id, "三秒后按固定出生点回到基地")
+	_expect(hall.vehicle_combat_state_for(entity_id).health == health, "主动回城保留生命，不按死亡比例扣血")
+	request = VehicleRecoveryIntentContract.new(hall.instance_id, VehicleRecoveryIntentContract.RETURN_TO_BASE, 2).to_dictionary()
+	_expect(not server.handle_peer_vehicle_recovery(63, request).ok, "已在基地不重复回城")
+	server.free()
+
+
 ## 构造与当前公开内容版本匹配的客户端握手载荷。
-## 返回该函数计算、查询或操作得到的结果。
+## 返回协议和内容版本字段。
 func _handshake() -> Dictionary:
 	return {
 		"protocol_version": Protocol.PROTOCOL_VERSION,

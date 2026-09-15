@@ -603,13 +603,13 @@ func handle_peer_vehicle_recovery(peer_id: int, raw_intent: Variant) -> Dictiona
 	if _pending_vehicle_recoveries.has(session.entity_id):
 		return _failure(&"vehicle_recovery.already_pending", "base rescue is already pending")
 	var source := map_registry.instance_by_id(session.map_instance_id)
-	if source == null or not source.is_vehicle_combat_active():
-		return _failure(
-			&"vehicle_recovery.not_in_combat", "vehicle recovery is only available on combat maps"
-		)
+	if source == null:
+		return _failure(&"vehicle_recovery.map_missing", "current map is unavailable")
+	if String(source.definition.map_id) == BASE_HALL_MAP_ID:
+		return _failure(&"vehicle_recovery.already_home", "已经在基地中心")
 	var vehicle_state := source.vehicle_combat_state_for(session.entity_id) if source != null else null
-	if vehicle_state == null or vehicle_state.health > 0:
-		return _failure(&"vehicle_recovery.not_destroyed", "only a destroyed vehicle may return")
+	if vehicle_state == null:
+		return _failure(&"vehicle_recovery.combat_state_missing", "vehicle state is unavailable")
 	session.last_recovery_sequence = intent.input_sequence
 	var complete_at_tick := server_tick + maxi(
 		1, roundi(VEHICLE_RECOVERY_DELAY_SECONDS * float(config.simulation_hz))
@@ -661,8 +661,8 @@ func _recover_destroyed_vehicle_to_base(entity_id: String, pending: Dictionary) 
 			destination = ensured.value
 	var source_entity: AuthoritativeEntity = source.entities.get(entity_id) if source != null else null
 	var source_vehicle := source.vehicle_combat_state_for(entity_id) if source != null else null
-	if source_entity == null or source_vehicle == null or source_vehicle.health > 0:
-		return _failure(&"vehicle_recovery.no_longer_destroyed", "vehicle is no longer destroyed")
+	if source_entity == null or source_vehicle == null:
+		return _failure(&"vehicle_recovery.combat_state_missing", "vehicle state is unavailable")
 	if destination == null:
 		return _failure(&"vehicle_recovery.base_unavailable", "base hall is unavailable")
 	var spawn_point: MapSpawnPoint = destination.definition.spawn_by_id(
@@ -702,9 +702,8 @@ func _recover_destroyed_vehicle_to_base(entity_id: String, pending: Dictionary) 
 	var recovered_vehicle := destination.vehicle_combat_state_for(entity_id)
 	if recovered_vehicle == null:
 		return _failure(&"vehicle_recovery.combat_state_missing", "base vehicle state is missing")
-	recovered_vehicle.health = maxi(
-		1, ceili(float(recovered_vehicle.max_health) * VEHICLE_RECOVERY_HEALTH_RATIO)
-	)
+	if recovered_vehicle.health <= 0:
+		recovered_vehicle.health = maxi(1, ceili(float(recovered_vehicle.max_health) * VEHICLE_RECOVERY_HEALTH_RATIO))
 	var joined := MapJoinedContract.new(
 		String(destination.definition.map_id), destination.instance_id, entity_id,
 		recovered_entity.position, destination.definition.schema_version, server_tick,
