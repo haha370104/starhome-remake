@@ -3,12 +3,15 @@
 每张地图保存独立 NPC 列表；大厅见 [yian_harbor_hall_floor_1.json](./yian_harbor_hall_floor_1.json)。
 不在场景脚本逐个硬编码 NPC 身份。
 
+基地大厅当前仅保留战斗训练师和卖矿商人，沿用原位置及任务入口。其余九名占位 NPC 已撤下；
+地图导航侧栏从当前实例收集目标，同步只显示这两名 NPC。其他地图的 NPC 配置独立保留。
+
 ## 字段
 
 - `id/name/appearance/kind`：稳定身份、名称、外观、业务种类（shop/quest/ambient）。
 - `spawn`：世界脚点，不是图片左上角。
 - `patrol.speed/animation_speed_scale/initial_delay`：每个 NPC 独立配置，不引用玩家速度。
-- `patrol.points`：顺序巡逻点；各点 `position` 和随机停留区间 `dwell`，当前大厅为三角循环。
+- `patrol.points`：顺序巡逻点；各点 `position` 和随机停留区间 `dwell`。当前大厅两名 NPC 固定站位。
 - `interaction.body/actions`：交互正文和动作声明，不在 JSON 塞入可执行代码。
 
 ## 模型与视图分工
