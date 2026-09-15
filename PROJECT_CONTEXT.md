@@ -16,6 +16,9 @@
 
 ## 素材版本
 
+2026-09-15 用户授权接合器强化所需缺失素材少于3个时可参考现有素材补绘。本次仅加工石1项，
+以 `remake_generated` 记录在 `assets/items/materials/processing_stone/manifest.json`，不冒充荣耀原图。
+
 从 2026-08-26 起，除下述 HUD 唯一豁免外，所有新加入 `starhome_remake` 的素材统一以荣耀版为唯一正式来源：
 
 - 版本名称：荣耀版

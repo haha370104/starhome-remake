@@ -55,6 +55,7 @@ func _run() -> void:
 			_expect(not ItemPresentationTextureResolver.resolve(definition.presentation).is_empty(), "六种材料加载各自荣耀原图")
 		else:
 			_expect(definition.source_audit.asset_status == "local_missing_and_official_exact_path_404", "加工石明确记录原图缺失")
+			_expect(not ItemPresentationTextureResolver.resolve(definition.presentation).is_empty(), "加工石采用用户授权补绘图标")
 	var stages := 0
 	for offer: Dictionary in offers:
 		if offer.family == "upgrade_material":

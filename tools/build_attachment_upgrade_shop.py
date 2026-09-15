@@ -59,7 +59,8 @@ def build():
         else:
             assert source_class == "ProcessStone", reference
             row["source_audit"]["asset_status"] = "local_missing_and_official_exact_path_404"
-            row["description"] += "原版图像暂缺，目前以名称显示。"
+            row["presentation"] = {"icon": "res://assets/items/materials/processing_stone/icon.png"}
+            row["source_audit"]["replacement_source"] = "remake_generated_user_authorized_2026-09-15"
         definitions.append(row)
         ids[source_class] = item_id
         prices[item_id] = price
@@ -104,7 +105,7 @@ def build():
             rules.append({"attachment_id": by_class[source_class]["id"], "current_level": level,
                           "target_level": level + 1, "coefficient": coefficient,
                           "premium_materials": premium, "normal_materials": normal, "currency": currency,
-                          "source_audit": "remake quantities: max(current level,1)*coefficient; original material roles retained; upgrade execution not implemented"})
+                          "source_audit": "remake quantities: max(current level,1)*coefficient; original material roles retained; authoritative single-level upgrade"})
     assert len(rules) == 40
     write("data/gameplay/commerce/attachment_upgrade_costs_v1.json", rules, "rules")
     print(f"Upgrade shop: {len(definitions)} materials, {len(rules)} stage rules")

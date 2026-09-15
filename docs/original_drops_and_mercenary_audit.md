@@ -172,4 +172,4 @@ python -X utf8 tools/audit_original_drops_and_mercenaries.py
 
 工具只读取领域目录，不加载玩家存档。若独立交叉检查发现可获得目标被过滤会失败退出。原始归档缺失时明确降低验证范围。
 
-运行目录快照 SHA-256：`57570267d507427c2a4bc795e2bea7db9f6f5acd80c02f15be7f393535e2ba82`。
+运行目录快照 SHA-256：`9deb1a1b0492c87a0a7626d9d1ff5f0fd8ae42c87cf9ae5d739306b7feb78d5c`。

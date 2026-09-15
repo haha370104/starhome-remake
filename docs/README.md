@@ -81,6 +81,7 @@
 | [原版掉落与佣兵全量审计](original_drops_and_mercenary_audit.md) | 79种掉落名称的实际覆盖、495条任务逐条判定、金币捐赠误过滤修复 |
 | [元素提炼与合金供应](industrial_material_supply.md) | 硫磷钾提炼、镍锌钛钪镁钡矿点、合金等级与原料获取链 |
 | [升级材料商城与预算](attachment_upgrade_shop.md) | 七种材料单价、当前强化等级计价、40阶段用量及权威购买 |
+| [接合器强化执行](attachment_upgrade_execution.md) | 单级强化、原子支付、装配生效、存档及加工石补绘 |
 | [系统提示](./reverse_engineering/system_message_rendering.md) | 屏幕中央提示的字体、位置及生命周期 |
 | [矿源渲染](./reverse_engineering/mine_source_rendering.md) | 远程矿源对象、调色板、储量与渲染的分离 |
 | [FCC 与全量资源恢复](./fcc_resource_recovery.md) | 密钥来源、DLL 解密、索引下载、动画解析、官网精确依赖补抓 |
