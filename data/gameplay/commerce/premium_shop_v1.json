@@ -37,6 +37,34 @@
     {
       "definition_id": "glory_equipment_zhencejieheqi_0fe2126f79",
       "price": 2000
+    },
+    {
+      "definition_id": "item:material:f65184d5f9b2",
+      "price": 300
+    },
+    {
+      "definition_id": "upgrade_material_17f973d2a8d2",
+      "price": 600
+    },
+    {
+      "definition_id": "upgrade_material_a3c001f4ff7f",
+      "price": 300
+    },
+    {
+      "definition_id": "upgrade_material_072d8beff422",
+      "price": 300
+    },
+    {
+      "definition_id": "upgrade_material_e822c3f954f6",
+      "price": 300
+    },
+    {
+      "definition_id": "upgrade_material_6f71998aa32b",
+      "price": 300
+    },
+    {
+      "definition_id": "upgrade_material_fbb7efbe11af",
+      "price": 600
     }
   ]
 }

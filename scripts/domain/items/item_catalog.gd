@@ -10,6 +10,7 @@ const GAMEPLAY_PATHS := [
 	"res://data/gameplay/official_rocket_items_v1.json",
 	"res://data/gameplay/glory/glory_items_v1.json",
 	"res://data/gameplay/industrial_materials_v1.json",
+	"res://data/gameplay/commerce/attachment_upgrade_materials_v1.json",
 ]
 const PRESENTATION_PATHS := [
 	"res://data/presentation/player_equipment_v1.json",
@@ -150,7 +151,12 @@ func _load_gameplay_file(path: String) -> DomainResult:
 			return DomainResult.failure(&"items.catalog_invalid", "item definition must be a dictionary")
 		var item_definition: Dictionary = raw_definition.duplicate(true)
 		var definition_id := String(item_definition.get("id", ""))
-		if definition_id.is_empty() or _definitions.has(definition_id):
+		var previous: Dictionary = _definitions.get(definition_id, {})
+		var replaces_placeholder: bool = bool(item_definition.get("replaces_name_only", false)) \
+			and previous.get("source_audit", {}).get("status", "") == "name_only" \
+			and previous.get("display_name", "") == item_definition.get("source_class", "") \
+			and previous.get("kind", "") == "material" and item_definition.get("kind", "") == "material"
+		if definition_id.is_empty() or (_definitions.has(definition_id) and not replaces_placeholder):
 			return DomainResult.failure(&"items.catalog_invalid", "item definition identity is invalid")
 		_apply_equipment_contract(item_definition)
 		_definitions[definition_id] = item_definition

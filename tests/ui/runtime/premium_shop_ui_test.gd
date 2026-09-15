@@ -42,6 +42,30 @@ func _run() -> void:
 	shop._confirm_purchase()
 	_expect(state.amethyst == 19000 and shop._balance_label.text.contains("19000"), "实际购买回包刷新余额")
 	_expect(commands.back().type == "buy_premium_item" and not commands.back().has("price"), "UI不提交可信价格")
+	shop._select_offer(0)
+	_expect(shop._detail_label.text.contains("1800 紫晶"), "接合器详情显示权威升级材料预算")
+	shop._select_subcategory(3)
+	_expect(shop.listing.item_count == 7, "接合器升级材料分类显示七种材料")
+	shop.listing.select(0)
+	shop._select_offer(0)
+	shop._quantity.value = 3
+	_expect(shop._detail_label.text.contains("合计：900 紫晶") and not shop._buy_button.disabled, "批量选择更新材料总价")
+	shop._request_purchase()
+	_expect(shop._purchase_dialog.dialog_text.contains("×3") and shop._purchase_dialog.dialog_text.contains("900"), "确认框明确材料数量与总价")
+	shop._purchase_dialog.hide()
+	shop._confirm_purchase()
+	_expect(state.amethyst == 18100 and int(commands.back().quantity) == 3, "真实材料批量购买回包更新余额")
+	shop._select_category(0)
+	shop._select_subcategory(2)
+	_expect(shop.listing.item_count == 7, "功能道具的升级类也能找到相同材料")
+	shop.listing.select(0)
+	shop._select_offer(0)
+	shop._quantity.value = 99
+	_expect(shop._buy_button.disabled, "批量总价超过余额时禁止提交")
+	shop._quantity.value = 3
+	if "--capture" in OS.get_cmdline_user_args():
+		await RenderingServer.frame_post_draw
+		root.get_texture().get_image().save_png("res://.godot/premium-upgrade-materials.png")
 	var catalog := ItemCatalog.new()
 	catalog.initialize()
 	var mapper := PlayerStateMapper.new(catalog)

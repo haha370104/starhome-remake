@@ -14,7 +14,7 @@ var price: int
 func _init(row: Dictionary, definition: Dictionary) -> void:
 	definition_id = String(row["definition_id"])
 	price = int(row["price"])
-	family = String(definition["attachment_family"])
+	family = String(definition.get("attachment_family", definition.get("premium_category", "")))
 	display_name = String(definition["display_name"])
 	description = String(definition.get("description", ""))
 	if definition.get("stats", {}).get("attachment_effect", "") == "radar":
@@ -25,4 +25,18 @@ func _init(row: Dictionary, definition: Dictionary) -> void:
 ## 返回商品名称、类别、说明和紫晶价格。
 func snapshot() -> Dictionary:
 	return {"definition_id": definition_id, "display_name": display_name,
-		"description": description, "family": family, "price": price, "currency": "amethyst"}
+		"description": description, "family": family, "price": price, "currency": "amethyst",
+		"maximum_quantity": 99 if family == "upgrade_material" else 1}
+
+
+## 校验购买数量并按权威单价报价，材料可批量购买，装置保持一次一件。
+## [param raw_quantity] 未信任的请求数量，允许JSON整数浮点表示。
+## 返回有效数量及总价，或非法数量错误。
+func quote(raw_quantity: Variant) -> DomainResult:
+	if not (raw_quantity is int or raw_quantity is float):
+		return DomainResult.failure(&"commerce.invalid_quantity", "购买数量无效")
+	var amount := float(raw_quantity)
+	var maximum := 99 if family == "upgrade_material" else 1
+	if not is_finite(amount) or amount != floorf(amount) or amount < 1 or amount > maximum:
+		return DomainResult.failure(&"commerce.invalid_quantity", "购买数量超出范围")
+	return DomainResult.ok({"quantity": int(amount), "price": price * int(amount)})

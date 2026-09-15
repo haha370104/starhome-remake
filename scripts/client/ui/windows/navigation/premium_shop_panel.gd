@@ -8,7 +8,7 @@ const SUBCATEGORIES := [
 	["经验类", "修复类", "升级类", "维护类", "传送类", "通讯类", "生活类", "辅助类"],
 	["人物变形", "装备变形", "装备特效", "人物背景", "装备背景", "特效物品", "超炫信纸", "浓情贺卡", "Q版请柬"],
 	["镶嵌类", "服装类", "特殊类", "消耗类", "护卫类", "千级装备", "初级物资", "礼包类"],
-	["全部接合器", "新式接合器", "旧式接合器"],
+	["全部接合器", "新式接合器", "旧式接合器", "升级材料"],
 ]
 var listing: ItemList
 var _balance_label: Label
@@ -22,6 +22,8 @@ var _balance := 0
 var _keyword := ""
 var _selected_id := ""
 var _pending_id := ""
+var _pending_quantity := 1
+var _quantity: SpinBox
 var _subcategory := 0
 var subcategories: OptionButton
 var empty_label: Label
@@ -57,10 +59,19 @@ func _ready() -> void:
 	make_label("商品详情", Rect2(550, 132, 145, 25))
 	_detail_label = RichTextLabel.new()
 	_detail_label.position = Vector2(545, 165)
-	_detail_label.size = Vector2(125, 235)
+	_detail_label.size = Vector2(125, 205)
 	_detail_label.add_theme_font_size_override("normal_font_size", 14)
 	_detail_label.text = "请选择接合器"
 	content_root.add_child(_detail_label)
+	_quantity = SpinBox.new()
+	_quantity.position = Vector2(548, 375)
+	_quantity.size = Vector2(120, 28)
+	_quantity.min_value = 1
+	_quantity.max_value = 99
+	_quantity.value = 1
+	_quantity.prefix = "数量 "
+	_quantity.value_changed.connect(_quantity_changed)
+	content_root.add_child(_quantity)
 	_buy_button = make_button("购买", Rect2(566, 410, 110, 30), _request_purchase)
 	_buy_button.disabled = true
 	make_button("刷新", Rect2(600, 82, 75, 26), _refresh_shop)
@@ -141,6 +152,7 @@ func _select_category(category: int) -> void:
 ## [param index] 当前大类内的子分类序号。
 func _select_subcategory(index: int) -> void:
 	_subcategory = index
+	subcategories.select(index)
 	_render_offers()
 
 
@@ -154,7 +166,7 @@ func apply_shop_bundle(bundle: Dictionary) -> void:
 	_balance_label.text = "紫晶：%d" % _balance
 	_render_offers()
 	if shop.get("operation", {}).get("action", "") == "premium_buy":
-		notice_requested.emit("购买成功，接合器已放入背包")
+		notice_requested.emit("购买成功，商品已放入背包")
 
 
 ## 只发送查询意图，不允许客户端修改余额。
@@ -167,21 +179,24 @@ func _render_offers() -> void:
 	listing.clear()
 	_visible_offers.clear()
 	for offer: Dictionary in _offers:
-		if _category != 3:
+		var is_material: bool = offer.get("family", "") == "upgrade_material"
+		var material_tab := (_category == 3 and _subcategory == 3) or (_category == 0 and _subcategory == 2)
+		if material_tab != is_material or (not material_tab and _category != 3):
 			continue
-		if _subcategory == 1 and offer.get("family") != "new_joint":
+		if not material_tab and _subcategory == 1 and offer.get("family") != "new_joint":
 			continue
-		if _subcategory == 2 and offer.get("family") != "old_joint":
+		if not material_tab and _subcategory == 2 and offer.get("family") != "old_joint":
 			continue
 		if not _keyword.is_empty() and not String(offer.get("display_name", "")).contains(_keyword):
 			continue
 		_visible_offers.append(offer)
-		var series := "新式" if offer.get("family") == "new_joint" else "旧式"
+		var series := "材料" if is_material else ("新式" if offer.get("family") == "new_joint" else "旧式")
 		listing.add_item("[%s] %s    %d 紫晶" % [series, offer.display_name, int(offer.price)])
 	empty_label.text = "没有匹配商品" if not _keyword.is_empty() else "当前分类暂无商品"
 	empty_label.visible = _visible_offers.is_empty()
 	_buy_button.disabled = true
-	_detail_label.text = "请选择接合器"
+	_detail_label.text = "请选择商品"
+	_quantity.hide()
 	for index in range(_visible_offers.size()):
 		if _visible_offers[index].definition_id == _selected_id:
 			listing.select(index)
@@ -194,10 +209,36 @@ func _render_offers() -> void:
 func _select_offer(index: int) -> void:
 	var offer := _visible_offers[index]
 	_selected_id = String(offer.definition_id)
-	var series := "新式" if offer.family == "new_joint" else "旧式"
-	_detail_label.text = "%s\n%s\n\n%s\n\n售价：%d 紫晶\n同系列最多装备 2 个" % [series, offer.display_name, offer.description, int(offer.price)]
-	_buy_button.disabled = _inventory_revision < 0 or _balance < int(offer.price)
-	_buy_button.tooltip_text = "紫晶不足" if _balance < int(offer.price) else "购买一件并放入背包"
+	_quantity.set_value_no_signal(1)
+	_quantity.visible = offer.family == "upgrade_material"
+	_update_detail(offer)
+
+
+## 在选择购买数量时同步总价与余额检查，报价仍只用于展示。
+## [param value] 数量控件的新值。
+func _quantity_changed(value: float) -> void:
+	if value < 1:
+		return
+	var selected := listing.get_selected_items()
+	if not selected.is_empty():
+		_update_detail(_visible_offers[selected[0]])
+
+
+## 展示材料批量报价或接合器各阶段材料预算。
+## [param offer] 服务端下发的商品投影。
+func _update_detail(offer: Dictionary) -> void:
+	var is_material: bool = offer.family == "upgrade_material"
+	var series := "升级材料" if is_material else ("新式" if offer.family == "new_joint" else "旧式")
+	var amount := int(_quantity.value) if is_material else 1
+	var total := int(offer.price) * amount
+	_detail_label.text = "%s\n%s\n\n%s\n\n单价：%d 紫晶\n合计：%d 紫晶" % [series, offer.display_name, offer.description, int(offer.price), total]
+	if not is_material:
+		_detail_label.text += "\n同系列最多装备 2 个\n\n升级材料预算："
+		for plan: Dictionary in offer.get("upgrade_plans", []):
+			_detail_label.text += "\n+%d→+%d：%d 紫晶" % [int(plan.current_level), int(plan.target_level), int(plan.premium_cost)]
+		_detail_label.text += "\n升级操作暂未开放。"
+	_buy_button.disabled = _inventory_revision < 0 or _balance < total
+	_buy_button.tooltip_text = "紫晶不足" if _balance < total else ""
 
 
 ## 购买前展示具体物品和紫晶金额，确认不会触发真实货币支付。
@@ -207,7 +248,8 @@ func _request_purchase() -> void:
 		return
 	var offer := _visible_offers[selected[0]]
 	_pending_id = String(offer.definition_id)
-	_purchase_dialog.dialog_text = "购买 %s，花费 %d 紫晶？" % [offer.display_name, int(offer.price)]
+	_pending_quantity = int(_quantity.value) if offer.family == "upgrade_material" else 1
+	_purchase_dialog.dialog_text = "购买 %s ×%d，花费 %d 紫晶？" % [offer.display_name, _pending_quantity, int(offer.price) * _pending_quantity]
 	_purchase_dialog.popup_centered(Vector2i(360, 150))
 
 
@@ -217,7 +259,7 @@ func _confirm_purchase() -> void:
 		return
 	_buy_button.disabled = true
 	command_requested.emit({"type": "buy_premium_item", "definition_id": _pending_id,
-		"inventory_revision": _inventory_revision})
+		"quantity": _pending_quantity, "inventory_revision": _inventory_revision})
 	_pending_id = ""
 
 

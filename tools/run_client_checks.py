@@ -14,6 +14,7 @@ TESTS = (
     "server/mining/authoritative_mining_module_test.gd",
     "domain/player_rich_model_test.gd",
     "server/commerce/premium_shop_and_attachments_test.gd",
+    "server/commerce/premium_upgrade_materials_test.gd",
     "server/commerce/daily_activity_test.gd",
     "server/combat/upgrade_material_supply_test.gd",
     "server/manufacturing/industrial_supply_chain_test.gd",

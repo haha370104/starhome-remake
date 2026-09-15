@@ -31,24 +31,28 @@ var amethyst: AmethystWallet
 
 ## 在玩家一致性边界内完成商城扣款和入包；失败不改变金币、紫晶或背包。
 ## [param offer] 权威目录中的类型化商品。
-## [param item] 按商品定义创建的单件实例。
+## [param item] 按商品定义创建的装置或材料堆叠。
 ## [param expected_inventory_revision] 客户端看到的背包版本，防止重复购买意图重放。
 ## 返回实际商品和扣款金额。
 func purchase_premium_item(offer: PremiumShopOffer, item: GameItem, expected_inventory_revision: int) -> DomainResult:
 	var checked := inventory.require_revision(expected_inventory_revision)
 	if not checked.is_ok:
 		return checked
-	if item == null or item.definition_id != offer.definition_id or item.quantity != 1:
+	if item == null or item.definition_id != offer.definition_id:
 		return DomainResult.failure(&"commerce.invalid_offer", "premium item does not match offer")
-	checked = amethyst.can_spend(offer.price)
+	var quote := offer.quote(item.quantity)
+	if not quote.is_ok:
+		return quote
+	var total := int(quote.value.price)
+	checked = amethyst.can_spend(total)
 	if not checked.is_ok:
 		return checked
 	var added := inventory.add_reward(item)
 	if not added.is_ok:
 		return added
-	amethyst.spend(offer.price)
+	amethyst.spend(total)
 	return DomainResult.ok({"action": "premium_buy", "definition_id": offer.definition_id,
-		"price": offer.price, "currency": "amethyst"})
+		"price": total, "quantity": item.quantity, "currency": "amethyst"})
 
 
 ## 初始化完整玩家聚合及其固定子对象。

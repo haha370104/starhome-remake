@@ -3,6 +3,7 @@ extends RefCounted
 
 var _catalog: ItemCatalog
 var _offers: Dictionary = {}
+var _upgrade_pricing := preload("res://scripts/domain/commerce/attachment_upgrade_pricing.gd").new()
 
 
 ## 加载服务端白名单，拒绝无效物品、重复商品和非正售价。
@@ -16,12 +17,13 @@ func initialize(catalog: ItemCatalog) -> DomainResult:
 		return loaded
 	for row: Dictionary in loaded.value.get("offers", []):
 		var definition := catalog.definition(String(row.get("definition_id", "")))
-		if String(definition.get("attachment_family", "")) not in ["old_joint", "new_joint"] \
+		var is_material: bool = definition.get("kind", "") == "material" and definition.get("premium_category", "") == "upgrade_material"
+		if (String(definition.get("attachment_family", "")) not in ["old_joint", "new_joint"] and not is_material) \
 				or int(row.get("price", 0)) <= 0 or _offers.has(row.get("definition_id")):
 			return DomainResult.failure(&"commerce.invalid_offer", "invalid premium catalog")
 		var offer := PremiumShopOffer.new(row, definition)
 		_offers[offer.definition_id] = offer
-	return DomainResult.ok()
+	return _upgrade_pricing.initialize(catalog, _offers)
 
 
 ## 创建服务端商品实例并委托玩家聚合完成扣款和入包。
@@ -32,8 +34,11 @@ func purchase(player: Player, command: Dictionary) -> DomainResult:
 	var offer: PremiumShopOffer = _offers.get(String(command.get("definition_id", "")))
 	if offer == null:
 		return DomainResult.failure(&"commerce.item_not_offered", "premium item is not offered")
+	var quote := offer.quote(command.get("quantity", 1) if offer.family == "upgrade_material" else 1)
+	if not quote.is_ok:
+		return quote
 	var created := _catalog.create(offer.definition_id, {
-		"instance_id": "premium.%s" % Crypto.new().generate_random_bytes(16).hex_encode(), "quantity": 1,
+		"instance_id": "premium.%s" % Crypto.new().generate_random_bytes(16).hex_encode(), "quantity": quote.value.quantity,
 	})
 	if not created.is_ok:
 		return created
@@ -47,5 +52,7 @@ func purchase(player: Player, command: Dictionary) -> DomainResult:
 func snapshot(player: Player, operation: Dictionary) -> Dictionary:
 	var offers: Array[Dictionary] = []
 	for offer: PremiumShopOffer in _offers.values():
-		offers.append(offer.snapshot())
+		var row := offer.snapshot()
+		row["upgrade_plans"] = _upgrade_pricing.plans_for(offer.definition_id)
+		offers.append(row)
 	return {"offers": offers, "amethyst": player.amethyst.balance(), "operation": operation.duplicate(true)}

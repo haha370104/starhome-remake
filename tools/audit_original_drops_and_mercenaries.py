@@ -64,6 +64,12 @@ def main() -> None:
         if len(available) == previous:
             break
 
+    upgrade_rules = load("data/gameplay/commerce/attachment_upgrade_costs_v1.json")["rules"]
+    for rule in upgrade_rules:
+        for material in rule["premium_materials"] + rule["normal_materials"]:
+            assert material["definition_id"] in available, f"升级材料无获取链：{rule['attachment_id']} +{rule['current_level']} {material['definition_id']}"
+    print(f"UPGRADE_SUPPLY_AUDIT stages={len(upgrade_rules)} missing=0")
+
     source_species = defaultdict(set)
     source_entries = Counter()
     matched_entries = 0
@@ -165,7 +171,7 @@ def main() -> None:
               "镁矿已在后续材料投放中开放，相应13条收集任务进入可执行目录；钒矿、钼矿、钽矿仍未进入启用矿池。", "",
               "## 本次纠正的旧结论", "",
               "`NewJointImpactChip` 就是冲击晶体：荣耀 `ven/stuffclt2_ven.fcc:3772` 明确给出了类名与中文名，NPC 候选也有记录。",
-              "当前只有以类名登记的材料占位项，未完整导入本体与实际掉落；不能再写成“原版没有获取来源”。",
+              "后续已恢复中文名与荣耀图像，沿用占位ID并加入紫晶商城；原怪物掉落尚未接入，不能混同商城获取与原掉落覆盖。",
               "部分低级材料另有稳定 ID 与原始哈希 ID 两套定义；工业配方严格按 ID 扣料，不能以同名视作原料已获得。", "",
               "## 复核方式", "", "先运行：", "", "```powershell",
               "godot --headless --path . --script res://tools/export_content_supply_audit.gd",

@@ -16,9 +16,10 @@ func _initialize() -> void:
 	var queried := service.execute(state, {"type": "query_premium_shop"})
 	_expect(queried.is_ok and not queried.value.changed, "商城查询不写存档")
 	var offers: Array = queried.value.panel_bundle.premium_shop.offers
-	_expect(offers.size() == 9, "仅出售四种新式及五种旧式，不含赠品")
+	_expect(offers.size() == 16, "四种新式、五种旧式及七种升级材料，不含赠品")
 	for offer: Dictionary in offers:
-		_expect(int(offer.price) == (1000 if offer.family == "new_joint" else 2000), "服务端分代定价")
+		if offer.family != "upgrade_material":
+			_expect(int(offer.price) == (1000 if offer.family == "new_joint" else 2000), "装置本体沿用分代定价")
 	var command := {"type": "buy_premium_item", "definition_id": offers[0].definition_id,
 		"inventory_revision": state.inventory_revision, "price": 1, "amethyst": 999999, "quantity": 99}
 	_expect(service.execute(state, command).error_code == &"commerce.insufficient_amethyst", "金币和伪造余额不能代替紫晶")
