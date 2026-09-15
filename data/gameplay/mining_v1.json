@@ -240,7 +240,8 @@
       "evidence": {
         "level": "客户端矿源提示文本",
         "locations": "本地未发现矿点坐标",
-        "definition": "mineclt.fcc:165"
+        "definition": "mineclt.fcc:165",
+        "runtime_supply": "2026-09-15 user requested level-based remake placement"
       }
     },
     {
@@ -309,7 +310,8 @@
       "evidence": {
         "level": "客户端矿源提示文本",
         "locations": "本地未发现矿点坐标",
-        "definition": "mineclt.fcc:183"
+        "definition": "mineclt.fcc:183",
+        "runtime_supply": "2026-09-15 user requested level-based remake placement"
       }
     },
     {
@@ -637,20 +639,23 @@
       "item_definition_id": "item:material:3d9597ddfaa0",
       "world_presentation_id": "glory_mineral_3d9597ddfaa0",
       "collectible": true,
-      "required_mining_level": 0,
-      "experience_coefficient": 1.0,
-      "tooltip": "",
+      "required_mining_level": 250,
+      "experience_coefficient": 25.0,
+      "tooltip": "钾矿，需要采矿等级250级",
       "description": "以钾元素为主的矿，提炼可以得到钾",
       "worth": 10,
       "sell_price": 5,
       "presentation": {
-        "inventory_animation": "pic3/mine/jia01"
+        "inventory_animation": "pic3/mine/jia01",
+        "world_animation": "pic3/mine/jia01"
       },
       "source_class": "",
       "evidence": {
-        "level": "本地未发现等级",
+        "level": "复刻配置；原版矿源等级未确认",
         "locations": "本地未发现矿点坐标",
-        "definition": ""
+        "definition": "",
+        "runtime_supply": "2026-09-15 user requested level-based remake placement",
+        "world_presentation": "复用本矿石的荣耀物品图；未声称恢复独立矿源动画"
       }
     },
     {
@@ -681,20 +686,23 @@
       "item_definition_id": "item:material:b739c1f3c1d8",
       "world_presentation_id": "glory_mineral_b739c1f3c1d8",
       "collectible": true,
-      "required_mining_level": 0,
-      "experience_coefficient": 1.0,
-      "tooltip": "",
+      "required_mining_level": 200,
+      "experience_coefficient": 20.0,
+      "tooltip": "磷矿，需要采矿等级200级",
       "description": "以磷元素为主的矿，提炼可以得到磷",
       "worth": 10,
       "sell_price": 5,
       "presentation": {
-        "inventory_animation": "pic3/mine/lin01"
+        "inventory_animation": "pic3/mine/lin01",
+        "world_animation": "pic3/mine/lin01"
       },
       "source_class": "",
       "evidence": {
-        "level": "本地未发现等级",
+        "level": "复刻配置；原版矿源等级未确认",
         "locations": "本地未发现矿点坐标",
-        "definition": ""
+        "definition": "",
+        "runtime_supply": "2026-09-15 user requested level-based remake placement",
+        "world_presentation": "复用本矿石的荣耀物品图；未声称恢复独立矿源动画"
       }
     },
     {
@@ -703,20 +711,23 @@
       "item_definition_id": "item:material:5479cbea59ce",
       "world_presentation_id": "glory_mineral_5479cbea59ce",
       "collectible": true,
-      "required_mining_level": 0,
-      "experience_coefficient": 1.0,
-      "tooltip": "",
+      "required_mining_level": 150,
+      "experience_coefficient": 15.0,
+      "tooltip": "硫矿，需要采矿等级150级",
       "description": "以硫元素为主的矿，提炼可以得到硫",
       "worth": 10,
       "sell_price": 5,
       "presentation": {
-        "inventory_animation": "pic3/mine/liu01"
+        "inventory_animation": "pic3/mine/liu01",
+        "world_animation": "pic3/mine/liu01"
       },
       "source_class": "",
       "evidence": {
-        "level": "本地未发现等级",
+        "level": "复刻配置；原版矿源等级未确认",
         "locations": "本地未发现矿点坐标",
-        "definition": ""
+        "definition": "",
+        "runtime_supply": "2026-09-15 user requested level-based remake placement",
+        "world_presentation": "复用本矿石的荣耀物品图；未声称恢复独立矿源动画"
       }
     },
     {
@@ -843,9 +854,14 @@
         {
           "mineral_id": "graphite_ore",
           "weight": 1.0
+        },
+        {
+          "mineral_id": "glory_mineral_5479cbea59ce",
+          "weight": 1.0
         }
       ],
-      "evidence": "Glory client map placement relation; remake uses random walkable spawns, not source coordinates."
+      "evidence": "Glory client map placement relation; remake uses random walkable spawns, not source coordinates.",
+      "remake_material_supply": "2026-09-15 按采掘等级补充接合器材料矿物；原矿池保留"
     },
     "glory_nft_bl_c08": {
       "enabled": true,
@@ -893,9 +909,18 @@
         {
           "mineral_id": "glory_mineral_7e5a51823863",
           "weight": 1.0
+        },
+        {
+          "mineral_id": "glory_mineral_1ab9ea134717",
+          "weight": 1.0
+        },
+        {
+          "mineral_id": "glory_mineral_4bc7df36d8ad",
+          "weight": 1.0
         }
       ],
-      "evidence": "Glory client map placement relation; remake uses random walkable spawns, not source coordinates."
+      "evidence": "Glory client map placement relation; remake uses random walkable spawns, not source coordinates.",
+      "remake_material_supply": "2026-09-15 按采掘等级补充接合器材料矿物；原矿池保留"
     },
     "glory_nft_bl_e06": {
       "enabled": true,
@@ -935,9 +960,14 @@
         {
           "mineral_id": "glory_mineral_8cdb4c763103",
           "weight": 1.0
+        },
+        {
+          "mineral_id": "glory_mineral_b739c1f3c1d8",
+          "weight": 1.0
         }
       ],
-      "evidence": "Glory client map placement relation; remake uses random walkable spawns, not source coordinates."
+      "evidence": "Glory client map placement relation; remake uses random walkable spawns, not source coordinates.",
+      "remake_material_supply": "2026-09-15 按采掘等级补充接合器材料矿物；原矿池保留"
     },
     "glory_nft_bl_h07": {
       "enabled": true,
@@ -949,9 +979,14 @@
         {
           "mineral_id": "glory_mineral_7e5a51823863",
           "weight": 1.0
+        },
+        {
+          "mineral_id": "glory_mineral_3d9597ddfaa0",
+          "weight": 1.0
         }
       ],
-      "evidence": "Glory client map placement relation; remake uses random walkable spawns, not source coordinates."
+      "evidence": "Glory client map placement relation; remake uses random walkable spawns, not source coordinates.",
+      "remake_material_supply": "2026-09-15 按采掘等级补充接合器材料矿物；原矿池保留"
     },
     "glory_nft_bl_h08": {
       "enabled": true,
@@ -1019,9 +1054,14 @@
         {
           "mineral_id": "graphite_ore",
           "weight": 1.0
+        },
+        {
+          "mineral_id": "glory_mineral_5479cbea59ce",
+          "weight": 1.0
         }
       ],
-      "evidence": "Glory client map placement relation; remake uses random walkable spawns, not source coordinates."
+      "evidence": "Glory client map placement relation; remake uses random walkable spawns, not source coordinates.",
+      "remake_material_supply": "2026-09-15 按采掘等级补充接合器材料矿物；原矿池保留"
     },
     "glory_nft_bt_c08": {
       "enabled": true,
@@ -1069,9 +1109,18 @@
         {
           "mineral_id": "glory_mineral_7e5a51823863",
           "weight": 1.0
+        },
+        {
+          "mineral_id": "glory_mineral_1ab9ea134717",
+          "weight": 1.0
+        },
+        {
+          "mineral_id": "glory_mineral_4bc7df36d8ad",
+          "weight": 1.0
         }
       ],
-      "evidence": "Glory client map placement relation; remake uses random walkable spawns, not source coordinates."
+      "evidence": "Glory client map placement relation; remake uses random walkable spawns, not source coordinates.",
+      "remake_material_supply": "2026-09-15 按采掘等级补充接合器材料矿物；原矿池保留"
     },
     "glory_nft_bt_e06": {
       "enabled": true,
@@ -1125,9 +1174,14 @@
         {
           "mineral_id": "glory_mineral_8cdb4c763103",
           "weight": 1.0
+        },
+        {
+          "mineral_id": "glory_mineral_b739c1f3c1d8",
+          "weight": 1.0
         }
       ],
-      "evidence": "Glory client map placement relation; remake uses random walkable spawns, not source coordinates."
+      "evidence": "Glory client map placement relation; remake uses random walkable spawns, not source coordinates.",
+      "remake_material_supply": "2026-09-15 按采掘等级补充接合器材料矿物；原矿池保留"
     },
     "glory_nft_bt_g08": {
       "enabled": true,
@@ -1167,9 +1221,14 @@
         {
           "mineral_id": "glory_mineral_7e5a51823863",
           "weight": 1.0
+        },
+        {
+          "mineral_id": "glory_mineral_3d9597ddfaa0",
+          "weight": 1.0
         }
       ],
-      "evidence": "Glory client map placement relation; remake uses random walkable spawns, not source coordinates."
+      "evidence": "Glory client map placement relation; remake uses random walkable spawns, not source coordinates.",
+      "remake_material_supply": "2026-09-15 按采掘等级补充接合器材料矿物；原矿池保留"
     },
     "glory_nft_bt_h08": {
       "enabled": true,

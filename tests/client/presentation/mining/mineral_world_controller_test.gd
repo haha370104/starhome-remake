@@ -76,7 +76,7 @@ func _run() -> void:
 		})
 		sequence += 1
 	controller.apply_snapshot(_snapshot(all_sources))
-	_expect(controller.active_view_count() == 24, "全部 24 类有世界素材的矿源都应可渲染")
+	_expect(controller.active_view_count() == 27, "24 类原有矿源及硫磷钾三种矿石世界视图应可渲染")
 	controller.queue_free()
 	world.queue_free()
 	_finish()

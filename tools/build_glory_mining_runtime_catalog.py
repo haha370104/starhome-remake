@@ -281,6 +281,8 @@ def main() -> int:
         }],
         "summary": {"sprites": len(variant_rows)},
     }, pretty=True)
+    from build_upgrade_material_supply import apply_mining
+    apply_mining()
     print(f"GLORY_MINING_CATALOG_BUILT {len(definitions)} minerals, {len(map_pools)} maps, {len(variant_rows)} palette sprites")
     return 0
 

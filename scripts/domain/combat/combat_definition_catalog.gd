@@ -41,8 +41,10 @@ static func load_file(catalog_path: String) -> DomainResult:
 		return DomainResult.failure(&"combat.invalid_catalog", "catalog definitions must be a dictionary")
 	var documents: Dictionary = {}
 	for key: String in [
-		"starter_loadout", "monsters", "d04_encounters", "glory_monsters", "glory_encounters"
+		"starter_loadout", "monsters", "d04_encounters", "glory_monsters", "glory_encounters", "material_drops"
 	]:
+		if key == "material_drops" and not references.has(key):
+			continue
 		var path := String(references.get(key, ""))
 		if not _is_controlled_json_path(path):
 			return DomainResult.failure(&"combat.catalog_path_not_allowed", "definition path is outside the controlled stage-three directory")
@@ -553,11 +555,40 @@ func _configure(catalog: Dictionary, documents: Dictionary) -> DomainResult:
 	)
 	if not monster_result.is_ok:
 		return monster_result
+	if documents.has("material_drops"):
+		var drops_result := _apply_material_drops(documents.material_drops)
+		if not drops_result.is_ok:
+			return drops_result
 	var encounter_result := _index_encounters(documents["glory_encounters"].get("encounters"))
 	if not encounter_result.is_ok:
 		return encounter_result
 	_encounters_by_map_id[String(_d04_encounter["map_id"])] = _d04_encounter.duplicate(true)
 	return _validate_runtime_links()
+
+
+## 将明确批准的材料投放合并到怪物定义，原始候选字段继续只作证据。
+## [param document] 单独版本化的材料投放配置。
+## 返回全部条目通过领域掉落校验后的结果。
+func _apply_material_drops(document: Dictionary) -> DomainResult:
+	if int(document.get("schema_version", 0)) != 1 or not document.get("definitions") is Array:
+		return DomainResult.failure(&"combat.invalid_material_drops", "材料投放配置格式错误")
+	var seen: Dictionary = {}
+	for raw: Variant in document.definitions:
+		if not raw is Dictionary or not raw.get("monster_id") is String or not raw.get("drops") is Array:
+			return DomainResult.failure(&"combat.invalid_material_drops", "材料投放条目格式错误")
+		var id := String(raw.monster_id)
+		if not _monsters_by_id.has(id) or seen.has(id):
+			return DomainResult.failure(&"combat.invalid_material_drops", "材料投放引用未知或重复怪物")
+		seen[id] = true
+		var table := DropTable.new()
+		var validation := table.configure(raw.drops)
+		if not validation.is_ok:
+			return validation
+		var species: Dictionary = _monsters_by_id[id]
+		var combined: Array = species.drops.duplicate(true) if species.get("drops") is Array else []
+		combined.append_array(table.entries())
+		species.drops = combined
+	return DomainResult.ok()
 
 
 ## 执行 `index_definitions` 对应的模块操作。

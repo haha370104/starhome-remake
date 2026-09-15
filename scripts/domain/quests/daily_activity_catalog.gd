@@ -66,6 +66,11 @@ func _available_materials(items: ItemCatalog) -> Dictionary:
 		for drop: Dictionary in monster.get("drops", []):
 			if float(drop.get("chance", 0)) > 0:
 				ids[drop.item_definition_id] = true
+	var materials := JsonConfigLoader.load_dictionary("res://data/gameplay/monster_material_drops_v1.json").value as Dictionary
+	for monster: Dictionary in materials.definitions:
+		for drop: Dictionary in monster.drops:
+			if float(drop.get("chance", 0)) > 0:
+				ids[drop.item_definition_id] = true
 	var mining := JsonConfigLoader.load_dictionary("res://data/gameplay/mining_v1.json").value as Dictionary
 	var enabled: Dictionary = {}
 	for map: Dictionary in mining.maps.values():
