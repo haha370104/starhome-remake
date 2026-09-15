@@ -12,7 +12,7 @@ const SUBCATEGORIES := [
 	["镶嵌类", "服装类", "特殊类", "消耗类", "护卫类", "千级装备", "初级物资", "礼包类"],
 	["全部接合器", "新式接合器", "旧式接合器", "升级材料"],
 ]
-var listing: ItemList
+var listing: LegacyShopOfferList
 var _balance_label: Label
 var _detail_label: RichTextLabel
 var _detail_panel: PanelContainer
@@ -48,14 +48,10 @@ func _ready() -> void:
 	subcategories.size = Vector2(220, 26)
 	subcategories.item_selected.connect(_select_subcategory)
 	content_root.add_child(subcategories)
-	listing = ItemList.new()
+	listing = LegacyShopOfferList.new()
 	listing.name = "Offers"
-	listing.position = Vector2(24, 130)
-	listing.size = Vector2(434, 314)
-	var list_style := StyleBoxFlat.new()
-	list_style.bg_color = Color("17242deb")
-	listing.add_theme_stylebox_override("panel", list_style)
-	listing.add_theme_constant_override("v_separation", 8)
+	listing.position = Vector2(32, 135)
+	listing.size = Vector2(488, 324)
 	listing.item_selected.connect(_select_offer)
 	content_root.add_child(listing)
 	empty_label = make_label("", Rect2(42, 160, 398, 100))
@@ -86,17 +82,14 @@ func _ready() -> void:
 ## 用固定侧栏与纵向容器约束详情、数量和购买按钮，长文本只在详情内部滚动。
 func _build_details() -> void:
 	_detail_panel = PanelContainer.new()
-	_detail_panel.position = Vector2(470, 130)
-	_detail_panel.size = Vector2(206, 314)
+	_detail_panel.position = Vector2(558, 130)
+	_detail_panel.size = Vector2(120, 120)
 	_detail_panel.clip_contents = true
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color("17242d")
-	style.border_color = Color("4291a8")
-	style.set_border_width_all(1)
-	style.content_margin_left = 12
-	style.content_margin_right = 12
-	style.content_margin_top = 10
-	style.content_margin_bottom = 10
+	var style := StyleBoxEmpty.new()
+	style.content_margin_left = 5
+	style.content_margin_right = 5
+	style.content_margin_top = 5
+	style.content_margin_bottom = 5
 	_detail_panel.add_theme_stylebox_override("panel", style)
 	content_root.add_child(_detail_panel)
 	var column := VBoxContainer.new()
@@ -115,16 +108,28 @@ func _build_details() -> void:
 	_detail_label.add_theme_constant_override("line_separation", 3)
 	_detail_label.text = "请选择商品"
 	column.add_child(_detail_label)
+	var purchase_panel := PanelContainer.new()
+	purchase_panel.position = Vector2(558, 264)
+	purchase_panel.size = Vector2(120, 194)
+	purchase_panel.clip_contents = true
+	purchase_panel.add_theme_stylebox_override("panel", style)
+	content_root.add_child(purchase_panel)
+	column = VBoxContainer.new()
+	column.add_theme_constant_override("separation", 8)
+	purchase_panel.add_child(column)
 	_price_label = Label.new()
+	_price_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_price_label.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	column.add_child(_price_label)
 	_quantity = SpinBox.new()
 	_quantity.min_value = 1
 	_quantity.max_value = 99
 	_quantity.value = 1
-	_quantity.prefix = "数量 "
+	_quantity.tooltip_text = "购买数量"
+	_quantity.get_line_edit().custom_minimum_size.x = 64
 	_quantity.value_changed.connect(_quantity_changed)
 	column.add_child(_quantity)
-	_buy_button = make_button("购买", Rect2(0, 0, 182, 30), _request_purchase)
+	_buy_button = make_button("购买", Rect2(0, 0, 110, 30), _request_purchase)
 	_buy_button.reparent(column)
 	_buy_button.custom_minimum_size.y = 30
 	_buy_button.disabled = true
@@ -272,7 +277,7 @@ func _update_detail(offer: Dictionary) -> void:
 	var amount := int(_quantity.value) if is_material else 1
 	var total := int(offer.price) * amount
 	_detail_label.text = "%s\n%s\n\n%s" % [series, offer.display_name, offer.description]
-	_price_label.text = "单价：%d 紫晶\n合计：%d 紫晶" % [int(offer.price), total]
+	_price_label.text = "单价：\n%d 紫晶\n合计：\n%d 紫晶" % [int(offer.price), total]
 	_price_label.show()
 	if not is_material:
 		_detail_label.text += "\n同系列最多装备 2 个\n\n升级材料预算："

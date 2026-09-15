@@ -76,7 +76,7 @@ func _run() -> void:
 	shop.listing.select(0)
 	shop._select_offer(0)
 	shop._quantity.value = 3
-	_expect(shop._price_label.text.contains("合计：900 紫晶") and not shop._buy_button.disabled, "批量选择更新材料总价")
+	_expect(shop._price_label.text.replace("\n", "").contains("合计：900 紫晶") and not shop._buy_button.disabled, "批量选择更新材料总价")
 	shop._request_purchase()
 	_expect(shop._purchase_dialog.dialog_text.contains("×3") and shop._purchase_dialog.dialog_text.contains("900"), "确认框明确材料数量与总价")
 	shop._purchase_dialog.hide()
