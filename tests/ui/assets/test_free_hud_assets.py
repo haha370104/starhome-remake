@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import json
+import re
 import struct
 from pathlib import Path
 from typing import Any, Iterable
@@ -36,6 +37,21 @@ def png_size(path: Path) -> tuple[int, int]:
     return width, height
 
 
+def texture_size(path: Path) -> tuple[int, int]:
+    if path.suffix == ".png":
+        return png_size(path)
+    resource = path.read_text(encoding="utf-8")
+    assert 'type="AtlasTexture"' in resource, f"unsupported texture: {path}"
+    atlas = re.search(r'path="(res://[^"]+\.png)"', resource)
+    region = re.search(r"region = Rect2\((\d+), (\d+), (\d+), (\d+)\)", resource)
+    assert atlas and region, f"missing atlas or region: {path}"
+    x, y, width, height = map(int, region.groups())
+    atlas_width, atlas_height = png_size(asset_path(atlas.group(1)))
+    assert width > 0 and height > 0
+    assert x + width <= atlas_width and y + height <= atlas_height
+    return width, height
+
+
 def assert_single(node: dict[str, Any], size: tuple[int, int]) -> None:
     assert node["available"] is True
     assert tuple(node["size"]) == size
@@ -51,7 +67,7 @@ def assert_states(node: dict[str, Any], names: Iterable[str]) -> None:
     assert list(node["state_origins"]) == names
     for name in names:
         path = asset_path(node["states"][name])
-        assert png_size(path) == tuple(node["state_sizes"][name])
+        assert texture_size(path) == tuple(node["state_sizes"][name])
         assert len(node["state_origins"][name]) == 2
 
 
@@ -80,6 +96,11 @@ def main() -> int:
         "party",
         "return_base",
         "self_repair",
+        "summon_guard",
+        "smart_assistant",
+        "central_controller",
+        "mercenary",
+        "experience",
     }
     for button in top["buttons"].values():
         assert_states(button, ["normal", "hover", "pressed"])
@@ -106,6 +127,7 @@ def main() -> int:
         "missions",
         "premium_shop",
         "system",
+        "achievements",
     }
     for button in bottom["menu_buttons"].values():
         assert_states(button, ["normal", "hover", "pressed"])
@@ -149,7 +171,7 @@ def main() -> int:
 
     assert sources["source_release"] == "starhome_lz_fr"
     assert sources["missing_assets"] == []
-    assert len(sources["sources"]) == 35
+    assert len(sources["sources"]) == 40
     expected_source_paths = {
         "pic2/topmenu/topmenuback_0.ale",
         "pic2/topmenu/btn_systemmsg.ale",
@@ -157,6 +179,11 @@ def main() -> int:
         "pic2/topmenu/btn_looktem.ale",
         "pic2/topmenu/btn_backhome.ale",
         "pic2/topmenu/btn_repaireself.ale",
+        "pic2/topmenu/btn_creatnpc.ale",
+        "pic2/topmenu/btn_ng.ale",
+        "pic2/topmenu/pivotcontrolwnd.ale",
+        "pic2/topmenu/mercenarymissionwnd.ale",
+        "pic2/topmenu/btn_userexperiencemission.ale",
         "pic2/topmenu/btn_topmenuso.ale",
         "pic2/topmenu/btn_topmenufa.ale",
         "pic2/ctrlpad/mainctrlpad_1024.png",
@@ -200,7 +227,7 @@ def main() -> int:
         digest = source.get("source_ale_sha256", source.get("source_sha256", ""))
         assert len(digest) == 64
 
-    print("Free HUD asset audit passed: 35 allowlisted sources, no minimap JPG")
+    print("Free HUD asset audit passed: 40 allowlisted sources, no minimap JPG")
     return 0
 
 

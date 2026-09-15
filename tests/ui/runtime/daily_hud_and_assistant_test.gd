@@ -35,11 +35,16 @@ func _run() -> void:
 	var expected := ["party", "return_base", "self_repair", "summon_guard", "smart_assistant", "central_controller", "mercenary", "experience"]
 	_expect(top.action_buttons.keys() == expected, "仅保留用户指定八个功能且顺序一致")
 	for i in range(8):
-		var button: Button = top.action_buttons[expected[i]]
-		_expect(button.size == Vector2(73, 34) and top.get_rect().size == Vector2(326, 82), "按钮拥有独立足够点击区域")
+		var button: LegacyStateButton = top.action_buttons[expected[i]]
+		_expect(button.size.x in [29.0, 31.0] and button.size.y == 27 and top.get_rect().size == Vector2(156, 56), "图标保留原尺寸且工具栏收紧")
+		_expect(button.hit_button.text.is_empty() and button.hit_button.tooltip_text.begins_with(FreeTopMenu.BUTTONS[expected[i]]), "使用图标而非文字按钮，悬停说明功能")
+		for visual: String in ["normal", "hover", "pressed"]:
+			button.set_visual_state(visual)
+			_expect(button.image_rect.texture != null and button.image_rect.texture.resource_path == manifest.value.top_menu.buttons[expected[i]].states[visual], "三态显示对应原版素材")
+		button.set_visual_state("normal")
 		if i >= 4:
 			_expect(button.position.y > top.action_buttons[expected[i - 4]].position.y, "两行四列无叠压")
-	top.action_buttons.mercenary.pressed.emit()
+	top.action_buttons.mercenary.hit_button.pressed.emit()
 	var mercenary: DailyActivitiesPanel = manager.navigation_windows.mercenary
 	mercenary.position = Vector2(25, 110)
 	_expect(mercenary.visible and mercenary.available.item_count == 5, "真实 HUD 打开已生成五条委托的窗口")
@@ -89,7 +94,7 @@ func _run() -> void:
 	_expect(mercenary.accept_button.disabled and mercenary.summary.text.contains("领取 200/200"), "领取额度耗尽时禁用领取按钮")
 	state = saved
 	_dispatch({"type": "query_daily_activities"})
-	top.action_buttons.experience.pressed.emit()
+	top.action_buttons.experience.hit_button.pressed.emit()
 	var experience: DailyActivitiesPanel = manager.navigation_windows.experience
 	experience.position = Vector2(590, 250)
 	_expect(experience.available.item_count == 10, "历练显示全部十条固定目标")

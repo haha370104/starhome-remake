@@ -15,43 +15,36 @@ var background: Panel
 var collapse_button: Control
 var expand_button: Control
 var action_buttons: Dictionary = {}
-var expanded_size := Vector2(326, 82)
+var expanded_size := Vector2(156, 56)
 var collapsed_size := Vector2(12, 26)
 
 
-## 执行 `configure` 对应的模块操作。
-## [param definition] 调用方传入的参数；具体约束由函数签名和所在模块定义。
-## [param state] 调用方传入的参数；具体约束由函数签名和所在模块定义。
-## 设计：八个语义按钮排列为两行四列，依据小地图宽度重新锚定。
+## 使用原版三态图标创建精简工具栏，功能名称只在悬停时显示。
+## [param definition] 免费版HUD图像及三态原点配置。
+## [param state] 共享HUD收展状态。
+## 设计：保留八个入口，两行四列按原尺寸排列，并依据小地图宽度重新锚定。
 func configure(definition: Dictionary, state: HudState) -> void:
 	name = "TopMenu"
 	hud_state = state
 	set_anchors_preset(Control.PRESET_TOP_RIGHT)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
-	expanded_size = Vector2(326, 82)
+	expanded_size = Vector2(156, 56)
 	collapsed_size = Vector2(12, 26)
 	background = Panel.new()
 	background.name = "Background"
 	background.size = expanded_size
 	background.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var style := StyleBoxFlat.new()
-	style.bg_color = Color("142631e8")
+	style.bg_color = Color("103e67")
 	style.border_color = Color("397c90")
 	style.set_border_width_all(1)
-	style.set_corner_radius_all(5)
 	background.add_theme_stylebox_override("panel", style)
 	add_child(background)
 	var index := 0
 	for action_id: String in BUTTONS:
-		var button := Button.new()
-		button.name = action_id.to_pascal_case()
-		button.text = BUTTONS[action_id]
-		button.tooltip_text = BUTTONS[action_id] + ("（Z）" if action_id == "self_repair" else "")
-		button.position = Vector2(18 + (index % 4) * 76, 5 + floori(float(index) / 4.0) * 37)
-		button.size = Vector2(73, 34)
-		button.add_theme_font_override("font", preload("res://assets/ui/fonts/legacy_panel_font.tres"))
-		button.add_theme_font_size_override("font_size", 14)
-		button.pressed.connect(func() -> void: action_requested.emit(action_id))
+		var button := _build_button(definition.buttons[action_id], action_id,
+			BUTTONS[action_id] + ("（Z）" if action_id == "self_repair" else ""))
+		button.place_at(Vector2(18 + (index % 4) * 34, 1 + floori(float(index) / 4.0) * 27))
 		add_child(button)
 		action_buttons[action_id] = button
 		index += 1

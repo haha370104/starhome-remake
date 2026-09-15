@@ -34,6 +34,11 @@ TOP_BUTTONS = {
     "party": ("pic2/topmenu/btn_looktem", [94, 0]),
     "return_base": ("pic2/topmenu/btn_backhome", [133, 0]),
     "self_repair": ("pic2/topmenu/btn_repaireself", [172, 0]),
+    "summon_guard": ("pic2/topmenu/btn_creatnpc", [211, 0]),
+    "smart_assistant": ("pic2/topmenu/btn_ng", [250, 0]),
+    "central_controller": ("pic2/topmenu/PivotControlWnd", [94, 26]),
+    "mercenary": ("pic2/topmenu/mercenarymissionwnd", [172, 26]),
+    "experience": ("pic2/topmenu/btn_UserExperienceMission", [211, 26]),
 }
 
 BOTTOM_MENU_BUTTONS = {

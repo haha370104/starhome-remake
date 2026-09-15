@@ -307,6 +307,206 @@
           172,
           0
         ]
+      },
+      "summon_guard": {
+        "available": true,
+        "states": {
+          "normal": "res://assets/ui/free_hud/top_menu/buttons/summon_guard/normal.png",
+          "hover": "res://assets/ui/free_hud/top_menu/buttons/summon_guard/hover.png",
+          "pressed": "res://assets/ui/free_hud/top_menu/buttons/summon_guard/pressed.png"
+        },
+        "state_sizes": {
+          "normal": [
+            29,
+            27
+          ],
+          "hover": [
+            29,
+            27
+          ],
+          "pressed": [
+            29,
+            27
+          ]
+        },
+        "state_origins": {
+          "normal": [
+            0,
+            0
+          ],
+          "hover": [
+            0,
+            0
+          ],
+          "pressed": [
+            0,
+            0
+          ]
+        },
+        "position": [
+          211,
+          0
+        ]
+      },
+      "smart_assistant": {
+        "available": true,
+        "states": {
+          "normal": "res://assets/ui/free_hud/top_menu/buttons/smart_assistant/normal.png",
+          "hover": "res://assets/ui/free_hud/top_menu/buttons/smart_assistant/hover.png",
+          "pressed": "res://assets/ui/free_hud/top_menu/buttons/smart_assistant/pressed.png"
+        },
+        "state_sizes": {
+          "normal": [
+            29,
+            27
+          ],
+          "hover": [
+            29,
+            27
+          ],
+          "pressed": [
+            29,
+            27
+          ]
+        },
+        "state_origins": {
+          "normal": [
+            0,
+            0
+          ],
+          "hover": [
+            0,
+            0
+          ],
+          "pressed": [
+            0,
+            0
+          ]
+        },
+        "position": [
+          250,
+          0
+        ]
+      },
+      "central_controller": {
+        "available": true,
+        "states": {
+          "normal": "res://assets/ui/free_hud/top_menu/buttons/central_controller/normal.png",
+          "hover": "res://assets/ui/free_hud/top_menu/buttons/central_controller/hover.png",
+          "pressed": "res://assets/ui/free_hud/top_menu/buttons/central_controller/pressed.png"
+        },
+        "state_sizes": {
+          "normal": [
+            31,
+            27
+          ],
+          "hover": [
+            31,
+            27
+          ],
+          "pressed": [
+            31,
+            27
+          ]
+        },
+        "state_origins": {
+          "normal": [
+            0,
+            0
+          ],
+          "hover": [
+            0,
+            0
+          ],
+          "pressed": [
+            0,
+            0
+          ]
+        },
+        "position": [
+          94,
+          26
+        ]
+      },
+      "mercenary": {
+        "available": true,
+        "states": {
+          "normal": "res://assets/ui/free_hud/top_menu/buttons/mercenary/normal.png",
+          "hover": "res://assets/ui/free_hud/top_menu/buttons/mercenary/hover.png",
+          "pressed": "res://assets/ui/free_hud/top_menu/buttons/mercenary/pressed.png"
+        },
+        "state_sizes": {
+          "normal": [
+            31,
+            27
+          ],
+          "hover": [
+            31,
+            27
+          ],
+          "pressed": [
+            31,
+            27
+          ]
+        },
+        "state_origins": {
+          "normal": [
+            0,
+            0
+          ],
+          "hover": [
+            0,
+            0
+          ],
+          "pressed": [
+            0,
+            0
+          ]
+        },
+        "position": [
+          172,
+          26
+        ]
+      },
+      "experience": {
+        "available": true,
+        "states": {
+          "normal": "res://assets/ui/free_hud/top_menu/buttons/experience/normal.png",
+          "hover": "res://assets/ui/free_hud/top_menu/buttons/experience/hover.png",
+          "pressed": "res://assets/ui/free_hud/top_menu/buttons/experience/pressed.png"
+        },
+        "state_sizes": {
+          "normal": [
+            31,
+            27
+          ],
+          "hover": [
+            31,
+            27
+          ],
+          "pressed": [
+            31,
+            27
+          ]
+        },
+        "state_origins": {
+          "normal": [
+            0,
+            0
+          ],
+          "hover": [
+            0,
+            0
+          ],
+          "pressed": [
+            0,
+            0
+          ]
+        },
+        "position": [
+          211,
+          26
+        ]
       }
     }
   },
