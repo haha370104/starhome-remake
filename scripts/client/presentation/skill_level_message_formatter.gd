@@ -20,6 +20,9 @@ const DISPLAY_NAMES := {
 
 
 ## 按荣耀版 `OnSkillLevelUp` 的固定句式构造本地化系统提示。
+## [param skill_id] 发生升级的技能业务标识。
+## [param level] 权威服务器确认的新等级。
+## 返回可直接进入 HUD 系统消息队列的中文提示。
 static func format(skill_id: String, level: int) -> String:
 	var display_name := String(DISPLAY_NAMES.get(skill_id, skill_id))
 	return "你的%s操作技能提升到%d级！" % [display_name, level]
