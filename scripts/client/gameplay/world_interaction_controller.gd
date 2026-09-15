@@ -11,6 +11,7 @@ var hud: HallHud
 var map_travel: MapTravelController
 var combat: CombatInteractionController
 var game_window_manager: GameWindowManager
+var smart_assistant: SmartAssistantController
 
 
 ## 初始化时暂停输入，直到启动依赖全部配置完毕。
@@ -225,11 +226,18 @@ func on_hud_action_requested(action_id: String) -> void:
 	if action_id == "friends":
 		hud.show_system_message("好友列表暂未实现")
 		return
-	if action_id == "return_base" and combat.vehicle_destroyed:
+	if action_id == "return_base":
 		combat.request_vehicle_recovery()
 		return
 	if action_id == CombatActions.SELF_REPAIR_ABILITY_ID:
 		combat.request_self_repair()
+		return
+	if action_id == "smart_assistant" and smart_assistant == null:
+		smart_assistant = SmartAssistantController.new()
+		add_child(smart_assistant)
+		smart_assistant.configure(combat, game_window_manager.navigation_windows["smart_assistant"])
+	if action_id in ["party", "summon_guard", "central_controller"]:
+		hud.show_system_message({"party": "队伍功能暂未开放", "summon_guard": "召唤守卫暂未开放", "central_controller": "中枢控制器暂未开放"}[action_id])
 		return
 	if game_window_manager != null and game_window_manager.toggle(action_id):
 		return

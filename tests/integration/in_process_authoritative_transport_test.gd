@@ -74,6 +74,23 @@ func _run() -> void:
 		_expect(bundle.has("character") and bundle.has("inventory") and bundle.has("vehicle"),
 			"本地面板回包必须使用与联机相同的三面板契约")
 
+	transport.send_player_panel_command({"type": "query_daily_activities", "command_sequence": 2})
+	await process_frame
+	var daily: Dictionary = _last_message(&"player_panels").get("result", {}).get("value", {}).get("daily_activities", {})
+	_expect(not daily.is_empty() and daily.get("offers", []).size() == 5, "日常任务经正式传输生成持久任务栏")
+	if not daily.is_empty() and not daily.offers.is_empty():
+		transport.send_player_panel_command({"type": "accept_mercenary", "command_sequence": 3,
+			"task_id": daily.offers[0].id, "daily_revision": daily.revision, "reward": 999999})
+		await process_frame
+		var accepted: Dictionary = _last_message(&"player_panels").result.value.daily_activities
+		_expect(accepted.active.size() == 1 and accepted.accepted_today == 1, "接取通过正式服务提交一次")
+		_expect(accepted.amethyst == daily.amethyst, "接取或客户端伪造奖励不能直接增加紫晶")
+		transport.send_player_panel_command({"type": "accept_mercenary", "command_sequence": 4,
+			"task_id": daily.offers[0].id, "daily_revision": daily.revision})
+		await process_frame
+		_expect(String(_last_message(&"command_rejected").get("result", {}).get("code", "")) == "daily.stale",
+			"正式传输拒绝旧任务版本，不能重复接取")
+
 	var spawn_value: Variant = joined["spawn_position"]
 	var spawn := Vector2(float(spawn_value["x"]), float(spawn_value["y"]))
 	transport.send_move_intent({

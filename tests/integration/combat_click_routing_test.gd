@@ -107,12 +107,77 @@ func _run() -> void:
 	before = probe.abilities.size()
 	hall.combat.handle_world_combat_left_click(target)
 	_expect(probe.abilities.size() == before, "卸下主装置后不沿用旧开炮或采矿逻辑")
+	_test_assistant(hall, probe, current)
 	await create_timer(0.2).timeout
 	hall.free()
 	for failure in failures:
 		push_error(failure)
 	print("COMBAT_CLICK_ROUTING checks=%d failures=%d" % [checks, failures.size()])
 	quit(0 if failures.is_empty() else 1)
+
+
+## 以真实场景和手动意图入口验证智脑动作、节流、工程臂排除和暂停边界。
+## [param hall] 已提交野外地图的实际游戏入口。
+## [param probe] 替代传输层的命令记录器。
+## [param current] 当前人物聚合。
+func _test_assistant(hall: Node2D, probe: IntentProbe, current: Player) -> void:
+	probe.session = ClientMultiplayerSession.new()
+	probe.add_child(probe.session)
+	var panel := SmartAssistantPanel.new()
+	hall.add_child(panel)
+	panel.hide()
+	var brain := SmartAssistantController.new()
+	hall.add_child(brain)
+	brain.set_process(false)
+	brain.configure(hall.combat, panel)
+	brain.policy.apply({"enabled": true, "auto_attack": true, "auto_pickup": true, "auto_repair": true})
+	_equip(current, "glory_equipment_gun1000_c4c24e2500")
+	var origin: Vector2 = hall.world_view.player.position
+	var near := origin + Vector2(50, 0)
+	var snapshot := {"local_vehicle": {"health": 20, "max_health": 100}, "ground_loot": [], "monsters": []}
+	probe.combat_snapshot_received.emit(snapshot)
+	var before := probe.abilities.size()
+	brain._process(0.4)
+	_expect(probe.abilities.size() == before + 1 and probe.abilities.back() == "self_repair", "低血智脑复用真实Z技能意图")
+	brain._process(0.4)
+	_expect(probe.abilities.size() == before + 1, "等待回包时维修请求节流")
+	snapshot.local_vehicle.health = 80
+	snapshot.ground_loot = [{"loot_id": "brain.near", "position": [near.x, near.y]}]
+	probe.combat_snapshot_received.emit(snapshot)
+	before = probe.pickups.size()
+	brain._process(0.4)
+	brain._process(0.4)
+	_expect(probe.pickups.size() == before + 1 and probe.pickups.back() == "brain.near", "自动拾取复用真实拾取意图且不会重复刷请求")
+	snapshot.ground_loot = []
+	snapshot.monsters = [{"entity_id": "brain.target", "position": [near.x, near.y], "health": 100}]
+	probe.combat_snapshot_received.emit(snapshot)
+	var visual: WeaponAttackVisualController = hall.world_view.combat_attack_controllers.energy_cannon
+	visual._process(5.0)
+	before = probe.abilities.size()
+	brain._process(0.4)
+	_expect(probe.abilities.size() == before + 1 and probe.abilities.back() == "energy_cannon.primary", "自动攻击经过实际武器表现和网络意图入口")
+	brain._process(0.4)
+	_expect(probe.abilities.size() == before + 1, "自动攻击尊重武器冷却")
+	visual._process(5.0)
+	_equip(current, "glory_equipment_collector_ac947ee094")
+	before = probe.abilities.size()
+	brain._process(0.4)
+	_expect(probe.abilities.size() == before, "采掘臂不被自动攻击当成能量炮")
+	_equip(current, "glory_equipment_gun1000_c4c24e2500")
+	probe.session._pending_vehicle_recovery = {"input_sequence": 1}
+	brain._process(0.4)
+	_expect(probe.abilities.size() == before and hall.combat.is_input_locked(), "回基地等待期间冻结自动及手动操作")
+	probe.session._pending_vehicle_recovery.clear()
+	brain._observed_at -= 4000
+	brain._process(0.4)
+	_expect(probe.abilities.size() == before, "过期快照不能驱动自动攻击")
+	probe.map_joined.emit(&"next", "next.default", Vector2.ZERO, 1)
+	brain._process(0.4)
+	_expect(probe.abilities.size() == before and brain._snapshot.is_empty(), "切图立即丢弃旧目标")
+	probe.combat_snapshot_received.emit(snapshot)
+	brain.policy.enabled = false
+	brain._process(0.4)
+	_expect(probe.abilities.size() == before, "关闭智脑立即停止真实动作")
 
 
 ## 使用目录中的真实物品恢复底盘与指定主装置。

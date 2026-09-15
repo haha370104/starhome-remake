@@ -5,53 +5,56 @@ signal action_requested(action_id: String)
 
 const LegacyStateButtonScript := preload("res://scripts/ui/legacy_state_button.gd")
 const BUTTONS := {
-	"system_messages": "系统消息",
-	"help": "帮助",
-	"party": "队伍",
-	"return_base": "返回基地",
-	"self_repair": "自我维修",
+	"party": "队伍", "return_base": "返回基地", "self_repair": "自维修", "summon_guard": "召唤守卫",
+	"smart_assistant": "智脑系统", "central_controller": "中枢控制", "mercenary": "佣兵任务", "experience": "人物历练",
 }
 
 var minimap_width := 125.0
 var hud_state: HudState
-var background: TextureRect
+var background: Panel
 var collapse_button: Control
 var expand_button: Control
 var action_buttons: Dictionary = {}
-var expanded_size := Vector2(330, 54)
+var expanded_size := Vector2(326, 82)
 var collapsed_size := Vector2(12, 26)
 
 
 ## 执行 `configure` 对应的模块操作。
 ## [param definition] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## [param state] 调用方传入的参数；具体约束由函数签名和所在模块定义。
-## 设计：菜单保持原始像素尺寸，只依据小地图宽度重新锚定，不参与视口缩放。
+## 设计：八个语义按钮排列为两行四列，依据小地图宽度重新锚定。
 func configure(definition: Dictionary, state: HudState) -> void:
 	name = "TopMenu"
 	hud_state = state
 	set_anchors_preset(Control.PRESET_TOP_RIGHT)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
-	expanded_size = _vector_from_array(definition.get("expanded_size", []), Vector2(330, 54))
-	collapsed_size = _vector_from_array(definition.get("collapsed_size", []), Vector2(12, 26))
-	background = TextureRect.new()
+	expanded_size = Vector2(326, 82)
+	collapsed_size = Vector2(12, 26)
+	background = Panel.new()
 	background.name = "Background"
-	background.texture = _load_primary_texture(definition.get("background", {}))
-	background.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	background.stretch_mode = TextureRect.STRETCH_KEEP
-	background.size = _vector_from_array(
-		definition.get("background", {}).get("size", []),
-		Vector2(327, 54),
-	)
+	background.size = expanded_size
 	background.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color("142631e8")
+	style.border_color = Color("397c90")
+	style.set_border_width_all(1)
+	style.set_corner_radius_all(5)
+	background.add_theme_stylebox_override("panel", style)
 	add_child(background)
-
-	var button_definitions: Dictionary = definition.get("buttons", {})
-	for action_id in BUTTONS:
-		var button_definition: Dictionary = button_definitions.get(action_id, {})
-		var button := _build_button(button_definition, action_id, BUTTONS[action_id])
-		button.place_at(_vector_from_array(button_definition.get("position", []), Vector2.ZERO))
+	var index := 0
+	for action_id: String in BUTTONS:
+		var button := Button.new()
+		button.name = action_id.to_pascal_case()
+		button.text = BUTTONS[action_id]
+		button.tooltip_text = BUTTONS[action_id] + ("（Z）" if action_id == "self_repair" else "")
+		button.position = Vector2(18 + (index % 4) * 76, 5 + floori(float(index) / 4.0) * 37)
+		button.size = Vector2(73, 34)
+		button.add_theme_font_override("font", preload("res://assets/ui/fonts/legacy_panel_font.tres"))
+		button.add_theme_font_size_override("font_size", 14)
+		button.pressed.connect(func() -> void: action_requested.emit(action_id))
 		add_child(button)
 		action_buttons[action_id] = button
+		index += 1
 
 	var collapse_definition: Dictionary = definition.get("collapse_button", {})
 	collapse_button = _build_button(collapse_definition, "collapse", "收起顶部工具栏")

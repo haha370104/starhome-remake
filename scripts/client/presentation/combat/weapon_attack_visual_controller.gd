@@ -20,6 +20,23 @@ var _visual_shot_sequence := 0
 var _last_authoritative_event_id := 0
 
 
+## 向增强输入公开当前武器射程，避免读取内部武器字典。
+## 返回当前最大可视射程，未配置为零。
+func assisted_attack_range() -> float:
+	return float(_weapon.get("maximum_visual_range", 0.0))
+
+
+## 自动攻击沿用手动开火的距离和冷却门槛，最终许可仍由服务器决定。
+## [param origin] 当前玩家位置。
+## [param target] 所选怪物位置。
+## 返回本地是否可以尝试开火。
+func can_assist_fire(origin: Vector2, target: Vector2) -> bool:
+	var distance := origin.distance_to(target)
+	return not _weapon.is_empty() and _cooldown_remaining <= 0.0 and target.is_finite() \
+		and distance >= maxf(MINIMUM_SHOT_DISTANCE, float(_weapon.get("minimum_visual_range", 0.0))) \
+		and distance <= assisted_attack_range()
+
+
 ## 执行 `configure` 对应的模块操作。
 ## [param manifest] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## [param world_parent] 调用方传入的参数；具体约束由函数签名和所在模块定义。

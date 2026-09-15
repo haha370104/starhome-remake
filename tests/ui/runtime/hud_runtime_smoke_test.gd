@@ -55,9 +55,9 @@ func _run() -> void:
 ## 执行 `assert_1280_layout` 对应的模块操作。
 ## [param hud] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _assert_1280_layout(hud: CanvasLayer) -> void:
-	_expect(hud.top_menu.size == Vector2(330, 54), "顶部菜单必须保持 330×54 原始像素")
-	_expect(hud.top_menu.position == Vector2(825, 0), "1280 宽时顶部菜单应在 125 宽小地图左侧贴顶")
-	_expect(hud.top_menu.action_buttons.size() == 5, "顶部菜单必须由首批 5 个独立按钮组成")
+	_expect(hud.top_menu.size == Vector2(326, 82), "顶部菜单必须保持 326×82 紧凑双排")
+	_expect(hud.top_menu.position == Vector2(829, 0), "1280 宽时顶部菜单应在 125 宽小地图左侧贴顶")
+	_expect(hud.top_menu.action_buttons.size() == 8, "顶部菜单必须由保留的 8 个独立按钮组成")
 	_expect(hud.minimap_dock.position == Vector2(1155, 0), "125 宽免费版小地图应贴右上")
 	_expect(hud.minimap_dock.size == Vector2(125, 165), "免费版小地图小模式必须为 125×165")
 	_expect(hud.minimap_dock.map_viewport.size == Vector2(120, 120), "小地图裁剪视口必须为 120×120")
@@ -179,12 +179,12 @@ func _assert_minimap_modes(hud: CanvasLayer) -> void:
 	hud.state.set_minimap_size("large")
 	_expect(hud.minimap_dock.map_viewport.size == Vector2(300, 300), "大地图模式必须直接使用专用 JPG 原始尺寸")
 	_expect(hud.minimap_dock.size == Vector2(300, 341), "大地图总尺寸应由 300 像素地图与 41 像素控制区组成")
-	_expect(hud.top_menu.position == Vector2(650, 0), "小地图变宽时顶部菜单应重新锚定在其左侧")
+	_expect(hud.top_menu.position == Vector2(654, 0), "小地图变宽时顶部菜单应重新锚定在其左侧")
 
 	hud.state.set_minimap_collapsed(true)
 	_expect(hud.minimap_dock.size == Vector2(125, 41), "小地图收起后必须仅保留 125×41 控制区")
 	_expect(not hud.minimap_dock.map_viewport.visible, "小地图收起后应隐藏地图视口")
-	_expect(hud.top_menu.position == Vector2(825, 0), "小地图收起后顶部菜单应按 125 像素宽度重新锚定")
+	_expect(hud.top_menu.position == Vector2(829, 0), "小地图收起后顶部菜单应按 125 像素宽度重新锚定")
 
 	hud.state.set_top_menu_expanded(false)
 	_expect(hud.top_menu.size == Vector2(12, 26), "顶部菜单收起后必须为 12×26")
@@ -225,8 +225,8 @@ func _assert_transition_markers(hud: CanvasLayer) -> void:
 ## 执行 `assert_1600_layout` 对应的模块操作。
 ## [param hud] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _assert_1600_layout(hud: CanvasLayer) -> void:
-	_expect(hud.top_menu.position == Vector2(1145, 0), "1600 宽时顶部菜单应仍位于小地图左侧")
-	_expect(hud.top_menu.size == Vector2(330, 54), "窗口变大不得缩放顶部菜单")
+	_expect(hud.top_menu.position == Vector2(1149, 0), "1600 宽时顶部菜单应仍位于小地图左侧")
+	_expect(hud.top_menu.size == Vector2(326, 82), "窗口变大不得缩放顶部菜单")
 	_expect(hud.minimap_dock.position == Vector2(1475, 0), "窗口变大后小地图仍应贴右上")
 	_expect(hud.bottom_main_bar.position == Vector2(0, 871), "窗口变大后 29 像素底栏仍应吸底")
 	_expect(hud.bottom_main_bar.design_surface.position == Vector2(288, 0), "1600 宽时 1024 像素底栏应水平居中")

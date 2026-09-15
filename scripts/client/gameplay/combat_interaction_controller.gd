@@ -72,6 +72,12 @@ func handle_world_combat_left_click(world_position: Vector2) -> void:
 		if not loot_id.is_empty():
 			request_ground_loot_pickup(loot_id)
 			return
+	request_weapon_attack(world_position)
+
+
+## 按当前装置发起意图，供手动点击与智脑共用；智脑先排除工程臂，手动点击保留工程臂分发。
+## [param world_position] 已选中的目标世界坐标。
+func request_weapon_attack(world_position: Vector2) -> void:
 	var selected_mode := String(hud.selected_action())
 	if selected_mode == "energy_cannon" and _handle_primary_device_click(world_position):
 		return
@@ -251,25 +257,32 @@ func on_combat_snapshot_received(snapshot: Dictionary) -> void:
 			world_view.self_repair_visual_controller.apply_snapshot(vehicle)
 
 
-## 提交击毁后的回基地选择；目的地图、三秒等待和回血比例均由服务器决定。
+## 提交主动回城或击毁后的回基地选择；目的地图、三秒等待和回血规则均由服务器决定。
 func request_vehicle_recovery() -> void:
-	if not vehicle_destroyed or multiplayer_presenter == null:
+	if map_travel.is_locked() or multiplayer_presenter == null:
 		return
+	map_travel.stop_moving("正在请求返回基地")
 	if multiplayer_presenter.request_vehicle_recovery().is_empty():
-		vehicle_destroyed_dialog.show_recovery_failed("基地救援请求发送失败")
+		hud.show_system_message("返回基地请求发送失败")
 
 
 ## 显示服务器确认的基地救援等待时间。
 ## [param delay_seconds] 服务器安排的救援等待秒数。
 func on_vehicle_recovery_scheduled(delay_seconds: float) -> void:
-	vehicle_destroyed_dialog.show_recovery_scheduled(delay_seconds)
+	if vehicle_destroyed:
+		vehicle_destroyed_dialog.show_recovery_scheduled(delay_seconds)
+	else:
+		hud.show_system_message("将在 %.0f 秒后返回基地" % delay_seconds)
 
 
 ## 恢复被服务器拒绝的死亡窗选择。
 ## [param _code] 权威边界返回的稳定错误码。
 ## [param _message] 权威拒绝说明，界面通过错误映射呈现。
 func on_vehicle_recovery_failed(_code: StringName, _message: String) -> void:
-	vehicle_destroyed_dialog.show_recovery_failed("基地救援请求被拒绝，请重试")
+	if vehicle_destroyed:
+		vehicle_destroyed_dialog.show_recovery_failed("基地救援请求被拒绝，请重试")
+	else:
+		hud.show_system_message(PlayerErrorMessages.describe(_code, _message))
 
 
 ## 原地等待只关闭选择窗，不解除击毁状态或恢复输入。
@@ -316,8 +329,9 @@ func on_weapon_slot_selected(slot_id: String) -> void:
 		world_view.player.set_combat_weapon_layer(StringName(mode["layer_id"]))
 
 
-## 合并切图冻结和战车击毁状态，供输入协调器使用。
+## 合并切图、基地救援等待和战车击毁状态，供输入协调器使用。
 ## 返回世界操作是否必须暂停。
 func is_input_locked() -> bool:
-	return map_travel.is_locked() or vehicle_destroyed
+	return map_travel.is_locked() or vehicle_destroyed or (multiplayer_presenter != null \
+		and multiplayer_presenter.session != null and multiplayer_presenter.session.is_vehicle_recovery_pending())
 

@@ -72,11 +72,16 @@ func configure(session: PlayerPanelSession) -> bool:
 		"missions": preload("res://scripts/client/ui/windows/navigation/mission_journal_panel.gd"),
 		"system": preload("res://scripts/client/ui/windows/navigation/system_menu_panel.gd"),
 		"premium_shop": preload("res://scripts/client/ui/windows/navigation/premium_shop_panel.gd"),
+		"mercenary": preload("res://scripts/client/ui/windows/navigation/daily_activities_panel.gd"),
+		"experience": preload("res://scripts/client/ui/windows/navigation/daily_activities_panel.gd"),
+		"smart_assistant": preload("res://scripts/client/ui/windows/navigation/smart_assistant_panel.gd"),
 		"achievements": preload("res://scripts/client/ui/windows/navigation/achievements_panel.gd"),
 	}
 	for action: String in navigation_scripts:
 		var window: NavigationWindow = navigation_scripts[action].new()
-		if action == "premium_shop":
+		if action in ["mercenary", "experience"]:
+			window.mode = action
+		if action in ["premium_shop", "mercenary", "experience"]:
 			window.command_requested.connect(panel_session.dispatch)
 		window.position = Vector2(120, 70)
 		window.notice_requested.connect(notice_requested.emit)
@@ -140,17 +145,21 @@ func toggle(action_id: String) -> bool:
 			window.position = Vector2(size.x / 2.0 + 235, size.y - 29 - window.size.y)
 		if action_id == "premium_shop":
 			window.open_shop()
+		if action_id in ["mercenary", "experience"]:
+			window.open_board()
 		window.move_to_front()
 		window.call("clamp_to_viewport", size)
 		if action_id == "scene_players":
 			panel_session.dispatch({"type": "query_scene_players"})
-		elif action_id not in ["system", "premium_shop"]:
+		elif action_id not in ["system", "premium_shop", "mercenary", "experience", "smart_assistant"]:
 			panel_session.dispatch({"type": "query"})
 	return true
 
 
 ## 仅在用户列表或任务日志可见时刷新只读查询，关闭窗口不产生轮询。
 func _refresh_navigation() -> void:
+	if navigation_windows["mercenary"].visible or navigation_windows["experience"].visible:
+		panel_session.dispatch({"type": "query_daily_activities"})
 	if navigation_windows["scene_players"].visible:
 		panel_session.dispatch({"type": "query_scene_players"})
 	if navigation_windows["missions"].visible or navigation_windows["achievements"].visible:
@@ -160,6 +169,8 @@ func _refresh_navigation() -> void:
 ## 将会话消息中的名单、商店、制造和任务日志分发到对应窗口。
 ## [param bundle] 已由玩家会话接收的权威消息；可能只包含某个辅助窗口的数据。
 func _apply_auxiliary_bundle(bundle: Dictionary) -> void:
+	for action: String in ["mercenary", "experience"]:
+		navigation_windows[action].apply_activity_bundle(bundle)
 	if bundle.get("premium_shop") is Dictionary:
 		navigation_windows["premium_shop"].apply_shop_bundle(bundle)
 	if bundle.get("scene_players") is Dictionary:
