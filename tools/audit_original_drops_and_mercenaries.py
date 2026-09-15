@@ -130,7 +130,7 @@ def main() -> None:
     (output / "mercenary_availability.jsonl").write_text(
         "\n".join(json.dumps(row, ensure_ascii=False, separators=(",", ":")) for row in rows) + "\n", encoding="utf-8")
     lines = ["# 原版掉落与佣兵任务全量核查", "", "审计日期：2026-09-15。由运行目录导出和原表对照生成。", "",
-             "## 结论与口径", "", f"**原版掉落尚未全部接入。{len(tasks)} 条佣兵定义均保留；修复误排的 20 条金币捐赠后，{len(runtime['tasks'])} 条可执行。**", "",
+             "## 结论与口径", "", f"**原版掉落尚未全部接入。{len(tasks)} 条佣兵定义均保留；计入金币捐赠修复及后续材料投放后，当前 {len(runtime['tasks'])} 条可执行。**", "",
              f"荣耀客户端：{len(original)} 种怪物、{sum(source_entries.values())} 条原始候选（包含重复）、{len(source_species)} 种掉落名称。",
              f"按“原物种 → 原物品”关系核对：{full} 种名称的来源关系全覆盖，{partial} 种部分覆盖，{absent} 种未接入原怪物掉落。",
              f"逐原始条目匹配为 {matched_entries}/{sum(source_entries.values())}；去重后的物种—物品关系为 "
@@ -162,7 +162,7 @@ def main() -> None:
     lines += [f"| {name} | {count} | {status} |" for (name, status), count in sorted(missing.items())]
     lines += ["", "免费版力场模块、炮管磁压器、双进程模块、引擎接合器与商城的新旧接合器没有已确认的一一替代关系，不自动改成另一件装备。",
               "`FoodA_7` 原任务标题为糖瓜；生豆、植物棉及面、糖上游农业原料尚无获取链；馒头缺可执行物品定义。",
-              "镁矿、钒矿、钼矿、钽矿有物品登记但未进入启用矿池。", "",
+              "镁矿已在后续材料投放中开放，相应13条收集任务进入可执行目录；钒矿、钼矿、钽矿仍未进入启用矿池。", "",
               "## 本次纠正的旧结论", "",
               "`NewJointImpactChip` 就是冲击晶体：荣耀 `ven/stuffclt2_ven.fcc:3772` 明确给出了类名与中文名，NPC 候选也有记录。",
               "当前只有以类名登记的材料占位项，未完整导入本体与实际掉落；不能再写成“原版没有获取来源”。",

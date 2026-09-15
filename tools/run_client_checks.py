@@ -16,6 +16,7 @@ TESTS = (
     "server/commerce/premium_shop_and_attachments_test.gd",
     "server/commerce/daily_activity_test.gd",
     "server/combat/upgrade_material_supply_test.gd",
+    "server/manufacturing/industrial_supply_chain_test.gd",
     "server/authoritative_server_smoke_test.gd",
     "ui/runtime/daily_hud_and_assistant_test.gd",
     "ui/runtime/premium_shop_ui_test.gd",

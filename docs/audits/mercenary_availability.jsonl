@@ -131,7 +131,7 @@
 {"id":"132","title":"收集铁","grade":3,"kind":2,"source_target":"铁","quantity":30,"enabled":true,"status":"可执行收集","runtime_target":"item:material:8f615d2ef879"}
 {"id":"133","title":"收集中级四足甲的壳","grade":3,"kind":2,"source_target":"中级四足甲的壳","quantity":20,"enabled":true,"status":"可执行收集","runtime_target":"item:material:b76edad9fa8e"}
 {"id":"134","title":"收集硅矿","grade":3,"kind":2,"source_target":"硅矿","quantity":200,"enabled":true,"status":"可执行收集","runtime_target":"silicon_ore"}
-{"id":"135","title":"收集镁矿","grade":3,"kind":2,"source_target":"镁矿","quantity":50,"enabled":false,"status":"获取链未闭合","runtime_target":""}
+{"id":"135","title":"收集镁矿","grade":3,"kind":2,"source_target":"镁矿","quantity":50,"enabled":true,"status":"可执行收集","runtime_target":"item:material:185cf7b29406"}
 {"id":"136","title":"收集面","grade":3,"kind":2,"source_target":"面","quantity":200,"enabled":false,"status":"获取链未闭合","runtime_target":""}
 {"id":"137","title":"收集石墨矿","grade":3,"kind":2,"source_target":"石墨矿","quantity":200,"enabled":true,"status":"可执行收集","runtime_target":"graphite_ore"}
 {"id":"138","title":"收集铜","grade":3,"kind":2,"source_target":"铜","quantity":50,"enabled":true,"status":"可执行收集","runtime_target":"item:material:be59bb7699ac"}
@@ -229,7 +229,7 @@
 {"id":"230","title":"收集钽矿","grade":4,"kind":2,"source_target":"钽矿","quantity":100,"enabled":false,"status":"获取链未闭合","runtime_target":""}
 {"id":"231","title":"收集超导的炮管磁压器","grade":4,"kind":2,"source_target":"超导的炮管磁压器","quantity":25,"enabled":false,"status":"物品未登记","runtime_target":""}
 {"id":"232","title":"收集金属的炮管磁压器","grade":4,"kind":2,"source_target":"金属的炮管磁压器","quantity":25,"enabled":false,"status":"物品未登记","runtime_target":""}
-{"id":"233","title":"收集镁矿","grade":4,"kind":2,"source_target":"镁矿","quantity":100,"enabled":false,"status":"获取链未闭合","runtime_target":""}
+{"id":"233","title":"收集镁矿","grade":4,"kind":2,"source_target":"镁矿","quantity":100,"enabled":true,"status":"可执行收集","runtime_target":"item:material:185cf7b29406"}
 {"id":"234","title":"收集亚阻的炮管磁压器","grade":4,"kind":2,"source_target":"亚阻的炮管磁压器","quantity":25,"enabled":false,"status":"物品未登记","runtime_target":""}
 {"id":"235","title":"收集银矿","grade":4,"kind":2,"source_target":"银矿","quantity":200,"enabled":true,"status":"可执行收集","runtime_target":"item:material:dbd4b5c8b82f"}
 {"id":"236","title":"击杀暴君猛玛歼击机","grade":4,"kind":1,"source_target":"space_Npc_Airship9","quantity":5,"enabled":false,"status":"目标怪物未投放","runtime_target":""}
@@ -267,7 +267,7 @@
 {"id":"269","title":"击杀异兽巨蠕虫","grade":5,"kind":1,"source_target":"YSJRCNpc","quantity":10,"enabled":false,"status":"目标怪物未投放","runtime_target":""}
 {"id":"270","title":"击杀异兽巨蚊","grade":5,"kind":1,"source_target":"YSJWNpc","quantity":10,"enabled":false,"status":"目标怪物未投放","runtime_target":""}
 {"id":"271","title":"收集超导的双进程模块","grade":5,"kind":2,"source_target":"超导的双进程模块","quantity":40,"enabled":false,"status":"物品未登记","runtime_target":""}
-{"id":"272","title":"收集镁矿","grade":5,"kind":2,"source_target":"镁矿","quantity":150,"enabled":false,"status":"获取链未闭合","runtime_target":""}
+{"id":"272","title":"收集镁矿","grade":5,"kind":2,"source_target":"镁矿","quantity":150,"enabled":true,"status":"可执行收集","runtime_target":"item:material:185cf7b29406"}
 {"id":"273","title":"收集亚阻的双进程模块","grade":5,"kind":2,"source_target":"亚阻的双进程模块","quantity":40,"enabled":false,"status":"物品未登记","runtime_target":""}
 {"id":"274","title":"击杀撒玛飞船","grade":5,"kind":4,"source_target":"Boss","quantity":1,"enabled":false,"status":"活动或排名未实现","runtime_target":""}
 {"id":"275","title":"击杀暴君猛玛歼击机","grade":5,"kind":1,"source_target":"space_Npc_Airship9","quantity":8,"enabled":false,"status":"目标怪物未投放","runtime_target":""}
@@ -281,7 +281,7 @@
 {"id":"283","title":"击杀远征运输兵","grade":5,"kind":1,"source_target":"YSYZYSBNpc","quantity":10,"enabled":false,"status":"目标怪物未投放","runtime_target":""}
 {"id":"284","title":"击杀撒玛机械部队BOSS","grade":5,"kind":4,"source_target":"SaMaJXBoss","quantity":1,"enabled":false,"status":"活动或排名未实现","runtime_target":""}
 {"id":"285","title":"击杀撒玛逆星军团","grade":5,"kind":1,"source_target":"SaMaNXJT","quantity":8,"enabled":false,"status":"目标怪物未投放","runtime_target":""}
-{"id":"286","title":"收集镁矿","grade":5,"kind":2,"source_target":"镁矿","quantity":200,"enabled":false,"status":"获取链未闭合","runtime_target":""}
+{"id":"286","title":"收集镁矿","grade":5,"kind":2,"source_target":"镁矿","quantity":200,"enabled":true,"status":"可执行收集","runtime_target":"item:material:185cf7b29406"}
 {"id":"287","title":"击杀暴君猛玛歼击机","grade":5,"kind":1,"source_target":"space_Npc_Airship9","quantity":10,"enabled":false,"status":"目标怪物未投放","runtime_target":""}
 {"id":"288","title":"击杀火泰坦歼击机","grade":5,"kind":1,"source_target":"space_Npc_Airship8","quantity":10,"enabled":false,"status":"目标怪物未投放","runtime_target":""}
 {"id":"289","title":"击杀剑齿虎攻击机","grade":5,"kind":1,"source_target":"space_Npc_Airship7","quantity":10,"enabled":false,"status":"目标怪物未投放","runtime_target":""}
@@ -322,7 +322,7 @@
 {"id":"324","title":"收集钽矿","grade":6,"kind":2,"source_target":"钽矿","quantity":200,"enabled":false,"status":"获取链未闭合","runtime_target":""}
 {"id":"325","title":"收集超导的炮管磁压器","grade":6,"kind":2,"source_target":"超导的炮管磁压器","quantity":50,"enabled":false,"status":"物品未登记","runtime_target":""}
 {"id":"326","title":"收集金属的炮管磁压器","grade":6,"kind":2,"source_target":"金属的炮管磁压器","quantity":50,"enabled":false,"status":"物品未登记","runtime_target":""}
-{"id":"327","title":"收集镁矿","grade":6,"kind":2,"source_target":"镁矿","quantity":100,"enabled":false,"status":"获取链未闭合","runtime_target":""}
+{"id":"327","title":"收集镁矿","grade":6,"kind":2,"source_target":"镁矿","quantity":100,"enabled":true,"status":"可执行收集","runtime_target":"item:material:185cf7b29406"}
 {"id":"328","title":"收集亚阻的炮管磁压器","grade":6,"kind":2,"source_target":"亚阻的炮管磁压器","quantity":100,"enabled":false,"status":"物品未登记","runtime_target":""}
 {"id":"329","title":"收集银矿","grade":6,"kind":2,"source_target":"银矿","quantity":500,"enabled":true,"status":"可执行收集","runtime_target":"item:material:dbd4b5c8b82f"}
 {"id":"330","title":"击杀暴戾的撒玛近卫军","grade":6,"kind":1,"source_target":"Npc机甲D3","quantity":15,"enabled":true,"status":"可执行击杀","runtime_target":"glory_monster_043"}
@@ -332,7 +332,7 @@
 {"id":"334","title":"击杀警觉的撒玛近卫军","grade":6,"kind":1,"source_target":"Npc机甲D2","quantity":15,"enabled":true,"status":"可执行击杀","runtime_target":"glory_monster_020"}
 {"id":"335","title":"收集金属的引擎接合器","grade":6,"kind":2,"source_target":"金属的引擎接合器","quantity":200,"enabled":false,"status":"物品未登记","runtime_target":""}
 {"id":"336","title":"收集超导的双进程模块","grade":6,"kind":2,"source_target":"超导的双进程模块","quantity":80,"enabled":false,"status":"物品未登记","runtime_target":""}
-{"id":"337","title":"收集镁矿","grade":6,"kind":2,"source_target":"镁矿","quantity":500,"enabled":false,"status":"获取链未闭合","runtime_target":""}
+{"id":"337","title":"收集镁矿","grade":6,"kind":2,"source_target":"镁矿","quantity":500,"enabled":true,"status":"可执行收集","runtime_target":"item:material:185cf7b29406"}
 {"id":"338","title":"收集亚阻的双进程模块","grade":6,"kind":2,"source_target":"亚阻的双进程模块","quantity":150,"enabled":false,"status":"物品未登记","runtime_target":""}
 {"id":"339","title":"击杀撒玛飞船","grade":6,"kind":4,"source_target":"Boss","quantity":1,"enabled":false,"status":"活动或排名未实现","runtime_target":""}
 {"id":"340","title":"收集高级能量催化剂","grade":6,"kind":2,"source_target":"高级能量催化剂","quantity":100,"enabled":true,"status":"可执行收集","runtime_target":"item:material:fdae75215694"}
@@ -347,7 +347,7 @@
 {"id":"349","title":"击杀撒玛机械部队","grade":6,"kind":4,"source_target":"SaMaJXBoss","quantity":1,"enabled":false,"status":"活动或排名未实现","runtime_target":""}
 {"id":"350","title":"击杀撒玛逆星军团","grade":6,"kind":1,"source_target":"SaMaNXJT","quantity":10,"enabled":false,"status":"目标怪物未投放","runtime_target":""}
 {"id":"351","title":"收集中级生物硅","grade":6,"kind":2,"source_target":"中级生物硅","quantity":800,"enabled":true,"status":"可执行收集","runtime_target":"item:material:deb4b85e31bd"}
-{"id":"352","title":"收集镁矿","grade":6,"kind":2,"source_target":"镁矿","quantity":200,"enabled":false,"status":"获取链未闭合","runtime_target":""}
+{"id":"352","title":"收集镁矿","grade":6,"kind":2,"source_target":"镁矿","quantity":200,"enabled":true,"status":"可执行收集","runtime_target":"item:material:185cf7b29406"}
 {"id":"354","title":"击杀 A型撒玛突击队员","grade":6,"kind":1,"source_target":"SaMaTeamMemberA","quantity":15,"enabled":false,"status":"目标怪物未投放","runtime_target":""}
 {"id":"355","title":"击杀暴君猛犸歼击机","grade":6,"kind":1,"source_target":"space_Npc_Airship9","quantity":10,"enabled":false,"status":"目标怪物未投放","runtime_target":""}
 {"id":"356","title":"击杀残酷的撒玛卫士","grade":6,"kind":1,"source_target":"Npc机甲B2","quantity":20,"enabled":true,"status":"可执行击杀","runtime_target":"glory_monster_018"}
@@ -381,7 +381,7 @@
 {"id":"384","title":"收集钽矿","grade":7,"kind":2,"source_target":"钽矿","quantity":300,"enabled":false,"status":"获取链未闭合","runtime_target":""}
 {"id":"385","title":"收集超导的炮管磁压器","grade":7,"kind":2,"source_target":"超导的炮管磁压器","quantity":100,"enabled":false,"status":"物品未登记","runtime_target":""}
 {"id":"386","title":"收集金属的炮管磁压器","grade":7,"kind":2,"source_target":"金属的炮管磁压器","quantity":100,"enabled":false,"status":"物品未登记","runtime_target":""}
-{"id":"387","title":"收集镁矿","grade":7,"kind":2,"source_target":"镁矿","quantity":200,"enabled":false,"status":"获取链未闭合","runtime_target":""}
+{"id":"387","title":"收集镁矿","grade":7,"kind":2,"source_target":"镁矿","quantity":200,"enabled":true,"status":"可执行收集","runtime_target":"item:material:185cf7b29406"}
 {"id":"388","title":"收集亚阻的炮管磁压器","grade":7,"kind":2,"source_target":"亚阻的炮管磁压器","quantity":200,"enabled":false,"status":"物品未登记","runtime_target":""}
 {"id":"389","title":"收集银矿","grade":7,"kind":2,"source_target":"银矿","quantity":800,"enabled":true,"status":"可执行收集","runtime_target":"item:material:dbd4b5c8b82f"}
 {"id":"390","title":"击杀异兽机枪虫","grade":7,"kind":1,"source_target":"MagicMonster_JiQiang","quantity":20,"enabled":false,"status":"目标怪物未投放","runtime_target":""}
@@ -391,7 +391,7 @@
 {"id":"394","title":"击杀异兽巨蚊","grade":7,"kind":1,"source_target":"YSJWNpc","quantity":15,"enabled":false,"status":"目标怪物未投放","runtime_target":""}
 {"id":"395","title":"收集金属的引擎接合器","grade":7,"kind":2,"source_target":"金属的引擎接合器","quantity":300,"enabled":false,"status":"物品未登记","runtime_target":""}
 {"id":"396","title":"收集超导的双进程模块","grade":7,"kind":2,"source_target":"超导的双进程模块","quantity":100,"enabled":false,"status":"物品未登记","runtime_target":""}
-{"id":"397","title":"收集镁矿","grade":7,"kind":2,"source_target":"镁矿","quantity":800,"enabled":false,"status":"获取链未闭合","runtime_target":""}
+{"id":"397","title":"收集镁矿","grade":7,"kind":2,"source_target":"镁矿","quantity":800,"enabled":true,"status":"可执行收集","runtime_target":"item:material:185cf7b29406"}
 {"id":"398","title":"收集亚阻的双进程模块","grade":7,"kind":2,"source_target":"亚阻的双进程模块","quantity":300,"enabled":false,"status":"物品未登记","runtime_target":""}
 {"id":"399","title":"击杀撒玛飞船","grade":7,"kind":4,"source_target":"Boss","quantity":1,"enabled":false,"status":"活动或排名未实现","runtime_target":""}
 {"id":"400","title":"击杀暴君猛犸歼击机","grade":7,"kind":1,"source_target":"space_Npc_Airship9","quantity":12,"enabled":false,"status":"目标怪物未投放","runtime_target":""}
@@ -406,7 +406,7 @@
 {"id":"409","title":"击杀撒玛机械部队","grade":7,"kind":4,"source_target":"SaMaJXBoss","quantity":1,"enabled":false,"status":"活动或排名未实现","runtime_target":""}
 {"id":"410","title":"击杀撒玛逆星军团","grade":7,"kind":1,"source_target":"SaMaNXJT","quantity":20,"enabled":false,"status":"目标怪物未投放","runtime_target":""}
 {"id":"411","title":"收集中级生物硅","grade":7,"kind":2,"source_target":"中级生物硅","quantity":800,"enabled":true,"status":"可执行收集","runtime_target":"item:material:deb4b85e31bd"}
-{"id":"412","title":"收集镁矿","grade":7,"kind":2,"source_target":"镁矿","quantity":500,"enabled":false,"status":"获取链未闭合","runtime_target":""}
+{"id":"412","title":"收集镁矿","grade":7,"kind":2,"source_target":"镁矿","quantity":500,"enabled":true,"status":"可执行收集","runtime_target":"item:material:185cf7b29406"}
 {"id":"414","title":"击杀 A型撒玛突击队员","grade":7,"kind":1,"source_target":"SaMaTeamMemberA","quantity":20,"enabled":false,"status":"目标怪物未投放","runtime_target":""}
 {"id":"415","title":"击杀暴君猛犸歼击机","grade":7,"kind":1,"source_target":"space_Npc_Airship9","quantity":30,"enabled":false,"status":"目标怪物未投放","runtime_target":""}
 {"id":"416","title":"击杀残酷的撒玛卫士","grade":7,"kind":1,"source_target":"Npc机甲B2","quantity":30,"enabled":true,"status":"可执行击杀","runtime_target":"glory_monster_018"}
@@ -440,7 +440,7 @@
 {"id":"444","title":"收集钽矿","grade":8,"kind":2,"source_target":"钽矿","quantity":400,"enabled":false,"status":"获取链未闭合","runtime_target":""}
 {"id":"445","title":"收集超导的炮管磁压器","grade":8,"kind":2,"source_target":"超导的炮管磁压器","quantity":150,"enabled":false,"status":"物品未登记","runtime_target":""}
 {"id":"446","title":"收集金属的炮管磁压器","grade":8,"kind":2,"source_target":"金属的炮管磁压器","quantity":150,"enabled":false,"status":"物品未登记","runtime_target":""}
-{"id":"447","title":"收集镁矿","grade":8,"kind":2,"source_target":"镁矿","quantity":300,"enabled":false,"status":"获取链未闭合","runtime_target":""}
+{"id":"447","title":"收集镁矿","grade":8,"kind":2,"source_target":"镁矿","quantity":300,"enabled":true,"status":"可执行收集","runtime_target":"item:material:185cf7b29406"}
 {"id":"448","title":"收集亚阻的炮管磁压器","grade":8,"kind":2,"source_target":"亚阻的炮管磁压器","quantity":300,"enabled":false,"status":"物品未登记","runtime_target":""}
 {"id":"449","title":"收集银矿","grade":8,"kind":2,"source_target":"银矿","quantity":900,"enabled":true,"status":"可执行收集","runtime_target":"item:material:dbd4b5c8b82f"}
 {"id":"450","title":"击杀异兽机枪虫","grade":8,"kind":1,"source_target":"MagicMonster_JiQiang","quantity":25,"enabled":false,"status":"目标怪物未投放","runtime_target":""}
@@ -450,7 +450,7 @@
 {"id":"454","title":"击杀异兽巨蚊","grade":8,"kind":1,"source_target":"YSJWNpc","quantity":20,"enabled":false,"status":"目标怪物未投放","runtime_target":""}
 {"id":"455","title":"收集金属的引擎接合器","grade":8,"kind":2,"source_target":"金属的引擎接合器","quantity":400,"enabled":false,"status":"物品未登记","runtime_target":""}
 {"id":"456","title":"收集超导的双进程模块","grade":8,"kind":2,"source_target":"超导的双进程模块","quantity":120,"enabled":false,"status":"物品未登记","runtime_target":""}
-{"id":"457","title":"收集镁矿","grade":8,"kind":2,"source_target":"镁矿","quantity":900,"enabled":false,"status":"获取链未闭合","runtime_target":""}
+{"id":"457","title":"收集镁矿","grade":8,"kind":2,"source_target":"镁矿","quantity":900,"enabled":true,"status":"可执行收集","runtime_target":"item:material:185cf7b29406"}
 {"id":"458","title":"收集亚阻的双进程模块","grade":8,"kind":2,"source_target":"亚阻的双进程模块","quantity":350,"enabled":false,"status":"物品未登记","runtime_target":""}
 {"id":"459","title":"击杀撒玛飞船","grade":8,"kind":4,"source_target":"Boss","quantity":1,"enabled":false,"status":"活动或排名未实现","runtime_target":""}
 {"id":"460","title":"击杀暴君猛犸歼击机","grade":8,"kind":1,"source_target":"space_Npc_Airship9","quantity":20,"enabled":false,"status":"目标怪物未投放","runtime_target":""}
@@ -465,7 +465,7 @@
 {"id":"469","title":"击杀撒玛机械部队","grade":8,"kind":4,"source_target":"SaMaJXBoss","quantity":1,"enabled":false,"status":"活动或排名未实现","runtime_target":""}
 {"id":"470","title":"击杀撒玛逆星军团","grade":8,"kind":1,"source_target":"SaMaNXJT","quantity":20,"enabled":false,"status":"目标怪物未投放","runtime_target":""}
 {"id":"471","title":"收集中级生物硅","grade":8,"kind":2,"source_target":"中级生物硅","quantity":900,"enabled":true,"status":"可执行收集","runtime_target":"item:material:deb4b85e31bd"}
-{"id":"472","title":"收集镁矿","grade":8,"kind":2,"source_target":"镁矿","quantity":600,"enabled":false,"status":"获取链未闭合","runtime_target":""}
+{"id":"472","title":"收集镁矿","grade":8,"kind":2,"source_target":"镁矿","quantity":600,"enabled":true,"status":"可执行收集","runtime_target":"item:material:185cf7b29406"}
 {"id":"474","title":"击杀 A型撒玛突击队员","grade":8,"kind":1,"source_target":"SaMaTeamMemberA","quantity":30,"enabled":false,"status":"目标怪物未投放","runtime_target":""}
 {"id":"475","title":"击杀暴君猛犸歼击机","grade":8,"kind":1,"source_target":"space_Npc_Airship9","quantity":40,"enabled":false,"status":"目标怪物未投放","runtime_target":""}
 {"id":"476","title":"击杀残酷的撒玛卫士","grade":8,"kind":1,"source_target":"Npc机甲B2","quantity":40,"enabled":true,"status":"可执行击杀","runtime_target":"glory_monster_018"}

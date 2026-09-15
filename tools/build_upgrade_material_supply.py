@@ -9,6 +9,9 @@ CRAWLERS = {'glory_monster_046', 'glory_monster_114'}
 MINING_POLICY = {
     '硫矿': (150, 'c07'), '磷矿': (200, 'g06'), '钾矿': (250, 'h07'),
     '镭矿': (300, 'd08'), '铬矿': (300, 'd08'),
+    '镍矿': (300, 'c08'), '锌矿': (300, 'c08'),
+    '钛矿': (350, 'h08'), '钪矿': (450, 'e07'),
+    '镁矿': (500, 'e06'), '钡矿': (550, 'd06'),
 }
 
 
@@ -59,7 +62,7 @@ def build_drops():
 
 
 def apply_mining():
-    """Preserve historical pools while adding five explicit level placements."""
+    """Preserve historical pools while adding explicit material-chain placements."""
     path = ROOT / 'data/gameplay/mining_v1.json'
     document = read(path)
     manifest_path = ROOT / 'assets/minerals/mining_asset_manifest.json'
@@ -72,7 +75,7 @@ def apply_mining():
         mineral['experience_coefficient'] = level / 10.0
         mineral['tooltip'] = f'{mineral["display_name"]}，需要采矿等级{level}级'
         mineral['evidence']['runtime_supply'] = '2026-09-15 user requested level-based remake placement'
-        if mineral['display_name'] in ('硫矿', '磷矿', '钾矿'):
+        if mineral['display_name'] in ('硫矿', '磷矿', '钾矿', '钛矿', '钪矿'):
             mineral['evidence']['level'] = '复刻配置；原版矿源等级未确认'
             presentation = mineral['presentation']
             presentation['world_animation'] = presentation['inventory_animation']

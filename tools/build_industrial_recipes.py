@@ -5,6 +5,8 @@ import json
 import re
 from pathlib import Path
 
+from build_upgrade_material_supply import MINING_POLICY
+
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT.parent / "starhome_lz_ry_full_parsed/ftc_resources"
 
@@ -100,6 +102,42 @@ def build():
             r'\("([^"\n]+)",\s*(\d+),\s*(\d+),\s*(\d+),\s*\(\("([^"\n]+)",\s*(\d+)\)\)\)', section):
         register_material(product, relative)
         add("refining", product, level, count, xp, [(ore, int(amount))], relative, ore)
+
+    # 用户指定的扩展与原表分开标记；重建时保留，不能写回原客户端证据。
+    source_file = "cltobj/stuffclt2.fcc"
+    source_text = (ROOT.parent / "starhome_lz_ry_fcc_source" / source_file).read_text(encoding="utf-8-sig")
+    sprite_ids = {row["logical_id"] for row in json.loads(
+        (ROOT / "data/content/glory_sprite_runtime_index_v1.json").read_text(encoding="utf-8"))["sprites"]}
+
+    def register_extension(name):
+        """复用荣耀已收录的本体图，补齐原客户端明确存在但漏登记的材料。"""
+        register_material(name, source_file)
+        item = by_name[name]
+        body = re.search(r"^class " + re.escape(name) + r":.*?(?=^class |\Z)", source_text, re.M | re.S)
+        if body is None:
+            raise ValueError(f"Missing Glory material class: {name}")
+        sprite = re.search(r'src=\$\+"../([^"\n]+)"', body[0])[1].lower().removesuffix(".ale")
+        if sprite not in sprite_ids:
+            raise ValueError(f"Missing indexed Glory material sprite: {name}: {sprite}")
+        item["source_class"] = name
+        item["presentation"] = {"ale_reference": sprite}
+        item["source_audit"].update({"asset_status": "existing_glory_sprite_index", "source_line": source_text.count("\n", 0, body.start()) + 1})
+
+    policy_source = "remake:industrial-supply-2026-09-15"
+    for element in ("硫", "磷", "钾", "钛", "钪", "镁", "钡"):
+        register_extension(element)
+        level = MINING_POLICY[element + "矿"][0]
+        add("refining", element, level, 1, max(1, level // 5 + 10), [(element + "矿", 10)], policy_source, element)
+        recipes[-1]["source_audit"].update({"rule_status": "user_requested_remake", "rule": "10 ore to 1 element; refining level equals mining level"})
+
+    refining_levels = {row["display_name"]: row["required_skill_level"] for row in recipes if row["station_id"] == "refining"}
+    for name, parts in {"锌钛合金": ("锌", "钛"), "钡镁合金": ("钡", "镁"),
+                        "锌钡合金": ("锌", "钡"), "钛铬合金": ("钛", "铬"), "钪镁合金": ("钪", "镁")}.items():
+        register_extension(name)
+        # 参照镭铬/镍锌的提炼270、制造300：新合金取最高原料提炼等级的下一档50级。
+        level = (max(refining_levels[part] for part in parts) // 50 + 1) * 50
+        add("alloy", name, level, 1, level // 5 + 20, [(part, 1) for part in parts], policy_source, name)
+        recipes[-1]["source_audit"].update({"rule_status": "remake_default", "rule": "one of each constituent; next 50-level band above highest constituent refining level; original recipes unchanged"})
     payload = {"schema_version": 1, "recipes": recipes, "excluded": excluded,
                "execution_policy": "复刻首版：等级达标后单次确定产出；原服务器加工耗时、失败概率与批量倍率尚未恢复。"}
     output = ROOT / "data/gameplay/industrial_recipes_v1.json"

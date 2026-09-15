@@ -79,10 +79,11 @@ func _run() -> void:
 	_finish()
 
 
-## 在真实矿源模块中验证五种矿物的地图投放、采掘门槛和产物，并检查地面可点击视图。
+## 在真实矿源模块中验证材料链矿物的地图投放、采掘门槛和产物，并检查地面可点击视图。
 func _test_mining() -> void:
 	var catalog: MiningCatalog = MiningCatalog.load_default().value
-	var expected := {"硫矿": [150, "c07"], "磷矿": [200, "g06"], "钾矿": [250, "h07"], "镭矿": [300, "d08"], "铬矿": [300, "d08"]}
+	var expected := {"硫矿": [150, "c07"], "磷矿": [200, "g06"], "钾矿": [250, "h07"], "镭矿": [300, "d08"], "铬矿": [300, "d08"],
+		"镍矿": [300, "c08"], "锌矿": [300, "c08"], "钛矿": [350, "h08"], "钪矿": [450, "e07"], "镁矿": [500, "e06"], "钡矿": [550, "d06"]}
 	var navigation := NavigationFixture.new()
 	for i in range(400):
 		navigation.graph.add_point(i, Vector2((i % 20) * 120 + 120, floori(i / 20.0) * 120 + 120))
@@ -122,20 +123,20 @@ func _test_mining() -> void:
 				_expect(result.is_ok and result.value.item_definition_id == mineral.item_definition_id, "产出对应矿石而非错误的元素成品")
 		var index := snapshots.size()
 		snapshots.append({"source_id": id, "mineral_id": id, "display_name": mineral.display_name,
-			"position": [100 + index * 155, 170], "remaining": 50, "required_mining_level": rule[0], "visual_variant": 0})
+			"position": [100 + (index % 4) * 200, 140 + floori(index / 4.0) * 170], "remaining": 50, "required_mining_level": rule[0], "visual_variant": 0})
 		var label := Label.new()
 		label.text = "%s · %d级" % [mineral.display_name, rule[0]]
-		label.position = Vector2(50 + index * 155, 220)
+		label.position = Vector2(50 + (index % 4) * 200, 180 + floori(index / 4.0) * 170)
 		label.add_theme_font_override("font", preload("res://assets/ui/fonts/legacy_panel_font.tres"))
 		world.add_child(label)
 	display.apply_snapshot({"mine_sources": snapshots})
-	_expect(display.active_view_count() == 5, "五种矿源全部可见，硫磷钾不能出现隐形矿点")
+	_expect(display.active_view_count() == expected.size(), "所有新增矿源可见，不能出现隐形矿点")
 	for row: Dictionary in snapshots:
 		var view := display.view_for_source(row.source_id)
 		if view != null:
 			_expect(display.source_at(view.to_global(view.local_hit_rect().get_center())) == row.source_id, "矿源图像中心可点击和选择")
 	if "--capture" in OS.get_cmdline_user_args():
-		root.size = Vector2i(850, 350)
+		root.size = Vector2i(850, 600)
 		await RenderingServer.frame_post_draw
 		root.get_texture().get_image().save_png("res://.godot/upgrade-material-mines.png")
 	display.queue_free()
