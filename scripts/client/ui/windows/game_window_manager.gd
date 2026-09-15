@@ -76,6 +76,8 @@ func configure(session: PlayerPanelSession) -> bool:
 	}
 	for action: String in navigation_scripts:
 		var window: NavigationWindow = navigation_scripts[action].new()
+		if action == "premium_shop":
+			window.command_requested.connect(panel_session.dispatch)
 		window.position = Vector2(120, 70)
 		window.notice_requested.connect(notice_requested.emit)
 		navigation_windows[action] = window
@@ -158,6 +160,8 @@ func _refresh_navigation() -> void:
 ## 将会话消息中的名单、商店、制造和任务日志分发到对应窗口。
 ## [param bundle] 已由玩家会话接收的权威消息；可能只包含某个辅助窗口的数据。
 func _apply_auxiliary_bundle(bundle: Dictionary) -> void:
+	if bundle.get("premium_shop") is Dictionary:
+		navigation_windows["premium_shop"].apply_shop_bundle(bundle)
 	if bundle.get("scene_players") is Dictionary:
 		navigation_windows["scene_players"].apply_snapshot(bundle["scene_players"])
 	if weapon_merchant_window != null and bundle.get("commerce") is Dictionary:

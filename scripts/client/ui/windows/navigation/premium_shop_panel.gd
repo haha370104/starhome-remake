@@ -1,12 +1,28 @@
 class_name PremiumShopPanel
 extends NavigationWindow
 
-const CATEGORIES := ["功能道具", "装饰特效", "充值物资"]
+signal command_requested(command: Dictionary)
+
+const CATEGORIES := ["功能道具", "装饰特效", "充值物资", "接合器"]
 const SUBCATEGORIES := [
 	["经验类", "修复类", "升级类", "维护类", "传送类", "通讯类", "生活类", "辅助类"],
 	["人物变形", "装备变形", "装备特效", "人物背景", "装备背景", "特效物品", "超炫信纸", "浓情贺卡", "Q版请柬"],
 	["镶嵌类", "服装类", "特殊类", "消耗类", "护卫类", "千级装备", "初级物资", "礼包类"],
+	["全部接合器", "新式接合器", "旧式接合器"],
 ]
+var listing: ItemList
+var _balance_label: Label
+var _detail_label: RichTextLabel
+var _buy_button: Button
+var _purchase_dialog: ConfirmationDialog
+var _offers: Array[Dictionary] = []
+var _visible_offers: Array[Dictionary] = []
+var _inventory_revision := -1
+var _balance := 0
+var _keyword := ""
+var _selected_id := ""
+var _pending_id := ""
+var _subcategory := 0
 var subcategories: OptionButton
 var empty_label: Label
 var search_input: LineEdit
@@ -14,7 +30,7 @@ var confirmation: Control
 var _category := 0
 
 
-## 按免费版商城创建分类、物品列表、详情区、搜索及进入确认；商品与支付保持关闭。
+## 按免费版商城创建分类、物品列表、详情区、搜索及进入确认；商品及余额由权威商城快照提供。
 func _ready() -> void:
 	build_window(Vector2(720, 502), preload("res://assets/ui/windows/navigation/premium_shop.png"), "")
 	get_node("CloseButton").position = Vector2(690, 58)
@@ -25,19 +41,36 @@ func _ready() -> void:
 	subcategories.size = Vector2(220, 26)
 	subcategories.item_selected.connect(_select_subcategory)
 	content_root.add_child(subcategories)
-	empty_label = make_label("", Rect2(42, 168, 480, 160))
+	listing = ItemList.new()
+	listing.name = "Offers"
+	listing.position = Vector2(24, 130)
+	listing.size = Vector2(510, 298)
+	listing.add_theme_font_size_override("font_size", 16)
+	listing.add_theme_constant_override("v_separation", 8)
+	listing.item_selected.connect(_select_offer)
+	content_root.add_child(listing)
+	empty_label = make_label("", Rect2(42, 160, 470, 100))
+	empty_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	empty_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	make_label("紫晶数量：待开放", Rect2(520, 40, 145, 20))
-	make_label("物品信息", Rect2(594, 130, 100, 20))
-	make_label("尚未选中商品", Rect2(567, 277, 115, 90))
-	make_button("上一页", Rect2(30, 447, 70, 23), _page_empty)
-	make_label("0 / 0", Rect2(240, 448, 70, 23))
-	make_button("下一页", Rect2(420, 447, 70, 23), _page_empty)
-	make_button("充值", Rect2(637, 82, 55, 23), unavailable.bind("商城充值"))
-	make_button("查询", Rect2(560, 83, 55, 23), unavailable.bind("紫晶查询"))
-	make_button("兑换", Rect2(560, 108, 55, 23), unavailable.bind("紫晶兑换"))
-	make_button("购买", Rect2(612, 410, 64, 23), unavailable.bind("商城购买"))
+	_balance_label = make_label("紫晶：0", Rect2(500, 38, 175, 26))
+	_balance_label.add_theme_font_size_override("font_size", 16)
+	make_label("商品详情", Rect2(550, 132, 145, 25))
+	_detail_label = RichTextLabel.new()
+	_detail_label.position = Vector2(545, 165)
+	_detail_label.size = Vector2(125, 235)
+	_detail_label.add_theme_font_size_override("normal_font_size", 14)
+	_detail_label.text = "请选择接合器"
+	content_root.add_child(_detail_label)
+	_buy_button = make_button("购买", Rect2(566, 410, 110, 30), _request_purchase)
+	_buy_button.disabled = true
+	make_button("刷新", Rect2(600, 82, 75, 26), _refresh_shop)
 	make_button("退出", Rect2(616, 467, 65, 23), request_close)
+	_purchase_dialog = ConfirmationDialog.new()
+	_purchase_dialog.title = "确认购买"
+	_purchase_dialog.ok_button_text = "购买"
+	_purchase_dialog.cancel_button_text = "取消"
+	_purchase_dialog.confirmed.connect(_confirm_purchase)
+	add_child(_purchase_dialog)
 	search_input = LineEdit.new()
 	search_input.placeholder_text = "搜索商品"
 	search_input.position = Vector2(290, 468)
@@ -46,11 +79,12 @@ func _ready() -> void:
 	content_root.add_child(search_input)
 	make_button("搜索", Rect2(539, 467, 65, 23), _search_current)
 	_build_confirmation()
-	_select_category(0)
+	_select_category(3)
 
 
 ## 每次通过底栏打开时显示进入确认，不访问外链或触发付费业务。
 func open_shop() -> void:
+	_refresh_shop()
 	for child: Node in content_root.get_children():
 		if child is Control:
 			child.visible = child == confirmation
@@ -82,18 +116,21 @@ func _build_confirmation() -> void:
 		confirmation.add_child(button)
 
 
-## 确认进入商城，仍不开放任何尚未定义的商品交易。
+## 确认进入商城，展示已登记的接合器商品。
 func _confirm_entry() -> void:
 	for child: Node in content_root.get_children():
 		if child is Control:
 			child.show()
 	confirmation.hide()
+	_render_offers()
 
 
 ## 切换原版商品大类并重建对应子类。
 ## [param category] 三个原版大类的序号。
 func _select_category(category: int) -> void:
 	_category = category
+	_keyword = ""
+	search_input.text = ""
 	subcategories.clear()
 	for label: String in SUBCATEGORIES[category]:
 		subcategories.add_item(label)
@@ -103,20 +140,94 @@ func _select_category(category: int) -> void:
 ## 展示未开放分类的空状态，不伪造售价或数量。
 ## [param index] 当前大类内的子分类序号。
 func _select_subcategory(index: int) -> void:
-	empty_label.text = "%s / %s\n\n售卖物品待定，当前暂无商品。" % [CATEGORIES[_category], SUBCATEGORIES[_category][index]]
+	_subcategory = index
+	_render_offers()
 
 
-## 空目录翻页时保持零页数并给出明确提示。
-func _page_empty() -> void:
-	notice_requested.emit("当前暂无商品可翻页")
+## 按权威快照重建商品列表，保持当前选择和筛选条件。
+## [param bundle] 含紫晶商城和背包版本的服务端快照。
+func apply_shop_bundle(bundle: Dictionary) -> void:
+	var shop: Dictionary = bundle.get("premium_shop", {})
+	_offers.assign(shop.get("offers", []))
+	_balance = int(shop.get("amethyst", 0))
+	_inventory_revision = int(bundle.get("inventory", {}).get("revision", -1))
+	_balance_label.text = "紫晶：%d" % _balance
+	_render_offers()
+	if shop.get("operation", {}).get("action", "") == "premium_buy":
+		notice_requested.emit("购买成功，接合器已放入背包")
 
 
-## 使用输入框中的查询词执行本地空目录搜索。
+## 只发送查询意图，不允许客户端修改余额。
+func _refresh_shop() -> void:
+	command_requested.emit({"type": "query_premium_shop"})
+
+
+## 重建当前分类的商品显示及选中详情。
+func _render_offers() -> void:
+	listing.clear()
+	_visible_offers.clear()
+	for offer: Dictionary in _offers:
+		if _category != 3:
+			continue
+		if _subcategory == 1 and offer.get("family") != "new_joint":
+			continue
+		if _subcategory == 2 and offer.get("family") != "old_joint":
+			continue
+		if not _keyword.is_empty() and not String(offer.get("display_name", "")).contains(_keyword):
+			continue
+		_visible_offers.append(offer)
+		var series := "新式" if offer.get("family") == "new_joint" else "旧式"
+		listing.add_item("[%s] %s    %d 紫晶" % [series, offer.display_name, int(offer.price)])
+	empty_label.text = "没有匹配商品" if not _keyword.is_empty() else "当前分类暂无商品"
+	empty_label.visible = _visible_offers.is_empty()
+	_buy_button.disabled = true
+	_detail_label.text = "请选择接合器"
+	for index in range(_visible_offers.size()):
+		if _visible_offers[index].definition_id == _selected_id:
+			listing.select(index)
+			_select_offer(index)
+			break
+
+
+## 显示商品用途、类别与价格，同名生命接合器也能区分。
+## [param index] 当前可见商品索引。
+func _select_offer(index: int) -> void:
+	var offer := _visible_offers[index]
+	_selected_id = String(offer.definition_id)
+	var series := "新式" if offer.family == "new_joint" else "旧式"
+	_detail_label.text = "%s\n%s\n\n%s\n\n售价：%d 紫晶\n同系列最多装备 2 个" % [series, offer.display_name, offer.description, int(offer.price)]
+	_buy_button.disabled = _inventory_revision < 0 or _balance < int(offer.price)
+	_buy_button.tooltip_text = "紫晶不足" if _balance < int(offer.price) else "购买一件并放入背包"
+
+
+## 购买前展示具体物品和紫晶金额，确认不会触发真实货币支付。
+func _request_purchase() -> void:
+	var selected := listing.get_selected_items()
+	if selected.is_empty() or _buy_button.disabled:
+		return
+	var offer := _visible_offers[selected[0]]
+	_pending_id = String(offer.definition_id)
+	_purchase_dialog.dialog_text = "购买 %s，花费 %d 紫晶？" % [offer.display_name, int(offer.price)]
+	_purchase_dialog.popup_centered(Vector2i(360, 150))
+
+
+## 确认后提交商品标识和版本，实际价格由服务器决定。
+func _confirm_purchase() -> void:
+	if _pending_id.is_empty():
+		return
+	_buy_button.disabled = true
+	command_requested.emit({"type": "buy_premium_item", "definition_id": _pending_id,
+		"inventory_revision": _inventory_revision})
+	_pending_id = ""
+
+
+## 使用输入框的文本筛选当前商品。
 func _search_current() -> void:
 	_search(search_input.text)
 
 
-## 展示商城搜索空结果，不发送购买或付费请求。
-## [param keyword] 玩家输入的商品查询词。
+## 搜索公开商品目录，不发送服务器交易请求。
+## [param keyword] 商品名称关键词。
 func _search(keyword: String) -> void:
-	empty_label.text = "搜索：%s\n\n商品目录尚未开放，没有匹配商品。" % keyword.strip_edges()
+	_keyword = keyword.strip_edges()
+	_render_offers()

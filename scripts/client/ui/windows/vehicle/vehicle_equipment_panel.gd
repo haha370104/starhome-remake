@@ -13,14 +13,14 @@ const PROPULSION_SLOT_RECT := Rect2(96, 360, 68, 68)
 const DISPLAY_LABELS := [
 	{"id": 0, "text": "装置0", "position": Vector2(30, 122)},
 	{"id": 1, "text": "装置1", "position": Vector2(101, 122), "hover_yellow": true},
-	{"id": 2, "text": "装置2", "position": Vector2(172, 122)},
-	{"id": 3, "text": "装置3", "position": Vector2(243, 122)},
-	{"id": 4, "text": "装置4", "position": Vector2(314, 122)},
-	{"id": 10, "text": "装置10", "position": Vector2(395, 123)},
-	{"id": 11, "text": "装置11", "position": Vector2(395, 222)},
-	{"id": 12, "text": "装置12", "position": Vector2(395, 318)},
-	{"id": 13, "text": "装置13", "position": Vector2(395, 343)},
-	{"id": 5, "text": "装置5", "position": Vector2(30, 342)},
+	{"id": 2, "text": "旧接合 I", "position": Vector2(172, 122)},
+	{"id": 3, "text": "旧接合 II", "position": Vector2(243, 122)},
+	{"id": 4, "text": "发生器 I", "position": Vector2(314, 122)},
+	{"id": 10, "text": "新接合 I", "position": Vector2(395, 123)},
+	{"id": 11, "text": "新接合 II", "position": Vector2(395, 222)},
+	{"id": 12, "text": "发生器 II", "position": Vector2(395, 318)},
+	{"id": 13, "text": "", "position": Vector2(395, 343)},
+	{"id": 5, "text": "宏原子", "position": Vector2(30, 342)},
 	{"id": 6, "text": "推进器", "position": Vector2(101, 342)},
 	{"id": 7, "text": "装置7", "position": Vector2(172, 342)},
 	{"id": 8, "text": "装置8", "position": Vector2(243, 342)},
@@ -46,6 +46,7 @@ const STAT_ROWS := [
 	{"id": "working_energy", "label": "工作能量", "y": 325},
 ]
 
+var _special_panel: SpecialEquipmentPanel
 var _preview_root: Control
 var _slot_label_root: Control
 var _slot_root: Control
@@ -66,6 +67,17 @@ func _ready() -> void:
 	content_root.add_child(_slot_root)
 	_preview_root = _slot_root
 	_build_stat_labels()
+	_special_panel = SpecialEquipmentPanel.new()
+	content_root.add_child(_special_panel)
+	_special_panel.hide()
+	_special_panel.unequip_requested.connect(_request_unequip)
+	var special_button := Button.new()
+	special_button.text = "特殊装备"
+	special_button.position = Vector2(386, 352)
+	special_button.size = Vector2(66, 30)
+	special_button.add_theme_font_size_override("font_size", 12)
+	special_button.pressed.connect(_special_panel.show)
+	content_root.add_child(special_button)
 
 
 ## 创建荣耀版十四条固定视觉槽位文字。
@@ -119,6 +131,7 @@ func apply_snapshot(snapshot: Dictionary) -> void:
 		for raw_equipment: Variant in equipped:
 			if raw_equipment is Dictionary:
 				_add_equipment_visual(raw_equipment)
+	_special_panel.apply_equipment(equipped_value if equipped_value is Array else [])
 	var stats_value: Variant = snapshot.get("stats", {})
 	_update_stat_labels(stats_value if stats_value is Dictionary else {})
 
@@ -151,7 +164,17 @@ func _build_stat_labels() -> void:
 func _add_equipment_visual(equipment: Dictionary) -> void:
 	var visual := EquipmentLayer.new()
 	var location := int(equipment.get("location", -1))
+	if not EquipmentSlotRegistry.special_series(location).is_empty():
+		visual.free()
+		return
 	var slot_rect := PROPULSION_SLOT_RECT if location == 3 else Rect2()
+	var attachment_rects := {
+		16: Rect2(166, 58, 68, 60), 17: Rect2(237, 58, 68, 60),
+		14: Rect2(308, 58, 68, 60), 32: Rect2(386, 62, 62, 56),
+		33: Rect2(386, 161, 62, 56), 34: Rect2(386, 257, 62, 56),
+	}
+	if attachment_rects.has(location):
+		slot_rect = attachment_rects[location]
 	if not visual.configure(equipment, Vector2(170, 200), slot_rect):
 		visual.free()
 		return
@@ -167,12 +190,16 @@ func _add_equipment_visual(equipment: Dictionary) -> void:
 func _on_equipment_gui_input(event: InputEvent, location: int) -> void:
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT \
 			and event.pressed and event.double_click:
-		command_requested.emit({
-			"type": "unequip_vehicle_item",
-			"location": location,
-			"inventory_revision": _inventory_revision,
-			"loadout_revision": _loadout_revision,
-		})
+		_request_unequip(location)
+
+
+## 从主面板或特殊装备区统一提交卸载命令。
+## [param location] 实际装配位置。
+func _request_unequip(location: int) -> void:
+	command_requested.emit({
+		"type": "unequip_vehicle_item", "location": location,
+		"inventory_revision": _inventory_revision, "loadout_revision": _loadout_revision,
+	})
 
 
 ## 刷新右侧属性文字与基础值/附加值提示。

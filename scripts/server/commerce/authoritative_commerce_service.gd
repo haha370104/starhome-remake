@@ -10,10 +10,12 @@ const PlayerPanelProjectorScript := preload(
 )
 
 const COMMAND_TYPES := [
+	"query_premium_shop", "buy_premium_item",
 	"query_weapon_merchant", "buy_from_weapon_merchant", "sell_to_weapon_merchant",
 	"accept_weapon_merchant_task", "turn_in_weapon_merchant_task",
 ]
 
+var _premium := PremiumShopService.new()
 var _catalog: ItemCatalog
 var _merchants: Dictionary = {}
 var quests = QuestServiceScript.new()
@@ -29,6 +31,9 @@ func initialize() -> DomainResult:
 	var items_loaded := _catalog.initialize()
 	if not items_loaded.is_ok:
 		return items_loaded
+	var premium_loaded := _premium.initialize(_catalog)
+	if not premium_loaded.is_ok:
+		return premium_loaded
 	_merchants.clear()
 	var quests_loaded: DomainResult = quests.initialize(_catalog)
 	if not quests_loaded.is_ok:
@@ -70,7 +75,7 @@ func execute(state: PlayerStateRecord, command: Dictionary) -> DomainResult:
 	var merchant = _merchants.get(merchant_id)
 	if merchant == null:
 		return DomainResult.failure(&"commerce.merchant_missing", "merchant is not registered")
-	var changed := command_type != "query_weapon_merchant"
+	var changed := command_type not in ["query_weapon_merchant", "query_premium_shop"]
 	var operation := _execute_command(player, command_type, command, merchant_id, merchant)
 	if not operation.is_ok:
 		return operation
@@ -103,6 +108,9 @@ func build_bundle(state: PlayerStateRecord, operation: Dictionary = {}) -> Dicti
 
 
 ## 把内部死亡事件应用到隔离聚合；进度由自动存档写入，领奖仍走即时事务提交。
+## [param state] 当前已提交的玩家存档。
+## [param event] 服务端确认的怪物死亡事件。
+## 返回：包含进度变更及候选存档的领域结果。
 func record_monster_kill(state: PlayerStateRecord, event: Dictionary) -> DomainResult:
 	var mapped := _mapper.to_domain(state)
 	if not mapped.is_ok:
@@ -139,6 +147,10 @@ func _execute_command(
 	merchant,
 ) -> DomainResult:
 	match command_type:
+		"query_premium_shop":
+			return DomainResult.ok({"action": "premium_query"})
+		"buy_premium_item":
+			return _premium.purchase(player, command)
 		"query_weapon_merchant":
 			return DomainResult.ok({"action": "query", "merchant_id": merchant_id})
 		"buy_from_weapon_merchant":
@@ -219,6 +231,7 @@ func _build_bundle(
 	if merchant == null:
 		return {}
 	var bundle := _projector.build_bundle(player)
+	bundle["premium_shop"] = _premium.snapshot(player, operation)
 	var tasks: Array[Dictionary] = quests.snapshots(player, merchant_id)
 	var sell_items: Array[Dictionary] = []
 	for item: GameItem in player.inventory.items():

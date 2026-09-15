@@ -17,6 +17,8 @@ func _init(row: Dictionary, definition: Dictionary) -> void:
 	family = String(definition["attachment_family"])
 	display_name = String(definition["display_name"])
 	description = String(definition.get("description", ""))
+	if definition.get("stats", {}).get("attachment_effect", "") == "radar":
+		description += "\n雷达与隐形功能暂未开放。"
 
 
 ## 导出客户端展示数据，价格只用于显示而非回传结算。

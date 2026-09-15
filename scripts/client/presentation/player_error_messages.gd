@@ -32,6 +32,8 @@ const MESSAGES := {
 	"inventory.item_not_tradeable": "该物品不可出售或交易",
 	"inventory.invalid_position": "这个位置不能放置物品",
 	"inventory.out_of_bounds": "物品超出背包边界，请换一个位置",
+	"commerce.insufficient_amethyst": "紫晶不足，无法购买",
+	"equipment.attachment_slots_full": "此类装置最多装备两个，请先卸下一件",
 	"commerce.insufficient_currency": "金币不足，无法购买",
 	"commerce.item_not_offered": "该商人不出售这件物品",
 	"commerce.merchant_missing": "该商人当前不可用",

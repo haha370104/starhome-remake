@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "currency": "amethyst",
+  "offers": [
+    {
+      "definition_id": "glory_equipment_newgunjoint_01c76b26fe",
+      "price": 1000
+    },
+    {
+      "definition_id": "glory_equipment_newfiregunjoint_23a6250f48",
+      "price": 1000
+    },
+    {
+      "definition_id": "glory_equipment_newmillisejoint_1c700dc026",
+      "price": 1000
+    },
+    {
+      "definition_id": "glory_equipment_newlifejoint_687cdd1777",
+      "price": 1000
+    },
+    {
+      "definition_id": "glory_equipment_huolijieheqi_73798bb7c5",
+      "price": 2000
+    },
+    {
+      "definition_id": "glory_equipment_shengmingjieheqi_c44acf5b57",
+      "price": 2000
+    },
+    {
+      "definition_id": "glory_equipment_xunjiejieheqi_461f80ccd8",
+      "price": 2000
+    },
+    {
+      "definition_id": "glory_equipment_wajuejieheqi_07063c24ae",
+      "price": 2000
+    },
+    {
+      "definition_id": "glory_equipment_zhencejieheqi_0fe2126f79",
+      "price": 2000
+    }
+  ]
+}
