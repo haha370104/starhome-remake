@@ -223,6 +223,15 @@ func _test_eight_way_idle_and_move(player: Node2D, controller: Node) -> void:
 ## 执行 `test_move_and_fire_keeps_route` 对应的模块操作。
 ## [param hall] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _test_move_and_fire_keeps_route(hall: Node2D) -> void:
+	var current: CurrentPlayer = hall.panel_session.current_player
+	var original_loadout := current.vehicle.loadout
+	current.vehicle.loadout = VehicleLoadout.new()
+	var catalog := ItemCatalogScript.new()
+	_expect(catalog.initialize().is_ok, "移动射击夹具加载实际装备目录")
+	for id: String in ["glory_equipment_tank1000_27ae5e8059", "glory_equipment_gun1000_c4c24e2500"]:
+		var created := catalog.create(id, {"instance_id": "moving.fire.%s" % id})
+		_expect(created.is_ok and current.vehicle.loadout.restore(created.value).is_ok,
+			"移动射击必须在玩家聚合中实际装炮，不能只设置外观")
 	var origin: Vector2 = hall.world_view.player.position
 	var requested_target := origin + Vector2(180, 90)
 	var movement_target: Vector2 = hall.active_world_controller.navigation.closest_reachable_position(
@@ -231,6 +240,7 @@ func _test_move_and_fire_keeps_route(hall: Node2D) -> void:
 	)
 	_expect(movement_target.is_finite(), "D04 出生点附近必须能解析移动目标")
 	if not movement_target.is_finite():
+		current.vehicle.loadout = original_loadout
 		return
 	var movement_result: Dictionary = hall.local_player_controller.request_move(movement_target)
 	_expect(bool(movement_result.get("ok", false)), "战车必须先建立未完成路线")
@@ -239,9 +249,10 @@ func _test_move_and_fire_keeps_route(hall: Node2D) -> void:
 	_expect(hall.local_player_controller.has_active_route(), "开火不得停止活动路线")
 	_expect(hall.local_player_controller.path_points == route_before_fire, "开火不得改写尚未完成的路径折线")
 	_expect(hall.world_view.combat_attack_controller.active_projectile_count() == 1, "移动中开火仍须生成弹体")
+	current.vehicle.loadout = original_loadout
 
 
-## 验证真实目录构建的工程臂空地点击静默，不产生弹体，也不提交网络能力意图。
+## 验证采掘臂空地点击静默、维修臂给出维修反馈，二者均不产生炮弹或网络技能。
 ## [param hall] 已完成 D04 装配的真实大厅场景。
 func _test_engineering_arm_empty_click(hall: Node2D) -> void:
 	var catalog := ItemCatalogScript.new()
@@ -269,7 +280,11 @@ func _test_engineering_arm_empty_click(hall: Node2D) -> void:
 			hall.hud.show_status("原提示保持不变")
 			# 空图外坐标不包含矿物、掉落或怪物；若误入发射链将产生弹体或连接错误。
 			hall.combat.handle_world_combat_left_click(Vector2(-10000, -10000))
-			_expect(hall.hud.status_text() == "原提示保持不变", "空地点击不显示任何错误")
+			if device_kind == "repair_arm":
+				_expect(hall.hud.status_text().contains("维修") and not hall.hud.status_text().contains("采矿"),
+					"维修臂空地点击归为客户端维修意图")
+			else:
+				_expect(hall.hud.status_text() == "原提示保持不变", "采掘臂空地点击保持静默")
 			_expect(feed.queued_message_count() == message_count and feed.message_label.text == active_message,
 				"空地点击不能向中央消息队列添加错误")
 			_expect(hall.multiplayer_presenter.session._next_ability_sequence == ability_sequence,

@@ -1,6 +1,8 @@
 class_name CombatInteractionController
 extends Node
 
+signal target_repair_requested(world_position: Vector2)
+
 const CombatActions := preload("res://scripts/client/gameplay/client_combat_actions.gd")
 
 var vehicle_destroyed := false
@@ -61,7 +63,7 @@ func request_mining(source_position: Vector2) -> void:
 		hud.show_status("采矿请求发送失败")
 
 
-## 按掉落、矿物、武器目标的优先级处理点击并提交对应意图。
+## 优先拾取掉落，再按选中槽位及实际主装置分发采矿、维修或武器意图。
 ## [param world_position] 鼠标命中的地图世界坐标。
 ## 设计：当前切片立即反馈弹体与命中特效；伤害、能耗和真实命中仍只接受服务端事件。
 func handle_world_combat_left_click(world_position: Vector2) -> void:
@@ -70,20 +72,9 @@ func handle_world_combat_left_click(world_position: Vector2) -> void:
 		if not loot_id.is_empty():
 			request_ground_loot_pickup(loot_id)
 			return
-	if world_view.mineral_world_controller != null:
-		var source_id := world_view.mineral_world_controller.source_at(world_position)
-		if not source_id.is_empty():
-			var source_position := world_view.mineral_world_controller.source_position(source_id)
-			request_mining(source_position)
-			return
 	var selected_mode := String(hud.selected_action())
-	if selected_mode == "energy_cannon" and panel_session != null \
-			and panel_session.current_player != null \
-			and panel_session.current_player.vehicle != null:
-		var primary_device: VehicleEquipment = panel_session.current_player.vehicle.loadout.at(1)
-		if primary_device != null and primary_device.primary_device_kind() in ["mining_arm", "repair_arm"]:
-			# 工程臂点击空地不提交开炮意图；上面的拾取和矿物选择仍保留各自的交互。
-			return
+	if selected_mode == "energy_cannon" and _handle_primary_device_click(world_position):
+		return
 	var mode: Dictionary = CombatActions.WEAPON_MODES.get(selected_mode, {})
 	var attack_controller: Node = world_view.combat_attack_controllers.get(selected_mode)
 	if mode.is_empty() or attack_controller == null:
@@ -155,6 +146,32 @@ func handle_world_combat_left_click(world_position: Vector2) -> void:
 			roundi(resolved_target.y),
 		])
 	_restore_locomotion_after_attack(was_moving, layer_id)
+
+
+## 根据实际主装置消费工程臂点击，能量炮继续进入既有开火流程。
+## [param world_position] 用户点击的世界坐标。
+## 返回是否已消费点击；主装置缺失时阻止按旧炮槽标识误开火。
+func _handle_primary_device_click(world_position: Vector2) -> bool:
+	var current: Player = panel_session.current_player if panel_session != null else null
+	if current == null or current.vehicle == null:
+		hud.show_status("角色装备数据尚未就绪，请稍后再试")
+		return true
+	var device: VehicleEquipment = current.vehicle.loadout.at(1)
+	var kind := device.primary_device_kind() if device != null else ""
+	match kind:
+		"energy_cannon":
+			return false
+		"mining_arm":
+			var minerals := world_view.mineral_world_controller
+			var source_id := minerals.source_at(world_position) if minerals != null else ""
+			if not source_id.is_empty():
+				request_mining(minerals.source_position(source_id))
+		"repair_arm":
+			target_repair_requested.emit(world_position)
+			hud.show_status("已选择维修目标，维修臂的目标维修功能尚未开放")
+		_:
+			hud.show_status("未安装可用主装置")
+	return true
 
 
 ## 查询战斗目标在当前客户端快照中的世界坐标。

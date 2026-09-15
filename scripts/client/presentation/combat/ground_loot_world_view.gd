@@ -61,6 +61,7 @@ func configure(ground_item: GameItem, snapshot: Dictionary) -> Error:
 	_tooltip.position = Vector2(origin.x + native_size.x + 6.0, origin.y - 2.0)
 	_tooltip.z_index = 100
 	_tooltip.visible = false
+	_tooltip.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_tooltip.add_theme_font_size_override("font_size", 13)
 	_tooltip.add_theme_color_override("font_color", Color(0.72, 1.0, 0.58))
 	_tooltip.add_theme_color_override("font_shadow_color", Color.BLACK)
@@ -91,6 +92,19 @@ func apply_snapshot(ground_item: GameItem, snapshot: Dictionary) -> void:
 ## 返回该坐标是否命中当前掉落图像。
 func contains_world_point(world_position: Vector2) -> bool:
 	return visible and _local_hit_rect.has_point(to_local(world_position))
+
+
+## 判断拾取命中，包含原图、四像素发光边缘和当前可见的物品名称。
+## [param world_position] 鼠标对应的世界坐标。
+## 返回是否应优先拾取；名称隐藏时不保留不可见的点击区域。
+func contains_pickup_point(world_position: Vector2) -> bool:
+	if not is_visible_in_tree():
+		return false
+	var local_point := to_local(world_position)
+	if _local_hit_rect.grow(HOVER_GLOW_RADIUS).has_point(local_point):
+		return true
+	return _tooltip != null and _tooltip.visible \
+		and _tooltip.get_rect().grow(HOVER_GLOW_RADIUS).has_point(local_point)
 
 
 ## 切换原客户端风格的地面物品悬浮反馈。

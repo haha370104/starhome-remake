@@ -52,9 +52,11 @@ func _run() -> void:
 			"click inside the original frame rectangle should select the loot",
 		)
 		_expect(
-			controller.loot_at(Vector2(65.0, 175.0)).is_empty(),
-			"click outside the original frame rectangle should not select the loot",
+			controller.loot_at(Vector2(61.0, 175.0)).is_empty(),
+			"click beyond the four-pixel glow should not select the loot",
 		)
+		_expect(controller.loot_at(Vector2(65, 175)) == "loot.biosilicon.1",
+			"click on the glow edge should pick up rather than select a nearby mineral")
 		view.set_hovered(true)
 		_expect(
 			view.is_hover_glow_enabled(),

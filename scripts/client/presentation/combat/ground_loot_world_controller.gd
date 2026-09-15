@@ -74,7 +74,7 @@ func apply_snapshot(combat_snapshot: Dictionary) -> void:
 			_hovered_loot_id = ""
 
 
-## 查询世界坐标命中的最前方地面掉落实例。
+## 查询原图、发光边缘或可见名称命中的最前方掉落，与悬停共用拾取范围。
 ## [param world_position] 鼠标对应的世界坐标。
 ## 返回 loot_id；没有命中时返回空字符串。
 func loot_at(world_position: Vector2) -> String:
@@ -82,7 +82,7 @@ func loot_at(world_position: Vector2) -> String:
 	var selected_y := -INF
 	for loot_id: String in _views:
 		var view: GroundLootWorldView = _views[loot_id]
-		if view.contains_world_point(world_position) and view.position.y >= selected_y:
+		if view.contains_pickup_point(world_position) and view.position.y >= selected_y:
 			selected = loot_id
 			selected_y = view.position.y
 	return selected

@@ -11,6 +11,7 @@ import time
 
 ROOT = Path(__file__).resolve().parents[1]
 TESTS = (
+    "integration/combat_click_routing_test.gd",
     "ui/runtime/map_navigation_test.gd",
     "integration/map_navigation_scene_test.gd",
     "domain/achievements_test.gd",

@@ -66,6 +66,16 @@
 `tests/integration/map_navigation_scene_test.gd` 验证当前实体、移动意图、到达出口和地图替换。
 二者纳入 `tools/run_client_checks.py`。
 
+### 世界点击与主装置
+
+世界左键由 `CombatInteractionController` 按“掉落拾取 → 当前选中装置”分发。
+掉落命中包括原始图片、四像素发光边缘及当前可见的名称，悬停与拾取共享判定；隐藏名称不保留命中范围。
+只有选中主槽且实际安装采掘臂时才查询矿物并调用 `request_mining`，采矿技能与装备许可继续由领域模型校验。
+能量炮和战术武器保留原开火流程，矿物不拦截它们的点击。
+维修臂发布客户端 `target_repair_requested` 意图并提示目标维修尚未开放，不冒充已完成维修或发送采矿请求。
+目标维修的服务器结算尚未实现；现有 `self_repair` 属于底盘自维修，是独立功能。
+`tests/integration/combat_click_routing_test.gd` 使用真实掉落、矿物、目录装备和武器表现验证上述分发。
+
 ### 检查与提交
 
 1. 改动前记录 Git 脏文件与可运行基线，保留用户尚未提交的修改。
