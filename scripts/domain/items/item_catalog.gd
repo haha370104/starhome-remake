@@ -44,6 +44,13 @@ func initialize() -> DomainResult:
 			var current: Dictionary = _definitions[item_id].get("presentation", {})
 			current.merge(presentation_result.value[definition_id], true)
 			_definitions[item_id]["presentation"] = current
+	var use_rules := JsonConfigLoader.load_dictionary("res://data/gameplay/consumable_effects_v1.json")
+	if not use_rules.is_ok:
+		return use_rules
+	for id: String in use_rules.value.rules:
+		if not _definitions.has(id):
+			return DomainResult.failure(&"items.unknown_consumable", "consumable definition is missing")
+		_definitions[id]["use_rule"] = use_rules.value.rules[id]
 	_index_display_names()
 	return DomainResult.ok(self)
 
@@ -57,6 +64,8 @@ func create(definition_id: String, state: Dictionary) -> DomainResult:
 		return DomainResult.failure(&"items.definition_missing", "item definition does not exist")
 	var item_definition: Dictionary = _definitions[definition_id].duplicate(true)
 	var kind := String(item_definition.get("kind", ""))
+	if item_definition.has("use_rule"):
+		return DomainResult.ok(ConsumableItem.new(item_definition, state))
 	match kind:
 		"character_clothing":
 			return DomainResult.ok(Clothing.new(item_definition, state))

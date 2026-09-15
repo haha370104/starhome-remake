@@ -1,0 +1,431 @@
+{
+  "schema_version": 1,
+  "source_release": "starhome_lz_ry",
+  "source_file": "cltobj/stuffclt2.fcc",
+  "rules": {
+    "item:material:04081d3010ba": {
+      "kind": "food",
+      "name": "奶酪",
+      "physical": 10,
+      "effects": [
+        {
+          "kind": 17,
+          "amount": 5,
+          "duration": 1800,
+          "cooldown": 1
+        }
+      ]
+    },
+    "item:material:0b8c4bb849e0": {
+      "kind": "food",
+      "name": "蛋糕",
+      "physical": 10,
+      "effects": [
+        {
+          "kind": 14,
+          "amount": 5,
+          "duration": 1800,
+          "cooldown": 1
+        }
+      ]
+    },
+    "item:material:1967f997dcb6": {
+      "kind": "food",
+      "name": "汉堡套餐",
+      "physical": 10,
+      "effects": [
+        {
+          "kind": 9,
+          "amount": 20,
+          "duration": 900,
+          "cooldown": 1
+        }
+      ]
+    },
+    "item:material:1a7b61344813": {
+      "kind": "food",
+      "name": "派",
+      "physical": 10,
+      "effects": [
+        {
+          "kind": 3,
+          "amount": 10,
+          "duration": 600,
+          "cooldown": 1
+        }
+      ]
+    },
+    "item:material:212c73d1769f": {
+      "kind": "food",
+      "name": "白兰地",
+      "physical": 10,
+      "effects": [
+        {
+          "kind": 16,
+          "amount": 200,
+          "duration": 3600,
+          "cooldown": 1
+        }
+      ]
+    },
+    "item:material:29313f6e399b": {
+      "kind": "food",
+      "name": "比萨",
+      "physical": 10,
+      "effects": [
+        {
+          "kind": 13,
+          "amount": 10,
+          "duration": 1800,
+          "cooldown": 1
+        }
+      ]
+    },
+    "item:material:2ad7220f1f76": {
+      "kind": "food",
+      "name": "馅饼",
+      "physical": 10,
+      "effects": [
+        {
+          "kind": 2,
+          "amount": 10,
+          "duration": 600,
+          "cooldown": 1
+        }
+      ]
+    },
+    "item:material:341abb62475c": {
+      "kind": "food",
+      "name": "素豆煎蛋饭",
+      "physical": 10,
+      "effects": [
+        {
+          "kind": 12,
+          "amount": 20,
+          "duration": 900,
+          "cooldown": 1
+        }
+      ]
+    },
+    "item:material:37961e4dd452": {
+      "kind": "food",
+      "name": "日式鳗鱼饭",
+      "physical": 0,
+      "effects": [
+        {
+          "kind": 2,
+          "amount": 20,
+          "duration": 900,
+          "cooldown": 1
+        }
+      ]
+    },
+    "item:material:3a6a410118b6": {
+      "kind": "food",
+      "name": "青椒肉丝",
+      "physical": 10,
+      "effects": [
+        {
+          "kind": 13,
+          "amount": 5,
+          "duration": 1800,
+          "cooldown": 1
+        }
+      ]
+    },
+    "item:material:3cf03f3ca8f0": {
+      "kind": "food",
+      "name": "龙舌兰酒",
+      "physical": 10,
+      "effects": [
+        {
+          "kind": 18,
+          "amount": 10,
+          "duration": 10,
+          "cooldown": 300
+        }
+      ]
+    },
+    "item:material:491e4fbf9ddf": {
+      "kind": "food",
+      "name": "火腿三明治",
+      "physical": 0,
+      "effects": [
+        {
+          "kind": 4,
+          "amount": 20,
+          "duration": 900,
+          "cooldown": 1
+        }
+      ]
+    },
+    "item:material:56ad9259e3e1": {
+      "kind": "food",
+      "name": "饼干",
+      "physical": 10,
+      "effects": [
+        {
+          "kind": 16,
+          "amount": 10,
+          "duration": 1800,
+          "cooldown": 1
+        }
+      ]
+    },
+    "item:material:589c3c4cec86": {
+      "kind": "food",
+      "name": "意式比萨饼",
+      "physical": 0,
+      "effects": [
+        {
+          "kind": 8,
+          "amount": 20,
+          "duration": 900,
+          "cooldown": 1
+        }
+      ]
+    },
+    "item:material:67b74e673143": {
+      "kind": "food",
+      "name": "朗姆酒",
+      "physical": 10,
+      "effects": [
+        {
+          "kind": 13,
+          "amount": 25,
+          "duration": 3600,
+          "cooldown": 1
+        }
+      ]
+    },
+    "item:material:6af4c3a3cd7f": {
+      "kind": "food",
+      "name": "鱼肉炒饭",
+      "physical": 10,
+      "effects": [
+        {
+          "kind": 10,
+          "amount": 20,
+          "duration": 900,
+          "cooldown": 1
+        }
+      ]
+    },
+    "item:material:756d808fdc15": {
+      "kind": "food",
+      "name": "奶油饼干",
+      "physical": 10,
+      "effects": [
+        {
+          "kind": 7,
+          "amount": 20,
+          "duration": 900,
+          "cooldown": 1
+        }
+      ]
+    },
+    "item:material:7a9d652d9d30": {
+      "kind": "food",
+      "name": "韩式寿司",
+      "physical": 0,
+      "effects": [
+        {
+          "kind": 1,
+          "amount": 20,
+          "duration": 900,
+          "cooldown": 1
+        }
+      ]
+    },
+    "item:material:826b21d5e192": {
+      "kind": "food",
+      "name": "蛋包饭",
+      "physical": 10,
+      "effects": [
+        {
+          "kind": 11,
+          "amount": 10,
+          "duration": 600,
+          "cooldown": 1
+        }
+      ]
+    },
+    "item:material:906576ebac94": {
+      "kind": "food",
+      "name": "营养料理餐",
+      "physical": 10,
+      "effects": [
+        {
+          "kind": 5,
+          "amount": 20,
+          "duration": 900,
+          "cooldown": 1
+        }
+      ]
+    },
+    "item:material:936b913dcb1f": {
+      "kind": "food",
+      "name": "伏特加",
+      "physical": 10,
+      "effects": [
+        {
+          "kind": 19,
+          "amount": 100,
+          "duration": 1,
+          "cooldown": 300
+        }
+      ]
+    },
+    "item:material:9cbc7d0e0296": {
+      "kind": "food",
+      "name": "饭团",
+      "physical": 10,
+      "effects": [
+        {
+          "kind": 5,
+          "amount": 10,
+          "duration": 600,
+          "cooldown": 1
+        }
+      ]
+    },
+    "item:material:a0afe3b311fa": {
+      "kind": "food",
+      "name": "鱼排",
+      "physical": 10,
+      "effects": [
+        {
+          "kind": 9,
+          "amount": 10,
+          "duration": 600,
+          "cooldown": 1
+        }
+      ]
+    },
+    "item:material:b4bf241cd10e": {
+      "kind": "food",
+      "name": "面包",
+      "physical": 10,
+      "effects": [
+        {
+          "kind": 1,
+          "amount": 10,
+          "duration": 600,
+          "cooldown": 1
+        }
+      ]
+    },
+    "item:material:b66b04c2509a": {
+      "kind": "food",
+      "name": "寿司",
+      "physical": 10,
+      "effects": [
+        {
+          "kind": 6,
+          "amount": 10,
+          "duration": 600,
+          "cooldown": 1
+        }
+      ]
+    },
+    "item:material:c27f83efbc0c": {
+      "kind": "food",
+      "name": "鳗鱼饭团",
+      "physical": 10,
+      "effects": [
+        {
+          "kind": 17,
+          "amount": 10,
+          "duration": 1800,
+          "cooldown": 1
+        }
+      ]
+    },
+    "item:material:c2af1947b661": {
+      "kind": "food",
+      "name": "通心面",
+      "physical": 10,
+      "effects": [
+        {
+          "kind": 7,
+          "amount": 10,
+          "duration": 600,
+          "cooldown": 1
+        }
+      ]
+    },
+    "item:material:c61bd71bd4d0": {
+      "kind": "food",
+      "name": "炒面面包",
+      "physical": 10,
+      "effects": [
+        {
+          "kind": 11,
+          "amount": 20,
+          "duration": 900,
+          "cooldown": 1
+        }
+      ]
+    },
+    "item:material:df6953c9d7c1": {
+      "kind": "food",
+      "name": "牛肉拉面",
+      "physical": 10,
+      "effects": [
+        {
+          "kind": 8,
+          "amount": 10,
+          "duration": 600,
+          "cooldown": 1
+        }
+      ]
+    },
+    "item:material:e233a13a49e5": {
+      "kind": "food",
+      "name": "米饭",
+      "physical": 10,
+      "effects": [
+        {
+          "kind": 4,
+          "amount": 10,
+          "duration": 600,
+          "cooldown": 1
+        }
+      ]
+    },
+    "item:material:e9de073940b0": {
+      "kind": "food",
+      "name": "奶油三明治",
+      "physical": 10,
+      "effects": [
+        {
+          "kind": 6,
+          "amount": 20,
+          "duration": 900,
+          "cooldown": 1
+        }
+      ]
+    },
+    "item:material:cfa52e059e34": {
+      "kind": "energy",
+      "name": "中级能量包",
+      "energy": 10000,
+      "physical": 0,
+      "effects": []
+    },
+    "item:material:dc2a516b5a42": {
+      "kind": "energy",
+      "name": "低级能量包",
+      "energy": 1000,
+      "physical": 0,
+      "effects": []
+    },
+    "low_grade_energy_pack": {
+      "kind": "energy",
+      "name": "低级能量包",
+      "energy": 1000,
+      "physical": 0,
+      "effects": []
+    }
+  }
+}

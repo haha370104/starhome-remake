@@ -14,6 +14,7 @@ var position_px: Vector2i
 var footprint_px: Vector2i
 var icon_path: String
 var presentation: Dictionary
+var _definition: Dictionary
 
 
 ## 初始化通用物品实例和值对象属性。
@@ -21,6 +22,7 @@ var presentation: Dictionary
 ## [param state] 存档中的实例状态。
 ## 设计：具体物品只按业务类型派生；名称不同的同类物品均由 definition 配置成实例。
 func _init(definition: Dictionary = {}, state: Dictionary = {}) -> void:
+	_definition = definition.duplicate(true)
 	definition_id = String(definition.get("id", ""))
 	display_name = String(definition.get("display_name", definition_id))
 	description = String(definition.get("description", ""))
@@ -39,6 +41,24 @@ func _init(definition: Dictionary = {}, state: Dictionary = {}) -> void:
 	icon_path = String(inventory_presentation.get(
 		"icon", presentation.get("icon", presentation_for("world").get("texture", ""))
 	))
+
+
+## 判断两个堆叠能否合并，绑定状态不同或被锁定时禁止合并。
+## [param other] 同一背包中的另一个物品。
+## 返回是否具有相同定义和绑定属性且支持堆叠。
+func can_stack_with(other: GameItem) -> bool:
+	return other != null and other != self and max_stack > 1 and not locked and not other.locked \
+		and definition_id == other.definition_id and bound == other.bound
+
+
+## 为拆分创建保持具体类型与绑定属性的新实例，不修改原数量。
+## [param new_id] 权威端生成的新实例标识。
+## [param amount] 拆出的数量。
+## 返回同定义、同表现的新物品。
+func copy_stack(new_id: String, amount: int) -> GameItem:
+	return get_script().new(_definition, {"instance_id": new_id, "quantity": amount,
+		"bound": bound, "locked": locked, "container_id": container_id,
+		"position_px": [position_px.x, position_px.y], "footprint_px": [footprint_px.x, footprint_px.y]})
 
 
 ## 按使用场景读取当前物品的表现配置。
