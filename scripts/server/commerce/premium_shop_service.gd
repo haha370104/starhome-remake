@@ -6,6 +6,12 @@ var _offers: Dictionary = {}
 var _upgrade_pricing := preload("res://scripts/domain/commerce/attachment_upgrade_pricing.gd").new()
 
 
+## 将初始化后相同的材料方案提供给强化服务。
+## 返回权威定价领域目录。
+func upgrade_pricing() -> AttachmentUpgradePricing:
+	return _upgrade_pricing
+
+
 ## 加载服务端白名单，拒绝无效物品、重复商品和非正售价。
 ## [param catalog] 统一物品目录。
 ## 返回目录加载结果。

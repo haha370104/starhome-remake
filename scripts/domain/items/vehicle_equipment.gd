@@ -9,6 +9,32 @@ var attachment_family: String
 var allowed_locations: Array = []
 
 
+## 检查接合器逐级强化条件；不改变耐久、绑定和槽位。
+## [param target_level] 本次目标等级。
+## 返回允许强化或锁定、类型、等级错误。
+func validate_attachment_upgrade(target_level: int) -> DomainResult:
+	if attachment_family not in ["new_joint", "old_joint"]:
+		return DomainResult.failure(&"upgrade.unsupported", "该装备不支持接合器强化")
+	if locked:
+		return DomainResult.failure(&"upgrade.locked", "请先解除接合器锁定")
+	var maximum := 5 if attachment_family == "new_joint" else 4
+	var values: Array = stat("attachment_values", [])
+	if target_level != upgrade_level + 1 or target_level > maximum or target_level >= values.size():
+		return DomainResult.failure(&"upgrade.max_level", "该接合器已达强化上限或阶段未开放")
+	return DomainResult.ok()
+
+
+## 在玩家聚合完成支付后推进一级强化，保持实例身份和其他装备状态。
+## [param target_level] 经过相同实例预检的目标等级。
+## 返回升级后的等级或拒绝原因。
+func upgrade_attachment(target_level: int) -> DomainResult:
+	var checked := validate_attachment_upgrade(target_level)
+	if not checked.is_ok:
+		return checked
+	upgrade_level = target_level
+	return DomainResult.ok(upgrade_level)
+
+
 ## 查询当前强化等级的装置效果，损坏装备不提供加值。
 ## [param effect] 规范化效果标识。
 ## 返回该装备贡献的固定加值。

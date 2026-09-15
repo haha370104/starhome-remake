@@ -29,6 +29,49 @@ var daily_activities: DailyActivityJournal
 var amethyst: AmethystWallet
 
 
+## 按实例身份查询玩家背包或已装配的战车装备，不接受外部玩家实例。
+## [param instance_id] 装备实例ID。
+## 返回拥有的战车装备，不存在或类型不符时为空。
+func attachment_item(instance_id: String) -> VehicleEquipment:
+	var carried := inventory.find(instance_id)
+	if carried is VehicleEquipment:
+		return carried as VehicleEquipment
+	for equipment: VehicleEquipment in vehicle.loadout.items():
+		if equipment.instance_id == instance_id:
+			return equipment
+	return null
+
+
+## 在玩家一致性边界内支付材料金币并强化同一实例，已装配时同步刷新战车状态。
+## [param instance_id] 待强化的自有装备。
+## [param plan] 服务端解析的当前阶段领域规则。
+## [param inventory_revision] 客户端看到的背包版本。
+## [param loadout_revision] 客户端看到的装配版本。
+## 返回强化结果；所有可失败的前置条件在支付前完成。
+func upgrade_attachment(instance_id: String, plan: AttachmentUpgradePlan, inventory_revision: int, loadout_revision: int) -> DomainResult:
+	var checked := inventory.require_revision(inventory_revision)
+	if not checked.is_ok:
+		return checked
+	checked = vehicle.loadout.require_revision(loadout_revision)
+	if not checked.is_ok:
+		return checked
+	var equipment := attachment_item(instance_id)
+	if plan == null:
+		return DomainResult.failure(&"upgrade.max_level", "该接合器已达强化上限或未开放强化")
+	checked = plan.validate(equipment)
+	if not checked.is_ok:
+		return checked
+	var paid := inventory.pay_upgrade_cost(plan.requirements, plan.currency)
+	if not paid.is_ok:
+		return paid
+	equipment.upgrade_attachment(plan.target_level)
+	if inventory.find(instance_id) == null:
+		vehicle.loadout.commit_transfer()
+		vehicle.reconcile_loadout_state()
+	return DomainResult.ok({"action": "attachment_upgrade", "instance_id": instance_id,
+		"current_level": plan.current_level, "target_level": plan.target_level, "cost": paid.value})
+
+
 ## 在玩家一致性边界内完成商城扣款和入包；失败不改变金币、紫晶或背包。
 ## [param offer] 权威目录中的类型化商品。
 ## [param item] 按商品定义创建的装置或材料堆叠。

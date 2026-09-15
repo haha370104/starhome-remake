@@ -59,6 +59,17 @@ func plans_for(definition_id: String) -> Array:
 	return (_plans.get(definition_id, []) as Array).duplicate(true)
 
 
+## 为指定装备阶段提供唯一领域规则；满级或未开放的赠品不产生配方。
+## [param definition_id] 接合器定义ID。
+## [param current_level] 实例当前强化等级。
+## 返回匹配规则，未配置时为空。
+func plan_for(definition_id: String, current_level: int) -> AttachmentUpgradePlan:
+	for row: Dictionary in _plans.get(definition_id, []):
+		if int(row.current_level) == current_level:
+			return AttachmentUpgradePlan.new(definition_id, row)
+	return null
+
+
 ## 统一返回定价配置失败，不发布违反预算约束的商品方案。
 ## 返回领域错误。
 func _invalid() -> DomainResult:

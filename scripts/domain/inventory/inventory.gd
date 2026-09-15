@@ -149,6 +149,22 @@ func consume_requirements(requirements: Array[Dictionary]) -> DomainResult:
 	return DomainResult.ok(consumed)
 
 
+## 原子支付强化材料和金币；任一不足时保留背包全部状态。
+## [param requirements] 权威规则中的材料及数量。
+## [param currency_cost] 非负金币消耗，允许无金币配方。
+## 返回支付摘要或拒绝原因。
+func pay_upgrade_cost(requirements: Array[Dictionary], currency_cost: int) -> DomainResult:
+	if currency_cost < 0 or currency < currency_cost:
+		return DomainResult.failure(&"upgrade.currency_missing", "强化所需星际币不足")
+	var checked := _validate_requirements(requirements)
+	if not checked.is_ok:
+		return checked
+	var consumed := _consume_requirements_uncommitted(requirements)
+	currency -= currency_cost
+	revision += 1
+	return DomainResult.ok({"materials": consumed, "currency": currency_cost})
+
+
 ## 在一个背包事务中消耗材料并加入制作产物。
 ## [param requirements] 含 definition_id 与 quantity 的材料要求数组。
 ## [param product] 已由物品目录创建的产物实例。

@@ -173,6 +173,8 @@ func _create_equipment(raw_equipment: Variant) -> Equipment:
 		"max_durability": raw_equipment.get("max_durability", 1),
 		"durability": raw_equipment.get("durability", 1),
 		"upgrade_level": raw_equipment.get("upgrade_level", 0),
+		"locked": raw_equipment.get("locked", false),
+		"bound": raw_equipment.get("bound", false),
 		"equipment_location": raw_equipment.get("location", -1),
 		"footprint_px": [45, 45],
 	})

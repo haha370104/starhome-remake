@@ -72,6 +72,7 @@ func configure(session: PlayerPanelSession) -> bool:
 		"missions": preload("res://scripts/client/ui/windows/navigation/mission_journal_panel.gd"),
 		"system": preload("res://scripts/client/ui/windows/navigation/system_menu_panel.gd"),
 		"premium_shop": preload("res://scripts/client/ui/windows/navigation/premium_shop_panel.gd"),
+		"attachment_upgrades": preload("res://scripts/client/ui/windows/navigation/attachment_upgrade_panel.gd"),
 		"mercenary": preload("res://scripts/client/ui/windows/navigation/daily_activities_panel.gd"),
 		"experience": preload("res://scripts/client/ui/windows/navigation/daily_activities_panel.gd"),
 		"smart_assistant": preload("res://scripts/client/ui/windows/navigation/smart_assistant_panel.gd"),
@@ -81,12 +82,13 @@ func configure(session: PlayerPanelSession) -> bool:
 		var window: NavigationWindow = navigation_scripts[action].new()
 		if action in ["mercenary", "experience"]:
 			window.mode = action
-		if action in ["premium_shop", "mercenary", "experience"]:
+		if action in ["premium_shop", "mercenary", "experience", "attachment_upgrades"]:
 			window.command_requested.connect(panel_session.dispatch)
 		window.position = Vector2(120, 70)
 		window.notice_requested.connect(notice_requested.emit)
 		navigation_windows[action] = window
 		_add_window(window)
+	navigation_windows["premium_shop"].attachment_upgrade_requested.connect(_open_attachment_upgrades)
 	var refresh := Timer.new()
 	refresh.wait_time = 2.0
 	refresh.timeout.connect(_refresh_navigation)
@@ -158,6 +160,8 @@ func toggle(action_id: String) -> bool:
 
 ## 仅在用户列表或任务日志可见时刷新只读查询，关闭窗口不产生轮询。
 func _refresh_navigation() -> void:
+	if navigation_windows["attachment_upgrades"].visible:
+		panel_session.dispatch({"type": "query_attachment_upgrades"})
 	if navigation_windows["mercenary"].visible or navigation_windows["experience"].visible:
 		panel_session.dispatch({"type": "query_daily_activities"})
 	if navigation_windows["scene_players"].visible:
@@ -169,6 +173,7 @@ func _refresh_navigation() -> void:
 ## 将会话消息中的名单、商店、制造和任务日志分发到对应窗口。
 ## [param bundle] 已由玩家会话接收的权威消息；可能只包含某个辅助窗口的数据。
 func _apply_auxiliary_bundle(bundle: Dictionary) -> void:
+	navigation_windows["attachment_upgrades"].apply_upgrade_bundle(bundle)
 	for action: String in ["mercenary", "experience"]:
 		navigation_windows[action].apply_activity_bundle(bundle)
 	if bundle.get("premium_shop") is Dictionary:
@@ -181,6 +186,15 @@ func _apply_auxiliary_bundle(bundle: Dictionary) -> void:
 		manufacturing_window.apply_manufacturing_bundle(bundle)
 	if bundle.get("mission_journal") is Array:
 		navigation_windows["missions"].apply_entries(bundle["mission_journal"])
+
+
+## 从商城进入强化窗口，使用共享会话查询权威材料及装备状态。
+func _open_attachment_upgrades() -> void:
+	var window: NavigationWindow = navigation_windows["attachment_upgrades"]
+	window.show()
+	window.move_to_front()
+	window.clamp_to_viewport(size)
+	window.open_board()
 
 
 ## 用会话的同事务投影同步人物、战车、背包和技能展示。

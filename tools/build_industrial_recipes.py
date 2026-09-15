@@ -40,7 +40,7 @@ def build():
         if name in by_name:
             return
         item = {"id": "industrial_material_" + hashlib.sha256(name.encode()).hexdigest()[:12],
-                "kind": "material", "display_name": name, "max_stack": 99,
+                "kind": "material", "display_name": name, "max_stack": 999 if name in {"钾", "钡镁合金"} else 99,
                 "description": "荣耀版提炼／制造材料。", "source_audit": {
                     "source_release": "starhome_lz_ry", "source_file": source_file,
                     "source_class": name, "asset_status": "not_imported"}}

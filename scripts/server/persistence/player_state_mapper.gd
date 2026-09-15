@@ -88,6 +88,8 @@ func to_domain(record: PlayerStateRecord) -> DomainResult:
 			"max_durability": slot.max_durability,
 			"durability": slot.durability,
 			"upgrade_level": slot.upgrade_level,
+			"locked": slot.locked,
+			"bound": slot.bound,
 			"equipment_location": slot.slot_location,
 			"footprint_px": [45, 45],
 		})
@@ -220,6 +222,8 @@ func _equipment_record(
 		"max_durability": equipment.max_durability,
 		"durability": equipment.durability,
 		"upgrade_level": equipment.upgrade_level,
+		"locked": equipment.locked,
+		"bound": equipment.bound,
 		"slot_location": location,
 		"equip_kind": equip_kind,
 	}

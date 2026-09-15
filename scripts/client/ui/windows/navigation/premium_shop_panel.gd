@@ -2,6 +2,7 @@ class_name PremiumShopPanel
 extends NavigationWindow
 
 signal command_requested(command: Dictionary)
+signal attachment_upgrade_requested
 
 const CATEGORIES := ["功能道具", "装饰特效", "充值物资", "接合器"]
 const SUBCATEGORIES := [
@@ -75,6 +76,7 @@ func _ready() -> void:
 	_buy_button = make_button("购买", Rect2(566, 410, 110, 30), _request_purchase)
 	_buy_button.disabled = true
 	make_button("刷新", Rect2(600, 82, 75, 26), _refresh_shop)
+	make_button("接合器强化", Rect2(354, 82, 136, 26), attachment_upgrade_requested.emit)
 	make_button("退出", Rect2(616, 467, 65, 23), request_close)
 	_purchase_dialog = ConfirmationDialog.new()
 	_purchase_dialog.title = "确认购买"
@@ -236,7 +238,7 @@ func _update_detail(offer: Dictionary) -> void:
 		_detail_label.text += "\n同系列最多装备 2 个\n\n升级材料预算："
 		for plan: Dictionary in offer.get("upgrade_plans", []):
 			_detail_label.text += "\n+%d→+%d：%d 紫晶" % [int(plan.current_level), int(plan.target_level), int(plan.premium_cost)]
-		_detail_label.text += "\n升级操作暂未开放。"
+		_detail_label.text += "\n点击上方‘接合器强化’可升级自有装备。"
 	_buy_button.disabled = _inventory_revision < 0 or _balance < total
 	_buy_button.tooltip_text = "紫晶不足" if _balance < total else ""
 

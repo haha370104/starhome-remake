@@ -11,12 +11,14 @@ const PlayerPanelProjectorScript := preload(
 
 const COMMAND_TYPES := [
 	"query_premium_shop", "buy_premium_item",
+	"query_attachment_upgrades", "upgrade_attachment",
 	"query_weapon_merchant", "buy_from_weapon_merchant", "sell_to_weapon_merchant",
 	"accept_weapon_merchant_task", "turn_in_weapon_merchant_task",
 ]
 
 var daily := DailyActivityService.new()
 var _premium := PremiumShopService.new()
+var _upgrades: AttachmentUpgradeService
 var _catalog: ItemCatalog
 var _merchants: Dictionary = {}
 var quests = QuestServiceScript.new()
@@ -35,6 +37,7 @@ func initialize() -> DomainResult:
 	var premium_loaded := _premium.initialize(_catalog)
 	if not premium_loaded.is_ok:
 		return premium_loaded
+	_upgrades = AttachmentUpgradeService.new(_premium.upgrade_pricing(), _catalog)
 	var daily_loaded := daily.initialize(_catalog)
 	if not daily_loaded.is_ok:
 		return daily_loaded
@@ -79,7 +82,7 @@ func execute(state: PlayerStateRecord, command: Dictionary) -> DomainResult:
 	var merchant = _merchants.get(merchant_id)
 	if merchant == null:
 		return DomainResult.failure(&"commerce.merchant_missing", "merchant is not registered")
-	var changed := command_type not in ["query_weapon_merchant", "query_premium_shop"]
+	var changed := command_type not in ["query_weapon_merchant", "query_premium_shop", "query_attachment_upgrades"]
 	var operation := _execute_command(player, command_type, command, merchant_id, merchant)
 	if not operation.is_ok:
 		return operation
@@ -156,6 +159,10 @@ func _execute_command(
 	if command_type in DailyActivityService.COMMANDS:
 		return daily.execute(player, command)
 	match command_type:
+		"query_attachment_upgrades":
+			return DomainResult.ok({"action": "attachment_upgrade_query"})
+		"upgrade_attachment":
+			return _upgrades.execute(player, command)
 		"query_premium_shop":
 			return DomainResult.ok({"action": "premium_query"})
 		"buy_premium_item":
@@ -241,6 +248,7 @@ func _build_bundle(
 		return {}
 	var bundle := _projector.build_bundle(player)
 	bundle["premium_shop"] = _premium.snapshot(player, operation)
+	bundle["attachment_upgrades"] = _upgrades.snapshot(player, operation)
 	bundle["daily_activities"] = daily.snapshot(player)
 	var tasks: Array[Dictionary] = quests.snapshots(player, merchant_id)
 	var sell_items: Array[Dictionary] = []
