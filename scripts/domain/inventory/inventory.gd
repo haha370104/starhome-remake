@@ -9,6 +9,17 @@ var currency: int
 var _items: Array[GameItem] = []
 
 
+## 检查余额后扣除正整数金币，失败不改变余额或版本。
+## [param amount] 由权威业务规则确定的金币数量。
+## 返回扣款结果；成功推进背包版本以拒绝旧交易。
+func spend_currency(amount: int) -> DomainResult:
+	if amount <= 0 or currency < amount:
+		return DomainResult.failure(&"inventory.insufficient_currency", "星际币余额不足或扣款数量无效")
+	currency -= amount
+	revision += 1
+	return DomainResult.ok()
+
+
 ## 初始化拥有容量、货币与独立乐观锁版本的背包。
 ## [param initial_capacity] 最大物品实例数量。
 ## [param initial_revision] 当前背包 revision。

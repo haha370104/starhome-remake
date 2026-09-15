@@ -34,6 +34,7 @@ func _initialize() -> void:
 		bands[task.grade] = true
 	_expect(bands.size() == 8, "八档均有可完成任务")
 	print("DAILY_CATALOG available=%d grades=%d" % [catalog.tasks.size(), bands.size()])
+	_test_currency_donations(catalog)
 	_expect(catalog.tasks.has("2"), "低级类胶使用实际掉落 ID")
 	state.daily_activities.offers = ["2", "3", "4"]
 	var accepted := _command("accept_mercenary", {"task_id": "2", "reward": 9999})
@@ -129,6 +130,49 @@ func _initialize() -> void:
 		push_error(failure)
 	print("DAILY_ACTIVITIES checks=%d failures=%d" % [checks, failures.size()])
 	quit(0 if failures.is_empty() else 1)
+
+
+## 对原表所有金币任务做覆盖校验，并验证真实服务的原子扣款、旧版本与存档重放。
+## [param catalog] 实际服务初始化的任务目录。
+func _test_currency_donations(catalog: DailyActivityCatalog) -> void:
+	var source: Dictionary = JsonConfigLoader.load_dictionary("res://data/gameplay/quests/mercenary_tasks_v1.json").value
+	var count := 0
+	for raw: Dictionary in source.tasks:
+		if int(raw.condition[0]) == 2 and String(raw.condition[1]) == "money":
+			count += 1
+			var rule: MercenaryDefinition = catalog.tasks.get(String(raw.id))
+			_expect(rule != null and rule.is_currency_donation() and rule.quantity == int(raw.condition[2]), "原表金币委托保留数量和币种")
+	_expect(count == 20, "原版20条金币委托全部纳入")
+	var saved := state.duplicate_record()
+	var donation: MercenaryDefinition = catalog.tasks["301"]
+	state.daily_activities.active = {"donation": {"id": donation.id, "progress": 0}}
+	state.currency = donation.quantity - 1
+	var before := state.to_dictionary()
+	var failed := _command("complete_mercenary", {"ticket": "donation"})
+	_expect(not failed.is_ok and state.to_dictionary() == before, "少一枚金币时拒绝，任务、紫晶、版本均不变")
+	var mapper := PlayerStateMapper.new(items)
+	var player: Player = mapper.to_domain(state).value
+	var active: Dictionary = player.daily_activities.snapshot(catalog, player.inventory).active[0]
+	_expect(active.progress == donation.quantity - 1 and not active.ready and active.currency_donation, "窗口进度使用金币余额而非物品数量")
+	state.currency = donation.quantity
+	var stale := {"type": "complete_mercenary", "ticket": "donation", "daily_revision": state.daily_activities.revision,
+		"inventory_revision": state.inventory_revision - 1}
+	_expect(not service.execute(state, stale).is_ok and state.currency == donation.quantity, "旧背包版本不能捐款")
+	var command := {"type": "complete_mercenary", "ticket": "donation", "daily_revision": state.daily_activities.revision,
+		"inventory_revision": state.inventory_revision, "quantity": 1, "reward": 99999, "currency": 999999}
+	var completed := service.execute(state, command)
+	_expect(completed.is_ok, "恰好足额可捐款")
+	if completed.is_ok:
+		var next: PlayerStateRecord = completed.value.candidate
+		_expect(state.currency == donation.quantity and next.currency == 0, "候选隔离且只扣原表金额")
+		_expect(next.amethyst == state.amethyst + donation.reward and next.inventory_revision == state.inventory_revision + 1,
+			"金币扣款与配置紫晶奖励一并结算并推进背包版本")
+		var restored := PlayerStateRecord.from_dictionary(JSON.parse_string(JSON.stringify(next.to_dictionary())))
+		_expect(restored.is_ok and not service.execute(restored.value, command).is_ok, "JSON重启后不能重复捐款领奖")
+	var inventory := Inventory.new(10, 2, 100)
+	_expect(not inventory.spend_currency(0).is_ok and not inventory.spend_currency(-1).is_ok and inventory.currency == 100
+		and inventory.revision == 2, "非法扣款数不能制造金币或修改版本")
+	state = saved
 
 
 ## 模拟仓储接受成功候选，失败时保留原记录。

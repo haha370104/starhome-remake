@@ -10,6 +10,8 @@ var experience: Array[Dictionary] = []
 ## [param items] 已初始化的权威物品目录。
 ## 返回可执行目录或配置失败。
 func initialize(items: ItemCatalog) -> DomainResult:
+	tasks.clear()
+	experience.clear()
 	var settings := JsonConfigLoader.load_dictionary("res://data/gameplay/quests/daily_activities_v1.json")
 	var source := JsonConfigLoader.load_dictionary("res://data/gameplay/quests/mercenary_tasks_v1.json")
 	if not settings.is_ok or not source.is_ok:
@@ -39,9 +41,11 @@ func initialize(items: ItemCatalog) -> DomainResult:
 			rule.locations = places.get(rule.target_id, []).duplicate()
 			rule.description = "击杀 %d 只%s" % [rule.quantity, rule.title.trim_prefix("击杀")]
 		elif rule.kind == 2:
-			rule.target_id = String(available.get(String(raw.condition[1]), ""))
+			rule.target_id = "money" if String(raw.condition[1]) == "money" else String(available.get(String(raw.condition[1]), ""))
 			# 原版地图提示与复刻布怪不同，收集任务明确允许既有物品。
 			rule.description = "收集并交付 %d 个%s（可使用背包已有材料）" % [rule.quantity, rule.title.trim_prefix("收集")]
+			if rule.is_currency_donation():
+				rule.description = "捐赠 %d 星际币（交付时扣除金币余额）" % rule.quantity
 		if not rule.target_id.is_empty():
 			tasks[rule.id] = rule
 	for raw: Dictionary in policy.experience:

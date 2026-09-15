@@ -143,9 +143,9 @@ func complete(ticket: String, revision: int, catalog: DailyActivityCatalog, inve
 	if task == null:
 		return DomainResult.failure(&"daily.not_active", "任务已不存在或目标尚未开放")
 	if task.kind == 2:
-		var consumed := inventory.consume_definition(task.target_id, task.quantity)
+		var consumed := task.consume_delivery(inventory)
 		if not consumed.is_ok:
-			return DomainResult.failure(&"daily.incomplete", "所需材料不足，或材料已锁定")
+			return consumed
 	elif int(row.progress) < task.quantity:
 		return DomainResult.failure(&"daily.incomplete", "尚未完成任务目标")
 	_state.active.erase(ticket)
@@ -229,7 +229,7 @@ func snapshot(catalog: DailyActivityCatalog, inventory: Inventory) -> Dictionary
 			continue
 		var row := task.snapshot()
 		row["ticket"] = ticket
-		row["progress"] = inventory.count_consumable_definition(task.target_id) if task.kind == 2 else int(saved.progress)
+		row["progress"] = task.delivery_progress(inventory) if task.kind == 2 else int(saved.progress)
 		row["ready"] = int(row.progress) >= task.quantity
 		result.active.append(row)
 	for activity: Dictionary in catalog.experience:

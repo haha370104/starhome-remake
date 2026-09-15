@@ -146,7 +146,7 @@ func _show_available(index: int) -> void:
 func _show_active(index: int) -> void:
 	var row: Dictionary = _active_rows[index]
 	details.text = "%s\n奖励 %d 紫晶%s" % [row.description, row.reward,
-		"；交付会消耗对应材料。" if int(row.kind) == 2 else "。"]
+		"；交付会扣除星际币。" if bool(row.get("currency_donation", false)) else ("；交付会消耗对应材料。" if int(row.kind) == 2 else "。")]
 	if not row.locations.is_empty():
 		details.text += "\n分布：" + ", ".join(row.locations.slice(0, 4)).replace("glory_nft_", "").to_upper()
 	_update_buttons()
