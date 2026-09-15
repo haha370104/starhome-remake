@@ -217,7 +217,7 @@ func vehicle_combat_loadout(
 		)
 	var calculator_chassis := {
 		"weight": chassis.weight,
-		"max_health": chassis.base_max_health + player.vehicle.achievement_bonuses.max_health,
+		"max_health": chassis.base_max_health + player.vehicle.achievement_bonuses.max_health + player.vehicle.loadout.attachment_bonus("max_health"),
 		"max_durability": chassis.max_durability,
 		"working_energy_capacity": chassis.working_energy_capacity,
 		"reserve_energy_capacity": chassis.reserve_energy_capacity,
@@ -250,6 +250,9 @@ func vehicle_combat_loadout(
 	if not assembly_result.is_ok:
 		return assembly_result
 	var assembly: Dictionary = assembly_result.value
+	if float(assembly["movement_speed"]) > 0.0:
+		assembly["movement_speed"] = minf(float(movement_config.get("base_speed_cap", 240.0)),
+			float(assembly["movement_speed"]) + player.vehicle.loadout.attachment_bonus("speed"))
 	assembly["vehicle_id"] = chassis.definition_id
 	assembly["self_repair_base_strength"] = chassis.self_repair_power()
 	assembly["self_repair_bonus_strength"] = self_repair_bonus + player.vehicle.achievement_bonuses.self_repair
@@ -269,6 +272,11 @@ func vehicle_combat_loadout(
 	weapons.merge(secondary_result.value)
 	for ability_id: String in weapons:
 		weapons[ability_id] = player.vehicle.achievement_bonuses.apply_weapon(weapons[ability_id])
+		var effect := String({"energy_cannon": "energy_cannon_attack", "missile": "missile_attack",
+			"rocket_launcher": "rocket_attack"}.get(weapons[ability_id].get("skill_id", ""), ""))
+		var bonus := player.vehicle.loadout.attachment_bonus(effect)
+		weapons[ability_id]["minimum_damage"] += bonus
+		weapons[ability_id]["maximum_damage"] += bonus
 	return DomainResult.ok({"assembly": assembly, "weapons": weapons})
 
 

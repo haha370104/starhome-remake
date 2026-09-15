@@ -66,6 +66,7 @@ func configure(
 ## [param aim_world_position] 调用方传入的 `aim_world_position` 参数。
 ## [param mining_level] 调用方传入的 `mining_level` 参数。
 ## [param command_sequence] 调用方传入的 `command_sequence` 参数。
+## [param time_reduction_ms] 服务器从已装配接合器派生的间隔减值；周期最短 0.1 秒。
 ## 返回该函数计算、查询或操作得到的结果。
 func begin_collection(
 	actor_id: String,
@@ -73,6 +74,7 @@ func begin_collection(
 	aim_world_position: Vector2,
 	mining_level: int,
 	command_sequence: int,
+	time_reduction_ms: int = 0,
 ) -> DomainResult:
 	if _policy.is_empty():
 		return DomainResult.failure(&"mining.not_available", "this map has no mineral population")
@@ -90,15 +92,17 @@ func begin_collection(
 		return DomainResult.failure(&"mining.out_of_range", "mine source is outside collection range")
 	if mining_level < source.required_mining_level:
 		return DomainResult.failure(&"mining.skill_too_low", "mining skill does not meet the source requirement")
+	var interval := maxf(0.1, float(_policy["collection_interval_seconds"]) - float(maxi(0, time_reduction_ms)) / 1000.0)
 	_actions[actor_id] = {
+		"interval_seconds": interval,
 		"source_id": source.source_id,
-		"next_cycle_tick": current_tick + _seconds_to_ticks(float(_policy["collection_interval_seconds"])),
+		"next_cycle_tick": current_tick + _seconds_to_ticks(interval),
 	}
 	return DomainResult.ok({
 		"event_type": &"mining_started",
 		"actor_id": actor_id,
 		"source_id": source.source_id,
-		"interval_seconds": float(_policy["collection_interval_seconds"]),
+		"interval_seconds": interval,
 	})
 
 
@@ -185,7 +189,7 @@ func commit_cycle(token: String) -> DomainResult:
 		_actions.erase(actor_id)
 	elif _actions.has(actor_id):
 		_actions[actor_id]["next_cycle_tick"] = current_tick \
-			+ _seconds_to_ticks(float(_policy["collection_interval_seconds"]))
+			+ _seconds_to_ticks(float(_actions[actor_id].get("interval_seconds", _policy["collection_interval_seconds"])))
 	return DomainResult.ok({
 		"event_type": &"mining_collected",
 		"actor_id": actor_id,

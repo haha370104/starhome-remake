@@ -18,6 +18,7 @@ func _initialize() -> void:
 	_test_catalog_and_initial_population()
 	_test_three_second_collection_and_capacity()
 	_test_five_minute_replenishment()
+	_test_attachment_interval()
 	if failures.is_empty():
 		print("AUTHORITATIVE_MINING_MODULE_OK (%d assertions)" % assertions)
 		quit(0)
@@ -110,3 +111,21 @@ func _expect(condition: bool, message: String) -> void:
 	assertions += 1
 	if not condition:
 		failures.append(message)
+
+
+## 验证挖掘接合器缩短连续周期，极大加成不会产生零周期。
+func _test_attachment_interval() -> void:
+	var module = _module(MiningCatalogScript.load_default().value, "d04_field_zone", "joint.interval.test")
+	var source = module.sources.values()[0]
+	var started: DomainResult = module.begin_collection("joint.user", source.position + Vector2(40, 0), source.position, 10, 1, 500)
+	_expect(started.is_ok and started.value.interval_seconds == 2.5, "两件基础挖掘接合器将三秒缩短到两点五秒")
+	module.advance_ticks(49)
+	_expect(module.drain_ready_cycles().is_empty(), "加速周期到期前不能结算")
+	module.advance_ticks(1)
+	var ready: Array = module.drain_ready_cycles()
+	_expect(ready.size() == 1, "五十tick产生一个周期")
+	module.commit_cycle(ready[0].token)
+	module.advance_ticks(50)
+	_expect(module.drain_ready_cycles().size() == 1, "后续周期保持相同加速")
+	var capped: DomainResult = module.begin_collection("fast.user", source.position + Vector2(40, 0), source.position, 10, 1, 999999)
+	_expect(capped.is_ok and capped.value.interval_seconds == 0.1, "周期保留零点一秒下限")
