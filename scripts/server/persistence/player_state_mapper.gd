@@ -48,6 +48,7 @@ func to_domain(record: PlayerStateRecord) -> DomainResult:
 		"quest_states": record.quest_states,
 		"achievements": record.achievements,
 		"daily_activities": record.daily_activities,
+		"food_status": record.food_status,
 		"vehicle": {
 			"vehicle_id": record.vehicle_id,
 			"definition_id": record.vehicle_definition_id,
@@ -111,7 +112,7 @@ func to_domain(record: PlayerStateRecord) -> DomainResult:
 			var restored_vehicle := player.vehicle.loadout.restore(created.value)
 			if not restored_vehicle.is_ok:
 				return restored_vehicle
-	player.vehicle.reconcile_loadout_state()
+	player.vehicle.reconcile_loadout_state(record.food_status.is_empty())
 	return DomainResult.ok(player)
 
 
@@ -183,6 +184,7 @@ func to_record(player: Player) -> DomainResult:
 		"quest_states": player.quest_states.duplicate(true),
 		"achievements": player.achievements.to_dictionary(),
 		"daily_activities": player.daily_activities.to_dictionary(),
+		"food_status": player.food_status.to_dictionary(),
 		"vehicle_id": player.vehicle.vehicle_id,
 		"vehicle_definition_id": player.vehicle.definition_id,
 		"vehicle_max_health": player.vehicle.max_health,

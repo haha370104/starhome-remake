@@ -159,6 +159,7 @@ func refresh_achievement_loadout(actor_id: String, loadout: Dictionary) -> Domai
 	var actor: Dictionary = actors[actor_id]
 	var state: VehicleCombatState = actor["vehicle_state"]
 	state.max_health = int(assembly["max_health"])
+	state.food_defense = maxi(0, int(assembly.get("food_defense", 0)))
 	state.health = mini(state.health, state.max_health)
 	actor["weapons"] = normalized
 	actor["self_repair_bonus_strength"] = int(assembly.get("self_repair_bonus_strength", 0))
@@ -709,12 +710,15 @@ func _settle_rocket_projectile(projectile: Dictionary) -> void:
 
 
 ## 死亡进度独立于仅保留64条的表现事件环；群攻大量击杀也不会丢失训练计数。
+## [param monster] 已确认死亡的怪物。
+## [param killer_id] 获得击杀归属的玩家标识。
 func _record_quest_kill(monster: MonsterLifecycle, killer_id: String) -> void:
 	_quest_kills.append({"killer_id": killer_id, "species_id": monster.species_id,
 		"death_id": "%s.%s.%d" % [_quest_event_namespace, monster.monster_id, monster.death_generation]})
 
 
 ## 每次推进后由权威服务器提取且清空，不对网络客户端开放写入口。
+## 返回尚未结算的击杀事实。
 func drain_quest_kills() -> Array[Dictionary]:
 	var result := _quest_kills
 	_quest_kills = []

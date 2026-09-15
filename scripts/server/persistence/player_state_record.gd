@@ -31,6 +31,7 @@ var character_skills: Dictionary = {}
 var quest_states: Dictionary = {}
 var achievements: Dictionary = {}
 var daily_activities: Dictionary = {}
+var food_status: Dictionary = {}
 var vehicle_id := ""
 var vehicle_definition_id := ""
 var vehicle_max_health := 0
@@ -93,6 +94,10 @@ static func from_dictionary(raw: Variant) -> DomainResult:
 	if not PlayerAchievements.valid_state(achievement_value):
 		return DomainResult.failure(&"persistence.invalid_player_state", "achievement state is invalid")
 	record.achievements = (achievement_value as Dictionary).duplicate(true)
+	var food_value: Variant = raw.get("food_status", {})
+	if not FoodStatus.valid_state(food_value):
+		return DomainResult.failure(&"persistence.invalid_player_state", "food status is invalid")
+	record.food_status = food_value.duplicate(true)
 	var daily_value: Variant = raw.get("daily_activities", {})
 	if not DailyActivityJournal.valid_state(daily_value):
 		return DomainResult.failure(&"persistence.invalid_player_state", "daily activity state is invalid")
@@ -127,6 +132,8 @@ static func from_dictionary(raw: Variant) -> DomainResult:
 ## 校验 `validate` 对应的模块状态。
 ## 返回该函数计算、查询或操作得到的结果。
 func validate() -> DomainResult:
+	if not FoodStatus.valid_state(food_status):
+		return DomainResult.failure(&"persistence.invalid_player_state", "food status is invalid")
 	if account_id.is_empty() or account_name.is_empty() or account_status.is_empty() \
 		or character_id.is_empty() or display_name.is_empty():
 		return DomainResult.failure(&"persistence.invalid_player_state", "account and character identity are required")
@@ -223,6 +230,7 @@ func to_dictionary() -> Dictionary:
 		"quest_states": quest_states.duplicate(true),
 		"achievements": achievements.duplicate(true),
 		"daily_activities": daily_activities.duplicate(true),
+		"food_status": food_status.duplicate(true),
 		"vehicle_id": vehicle_id,
 		"vehicle_definition_id": vehicle_definition_id,
 		"vehicle_max_health": vehicle_max_health,

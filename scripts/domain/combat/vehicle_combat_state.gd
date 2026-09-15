@@ -2,6 +2,7 @@ class_name VehicleCombatState
 extends RefCounted
 
 
+var food_defense := 0
 var max_health := 0
 var health := 0
 var reserve_energy_capacity := 0.0
@@ -28,6 +29,7 @@ func configure(assembly: Dictionary) -> DomainResult:
 		return DomainResult.failure(&"combat.invalid_assembly", "vehicle resource capacities are invalid")
 	if requested_output < 0.0 or requested_load < 0.0:
 		return DomainResult.failure(&"combat.invalid_assembly", "vehicle power budget is invalid")
+	food_defense = maxi(0, int(assembly.get("food_defense", 0)))
 	max_health = requested_health
 	health = max_health
 	reserve_energy_capacity = requested_reserve
@@ -80,7 +82,7 @@ func apply_damage(amount: int) -> DomainResult:
 	if amount < 0:
 		return DomainResult.failure(&"combat.invalid_damage", "damage cannot be negative")
 	var was_alive := health > 0
-	var applied := mini(amount, health)
+	var applied := mini(maxi(0, amount - food_defense), health)
 	health -= applied
 	return DomainResult.ok({
 		"applied_damage": applied,

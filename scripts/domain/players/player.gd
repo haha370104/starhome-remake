@@ -27,6 +27,16 @@ var quest_states: Dictionary
 var achievements: PlayerAchievements
 var daily_activities: DailyActivityJournal
 var amethyst: AmethystWallet
+var food_status: FoodStatus
+
+
+## 结算在线食品回血并回收过期战车属性，死亡人物不会因此复活。
+## [param now] 权威当前秒数。
+func advance_food_status(now: int) -> void:
+	var healing := food_status.advance(now)
+	if health > 0:
+		health = mini(max_health, health + healing)
+	vehicle.reconcile_loadout_state(false)
 
 
 ## 按实例身份查询玩家背包或已装配的战车装备，不接受外部玩家实例。
@@ -135,6 +145,9 @@ func _init(state: Dictionary = {}) -> void:
 	character_equipment = CharacterEquipment.new()
 	vehicle = PlayerVehicle.new(state.get("vehicle", {}))
 	skills = SkillBook.new(state.get("skills", {}))
+	food_status = FoodStatus.new(state.get("food_status", {}))
+	vehicle.food_status = food_status
+	skills.food_status = food_status
 	var quest_value: Variant = state.get("quest_states", {})
 	quest_states = (quest_value as Dictionary).duplicate(true) if quest_value is Dictionary else {}
 	achievements = PlayerAchievements.new(state.get("achievements", {}))
@@ -221,6 +234,27 @@ func move_inventory_item(
 ## 返回领域操作结果。
 func arrange_inventory(expected_inventory_revision: int) -> DomainResult:
 	return inventory.arrange(expected_inventory_revision)
+
+
+## 在玩家拥有的背包内执行堆叠操作，数量与绑定规则由背包领域行为负责。
+## [param action] 拆分或合并动作。
+## [param instance_id] 自有物品实例。
+## [param quantity] 拆分数量；合并时忽略。
+## [param expected_revision] 背包版本。
+## 返回堆叠操作结果。
+func change_stack(action: String, instance_id: String, quantity: int, expected_revision: int) -> DomainResult:
+	if action == "split_inventory_item":
+		return InventoryStackActions.split(inventory, instance_id, quantity, expected_revision)
+	return InventoryStackActions.merge(inventory, instance_id, expected_revision)
+
+
+## 在聚合边界内使用物品，由领域行为校验并统一修改背包与资源。
+## [param instance_id] 自有物品实例。
+## [param expected_revision] 背包版本。
+## [param now] 权威使用时刻。
+## 返回完整用例结果。
+func use_inventory_item(instance_id: String, expected_revision: int, now: int) -> DomainResult:
+	return PlayerConsumableActions.use_item(self, instance_id, expected_revision, now)
 
 
 ## 接收由权威战斗结算创建的怪物掉落物。

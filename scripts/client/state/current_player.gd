@@ -44,6 +44,9 @@ func apply_bundle(bundle: Dictionary) -> bool:
 		or not bundle.get("inventory") is Dictionary \
 		or not bundle.get("vehicle") is Dictionary:
 		return false
+	if not FoodStatus.valid_state(bundle.get("food_status", {})):
+		return false
+	food_status = FoodStatus.new(bundle.get("food_status", {}))
 	amethyst = AmethystWallet.new(int(bundle.get("wallet", {}).get("amethyst", 0)))
 	var character: Dictionary = bundle["character"]
 	var inventory_snapshot: Dictionary = bundle["inventory"]
@@ -69,6 +72,7 @@ func apply_bundle(bundle: Dictionary) -> bool:
 	experience = maxi(0, int(character.get("experience", 0)))
 	revision = maxi(0, int(bundle.get("transaction_revision", 0)))
 	skills = SkillBook.new(skill_states)
+	skills.food_status = food_status
 	var achievement_snapshot: Dictionary = bundle.get("achievements", {})
 	if not PlayerAchievements.valid_state({"counters": achievement_snapshot.get("counters", {})}):
 		return false
@@ -97,6 +101,7 @@ func apply_bundle(bundle: Dictionary) -> bool:
 	if not _restore_equipment(character.get("worn_items", []), vehicle_snapshot.get("equipped", [])):
 		return false
 	vehicle.achievement_bonuses = achievements.bonuses()
+	vehicle.food_status = food_status
 	vehicle.reconcile_loadout_state(false)
 	changed.emit(self)
 	return true

@@ -219,7 +219,7 @@ func vehicle_combat_loadout(
 		)
 	var calculator_chassis := {
 		"weight": chassis.weight,
-		"max_health": chassis.base_max_health + player.vehicle.achievement_bonuses.max_health + player.vehicle.loadout.attachment_bonus("max_health"),
+		"max_health": chassis.base_max_health + player.vehicle.achievement_bonuses.max_health + player.vehicle.loadout.attachment_bonus("max_health") + player.food_status.bonus(16),
 		"max_durability": chassis.max_durability,
 		"working_energy_capacity": chassis.working_energy_capacity,
 		"reserve_energy_capacity": chassis.reserve_energy_capacity,
@@ -276,9 +276,11 @@ func vehicle_combat_loadout(
 		weapons[ability_id] = player.vehicle.achievement_bonuses.apply_weapon(weapons[ability_id])
 		var effect := String({"energy_cannon": "energy_cannon_attack", "missile": "missile_attack",
 			"rocket_launcher": "rocket_attack"}.get(weapons[ability_id].get("skill_id", ""), ""))
-		var bonus := player.vehicle.loadout.attachment_bonus(effect)
+		var food_kind := int({"energy_cannon_attack": 13, "missile_attack": 14, "rocket_attack": 15}.get(effect, 0))
+		var bonus := player.vehicle.loadout.attachment_bonus(effect) + player.food_status.bonus(food_kind)
 		weapons[ability_id]["minimum_damage"] += bonus
 		weapons[ability_id]["maximum_damage"] += bonus
+	assembly["food_defense"] = player.food_status.bonus(17)
 	return DomainResult.ok({"assembly": assembly, "weapons": weapons})
 
 

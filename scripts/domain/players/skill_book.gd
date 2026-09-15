@@ -17,6 +17,7 @@ const DISPLAY_NAMES := {
 }
 
 var _states: Dictionary = {}
+var food_status: FoodStatus
 
 
 ## 初始化玩家的完整技能状态集合，并兼容旧存档中的纯整数等级。
@@ -99,7 +100,7 @@ func grant_experience(
 			or not progression_config["coefficient_bands"].has(skill_id):
 		return DomainResult.failure(&"unknown_skill", "Unknown skill: %s" % skill_id)
 	var state := _state_for(skill_id)
-	var result := SkillProgressionScript.apply_exp(state, amount, progression_config)
+	var result := SkillProgressionScript.apply_exp(state, amount * (food_status.experience_multiplier(skill_id) if food_status != null else 1.0), progression_config)
 	if not result.is_ok and result.error_code == &"skill_maximum_level":
 		return DomainResult.ok({
 			"skill_id": skill_id,

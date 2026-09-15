@@ -30,6 +30,7 @@ func build_bundle(player: Player) -> Dictionary:
 		"vehicle": _vehicle_snapshot(player),
 		"mission_journal": _journal_snapshot(player),
 		"achievements": player.achievements.network_snapshot(),
+		"food_status": player.food_status.to_dictionary(),
 	}
 
 

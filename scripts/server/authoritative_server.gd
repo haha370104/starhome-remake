@@ -50,6 +50,7 @@ const VEHICLE_RECOVERY_HEALTH_RATIO := 0.10
 const GLORY_RUNTIME_MAP_INDEX_PATH := "res://data/content/glory_map_runtime_index_v1.json"
 const MAX_TRANSITION_LANDING_CORRECTION_DISTANCE := 192.0
 
+var _food_runtime: AuthoritativeFoodRuntime
 var config: DedicatedServerConfig
 var map_instance: AuthoritativeMapInstance
 var map_registry: AuthoritativeMapRegistry
@@ -229,9 +230,8 @@ func _ensure_transport_endpoint() -> void:
 	_transport_endpoint.peer_disconnected.connect(_on_peer_disconnected)
 
 
-## 按物理帧推进当前节点的确定性状态。
-## [param delta] 调用方传入的参数；具体约束由函数签名和所在模块定义。
-## 设计：该函数位于权威服务器边界，客户端不得覆盖其计算结果。
+## 推进世界与食品的权威时间。
+## [param delta] 本帧经过的时间。
 func _physics_process(delta: float) -> void:
 	advance_simulation(delta, Time.get_ticks_msec())
 
@@ -243,6 +243,7 @@ func _physics_process(delta: float) -> void:
 func advance_simulation(elapsed_seconds: float, now_msec := -1) -> void:
 	if sessions == null or elapsed_seconds <= 0.0:
 		return
+	_advance_food_status()
 	_simulation_accumulator += elapsed_seconds
 	var fixed_delta := 1.0 / float(config.simulation_hz)
 	while _simulation_accumulator + 0.000001 >= fixed_delta:
@@ -757,6 +758,11 @@ func handle_peer_player_panel_command(peer_id: int, command: Dictionary) -> Dict
 	var is_commerce: bool = commerce_service.handles(command_type)
 	var is_manufacturing: bool = manufacturing_service.handles(command_type)
 	var current_map := map_registry.instance_by_id(session.map_instance_id)
+	if command_type == "use_inventory_item":
+		var captured: DomainResult = _capture_persistent_player_state(current)
+		if not captured.is_ok:
+			return _failure(captured.error_code, captured.error_message)
+		current = captured.value
 	var trusted_command := command.duplicate(true)
 	trusted_command["_authoritative_vehicle_combat_active"] = current_map != null \
 		and current_map.is_vehicle_combat_active()
@@ -784,7 +790,10 @@ func handle_peer_player_panel_command(peer_id: int, command: Dictionary) -> Dict
 	if current_map != null and current_map.mining_module != null \
 			and current.vehicle_loadout_revision != committed.value.vehicle_loadout_revision:
 		current_map.mining_module.interrupt(session.entity_id, &"equipment_changed")
-	if current_map != null and current_map.is_vehicle_combat_active():
+	if command_type == "use_inventory_item":
+		_apply_food_runtime(session.entity_id, committed.value)
+	elif command_type not in ["split_inventory_item", "merge_inventory_item"] \
+		and current_map != null and current_map.is_vehicle_combat_active():
 		var refreshed_loadout := current_map.set_vehicle_combat_loadout(
 			session.entity_id, prepared_loadout
 		)
@@ -933,9 +942,9 @@ func _settle_mining_cycles(instance: AuthoritativeMapInstance) -> void:
 			})
 
 
-## 晋升后热更新战斗增益，保留冷却、命令序号、维修周期和已发射弹体。
+## 热更新成就及食品战斗增益，保留冷却、命令序号、维修周期和已发射弹体。
 ## [param entity_id] 已完成权威结算的玩家。
-## [param state] 新称号所在的已提交状态。
+## [param state] 新增益所在的已提交状态。
 func _refresh_achievement_combat(entity_id: String, state: PlayerStateRecord) -> void:
 	if map_registry == null or _combat_catalog == null:
 		return
@@ -944,6 +953,9 @@ func _refresh_achievement_combat(entity_id: String, state: PlayerStateRecord) ->
 		return
 	var loadout := _build_entity_combat_loadout(target, state)
 	if not loadout.is_ok:
+		if not target.is_vehicle_combat_active() and loadout.error_code in [
+			&"equipment.chassis_required_for_field", &"equipment.primary_weapon_required_for_field"]:
+			return
 		push_error("Achievement combat update failed: " + loadout.error_message)
 		return
 	var updated := target.refresh_achievement_loadout(entity_id, loadout.value)
@@ -1431,6 +1443,9 @@ func _restore_persistent_player_state(
 	session: ServerSession,
 	state: PlayerStateRecord,
 ) -> bool:
+	var resumed_food := FoodStatus.new(state.food_status)
+	resumed_food.resume(int(Time.get_unix_time_from_system()))
+	state.food_status = resumed_food.to_dictionary()
 	var source := map_registry.instance_by_id(session.map_instance_id)
 	var canonical_map_id := _canonical_persisted_map_id(state.map_id)
 	var target: AuthoritativeMapInstance
@@ -1485,6 +1500,7 @@ func _restore_persistent_player_state(
 		var combat_restore := target.restore_vehicle_combat_state(session.entity_id, state)
 		if not combat_restore.ok:
 			return false
+	autosave_service.update_runtime_state(session.entity_id, state)
 	return true
 
 
@@ -1822,3 +1838,36 @@ func _success(value: Variant) -> Dictionary:
 ## 设计：该函数位于权威服务器边界，客户端不得覆盖其计算结果。
 func _failure(code: StringName, message: String) -> Dictionary:
 	return {"ok": false, "code": code, "message": message}
+
+
+## 将食品时钟交给独立协调器，资源捕获与地图刷新复用现有端口。
+func _advance_food_status() -> void:
+	if autosave_service == null or player_panel_service == null:
+		return
+	if _food_runtime == null:
+		_food_runtime = AuthoritativeFoodRuntime.new(autosave_service, player_panel_service,
+			_capture_persistent_player_state, _apply_food_runtime, _publish_food_status)
+	_food_runtime.advance(sessions.all_sessions(), int(Time.get_unix_time_from_system()))
+
+
+## 向在线角色发布已提交的食品和玩家投影。
+## [param peer_id] 当前连接。
+## [param state] 同一事务玩家状态。
+func _publish_food_status(peer_id: int, state: PlayerStateRecord) -> void:
+	_send_reliable(peer_id, {"type": "player_panels",
+		"result": _wire_result(_success(player_panel_service.build_bundle(state)))})
+
+
+## 将食品事务资源同步回当前地图，热更新武器时保留射击冷却和维修状态。
+## [param entity_id] 会话拥有的角色。
+## [param state] 已提交的权威状态。
+func _apply_food_runtime(entity_id: String, state: PlayerStateRecord) -> void:
+	_refresh_achievement_combat(entity_id, state)
+	var target := map_registry.instance_by_id(state.map_instance_id)
+	if target == null:
+		return
+	var combat_state := target.vehicle_combat_state_for(entity_id)
+	if combat_state != null:
+		combat_state.health = clampi(state.vehicle_health, 0, combat_state.max_health)
+		combat_state.reserve_energy = clampf(state.reserve_energy, 0.0, combat_state.reserve_energy_capacity)
+		combat_state.working_energy = clampf(state.working_energy, 0.0, combat_state.working_energy_capacity)

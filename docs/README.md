@@ -42,6 +42,7 @@
 | [客户端结构与阅读顺序](client_architecture.md) | 入口拆分、控制器、共享组件、状态链路及本轮验证范围 |
 | [技术架构](./technical_architecture.md) | 架构决策、目标依赖、协议和完成定义；含尚未实现的目标设计 |
 | [双运行模式架构](./runtime_modes_architecture.md) | 进程边界、启动握手、传输/模拟差异、状态归属、保存与验证 |
+| [背包操作与食品效果](inventory_item_actions.md) | 右键菜单、拆分合并、原版食品、权威时钟与存档 |
 | [人物/背包/战车](./player_panels_architecture.md) | Player 聚合、同版本投影、换装事务、背包几何 |
 | [装备展示模式](equipment_presentation_modes.md) | 世界、背包、面板三种图像身份和统一装配投影 |
 | [自由背包布局](inventory_free_position.md) | 像素占位、拖放、吸附与原生图片尺寸分离 |

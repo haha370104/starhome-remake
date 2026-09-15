@@ -12,6 +12,7 @@ var working_energy_capacity: float
 var working_energy: float
 var output_power: float
 var achievement_bonuses := AchievementBonuses.new()
+var food_status := FoodStatus.new()
 
 
 ## 初始化玩家拥有的战车实体及其运行时资源。
@@ -41,7 +42,7 @@ func calculate_stats(
 	var total_weight := 0
 	var propulsion := 0
 	var primary_attack := 0
-	var defense := 0
+	var defense := food_status.bonus(17)
 	var armor_by_location := {5: 0, 6: 0, 7: 0, 8: 0}
 	var chassis_base_health := 0
 	var self_repair_base := 0
@@ -76,19 +77,19 @@ func calculate_stats(
 		"max_health_base": chassis_base_health,
 		"max_health_bonus": maxi(0, max_health - chassis_base_health),
 		"defense": defense,
-		"defense_base": defense,
-		"defense_bonus": 0,
+		"defense_base": defense - food_status.bonus(17),
+		"defense_bonus": food_status.bonus(17),
 		"armor_front": int(armor_by_location[5]),
 		"armor_rear": int(armor_by_location[6]),
 		"armor_left": int(armor_by_location[7]),
 		"armor_right": int(armor_by_location[8]),
 		"speed": propulsion + (loadout.attachment_bonus("speed") if propulsion > 0 else 0),
-		"energy_cannon_attack": primary_attack + ((achievement_bonuses.energy_cannon_attack + loadout.attachment_bonus("energy_cannon_attack")) if primary_attack > 0 else 0),
+		"energy_cannon_attack": primary_attack + ((achievement_bonuses.energy_cannon_attack + loadout.attachment_bonus("energy_cannon_attack") + food_status.bonus(13)) if primary_attack > 0 else 0),
 		"energy_cannon_attack_base": primary_attack,
-		"energy_cannon_attack_bonus": (achievement_bonuses.energy_cannon_attack + loadout.attachment_bonus("energy_cannon_attack")) if primary_attack > 0 else 0,
+		"energy_cannon_attack_bonus": (achievement_bonuses.energy_cannon_attack + loadout.attachment_bonus("energy_cannon_attack") + food_status.bonus(13)) if primary_attack > 0 else 0,
 		"energy_cannon_range_bonus": achievement_bonuses.energy_cannon_range,
-		"missile_attack": achievement_bonuses.missile_attack + loadout.attachment_bonus("missile_attack"),
-		"rocket_attack": achievement_bonuses.rocket_attack + loadout.attachment_bonus("rocket_attack"),
+		"missile_attack": achievement_bonuses.missile_attack + loadout.attachment_bonus("missile_attack") + food_status.bonus(14),
+		"rocket_attack": achievement_bonuses.rocket_attack + loadout.attachment_bonus("rocket_attack") + food_status.bonus(15),
 		"propulsion": propulsion,
 		"output_power": output_power,
 		"weight": total_weight,
@@ -117,7 +118,7 @@ func reconcile_loadout_state(preserve_resource_ratios := true) -> bool:
 	var reserve_ratio := _resource_ratio(reserve_energy, reserve_energy_capacity)
 	var working_ratio := _resource_ratio(working_energy, working_energy_capacity)
 	definition_id = chassis.definition_id
-	max_health = chassis.base_max_health + achievement_bonuses.max_health + loadout.attachment_bonus("max_health")
+	max_health = chassis.base_max_health + achievement_bonuses.max_health + loadout.attachment_bonus("max_health") + food_status.bonus(16)
 	reserve_energy_capacity = chassis.reserve_energy_capacity
 	working_energy_capacity = chassis.working_energy_capacity
 	output_power = chassis.output_power

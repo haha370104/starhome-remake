@@ -76,6 +76,19 @@ func build_bundle(state: PlayerStateRecord) -> Dictionary:
 	return _projector.build_bundle(mapped.value)
 
 
+## 推进食品到期及在线回血，并返回可持久化的完整候选状态。
+## [param state] 已合入实时战斗资源的权威状态。
+## [param now] 服务器当前秒数。
+## 返回新状态，或映射错误。
+func advance_food_status(state: PlayerStateRecord, now: int) -> DomainResult:
+	var mapped := _mapper.to_domain(state)
+	if not mapped.is_ok:
+		return mapped
+	var player: Player = mapped.value
+	player.advance_food_status(now)
+	return _mapper.to_record(player)
+
+
 ## 将权威持久化记录还原为共享充血 Player 聚合，供同进程其他权威模块复用。
 ## [param state] 已通过仓储校验的玩家记录。
 ## 返回含完整固定装配对象的 Player，或映射失败原因。
@@ -251,6 +264,12 @@ func _execute_domain_command(
 			)
 		&"arrange_inventory":
 			return player.arrange_inventory(int(command.get("inventory_revision", -1)))
+		&"split_inventory_item", &"merge_inventory_item":
+			return player.change_stack(String(command_type), String(command.get("instance_id", "")),
+				int(command.get("quantity", 0)), int(command.get("inventory_revision", -1)))
+		&"use_inventory_item":
+			return player.use_inventory_item(String(command.get("instance_id", "")),
+				int(command.get("inventory_revision", -1)), int(Time.get_unix_time_from_system()))
 		&"equip_vehicle_item":
 			return player.equip_vehicle_item(
 				String(command.get("instance_id", "")),
