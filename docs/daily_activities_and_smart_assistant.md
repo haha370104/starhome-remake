@@ -23,8 +23,9 @@
 ## 佣兵任务
 
 已整理免费版原表全部 495 条任务为[规范化配置](../data/gameplay/quests/mercenary_tasks_v1.json)。
-运行目录按当前实际启用的刷怪、掉落、矿池和工业配方过滤，补齐[升级材料投放](attachment_upgrade_material_audit.md)后现可用 **175 条**（此前134条），覆盖全部八档。
-目前提供击杀和收集两类；战场积分、BOSS 排名及没有来源的目标不会进入可接列表。
+运行目录按当前实际启用的刷怪、掉落、矿池和工业配方过滤，补齐[升级材料投放](attachment_upgrade_material_audit.md)后为175条；修复金币捐赠误过滤后现可用 **195 条**，覆盖全部八档。
+包括73条击杀、102条物品收集、20条星际币捐赠；战场积分、BOSS 排名及没有来源的目标不会进入可接列表。
+全部495条原始条件保留，逐条核查结果见[掉落与佣兵审计](original_drops_and_mercenary_audit.md)。
 击杀按实际怪物显示名映射并展示当前地图分布，不使用原表已过时的地图提示。
 “存在获取链”不代表玩家已经拥有对应采掘技能或工业原料，接取前应查看数量和目标。
 
@@ -49,6 +50,7 @@
 - 北京时间 0 点重置每日计数和任务栏，已接任务及击杀进度跨日保留。
 - 击杀只统计领取后的权威死亡事件，按玩家归属及死亡实例去重。
 - 收集可以使用背包已有材料；交付消耗对应数量，锁定物品不参与计数和消耗。
+- 星际币捐赠按金币余额显示进度，交付时扣除原表数量并奖励任务档位紫晶；不把金币当物品，也不消耗紫晶。
 - 紫晶在交付成功时入账。每日完成数按交付日计算，包含昨日领取、今日交付的任务。
 - 原表佣兵积分随交付累计，上限 250000；尚无积分商店、晋升或额外用途。
   原帮助提及的第 5/10/15/20 次额外积分因具体数值未知未实现。
@@ -85,11 +87,11 @@
 
 ## 工程边界与验证
 
-- `MercenaryDefinition` 表达任务定义；`DailyActivityCatalog` 在配置边界解析可执行目标。
+- `MercenaryDefinition` 表达任务定义并区分金币/物品交付、查询可用进度和消费需求；`DailyActivityCatalog` 在配置边界解析可执行目标。
 - `DailyActivityJournal` 拥有接取、放弃、计数、换日、交付和去重不变量。
 - `Player.claim_daily_reward` 协调账本、背包、钱包和成就；`DailyActivityService` 编排服务器日期和用例。
   外层 `AuthoritativeCommerceService` 继续使用隔离候选和仓储原子提交，不由窗口发放奖励。
-- `daily_revision` 拒绝旧操作；材料交付同时校验 `inventory_revision`。
+- `daily_revision` 拒绝旧操作；材料及金币交付同时校验 `inventory_revision`。
   整个账本进入 `PlayerStateRecord` / Mapper，缺字段旧存档兼容，JSON 整数浮点表示在边界校验并规范化。
 - `DailyActivitiesPanel` 只发任务意图、显示同一事务回包，佣兵/历练复用一个窗口组件。
 - `SmartAssistantPolicy` 负责本地决策，`SmartAssistantController` 复用现有战斗入口；不新增权威状态所有者。
@@ -97,7 +99,7 @@
 
 专项测试均纳入 `tools/run_client_checks.py`：
 
-- `daily_activity_test.gd`：314 项断言，包括真实文件仓储重启、紫晶入账、坏数据、锁定材料、跨日和重复领奖。
+- `daily_activity_test.gd`：465 项断言，包括20条金币委托覆盖、不足/足额扣款、真实文件仓储重启、紫晶入账、坏数据、锁定材料、跨日和重复领奖。
 - `daily_hud_and_assistant_test.gd`：真实 HUD 打开窗口、接取、交付、放弃及智脑选项；支持 `-- --capture` 渲染截图。
 - `combat_click_routing_test.gd`：55 项断言，包括实际场景中的自动开炮、拾取、自维修、节流、工程臂和回城/切图暂停。
 - `authoritative_server_smoke_test.gd`：主动回城、重复请求和原有死亡回城。

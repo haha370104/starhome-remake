@@ -78,6 +78,7 @@
 | [武器商店逆向](weapon_merchant_ui_reverse.md) | 商品、等级、价格、装备详细信息与商店行为证据 |
 | [免费版人物历练与佣兵](free_experience_and_mercenary_audit.md) | 10 条每日历练、495 条佣兵定义、每日规则和服务端边界 |
 | [免费版佣兵任务全表](free_mercenary_task_catalog.md) | 全部任务条件、目标、数量、等级、品质和原积分；非运行配置 |
+| [原版掉落与佣兵全量审计](original_drops_and_mercenary_audit.md) | 79种掉落名称的实际覆盖、495条任务逐条判定、金币捐赠误过滤修复 |
 | [系统提示](./reverse_engineering/system_message_rendering.md) | 屏幕中央提示的字体、位置及生命周期 |
 | [矿源渲染](./reverse_engineering/mine_source_rendering.md) | 远程矿源对象、调色板、储量与渲染的分离 |
 | [FCC 与全量资源恢复](./fcc_resource_recovery.md) | 密钥来源、DLL 解密、索引下载、动画解析、官网精确依赖补抓 |
