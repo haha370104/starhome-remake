@@ -115,3 +115,8 @@
 ## 仓库协作
 
 - [主仓库与素材子模块](./repository_layout.md)：克隆、资源拉取、版本固定、提交顺序和历史拆分。
+
+## 接合器与商城更新（2026-09-15）
+
+- [装配规则、紫晶商城和领域边界](attachments_and_premium_shop.md)
+- [升级材料的实际获取缺口](attachment_upgrade_material_audit.md)
