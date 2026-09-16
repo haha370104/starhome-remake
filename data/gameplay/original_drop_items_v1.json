@@ -1,0 +1,1465 @@
+{
+  "schema_version": 1,
+  "definitions": [
+    {
+      "id": "item:material:78f2a523a761",
+      "kind": "material",
+      "display_name": "初级密度柔解剂",
+      "description": "利用撒玛科技从微量元素中提取到的神秘物质,可以装备开启1个凹槽,失败后装备损失一个已开启凹槽(如果凹槽有晶石，则晶石也一起消失),成功几率较低。",
+      "max_stack": 99,
+      "replaces_name_only": true,
+      "source_class": "Activator2",
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_class": "Activator2",
+        "source_file": "cltobj/stuffclt2.fcc",
+        "source_line": 11735,
+        "source_logical_path": "pic3/stuff/Activator2.ale",
+        "source_sha256": "d2aadb9b3363fc46c14fedfdfdc7ebe7c61d910688d573f303f827452f7807c4",
+        "source_palette": "",
+        "source_palette_sha256": "",
+        "status": "client_confirmed"
+      }
+    },
+    {
+      "id": "item:material:f6487f0e04b8",
+      "kind": "material",
+      "display_name": "五彩水晶",
+      "description": "泛着五色光芒的水晶，可以提升晶源体系列装备的品质。",
+      "max_stack": 99,
+      "replaces_name_only": true,
+      "source_class": "ColourfulCrystal",
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_class": "ColourfulCrystal",
+        "source_file": "cltobj/stuffclt2.fcc",
+        "source_line": 39266,
+        "source_logical_path": "pic3/stuff/ColourfulCrystal.ale",
+        "source_sha256": "99226bcc1fc044abb488a09758e1048a7f628e4c00b970e91ecc59d001ee7fac",
+        "source_palette": "",
+        "source_palette_sha256": "",
+        "status": "client_confirmed"
+      }
+    },
+    {
+      "id": "item:material:d247fd43ad3c",
+      "kind": "material",
+      "display_name": "电磁护具",
+      "description": "自发热，冷磁场，几乎所有最先进科技融为一体。是强化蓝色品质机体的必要材料。",
+      "max_stack": 99,
+      "replaces_name_only": true,
+      "source_class": "DCProtecter",
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_class": "DCProtecter",
+        "source_file": "cltobj/stuffclt2.fcc",
+        "source_line": 39581,
+        "source_logical_path": "pic3/stuff/DCProtecter.ale",
+        "source_sha256": "66c1c2b4f0b741872828cc8bbb3d44256eabbd92e1a831ae8af992c0a3c41ada",
+        "source_palette": "",
+        "source_palette_sha256": "",
+        "status": "client_confirmed"
+      }
+    },
+    {
+      "id": "item:material:71548d3aa10f",
+      "kind": "material",
+      "display_name": "电激波结晶",
+      "description": "特殊的结晶体，放入电激波护甲的插槽中可以极大的提升其属性。",
+      "max_stack": 99,
+      "replaces_name_only": true,
+      "source_class": "DJBJJ",
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_class": "DJBJJ",
+        "source_file": "cltobj/stuffclt2.fcc",
+        "source_line": 33035,
+        "source_logical_path": "pic3/stuff/DJBJJ.ale",
+        "source_sha256": "3a242d2107b3372ddfac5c2468bf2157dfe6f1b8f7f30977c563eed3bb1fda1c",
+        "source_palette": "",
+        "source_palette_sha256": "",
+        "status": "client_confirmed"
+      }
+    },
+    {
+      "id": "item:material:760ebf2df00d",
+      "kind": "material",
+      "display_name": "电激波芯片",
+      "description": "可以使电激波结晶发挥最大功效的控制芯片。",
+      "max_stack": 99,
+      "replaces_name_only": true,
+      "source_class": "DJBXP",
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_class": "DJBXP",
+        "source_file": "cltobj/stuffclt2.fcc",
+        "source_line": 33056,
+        "source_logical_path": "pic3/stuff/DJBXP.ale",
+        "source_sha256": "0eee598b7d5829e8aa2734a27af205301891cd98dcce6399552eb55a5c56500c",
+        "source_palette": "",
+        "source_palette_sha256": "",
+        "status": "client_confirmed"
+      }
+    },
+    {
+      "id": "item:material:d2a1d9d06fbc",
+      "kind": "material",
+      "display_name": "冻结钢片",
+      "description": "科考队在希尔纳山脉积雪下发现的，是强化绿色品质磁悬浮炮的必要材料。",
+      "max_stack": 99,
+      "replaces_name_only": true,
+      "source_class": "DJSteelChip",
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_class": "DJSteelChip",
+        "source_file": "cltobj/stuffclt2.fcc",
+        "source_line": 39497,
+        "source_logical_path": "pic3/stuff/DJSteelChip.ale",
+        "source_sha256": "f982f31e70f30b895562f6dc95ea75e42b7bd6ea11cdc7e520ccbf205f96c44e",
+        "source_palette": "",
+        "source_palette_sha256": "",
+        "status": "client_confirmed"
+      }
+    },
+    {
+      "id": "item:material:95aa2445915e",
+      "kind": "material",
+      "display_name": "电子制芯",
+      "description": "磁悬浮精密定位芯片，耗费无限人力财力的胜果。是强化绿色品质动力核心的必要材料。",
+      "max_stack": 99,
+      "replaces_name_only": true,
+      "source_class": "ElectronicZX",
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_class": "ElectronicZX",
+        "source_file": "cltobj/stuffclt2.fcc",
+        "source_line": 39623,
+        "source_logical_path": "pic3/stuff/ElectronicZX.ale",
+        "source_sha256": "5ba902181c42ebbf14faa8737a6c2b9fecdd60d7b91c3e702f80950b8f5ceedf",
+        "source_palette": "",
+        "source_palette_sha256": "",
+        "status": "client_confirmed"
+      }
+    },
+    {
+      "id": "item:material:82b550887686",
+      "kind": "material",
+      "display_name": "黑石膛线",
+      "description": "黑石山举世闻名的宝藏，只出售给人类联盟。是强化绿色品质机体的必要材料。",
+      "max_stack": 99,
+      "replaces_name_only": true,
+      "source_class": "HSRifling",
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_class": "HSRifling",
+        "source_file": "cltobj/stuffclt2.fcc",
+        "source_line": 39560,
+        "source_logical_path": "pic3/stuff/HSRifling.ale",
+        "source_sha256": "0db76282f2a72dd1b7246b6ab2f37b0fcf3178f35117445f4a5918e36b51425d",
+        "source_palette": "",
+        "source_palette_sha256": "",
+        "status": "client_confirmed"
+      }
+    },
+    {
+      "id": "item:material:390575d3e7c8",
+      "kind": "material",
+      "display_name": "红晶源",
+      "description": "一枚蕴含神秘能量的红色晶源，可以提升晶源体系列装备的阶数。",
+      "max_stack": 99,
+      "replaces_name_only": true,
+      "source_class": "HongCrystal",
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_class": "HongCrystal",
+        "source_file": "cltobj/stuffclt2.fcc",
+        "source_line": 39329,
+        "source_logical_path": "pic3/stuff/HongCrystal.ale",
+        "source_sha256": "32a5a49b4caee9f26e8dc3ec3ca6c8fb9772eed28e290be8caf4b76b69a6a2c7",
+        "source_palette": "",
+        "source_palette_sha256": "",
+        "status": "client_confirmed"
+      }
+    },
+    {
+      "id": "item:material:f3fe549c15c1",
+      "kind": "material",
+      "display_name": "G91精密触发器",
+      "description": "被工程师用来制作G91装备的重要材料。",
+      "max_stack": 99,
+      "replaces_name_only": true,
+      "source_class": "JMCFQ_G91",
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_class": "JMCFQ_G91",
+        "source_file": "cltobj/stuffclt2.fcc",
+        "source_line": 33301,
+        "source_logical_path": "pic3/stuff/JMCFQ_G91.ale",
+        "source_sha256": "86280ad060b20ea6a8ebb77748692a57e2f51c71e76761b4459085a24ab5c045",
+        "source_palette": "",
+        "source_palette_sha256": "",
+        "status": "client_confirmed"
+      }
+    },
+    {
+      "id": "item:material:abb79c50c89f",
+      "kind": "material",
+      "display_name": "机甲附属晶体I",
+      "description": "机甲辅助装备的晶体材料，是强化白色品质星辰级总控装置、星辰级传控装置、星辰级能源核心的必要材料。",
+      "max_stack": 99,
+      "replaces_name_only": true,
+      "source_class": "JiJiaFuShuJingTi1",
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_class": "JiJiaFuShuJingTi1",
+        "source_file": "cltobj/stuffclt2.fcc",
+        "source_line": 40044,
+        "source_logical_path": "pic3/stuff/JiJiaFuShuJingTi1.ale",
+        "source_sha256": "12da762ac61180058ca5759b5921b9cffb77beb8f345a573e489881fb3cf9f6e",
+        "source_palette": "",
+        "source_palette_sha256": "",
+        "status": "client_confirmed"
+      }
+    },
+    {
+      "id": "item:material:33d330a61be3",
+      "kind": "material",
+      "display_name": "机甲附属晶体II",
+      "description": "机甲辅助装备的晶体材料，是强化绿色品质星辰级总控装置、星辰级传控装置、星辰级能源核心的必要材料。",
+      "max_stack": 99,
+      "replaces_name_only": true,
+      "source_class": "JiJiaFuShuJingTi2",
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_class": "JiJiaFuShuJingTi2",
+        "source_file": "cltobj/stuffclt2.fcc",
+        "source_line": 40065,
+        "source_logical_path": "pic3/stuff/JiJiaFuShuJingTi2.ale",
+        "source_sha256": "37a793e5bd716d699bf7d309236e66df69661e34e82ce69ec8ff5f297b75e3c8",
+        "source_palette": "",
+        "source_palette_sha256": "",
+        "status": "client_confirmed"
+      }
+    },
+    {
+      "id": "item:material:e283667ae437",
+      "kind": "material",
+      "display_name": "机甲附属晶体III",
+      "description": "机甲辅助装备的晶体材料，是强化蓝色品质星辰级总控装置、星辰级传控装置、星辰级能源核心的必要材料。",
+      "max_stack": 99,
+      "replaces_name_only": true,
+      "source_class": "JiJiaFuShuJingTi3",
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_class": "JiJiaFuShuJingTi3",
+        "source_file": "cltobj/stuffclt2.fcc",
+        "source_line": 40086,
+        "source_logical_path": "pic3/stuff/JiJiaFuShuJingTi3.ale",
+        "source_sha256": "e3b09cf1af627b9c1509e954cfcfd69a47a2e42fb32c39873aa2edfd8038d682",
+        "source_palette": "",
+        "source_palette_sha256": "",
+        "status": "client_confirmed"
+      }
+    },
+    {
+      "id": "item:material:062a265c9544",
+      "kind": "material",
+      "display_name": "机甲月辉晶体I",
+      "description": "机甲辅助装备的晶体材料，是强化白色品质月辉级悬浮炮、月辉级机体、月辉级动力核心的必要材料。",
+      "max_stack": 99,
+      "replaces_name_only": true,
+      "source_class": "JiJiaYueHuiJingTi1",
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_class": "JiJiaYueHuiJingTi1",
+        "source_file": "cltobj/stuffclt2.fcc",
+        "source_line": 40376,
+        "source_logical_path": "pic3/stuff/JiJiaYueHuiJingTi1.ale",
+        "source_sha256": "487bc4796a66f2db5e349c18478fb74da0cc915c09b327ca8b393130843517b6",
+        "source_palette": "",
+        "source_palette_sha256": "",
+        "status": "client_confirmed"
+      }
+    },
+    {
+      "id": "item:material:3ed7f1287e45",
+      "kind": "material",
+      "display_name": "机甲月辉晶体II",
+      "description": "机甲辅助装备的晶体材料，是强化绿色品质月辉级悬浮炮、月辉级机体、月辉级动力核心的必要材料。",
+      "max_stack": 99,
+      "replaces_name_only": true,
+      "source_class": "JiJiaYueHuiJingTi2",
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_class": "JiJiaYueHuiJingTi2",
+        "source_file": "cltobj/stuffclt2.fcc",
+        "source_line": 40397,
+        "source_logical_path": "pic3/stuff/JiJiaYueHuiJingTi2.ale",
+        "source_sha256": "a684c14b18cfd7d5788cab362ffc44aef988de50fc23e75f052795dd8d8afc3c",
+        "source_palette": "",
+        "source_palette_sha256": "",
+        "status": "client_confirmed"
+      }
+    },
+    {
+      "id": "item:material:743ceffa7af7",
+      "kind": "material",
+      "display_name": "机甲月辉晶体III",
+      "description": "机甲辅助装备的晶体材料，是强化蓝色品质月辉级悬浮炮、月辉级机体、月辉级动力核心的必要材料。",
+      "max_stack": 99,
+      "replaces_name_only": true,
+      "source_class": "JiJiaYueHuiJingTi3",
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_class": "JiJiaYueHuiJingTi3",
+        "source_file": "cltobj/stuffclt2.fcc",
+        "source_line": 40418,
+        "source_logical_path": "pic3/stuff/JiJiaYueHuiJingTi3.ale",
+        "source_sha256": "e47cb2e12374098fa3fc2bd2125d356ef3ec265077443790b9975f978aa78335",
+        "source_palette": "",
+        "source_palette_sha256": "",
+        "status": "client_confirmed"
+      }
+    },
+    {
+      "id": "item:material:a55a9a5d270a",
+      "kind": "material",
+      "display_name": "蓝晶源",
+      "description": "一枚蕴含神秘能量的蓝色晶源，可以提升晶源体系列装备的阶数。",
+      "max_stack": 99,
+      "replaces_name_only": true,
+      "source_class": "LanCrystal",
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_class": "LanCrystal",
+        "source_file": "cltobj/stuffclt2.fcc",
+        "source_line": 39350,
+        "source_logical_path": "pic3/stuff/LanCrystal.ale",
+        "source_sha256": "f793646c8c28c27a7c9369a2c1218f32646786eb8be56504d6113bfc0c83dccd",
+        "source_palette": "",
+        "source_palette_sha256": "",
+        "status": "client_confirmed"
+      }
+    },
+    {
+      "id": "item:material:7df65e194766",
+      "kind": "material",
+      "display_name": "绿晶源",
+      "description": "一枚蕴含神秘能量的绿色晶源，可以提升晶源体系列装备的阶数。",
+      "max_stack": 99,
+      "replaces_name_only": true,
+      "source_class": "LvCrystal",
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_class": "LvCrystal",
+        "source_file": "cltobj/stuffclt2.fcc",
+        "source_line": 39371,
+        "source_logical_path": "pic3/stuff/LvCrystal.ale",
+        "source_sha256": "080e6df77b9822e3f4914fc31a445e2727470945fc5553999f8dad04dd3e4d0d",
+        "source_palette": "",
+        "source_palette_sha256": "",
+        "status": "client_confirmed"
+      }
+    },
+    {
+      "id": "item:material:920f37756918",
+      "kind": "material",
+      "display_name": "七彩水晶",
+      "description": "水晶中蕴含着七种颜色，时而绚丽，时而优雅。可以将晶源体系列装备的品质提升至15阶。",
+      "max_stack": 99,
+      "replaces_name_only": true,
+      "source_class": "MorColourfulCrystal",
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_class": "MorColourfulCrystal",
+        "source_file": "cltobj/stuffclt2.fcc",
+        "source_line": 39287,
+        "source_logical_path": "pic3/stuff/MorColourfulCrystal.ale",
+        "source_sha256": "56f9da82adde952babb732c097e838a8d11df5f0c14e576402c53d33d145d6d2",
+        "source_palette": "",
+        "source_palette_sha256": "",
+        "status": "client_confirmed"
+      }
+    },
+    {
+      "id": "item:material:5dbe93b102a3",
+      "kind": "material",
+      "display_name": "量子元素",
+      "description": "拥有高效能量的特殊物质，是制作早期初级装备的必须材料。",
+      "max_stack": 99,
+      "replaces_name_only": true,
+      "source_class": "QuantumElement",
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_class": "QuantumElement",
+        "source_file": "cltobj/stuffclt2.fcc",
+        "source_line": 25911,
+        "source_logical_path": "pic3/stuff/QuantumElement.ale",
+        "source_sha256": "bef538a219ef226ac94ae4f5f010f8ce395026b8ba3316a59cbd1e5741b2a94b",
+        "source_palette": "",
+        "source_palette_sha256": "",
+        "status": "client_confirmed"
+      }
+    },
+    {
+      "id": "item:material:a7bccd7c1408",
+      "kind": "material",
+      "display_name": "有瑕疵的火力晶石",
+      "description": "原版镶嵌晶石。镶嵌系统尚未开放，当前可拾取并保留。",
+      "max_stack": 99,
+      "replaces_name_only": true,
+      "source_class": "RYRime:0 1001 0",
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_class": "RYRime:0 1001 0",
+        "source_file": "cltobj/stuffclt2.fcc",
+        "source_line": 42507,
+        "source_logical_path": "pic3/stuff/RYRime1001.ale",
+        "source_sha256": "14f3f2b40ab6573fe9d93c85a1ae01237a1e87c980092e7d967ecac67358cd56",
+        "source_palette": "",
+        "source_palette_sha256": "",
+        "status": "client_confirmed"
+      }
+    },
+    {
+      "id": "item:material:794588abb6cf",
+      "kind": "material",
+      "display_name": "有瑕疵的生命晶石",
+      "description": "原版镶嵌晶石。镶嵌系统尚未开放，当前可拾取并保留。",
+      "max_stack": 99,
+      "replaces_name_only": true,
+      "source_class": "RYRime:0 1002 0",
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_class": "RYRime:0 1002 0",
+        "source_file": "cltobj/stuffclt2.fcc",
+        "source_line": 42507,
+        "source_logical_path": "pic3/stuff/RYRime1002.ale",
+        "source_sha256": "72bc54ea58dd1e55ddc54e9ce773cf78ff15640257b7b619ac4b7397bd5532d8",
+        "source_palette": "",
+        "source_palette_sha256": "",
+        "status": "client_confirmed"
+      }
+    },
+    {
+      "id": "item:material:d690c44b6030",
+      "kind": "material",
+      "display_name": "有瑕疵的防御晶石",
+      "description": "原版镶嵌晶石。镶嵌系统尚未开放，当前可拾取并保留。",
+      "max_stack": 99,
+      "replaces_name_only": true,
+      "source_class": "RYRime:0 1003 0",
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_class": "RYRime:0 1003 0",
+        "source_file": "cltobj/stuffclt2.fcc",
+        "source_line": 42507,
+        "source_logical_path": "pic3/stuff/RYRime1003.ale",
+        "source_sha256": "b32668193060d6ba87ed7df8bef7f4519a4311062b21922262a8e87a6b77fd29",
+        "source_palette": "",
+        "source_palette_sha256": "",
+        "status": "client_confirmed"
+      }
+    },
+    {
+      "id": "item:material:a095c982b884",
+      "kind": "material",
+      "display_name": "有瑕疵的制导晶石",
+      "description": "原版镶嵌晶石。镶嵌系统尚未开放，当前可拾取并保留。",
+      "max_stack": 99,
+      "replaces_name_only": true,
+      "source_class": "RYRime:0 1004 0",
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_class": "RYRime:0 1004 0",
+        "source_file": "cltobj/stuffclt2.fcc",
+        "source_line": 42507,
+        "source_logical_path": "pic3/stuff/RYRime1004.ale",
+        "source_sha256": "9ce6fd934c8e3e9da18fb02cdc286e956151037aded7045a39d8e6423905d72e",
+        "source_palette": "",
+        "source_palette_sha256": "",
+        "status": "client_confirmed"
+      }
+    },
+    {
+      "id": "item:material:c0cad9b715fb",
+      "kind": "material",
+      "display_name": "有瑕疵的暴击晶石",
+      "description": "原版镶嵌晶石。镶嵌系统尚未开放，当前可拾取并保留。",
+      "max_stack": 99,
+      "replaces_name_only": true,
+      "source_class": "RYRime:0 1005 0",
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_class": "RYRime:0 1005 0",
+        "source_file": "cltobj/stuffclt2.fcc",
+        "source_line": 42507,
+        "source_logical_path": "pic3/stuff/RYRime1005.ale",
+        "source_sha256": "4f584c208924b01aced30bdadaa374382e3b2f012e4ab9fde71e72aff226dc1d",
+        "source_palette": "",
+        "source_palette_sha256": "",
+        "status": "client_confirmed"
+      }
+    },
+    {
+      "id": "item:material:7dd51398ea4c",
+      "kind": "material",
+      "display_name": "有瑕疵的火箭晶石",
+      "description": "原版镶嵌晶石。镶嵌系统尚未开放，当前可拾取并保留。",
+      "max_stack": 99,
+      "replaces_name_only": true,
+      "source_class": "RYRime:0 1006 0",
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_class": "RYRime:0 1006 0",
+        "source_file": "cltobj/stuffclt2.fcc",
+        "source_line": 42507,
+        "source_logical_path": "pic3/stuff/RYRime1006.ale",
+        "source_sha256": "cdf89f2f8a4ca9407ed5657be9670dc4169bbd4bf47cacf0c87b5e0b3c91b7db",
+        "source_palette": "",
+        "source_palette_sha256": "",
+        "status": "client_confirmed"
+      }
+    },
+    {
+      "id": "item:material:1d49c09bf017",
+      "kind": "material",
+      "display_name": "晶石碎片",
+      "description": "5个晶石碎片可以合成一个随机的有瑕疵的晶石。（有几率直接合成为明亮的晶石）",
+      "max_stack": 99,
+      "replaces_name_only": true,
+      "source_class": "RYRimeFragment",
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_class": "RYRimeFragment",
+        "source_file": "cltobj/stuffclt2.fcc",
+        "source_line": 42779,
+        "source_logical_path": "pic3/stuff/RYRimeFragment.ale",
+        "source_sha256": "697e451f32cd463f9820cfbca093e167b48f61121ca9b6d4bba1e575688b8bab",
+        "source_palette": "",
+        "source_palette_sha256": "",
+        "status": "client_confirmed"
+      }
+    },
+    {
+      "id": "item:material:558e8a4df8ad",
+      "kind": "material",
+      "display_name": "铁钩钢片",
+      "description": "坚硬、但柔韧度欠缺，是强化白色品质磁悬浮炮的必要材料。",
+      "max_stack": 99,
+      "replaces_name_only": true,
+      "source_class": "TGSteelChip",
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_class": "TGSteelChip",
+        "source_file": "cltobj/stuffclt2.fcc",
+        "source_line": 39476,
+        "source_logical_path": "pic3/stuff/TGSteelChip.ale",
+        "source_sha256": "fc8c99ffc4ac6d3e93621303441be1225988a4e12df52271421f2acb2d6b9317",
+        "source_palette": "",
+        "source_palette_sha256": "",
+        "status": "client_confirmed"
+      }
+    },
+    {
+      "id": "item:material:093a64c39287",
+      "kind": "material",
+      "display_name": "陀螺平衡悬挂",
+      "description": "可使平行于振动板表面轴的旋转角速度产生的二阶弯曲振动模式的幅值更加平衡。是强化蓝色品质动力核心的必要材料。",
+      "max_stack": 99,
+      "replaces_name_only": true,
+      "source_class": "TLPHSuspension",
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_class": "TLPHSuspension",
+        "source_file": "cltobj/stuffclt2.fcc",
+        "source_line": 39644,
+        "source_logical_path": "pic3/stuff/TLPHSuspension.ale",
+        "source_sha256": "5bc1ec805edc5fca08848d9795fe32fd8c67e0fd5dd6e56863f7e368a17d086d",
+        "source_palette": "",
+        "source_palette_sha256": "",
+        "status": "client_confirmed"
+      }
+    },
+    {
+      "id": "item:material:bc5a18415358",
+      "kind": "material",
+      "display_name": "G91特制能量源",
+      "description": "被工程师用来改造神奇的G91装备，可对G91装备进行升阶。",
+      "max_stack": 99,
+      "replaces_name_only": true,
+      "source_class": "TZNLY_G91",
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_class": "TZNLY_G91",
+        "source_file": "cltobj/stuffclt2.fcc",
+        "source_line": 33319,
+        "source_logical_path": "pic3/stuff/TZNLY_G91.ale",
+        "source_sha256": "6bc2ab4871157389093cd1cd7059ac043a741e10478eb4538317d4f7342cdda3",
+        "source_palette": "",
+        "source_palette_sha256": "",
+        "status": "client_confirmed"
+      }
+    },
+    {
+      "id": "item:material:b517321630b8",
+      "kind": "material",
+      "display_name": "G92特制能量源",
+      "description": "被工程师用来改造神奇的G92装备，可对G92装备进行升阶。",
+      "max_stack": 99,
+      "replaces_name_only": true,
+      "source_class": "TZNLY_G92",
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_class": "TZNLY_G92",
+        "source_file": "cltobj/stuffclt2.fcc",
+        "source_line": 33336,
+        "source_logical_path": "pic3/stuff/TZNLY_G92.ale",
+        "source_sha256": "63fa2cacf8ae125b278039be6e4b7ccea1dec2ea6bcd4524f55d1db9a6d5e663",
+        "source_palette": "",
+        "source_palette_sha256": "",
+        "status": "client_confirmed"
+      }
+    },
+    {
+      "id": "item:material:f5ec2ce95368",
+      "kind": "material",
+      "display_name": "高级红晶源",
+      "description": "蕴含神秘能量的高阶红色晶源，可以将晶源体系列装备的阶数提升至15阶。",
+      "max_stack": 99,
+      "replaces_name_only": true,
+      "source_class": "TopHongCrystal",
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_class": "TopHongCrystal",
+        "source_file": "cltobj/stuffclt2.fcc",
+        "source_line": 39413,
+        "source_logical_path": "pic3/stuff/TopHongCrystal.ale",
+        "source_sha256": "daf75f232da3c1d53fb7d5c7b124f5ee82d0876559c7b42750d56774c19976e7",
+        "source_palette": "",
+        "source_palette_sha256": "",
+        "status": "client_confirmed"
+      }
+    },
+    {
+      "id": "item:material:d6e5deb49f86",
+      "kind": "material",
+      "display_name": "高级蓝晶源",
+      "description": "蕴含神秘能量的高阶蓝色晶源，可以将晶源体系列装备的阶数提升至15阶。",
+      "max_stack": 99,
+      "replaces_name_only": true,
+      "source_class": "TopLanCrystal",
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_class": "TopLanCrystal",
+        "source_file": "cltobj/stuffclt2.fcc",
+        "source_line": 39434,
+        "source_logical_path": "pic3/stuff/TopLanCrystal.ale",
+        "source_sha256": "13cd193a03b99f749113cace5c876e541deeb01b56c551f575a3003b2dbdf8d1",
+        "source_palette": "",
+        "source_palette_sha256": "",
+        "status": "client_confirmed"
+      }
+    },
+    {
+      "id": "item:material:0465103df5d2",
+      "kind": "material",
+      "display_name": "高级绿晶源",
+      "description": "蕴含神秘能量的高阶绿色晶源，可以将晶源体系列装备的阶数提升至15阶。",
+      "max_stack": 99,
+      "replaces_name_only": true,
+      "source_class": "TopLvCrystal",
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_class": "TopLvCrystal",
+        "source_file": "cltobj/stuffclt2.fcc",
+        "source_line": 39455,
+        "source_logical_path": "pic3/stuff/TopLvCrystal.ale",
+        "source_sha256": "cc23535cfeacad5325d9bd1f4424191e1baead9176f3d73f1b824efe0d16b124",
+        "source_palette": "",
+        "source_palette_sha256": "",
+        "status": "client_confirmed"
+      }
+    },
+    {
+      "id": "item:material:6ac284bb6c59",
+      "kind": "material",
+      "display_name": "高级紫晶源",
+      "description": "蕴含神秘能量的高阶紫色晶源，可以将晶源体系列装备的阶数提升至15阶。",
+      "max_stack": 99,
+      "replaces_name_only": true,
+      "source_class": "TopZiCrystal",
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_class": "TopZiCrystal",
+        "source_file": "cltobj/stuffclt2.fcc",
+        "source_line": 39392,
+        "source_logical_path": "pic3/stuff/TopZiCrystal.ale",
+        "source_sha256": "4e0ae42986f0e41e78045dbd8173e26dc86a762825e4d6132b2bc248486576a0",
+        "source_palette": "",
+        "source_palette_sha256": "",
+        "status": "client_confirmed"
+      }
+    },
+    {
+      "id": "item:material:f7c412f12300",
+      "kind": "material",
+      "display_name": "涡轮稳定器",
+      "description": "主要由扩压室、预燃室、火焰稳定器、喷管组成，适应于低级动力总承。是强化白色品质动力核心的必要材料。",
+      "max_stack": 99,
+      "replaces_name_only": true,
+      "source_class": "TurbineWDQ",
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_class": "TurbineWDQ",
+        "source_file": "cltobj/stuffclt2.fcc",
+        "source_line": 39602,
+        "source_logical_path": "pic3/stuff/TurbineWDQ.ale",
+        "source_sha256": "fb8fa353961780c1fd62985405a6cec8498222c13805d8cc49752f177e7f30c2",
+        "source_palette": "",
+        "source_palette_sha256": "",
+        "status": "client_confirmed"
+      }
+    },
+    {
+      "id": "item:material:073e4b22d062",
+      "kind": "material",
+      "display_name": "五行钢片",
+      "description": "一旦需要与银做搭档，那么五行钢片这个最古老的材料是不二选择。是强化蓝色品质磁悬浮炮的必要材料。",
+      "max_stack": 99,
+      "replaces_name_only": true,
+      "source_class": "WXSteelChip",
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_class": "WXSteelChip",
+        "source_file": "cltobj/stuffclt2.fcc",
+        "source_line": 39518,
+        "source_logical_path": "pic3/stuff/WXSteelChip.ale",
+        "source_sha256": "7b10e898a97205ca24b1d5785e096c63364410e72d5d7f34ebf8f0276087a1b1",
+        "source_palette": "",
+        "source_palette_sha256": "",
+        "status": "client_confirmed"
+      }
+    },
+    {
+      "id": "item:material:583a985508e9",
+      "kind": "material",
+      "display_name": "星磁晶体",
+      "description": "换取460级装备的高级晶体。",
+      "max_stack": 99,
+      "replaces_name_only": true,
+      "source_class": "XingCiCrystal",
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_class": "XingCiCrystal",
+        "source_file": "cltobj/stuffclt2.fcc",
+        "source_line": 1233,
+        "source_logical_path": "pic3/stuff/XingCiCrystal.ale",
+        "source_sha256": "eba3b76c22439e010aa342e4e85107be7cc11a4c70b04696e7dfa42d8c349a73",
+        "source_palette": "",
+        "source_palette_sha256": "",
+        "status": "client_confirmed"
+      }
+    },
+    {
+      "id": "item:material:f1a46cb86792",
+      "kind": "material",
+      "display_name": "星光晶体",
+      "description": "换取460级装备的高级晶体。",
+      "max_stack": 99,
+      "replaces_name_only": true,
+      "source_class": "XingGuangCrystal",
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_class": "XingGuangCrystal",
+        "source_file": "cltobj/stuffclt2.fcc",
+        "source_line": 1199,
+        "source_logical_path": "pic3/stuff/XingGuangCrystal.ale",
+        "source_sha256": "f03c79070fcf1e7452706b7f37d2903ff5e4b487109df37b7e6b7405b37db806",
+        "source_palette": "",
+        "source_palette_sha256": "",
+        "status": "client_confirmed"
+      }
+    },
+    {
+      "id": "item:material:77157411f2c7",
+      "kind": "material",
+      "display_name": "星辉晶体",
+      "description": "换取460级装备的高级晶体。",
+      "max_stack": 99,
+      "replaces_name_only": true,
+      "source_class": "XingHuiCrystal",
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_class": "XingHuiCrystal",
+        "source_file": "cltobj/stuffclt2.fcc",
+        "source_line": 1250,
+        "source_logical_path": "pic3/stuff/XingHuiCrystal.ale",
+        "source_sha256": "7ff653308a4c15cc4d3cf6c3cd292a70bddd6ff795177e49331aa40037dafb78",
+        "source_palette": "",
+        "source_palette_sha256": "",
+        "status": "client_confirmed"
+      }
+    },
+    {
+      "id": "item:material:6bce58752c7d",
+      "kind": "material",
+      "display_name": "星耀晶体",
+      "description": "换取460级装备的高级晶体。",
+      "max_stack": 99,
+      "replaces_name_only": true,
+      "source_class": "XingYaoCrystal",
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_class": "XingYaoCrystal",
+        "source_file": "cltobj/stuffclt2.fcc",
+        "source_line": 1268,
+        "source_logical_path": "pic3/stuff/XingYaoCrystal.ale",
+        "source_sha256": "e089972b0a49938d939aac113f7a6cb8c5770e1cacbc0d7a0571164251eb9eb4",
+        "source_palette": "",
+        "source_palette_sha256": "",
+        "status": "client_confirmed"
+      }
+    },
+    {
+      "id": "item:material:beb673694521",
+      "kind": "material",
+      "display_name": "星源晶体",
+      "description": "换取460级装备的高级晶体。",
+      "max_stack": 99,
+      "replaces_name_only": true,
+      "source_class": "XingYuanCrystal",
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_class": "XingYuanCrystal",
+        "source_file": "cltobj/stuffclt2.fcc",
+        "source_line": 1216,
+        "source_logical_path": "pic3/stuff/XingYuanCrystal.ale",
+        "source_sha256": "28b2384d01fd08ded4737f944095f6a83c55d65991161dc897a762c9805cd125",
+        "source_palette": "",
+        "source_palette_sha256": "",
+        "status": "client_confirmed"
+      }
+    },
+    {
+      "id": "item:material:bba50542ed38",
+      "kind": "material",
+      "display_name": "水晶月痕",
+      "description": "月光残影记录了我们祖先遗留的宝藏，使用后可以确定历险地点，祝你好运！",
+      "max_stack": 99,
+      "replaces_name_only": true,
+      "source_class": "YHOfInterstellar",
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_class": "YHOfInterstellar",
+        "source_file": "cltobj/stuffclt2.fcc",
+        "source_line": 31949,
+        "source_logical_path": "pic3/stuff/YHOfInterstellar.ale",
+        "source_sha256": "d1de7471bf7023b12751f482a7101600548a9042eeb0508be847cf52c87c50b2",
+        "source_palette": "",
+        "source_palette_sha256": "",
+        "status": "client_confirmed"
+      }
+    },
+    {
+      "id": "item:material:049296cd8264",
+      "kind": "material",
+      "display_name": "水晶月痕碎片",
+      "description": "撒玛部队为了不留下当前罪恶的痕迹，把所有的水晶月痕都销毁了。集齐5个水晶月痕碎片可以合成一个水晶月痕。",
+      "max_stack": 99,
+      "replaces_name_only": true,
+      "source_class": "YHOfInterstellar_Frag",
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_class": "YHOfInterstellar_Frag",
+        "source_file": "cltobj/stuffclt2.fcc",
+        "source_line": 32059,
+        "source_logical_path": "pic3/stuff/YHOfInterstellar_Frag.ale",
+        "source_sha256": "716f89d8a60b127ddd5221b6aeb22c19d1161161f8f9560a8597f3183640df58",
+        "source_palette": "",
+        "source_palette_sha256": "",
+        "status": "client_confirmed"
+      }
+    },
+    {
+      "id": "item:material:34fd6a87af72",
+      "kind": "material",
+      "display_name": "挂机辅助时间卡（15分钟）",
+      "description": "使用后可以增加15分钟的挂机使用时间，每天只可累计增加120分钟。（禁交易）",
+      "max_stack": 99,
+      "replaces_name_only": true,
+      "source_class": "ZNGJTimeCard15",
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_class": "ZNGJTimeCard15",
+        "source_file": "cltobj/stuffclt2.fcc",
+        "source_line": 28030,
+        "source_logical_path": "pic3/stuff/ZNGJTimeCard15.ale",
+        "source_sha256": "8f710c875ef11d5e8aee5bc8c50f3ea61dc89d7d9d1f42a1738e3992c1a20c19",
+        "source_palette": "",
+        "source_palette_sha256": "",
+        "status": "client_confirmed"
+      }
+    },
+    {
+      "id": "item:material:1916f1df829a",
+      "kind": "material",
+      "display_name": "兆瓦纤维",
+      "description": "优异适应性的纤维，可保机体电路畅通。是强化白色品质机体的必要材料。",
+      "max_stack": 99,
+      "replaces_name_only": true,
+      "source_class": "ZWFibar",
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_class": "ZWFibar",
+        "source_file": "cltobj/stuffclt2.fcc",
+        "source_line": 39539,
+        "source_logical_path": "pic3/stuff/ZWFibar.ale",
+        "source_sha256": "32f85a09053e22d1ebb12f1e568b9c3f336523364fee59267786eca573c9facf",
+        "source_palette": "",
+        "source_palette_sha256": "",
+        "status": "client_confirmed"
+      }
+    },
+    {
+      "id": "item:material:5773d6d74168",
+      "kind": "material",
+      "display_name": "紫晶源",
+      "description": "一枚蕴含神秘能量的紫色晶源，可以提升晶源体系列装备的阶数。",
+      "max_stack": 99,
+      "replaces_name_only": true,
+      "source_class": "ZiCrystal",
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_class": "ZiCrystal",
+        "source_file": "cltobj/stuffclt2.fcc",
+        "source_line": 39308,
+        "source_logical_path": "pic3/stuff/ZiCrystal.ale",
+        "source_sha256": "3af21f6aceb1b4f921c140be89fd7de1567bd6fb4749d214520e93b527c8001a",
+        "source_palette": "",
+        "source_palette_sha256": "",
+        "status": "client_confirmed"
+      }
+    },
+    {
+      "id": "item:material:9a81c6572eee",
+      "kind": "material",
+      "display_name": "高热结晶体",
+      "description": "最新发现的未知晶体,隐约可见晶体内部红色暗流涌动.",
+      "max_stack": 99,
+      "replaces_name_only": true,
+      "source_class": "new002",
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_class": "new002",
+        "source_file": "cltobj/stuffclt2.fcc",
+        "source_line": 350,
+        "source_logical_path": "pic3/stuff/jiejing01.ale",
+        "source_sha256": "114999188d5f44213cd42e5896e9934c73a636e92f5b4d399a48d8d65909fa51",
+        "source_palette": "",
+        "source_palette_sha256": "",
+        "status": "client_confirmed"
+      }
+    },
+    {
+      "id": "item:material:17500b513d35",
+      "kind": "material",
+      "display_name": "腐蚀结晶体",
+      "description": "最新发现的未知晶体,隐约可见晶体内部绿色浓雾滚动.",
+      "max_stack": 99,
+      "replaces_name_only": true,
+      "source_class": "new003",
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_class": "new003",
+        "source_file": "cltobj/stuffclt2.fcc",
+        "source_line": 367,
+        "source_logical_path": "pic3/stuff/jiejing02.ale",
+        "source_sha256": "daa9b059071570a1f2c3447318da0bc1528339996c148b25ec53a9c0bdd34387",
+        "source_palette": "",
+        "source_palette_sha256": "",
+        "status": "client_confirmed"
+      }
+    },
+    {
+      "id": "item:material:d407556cd129",
+      "kind": "material",
+      "display_name": "磁化结晶体",
+      "description": "最新发现的未知晶体,隐约可见晶体内部蓝色电流缠绕.",
+      "max_stack": 99,
+      "replaces_name_only": true,
+      "source_class": "new004",
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_class": "new004",
+        "source_file": "cltobj/stuffclt2.fcc",
+        "source_line": 384,
+        "source_logical_path": "pic3/stuff/jiejing03.ale",
+        "source_sha256": "7747a52e7ddba272f9986a8459f82e4dcc05be3c67e2b510af4cba5a1ad597bc",
+        "source_palette": "",
+        "source_palette_sha256": "",
+        "status": "client_confirmed"
+      }
+    },
+    {
+      "id": "item:material:43ed7eecc949",
+      "kind": "material",
+      "display_name": "高热芯片",
+      "description": "最新发现的高能量增幅芯片，可以全面增加高热发生器的威力.(附加高热伤害几率增加,持续时间延长,每秒伤害HP增加)",
+      "max_stack": 99,
+      "replaces_name_only": true,
+      "source_class": "new005",
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_class": "new005",
+        "source_file": "cltobj/stuffclt2.fcc",
+        "source_line": 401,
+        "source_logical_path": "pic3/stuff/xinpian01.ale",
+        "source_sha256": "cb5e70bd50d99dd546012eb04060c0bb287b90a971244a6d8e4563fe118f2121",
+        "source_palette": "",
+        "source_palette_sha256": "",
+        "status": "client_confirmed"
+      }
+    },
+    {
+      "id": "item:material:ee509dbc2244",
+      "kind": "material",
+      "display_name": "腐蚀芯片",
+      "description": "最新发现的高能量增幅芯片,可以全面增加腐蚀发生器的威力.(附加腐蚀伤害几率增加,持续时间延长,减少防御力最大值的效果增加)",
+      "max_stack": 99,
+      "replaces_name_only": true,
+      "source_class": "new006",
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_class": "new006",
+        "source_file": "cltobj/stuffclt2.fcc",
+        "source_line": 418,
+        "source_logical_path": "pic3/stuff/xinpian02.ale",
+        "source_sha256": "b349cb6b8030f0dbfaf900eff3c78268d68fa67e21fc1c168cd75be3b6033a4a",
+        "source_palette": "",
+        "source_palette_sha256": "",
+        "status": "client_confirmed"
+      }
+    },
+    {
+      "id": "item:material:f5fe4a61399b",
+      "kind": "material",
+      "display_name": "磁化芯片",
+      "description": "最新发现的高能量增幅芯片,可以全面增加磁化发生器的威力(附加磁暴伤害几率增加,持续时间延长,减少所装备武器的最大攻击力最大值的效果增加)",
+      "max_stack": 99,
+      "replaces_name_only": true,
+      "source_class": "new007",
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_class": "new007",
+        "source_file": "cltobj/stuffclt2.fcc",
+        "source_line": 435,
+        "source_logical_path": "pic3/stuff/xinpian03.ale",
+        "source_sha256": "863df6517c35dced289597410645a81999cc23da15c0158a3dc8866851bb31a7",
+        "source_palette": "",
+        "source_palette_sha256": "",
+        "status": "client_confirmed"
+      }
+    },
+    {
+      "id": "item:material:b76edad9fa8e",
+      "kind": "material",
+      "display_name": "中级四足甲的壳",
+      "description": "四足爬行类太空生物背上最坚硬的壳，很难被击穿，可以用来合成钢板。",
+      "max_stack": 99,
+      "replaces_name_only": true,
+      "source_class": "中级四足甲的壳",
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_class": "中级四足甲的壳",
+        "source_file": "cltobj/stuffclt2.fcc",
+        "source_line": 801,
+        "source_logical_path": "pic3/stuff/CHN_2005_06_28_18_35_28_782.ale",
+        "source_sha256": "dc80a7326e391bcf61d78fb31b3e24e3b9527784e17d3890366bb0c09c2c21c9",
+        "source_palette": "pic3/act/shellblue.act",
+        "source_palette_sha256": "cca6dda44fafea0b3f754ae87aa48614e109fe843de3c59c943bdf1d06c58911",
+        "status": "client_confirmed"
+      }
+    },
+    {
+      "id": "item:material:deb4b85e31bd",
+      "kind": "material",
+      "display_name": "中级生物硅",
+      "description": "太空生物骨骼上的坚硬颗粒，是制造中必不可少的添加剂。",
+      "max_stack": 99,
+      "replaces_name_only": true,
+      "source_class": "中级生物硅",
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_class": "中级生物硅",
+        "source_file": "cltobj/stuffclt2.fcc",
+        "source_line": 745,
+        "source_logical_path": "pic3/stuff/CHN_2005_06_28_18_35_21_781.ale",
+        "source_sha256": "1d8bde55a500f763b47f521a342e7e02f040d4d8803c357afd5cb011904b8940",
+        "source_palette": "pic3/act/siliconblue.act",
+        "source_palette_sha256": "cfe32864313cf5da458d378c0ace1aa6a0898f1e31ce0010a531b945706d9dce",
+        "status": "client_confirmed"
+      }
+    },
+    {
+      "id": "item:material:472d2fb951cb",
+      "kind": "material",
+      "display_name": "中级类胶",
+      "description": "太空生物体内产生的一种粘稠状液体，可以用来提炼各种材料。",
+      "max_stack": 99,
+      "replaces_name_only": true,
+      "source_class": "中级类胶",
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_class": "中级类胶",
+        "source_file": "cltobj/stuffclt2.fcc",
+        "source_line": 47,
+        "source_logical_path": "pic3/stuff/gluey.ale",
+        "source_sha256": "d02b1c89ceb0fc4750d1b65665d31729a71e1fe820d5c57d8fc709d6b1bc442a",
+        "source_palette": "pic3/act/rubberblue.act",
+        "source_palette_sha256": "cca6dda44fafea0b3f754ae87aa48614e109fe843de3c59c943bdf1d06c58911",
+        "status": "client_confirmed"
+      }
+    },
+    {
+      "id": "item:material:fa905bea2130",
+      "kind": "material",
+      "display_name": "中级能量催化剂",
+      "description": "制造或合成机械制品必须的催化剂。",
+      "max_stack": 99,
+      "replaces_name_only": true,
+      "source_class": "中级能量催化剂",
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_class": "中级能量催化剂",
+        "source_file": "cltobj/stuffclt2.fcc",
+        "source_line": 687,
+        "source_logical_path": "pic3/stuff/CHN_2005_06_28_18_34_48_776.ale",
+        "source_sha256": "c43ff2017f9ab1d7338dc98583f8cce165e905c1f8f783fede1cefd3e87275fb",
+        "source_palette": "pic3/act/activatorblue.act",
+        "source_palette_sha256": "cca6dda44fafea0b3f754ae87aa48614e109fe843de3c59c943bdf1d06c58911",
+        "status": "client_confirmed"
+      }
+    },
+    {
+      "id": "item:material:cfa52e059e34",
+      "kind": "material",
+      "display_name": "中级能量包",
+      "description": "储藏有能量的罐状容器。含有10000单位能量",
+      "max_stack": 99,
+      "replaces_name_only": true,
+      "source_class": "中级能量包",
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_class": "中级能量包",
+        "source_file": "cltobj/stuffclt2.fcc",
+        "source_line": 160,
+        "source_logical_path": "pic3/stuff/NLB02.ale",
+        "source_sha256": "2db0bb809cb108223eafd6c6a68827b0df529042d780bcfa5a502fff940e2a15",
+        "source_palette": "",
+        "source_palette_sha256": "",
+        "status": "client_confirmed"
+      }
+    },
+    {
+      "id": "item:material:a4f7cbe44e92",
+      "kind": "material",
+      "display_name": "传感器",
+      "description": "高级星球城市及建筑设施的维修建设的原料。",
+      "max_stack": 99,
+      "replaces_name_only": true,
+      "source_class": "传感器",
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_class": "传感器",
+        "source_file": "cltobj/stuffclt2.fcc",
+        "source_line": 4131,
+        "source_logical_path": "pic3/stuff/KL_npc02.ale",
+        "source_sha256": "7dce6a4056af017d8eddbb0114c3e2461924ae2fbec6f37ecac1a4b4cd45275d",
+        "source_palette": "",
+        "source_palette_sha256": "",
+        "status": "client_confirmed"
+      }
+    },
+    {
+      "id": "item:material:7e5440c2f103",
+      "kind": "material",
+      "display_name": "动力板",
+      "description": "高级星球城市及建筑设施的维修建设的原料。",
+      "max_stack": 99,
+      "replaces_name_only": true,
+      "source_class": "动力板",
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_class": "动力板",
+        "source_file": "cltobj/stuffclt2.fcc",
+        "source_line": 4165,
+        "source_logical_path": "pic3/stuff/KL_npc04.ale",
+        "source_sha256": "716a3121428c755abf2f7589f166d458559ff896e34221be251867c33f8bce8e",
+        "source_palette": "",
+        "source_palette_sha256": "",
+        "status": "client_confirmed"
+      }
+    },
+    {
+      "id": "item:material:3e5df1aed65c",
+      "kind": "material",
+      "display_name": "变接器",
+      "description": "高级星球城市及建筑设施的维修建设的原料。",
+      "max_stack": 99,
+      "replaces_name_only": true,
+      "source_class": "变接器",
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_class": "变接器",
+        "source_file": "cltobj/stuffclt2.fcc",
+        "source_line": 4114,
+        "source_logical_path": "pic3/stuff/KL_npc01.ale",
+        "source_sha256": "3bce2edefa8b98e87bf25b36371ac94918f688670224c6ca885e01b47e9209e2",
+        "source_palette": "",
+        "source_palette_sha256": "",
+        "status": "client_confirmed"
+      }
+    },
+    {
+      "id": "item:material:f046399c4dff",
+      "kind": "material",
+      "display_name": "扩充器+10",
+      "description": "给附加装备增加载弹量的特殊芯片!",
+      "max_stack": 99,
+      "replaces_name_only": true,
+      "source_class": "扩充器",
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_class": "扩充器",
+        "source_file": "cltobj/stuffclt2.fcc",
+        "source_line": 6345,
+        "source_logical_path": "pic3/stuff/bulletXP_1.ale",
+        "source_sha256": "9fb35e25e9f76017c012635840a5b1aa63c44401d211c304139a54fa6df9f755",
+        "source_palette": "",
+        "source_palette_sha256": "",
+        "status": "client_confirmed"
+      }
+    },
+    {
+      "id": "item:material:47b24f797e14",
+      "kind": "material",
+      "display_name": "扩流器+2",
+      "description": "特殊物品, 可给车的‘输出功率’加2",
+      "max_stack": 99,
+      "replaces_name_only": true,
+      "source_class": "扩流器1",
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_class": "扩流器1",
+        "source_file": "cltobj/stuffclt2.fcc",
+        "source_line": 5834,
+        "source_logical_path": "pic3/stuff/kuoliuqi01.ale",
+        "source_sha256": "9f846f9bf07a4d2908a352375e15bc2f9c08286d0c083dbcb4192ca53f2f541c",
+        "source_palette": "",
+        "source_palette_sha256": "",
+        "status": "client_confirmed"
+      }
+    },
+    {
+      "id": "item:material:9713f13ede8d",
+      "kind": "material",
+      "display_name": "接合器升级碎片",
+      "description": "凑齐一定数量后，可在提炼厂的材料提炼机上合并为1级接合器升级晶片。",
+      "max_stack": 99,
+      "replaces_name_only": true,
+      "source_class": "接合器升级碎片",
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_class": "接合器升级碎片",
+        "source_file": "ven/stuffclt2_ven.fcc",
+        "source_line": 3724,
+        "source_logical_path": "pic3/stuff/NewJointDebris.ale",
+        "source_sha256": "18e022423af1dd8e1d10c57462fcbeb8d699e8ed2776149a73c843399cb0a04b",
+        "source_palette": "",
+        "source_palette_sha256": "",
+        "status": "client_confirmed"
+      }
+    },
+    {
+      "id": "item:material:3481b7371d1e",
+      "kind": "material",
+      "display_name": "撒玛合金+10",
+      "description": "特殊物品, 可给车的‘生命力’加10",
+      "max_stack": 99,
+      "replaces_name_only": true,
+      "source_class": "撒玛合金5",
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_class": "撒玛合金5",
+        "source_file": "cltobj/stuffclt2.fcc",
+        "source_line": 5746,
+        "source_logical_path": "pic3/stuff/samahejin01.ale",
+        "source_sha256": "f67505dfcbc8826e3670aeb7b61e1d6fd7cf9edec44fc3f218d2f50e00f6d92a",
+        "source_palette": "",
+        "source_palette_sha256": "",
+        "status": "client_confirmed"
+      }
+    },
+    {
+      "id": "item:material:198e40429499",
+      "kind": "material",
+      "display_name": "火力元件+1",
+      "description": "给附加装备增加攻击力的特殊芯片!",
+      "max_stack": 99,
+      "replaces_name_only": true,
+      "source_class": "火力元件",
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_class": "火力元件",
+        "source_file": "cltobj/stuffclt2.fcc",
+        "source_line": 6294,
+        "source_logical_path": "pic3/stuff/attackXP_1.ale",
+        "source_sha256": "8f3760c685563af76b67f28b323592350c2fb7def5de6ced4466a462a9c248f6",
+        "source_palette": "",
+        "source_palette_sha256": "",
+        "status": "client_confirmed"
+      }
+    },
+    {
+      "id": "item:material:dc8a42c2781e",
+      "kind": "material",
+      "display_name": "热敏电阻",
+      "description": "高级星球城市及建筑设施的维修建设的原料。",
+      "max_stack": 99,
+      "replaces_name_only": true,
+      "source_class": "热敏电阻",
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_class": "热敏电阻",
+        "source_file": "cltobj/stuffclt2.fcc",
+        "source_line": 4148,
+        "source_logical_path": "pic3/stuff/KL_npc03.ale",
+        "source_sha256": "55335ba7debd674e4635e3bb2f8a5c2a6584c83e21f29edde2c33096787d60c8",
+        "source_palette": "",
+        "source_palette_sha256": "",
+        "status": "client_confirmed"
+      }
+    },
+    {
+      "id": "item:material:e24d172fada7",
+      "kind": "material",
+      "display_name": "聚能晶片+10",
+      "description": "特殊物品, 可给能量炮的‘射程’加10",
+      "max_stack": 99,
+      "replaces_name_only": true,
+      "source_class": "聚能晶片5",
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_class": "聚能晶片5",
+        "source_file": "cltobj/stuffclt2.fcc",
+        "source_line": 5924,
+        "source_logical_path": "pic3/stuff/junengxp01.ale",
+        "source_sha256": "ec0d0002671e73224c11841fd30e441c5f6a46a283ad94f04a148f98d28fddf4",
+        "source_palette": "",
+        "source_palette_sha256": "",
+        "status": "client_confirmed"
+      }
+    },
+    {
+      "id": "item:material:02212ea88168",
+      "kind": "material",
+      "display_name": "超磁体+2",
+      "description": "特殊物品, 可给引擎的‘推进力’加2",
+      "max_stack": 99,
+      "replaces_name_only": true,
+      "source_class": "超磁体1",
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_class": "超磁体1",
+        "source_file": "cltobj/stuffclt2.fcc",
+        "source_line": 6043,
+        "source_logical_path": "pic3/stuff/chaociti01.ale",
+        "source_sha256": "fa3adce0ac49cb2fdce45076f3886d061e01c370bcc5004c7cc833df93df6862",
+        "source_palette": "",
+        "source_palette_sha256": "",
+        "status": "client_confirmed"
+      }
+    },
+    {
+      "id": "item:material:485f08ad24d4",
+      "kind": "material",
+      "display_name": "高级四足甲的壳",
+      "description": "四足爬行类太空生物背上最坚硬的壳，很难被击穿，可以用来合成钢板。",
+      "max_stack": 99,
+      "replaces_name_only": true,
+      "source_class": "高级四足甲的壳",
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_class": "高级四足甲的壳",
+        "source_file": "cltobj/stuffclt2.fcc",
+        "source_line": 819,
+        "source_logical_path": "pic3/stuff/CHN_2005_06_28_18_35_28_782.ale",
+        "source_sha256": "dc80a7326e391bcf61d78fb31b3e24e3b9527784e17d3890366bb0c09c2c21c9",
+        "source_palette": "pic3/act/shellred.act",
+        "source_palette_sha256": "c11c70a4ee6277a6135b223ebe7309f401cd16e899e3f42e0ffe6525e1099b9e",
+        "status": "client_confirmed"
+      }
+    },
+    {
+      "id": "item:material:99d2d25d7142",
+      "kind": "material",
+      "display_name": "高级生物硅",
+      "description": "太空生物骨骼上的坚硬颗粒，是制造中必不可少的添加剂。",
+      "max_stack": 99,
+      "replaces_name_only": true,
+      "source_class": "高级生物硅",
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_class": "高级生物硅",
+        "source_file": "cltobj/stuffclt2.fcc",
+        "source_line": 763,
+        "source_logical_path": "pic3/stuff/CHN_2005_06_28_18_35_21_781.ale",
+        "source_sha256": "1d8bde55a500f763b47f521a342e7e02f040d4d8803c357afd5cb011904b8940",
+        "source_palette": "pic3/act/siliconred.act",
+        "source_palette_sha256": "9d35a91769078179a6f35ed0b3d916094af01132f92296ac48a8071b37b5984a",
+        "status": "client_confirmed"
+      }
+    },
+    {
+      "id": "item:material:fa5a837875bb",
+      "kind": "material",
+      "display_name": "高级类胶",
+      "description": "太空生物体内产生的一种粘稠状液体，可以用来提炼各种材料。",
+      "max_stack": 99,
+      "replaces_name_only": true,
+      "source_class": "高级类胶",
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_class": "高级类胶",
+        "source_file": "cltobj/stuffclt2.fcc",
+        "source_line": 65,
+        "source_logical_path": "pic3/stuff/gluey.ale",
+        "source_sha256": "d02b1c89ceb0fc4750d1b65665d31729a71e1fe820d5c57d8fc709d6b1bc442a",
+        "source_palette": "pic3/act/rubberred.act",
+        "source_palette_sha256": "c11c70a4ee6277a6135b223ebe7309f401cd16e899e3f42e0ffe6525e1099b9e",
+        "status": "client_confirmed"
+      }
+    },
+    {
+      "id": "item:material:fdae75215694",
+      "kind": "material",
+      "display_name": "高级能量催化剂",
+      "description": "制造或合成机械制品必须的催化剂。",
+      "max_stack": 99,
+      "replaces_name_only": true,
+      "source_class": "高级能量催化剂",
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_class": "高级能量催化剂",
+        "source_file": "cltobj/stuffclt2.fcc",
+        "source_line": 705,
+        "source_logical_path": "pic3/stuff/CHN_2005_06_28_18_34_48_776.ale",
+        "source_sha256": "c43ff2017f9ab1d7338dc98583f8cce165e905c1f8f783fede1cefd3e87275fb",
+        "source_palette": "pic3/act/activatorred.act",
+        "source_palette_sha256": "c11c70a4ee6277a6135b223ebe7309f401cd16e899e3f42e0ffe6525e1099b9e",
+        "status": "client_confirmed"
+      }
+    }
+  ]
+}
