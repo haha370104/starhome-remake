@@ -29,7 +29,8 @@ var _next_instance_serial := 1
 
 ## 初始化统一物品、商店、任务、存档映射和面板投影依赖。
 ## 返回初始化后的服务或具体配置错误。
-func initialize() -> DomainResult:
+## [param rewards] 同一服务器共享的奖励切面，省略时使用独立默认策略。
+func initialize(rewards: RewardPipeline = null) -> DomainResult:
 	_catalog = ItemCatalogScript.new()
 	var items_loaded := _catalog.initialize()
 	if not items_loaded.is_ok:
@@ -51,7 +52,7 @@ func initialize() -> DomainResult:
 		if not merchant_loaded.is_ok:
 			return merchant_loaded
 		_merchants[merchant_id] = merchant
-	_mapper = PlayerStateMapperScript.new(_catalog)
+	_mapper = PlayerStateMapperScript.new(_catalog, rewards)
 	var skill_config := JsonConfigLoader.load_dictionary("res://data/gameplay/skill_progression.json")
 	if not skill_config.is_ok:
 		return skill_config

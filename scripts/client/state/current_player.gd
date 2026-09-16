@@ -72,7 +72,6 @@ func apply_bundle(bundle: Dictionary) -> bool:
 	experience = maxi(0, int(character.get("experience", 0)))
 	revision = maxi(0, int(bundle.get("transaction_revision", 0)))
 	skills = SkillBook.new(skill_states)
-	skills.food_status = food_status
 	var achievement_snapshot: Dictionary = bundle.get("achievements", {})
 	if not PlayerAchievements.valid_state({"counters": achievement_snapshot.get("counters", {})}):
 		return false

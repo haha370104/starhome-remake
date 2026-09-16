@@ -58,17 +58,45 @@ func entries() -> Array[Dictionary]:
 ## 返回本次实际生成的物品定义与数量数组。
 ## 设计：领域对象只返回值对象，不生成世界实体或直接修改玩家背包。
 func roll(random: RandomNumberGenerator) -> Array[Dictionary]:
+	var rolled := roll_with_modifiers(random, null, null)
+	return rolled.value if rolled.is_ok else []
+
+
+## 在独立随机判定前执行统一倍率切面，概率溢出转为保证数量。
+## [param random] 服务端随机源。
+## [param pipeline] 可选奖励切面；为空时保持原始抽取行为。
+## [param context] 击杀者及怪物的权威事实，各物品使用独立上下文。
+## 返回本次掉落数组或结算错误；失败不返回半批奖励。
+func roll_with_modifiers(random: RandomNumberGenerator, pipeline: RewardPipeline, context: RewardContext) -> DomainResult:
 	var result: Array[Dictionary] = []
 	if random == null:
-		return result
+		return DomainResult.ok(result)
+	if pipeline != null and context == null:
+		return DomainResult.failure(&"reward.invalid_context", "掉落倍率缺少权威上下文")
 	for entry: Dictionary in _entries:
-		var chance := float(entry["chance"])
-		if chance <= 0.0 or random.randf() >= chance:
+		var chance := float(entry.chance)
+		var settlement: RewardSettlement
+		if pipeline != null:
+			var settled := pipeline.settle(context.for_item(String(entry.item_definition_id)), chance)
+			if not settled.is_ok:
+				return settled
+			settlement = settled.value
+			chance = settlement.final_amount
+		if chance <= 0.0:
 			continue
-		result.append({
-			"item_definition_id": String(entry["item_definition_id"]),
-			"quantity": random.randi_range(
-				int(entry["minimum_quantity"]), int(entry["maximum_quantity"])
-			),
-		})
-	return result
+		# 保持默认倍率时原随机数消费顺序，且不把大于100%的概率截断。
+		if chance * int(entry.maximum_quantity) > 9007199254740991.0:
+			return DomainResult.failure(&"reward.overflow", "掉落数量超过精确整数范围")
+		var successes := floori(chance)
+		if random.randf() < chance - successes:
+			successes += 1
+		if successes == 0:
+			continue
+		var drop := {
+			"item_definition_id": String(entry.item_definition_id),
+			"quantity": random.randi_range(int(entry.minimum_quantity), int(entry.maximum_quantity)) * successes,
+		}
+		if settlement != null:
+			drop["reward_settlement"] = settlement.to_dictionary()
+		result.append(drop)
+	return DomainResult.ok(result)

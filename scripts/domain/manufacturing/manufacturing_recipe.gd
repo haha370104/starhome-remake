@@ -93,7 +93,7 @@ func execute(
 	if not crafted.is_ok:
 		return crafted
 	var progression := player.grant_skill_experience(
-		skill_id, skill_experience, progression_config
+		skill_id, skill_experience, progression_config, "manufacturing"
 	)
 	if not progression.is_ok and progression.error_code == &"skill_maximum_level":
 		progression = DomainResult.ok({"upgraded": false, "maximum_level_reached": true})

@@ -17,7 +17,8 @@ var _skill_progression_config: Dictionary = {}
 ## 初始化物品目录、持久化映射器和网络 DTO 投影器。
 ## 返回加载成功的服务实例或配置错误。
 ## 设计：应用服务只编排用例，不再持有物品类型、换装和属性计算规则。
-func initialize() -> DomainResult:
+## [param rewards] 同一服务器共享的奖励切面，省略时使用独立默认策略。
+func initialize(rewards: RewardPipeline = null) -> DomainResult:
 	_catalog = ItemCatalogScript.new()
 	var catalog_result := _catalog.initialize()
 	if not catalog_result.is_ok:
@@ -28,7 +29,7 @@ func initialize() -> DomainResult:
 	if not skill_config_result.is_ok:
 		return skill_config_result
 	_skill_progression_config = skill_config_result.value
-	_mapper = PlayerStateMapperScript.new(_catalog)
+	_mapper = PlayerStateMapperScript.new(_catalog, rewards)
 	_projector = PlayerPanelProjectorScript.new(_catalog, _skill_progression_config)
 	return DomainResult.ok(self)
 
@@ -171,7 +172,7 @@ func grant_skill_progression(
 		skill_id, _skill_progression_config
 	)
 	var granted := player.grant_skill_experience(
-		skill_id, float(value["amount"]), _skill_progression_config
+		skill_id, float(value["amount"]), _skill_progression_config, String(progression_event.get("source", ""))
 	)
 	if not granted.is_ok:
 		return granted
@@ -180,7 +181,6 @@ func grant_skill_progression(
 		return persisted
 	var progression: Dictionary = granted.value
 	progression["source"] = String(progression_event.get("source", ""))
-	progression["granted_experience"] = float(value["amount"])
 	var after_percent := player.skills.displayed_progress_percent(skill_id, _skill_progression_config)
 	progression["visible_progress_changed"] = before_percent != after_percent \
 		or bool(progression.get("upgraded", false))

@@ -4,12 +4,15 @@ extends RefCounted
 const PlayerStateRecordScript := preload("res://scripts/server/persistence/player_state_record.gd")
 
 var _catalog: ItemCatalog
+var _reward_policy: DomainResult
 
 
 ## 初始化存档 DTO 与纯领域 Player 之间的映射器。
 ## [param catalog] 已完成加载的物品类型目录。
-func _init(catalog: ItemCatalog) -> void:
+## [param rewards] 由服务端组装的可选切面；省略时加载统一只读配置。
+func _init(catalog: ItemCatalog, rewards: RewardPipeline = null) -> void:
 	_catalog = catalog
+	_reward_policy = DomainResult.ok(rewards) if rewards != null else RewardPolicyLoader.load_default()
 
 
 ## 将权威持久化记录还原为充血 Player 聚合。
@@ -19,6 +22,8 @@ func _init(catalog: ItemCatalog) -> void:
 func to_domain(record: PlayerStateRecord) -> DomainResult:
 	if record == null or _catalog == null:
 		return DomainResult.failure(&"player.mapping_unavailable", "player mapper is unavailable")
+	if not _reward_policy.is_ok:
+		return _reward_policy
 	var player := Player.new({
 		"account_id": record.account_id,
 		"account_name": record.account_name,
@@ -62,6 +67,7 @@ func to_domain(record: PlayerStateRecord) -> DomainResult:
 			"output_power": record.output_power,
 		},
 	})
+	player.reward_pipeline = _reward_policy.value
 	var inventory_items: Array[GameItem] = []
 	for stack in record.inventory_stacks:
 		var created := _catalog.create(stack.item_definition_id, {

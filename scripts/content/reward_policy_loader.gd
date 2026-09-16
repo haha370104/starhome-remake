@@ -2,16 +2,15 @@ class_name RewardPolicyLoader
 extends RefCounted
 
 const DEFAULT_PATH := "res://data/gameplay/reward_modifiers_v1.json"
-static var _default_result: DomainResult
+static var _default_document: DomainResult
 
 
-## 装载只读运营规则并缓存，客户端命令不能替换该配置。
+## 缓存只读JSON、为每个服务端独立组装切面，避免动态提供者跨实例泄漏。
 ## 返回统一切面或配置错误；修改文件后重启服务端生效。
 static func load_default() -> DomainResult:
-	if _default_result == null:
-		var loaded := JsonConfigLoader.load_dictionary(DEFAULT_PATH)
-		_default_result = from_document(loaded.value) if loaded.is_ok else loaded
-	return _default_result
+	if _default_document == null:
+		_default_document = JsonConfigLoader.load_dictionary(DEFAULT_PATH)
+	return from_document(_default_document.value) if _default_document.is_ok else _default_document
 
 
 ## 在JSON边界将运营规则转换为领域对象。

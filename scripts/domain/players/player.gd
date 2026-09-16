@@ -28,6 +28,7 @@ var achievements: PlayerAchievements
 var daily_activities: DailyActivityJournal
 var amethyst: AmethystWallet
 var food_status: FoodStatus
+var reward_pipeline := RewardPipeline.new()
 
 
 ## 结算在线食品回血并回收过期战车属性，死亡人物不会因此复活。
@@ -147,7 +148,6 @@ func _init(state: Dictionary = {}) -> void:
 	skills = SkillBook.new(state.get("skills", {}))
 	food_status = FoodStatus.new(state.get("food_status", {}))
 	vehicle.food_status = food_status
-	skills.food_status = food_status
 	var quest_value: Variant = state.get("quest_states", {})
 	quest_states = (quest_value as Dictionary).duplicate(true) if quest_value is Dictionary else {}
 	achievements = PlayerAchievements.new(state.get("achievements", {}))
@@ -175,27 +175,41 @@ func grant_skill_level_reward(skill_id: String, progression_config: Dictionary) 
 	var threshold := SkillProgression.get_need_points(StringName(skill_id), skills.base_level(skill_id), progression_config)
 	if not threshold.is_ok:
 		return threshold
-	return grant_skill_experience(skill_id, float(threshold.value), progression_config)
+	return grant_skill_experience(skill_id, float(threshold.value), progression_config, "training_reward")
 
 
 ## 向指定技能发放一次权威经验，并在升级后同步重算综合等级。
 ## [param skill_id] 接收经验的技能稳定标识。
 ## [param amount] 已由服务器玩法规则换算出的本次经验。
 ## [param progression_config] 技能阈值及综合等级权重配置。
-## 返回技能升级结果，并额外包含变化前后的综合等级。
+## [param source] 服务端经验事件来源，用于定向运营规则。
+## [param now] 可注入的权威 Unix 秒数；负数使用当前服务器时间。
+## 返回技能升级结果、倍率明细及变化前后的综合等级。
 ## 设计：技能与综合等级同属 Player 聚合，任何调用方都无法只升级技能而漏算综合等级。
 func grant_skill_experience(
 	skill_id: String,
 	amount: float,
 	progression_config: Dictionary,
+	source: String = "direct",
+	now: int = -1,
 ) -> DomainResult:
+	var context := RewardContext.for_player(self, int(Time.get_unix_time_from_system()) if now < 0 else now)
+	context.skill_id = skill_id
+	context.source = source
+	var settled := reward_pipeline.settle(context, amount)
+	if not settled.is_ok:
+		return settled
+	var settlement: RewardSettlement = settled.value
 	var previous_comprehensive_level := level
-	var granted := skills.grant_experience(skill_id, amount, progression_config)
+	var granted := skills.grant_experience(skill_id, settlement.final_amount, progression_config)
 	if not granted.is_ok:
 		return granted
 	var value: Dictionary = granted.value
 	if bool(value.get("upgraded", false)):
 		level = skills.comprehensive_level(progression_config)
+	value["reward_settlement"] = settlement.to_dictionary()
+	value["base_experience"] = amount
+	value["granted_experience"] = settlement.final_amount
 	value["previous_comprehensive_level"] = previous_comprehensive_level
 	value["comprehensive_level"] = level
 	value["comprehensive_level_changed"] = level != previous_comprehensive_level

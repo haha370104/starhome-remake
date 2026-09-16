@@ -67,6 +67,7 @@ var _mining_catalog
 var player_state_repository: PlayerStateRepository
 var autosave_service: AuthoritativeAutosaveService
 var player_panel_service: AuthoritativePlayerPanelService
+var reward_service := AuthoritativeRewardService.new()
 var commerce_service
 var manufacturing_service
 var _pending_vehicle_recoveries: Dictionary = {}
@@ -164,16 +165,22 @@ func initialize(
 	var persistence_result := _initialize_persistence(injected_repository)
 	if not persistence_result.ok:
 		return persistence_result
+	var reward_result := reward_service.initialize(autosave_service)
+	if not reward_result.is_ok:
+		return _failure(reward_result.error_code, reward_result.error_message)
 	player_panel_service = PlayerPanelServiceScript.new()
-	var panel_result = player_panel_service.initialize()
+	var panel_result = player_panel_service.initialize(reward_service.pipeline)
 	if not panel_result.is_ok:
 		return _failure(panel_result.error_code, panel_result.error_message)
+	for instance: AuthoritativeMapInstance in map_registry.all_instances():
+		if instance.combat_module != null:
+			instance.combat_module.rewards = reward_service
 	commerce_service = CommerceServiceScript.new()
-	var commerce_result: DomainResult = commerce_service.initialize()
+	var commerce_result: DomainResult = commerce_service.initialize(reward_service.pipeline)
 	if not commerce_result.is_ok:
 		return _failure(commerce_result.error_code, commerce_result.error_message)
 	manufacturing_service = ManufacturingServiceScript.new()
-	var manufacturing_result: DomainResult = manufacturing_service.initialize()
+	var manufacturing_result: DomainResult = manufacturing_service.initialize(reward_service.pipeline)
 	if not manufacturing_result.is_ok:
 		return _failure(manufacturing_result.error_code, manufacturing_result.error_message)
 	_ticks_per_snapshot = floori(float(config.simulation_hz) / float(config.snapshot_hz))
@@ -1659,6 +1666,7 @@ func ensure_runtime_map(map_id: String) -> Dictionary:
 			&"runtime_map_combat_failed",
 			"%s: %s" % [definition_path, combat_result.get("message", "unknown combat error")],
 		)
+	loaded_instance.combat_module.rewards = reward_service
 	var mining_result := loaded_instance.configure_mining(_mining_catalog, config.simulation_hz)
 	if not mining_result.ok:
 		return _failure(

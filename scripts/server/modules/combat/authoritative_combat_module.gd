@@ -25,6 +25,7 @@ var pending_projectiles: Array[Dictionary] = []
 var pending_monster_attacks: Array[Dictionary] = []
 var corrosion := AuthoritativeCorrosionModule.new()
 var ground_loot: Dictionary = {}
+var rewards: AuthoritativeRewardService
 var _random := RandomNumberGenerator.new()
 var _monster_position_resolver := Callable()
 var _monster_route_resolver := Callable()
@@ -981,7 +982,12 @@ func commit_loot_pickup(actor_id: String, loot_id: String) -> DomainResult:
 ## 返回嵌入死亡事件的掉落 DTO 数组。
 func _spawn_monster_loot(monster: MonsterLifecycle, killer_id: String) -> Array[Dictionary]:
 	var spawned: Array[Dictionary] = []
-	for rolled: Dictionary in monster.drop_table.roll(_random):
+	var drops: DomainResult = rewards.roll_monster_loot(monster, killer_id, _random, int(Time.get_unix_time_from_system())) \
+		if rewards != null else DomainResult.ok(monster.drop_table.roll(_random))
+	if not drops.is_ok:
+		push_error("Reward settlement failed: %s" % drops.error_message)
+		return spawned
+	for rolled: Dictionary in drops.value:
 		_loot_sequence += 1
 		var loot_id := "%s.loot.%d.%d" % [monster.monster_id, monster.death_generation, _loot_sequence]
 		var loot := {
@@ -994,6 +1000,8 @@ func _spawn_monster_loot(monster: MonsterLifecycle, killer_id: String) -> Array[
 			"position": [monster.position.x, monster.position.y],
 			"spawn_tick": current_tick,
 		}
+		if rolled.has("reward_settlement"):
+			loot["reward_settlement"] = rolled.reward_settlement
 		ground_loot[loot_id] = loot
 		spawned.append(loot.duplicate(true))
 	return spawned

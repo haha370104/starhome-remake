@@ -59,11 +59,10 @@ func _test_transactions() -> void:
 	_expect(player.use_inventory_item("炒面面包", player.inventory.revision, now).is_ok, "使用裁缝食品")
 	var config: Dictionary = JsonConfigLoader.load_dictionary("res://data/gameplay/skill_progression.json").value
 	player.skills = SkillBook.new({"energy_cannon": 10, "tailoring": 20})
-	player.skills.food_status = player.food_status
 	for skill: String in ["energy_cannon", "tailoring"]:
 		var old_exp := player.skills.current_experience(skill)
-		player.skills.grant_experience(skill, 10, config)
-		_expect(player.skills.current_experience(skill) == old_exp + 12, "食品提高实际技能经验：%s exp=%d bonus=%s" % [skill, player.skills.current_experience(skill), player.food_status.experience_multiplier(skill)])
+		player.grant_skill_experience(skill, 10, config)
+		_expect(player.skills.current_experience(skill) == old_exp + 12, "食品经统一切面提高实际技能经验：%s exp=%d" % [skill, player.skills.current_experience(skill)])
 	player.use_inventory_item("龙舌兰酒", player.inventory.revision, now)
 	state = mapper.to_record(player).value
 	var restored := PlayerStateRecord.from_dictionary(JSON.parse_string(JSON.stringify(state.to_dictionary())))

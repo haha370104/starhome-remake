@@ -29,7 +29,8 @@ var _facility_maps: Dictionary = {}
 
 ## 初始化权威制造所需的物品、配方、技能和持久化映射边界。
 ## 返回加载成功的服务实例或具体配置错误。
-func initialize() -> DomainResult:
+## [param rewards] 同一服务器共享的奖励切面，省略时使用独立默认策略。
+func initialize(rewards: RewardPipeline = null) -> DomainResult:
 	_item_catalog = ItemCatalogScript.new()
 	var item_result := _item_catalog.initialize()
 	if not item_result.is_ok:
@@ -44,7 +45,7 @@ func initialize() -> DomainResult:
 	if not skill_result.is_ok:
 		return skill_result
 	_progression_config = skill_result.value
-	_mapper = PlayerStateMapperScript.new(_item_catalog)
+	_mapper = PlayerStateMapperScript.new(_item_catalog, rewards)
 	_projector = PlayerPanelProjectorScript.new(_item_catalog, _progression_config)
 	var facilities := JsonConfigLoader.load_dictionary("res://data/world/manufacturing_facilities_v1.json")
 	if not facilities.is_ok:

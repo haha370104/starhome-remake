@@ -95,14 +95,6 @@ func bonus(kind: int, now: int = -1) -> int:
 	return 0
 
 
-## 将原版技能经验百分比转换为乘数。
-## [param skill_id] 经验事件的技能。
-## 返回不小于一的经验倍率。
-func experience_multiplier(skill_id: String) -> float:
-	var kind := FoodEffect.SKILLS.find(skill_id)
-	return 1.0 + float(bonus(kind)) / 100.0 if kind > 0 else 1.0
-
-
 ## 结算在线经过的回血秒数并清理到期项，同一时刻重复调用不重复回血。
 ## [param now] 权威当前时间。
 ## 返回本轮应恢复的人物生命。
