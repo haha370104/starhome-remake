@@ -15,13 +15,14 @@ def main():
     starter = load("data/gameplay/stage3/d04_encounters_v1.json")
     encounters[starter["map_id"]] = starter
     spawned = {group["monster_id"] for encounter in encounters.values() if encounter.get("enabled", False)
-               for group in encounter["spawn_groups"] if group.get("weight", 1) > 0}
+               for group in encounter["spawn_groups"] + encounter.get("elite_spawn_groups", []) if group.get("weight", 1) > 0}
     missing = {sid: row for sid, row in runtime["monsters"].items()
                if not any(drop["chance"] > 0 for drop in row.get("drops") or [])}
     active_missing = set(missing) & spawned
     lines = ["# 怪物物品掉落覆盖审计", "", "2026-09-16，使用初始化后的权威目录（含新手覆盖及材料补充表）。", "",
              f"启用刷新物种 {len(spawned)} 种，其中 {len(active_missing)} 种没有物品掉落表；",
              f"另外 {len(missing) - len(active_missing)} 种未投放物种也没有掉落表。外观变体共享物种掉落。", "",
+             "本次新增12种普通怪和20种精英，共79种已投放；精英20倍数量期望，14种无原始候选的精英继承同类普通怪掉落。",
              "原客户端 `source_drop_candidates` 仅是来源证据，不等于实际运行的 `drops`。",
              "原版候选按drop_expectation_policy_v1.json编译期望；原始权重仅保留作为证据。接合器碎片遵循此前用户限定。", "",
              "## D03 与隐形掉落修复", "",
@@ -29,7 +30,7 @@ def main():
              "低温感光质的两档催化剂采用相同分布；其低级能量包仍为25%出2～4。",
              "两者过去只有掉落规则，没有地面表现，导致客户端拒绝创建视图。",
              "全部79种候选已具备地面/背包表现；重复行仅抽一次，数量和概率按期望策略覆盖，其余保留原范围。",
-             "表中未投放怪物虽已配置掉落，仍需要以后开放刷新地图才能获得其专属物品。", ""]
+             "未投放怪物即使已配置掉落，仍需要以后开放刷新地图才能获得其专属物品。", ""]
     for title, keys in [("已投放但无物品掉落", active_missing),
                         ("未投放且无物品掉落", set(missing) - spawned)]:
         lines += [f"## {title}", "", "| 物种 | 名称 | 原客户端候选条数 |", "| --- | --- | ---: |"]

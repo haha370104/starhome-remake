@@ -11,12 +11,14 @@ const bindings = (await read('data/gameplay/original_drop_bindings_v1.json')).de
 const byRaw = new Map(bindings.map(b => [b.source_class, b]));
 const fragment = byRaw.get('接合器升级碎片').item_definition_id;
 const policy = await read('data/gameplay/drop_expectation_policy_v1.json');
+const elitePolicy = await read('data/gameplay/elite_population_v1.json');
+const eliteIds = new Set(elitePolicy.species_indices.map(i => `glory_monster_${String(i).padStart(3, '0')}`));
 const tuned = new Map(policy.fixed_expectations.flatMap(r => r.source_classes.map(c => [byRaw.get(c).item_definition_id, r.category])));
 const biologicalNames = new Set(policy.biological_materials.families.flatMap(f => policy.biological_materials.grades.map(g => g+f)));
 const encounters = new Map((await read('data/gameplay/glory/glory_monster_encounters_v1.json')).encounters.map(e => [e.map_id, e]));
 const starter = await read('data/gameplay/stage3/d04_encounters_v1.json');
 encounters.set(starter.map_id, starter);
-const active = new Set([...encounters.values()].filter(e => e.enabled).flatMap(e => e.spawn_groups.filter(g => (g.weight ?? 1) > 0).map(g => g.monster_id)));
+const active = new Set([...encounters.values()].filter(e => e.enabled).flatMap(e => [...e.spawn_groups, ...(e.elite_spawn_groups ?? [])].filter(g => (g.weight ?? 1) > 0).map(g => g.monster_id)));
 const activeSources = new Map(bindings.map(b => [b.item_definition_id, new Set()]));
 const actualRows = [], overview = [], rawRows = [];
 for (const monster of source) {
@@ -26,13 +28,13 @@ for (const monster of source) {
   const excluded = monster.source_drop_candidates.filter(c => !current.has(byRaw.get(c.display_name).item_definition_id)).length;
   overview.push([monster.display_name, monster.id, enabled, monster.source_drop_candidates.length,
     new Set(monster.source_drop_candidates.map(c => c.display_name)).size, drops.length, excluded,
-    !drops.length ? '原表无候选；未补造掉落' : excluded ? '已配齐；非爬虫碎片按要求排除' : !monster.source_drop_candidates.length ? '用户增加爬虫碎片' : '原版候选已配齐']);
+    eliteIds.has(monster.id) ? (elitePolicy.inherited_drop_sources[monster.id] ? '继承普通怪掉落，20倍期望' : '自身原版候选，20倍期望') : !drops.length ? '原表无候选；未补造掉落' : excluded ? '已配齐；非爬虫碎片按要求排除' : !monster.source_drop_candidates.length ? '用户增加爬虫碎片' : '原版候选已配齐']);
   for (const drop of drops) {
     if (active.has(monster.id)) activeSources.get(drop.item_definition_id).add(monster.id);
     const isFragment = drop.item_definition_id === fragment;
     actualRows.push([monster.display_name, monster.id, enabled, runtime.items[drop.item_definition_id].display_name,
       drop.minimum_quantity, drop.maximum_quantity, drop.chance, null,
-      isFragment ? '用户例外：0～3各25%；仅两种爬虫及变体' : tuned.has(drop.item_definition_id) ? tuned.get(drop.item_definition_id) + '：按指定期望'
+      eliteIds.has(monster.id) ? '精英：基础数量期望×20；超100%部分转为数量' : isFragment ? '用户例外：0～3各25%；仅两种爬虫及变体' : tuned.has(drop.item_definition_id) ? tuned.get(drop.item_definition_id) + '：按指定期望'
         : biologicalNames.has(runtime.items[drop.item_definition_id].display_name) ? '生物材料：同怪同类每低一级期望×2' : '未指定：保留25%及原数量范围', drop.item_definition_id]);
   }
   for (const candidate of monster.source_drop_candidates) {
@@ -43,7 +45,7 @@ for (const monster of source) {
       drop ? '已配置' : '用户例外：排除非爬虫碎片', `npc_catalog.csv / index=${monster.source_audit.index}`]);
   }
 }
-if (actualRows.length !== 1134 || rawRows.length !== 1291 || overview.length !== 119 || bindings.length !== 79) throw Error('Unexpected report coverage');
+if (actualRows.length !== 1269 || rawRows.length !== 1291 || overview.length !== 119 || bindings.length !== 79) throw Error('Unexpected report coverage');
 const recipeInputs = new Set(runtime.recipes.flatMap(r => r.materials.map(m => m.definition_id)));
 const upgradeInputs = new Set((await read('data/gameplay/commerce/attachment_upgrade_costs_v1.json')).rules.flatMap(r => [...r.premium_materials, ...r.normal_materials].map(m => m.definition_id)));
 const taskInputs = new Set(Object.values(runtime.tasks).filter(t => t.kind === 2).map(t => t.target_id));
@@ -93,17 +95,17 @@ function sheet(name, title, notes, headers, rows, widths) {
 }
 const common = '2026-09-16 · 数据来自本轮初始化后的权威目录；同物种外观变体共享掉落。';
 const overviewSheet = sheet('怪物总览', '原版怪物掉落 · 全量检查', [
-  '119 种怪物  /  79 种物品  /  1,134 条实际掉落关系  /  当前启用 47 种怪物',
-  '材料：同怪同类最高档期望0.75、至多2个，每低一级期望翻倍；其余指定类别按本轮期望配置。',
+  `${overview.length} 种怪物 / ${bindings.length} 种物品 / ${actualRows.length} 条实际掉落关系 / 当前启用 ${active.size} 种怪物`,
+  '普通材料：最高档期望0.75、至多2个，每低一级期望翻倍；精英在基础期望上乘20。',
   '接合器碎片：仅机器爬虫、被遗忘的爬虫及变体，0～3 个等概率，期望 1.5；原表其他21条来源排除。',
   '先筛选怪物，再到「实际掉落」核对数量与概率；「原始候选」保留所有重复记录和原始权重。', common,
 ], ['怪物名称','物种 ID','当前刷新','原表记录','原表种类','已配种类','排除记录','检查说明'], overview,
   [210,200,95,90,90,90,90,305]);
 overviewSheet.getRange('C8:C126').conditionalFormats.add('containsText', {text:'未投放',format:{fill:'#FFF1D6',font:{color:'#855C16'}}});
 const detail = sheet('实际掉落', '运行配置 · 每种物品一次独立抽取', [
-  '1,134 条已生效配置；「未投放」表示怪物暂无刷新地图，配置保留但普通玩家当前不能从它身上获得。',
+  '1,269 条运行配置（含135条精英继承规则）；「未投放」表示怪物暂无刷新地图，配置保留但普通玩家当前不能从它身上获得。',
   '最低/最高数量是触发掉落后的区间；每击杀期望 = 掉率 ×（最低 + 最高）÷ 2。',
-  '最高档材料50%掉1～2；低一档75%掉1～3；低两档100%掉2～4。辅助卡期望0.05，特制能量源0.01。',
+  '普通材料：50%出1～2、75%出1～3、100%出2～4；精英数量期望×20，超100%部分转数量。',
   '强化道具、初级柔解剂、瑕疵晶石期望0.1；未指定物品保留旧值。数量区间随期望策略调整。', common,
 ], ['怪物名称','物种 ID','当前刷新','掉落物品','最低数量','最高数量','单项掉率','每击杀期望','规则说明','物品定义 ID'], actualRows,
   [195,190,95,220,85,85,90,110,320,250]);

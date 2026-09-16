@@ -35,7 +35,7 @@ def main() -> None:
     encounters = load("data/gameplay/glory/glory_monster_encounters_v1.json")
     all_encounters = encounters["encounters"] + [load("data/gameplay/stage3/d04_encounters_v1.json")]
     spawned = {group["monster_id"] for encounter in all_encounters if encounter.get("enabled", False)
-               for group in encounter["spawn_groups"] if group.get("weight", 1) > 0}
+               for group in encounter["spawn_groups"] + encounter.get("elite_spawn_groups", []) if group.get("weight", 1) > 0}
     names = defaultdict(set)
     for item_id, item in runtime["items"].items():
         for name in (item["display_name"], item.get("source_class"), item.get("source_audit", {}).get("source_class")):
@@ -142,12 +142,13 @@ def main() -> None:
              f"逐原始条目匹配为 {matched_entries}/{sum(source_entries.values())}；去重后的物种—物品关系为 "
              f"{sum(map(len, covered.values()))}/{sum(map(len, source_species.values()))}。这些是关系覆盖率，不是掉率。", "", raw_note, "", task_note, "",
              "“关系全覆盖”仅表示相应怪物配置了该掉落，并不表示概率恢复原服，也不保证每种怪物都有刷新地图。",
-             "原表raw_weight算法未恢复；材料、挂机卡、强化道具、柔解剂、特制能量源和瑕疵晶石按本轮期望策略覆盖，其余保留25%。爬虫碎片仍为75%出1～3（期望1.5）。这不是原服掉率。",
+             "本次新增12种普通怪和20种精英，共79种已投放；精英20倍数量期望，14种无原始候选的精英继承同类普通怪掉落。",
+             "原表raw_weight算法未恢复；材料、挂机卡、强化道具、柔解剂、特制能量源和瑕疵晶石按本轮期望策略覆盖，普通怪其余候选保留25%，精英再应用20倍。爬虫碎片仍为75%出1～3（期望1.5）。这不是原服掉率。",
              "免费版已解析 NPC CSV 没有数据行，不能据此宣称免费版无掉落；旧 JZNP 目录属于另一个版本，不混入荣耀运行素材。", "",
              "接合器升级碎片按用户确认仅投放机器爬虫与被遗忘的爬虫及其外观变体，原表其他怪物未开放属于有意缩小范围。",
              "被遗忘的爬虫当前没有启用刷新地图；普通机器爬虫已投放。", "",
              "## 全部 79 种掉落名称", "",
-             "列中数量均为去重物种数。来源栏最多展示三个原表怪物；全部关系、期望及升级配方见[更新检查表](audits/original_monster_drops_balanced.xlsx)。",
+             "列中数量均为去重物种数。来源栏最多展示三个原表怪物；精英增量和最新期望见[野外投放](field_monster_populations.md)；[前阶段检查表](audits/original_monster_drops_balanced.xlsx)未包含本次精英增量。",
              "“其他获取链”包含当前启用矿池、在售商品及原料闭合的制造/循环任务奖励；不计测试赠物、管理员注入或同名不同 ID。", "",
              "| 原表名称或类名 | 原表物种 | 配置覆盖 | 已刷怪的覆盖 | 任意获取链 | 原表来源示例 |",
              "| --- | ---: | ---: | ---: | --- | --- |"]
