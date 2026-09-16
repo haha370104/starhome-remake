@@ -25,6 +25,7 @@ func _run() -> void:
 		_finish()
 		return
 	var catalog: CombatDefinitionCatalog = loaded.value
+	await _test_drop_views(items, catalog)
 	var material_rules := JsonConfigLoader.load_dictionary("res://data/gameplay/monster_material_drops_v1.json").value as Dictionary
 	for row: Dictionary in material_rules.definitions:
 		var actual := DropTable.new(catalog.monster_definition(row.monster_id).drops)
@@ -77,6 +78,58 @@ func _run() -> void:
 	print("AVAILABLE_DAILY_TASKS %d" % daily.tasks.size())
 	await _test_mining()
 	_finish()
+
+
+## 验证全部实际掉落物可投影、可点击；额外使用 D03 生成的领域怪物抽取真实掉落实体。
+## [param items] 正式物品目录。
+## [param catalog] 已合并材料投放的权威战斗目录。
+func _test_drop_views(items: ItemCatalog, catalog: CombatDefinitionCatalog) -> void:
+	var world := Node2D.new()
+	root.add_child(world)
+	var display := GroundLootWorldController.new()
+	root.add_child(display)
+	display.configure(world, items)
+	var rows: Array[Dictionary] = []
+	var seen := {}
+	for species: String in catalog.monster_ids():
+		for drop: Dictionary in DropTable.new(catalog.monster_definition(species).drops).entries():
+			var id := String(drop.item_definition_id)
+			if seen.has(id):
+				continue
+			seen[id] = true
+			rows.append({"loot_id": id, "item_definition_id": id, "quantity": 2,
+				"position": [80 + (rows.size() % 5) * 180, 80 + (rows.size() / 5) * 100]})
+	display.apply_snapshot({"ground_loot": rows})
+	_expect(display.active_view_count() == seen.size(), "所有实际掉落必须创建地面视图，不能只有表而隐形")
+	for row: Dictionary in rows:
+		var view := display.view_for_loot(row.loot_id)
+		if view != null:
+			_expect(display.loot_at(view.to_global(view.local_hit_rect().get_center())) == row.loot_id, "掉落原图可点击")
+	var module := AuthoritativeCombatModule.new()
+	module.configure(20, 20260916)
+	var found := {}
+	var generated: Array = catalog.monster_lifecycles_for_map("buli_d03_field_zone", "loot.d03").value
+	for definition: Dictionary in generated:
+		if definition.species_id not in ["glory_monster_005", "glory_monster_006"] or found.has(definition.species_id):
+			continue
+		found[definition.species_id] = true
+		definition.position = Vector2(100, 100)
+		var monster := MonsterLifecycle.new()
+		_expect(monster.configure(definition, 20).is_ok, "D03 实际刷新怪物可配置")
+		var spawned := 0
+		for _sample in range(100):
+			spawned += module._spawn_monster_loot(monster, "test.player").size()
+		_expect(spawned > 60 and spawned < 90, "冷系怪物真实掉落实体符合75%抽样且不是必掉")
+	_expect(found.size() == 2, "D03 两种冷系怪物实际启用")
+	if "--capture" in OS.get_cmdline_user_args():
+		root.size = Vector2i(960, 500)
+		for view: GroundLootWorldView in display._views.values():
+			view.set_hovered(true)
+		await RenderingServer.frame_post_draw
+		root.get_texture().get_image().save_png("res://.godot/material-drop-icons.png")
+	display.queue_free()
+	world.queue_free()
+	await process_frame
 
 
 ## 在真实矿源模块中验证材料链矿物的地图投放、采掘门槛和产物，并检查地面可点击视图。

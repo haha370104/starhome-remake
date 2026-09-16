@@ -110,36 +110,252 @@
       "display_name": "铁矿",
       "world": {
         "texture": "res://assets/items/materials/iron_ore/inventory_icon.png",
-        "native_size": [42, 30],
-        "origin": [-21, -15]
+        "native_size": [
+          42,
+          30
+        ],
+        "origin": [
+          -21,
+          -15
+        ]
       },
       "inventory": {
         "icon": "res://assets/items/materials/iron_ore/inventory_icon.png",
-        "native_size": [42, 30]
+        "native_size": [
+          42,
+          30
+        ]
       }
     },
     "silicon_ore": {
       "display_name": "硅矿",
       "world": {
         "texture": "res://assets/items/materials/silicon_ore/inventory_icon.png",
-        "native_size": [42, 30],
-        "origin": [-21, -15]
+        "native_size": [
+          42,
+          30
+        ],
+        "origin": [
+          -21,
+          -15
+        ]
       },
       "inventory": {
         "icon": "res://assets/items/materials/silicon_ore/inventory_icon.png",
-        "native_size": [42, 30]
+        "native_size": [
+          42,
+          30
+        ]
       }
     },
     "graphite_ore": {
       "display_name": "石墨矿",
       "world": {
         "texture": "res://assets/items/materials/graphite_ore/inventory_icon.png",
-        "native_size": [42, 30],
-        "origin": [-21, -15]
+        "native_size": [
+          42,
+          30
+        ],
+        "origin": [
+          -21,
+          -15
+        ]
       },
       "inventory": {
         "icon": "res://assets/items/materials/graphite_ore/inventory_icon.png",
-        "native_size": [42, 30]
+        "native_size": [
+          42,
+          30
+        ]
+      }
+    },
+    "item:material:472d2fb951cb": {
+      "display_name": "中级类胶",
+      "world": {
+        "texture": "res://assets/items/materials/middle_grade_gel/icon.png",
+        "native_size": [
+          49,
+          31
+        ],
+        "origin": [
+          -23,
+          -15
+        ]
+      },
+      "inventory": {
+        "icon": "res://assets/items/materials/middle_grade_gel/icon.png",
+        "native_size": [
+          49,
+          31
+        ]
+      }
+    },
+    "item:material:fa5a837875bb": {
+      "display_name": "高级类胶",
+      "world": {
+        "texture": "res://assets/items/materials/high_grade_gel/icon.png",
+        "native_size": [
+          49,
+          31
+        ],
+        "origin": [
+          -23,
+          -15
+        ]
+      },
+      "inventory": {
+        "icon": "res://assets/items/materials/high_grade_gel/icon.png",
+        "native_size": [
+          49,
+          31
+        ]
+      }
+    },
+    "item:material:fa905bea2130": {
+      "display_name": "中级能量催化剂",
+      "world": {
+        "texture": "res://assets/items/materials/middle_grade_energy_catalyst/icon.png",
+        "native_size": [
+          42,
+          27
+        ],
+        "origin": [
+          -23,
+          -13
+        ]
+      },
+      "inventory": {
+        "icon": "res://assets/items/materials/middle_grade_energy_catalyst/icon.png",
+        "native_size": [
+          42,
+          27
+        ]
+      }
+    },
+    "item:material:fdae75215694": {
+      "display_name": "高级能量催化剂",
+      "world": {
+        "texture": "res://assets/items/materials/high_grade_energy_catalyst/icon.png",
+        "native_size": [
+          42,
+          27
+        ],
+        "origin": [
+          -23,
+          -13
+        ]
+      },
+      "inventory": {
+        "icon": "res://assets/items/materials/high_grade_energy_catalyst/icon.png",
+        "native_size": [
+          42,
+          27
+        ]
+      }
+    },
+    "item:material:deb4b85e31bd": {
+      "display_name": "中级生物硅",
+      "world": {
+        "texture": "res://assets/items/materials/middle_grade_biosilicon/icon.png",
+        "native_size": [
+          50,
+          42
+        ],
+        "origin": [
+          -34,
+          -26
+        ]
+      },
+      "inventory": {
+        "icon": "res://assets/items/materials/middle_grade_biosilicon/icon.png",
+        "native_size": [
+          50,
+          42
+        ]
+      }
+    },
+    "item:material:99d2d25d7142": {
+      "display_name": "高级生物硅",
+      "world": {
+        "texture": "res://assets/items/materials/high_grade_biosilicon/icon.png",
+        "native_size": [
+          50,
+          42
+        ],
+        "origin": [
+          -34,
+          -26
+        ]
+      },
+      "inventory": {
+        "icon": "res://assets/items/materials/high_grade_biosilicon/icon.png",
+        "native_size": [
+          50,
+          42
+        ]
+      }
+    },
+    "item:material:b76edad9fa8e": {
+      "display_name": "中级四足甲的壳",
+      "world": {
+        "texture": "res://assets/items/materials/middle_grade_quadruped_shell/icon.png",
+        "native_size": [
+          38,
+          31
+        ],
+        "origin": [
+          -22,
+          -17
+        ]
+      },
+      "inventory": {
+        "icon": "res://assets/items/materials/middle_grade_quadruped_shell/icon.png",
+        "native_size": [
+          38,
+          31
+        ]
+      }
+    },
+    "item:material:485f08ad24d4": {
+      "display_name": "高级四足甲的壳",
+      "world": {
+        "texture": "res://assets/items/materials/high_grade_quadruped_shell/icon.png",
+        "native_size": [
+          38,
+          31
+        ],
+        "origin": [
+          -22,
+          -17
+        ]
+      },
+      "inventory": {
+        "icon": "res://assets/items/materials/high_grade_quadruped_shell/icon.png",
+        "native_size": [
+          38,
+          31
+        ]
+      }
+    },
+    "item:material:9713f13ede8d": {
+      "display_name": "接合器升级碎片",
+      "world": {
+        "texture": "res://assets/items/materials/attachment_upgrade_fragment/icon.png",
+        "native_size": [
+          39,
+          29
+        ],
+        "origin": [
+          -22,
+          -15
+        ]
+      },
+      "inventory": {
+        "icon": "res://assets/items/materials/attachment_upgrade_fragment/icon.png",
+        "native_size": [
+          39,
+          29
+        ]
       }
     }
   }
