@@ -1,0 +1,166 @@
+{
+  "schema_version": 1,
+  "recipes": [
+    {
+      "recipe_id": "material_upgrade_high_grade_density_solvent",
+      "station_id": "refining",
+      "display_name": "高级密度柔解剂",
+      "product_definition_id": "high_grade_density_solvent",
+      "required_skill_level": 150,
+      "output_quantity": 1,
+      "skill_id": "refining",
+      "skill_experience": 40,
+      "materials": [
+        {
+          "definition_id": "item:material:78f2a523a761",
+          "quantity": 5
+        }
+      ],
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_file": "cltobj/stuffclt2.fcc",
+        "source_class": "Activator3",
+        "rule_status": "user_requested_remake",
+        "rule": "5 same-type lower tier to 1 higher tier; level 150; deterministic success"
+      }
+    },
+    {
+      "recipe_id": "material_upgrade_bright_firepower_crystal",
+      "station_id": "auxiliary_manufacturing",
+      "display_name": "明亮的火力晶石",
+      "product_definition_id": "bright_firepower_crystal",
+      "required_skill_level": 150,
+      "output_quantity": 1,
+      "skill_id": "manufacturing",
+      "skill_experience": 40,
+      "materials": [
+        {
+          "definition_id": "item:material:a7bccd7c1408",
+          "quantity": 5
+        }
+      ],
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_file": "cltobj/stuffclt2.fcc",
+        "source_class": "RYRime:0 2001 0",
+        "rule_status": "user_requested_remake",
+        "rule": "5 same-type lower tier to 1 higher tier; level 150; deterministic success"
+      }
+    },
+    {
+      "recipe_id": "material_upgrade_bright_health_crystal",
+      "station_id": "auxiliary_manufacturing",
+      "display_name": "明亮的生命晶石",
+      "product_definition_id": "bright_health_crystal",
+      "required_skill_level": 150,
+      "output_quantity": 1,
+      "skill_id": "manufacturing",
+      "skill_experience": 40,
+      "materials": [
+        {
+          "definition_id": "item:material:794588abb6cf",
+          "quantity": 5
+        }
+      ],
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_file": "cltobj/stuffclt2.fcc",
+        "source_class": "RYRime:0 2002 0",
+        "rule_status": "user_requested_remake",
+        "rule": "5 same-type lower tier to 1 higher tier; level 150; deterministic success"
+      }
+    },
+    {
+      "recipe_id": "material_upgrade_bright_defense_crystal",
+      "station_id": "auxiliary_manufacturing",
+      "display_name": "明亮的防御晶石",
+      "product_definition_id": "bright_defense_crystal",
+      "required_skill_level": 150,
+      "output_quantity": 1,
+      "skill_id": "manufacturing",
+      "skill_experience": 40,
+      "materials": [
+        {
+          "definition_id": "item:material:d690c44b6030",
+          "quantity": 5
+        }
+      ],
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_file": "cltobj/stuffclt2.fcc",
+        "source_class": "RYRime:0 2003 0",
+        "rule_status": "user_requested_remake",
+        "rule": "5 same-type lower tier to 1 higher tier; level 150; deterministic success"
+      }
+    },
+    {
+      "recipe_id": "material_upgrade_bright_guidance_crystal",
+      "station_id": "auxiliary_manufacturing",
+      "display_name": "明亮的制导晶石",
+      "product_definition_id": "bright_guidance_crystal",
+      "required_skill_level": 150,
+      "output_quantity": 1,
+      "skill_id": "manufacturing",
+      "skill_experience": 40,
+      "materials": [
+        {
+          "definition_id": "item:material:a095c982b884",
+          "quantity": 5
+        }
+      ],
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_file": "cltobj/stuffclt2.fcc",
+        "source_class": "RYRime:0 2004 0",
+        "rule_status": "user_requested_remake",
+        "rule": "5 same-type lower tier to 1 higher tier; level 150; deterministic success"
+      }
+    },
+    {
+      "recipe_id": "material_upgrade_bright_critical_crystal",
+      "station_id": "auxiliary_manufacturing",
+      "display_name": "明亮的暴击晶石",
+      "product_definition_id": "bright_critical_crystal",
+      "required_skill_level": 150,
+      "output_quantity": 1,
+      "skill_id": "manufacturing",
+      "skill_experience": 40,
+      "materials": [
+        {
+          "definition_id": "item:material:c0cad9b715fb",
+          "quantity": 5
+        }
+      ],
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_file": "cltobj/stuffclt2.fcc",
+        "source_class": "RYRime:0 2005 0",
+        "rule_status": "user_requested_remake",
+        "rule": "5 same-type lower tier to 1 higher tier; level 150; deterministic success"
+      }
+    },
+    {
+      "recipe_id": "material_upgrade_bright_rocket_crystal",
+      "station_id": "auxiliary_manufacturing",
+      "display_name": "明亮的火箭晶石",
+      "product_definition_id": "bright_rocket_crystal",
+      "required_skill_level": 150,
+      "output_quantity": 1,
+      "skill_id": "manufacturing",
+      "skill_experience": 40,
+      "materials": [
+        {
+          "definition_id": "item:material:7dd51398ea4c",
+          "quantity": 5
+        }
+      ],
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_file": "cltobj/stuffclt2.fcc",
+        "source_class": "RYRime:0 2006 0",
+        "rule_status": "user_requested_remake",
+        "rule": "5 same-type lower tier to 1 higher tier; level 150; deterministic success"
+      }
+    }
+  ]
+}

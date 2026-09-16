@@ -12,6 +12,7 @@ const GAMEPLAY_PATHS := [
 	"res://data/gameplay/industrial_materials_v1.json",
 	"res://data/gameplay/commerce/attachment_upgrade_materials_v1.json",
 	"res://data/gameplay/original_drop_items_v1.json",
+	"res://data/gameplay/material_upgrade_items_v1.json",
 ]
 const PRESENTATION_PATHS := [
 	"res://data/presentation/player_equipment_v1.json",

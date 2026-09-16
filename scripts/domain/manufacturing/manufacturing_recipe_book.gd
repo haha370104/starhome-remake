@@ -41,7 +41,12 @@ func initialize(item_catalog: ItemCatalog) -> DomainResult:
 	var industrial := JsonConfigLoader.load_dictionary("res://data/gameplay/industrial_recipes_v1.json")
 	if not industrial.is_ok:
 		return industrial
-	for definition: Dictionary in industrial.value.get("recipes", []):
+	var upgrades := JsonConfigLoader.load_dictionary("res://data/gameplay/material_upgrade_recipes_v1.json")
+	if not upgrades.is_ok:
+		return upgrades
+	var definitions: Array = industrial.value.get("recipes", []).duplicate(true)
+	definitions.append_array(upgrades.value.get("recipes", []))
+	for definition: Dictionary in definitions:
 		var model = ManufacturingRecipeScript.new(definition)
 		if _recipes_by_id.has(model.recipe_id) or item_catalog.definition(model.product_definition_id).is_empty():
 			return DomainResult.failure(&"manufacturing.catalog_invalid", "duplicate recipe or unknown industrial product")

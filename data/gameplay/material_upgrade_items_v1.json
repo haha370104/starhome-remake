@@ -1,0 +1,306 @@
+{
+  "schema_version": 1,
+  "definitions": [
+    {
+      "id": "high_grade_density_solvent",
+      "kind": "material",
+      "display_name": "高级密度柔解剂",
+      "description": "原版高级密度柔解剂，可由5个初级密度柔解剂提炼。装备开槽系统尚未开放。",
+      "max_stack": 99,
+      "source_class": "Activator3",
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_class": "Activator3",
+        "source_file": "cltobj/stuffclt2.fcc",
+        "source_line": 11752,
+        "source_logical_path": "pic3/stuff/Activator3.ale",
+        "source_sha256": "22784fb025491d6e3894c015d7145d3d2fa483cd6f6f245332d80fa0cbb72392",
+        "source_crop": [
+          1,
+          0,
+          30,
+          31
+        ],
+        "source_frame": 0
+      },
+      "presentation": {
+        "world": {
+          "texture": "res://assets/items/materials/high_grade_density_solvent/icon.png",
+          "native_size": [
+            29,
+            31
+          ],
+          "origin": [
+            -13,
+            -15
+          ]
+        },
+        "inventory": {
+          "icon": "res://assets/items/materials/high_grade_density_solvent/icon.png",
+          "native_size": [
+            29,
+            31
+          ]
+        }
+      }
+    },
+    {
+      "id": "bright_firepower_crystal",
+      "kind": "material",
+      "display_name": "明亮的火力晶石",
+      "description": "原版明亮晶石，可由5个同类有瑕疵晶石制造。镶嵌系统尚未开放。",
+      "max_stack": 99,
+      "source_class": "RYRime:0 2001 0",
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_class": "RYRime:0 2001 0",
+        "source_file": "cltobj/stuffclt2.fcc",
+        "source_line": 42507,
+        "source_logical_path": "pic3/stuff/RYRime2001.ale",
+        "source_sha256": "d200b598f1f0cd1acc6223d6f5b5ac27c75a22511b78446ae5860bb8cadc74fb",
+        "source_crop": [
+          0,
+          1,
+          26,
+          29
+        ],
+        "source_frame": 0
+      },
+      "presentation": {
+        "world": {
+          "texture": "res://assets/items/materials/bright_firepower_crystal/icon.png",
+          "native_size": [
+            26,
+            28
+          ],
+          "origin": [
+            -17,
+            -14
+          ]
+        },
+        "inventory": {
+          "icon": "res://assets/items/materials/bright_firepower_crystal/icon.png",
+          "native_size": [
+            26,
+            28
+          ]
+        }
+      }
+    },
+    {
+      "id": "bright_health_crystal",
+      "kind": "material",
+      "display_name": "明亮的生命晶石",
+      "description": "原版明亮晶石，可由5个同类有瑕疵晶石制造。镶嵌系统尚未开放。",
+      "max_stack": 99,
+      "source_class": "RYRime:0 2002 0",
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_class": "RYRime:0 2002 0",
+        "source_file": "cltobj/stuffclt2.fcc",
+        "source_line": 42507,
+        "source_logical_path": "pic3/stuff/RYRime2002.ale",
+        "source_sha256": "cc3f2eb84640c8de6edb143dfe9c045d84a47e3f5b9481a3c4f6c19946b62482",
+        "source_crop": [
+          0,
+          0,
+          27,
+          28
+        ],
+        "source_frame": 0
+      },
+      "presentation": {
+        "world": {
+          "texture": "res://assets/items/materials/bright_health_crystal/icon.png",
+          "native_size": [
+            27,
+            28
+          ],
+          "origin": [
+            -18,
+            -15
+          ]
+        },
+        "inventory": {
+          "icon": "res://assets/items/materials/bright_health_crystal/icon.png",
+          "native_size": [
+            27,
+            28
+          ]
+        }
+      }
+    },
+    {
+      "id": "bright_defense_crystal",
+      "kind": "material",
+      "display_name": "明亮的防御晶石",
+      "description": "原版明亮晶石，可由5个同类有瑕疵晶石制造。镶嵌系统尚未开放。",
+      "max_stack": 99,
+      "source_class": "RYRime:0 2003 0",
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_class": "RYRime:0 2003 0",
+        "source_file": "cltobj/stuffclt2.fcc",
+        "source_line": 42507,
+        "source_logical_path": "pic3/stuff/RYRime2003.ale",
+        "source_sha256": "b6b92b1a1af949ff8acf206c855920769cd6940546c7ccd4e4e6a94e5cd94ac1",
+        "source_crop": [
+          0,
+          1,
+          27,
+          28
+        ],
+        "source_frame": 0
+      },
+      "presentation": {
+        "world": {
+          "texture": "res://assets/items/materials/bright_defense_crystal/icon.png",
+          "native_size": [
+            27,
+            27
+          ],
+          "origin": [
+            -17,
+            -13
+          ]
+        },
+        "inventory": {
+          "icon": "res://assets/items/materials/bright_defense_crystal/icon.png",
+          "native_size": [
+            27,
+            27
+          ]
+        }
+      }
+    },
+    {
+      "id": "bright_guidance_crystal",
+      "kind": "material",
+      "display_name": "明亮的制导晶石",
+      "description": "原版明亮晶石，可由5个同类有瑕疵晶石制造。镶嵌系统尚未开放。",
+      "max_stack": 99,
+      "source_class": "RYRime:0 2004 0",
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_class": "RYRime:0 2004 0",
+        "source_file": "cltobj/stuffclt2.fcc",
+        "source_line": 42507,
+        "source_logical_path": "pic3/stuff/RYRime2004.ale",
+        "source_sha256": "10b3cb2e00c78ef67f230f3d9b4595c4992de7a9d24c937e6db7e28f3e916d3d",
+        "source_crop": [
+          0,
+          0,
+          28,
+          28
+        ],
+        "source_frame": 0
+      },
+      "presentation": {
+        "world": {
+          "texture": "res://assets/items/materials/bright_guidance_crystal/icon.png",
+          "native_size": [
+            28,
+            28
+          ],
+          "origin": [
+            -18,
+            -14
+          ]
+        },
+        "inventory": {
+          "icon": "res://assets/items/materials/bright_guidance_crystal/icon.png",
+          "native_size": [
+            28,
+            28
+          ]
+        }
+      }
+    },
+    {
+      "id": "bright_critical_crystal",
+      "kind": "material",
+      "display_name": "明亮的暴击晶石",
+      "description": "原版明亮晶石，可由5个同类有瑕疵晶石制造。镶嵌系统尚未开放。",
+      "max_stack": 99,
+      "source_class": "RYRime:0 2005 0",
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_class": "RYRime:0 2005 0",
+        "source_file": "cltobj/stuffclt2.fcc",
+        "source_line": 42507,
+        "source_logical_path": "pic3/stuff/RYRime2005.ale",
+        "source_sha256": "9fc4e1469d4dbfc281b92fdfcc7ec7d33cfb2a4a0cdd4ebc085cda6feaac768b",
+        "source_crop": [
+          0,
+          0,
+          29,
+          28
+        ],
+        "source_frame": 0
+      },
+      "presentation": {
+        "world": {
+          "texture": "res://assets/items/materials/bright_critical_crystal/icon.png",
+          "native_size": [
+            29,
+            28
+          ],
+          "origin": [
+            -17,
+            -15
+          ]
+        },
+        "inventory": {
+          "icon": "res://assets/items/materials/bright_critical_crystal/icon.png",
+          "native_size": [
+            29,
+            28
+          ]
+        }
+      }
+    },
+    {
+      "id": "bright_rocket_crystal",
+      "kind": "material",
+      "display_name": "明亮的火箭晶石",
+      "description": "原版明亮晶石，可由5个同类有瑕疵晶石制造。镶嵌系统尚未开放。",
+      "max_stack": 99,
+      "source_class": "RYRime:0 2006 0",
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_class": "RYRime:0 2006 0",
+        "source_file": "cltobj/stuffclt2.fcc",
+        "source_line": 42507,
+        "source_logical_path": "pic3/stuff/RYRime2006.ale",
+        "source_sha256": "e6755cc0aaa36d36e17fca56de92535a6c9f90d46aa8f50de5da37542ee85aa5",
+        "source_crop": [
+          0,
+          0,
+          27,
+          30
+        ],
+        "source_frame": 0
+      },
+      "presentation": {
+        "world": {
+          "texture": "res://assets/items/materials/bright_rocket_crystal/icon.png",
+          "native_size": [
+            27,
+            30
+          ],
+          "origin": [
+            -17,
+            -15
+          ]
+        },
+        "inventory": {
+          "icon": "res://assets/items/materials/bright_rocket_crystal/icon.png",
+          "native_size": [
+            27,
+            30
+          ]
+        }
+      }
+    }
+  ]
+}

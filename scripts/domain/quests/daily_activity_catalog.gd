@@ -86,6 +86,7 @@ func _available_materials(items: ItemCatalog, places: Dictionary, combat: Combat
 		if enabled.has(mineral.id):
 			ids[mineral.item_definition_id] = true
 	var recipes: Array = JsonConfigLoader.load_dictionary("res://data/gameplay/industrial_recipes_v1.json").value.recipes
+	recipes.append_array(JsonConfigLoader.load_dictionary("res://data/gameplay/material_upgrade_recipes_v1.json").value.recipes)
 	for _pass in range(recipes.size()):
 		var count := ids.size()
 		for recipe: Dictionary in recipes:
