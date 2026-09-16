@@ -34,6 +34,7 @@
 ## 当前模块说明
 
 - [日常活动与智脑](daily_activities_and_smart_assistant.md)：佣兵/历练紫晶收入、八按钮 HUD、主动回城与客户端增强。
+- [掉落期望与材料升级](original_monster_drop_balance.md)：材料相对等级期望、稀有物分类、柔解剂和晶石5比1生产。
 
 | 文档 | 责任范围 / 阅读时注意 |
 | --- | --- |
