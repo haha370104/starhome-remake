@@ -16,7 +16,7 @@
 领域链路：`Player.change_stack/use_inventory_item/advance_food_status` 是聚合行为。
 `InventoryStackActions` 保证拆分/合并数量、容量、绑定与 revision 不变量；
 `ConsumableItem` 持有目录规则，`FoodStatus/FoodEffect` 持有体力、增益及同类冷却。
-食品经验通过 `SkillBook.grant_experience` 进入既有技能结算；战斗目录派生伤害、
+食品经验通过 `Player.grant_skill_experience` 的统一奖励切面进入技能入账；战斗目录派生伤害、
 生命上限和食品防御，真实 `VehicleCombatState` 结算治疗和减伤。
 
 服务层 `AuthoritativePlayerPanelService` 生成隔离候选，服务器提交成功后同步地图资源。
@@ -75,3 +75,8 @@
 - `tests/ui/runtime/inventory_context_menu_test.gd`：真实右键输入、菜单、拆分数量、权威回包和替换提示；`-- --capture` 可输出窗口截图。
 
 三个专项纳入 `tools/run_client_checks.py`；本次执行记录以交接页中的报告为准。
+
+## 食品经验结算更新（2026-09-16）
+
+食品经验增益已迁移到[统一奖励切面](reward_modifiers.md)，SkillBook不再持有FoodStatus或计算食品倍率。
+食品自身仍拥有同类替换、冷却和到期状态；经验入口统一读取本次权威时刻，再与账号及活动规则组合。

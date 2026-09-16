@@ -33,6 +33,8 @@
 
 ## 当前模块说明
 
+- [经验与掉落倍率切面](reward_modifiers.md)：账号/技能/物品规则、食品经验迁移、VIP扩展端口及权威结算。
+
 - [日常活动与智脑](daily_activities_and_smart_assistant.md)：佣兵/历练紫晶收入、八按钮 HUD、主动回城与客户端增强。
 - [掉落期望与材料升级](original_monster_drop_balance.md)：材料相对等级期望、稀有物分类、柔解剂和晶石5比1生产。
 
