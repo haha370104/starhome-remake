@@ -48,10 +48,13 @@ MONSTER_TIERS: dict[int, list[tuple[int, str]]] = {
     8: [
         (25, "om"), (33, "mutant_insect"), (38, "mechanical"),
         (20, "sama"), (18, "sama"), (40, "mutant_insect"),
+        (48, "mechanical"), (49, "mechanical"), (54, "crystal"), (55, "crystal"),
     ],
-    9: [(37, "mutant_insect"), (41, "mechanical"), (39, "sama"), (43, "sama")],
+    9: [(37, "mutant_insect"), (41, "mechanical"), (39, "sama"), (43, "sama"),
+        (50, "mechanical"), (51, "mechanical"), (56, "crystal"), (57, "crystal")],
     10: [(42, "sama"), (44, "mechanical"), (45, "mechanical"),
-         (46, "mechanical"), (47, "mutant_insect")],
+         (46, "mechanical"), (47, "mutant_insect"),
+         (52, "mechanical"), (53, "mechanical"), (58, "crystal"), (59, "crystal")],
 }
 ECOLOGY_FAMILIES = ("slime", "photosensitive", "om", "mutant_insect", "sama", "mechanical")
 SECTOR_FAMILIES = {
@@ -290,6 +293,9 @@ def designed_spawn_groups(source_id: str, map_id: str) -> tuple[list[dict[str, A
     tier = int(progression["danger_tier"])
     allowed_tiers = [tier] if tier == 1 else [tier - 1, tier]
     themes = set(progression["themes"])
+    if "mechanical" in themes:
+        themes.add("crystal")
+        progression["themes"] = [*progression["themes"], "crystal"]
     ranked: list[tuple[int, int, int, int, str]] = []
     stable_seed = int(hashlib.sha256(map_id.encode("utf-8")).hexdigest()[:8], 16)
     for candidate_tier in reversed(allowed_tiers):
@@ -360,6 +366,7 @@ def build_encounters(
                 "source_name_resolution": class_evidence,
             }
         )
+    elite = read_json(Path(__file__).resolve().parents[1] / "data/gameplay/elite_population_v1.json")
     encounters = []
     for source_id, map_id in sorted(source_to_runtime.items()):
         # Kept in the existing stage3 definition; the runtime applies that override.
@@ -376,6 +383,9 @@ def build_encounters(
             "source_map_id": source_id,
             "progression": progression,
         }
+        if progression["danger_tier"] == elite["danger_tier"]:
+            encounter["elite_population_policy"] = {key: elite[key] for key in ("maximum_population", "replenish_interval_seconds")}
+            encounter["elite_spawn_groups"] = [dict(monster_id=runtime_id(index), weight=1.0) for index in elite["species_indices"]]
         if groups_by_map.get(map_id):
             encounter["supporting_client_evidence"] = {
                 "kind": "historical_client_editor_placement",

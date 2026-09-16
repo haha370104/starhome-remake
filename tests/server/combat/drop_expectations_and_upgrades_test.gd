@@ -28,14 +28,17 @@ func _run() -> void:
 		_expect(is_equal_approx(rule.expected_quantity, expected_categories[rule.category]), "分类期望符合用户数值")
 		for source: String in rule.source_classes:
 			fixed[ids[source]] = float(rule.expected_quantity)
+	var elites := JsonConfigLoader.load_dictionary("res://data/gameplay/elite_population_v1.json").value as Dictionary
 	for species: String in catalog.monster_ids():
+		var multiplier := 20.0 if float(species.trim_prefix("glory_monster_")) in elites.species_indices else 1.0
 		var drops: Array = catalog.monster_definition(species).drops
 		var by_name := {}
 		for drop: Dictionary in drops:
 			by_name[items.display_name(drop.item_definition_id)] = drop
 			if fixed.has(drop.item_definition_id):
-				_expect(is_equal_approx(_mean(drop), fixed[drop.item_definition_id]), "指定稀有物的每击杀数量期望")
-				_expect(drop.minimum_quantity == 1 and drop.maximum_quantity == 1, "稀有物成功时只掉一个")
+				_expect(is_equal_approx(_mean(drop), fixed[drop.item_definition_id] * multiplier), "指定稀有物的每击杀数量期望")
+				var quantity := maxi(1, roundi(float(fixed[drop.item_definition_id]) * multiplier))
+				_expect(drop.minimum_quantity == quantity and drop.maximum_quantity == quantity, "稀有物数量遵循普通或精英倍率")
 		for family: String in FAMILIES:
 			var highest := -1
 			for grade in range(GRADES.size()):
@@ -45,9 +48,9 @@ func _run() -> void:
 				if not by_name.has(GRADES[grade] + family):
 					continue
 				var drop: Dictionary = by_name[GRADES[grade] + family]
-				_expect(is_equal_approx(_mean(drop), 0.75 * pow(2.0, highest - grade)), "同怪同类材料每低一级期望翻倍")
+				_expect(is_equal_approx(_mean(drop), 0.75 * pow(2.0, highest - grade) * multiplier), "同怪同类材料每低一级期望翻倍")
 				if grade == highest:
-					_expect(drop.maximum_quantity <= 2, "当前最高级材料单次至多两个")
+					_expect(drop.maximum_quantity <= 2 * multiplier, "当前最高级材料遵循基础数量上限与精英倍率")
 	var evil: Array = catalog.monster_definition("glory_monster_010").drops
 	var table := DropTable.new(evil)
 	var random := RandomNumberGenerator.new()

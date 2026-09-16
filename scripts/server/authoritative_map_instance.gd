@@ -34,6 +34,7 @@ var _last_progression_combat_event_id := 0
 var _monster_population_policy: Dictionary = {}
 var _next_monster_replenishment_tick := -1
 var _monster_spawn_sequence := 0
+var _elite_population := TimedPopulationQuota.new()
 var suspended_at_server_tick := -1
 
 
@@ -87,6 +88,7 @@ func resume_runtime(server_tick: int) -> Dictionary:
 			for _round in range(rounds):
 				_replenish_monster_population_if_due()
 			_next_monster_replenishment_tick += (missed - rounds) * interval
+		_replenish_elite_population_if_due()
 	if mining_module != null:
 		mining_module.resume_navigation(navigation, elapsed_ticks)
 	suspended_at_server_tick = -1
@@ -137,6 +139,11 @@ func configure_combat(catalog, simulation_hz: int) -> Dictionary:
 		return _failure(&"combat.definition_invalid", "starter vehicle combat definitions are invalid")
 	_combat_catalog = catalog
 	_monster_population_policy = catalog.monster_population_policy_for_map(String(definition.map_id))
+	var elite_result := _elite_population.configure(
+		catalog.monster_population_policy_for_map(String(definition.map_id), &"elite"), simulation_hz
+	)
+	if not elite_result.is_ok:
+		return _failure(elite_result.error_code, elite_result.error_message)
 	_combat_assembly = assembly_result.value
 	_combat_weapons = {"energy_cannon.primary": weapon_result.value}
 	_combat_weapons.merge(secondary_result.value)
@@ -159,6 +166,7 @@ func configure_combat(catalog, simulation_hz: int) -> Dictionary:
 	_next_monster_replenishment_tick = roundi(
 		float(_monster_population_policy.get("replenish_interval_seconds", 60.0)) * simulation_hz
 	)
+	_replenish_elite_population_if_due()
 	for entity_id: String in entities:
 		var registration := _register_vehicle_combat(entity_id)
 		if not registration.ok:
@@ -418,6 +426,7 @@ func simulate(delta: float) -> void:
 			combat_module.update_actor_position(entity_id, entities[entity_id].position)
 		combat_module.advance_ticks(1, not entities.is_empty())
 		_replenish_monster_population_if_due()
+		_replenish_elite_population_if_due()
 	if mining_module != null:
 		mining_module.advance_ticks(1)
 
@@ -455,7 +464,7 @@ func _replenish_monster_population_if_due() -> void:
 	var alive_by_species: Dictionary = {}
 	var alive_count := 0
 	for monster: MonsterLifecycle in combat_module.monsters.values():
-		if monster.map_instance_id == instance_id and monster.is_alive():
+		if monster.map_instance_id == instance_id and monster.is_alive() and monster.population_kind == &"ordinary":
 			alive_count += 1
 			alive_by_species[monster.species_id] = int(
 				alive_by_species.get(monster.species_id, 0)
@@ -480,6 +489,36 @@ func _replenish_monster_population_if_due() -> void:
 			continue
 		monster_definition["position"] = position
 		combat_module.register_monster(monster_definition)
+	_monster_spawn_sequence += generated.value.size()
+
+
+## 使用独立精英配额补满种群；普通怪计时和人数不参与计算。
+## 设计：唤醒与正常模拟共用同一领域时钟，切图不会重置十分钟周期。
+func _replenish_elite_population_if_due() -> void:
+	if combat_module == null or not _elite_population.is_due(combat_module.current_tick):
+		return
+	var alive_by_species: Dictionary = {}
+	var alive_count := 0
+	for monster: MonsterLifecycle in combat_module.monsters.values():
+		if monster.map_instance_id == instance_id and monster.is_alive() and monster.population_kind == &"elite":
+			alive_count += 1
+			alive_by_species[monster.species_id] = int(alive_by_species.get(monster.species_id, 0)) + 1
+	var count := _elite_population.take_due_replenishment(combat_module.current_tick, alive_count)
+	if count <= 0:
+		return
+	var generated = _combat_catalog.monster_replenishment_for_map(
+		String(definition.map_id), instance_id, alive_by_species, _monster_spawn_sequence, count, &"elite"
+	)
+	if not generated.is_ok:
+		push_error("Elite replenishment failed: %s" % generated.error_message)
+		return
+	combat_module.remove_dead_monsters(instance_id)
+	for raw: Dictionary in generated.value:
+		raw.position = _random_monster_spawn_position(int(raw.spawn_index))
+		if raw.position.is_finite():
+			var result := combat_module.register_monster(raw)
+			if not result.is_ok:
+				push_error("Elite registration failed: %s" % result.error_message)
 	_monster_spawn_sequence += generated.value.size()
 
 

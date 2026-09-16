@@ -347,11 +347,13 @@ func monster_lifecycles_for_map(map_id: String, map_instance_id: String) -> Doma
 ## [param map_id] 待查询的业务地图标识。
 ## 返回启用地图的种群策略副本；无配置时返回空字典。
 ## 设计：调用方不得持有并修改目录内部配置。
-func monster_population_policy_for_map(map_id: String) -> Dictionary:
+## [param population_kind] ordinary 或 elite；两种种群独立配置。
+func monster_population_policy_for_map(map_id: String, population_kind: StringName = &"ordinary") -> Dictionary:
 	var encounter := _encounter_for_map(map_id)
 	if encounter.is_empty() or not bool(encounter.get("enabled", false)):
 		return {}
-	return (encounter.get("population_policy", {}) as Dictionary).duplicate(true)
+	var key := "elite_population_policy" if population_kind == &"elite" else "population_policy"
+	return (encounter.get(key, {}) as Dictionary).duplicate(true)
 
 
 ## 计算本轮应补数量；阈值采用严格小于，结果始终受地图上限钳制。
@@ -380,6 +382,7 @@ func monster_replenishment_count(map_id: String, alive_count: int) -> int:
 ## [param alive_by_species] 各物种当前存活数量。
 ## [param first_sequence] 本批实例稳定序号的起点。
 ## [param requested_count] 本轮期望生成数量。
+## [param population_kind] ordinary 或 elite，选择独立物种池。
 ## 返回按权重生成的怪物定义数组或配置错误。
 func monster_replenishment_for_map(
 	map_id: String,
@@ -387,13 +390,19 @@ func monster_replenishment_for_map(
 	alive_by_species: Dictionary,
 	first_sequence: int,
 	requested_count: int,
+	population_kind: StringName = &"ordinary",
 ) -> DomainResult:
+	if population_kind not in [&"ordinary", &"elite"]:
+		return DomainResult.failure(&"combat.invalid_population_request", "unknown population kind")
 	if map_instance_id.is_empty() or first_sequence < 0 or requested_count < 0:
 		return DomainResult.failure(&"combat.invalid_population_request", "monster replenishment request is invalid")
 	var encounter := _encounter_for_map(map_id)
 	if encounter.is_empty() or not bool(encounter.get("enabled", false)):
 		return DomainResult.ok([])
-	var groups: Array = encounter["spawn_groups"]
+	var key := "elite_spawn_groups" if population_kind == &"elite" else "spawn_groups"
+	var groups: Array = encounter.get(key, [])
+	if groups.is_empty():
+		return DomainResult.ok([])
 	var working_counts := alive_by_species.duplicate()
 	var result: Array[Dictionary] = []
 	for batch_index: int in range(requested_count):
@@ -412,6 +421,7 @@ func monster_replenishment_for_map(
 		result.append(_monster_lifecycle_definition(
 			encounter, selected_group, map_instance_id, sequence, species_count
 		))
+		result.back()["population_kind"] = population_kind
 		working_counts[species_id] = species_count + 1
 	return DomainResult.ok(result)
 
@@ -667,7 +677,17 @@ func _validate_runtime_links() -> DomainResult:
 			or String(policy.get("spawn_distribution", "")) != "full_walkable_map" \
 			or float(policy.get("minimum_spawn_separation", 0.0)) < 0.0:
 			return DomainResult.failure(&"combat.invalid_catalog", "encounter population policy is invalid")
-		for raw_group: Variant in groups:
+		var elite_groups: Variant = encounter.get("elite_spawn_groups", [])
+		var elite_policy: Variant = encounter.get("elite_population_policy", {})
+		if not elite_groups is Array or not elite_policy is Dictionary:
+			return DomainResult.failure(&"combat.invalid_catalog", "elite population format is invalid")
+		if not elite_groups.is_empty() or not elite_policy.is_empty():
+			var quota := TimedPopulationQuota.new()
+			if elite_groups.is_empty() or elite_policy.is_empty() or not quota.configure(elite_policy, 20).is_ok:
+				return DomainResult.failure(&"combat.invalid_catalog", "elite population policy is invalid")
+			if int(encounter.get("progression", {}).get("danger_tier", 0)) != 10:
+				return DomainResult.failure(&"combat.invalid_catalog", "elite population requires tier ten")
+		for raw_group: Variant in groups + elite_groups:
 			if not raw_group is Dictionary:
 				return DomainResult.failure(&"combat.invalid_catalog", "encounter spawn group must be a dictionary")
 			var group: Dictionary = raw_group

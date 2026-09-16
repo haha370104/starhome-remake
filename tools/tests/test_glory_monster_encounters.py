@@ -79,6 +79,23 @@ class EncounterTests(unittest.TestCase):
         self.assertEqual({index: tiers[index] for index in [9, 10, 11, 12]}, {9: 3, 10: 3, 11: 3, 12: 3})
         self.assertEqual({index: tiers[index] for index in [13, 14, 15, 16]}, {13: 4, 14: 4, 15: 4, 16: 4})
 
+    def test_new_ordinary_species_and_separate_elite_pools(self):
+        encounters, _ = self.build()
+        active = {g["monster_id"] for e in encounters for g in e["spawn_groups"]}
+        self.assertEqual(len(active), 59)
+        self.assertTrue({builder.runtime_id(i) for i in range(48, 60)} <= active)
+        elite_ids = {builder.runtime_id(i) for i in [*range(60, 66), *range(97, 111)]}
+        elite_maps = [e for e in encounters if e["progression"]["danger_tier"] == 10]
+        self.assertEqual(len(elite_maps), 24)
+        for encounter in encounters:
+            if encounter not in elite_maps:
+                self.assertNotIn("elite_spawn_groups", encounter)
+                continue
+            self.assertEqual({g["monster_id"] for g in encounter["elite_spawn_groups"]}, elite_ids)
+            self.assertEqual(encounter["elite_population_policy"],
+                             dict(maximum_population=30, replenish_interval_seconds=600))
+        self.assertFalse(active & elite_ids)
+
     def test_ambiguous_name_is_not_silently_joined(self):
         duplicate = next(row.copy() for row in self.rows if row["index"] == "4")
         duplicate["index"] = "999"

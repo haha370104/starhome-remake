@@ -169,7 +169,7 @@ func _test_original_candidates(items: ItemCatalog, catalog: CombatDefinitionCata
 				_expect(not actual.has(id), "保留非爬虫碎片的用户例外")
 				continue
 			_expect(actual.has(id), "每一条原版候选必须配置，原始权重为零也不能擅自丢弃")
-	_expect(relationships == 1134, "完整掉落关系包括1133条原版关系及爬虫BOSS例外")
+	_expect(relationships == 1269, "保留1134条原有关系，新增14种精英继承的135条关系")
 
 
 ## 在真实矿源模块中验证材料链矿物的地图投放、采掘门槛和产物，并检查地面可点击视图。

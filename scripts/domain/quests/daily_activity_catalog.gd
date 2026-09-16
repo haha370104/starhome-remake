@@ -23,7 +23,7 @@ func initialize(items: ItemCatalog) -> DomainResult:
 	for encounter: Dictionary in encounters.encounters:
 		if not bool(encounter.get("enabled", true)):
 			continue
-		for group: Dictionary in encounter.spawn_groups:
+		for group: Dictionary in encounter.spawn_groups + encounter.get("elite_spawn_groups", []):
 			if float(group.get("weight", 1.0)) <= 0:
 				continue
 			if not places.has(group.monster_id):

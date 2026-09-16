@@ -40,6 +40,7 @@ var action_sequence := 0
 var respawn_delay_ticks := 0
 var respawn_at_tick := -1
 var population_managed := false
+var population_kind: StringName = &"ordinary"
 var death_generation := 0
 var last_killer_id := ""
 
@@ -97,6 +98,7 @@ func configure(definition: Dictionary, simulation_hz: int) -> DomainResult:
 	wander_interval_ticks = roundi(requested_wander_interval_seconds * float(simulation_hz))
 	respawn_delay_ticks = roundi(requested_respawn_seconds * float(simulation_hz))
 	population_managed = bool(definition.get("population_managed", false))
+	population_kind = StringName(definition.get("population_kind", "ordinary"))
 	respawn_at_tick = -1
 	death_generation = 0
 	last_killer_id = ""

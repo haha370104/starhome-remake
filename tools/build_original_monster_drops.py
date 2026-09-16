@@ -83,9 +83,28 @@ def build_drops():
         if monster["id"] in CRAWLERS:
             grouped[ids[FRAGMENT]] = dict(item_definition_id=ids[FRAGMENT], minimum_quantity=1, maximum_quantity=3, chance=0.75)
         rows.append(dict(monster_id=monster["id"], display_name=monster["display_name"], drops=list(grouped.values())))
+    elite = read("data/gameplay/elite_population_v1.json")
+    by_id = {row["monster_id"]: row for row in rows}
+    for index in elite["species_indices"]:
+        row = by_id[f"glory_monster_{index:03d}"]
+        inherited = elite["inherited_drop_sources"].get(row["monster_id"])
+        if inherited:
+            assert not row["drops"], "Do not overwrite original elite candidates"
+            row["drops"] = [dict(drop) for drop in by_id[inherited]["drops"]]
+        for drop in row["drops"]:
+            scaled = round(drop["chance"] * elite["drop_multiplier"], 8)
+            if scaled <= 1:
+                drop["chance"] = scaled
+            else:
+                # Current approved probabilities produce integral guaranteed quantities.
+                # Reject a future incompatible probability instead of silently rounding EV.
+                assert scaled.is_integer(), f"Nonintegral elite quantity multiplier: {scaled}"
+                drop["chance"] = 1.0
+                drop["minimum_quantity"] *= int(scaled)
+                drop["maximum_quantity"] *= int(scaled)
     document = dict(schema_version=1, content_version="original-monster-drops-v1", mode="replace",
         source_audit=dict(source_release="starhome_lz_ry", source_catalog="glory/glory_monsters_v1.json",
-            policy="2026-09-16 user-approved expectations in drop_expectation_policy_v1.json; original raw_weight unconfirmed",
+            policy="2026-09-16 expectations in drop_expectation_policy_v1.json; elite inheritance and 20x EV in elite_population_v1.json; original raw_weight unconfirmed",
             duplicate_policy="one roll per species/item; original quantity envelope unless expectation policy overrides",
             fragment_policy="only crawler 046 and forgotten crawler 114 plus variants; uniform 0..3, E=1.5"), definitions=rows)
     # Generated records stay one drop per line, so reviewers can compare each relationship directly.
