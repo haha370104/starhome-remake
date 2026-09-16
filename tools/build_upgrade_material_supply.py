@@ -24,41 +24,9 @@ def write(path, data):
 
 
 def build_drops():
-    """Keep original ranges, deduplicate candidates, and label remake odds."""
-    monsters = read(ROOT / 'data/gameplay/glory/glory_monsters_v1.json')
-    items = read(ROOT / 'data/gameplay/glory/glory_items_v1.json')
-    ids = {row['display_name']: row['id'] for row in items['definitions']}
-    rows = []
-    for monster in monsters['definitions']:
-        grouped = {}
-        for candidate in monster['source_drop_candidates']:
-            name = candidate['display_name']
-            if name not in BIO_NAMES:
-                continue
-            if name not in grouped:
-                grouped[name] = {'item_definition_id': ids[name],
-                                 'minimum_quantity': candidate['minimum_quantity'],
-                                 'maximum_quantity': candidate['maximum_quantity'],
-                                 'chance': 0.75 if name.startswith('中级') else 0.5}
-            else:
-                grouped[name]['minimum_quantity'] = min(grouped[name]['minimum_quantity'], candidate['minimum_quantity'])
-                grouped[name]['maximum_quantity'] = max(grouped[name]['maximum_quantity'], candidate['maximum_quantity'])
-        drops = list(grouped.values())
-        if monster['id'] in CRAWLERS:
-            # P(0)=.25; P(1)=P(2)=P(3)=.75/3=.25; E=1.5.
-            drops.append({'item_definition_id': ids['接合器升级碎片'],
-                          'minimum_quantity': 1, 'maximum_quantity': 3, 'chance': 0.75})
-        if drops:
-            rows.append({'monster_id': monster['id'], 'display_name': monster['display_name'], 'drops': drops})
-    document = {'schema_version': 1, 'content_version': 'upgrade-material-supply-v1',
-                'source_audit': {'source_release': 'starhome_lz_ry',
-                                 'catalog': 'glory/glory_monsters_v1.json',
-                                 'bio_targets_and_ranges': 'client produce_obj candidates; duplicate names merged, not rolled twice',
-                                 'bio_chance': 'remake default: middle 0.75, high 0.5; original raw_weight algorithm unconfirmed',
-                                 'crawler_chance': 'user confirmed two crawler species and variants; uniform 0..3, expectation 1.5'},
-                'definitions': rows}
-    write(ROOT / 'data/gameplay/monster_material_drops_v1.json', document)
-    print(f'Material drops: {len(rows)} species; {sum(len(r["drops"]) for r in rows)} rules')
+    # Keep the legacy entry point on the complete, user-approved policy.
+    from build_original_monster_drops import build_drops as build_complete_drops
+    build_complete_drops()
 
 
 def apply_mining():

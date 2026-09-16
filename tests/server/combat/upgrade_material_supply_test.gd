@@ -25,8 +25,9 @@ func _run() -> void:
 		_finish()
 		return
 	var catalog: CombatDefinitionCatalog = loaded.value
+	_test_original_candidates(items, catalog)
 	await _test_drop_views(items, catalog)
-	var material_rules := JsonConfigLoader.load_dictionary("res://data/gameplay/monster_material_drops_v1.json").value as Dictionary
+	var material_rules := JsonConfigLoader.load_dictionary("res://data/gameplay/original_monster_drops_v1.json").value as Dictionary
 	for row: Dictionary in material_rules.definitions:
 		var actual := DropTable.new(catalog.monster_definition(row.monster_id).drops)
 		for entry: Dictionary in actual.entries():
@@ -58,7 +59,7 @@ func _run() -> void:
 	var gel: Array = catalog.monster_definition("glory_monster_009").drops
 	_expect(gel.any(func(row: Dictionary) -> bool: return row.item_definition_id == "item:material:472d2fb951cb"), "恶性毒胶实际掉中级类胶")
 	_expect(gel.any(func(row: Dictionary) -> bool: return row.item_definition_id == "item:material:fa5a837875bb"), "恶性毒胶实际掉高级类胶")
-	_expect(catalog.monster_definition("om_adult").drops.size() == 2, "原新手怪物掉落保留")
+	_expect(catalog.monster_definition("om_adult").drops.size() == 2, "新手怪物的重复原始记录应合并为两种候选")
 	var spawned_crawler := false
 	for map_id: String in catalog.monster_encounter_map_ids():
 		var population := catalog.monster_lifecycles_for_map(map_id, "supply.test").value as Array
@@ -98,7 +99,7 @@ func _test_drop_views(items: ItemCatalog, catalog: CombatDefinitionCatalog) -> v
 				continue
 			seen[id] = true
 			rows.append({"loot_id": id, "item_definition_id": id, "quantity": 2,
-				"position": [80 + (rows.size() % 5) * 180, 80 + (rows.size() / 5) * 100]})
+				"position": [50 + (rows.size() % 8) * 180, 70 + floori(rows.size() / 8.0) * 95]})
 	display.apply_snapshot({"ground_loot": rows})
 	_expect(display.active_view_count() == seen.size(), "所有实际掉落必须创建地面视图，不能只有表而隐形")
 	for row: Dictionary in rows:
@@ -117,12 +118,15 @@ func _test_drop_views(items: ItemCatalog, catalog: CombatDefinitionCatalog) -> v
 		var monster := MonsterLifecycle.new()
 		_expect(monster.configure(definition, 20).is_ok, "D03 实际刷新怪物可配置")
 		var spawned := 0
-		for _sample in range(100):
+		for _sample in range(3000):
 			spawned += module._spawn_monster_loot(monster, "test.player").size()
-		_expect(spawned > 60 and spawned < 90, "冷系怪物真实掉落实体符合75%抽样且不是必掉")
+		var expected := 3000.0 * monster.drop_table.entries().size() * 0.25
+		_expect(absf(float(spawned) - expected) < expected * 0.08,
+			"冷系怪物的各候选应独立按25%生成真实掉落实体")
 	_expect(found.size() == 2, "D03 两种冷系怪物实际启用")
 	if "--capture" in OS.get_cmdline_user_args():
-		root.size = Vector2i(960, 500)
+		root.size = Vector2i(1480, 1020)
+		display.set_process(false)
 		for view: GroundLootWorldView in display._views.values():
 			view.set_hovered(true)
 		await RenderingServer.frame_post_draw
@@ -130,6 +134,45 @@ func _test_drop_views(items: ItemCatalog, catalog: CombatDefinitionCatalog) -> v
 	display.queue_free()
 	world.queue_free()
 	await process_frame
+
+
+## 对照原始候选验证完整性、数量合并、统一概率、例外与背包可接收性。
+## [param items] 已恢复中文身份和原版图标的物品目录。
+## [param catalog] 最终权威掉落目录。
+func _test_original_candidates(items: ItemCatalog, catalog: CombatDefinitionCatalog) -> void:
+	var bindings := JsonConfigLoader.load_dictionary("res://data/gameplay/original_drop_bindings_v1.json").value as Dictionary
+	var names := {}
+	for binding: Dictionary in bindings.definitions:
+		names[binding.source_class] = binding.item_definition_id
+		var created := items.create(binding.item_definition_id, {"instance_id": binding.source_class, "quantity": 2})
+		_expect(created.is_ok and created.value.display_name == binding.display_name, "全部候选应恢复原版中文名称")
+		var inventory := Inventory.new()
+		_expect(inventory.add_reward(created.value).is_ok, "全部候选必须可拾取入包")
+		_expect(inventory.count_definition(binding.item_definition_id) == 2, "入包数量不得丢失")
+	_expect(names.size() == 79, "原版79种候选含六种晶石参数身份")
+	var source := JsonConfigLoader.load_dictionary("res://data/gameplay/glory/glory_monsters_v1.json").value as Dictionary
+	var relationships := 0
+	for monster: Dictionary in source.definitions:
+		var actual := {}
+		for drop: Dictionary in catalog.monster_definition(monster.id).drops:
+			_expect(not actual.has(drop.item_definition_id), "同怪同物品不得因原表重复而多次抽取")
+			actual[drop.item_definition_id] = drop
+			if drop.item_definition_id != FRAGMENT:
+				_expect(is_equal_approx(drop.chance, 0.25), "普通候选暂时统一25%概率")
+			var created := items.create(drop.item_definition_id, {"quantity": drop.maximum_quantity})
+			_expect(created.is_ok and created.value.quantity == drop.maximum_quantity,
+				"原版最大数量不得被物品堆叠上限截断")
+			relationships += 1
+		for candidate: Dictionary in monster.source_drop_candidates:
+			var id := String(names[candidate.display_name])
+			if id == FRAGMENT and monster.id not in CRAWLERS:
+				_expect(not actual.has(id), "保留非爬虫碎片的用户例外")
+				continue
+			_expect(actual.has(id), "每一条原版候选必须配置，原始权重为零也不能擅自丢弃")
+			if actual.has(id) and id != FRAGMENT:
+				_expect(actual[id].minimum_quantity <= candidate.minimum_quantity
+					and actual[id].maximum_quantity >= candidate.maximum_quantity, "合并数量范围必须覆盖原记录")
+	_expect(relationships == 1134, "完整掉落关系包括1133条原版关系及爬虫BOSS例外")
 
 
 ## 在真实矿源模块中验证材料链矿物的地图投放、采掘门槛和产物，并检查地面可点击视图。
