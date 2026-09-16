@@ -12,7 +12,7 @@ const TEXT_FONT_SIZE := 12
 const PROPULSION_SLOT_RECT := Rect2(96, 360, 68, 68)
 const DISPLAY_LABELS := [
 	{"id": 0, "text": "装置0", "position": Vector2(30, 122)},
-	{"id": 1, "text": "装置1", "position": Vector2(101, 122), "hover_yellow": true},
+	{"id": 1, "text": "副武器", "position": Vector2(101, 122), "hover_yellow": true},
 	{"id": 2, "text": "旧接合 I", "position": Vector2(172, 122)},
 	{"id": 3, "text": "旧接合 II", "position": Vector2(243, 122)},
 	{"id": 4, "text": "发生器 I", "position": Vector2(314, 122)},
@@ -76,7 +76,10 @@ func _ready() -> void:
 	special_button.position = Vector2(386, 352)
 	special_button.size = Vector2(66, 30)
 	special_button.add_theme_font_size_override("font_size", 12)
-	special_button.pressed.connect(_special_panel.show)
+	special_button.pressed.connect(func() -> void:
+		_special_panel.move_to_front()
+		_special_panel.show()
+	)
 	content_root.add_child(special_button)
 
 
@@ -169,6 +172,7 @@ func _add_equipment_visual(equipment: Dictionary) -> void:
 		return
 	var slot_rect := PROPULSION_SLOT_RECT if location == 3 else Rect2()
 	var attachment_rects := {
+		13: Rect2(96, 58, 68, 60),
 		16: Rect2(166, 58, 68, 60), 17: Rect2(237, 58, 68, 60),
 		14: Rect2(308, 58, 68, 60), 32: Rect2(386, 62, 62, 56),
 		33: Rect2(386, 161, 62, 56), 34: Rect2(386, 257, 62, 56),
@@ -179,7 +183,7 @@ func _add_equipment_visual(equipment: Dictionary) -> void:
 		visual.free()
 		return
 	visual.name = "Location_%d_%s" % [location, String(equipment.get("definition_id", "equipment"))]
-	visual.z_index = int(equipment.get("z_layer", 0))
+	# apply_snapshot 已按装备层级排序；使用窗口子树顺序，禁止越过其他窗口。
 	visual.gui_input.connect(_on_equipment_gui_input.bind(location))
 	_slot_root.add_child(visual)
 

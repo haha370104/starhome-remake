@@ -56,6 +56,18 @@ func _initialize() -> void:
 		"权威主炮身份必须是天神之怒")
 	_expect(int(primary.get("minimum_damage", 0)) == 900,
 		"权威基础伤害不得回退到新兵能量炮 7")
+	_expect(weapons.size() == 1, "空副武器槽不得获得两件新手武器的攻击能力")
+	for definition_id: String in ["glory_equipment_missile4_9861000063", "glory_equipment_missile5_15584171c6", "official_rocket_firegun_6"]:
+		var secondary: VehicleWeapon = item_catalog.create(definition_id, {"instance_id": definition_id}).value
+		player.vehicle.loadout.equip(secondary, 13, player.vehicle.loadout.revision)
+		var updated: DomainResult = combat_result.value.vehicle_combat_loadout(player, 20, {"base_speed_multiplier": 1500.0, "base_speed_cap": 240.0})
+		_expect(updated.is_ok, "实际副武器可以参与装配计算")
+		var ability_id := secondary.combat_mode() + ".primary"
+		var actual: Dictionary = updated.value.weapons[ability_id]
+		_expect(updated.value.weapons.size() == 2 and actual.weapon_id == definition_id, "仅登记实际安装的副武器")
+		_expect(actual.minimum_damage == secondary.base_attack and actual.working_energy_cost == secondary.working_energy_per_shot, "副武器伤害与能耗来自装备")
+		var stat_key := "missile_attack" if secondary.combat_mode() == "missile" else "rocket_attack"
+		_expect(player.calculate_vehicle_stats()[stat_key] == secondary.base_attack, "战车面板包含副武器基础攻击")
 	_finish()
 
 

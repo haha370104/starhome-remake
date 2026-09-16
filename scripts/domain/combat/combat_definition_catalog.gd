@@ -197,7 +197,7 @@ func starter_secondary_weapons(simulation_hz: int) -> DomainResult:
 ## [param simulation_hz] 权威服务器每秒模拟刻数。
 ## [param movement_config] 战车重量、推进力到移动速度的服务器规则。
 ## 返回 assembly 与 weapons 字典；缺少底盘或主装置时返回领域错误，采掘臂不登记主炮攻击。
-## 设计：loadout 是唯一装备事实来源；新兵目录只为未装备的副武器和待证实弹道常量提供回退。
+## 设计：loadout 是唯一装备事实来源；新兵目录仅为待证实的弹道常量提供回退。
 func vehicle_combat_loadout(
 	player: Player,
 	simulation_hz: int,
@@ -268,7 +268,7 @@ func vehicle_combat_loadout(
 		if not weapon_result.is_ok:
 			return weapon_result
 		weapons[STARTER_ABILITY_ID] = weapon_result.value
-	var secondary_result := starter_secondary_weapons(simulation_hz)
+	var secondary_result := _equipped_secondary_weapon(player.vehicle.loadout.at(13), simulation_hz)
 	if not secondary_result.is_ok:
 		return secondary_result
 	weapons.merge(secondary_result.value)
@@ -282,6 +282,34 @@ func vehicle_combat_loadout(
 		weapons[ability_id]["maximum_damage"] += bonus
 	assembly["food_defense"] = player.food_status.bonus(17)
 	return DomainResult.ok({"assembly": assembly, "weapons": weapons})
+
+
+## 将实际安装的副武器转换为权威攻击定义；空槽不登记任何攻击能力。
+## [param equipment] 战车副武器槽中的实际装备。
+## [param simulation_hz] 权威模拟频率。
+## 返回按能力标识索引的武器定义；非攻击装置返回空集合。
+func _equipped_secondary_weapon(equipment: VehicleEquipment, simulation_hz: int) -> DomainResult:
+	if not equipment is VehicleWeapon:
+		return DomainResult.ok({})
+	var weapon := equipment as VehicleWeapon
+	var mode := weapon.combat_mode()
+	if mode not in ["missile", "rocket_launcher"]:
+		return DomainResult.ok({})
+	var templates := starter_secondary_weapons(simulation_hz)
+	if not templates.is_ok:
+		return templates
+	var ability_id := mode + ".primary"
+	var definition: Dictionary = templates.value[ability_id].duplicate(true)
+	definition["weapon_id"] = weapon.definition_id
+	definition["minimum_damage"] = weapon.base_attack
+	definition["maximum_damage"] = weapon.base_attack
+	definition["working_energy_cost"] = weapon.working_energy_per_shot
+	if weapon.attack_range > 0.0:
+		definition["range"] = weapon.attack_range
+	definition["minimum_range"] = float(weapon.stat("minimum_range", definition["minimum_range"]))
+	if weapon.attack_interval_seconds > 0.0:
+		definition["cooldown_ticks"] = maxi(1, roundi(weapon.attack_interval_seconds * simulation_hz))
+	return DomainResult.ok({ability_id: definition})
 
 
 ## 将实际装备的能量炮转换为权威战斗状态机协议。

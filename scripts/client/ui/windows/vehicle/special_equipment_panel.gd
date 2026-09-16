@@ -11,7 +11,6 @@ var _items_root: Control
 func _ready() -> void:
 	position = Vector2(22, 46)
 	size = Vector2(425, 383)
-	z_index = 100
 	var style := StyleBoxFlat.new()
 	style.bg_color = Color("101d28")
 	style.border_color = Color("42c9dc")

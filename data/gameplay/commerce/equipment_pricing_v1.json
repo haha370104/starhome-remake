@@ -6,7 +6,9 @@
     "glory_equipment_engine7_24246159c0": {"purchase_value":50000,"sell_value":25000},
     "glory_equipment_engine8_df38922e4b": {"purchase_value":100000,"sell_value":50000},
     "glory_equipment_gun8_e7ce1423fa": {"purchase_value":80000,"sell_value":40000},
-    "glory_equipment_gun9_d2426d05e9": {"purchase_value":160000,"sell_value":80000}
+    "glory_equipment_gun9_d2426d05e9": {"purchase_value":160000,"sell_value":80000},
+    "glory_equipment_missile4_9861000063": {"purchase_value":36000,"sell_value":18000},
+    "glory_equipment_missile5_15584171c6": {"purchase_value":72000,"sell_value":36000}
   },
   "source_audit": {
     "evidence_level": "remake_design",

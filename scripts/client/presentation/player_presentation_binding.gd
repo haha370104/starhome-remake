@@ -1,11 +1,6 @@
 class_name PlayerPresentationBinding
 extends RefCounted
 
-const TACTICAL_ACTION_BY_DEFINITION := {
-	"starter_rocket_launcher": "rocket_launcher",
-	"starter_missile": "missile",
-}
-
 var world_view: ClientWorldView
 var local_player_controller: LocalPlayerController
 var active_world_controller: ActiveWorldController
@@ -63,10 +58,8 @@ func on_current_player_changed(current_player: Player) -> void:
 	if hud != null:
 		var primary_device: VehicleEquipment = current_player.vehicle.loadout.at(1)
 		hud.set_primary_device("" if primary_device == null else primary_device.primary_device_kind())
-		var tactical_equipment: VehicleEquipment = current_player.vehicle.loadout.at(13)
-		var action_id := "" if tactical_equipment == null else String(
-			TACTICAL_ACTION_BY_DEFINITION.get(tactical_equipment.definition_id, "")
-		)
+		var tactical_equipment := current_player.vehicle.loadout.at(13) as VehicleWeapon
+		var action_id := "" if tactical_equipment == null else tactical_equipment.combat_mode()
 		hud.set_tactical_action(action_id)
 	refresh_local_movement_availability(current_player)
 

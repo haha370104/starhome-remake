@@ -16,3 +16,15 @@ func _init(definition: Dictionary = {}, state: Dictionary = {}) -> void:
 	working_energy_per_shot = maxf(0.0, float(stat("working_energy_per_shot", 0.0)))
 	attack_range = maxf(0.0, float(stat("range", 0.0)))
 	attack_interval_seconds = maxf(0.0, float(stat("attack_interval_seconds", 0.0)))
+
+
+## 查询武器的战斗业务类型，供装配计算、HUD 和世界表现共享。
+## 返回能量炮、导弹或火箭的模式标识；未知武器返回空字符串。
+func combat_mode() -> String:
+	match _device_kind:
+		"energy_cannon": return "energy_cannon"
+		"missile_weapon": return "missile"
+		"rocket_weapon": return "rocket_launcher"
+	if equipment_location == 1:
+		return "energy_cannon"
+	return String({"starter_missile": "missile", "starter_rocket_launcher": "rocket_launcher"}.get(definition_id, ""))

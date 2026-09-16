@@ -29,6 +29,8 @@ func _initialize() -> void:
 	var special_loaded: DomainResult = special.initialize(items, "special_weapon_merchant")
 	_expect(special_loaded.is_ok, "特殊武器商人目录应加载")
 	if special_loaded.is_ok:
+		_expect(int(special.offer("glory_equipment_missile4_9861000063")["price"]) == 36000, "长剑售价为毒刺两倍")
+		_expect(int(special.offer("glory_equipment_missile5_15584171c6")["price"]) == 72000, "大力神售价为长剑两倍")
 		var special_offers: Array[Dictionary] = special.offers()
 		_expect(not special_offers.is_empty(), "特殊武器商人应有官网装备可售")
 		_expect(String(special_offers[0]["category"]) == "rocket_weapon", "特殊商店必须先列火箭")

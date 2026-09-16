@@ -88,8 +88,8 @@ func calculate_stats(
 		"energy_cannon_attack_base": primary_attack,
 		"energy_cannon_attack_bonus": (achievement_bonuses.energy_cannon_attack + loadout.attachment_bonus("energy_cannon_attack") + food_status.bonus(13)) if primary_attack > 0 else 0,
 		"energy_cannon_range_bonus": achievement_bonuses.energy_cannon_range,
-		"missile_attack": achievement_bonuses.missile_attack + loadout.attachment_bonus("missile_attack") + food_status.bonus(14),
-		"rocket_attack": achievement_bonuses.rocket_attack + loadout.attachment_bonus("rocket_attack") + food_status.bonus(15),
+		"missile_attack": _secondary_attack("missile") + achievement_bonuses.missile_attack + loadout.attachment_bonus("missile_attack") + food_status.bonus(14),
+		"rocket_attack": _secondary_attack("rocket_launcher") + achievement_bonuses.rocket_attack + loadout.attachment_bonus("rocket_attack") + food_status.bonus(15),
 		"propulsion": propulsion,
 		"output_power": output_power,
 		"weight": total_weight,
@@ -139,3 +139,11 @@ func reconcile_loadout_state(preserve_resource_ratios := true) -> bool:
 ## 返回 0 到 1 的资源比例；无有效上限时按满值处理。
 func _resource_ratio(current_value: float, capacity: float) -> float:
 	return clampf(current_value / capacity, 0.0, 1.0) if capacity > 0.0 else 1.0
+
+
+## 查询当前副武器的基础攻击，不把未安装的武器计入装备面板。
+## [param mode] 导弹或火箭的战斗模式。
+## 返回匹配副武器的基础攻击；空槽或不同类型返回零。
+func _secondary_attack(mode: String) -> int:
+	var weapon := loadout.at(13) as VehicleWeapon
+	return weapon.base_attack if weapon != null and weapon.combat_mode() == mode else 0

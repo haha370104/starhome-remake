@@ -27,6 +27,9 @@ func _run() -> void:
 		"三面板管理器应只依赖统一命令分发器")
 	manager.panel_session.dispatch({"type": "query"})
 	await process_frame
+	for layer: Control in manager.vehicle_panel._slot_root.get_children():
+		_expect(layer.z_index == 0, "装备按窗口子树排序，不可越过其他面板")
+	_expect(manager.vehicle_panel._special_panel.z_index == 0, "特殊装备也必须留在所属窗口内")
 	_expect(not manager.character_panel.visible, "人物面板初始应隐藏")
 	_expect(not manager.inventory_panel.visible, "背包面板初始应隐藏")
 	_expect(not manager.vehicle_panel.visible, "战车面板初始应隐藏")
@@ -286,7 +289,7 @@ func _test_mining_arm_layering() -> void:
 			panel.apply_snapshot({"equipped": [projector._equipment_view(arm, "vehicle"), projector._equipment_view(chassis, "vehicle")]})
 			var arm_visual := panel._slot_root.get_node("Location_1_%s" % arm_id) as TextureRect
 			var chassis_visual := panel._slot_root.get_node("Location_0_%s" % chassis_id) as TextureRect
-			_expect(arm_visual.z_index > chassis_visual.z_index, "%s 必须覆盖 %s" % [arm_id, chassis_id])
+			_expect(arm_visual.z_index == 0 and chassis_visual.z_index == 0 and arm_visual.get_index() > chassis_visual.get_index(), "%s 必须覆盖 %s" % [arm_id, chassis_id])
 			panel.free()
 
 
