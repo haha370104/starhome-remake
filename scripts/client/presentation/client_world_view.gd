@@ -169,3 +169,12 @@ func clear_map_effects() -> void:
 	if mineral_world_controller != null:
 		mineral_world_controller.clear()
 	mining_visual_controller.clear()
+
+
+## 用同一玩家装配选择各攻击槽的后续弹体，工程臂和空槽不保留旧炮表现。
+## [param vehicle] 当前玩家战车聚合；不会写入任何权威状态。
+func apply_weapon_equipment(vehicle: PlayerVehicle) -> void:
+	for mode_id: String in combat_attack_controllers:
+		var equipment := vehicle.loadout.at(1 if mode_id == "energy_cannon" else 13) as VehicleWeapon
+		var weapon_id := StringName(equipment.definition_id) if equipment != null and equipment.combat_mode() == mode_id else &""
+		combat_attack_controllers[mode_id].select_weapon(weapon_id)

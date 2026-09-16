@@ -243,12 +243,16 @@ func _apply_pose() -> Error:
 		if action.is_empty():
 			return ERR_INVALID_DATA
 		var resource_path := String(action.get("resource", ""))
+		var ale_reference := String(action.get("ale_reference", ""))
+		var resource_key := resource_path if ale_reference.is_empty() else ale_reference
 		var frames_resource := sprite.sprite_frames
-		if frames_resource == null or frames_resource.resource_path != resource_path:
-			var loaded := ResourceLoader.load(resource_path, "SpriteFrames") as SpriteFrames
+		if frames_resource == null or String(sprite.get_meta("resource_key", "")) != resource_key:
+			var loaded := CombatAnimationLibrary.load_ale(ale_reference) if not ale_reference.is_empty() \
+				else ResourceLoader.load(resource_path, "SpriteFrames") as SpriteFrames
 			if loaded == null or not loaded.has_animation(RAW_ANIMATION):
 				return ERR_CANT_OPEN
 			sprite.sprite_frames = loaded
+			sprite.set_meta("resource_key", resource_key)
 			frames_resource = loaded
 		sprite.animation = RAW_ANIMATION
 		var offset_value: Variant = action.get("offset", [0, 0])
@@ -270,6 +274,8 @@ func _apply_pose() -> Error:
 		if atlas_frame >= frames_resource.get_frame_count(RAW_ANIMATION):
 			return ERR_INVALID_DATA
 		sprite.frame = atlas_frame
+		if frames_resource.has_meta("ale_origins"):
+			sprite.offset = frames_resource.get_meta("ale_origins")[atlas_frame]
 	return OK
 
 

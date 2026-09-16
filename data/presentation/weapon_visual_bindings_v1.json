@@ -1,0 +1,566 @@
+{
+  "schema_version": 1,
+  "source_release": "starhome_lz_ry",
+  "equipment_style_index": 0,
+  "evidence": "cltobj/equipclt.fcc::ChangeEquipStyle overrides m_sbulletfile with m_szBulletFileChange[0]; bullet.fcc::laserbullet resolves pic3/bullet/",
+  "weapons": {
+    "glory_equipment_missile9_ft_8dd595ad3d": {
+      "mode": "missile",
+      "projectile": {
+        "ale_reference": "pic3/bullet/missilepd2",
+        "frames": 4,
+        "fps": 10.0
+      },
+      "source_class": "Missile9_FT",
+      "source_declared_projectile": "missilePD2.ale",
+      "source_style_override": "",
+      "source_file": "cltobj/appendequipcltclass.fcc"
+    },
+    "glory_equipment_missile1_e5d9c3dd47": {
+      "mode": "missile",
+      "projectile": {
+        "ale_reference": "pic3/bullet/missile",
+        "frames": 1,
+        "fps": 10.0
+      },
+      "source_class": "Missile1",
+      "source_declared_projectile": "missile.ale",
+      "source_style_override": "",
+      "source_file": "cltobj/appendequipcltclass.fcc"
+    },
+    "glory_equipment_space_missile1_4845f52bc1": {
+      "mode": "missile",
+      "projectile": {
+        "ale_reference": "pic3/bullet/missile",
+        "frames": 1,
+        "fps": 10.0
+      },
+      "source_class": "Space_Missile1",
+      "source_declared_projectile": "missile.ale",
+      "source_style_override": "",
+      "source_file": "cltobj/space_airship_cltclass.fcc"
+    },
+    "glory_equipment_missile1_binding_08f139dbc0": {
+      "mode": "missile",
+      "projectile": {
+        "ale_reference": "pic3/bullet/missile",
+        "frames": 1,
+        "fps": 10.0
+      },
+      "source_class": "Missile1_Binding",
+      "source_declared_projectile": "missile.ale",
+      "source_style_override": "",
+      "source_file": "cltobj/appendequipcltclass.fcc"
+    },
+    "glory_equipment_memory_missile1_d3ac23e0f8": {
+      "mode": "missile",
+      "projectile": {
+        "ale_reference": "pic3/bullet/missile",
+        "frames": 1,
+        "fps": 10.0
+      },
+      "source_class": "Memory_Missile1",
+      "source_declared_projectile": "missile.ale",
+      "source_style_override": "",
+      "source_file": "cltobj/appendequipcltclass.fcc"
+    },
+    "glory_equipment_missile9_7a6a4a6553": {
+      "mode": "missile",
+      "projectile": {
+        "ale_reference": "pic3/bullet/missilepd2",
+        "frames": 4,
+        "fps": 10.0
+      },
+      "source_class": "Missile9",
+      "source_declared_projectile": "missilePD2.ale",
+      "source_style_override": "",
+      "source_file": "cltobj/appendequipcltclass.fcc"
+    },
+    "glory_equipment_tmissile9_6e5b825c0e": {
+      "mode": "missile",
+      "projectile": {
+        "ale_reference": "pic3/bullet/missilepd2",
+        "frames": 4,
+        "fps": 10.0
+      },
+      "source_class": "TMissile9",
+      "source_declared_projectile": "missilePD2.ale",
+      "source_style_override": "",
+      "source_file": "cltobj/appendequipcltclass.fcc"
+    },
+    "glory_equipment_missile5_15584171c6": {
+      "mode": "missile",
+      "projectile": {
+        "ale_reference": "pic3/bullet/missile",
+        "frames": 1,
+        "fps": 10.0
+      },
+      "source_class": "Missile5",
+      "source_declared_projectile": "missile.ale",
+      "source_style_override": "",
+      "source_file": "cltobj/appendequipcltclass.fcc"
+    },
+    "glory_equipment_missile100_86662a8190": {
+      "mode": "missile",
+      "projectile": {
+        "ale_reference": "pic3/bullet/missilepd2",
+        "frames": 4,
+        "fps": 10.0
+      },
+      "source_class": "Missile100",
+      "source_declared_projectile": "missilePD2.ale",
+      "source_style_override": "",
+      "source_file": "cltobj/appendequipcltclass.fcc"
+    },
+    "glory_equipment_missile3_8a548551df": {
+      "mode": "missile",
+      "projectile": {
+        "ale_reference": "pic3/bullet/missile",
+        "frames": 1,
+        "fps": 10.0
+      },
+      "source_class": "Missile3",
+      "source_declared_projectile": "missile.ale",
+      "source_style_override": "",
+      "source_file": "cltobj/appendequipcltclass.fcc"
+    },
+    "glory_equipment_missile7_5d3c3a6c38": {
+      "mode": "missile",
+      "projectile": {
+        "ale_reference": "pic3/bullet/missilepd2",
+        "frames": 4,
+        "fps": 10.0
+      },
+      "source_class": "Missile7",
+      "source_declared_projectile": "missilePD2.ale",
+      "source_style_override": "",
+      "source_file": "cltobj/appendequipcltclass.fcc"
+    },
+    "glory_equipment_missile2_ff175e4bd2": {
+      "mode": "missile",
+      "projectile": {
+        "ale_reference": "pic3/bullet/missile",
+        "frames": 1,
+        "fps": 10.0
+      },
+      "source_class": "Missile2",
+      "source_declared_projectile": "missile.ale",
+      "source_style_override": "",
+      "source_file": "cltobj/appendequipcltclass.fcc"
+    },
+    "glory_equipment_missile4_9861000063": {
+      "mode": "missile",
+      "projectile": {
+        "ale_reference": "pic3/bullet/missile",
+        "frames": 1,
+        "fps": 10.0
+      },
+      "source_class": "Missile4",
+      "source_declared_projectile": "missile.ale",
+      "source_style_override": "",
+      "source_file": "cltobj/appendequipcltclass.fcc"
+    },
+    "glory_equipment_missile6_f42d8278a3": {
+      "mode": "missile",
+      "projectile": {
+        "ale_reference": "pic3/bullet/missilepd2",
+        "frames": 4,
+        "fps": 10.0
+      },
+      "source_class": "Missile6",
+      "source_declared_projectile": "missilePD2.ale",
+      "source_style_override": "",
+      "source_file": "cltobj/appendequipcltclass.fcc"
+    },
+    "glory_equipment_tmissile6_e2b797a3b6": {
+      "mode": "missile",
+      "projectile": {
+        "ale_reference": "pic3/bullet/missilepd2",
+        "frames": 4,
+        "fps": 10.0
+      },
+      "source_class": "TMissile6",
+      "source_declared_projectile": "missilePD2.ale",
+      "source_style_override": "",
+      "source_file": "cltobj/appendequipcltclass.fcc"
+    },
+    "glory_equipment_missile8_708162cbf4": {
+      "mode": "missile",
+      "projectile": {
+        "ale_reference": "pic3/bullet/missilepd2",
+        "frames": 4,
+        "fps": 10.0
+      },
+      "source_class": "Missile8",
+      "source_declared_projectile": "missilePD2.ale",
+      "source_style_override": "",
+      "source_file": "cltobj/appendequipcltclass.fcc"
+    },
+    "glory_equipment_tmissile8_4446a0ff29": {
+      "mode": "missile",
+      "projectile": {
+        "ale_reference": "pic3/bullet/missilepd2",
+        "frames": 4,
+        "fps": 10.0
+      },
+      "source_class": "TMissile8",
+      "source_declared_projectile": "missilePD2.ale",
+      "source_style_override": "",
+      "source_file": "cltobj/appendequipcltclass.fcc"
+    },
+    "glory_equipment_finalgun_3079e9ae92": {
+      "mode": "energy_cannon",
+      "projectile": {
+        "ale_reference": "pic3/bullet/bulletfinal",
+        "frames": 1,
+        "fps": 10.0
+      },
+      "source_class": "FinalGun",
+      "source_declared_projectile": "BulletFinal.ale",
+      "source_style_override": "",
+      "source_file": "cltobj/equipcltclass.fcc"
+    },
+    "glory_equipment_space_firegun1_49553e4065": {
+      "mode": "rocket_launcher",
+      "projectile": {
+        "ale_reference": "pic3/bullet/daodan1",
+        "frames": 4,
+        "fps": 10.0
+      },
+      "source_class": "Space_FireGun1",
+      "source_declared_projectile": "daodan1.ale",
+      "source_style_override": "",
+      "source_file": "cltobj/space_airship_cltclass.fcc"
+    },
+    "glory_equipment_gun2_baf92d19b5": {
+      "mode": "energy_cannon",
+      "projectile": {
+        "ale_reference": "pic3/bullet/bullet1",
+        "frames": 1,
+        "fps": 10.0
+      },
+      "source_class": "gun2",
+      "source_declared_projectile": "bullet2.ale",
+      "source_style_override": "bullet1.ale",
+      "source_file": "cltobj/equipcltclass.fcc"
+    },
+    "glory_equipment_gun10_e72fbae102": {
+      "mode": "energy_cannon",
+      "projectile": {
+        "ale_reference": "pic3/bullet/bullet9",
+        "frames": 1,
+        "fps": 10.0
+      },
+      "source_class": "gun10",
+      "source_declared_projectile": "bullet10.ale",
+      "source_style_override": "bullet9.ale",
+      "source_file": "cltobj/equipcltclass.fcc"
+    },
+    "glory_equipment_gun1000_c4c24e2500": {
+      "mode": "energy_cannon",
+      "projectile": {
+        "ale_reference": "pic3/bullet/bullet12",
+        "frames": 1,
+        "fps": 10.0
+      },
+      "source_class": "gun1000",
+      "source_declared_projectile": "bullet12.ale",
+      "source_style_override": "",
+      "source_file": "cltobj/equipcltclass.fcc"
+    },
+    "glory_equipment_home_gun1_d545a38a2d": {
+      "mode": "energy_cannon",
+      "projectile": {
+        "ale_reference": "pic3/bullet/bullet16",
+        "frames": 1,
+        "fps": 10.0
+      },
+      "source_class": "Home_gun1",
+      "source_declared_projectile": "bullet16.ale",
+      "source_style_override": "",
+      "source_file": "cltobj/equipcltclass.fcc"
+    },
+    "glory_equipment_monarchgun_02b1acfd77": {
+      "mode": "energy_cannon",
+      "projectile": {
+        "ale_reference": "pic3/bullet/bullet15",
+        "frames": 1,
+        "fps": 10.0
+      },
+      "source_class": "MonarchGun",
+      "source_declared_projectile": "bullet15.ale",
+      "source_style_override": "",
+      "source_file": "cltobj/equipcltclass.fcc"
+    },
+    "glory_equipment_gun11_428a0490c6": {
+      "mode": "energy_cannon",
+      "projectile": {
+        "ale_reference": "pic3/bullet/bullet10",
+        "frames": 1,
+        "fps": 10.0
+      },
+      "source_class": "gun11",
+      "source_declared_projectile": "bullet11.ale",
+      "source_style_override": "bullet10.ale",
+      "source_file": "cltobj/equipcltclass.fcc"
+    },
+    "glory_equipment_gun1_216568dc50": {
+      "mode": "energy_cannon",
+      "projectile": {
+        "ale_reference": "pic3/bullet/bullet1",
+        "frames": 1,
+        "fps": 10.0
+      },
+      "source_class": "gun1",
+      "source_declared_projectile": "bullet1.ale",
+      "source_style_override": "bullet1.ale",
+      "source_file": "cltobj/equipcltclass.fcc"
+    },
+    "glory_equipment_gunxxx_e5a0deb104": {
+      "mode": "energy_cannon",
+      "projectile": {
+        "ale_reference": "pic3/bullet/gun_gm_bullet",
+        "frames": 1,
+        "fps": 10.0
+      },
+      "source_class": "gunXXX",
+      "source_declared_projectile": "gun_gm_bullet.ale",
+      "source_style_override": "",
+      "source_file": "cltobj/equipcltclass.fcc"
+    },
+    "glory_equipment_gun3_3599e6f3f0": {
+      "mode": "energy_cannon",
+      "projectile": {
+        "ale_reference": "pic3/bullet/bullet2",
+        "frames": 1,
+        "fps": 10.0
+      },
+      "source_class": "gun3",
+      "source_declared_projectile": "bullet3.ale",
+      "source_style_override": "bullet2.ale",
+      "source_file": "cltobj/equipcltclass.fcc"
+    },
+    "glory_equipment_gun12_35e4f7db4f": {
+      "mode": "energy_cannon",
+      "projectile": {
+        "ale_reference": "pic3/bullet/bullet12",
+        "frames": 1,
+        "fps": 10.0
+      },
+      "source_class": "gun12",
+      "source_declared_projectile": "bullet12.ale",
+      "source_style_override": "",
+      "source_file": "cltobj/equipcltclass.fcc"
+    },
+    "glory_equipment_gun14_52a9c713bd": {
+      "mode": "energy_cannon",
+      "projectile": {
+        "ale_reference": "pic3/bullet/bullet14a",
+        "frames": 1,
+        "fps": 10.0
+      },
+      "source_class": "gun14",
+      "source_declared_projectile": "bullet14a.ale",
+      "source_style_override": "",
+      "source_file": "cltobj/equipcltclass.fcc"
+    },
+    "glory_equipment_gun8_e7ce1423fa": {
+      "mode": "energy_cannon",
+      "projectile": {
+        "ale_reference": "pic3/bullet/bullet7",
+        "frames": 1,
+        "fps": 10.0
+      },
+      "source_class": "gun8",
+      "source_declared_projectile": "bullet8.ale",
+      "source_style_override": "bullet7.ale",
+      "source_file": "cltobj/equipcltclass.fcc"
+    },
+    "glory_equipment_gun9_d2426d05e9": {
+      "mode": "energy_cannon",
+      "projectile": {
+        "ale_reference": "pic3/bullet/bullet8",
+        "frames": 1,
+        "fps": 10.0
+      },
+      "source_class": "gun9",
+      "source_declared_projectile": "bullet9.ale",
+      "source_style_override": "bullet8.ale",
+      "source_file": "cltobj/equipcltclass.fcc"
+    },
+    "glory_equipment_gun7_0705215c72": {
+      "mode": "energy_cannon",
+      "projectile": {
+        "ale_reference": "pic3/bullet/bullet6",
+        "frames": 1,
+        "fps": 10.0
+      },
+      "source_class": "gun7",
+      "source_declared_projectile": "bullet7.ale",
+      "source_style_override": "bullet6.ale",
+      "source_file": "cltobj/equipcltclass.fcc"
+    },
+    "glory_equipment_gun13_f014e9c95c": {
+      "mode": "energy_cannon",
+      "projectile": {
+        "ale_reference": "pic3/bullet/bullet13",
+        "frames": 1,
+        "fps": 10.0
+      },
+      "source_class": "gun13",
+      "source_declared_projectile": "bullet13.ale",
+      "source_style_override": "",
+      "source_file": "cltobj/equipcltclass.fcc"
+    },
+    "glory_equipment_gun5_550f30177d": {
+      "mode": "energy_cannon",
+      "projectile": {
+        "ale_reference": "pic3/bullet/bullet4",
+        "frames": 1,
+        "fps": 10.0
+      },
+      "source_class": "gun5",
+      "source_declared_projectile": "bullet5.ale",
+      "source_style_override": "bullet4.ale",
+      "source_file": "cltobj/equipcltclass.fcc"
+    },
+    "glory_equipment_gun6_e2c0fdc60c": {
+      "mode": "energy_cannon",
+      "projectile": {
+        "ale_reference": "pic3/bullet/bullet5",
+        "frames": 1,
+        "fps": 10.0
+      },
+      "source_class": "gun6",
+      "source_declared_projectile": "bullet6.ale",
+      "source_style_override": "bullet5.ale",
+      "source_file": "cltobj/equipcltclass.fcc"
+    },
+    "glory_equipment_gun4_d045d0a572": {
+      "mode": "energy_cannon",
+      "projectile": {
+        "ale_reference": "pic3/bullet/bullet3",
+        "frames": 1,
+        "fps": 10.0
+      },
+      "source_class": "gun4",
+      "source_declared_projectile": "bullet4.ale",
+      "source_style_override": "bullet3.ale",
+      "source_file": "cltobj/equipcltclass.fcc"
+    },
+    "glory_equipment_gundragon_f3533711ec": {
+      "mode": "energy_cannon",
+      "projectile": {
+        "ale_reference": "pic3/bullet/bullet08",
+        "frames": 1,
+        "fps": 10.0
+      },
+      "source_class": "gunDragon",
+      "source_declared_projectile": "bullet08.ale",
+      "source_style_override": "",
+      "source_file": "cltobj/appendequipcltclass.fcc"
+    },
+    "official_rocket_firegun_2": {
+      "mode": "rocket_launcher",
+      "projectile": {
+        "ale_reference": "pic3/bullet/daodan1",
+        "frames": 4,
+        "fps": 10.0
+      },
+      "source_class": "FireGun2",
+      "source_declared_projectile": "daodan1.ale",
+      "source_style_override": "",
+      "source_file": "cltobj/fireguncltclass.fcc"
+    },
+    "official_rocket_firegun_3": {
+      "mode": "rocket_launcher",
+      "projectile": {
+        "ale_reference": "pic3/bullet/daodan1",
+        "frames": 4,
+        "fps": 10.0
+      },
+      "source_class": "FireGun3",
+      "source_declared_projectile": "daodan1.ale",
+      "source_style_override": "",
+      "source_file": "cltobj/fireguncltclass.fcc"
+    },
+    "official_rocket_firegun_4": {
+      "mode": "rocket_launcher",
+      "projectile": {
+        "ale_reference": "pic3/bullet/daodan1",
+        "frames": 4,
+        "fps": 10.0
+      },
+      "source_class": "FireGun4",
+      "source_declared_projectile": "daodan1.ale",
+      "source_style_override": "",
+      "source_file": "cltobj/fireguncltclass.fcc"
+    },
+    "official_rocket_firegun_5": {
+      "mode": "rocket_launcher",
+      "projectile": {
+        "ale_reference": "pic3/bullet/daodan1",
+        "frames": 4,
+        "fps": 10.0
+      },
+      "source_class": "FireGun5",
+      "source_declared_projectile": "daodan1.ale",
+      "source_style_override": "",
+      "source_file": "cltobj/fireguncltclass.fcc"
+    },
+    "official_rocket_firegun_6": {
+      "mode": "rocket_launcher",
+      "projectile": {
+        "ale_reference": "pic3/bullet/daodan1",
+        "frames": 4,
+        "fps": 10.0
+      },
+      "source_class": "FireGun6",
+      "source_declared_projectile": "daodan1.ale",
+      "source_style_override": "",
+      "source_file": "cltobj/fireguncltclass.fcc"
+    },
+    "official_rocket_firegun_7": {
+      "mode": "rocket_launcher",
+      "projectile": {
+        "ale_reference": "pic3/bullet/daodan1",
+        "frames": 4,
+        "fps": 10.0
+      },
+      "source_class": "FireGun7",
+      "source_declared_projectile": "daodan1.ale",
+      "source_style_override": "",
+      "source_file": "cltobj/fireguncltclass.fcc"
+    }
+  },
+  "unavailable_source_assets": [
+    {
+      "definition_id": "glory_equipment_missile_thunder_c5ee4fe533",
+      "source_reference": "pic3/bullet/missile_thunder_pd"
+    },
+    {
+      "definition_id": "glory_equipment_tmissile_thunder_8a43f3b5c7",
+      "source_reference": "pic3/bullet/missile_thunder_pd"
+    },
+    {
+      "definition_id": "glory_equipment_jmissile_thunder_e0b6883c21",
+      "source_reference": "pic3/bullet/missile_thunder_pd"
+    },
+    {
+      "definition_id": "glory_equipment_xmasgun_9d72e95d33",
+      "source_reference": "pic3/bullet/gun14_bullet14"
+    },
+    {
+      "definition_id": "glory_equipment_gun_xmas_9475063eaa",
+      "source_reference": "pic3/bullet/gun_xmas_bullet"
+    },
+    {
+      "definition_id": "glory_equipment_tnewfiregunjoint_7674ff256b",
+      "source_reference": "pic3/bullet/"
+    },
+    {
+      "definition_id": "glory_equipment_memory_gun1_4df55354ab",
+      "source_reference": "pic3/bullet/bullet01"
+    }
+  ]
+}

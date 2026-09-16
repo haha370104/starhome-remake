@@ -184,38 +184,44 @@ func apply_vehicle_equipment(vehicle: PlayerVehicle) -> bool:
 		return false
 	var chassis := vehicle.loadout.at(0) as VehicleChassis
 	var primary_weapon := vehicle.loadout.at(1)
-	if chassis == null or primary_weapon == null:
+	if chassis == null:
+		combat_presenter.clear_actor()
+		_equipped_combat_actor_id = &""
 		return false
-	var component_map: Dictionary = _combat_manifest.get(
-		"vehicle_component_by_equipment_definition", {}
-	)
-	var shadow_map: Dictionary = _combat_manifest.get(
-		"vehicle_shadow_component_by_chassis_definition", {}
-	)
+	var shadow_map: Dictionary = _combat_manifest.get("vehicle_shadow_component_by_chassis_definition", {})
 	var components: Dictionary = _combat_manifest.get("components", {})
-	var chassis_component := String(component_map.get(chassis.definition_id, ""))
-	var weapon_component := String(component_map.get(primary_weapon.definition_id, ""))
+	var chassis_component := _equipment_component(chassis)
+	var weapon_component := _equipment_component(primary_weapon)
 	var shadow_component := String(shadow_map.get(chassis.definition_id, ""))
-	if chassis_component.is_empty() or weapon_component.is_empty() \
-			or not components.has(chassis_component) or not components.has(weapon_component):
+	if chassis_component.is_empty():
+		combat_presenter.clear_actor()
+		_equipped_combat_actor_id = &""
 		return false
 	var layers: Array[Dictionary] = []
 	if not shadow_component.is_empty() and components.has(shadow_component):
 		layers.append(_vehicle_layer(
 			&"shadow", -1, components[shadow_component], false
 		))
-	layers.append(_vehicle_layer(&"chassis", 0, components[chassis_component], true))
-	var primary_layer := _vehicle_layer(&"primary_weapon", 1, components[weapon_component], false)
-	if primary_weapon is VehicleMiningArm:
-		primary_layer["actions"]["collect"] = components[weapon_component]["action"].duplicate(true)
-	layers.append(primary_layer)
-	_append_secondary_weapon_layers(layers)
+	layers.append(_vehicle_layer(&"chassis", 0, chassis_component, true))
+	if not weapon_component.is_empty():
+		var primary_layer := _vehicle_layer(&"primary_weapon", 1, weapon_component, false)
+		if primary_weapon is VehicleMiningArm:
+			primary_layer["actions"]["collect"] = weapon_component["action"].duplicate(true)
+		layers.append(primary_layer)
+	var secondary := vehicle.loadout.at(13) as VehicleWeapon
+	if secondary != null:
+		var component := _equipment_component(secondary)
+		var layer_id := &"missile_weapon" if secondary.combat_mode() == "missile" else &"rocket_weapon"
+		if not component.is_empty():
+			layers.append(_vehicle_layer(layer_id, 2, component, false))
 	var actor_id := &"equipped_combat_vehicle"
 	var registered: Error = combat_presenter.register_actor(actor_id, {
 		"display_name": chassis.display_name,
 		"default_action": "idle",
 		"layers": layers,
-		"installed_components": [chassis_component, weapon_component],
+		"installed_components": [
+			_combat_manifest.get("vehicle_component_by_equipment_definition", {}).get(chassis.definition_id, chassis.definition_id),
+			_combat_manifest.get("vehicle_component_by_equipment_definition", {}).get(primary_weapon.definition_id, primary_weapon.definition_id) if primary_weapon != null else ""],
 	})
 	if registered != OK:
 		return false
@@ -259,18 +265,15 @@ func _vehicle_layer(
 	}
 
 
-## 从新兵兼容 actor 复制已按需导入的火箭与导弹表现层。
-## [param layers] 正在组装的玩家实际战车图层数组。
-## 设计：副武器尚未纳入完整固定装配映射前继续复用公共视觉层，但不影响底盘和主炮事实来源。
-func _append_secondary_weapon_layers(layers: Array[Dictionary]) -> void:
-	var actors: Dictionary = _combat_manifest.get("actors", {})
-	var fallback_actor: Dictionary = actors.get("starter_combat_vehicle", {})
-	for layer_value: Variant in fallback_actor.get("layers", []):
-		if not layer_value is Dictionary:
-			continue
-		var layer: Dictionary = layer_value
-		if StringName(layer.get("id", "")) in [&"rocket_weapon", &"missile_weapon"]:
-			layers.append(layer.duplicate(true))
+## 从明确导入的组件或物品自身的荣耀世界图读取实际装备外观。
+## [param equipment] 当前安装的战车装备。
+## 返回本件装备的组件；缺失时返回空，不能保留上一件外观。
+func _equipment_component(equipment: VehicleEquipment) -> Dictionary:
+	if equipment == null:
+		return {}
+	var key := String(_combat_manifest.get("vehicle_component_by_equipment_definition", {}).get(equipment.definition_id, equipment.definition_id))
+	var component: Dictionary = _combat_manifest.get("components", {}).get(key, {})
+	return component if not component.is_empty() else CombatAnimationLibrary.equipment_component(equipment)
 
 
 ## 执行 `set_combat_status` 对应的模块操作。

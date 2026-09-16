@@ -55,3 +55,46 @@
 HUD 按 `VehicleWeapon.combat_mode()` 判断副武器，所有同类装备共用导弹/火箭按钮。权威装配也只登记实际装在 Location 13 的副武器，使用该装备的攻击、能耗和冷却；空槽不能攻击。战车属性面板包含副武器基础攻击。
 
 长剑导弹售价 36000、回收价 18000；大力神售价 72000、回收价 36000。以毒刺售价 18000 为基准逐档翻倍，属于用户指定的复刻经济调整。
+
+### 实际换装与弹体来源
+
+此前野外只认识少量预先导出的组件，未命中的高级炮会保留上一件外观；攻击控制器也始终使用新兵弹体。
+现在世界表现优先读取已有组件，其余装备读取自身的 world ALE；缺失时清除该层，不遗留上一件装备。
+副武器层仅由实际 Location 13 装备产生。`CombatAnimationLibrary` 复用现有荣耀内容包，缓存动画并保留每帧原点；没有新增或混用其他版本素材。
+
+弹体关系由 `tools/build_weapon_visual_bindings.py` 离线编译为 `data/presentation/weapon_visual_bindings_v1.json`。
+来源是荣耀 `cltobj/equipcltclass.fcc`、`cltobj/appendequipcltclass.fcc`、`cltobj/fireguncltclass.fcc` 等装备类。
+其中 `cltobj/equipclt.fcc::ChangeEquipStyle` 会用 `m_szBulletFileChange[0]` 覆盖初始 `m_sbulletfile`；
+复刻当前使用与炮身一致的默认风格 0，不能只取类中最初的弹体声明。
+`bullet.fcc::laserbullet` 确认弹体从原目录 `pic3/bullet/` 加载、逐帧播放并旋转到飞行方向。
+
+| 主炮 | 默认风格实际弹体（原版溯源名称） |
+| --- | --- |
+| 新兵能量炮、加强能量炮 | bullet1.ale |
+| 突袭能量炮 | bullet2.ale |
+| 鳄式能量炮 | bullet3.ale |
+| 鳄式加强能量炮 | bullet4.ale |
+| 鳄式突袭能量炮 | bullet5.ale |
+| 虎式能量炮 | bullet6.ale |
+| 虎式加强能量炮 | bullet7.ale |
+| 虎式突袭能量炮 | bullet8.ale |
+| 天神之怒 | bullet12.ale |
+
+目前在售的五档导弹共用 `missile.ale`，七档火箭共用 `daodan1.ale`，这是原版关联，不能人为每档换一种。
+清单共记录 44 件可解析装备，覆盖所有当前在售主炮和副武器；原目录另有 7 件未解析定义/缺失引用记录在
+`unavailable_source_assets`，没有为这些未开放条目伪造弹体。炮口和命中效果继续使用现有同类模板；
+本轮确认并恢复的是飞行弹体关联，不把模板宣称为已逆向出的每件装备独立爆炸效果。
+
+装备投影、权威快照和已接受的发射事件均携带实际装备身份；网络仅指定身份和弹道参数，不能指定资源路径。
+表现侧为在途弹体冻结发射时资源和爆炸配置，换装不改写已发出的炮弹，也不清空发射确认去重记录。
+工作能量蓝条读取权威 `working_energy / working_energy_capacity`。客户端提交开火只解析瞄准、限制提交频率；
+收到权威接受事件后才播放炮口与弹体，能量不足的拒绝不会再出现假开火。
+
+### 本轮验证
+
+`tests/integration/equipped_weapon_presentation_test.gd` 已纳入客户端总门禁，149 项检查覆盖在售武器世界图、
+原版弹体映射、采掘臂切回虎式、在途换装、副武器 HUD 与真实槽位，以及真实服务端拒绝/扣能/客户端播放。
+虎式在 20/100 能量时拒绝且无弹体，100/100 时发射后变为 50/100；事件与快照重发只创建一次弹体。
+附加 `-- --capture-equipment` 的 OpenGL 运行通过 150 项，增加前景窗口像素遮挡检查，并输出
+`.godot/equipment_window_stacking.png` 与 `.godot/equipment_weapon_preview.png`，两张实际渲染均已核对。
+测试使用内存聚合和隔离状态，不操作日常存档。

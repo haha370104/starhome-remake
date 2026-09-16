@@ -55,6 +55,7 @@ func on_current_player_changed(current_player: Player) -> void:
 			character_catalog,
 		)
 		world_view.player.apply_vehicle_equipment(current_player.vehicle)
+		world_view.apply_weapon_equipment(current_player.vehicle)
 	if hud != null:
 		var primary_device: VehicleEquipment = current_player.vehicle.loadout.at(1)
 		hud.set_primary_device("" if primary_device == null else primary_device.primary_device_kind())

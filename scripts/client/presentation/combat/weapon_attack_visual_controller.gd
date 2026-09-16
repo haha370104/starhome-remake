@@ -5,6 +5,8 @@ const RAW_ANIMATION := &"raw"
 const MINIMUM_SHOT_DISTANCE := 2.0
 const MUZZLE_FORWARD_OFFSET := 28.0
 
+var _manifest: Dictionary = {}
+var _visual_definition_id: StringName = &""
 var _world_parent: Node2D
 var _weapon_id: StringName = &""
 var _weapon: Dictionary = {}
@@ -51,34 +53,41 @@ func configure(
 ) -> Error:
 	clear_effects()
 	_world_parent = world_parent
-	_weapon_id = weapon_id
+	_manifest = CombatAnimationLibrary.with_weapon_bindings(manifest)
+	_visual_definition_id = &""
 	_weapon.clear()
-	_projectile_frames = null
-	_impact_frames = null
-	_muzzle_frames = null
 	_visual_collision_resolver = Callable()
 	_cooldown_remaining = 0.0
 	_visual_shot_sequence = 0
-	if _world_parent == null or _weapon_id == &"":
+	if _world_parent == null:
 		return ERR_INVALID_PARAMETER
-	var weapons_value: Variant = manifest.get("weapons", {})
-	if not weapons_value is Dictionary:
-		return ERR_INVALID_DATA
-	var weapon_value: Variant = (weapons_value as Dictionary).get(String(_weapon_id), {})
-	if not weapon_value is Dictionary or (weapon_value as Dictionary).is_empty():
-		return ERR_DOES_NOT_EXIST
-	var candidate: Dictionary = (weapon_value as Dictionary).duplicate(true)
+	return select_weapon(weapon_id)
+
+
+## 根据实际装备切换后续发射的外观；在途弹体、确认去重和独立冷却保持原状态。
+## [param weapon_id] 本地表现目录中的装备标识；空标识表示卸下武器。
+## 返回是否找到该装备的完整弹体和爆炸素材。
+func select_weapon(weapon_id: StringName) -> Error:
+	if weapon_id == _visual_definition_id and not _weapon.is_empty():
+		return OK
+	_weapon.clear()
+	_weapon_id = weapon_id
+	_visual_definition_id = weapon_id
+	_projectile_frames = null
+	_impact_frames = null
+	_muzzle_frames = null
+	if weapon_id == &"":
+		return OK
+	var candidate: Dictionary = _manifest.get("weapons", {}).get(String(weapon_id), {}).duplicate(true)
 	if not _is_valid_weapon(candidate):
 		return ERR_INVALID_DATA
-	var projectile: Dictionary = candidate["projectile"]
-	var impact: Dictionary = candidate["impact"]
-	_projectile_frames = _load_frames(String(projectile["resource"]))
-	_impact_frames = _load_frames(String(impact["resource"]))
+	_projectile_frames = _load_effect_frames(candidate["projectile"])
+	_impact_frames = _load_effect_frames(candidate["impact"])
 	if _projectile_frames == null or _impact_frames == null:
 		return ERR_CANT_OPEN
-	var muzzle_value: Variant = candidate.get("muzzle", {})
-	if muzzle_value is Dictionary and not (muzzle_value as Dictionary).is_empty():
-		_muzzle_frames = _load_frames(String((muzzle_value as Dictionary)["resource"]))
+	var muzzle: Dictionary = candidate.get("muzzle", {})
+	if not muzzle.is_empty():
+		_muzzle_frames = _load_effect_frames(muzzle)
 		if _muzzle_frames == null:
 			return ERR_CANT_OPEN
 	_weapon = candidate
@@ -190,6 +199,11 @@ func present_confirmed_shot(event: Dictionary, tracking_target_resolver: Callabl
 			or not actor_point is Array or actor_point.size() != 2 \
 			or not endpoint is Array or endpoint.size() != 2:
 		return false
+	var confirmed_weapon := StringName(event.get("weapon_id", _weapon_id))
+	if select_weapon(confirmed_weapon) != OK:
+		return false
+	if event.get("weapon_flight") is Dictionary:
+		_apply_flight_parameters(event["weapon_flight"])
 	# 服务端已经通过冷却校验，网络延迟不能让本地旧冷却吞掉合法开火。
 	_cooldown_remaining = 0.0
 	var fired := request_fire(Vector2(actor_point[0], actor_point[1]), Vector2(endpoint[0], endpoint[1]), tracking_target_resolver)
@@ -209,7 +223,9 @@ func present_confirmed_shot(event: Dictionary, tracking_target_resolver: Callabl
 func apply_authoritative_snapshot(snapshot: Dictionary, ability_id: String) -> void:
 	var flights: Variant = snapshot.get("local_weapon_flight", {})
 	if flights is Dictionary and flights.get(ability_id) is Dictionary:
-		_apply_flight_parameters(flights[ability_id])
+		var flight: Dictionary = flights[ability_id]
+		if select_weapon(StringName(flight.get("weapon_id", ""))) == OK:
+			_apply_flight_parameters(flight)
 	var local_id := String(snapshot.get("local_entity_id", ""))
 	if local_id.is_empty():
 		return
@@ -280,7 +296,7 @@ func _finish_authoritative_projectile(event: Dictionary) -> void:
 		})
 		_free_state_node(state)
 		_projectiles.remove_at(index)
-		_spawn_impact(impact)
+		_spawn_impact(impact, state)
 		return
 
 
@@ -385,7 +401,7 @@ func _is_valid_effect(effect_value: Variant, requires_speed: bool) -> bool:
 		return false
 	var effect: Dictionary = effect_value
 	if (
-		String(effect.get("resource", "")).is_empty()
+		(String(effect.get("resource", "")).is_empty() and String(effect.get("ale_reference", "")).is_empty())
 		or int(effect.get("frames", 0)) <= 0
 		or float(effect.get("fps", 0.0)) <= 0.0
 	):
@@ -393,11 +409,13 @@ func _is_valid_effect(effect_value: Variant, requires_speed: bool) -> bool:
 	return not requires_speed or float(effect.get("travel_pixels_per_second", 0.0)) > 0.0
 
 
-## 执行 `load_frames` 对应的模块操作。
-## [param resource_path] 调用方传入的参数；具体约束由函数签名和所在模块定义。
-## 返回该函数计算、查询或操作得到的结果。
-func _load_frames(resource_path: String) -> SpriteFrames:
-	var frames := ResourceLoader.load(resource_path, "SpriteFrames") as SpriteFrames
+## 从受控的本地效果配置加载 SpriteFrames 或已有 ALE 内容包。
+## [param effect] 清单中的弹体、爆炸或炮口表现。
+## 返回合法 raw 动画；资源缺失时为 null。
+func _load_effect_frames(effect: Dictionary) -> SpriteFrames:
+	var reference := String(effect.get("ale_reference", ""))
+	var frames := CombatAnimationLibrary.load_ale(reference) if not reference.is_empty() \
+		else ResourceLoader.load(String(effect.get("resource", "")), "SpriteFrames") as SpriteFrames
 	return frames if frames != null and frames.has_animation(RAW_ANIMATION) else null
 
 
@@ -420,6 +438,8 @@ func _spawn_projectile(
 		"visual_shot_id": visual_shot_id,
 		"input_sequence": -1,
 		"weapon_id": String(_weapon_id),
+		"impact_frames": _impact_frames,
+		"impact_config": _weapon["impact"].duplicate(true),
 		"speed": float(projectile["travel_pixels_per_second"]),
 		"node": wrapper,
 		"origin": origin,
@@ -447,11 +467,12 @@ func _spawn_muzzle(position: Vector2) -> void:
 	})
 
 
-## 执行 `spawn_impact` 对应的模块操作。
+## 使用发射时冻结的装备特效创建爆炸，换装不能改变已在途的弹体效果。
+## [param shot] 发射时保留的爆炸资源和时长配置。
 ## [param position] 调用方传入的参数；具体约束由函数签名和所在模块定义。
-func _spawn_impact(position: Vector2) -> void:
-	var wrapper := _create_effect_node("WeaponImpact", position, _impact_frames)
-	_impacts.append({"node": wrapper, "elapsed": 0.0})
+func _spawn_impact(position: Vector2, shot: Dictionary) -> void:
+	var wrapper := _create_effect_node("WeaponImpact", position, shot["impact_frames"])
+	_impacts.append({"node": wrapper, "elapsed": 0.0, "config": shot["impact_config"]})
 
 
 ## 执行 `create_effect_node` 对应的模块操作。
@@ -468,6 +489,12 @@ func _create_effect_node(name_value: String, position: Vector2, frames: SpriteFr
 	sprite.sprite_frames = frames
 	sprite.animation = RAW_ANIMATION
 	sprite.frame = 0
+	if frames.has_meta("ale_origins"):
+		sprite.centered = false
+		sprite.offset = frames.get_meta("ale_origins")[0]
+		sprite.frame_changed.connect(func() -> void:
+			sprite.offset = frames.get_meta("ale_origins")[sprite.frame]
+		)
 	sprite.play(RAW_ANIMATION)
 	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	wrapper.add_child(sprite)
@@ -500,7 +527,7 @@ func _advance_projectiles(delta_seconds: float) -> void:
 				"elapsed_seconds": float(state["elapsed"]),
 			})
 			_free_state_node(state)
-			_spawn_impact(Vector2(collision.get("position", next_position)))
+			_spawn_impact(Vector2(collision.get("position", next_position)), state)
 			_projectiles.remove_at(index)
 			continue
 		var wrapper := state["node"] as Node2D
@@ -516,7 +543,7 @@ func _advance_projectiles(delta_seconds: float) -> void:
 			"elapsed_seconds": float(state["elapsed"]),
 		})
 		_free_state_node(state)
-		_spawn_impact(Vector2(state["target"]))
+		_spawn_impact(Vector2(state["target"]), state)
 		_projectiles.remove_at(index)
 
 
@@ -553,7 +580,7 @@ func _advance_homing_projectile(index: int, state: Dictionary, delta_seconds: fl
 		"maximum_lifetime_seconds": float(state["maximum_lifetime"]),
 	})
 	_free_state_node(state)
-	_spawn_impact(target)
+	_spawn_impact(target, state)
 	_projectiles.remove_at(index)
 
 
@@ -571,11 +598,10 @@ func _resolve_visual_collision(segment_start: Vector2, segment_end: Vector2) -> 
 ## 执行 `advance_impacts` 对应的模块操作。
 ## [param delta_seconds] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _advance_impacts(delta_seconds: float) -> void:
-	var impact: Dictionary = _weapon.get("impact", {})
-	var frame_count := int(impact.get("frames", 0))
-	var fps := float(impact.get("fps", 0.0))
 	for index in range(_impacts.size() - 1, -1, -1):
 		var state: Dictionary = _impacts[index]
+		var frame_count := int(state["config"].get("frames", 0))
+		var fps := float(state["config"].get("fps", 0.0))
 		state["elapsed"] = float(state["elapsed"]) + delta_seconds
 		var frame := int(floor(float(state["elapsed"]) * fps))
 		if frame >= frame_count:
