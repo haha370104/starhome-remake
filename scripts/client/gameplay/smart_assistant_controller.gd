@@ -1,6 +1,8 @@
 class_name SmartAssistantController
 extends Node
 
+const WEAPON_SWITCH_SECONDS := 0.5
+
 var policy := SmartAssistantPolicy.new()
 var _combat: CombatInteractionController
 var _panel: SmartAssistantPanel
@@ -9,6 +11,7 @@ var _elapsed := 0.0
 var _retry_at: Dictionary = {}
 var _settings_path := ""
 var _observed_at := 0
+var _weapon_elapsed := 0.0
 
 
 ## 绑定已有战斗输入和设置面板，不创建另一个网络或玩家状态所有者。
@@ -37,6 +40,7 @@ func configure(combat: CombatInteractionController, panel: SmartAssistantPanel) 
 func _map_changed(_map_id: StringName, _instance: String, _position: Vector2, _version: int) -> void:
 	_snapshot.clear()
 	_retry_at.clear()
+	_weapon_elapsed = 0.0
 
 
 ## 只保存服务器已投影的可见对象，不修改生命或掉落状态。
@@ -50,6 +54,7 @@ func _observe(snapshot: Dictionary) -> void:
 ## [param values] 设置面板发布的选项。
 func _apply_settings(values: Dictionary) -> void:
 	policy.apply(values)
+	_weapon_elapsed = 0.0
 	var saved := ConfigFile.new()
 	saved.set_value("assistant", "preferences", policy.snapshot())
 	if saved.save(_settings_path) != OK:
@@ -60,6 +65,7 @@ func _apply_settings(values: Dictionary) -> void:
 ## 节流增强操作；切图、死亡、手动行走和维修期间暂停自动攻击。
 ## [param delta] 本帧秒数。
 func _process(delta: float) -> void:
+	_advance_weapon_switch(delta)
 	_elapsed += delta
 	if _elapsed < 0.4 or _combat == null:
 		return
@@ -103,6 +109,29 @@ func _process(delta: float) -> void:
 	var target := Vector2(float(monster.position[0]), float(monster.position[1]))
 	if visual.can_assist_fire(origin, target):
 		_combat.request_weapon_attack(target)
+
+
+## 按原版500毫秒心跳切换炮导，独立于自动攻击，手动点击仍经过原战斗入口。
+## [param delta] 本帧秒数；暂停期间不累计切换次数。
+func _advance_weapon_switch(delta: float) -> void:
+	if _combat == null or not policy.enabled or not policy.gun_missile_mode \
+		or _combat.is_input_locked() or _combat.world_view.player == null \
+		or not _combat.world_view.player.is_combat_actor_active() or _snapshot.is_empty() \
+		or Time.get_ticks_msec() - _observed_at > 3000 \
+		or bool(_snapshot.get("local_vehicle", {}).get("self_repair_active", false)):
+		_weapon_elapsed = 0.0
+		return
+	var player := _combat.panel_session.current_player
+	var next := policy.next_attack_weapon(_combat.hud.selected_action(),
+		player.vehicle.loadout if player != null and player.vehicle != null else null)
+	if next.is_empty():
+		_weapon_elapsed = 0.0
+		return
+	_weapon_elapsed += delta
+	if _weapon_elapsed + 0.000001 < WEAPON_SWITCH_SECONDS:
+		return
+	_weapon_elapsed = fmod(maxf(_weapon_elapsed, WEAPON_SWITCH_SECONDS), WEAPON_SWITCH_SECONDS)
+	_combat.hud.select_action(next)
 
 
 ## 限制失败后的重试频率，避免背包满或能源不足时刷屏。

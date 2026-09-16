@@ -178,6 +178,85 @@ func _test_assistant(hall: Node2D, probe: IntentProbe, current: Player) -> void:
 	brain.policy.enabled = false
 	brain._process(0.4)
 	_expect(probe.abilities.size() == before, "关闭智脑立即停止真实动作")
+	_test_gun_missile_mode(hall, probe, current, brain)
+
+
+## 验证原版半秒炮导切换、连续手动点击、自动攻击及暂停边界。
+## [param hall] 已提交野外地图的实际场景。
+## [param probe] 正式战斗入口的意图记录器。
+## [param current] 当前已装配玩家。
+## [param brain] 已配置且使用测试时钟的智脑。
+func _test_gun_missile_mode(hall: Node2D, probe: IntentProbe, current: Player, brain: SmartAssistantController) -> void:
+	_equip(current, "glory_equipment_gun1000_c4c24e2500")
+	_expect(current.vehicle.loadout.restore(catalog.create("starter_missile", {"instance_id": "brain.missile"}).value).is_ok, "装备实际导弹")
+	hall.hud.set_tactical_action("missile")
+	hall.hud.select_action("energy_cannon")
+	brain._settings_path = "res://.godot/gun-missile-%d.cfg" % Time.get_ticks_usec()
+	brain._apply_settings({"enabled": true, "gun_missile_mode": true})
+	var saved := ConfigFile.new()
+	_expect(saved.load(brain._settings_path) == OK and saved.get_value("assistant", "preferences").gun_missile_mode,
+		"炮导偏好实际写入角色配置")
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(brain._settings_path))
+	var origin: Vector2 = hall.world_view.player.position
+	var target := origin + Vector2(100, 0)
+	var snapshot := {"local_vehicle": {"health": 100, "max_health": 100}, "ground_loot": [], "monsters": [{
+		"entity_id": "brain.locked", "species_id": "om_adult", "combat_actor_id": "om_adult_standard",
+		"display_name": "炮导测试目标", "position": [target.x, target.y], "health": 60, "max_health": 60,
+		"alive": true, "action": "idle", "facing_index": 0}]}
+	hall.world_view.monster_world_controller.apply_snapshot(snapshot)
+	probe.combat_snapshot_received.emit(snapshot)
+	for visual: WeaponAttackVisualController in hall.world_view.combat_attack_controllers.values():
+		visual._process(5.0)
+	var before := probe.abilities.size()
+	hall.combat.handle_world_combat_left_click(target)
+	brain._process(0.49)
+	_expect(hall.hud.selected_action() == "energy_cannon", "未到500毫秒不切换")
+	brain._process(0.01)
+	_expect(hall.hud.selected_action() == "missile" and probe.abilities.size() == before + 1,
+		"自动攻击关闭时仍切到导弹，但不会自行开火")
+	hall.combat.handle_world_combat_left_click(target)
+	_expect(probe.abilities.slice(before) == ["energy_cannon.primary", "missile.primary"], "连续手动点击实际发出主炮和导弹两种意图")
+	brain._process(0.5)
+	_expect(hall.hud.selected_action() == "energy_cannon", "再过半秒切回主炮")
+	brain._process(0.5)
+	before = probe.abilities.size()
+	hall.combat.handle_world_combat_left_click(target)
+	_expect(probe.abilities.size() == before, "反复切换不重置导弹独立冷却")
+	hall.world_view.combat_attack_controllers.missile._process(5.0)
+	hall.combat.handle_world_combat_left_click(target + Vector2(500, 500))
+	_expect(probe.abilities.size() == before, "导弹点击空地仍需锁定目标")
+	brain.policy.auto_attack = true
+	hall.world_view.combat_attack_controllers.energy_cannon._process(5.0)
+	brain._process(0.5)
+	brain._process(0.5)
+	_expect(probe.abilities.slice(before) == ["energy_cannon.primary", "missile.primary"], "自动攻击复用相同的炮导选择")
+	brain.policy.auto_attack = false
+	for pause: String in ["disabled", "repair", "recovery", "stale", "destroyed"]:
+		probe.combat_snapshot_received.emit(snapshot)
+		brain.policy.enabled = pause != "disabled"
+		brain._snapshot.local_vehicle.self_repair_active = pause == "repair"
+		probe.session._pending_vehicle_recovery = {"input_sequence": 1} if pause == "recovery" else {}
+		brain._observed_at -= 4000 if pause == "stale" else 0
+		hall.combat.vehicle_destroyed = pause == "destroyed"
+		var paused_selection: String = hall.hud.selected_action()
+		brain._process(0.5)
+		_expect(hall.hud.selected_action() == paused_selection, "暂停状态不切换：" + pause)
+	hall.combat.vehicle_destroyed = false
+	probe.session._pending_vehicle_recovery.clear()
+	brain.policy.enabled = true
+	probe.combat_snapshot_received.emit(snapshot)
+	for equipment: String in ["glory_equipment_collector_ac947ee094", "glory_equipment_repair_aab7d81665"]:
+		_equip(current, equipment)
+		current.vehicle.loadout.restore(catalog.create("starter_missile", {"instance_id": "brain.missile"}).value)
+		_expect(brain.policy.next_attack_weapon("energy_cannon", current.vehicle.loadout).is_empty(), "工程臂不参与炮导切换")
+	_equip(current, "glory_equipment_gun1000_c4c24e2500")
+	_expect(brain.policy.next_attack_weapon("energy_cannon", current.vehicle.loadout).is_empty(), "未装导弹不切换")
+	current.vehicle.loadout.restore(catalog.create("starter_rocket_launcher", {"instance_id": "brain.rocket"}).value)
+	_expect(brain.policy.next_attack_weapon("energy_cannon", current.vehicle.loadout).is_empty(), "火箭炮不冒充导弹")
+	probe.map_joined.emit(&"next", "next.default", Vector2.ZERO, 1)
+	var selected: String = hall.hud.selected_action()
+	brain._process(0.5)
+	_expect(hall.hud.selected_action() == selected and brain._weapon_elapsed == 0.0, "切图清空目标与切换时钟")
 
 
 ## 使用目录中的真实物品恢复底盘与指定主装置。

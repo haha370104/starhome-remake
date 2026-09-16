@@ -10,7 +10,7 @@ var status: Label
 
 ## 创建免费版智脑功能的复刻设置，所有开关默认关闭。
 func _ready() -> void:
-	build_window(Vector2(500, 370), null, "智脑系统")
+	build_window(Vector2(500, 410), null, "智脑系统")
 	theme.default_font_size = 16
 	var background := Panel.new()
 	var style := StyleBoxFlat.new()
@@ -22,21 +22,24 @@ func _ready() -> void:
 	background.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(background)
 	move_child(background, 0)
-	var labels := {"enabled": "启用智脑", "auto_attack": "站定时自动攻击当前武器射程内的怪物",
+	var labels := {"enabled": "启用智脑", "gun_missile_mode": "炮导模式：每0.5秒切换能量炮 / 导弹",
+		"auto_attack": "站定时自动攻击当前武器射程内的怪物",
 		"auto_pickup": "自动拾取身边掉落物", "auto_repair": "低生命时自助维修（同 Z）"}
 	var index := 0
 	for key: String in labels:
 		var toggle := CheckButton.new()
 		toggle.text = labels[key]
+		if key == "gun_missile_mode":
+			toggle.tooltip_text = "需装备能量炮和导弹。无需开启自动攻击，连续点击即可轮流开火；各自冷却及导弹锁定规则仍生效。"
 		toggle.position = Vector2(24, 52 + index * 40)
 		toggle.size = Vector2(450, 34)
 		toggle.toggled.connect(func(_value: bool) -> void: _changed())
 		content_root.add_child(toggle)
 		toggles[key] = toggle
 		index += 1
-	threshold_label = make_label("自维修阈值：50%", Rect2(24, 224, 240, 26))
+	threshold_label = make_label("自维修阈值：50%", Rect2(24, 264, 240, 26))
 	threshold = HSlider.new()
-	threshold.position = Vector2(250, 230)
+	threshold.position = Vector2(250, 270)
 	threshold.size = Vector2(220, 24)
 	threshold.min_value = 10
 	threshold.max_value = 90
@@ -44,8 +47,8 @@ func _ready() -> void:
 	threshold.value = 50
 	threshold.value_changed.connect(func(_value: float) -> void: _changed())
 	content_root.add_child(threshold)
-	status = make_label("未启用", Rect2(24, 276, 450, 26))
-	make_label("设置自动保存；重新进入游戏后需手动启用。", Rect2(24, 318, 455, 24))
+	status = make_label("未启用", Rect2(24, 316, 450, 26))
+	make_label("设置自动保存；重新进入游戏后需手动启用。", Rect2(24, 358, 455, 24))
 
 
 ## 将保存的偏好投影到控件，避免初始化时反向写配置。

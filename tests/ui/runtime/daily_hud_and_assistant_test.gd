@@ -106,6 +106,11 @@ func _run() -> void:
 	brain.settings_changed.connect(policy.apply)
 	brain.toggles.auto_repair.button_pressed = true
 	brain.toggles.enabled.button_pressed = true
+	brain.toggles.gun_missile_mode.button_pressed = true
+	_expect(policy.gun_missile_mode and not policy.auto_attack, "炮导模式独立于自动攻击开关")
+	var restored_policy := SmartAssistantPolicy.new()
+	restored_policy.apply(policy.snapshot())
+	_expect(restored_policy.gun_missile_mode, "偏好往返保留炮导模式")
 	_expect(policy.needs_repair({"health": 30, "max_health": 100}), "智脑面板开关真正改变决策")
 	_expect(not policy.needs_repair({"health": 0, "max_health": 100}), "死亡不触发维修")
 	_expect(not policy.needs_repair({"health": 30, "max_health": 100, "self_repair_active": true}), "维修进行中不重复开关")

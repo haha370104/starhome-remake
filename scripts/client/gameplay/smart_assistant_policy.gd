@@ -3,6 +3,7 @@ extends RefCounted
 
 var enabled := false
 var auto_attack := false
+var gun_missile_mode := false
 var auto_pickup := false
 var auto_repair := false
 var repair_threshold := 0.5
@@ -13,6 +14,7 @@ var repair_threshold := 0.5
 func apply(values: Dictionary) -> void:
 	enabled = bool(values.get("enabled", false))
 	auto_attack = bool(values.get("auto_attack", false))
+	gun_missile_mode = bool(values.get("gun_missile_mode", false))
 	auto_pickup = bool(values.get("auto_pickup", false))
 	auto_repair = bool(values.get("auto_repair", false))
 	repair_threshold = clampf(float(values.get("repair_threshold", 0.5)), 0.1, 0.9)
@@ -22,7 +24,24 @@ func apply(values: Dictionary) -> void:
 ## 返回可持久化的设置副本。
 func snapshot() -> Dictionary:
 	return {"enabled": enabled, "auto_attack": auto_attack, "auto_pickup": auto_pickup,
-		"auto_repair": auto_repair, "repair_threshold": repair_threshold}
+		"auto_repair": auto_repair, "repair_threshold": repair_threshold, "gun_missile_mode": gun_missile_mode}
+
+
+## 炮导模式只交替选择实际装配的能量炮与导弹，不自动开火或改写冷却。
+## [param selected] 当前HUD动作。
+## [param loadout] 当前玩家已装配的装置，背包物品不参与判断。
+## 返回下一武器动作；开关关闭、装配不符或选中其他动作时为空。
+func next_attack_weapon(selected: String, loadout: VehicleLoadout) -> String:
+	if not enabled or not gun_missile_mode or loadout == null or selected not in ["energy_cannon", "missile"]:
+		return ""
+	var primary := loadout.at(1)
+	var tactical := loadout.at(13)
+	if primary == null or primary.primary_device_kind() != "energy_cannon" or tactical == null:
+		return ""
+	# 当前战术槽的导弹入口与战斗目录均只启用这一正式定义。
+	if tactical.definition_id != "starter_missile":
+		return ""
+	return "missile" if selected == "energy_cannon" else "energy_cannon"
 
 
 ## 根据真实快照判断是否需要触发与 Z 相同的自维修。
