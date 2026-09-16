@@ -219,7 +219,7 @@ func _add_reward_uncommitted(item: GameItem) -> DomainResult:
 func _validate_requirements(requirements: Array[Dictionary]) -> DomainResult:
 	var requested: Dictionary = {}
 	for requirement: Dictionary in requirements:
-		var definition_id := String(requirement.get("definition_id", ""))
+		var definition_id := ItemDefinitionAliases.canonical(String(requirement.get("definition_id", "")))
 		var quantity := int(requirement.get("quantity", 0))
 		if definition_id.is_empty() or quantity <= 0 or requested.has(definition_id):
 			return DomainResult.failure(&"manufacturing.invalid_requirements", "recipe requirements are invalid")
@@ -240,7 +240,7 @@ func _validate_requirements(requirements: Array[Dictionary]) -> DomainResult:
 func _consume_requirements_uncommitted(requirements: Array[Dictionary]) -> Array[Dictionary]:
 	var consumed: Array[Dictionary] = []
 	for requirement: Dictionary in requirements:
-		var definition_id := String(requirement["definition_id"])
+		var definition_id := ItemDefinitionAliases.canonical(String(requirement["definition_id"]))
 		var remaining := int(requirement["quantity"])
 		for index: int in range(_items.size() - 1, -1, -1):
 			var item: GameItem = _items[index]
@@ -289,6 +289,7 @@ func remove_quantity(instance_id: String, quantity: int) -> DomainResult:
 ## [param definition_id] 稳定物品定义标识。
 ## 返回跨堆叠合计数量。
 func count_definition(definition_id: String) -> int:
+	definition_id = ItemDefinitionAliases.canonical(definition_id)
 	var total := 0
 	for item: GameItem in _items:
 		if item.definition_id == definition_id:
@@ -300,6 +301,7 @@ func count_definition(definition_id: String) -> int:
 ## [param definition_id] 稳定物品定义标识。
 ## 返回所有未锁定堆叠的合计数量。
 func count_consumable_definition(definition_id: String) -> int:
+	definition_id = ItemDefinitionAliases.canonical(definition_id)
 	var total := 0
 	for item: GameItem in _items:
 		if item.definition_id == definition_id and not item.locked:
@@ -312,6 +314,7 @@ func count_consumable_definition(definition_id: String) -> int:
 ## [param quantity] 需要消耗的总量。
 ## 返回消耗数量和受影响实例；成功只推进一次 revision。
 func consume_definition(definition_id: String, quantity: int) -> DomainResult:
+	definition_id = ItemDefinitionAliases.canonical(definition_id)
 	if definition_id.is_empty() or quantity <= 0:
 		return DomainResult.failure(&"inventory.invalid_quantity", "positive quantity is required")
 	if count_consumable_definition(definition_id) < quantity:

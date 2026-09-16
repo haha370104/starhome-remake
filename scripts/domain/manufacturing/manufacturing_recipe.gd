@@ -18,7 +18,7 @@ func _init(definition: Dictionary = {}) -> void:
 	recipe_id = String(definition.get("recipe_id", ""))
 	station_id = String(definition.get("station_id", ""))
 	display_name = String(definition.get("display_name", ""))
-	product_definition_id = String(definition.get("product_definition_id", ""))
+	product_definition_id = ItemDefinitionAliases.canonical(String(definition.get("product_definition_id", "")))
 	output_quantity = maxi(1, int(definition.get("output_quantity", 1)))
 	skill_id = String(definition.get("skill_id", ""))
 	required_skill_level = maxi(0, int(definition.get("required_skill_level", 0)))
@@ -27,7 +27,9 @@ func _init(definition: Dictionary = {}) -> void:
 	if material_value is Array:
 		for entry: Variant in material_value:
 			if entry is Dictionary:
-				materials.append((entry as Dictionary).duplicate(true))
+				var requirement := (entry as Dictionary).duplicate(true)
+				requirement["definition_id"] = ItemDefinitionAliases.canonical(String(requirement.get("definition_id", "")))
+				materials.append(requirement)
 
 
 ## 判断本配方是否能出现在指定生产设施中。

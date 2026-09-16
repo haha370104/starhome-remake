@@ -14,7 +14,8 @@ func _initialize() -> void:
 		quit(1)
 		return
 	var combat: CombatDefinitionCatalog = combat_result.value
-	var data := {"items": {}, "tasks": {}, "monsters": {}, "offers": [], "recipes": []}
+	var data := {"items": {}, "tasks": {}, "monsters": {}, "offers": [], "recipes": [],
+		"item_aliases": ItemDefinitionAliases.LEGACY_TO_CANONICAL}
 	for id: String in items.definition_ids():
 		data.items[id] = items.definition(id)
 	for id: String in daily.tasks:

@@ -60,6 +60,7 @@ func initialize() -> DomainResult:
 ## [param state] 存档中的实例状态。
 ## 返回服装、战车底盘、引擎、武器、采掘臂、通用装备或普通物品的具体实例。
 func create(definition_id: String, state: Dictionary) -> DomainResult:
+	definition_id = ItemDefinitionAliases.canonical(definition_id)
 	if not _definitions.has(definition_id):
 		return DomainResult.failure(&"items.definition_missing", "item definition does not exist")
 	var item_definition: Dictionary = _definitions[definition_id].duplicate(true)
@@ -91,6 +92,7 @@ func create(definition_id: String, state: Dictionary) -> DomainResult:
 ## [param definition_id] 配置表定义标识。
 ## 返回定义显示名；未知定义返回原标识。
 func display_name(definition_id: String) -> String:
+	definition_id = ItemDefinitionAliases.canonical(definition_id)
 	var item_definition: Dictionary = _definitions.get(definition_id, {})
 	return String(item_definition.get("display_name", definition_id))
 
@@ -109,6 +111,7 @@ func definition_ids() -> PackedStringArray:
 ## 执行 `definition` 对应的模块操作。
 ## [param definition_id] 调用方传入的 `definition_id` 参数。
 func definition(definition_id: String) -> Dictionary:
+	definition_id = ItemDefinitionAliases.canonical(definition_id)
 	var value: Variant = _definitions.get(definition_id)
 	return value.duplicate(true) if value is Dictionary else {}
 
@@ -126,7 +129,7 @@ func definition_id_by_display_name(
 	for definition_id: String in _definition_ids_by_display_name.get(normalized, PackedStringArray()):
 		var kind := String((_definitions[definition_id] as Dictionary).get("kind", ""))
 		if accepted_kinds.is_empty() or kind in accepted_kinds:
-			return definition_id
+			return ItemDefinitionAliases.canonical(definition_id)
 	return ""
 
 
