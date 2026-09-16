@@ -1,0 +1,1942 @@
+{
+  "schema_version": 1,
+  "definitions": [
+    {
+      "source_release": "starhome_lz_ry",
+      "source_class": "Activator2",
+      "source_file": "cltobj/stuffclt2.fcc",
+      "source_line": 11735,
+      "source_logical_path": "pic3/stuff/Activator2.ale",
+      "source_sha256": "d2aadb9b3363fc46c14fedfdfdc7ebe7c61d910688d573f303f827452f7807c4",
+      "source_palette": "",
+      "source_palette_sha256": "",
+      "resource": "res://assets/items/materials/density_solvent/icon.tres",
+      "source_frame": 0,
+      "source_frame_count": 1,
+      "source_crop": [
+        0,
+        0,
+        25,
+        26
+      ],
+      "item_definition_id": "item:material:78f2a523a761",
+      "display_name": "初级密度柔解剂",
+      "atlas_region": [
+        2,
+        2,
+        25,
+        26
+      ]
+    },
+    {
+      "source_release": "starhome_lz_ry",
+      "source_class": "ColourfulCrystal",
+      "source_file": "cltobj/stuffclt2.fcc",
+      "source_line": 39266,
+      "source_logical_path": "pic3/stuff/ColourfulCrystal.ale",
+      "source_sha256": "99226bcc1fc044abb488a09758e1048a7f628e4c00b970e91ecc59d001ee7fac",
+      "source_palette": "",
+      "source_palette_sha256": "",
+      "resource": "res://assets/items/materials/five_color_crystal/icon.tres",
+      "source_frame": 0,
+      "source_frame_count": 1,
+      "source_crop": [
+        1,
+        0,
+        35,
+        33
+      ],
+      "item_definition_id": "item:material:f6487f0e04b8",
+      "display_name": "五彩水晶",
+      "atlas_region": [
+        50,
+        2,
+        34,
+        33
+      ]
+    },
+    {
+      "source_release": "starhome_lz_ry",
+      "source_class": "DCProtecter",
+      "source_file": "cltobj/stuffclt2.fcc",
+      "source_line": 39581,
+      "source_logical_path": "pic3/stuff/DCProtecter.ale",
+      "source_sha256": "66c1c2b4f0b741872828cc8bbb3d44256eabbd92e1a831ae8af992c0a3c41ada",
+      "source_palette": "",
+      "source_palette_sha256": "",
+      "resource": "res://assets/items/materials/electromagnetic_protector/icon.tres",
+      "source_frame": 0,
+      "source_frame_count": 1,
+      "source_crop": [
+        0,
+        0,
+        35,
+        35
+      ],
+      "item_definition_id": "item:material:d247fd43ad3c",
+      "display_name": "电磁护具",
+      "atlas_region": [
+        98,
+        2,
+        35,
+        35
+      ]
+    },
+    {
+      "source_release": "starhome_lz_ry",
+      "source_class": "DJBJJ",
+      "source_file": "cltobj/stuffclt2.fcc",
+      "source_line": 33035,
+      "source_logical_path": "pic3/stuff/DJBJJ.ale",
+      "source_sha256": "3a242d2107b3372ddfac5c2468bf2157dfe6f1b8f7f30977c563eed3bb1fda1c",
+      "source_palette": "",
+      "source_palette_sha256": "",
+      "resource": "res://assets/items/materials/electric_wave_crystal/icon.tres",
+      "source_frame": 0,
+      "source_frame_count": 1,
+      "source_crop": [
+        0,
+        3,
+        37,
+        38
+      ],
+      "item_definition_id": "item:material:71548d3aa10f",
+      "display_name": "电激波结晶",
+      "atlas_region": [
+        146,
+        2,
+        37,
+        35
+      ]
+    },
+    {
+      "source_release": "starhome_lz_ry",
+      "source_class": "DJBXP",
+      "source_file": "cltobj/stuffclt2.fcc",
+      "source_line": 33056,
+      "source_logical_path": "pic3/stuff/DJBXP.ale",
+      "source_sha256": "0eee598b7d5829e8aa2734a27af205301891cd98dcce6399552eb55a5c56500c",
+      "source_palette": "",
+      "source_palette_sha256": "",
+      "resource": "res://assets/items/materials/electric_wave_chip/icon.tres",
+      "source_frame": 0,
+      "source_frame_count": 1,
+      "source_crop": [
+        0,
+        0,
+        31,
+        29
+      ],
+      "item_definition_id": "item:material:760ebf2df00d",
+      "display_name": "电激波芯片",
+      "atlas_region": [
+        194,
+        2,
+        31,
+        29
+      ]
+    },
+    {
+      "source_release": "starhome_lz_ry",
+      "source_class": "DJSteelChip",
+      "source_file": "cltobj/stuffclt2.fcc",
+      "source_line": 39497,
+      "source_logical_path": "pic3/stuff/DJSteelChip.ale",
+      "source_sha256": "f982f31e70f30b895562f6dc95ea75e42b7bd6ea11cdc7e520ccbf205f96c44e",
+      "source_palette": "",
+      "source_palette_sha256": "",
+      "resource": "res://assets/items/materials/frozen_steel_plate/icon.tres",
+      "source_frame": 0,
+      "source_frame_count": 1,
+      "source_crop": [
+        0,
+        1,
+        35,
+        35
+      ],
+      "item_definition_id": "item:material:d2a1d9d06fbc",
+      "display_name": "冻结钢片",
+      "atlas_region": [
+        242,
+        2,
+        35,
+        34
+      ]
+    },
+    {
+      "source_release": "starhome_lz_ry",
+      "source_class": "ElectronicZX",
+      "source_file": "cltobj/stuffclt2.fcc",
+      "source_line": 39623,
+      "source_logical_path": "pic3/stuff/ElectronicZX.ale",
+      "source_sha256": "5ba902181c42ebbf14faa8737a6c2b9fecdd60d7b91c3e702f80950b8f5ceedf",
+      "source_palette": "",
+      "source_palette_sha256": "",
+      "resource": "res://assets/items/materials/electronic_control_chip/icon.tres",
+      "source_frame": 0,
+      "source_frame_count": 1,
+      "source_crop": [
+        0,
+        1,
+        35,
+        34
+      ],
+      "item_definition_id": "item:material:95aa2445915e",
+      "display_name": "电子制芯",
+      "atlas_region": [
+        290,
+        2,
+        35,
+        33
+      ]
+    },
+    {
+      "source_release": "starhome_lz_ry",
+      "source_class": "HSRifling",
+      "source_file": "cltobj/stuffclt2.fcc",
+      "source_line": 39560,
+      "source_logical_path": "pic3/stuff/HSRifling.ale",
+      "source_sha256": "0db76282f2a72dd1b7246b6ab2f37b0fcf3178f35117445f4a5918e36b51425d",
+      "source_palette": "",
+      "source_palette_sha256": "",
+      "resource": "res://assets/items/materials/blackstone_rifling/icon.tres",
+      "source_frame": 0,
+      "source_frame_count": 1,
+      "source_crop": [
+        0,
+        1,
+        35,
+        35
+      ],
+      "item_definition_id": "item:material:82b550887686",
+      "display_name": "黑石膛线",
+      "atlas_region": [
+        2,
+        45,
+        35,
+        34
+      ]
+    },
+    {
+      "source_release": "starhome_lz_ry",
+      "source_class": "HongCrystal",
+      "source_file": "cltobj/stuffclt2.fcc",
+      "source_line": 39329,
+      "source_logical_path": "pic3/stuff/HongCrystal.ale",
+      "source_sha256": "32a5a49b4caee9f26e8dc3ec3ca6c8fb9772eed28e290be8caf4b76b69a6a2c7",
+      "source_palette": "",
+      "source_palette_sha256": "",
+      "resource": "res://assets/items/materials/red_crystal_source/icon.tres",
+      "source_frame": 0,
+      "source_frame_count": 1,
+      "source_crop": [
+        1,
+        1,
+        29,
+        36
+      ],
+      "item_definition_id": "item:material:390575d3e7c8",
+      "display_name": "红晶源",
+      "atlas_region": [
+        50,
+        45,
+        28,
+        35
+      ]
+    },
+    {
+      "source_release": "starhome_lz_ry",
+      "source_class": "JMCFQ_G91",
+      "source_file": "cltobj/stuffclt2.fcc",
+      "source_line": 33301,
+      "source_logical_path": "pic3/stuff/JMCFQ_G91.ale",
+      "source_sha256": "86280ad060b20ea6a8ebb77748692a57e2f51c71e76761b4459085a24ab5c045",
+      "source_palette": "",
+      "source_palette_sha256": "",
+      "resource": "res://assets/items/materials/g91_precision_trigger/icon.tres",
+      "source_frame": 0,
+      "source_frame_count": 1,
+      "source_crop": [
+        0,
+        0,
+        44,
+        24
+      ],
+      "item_definition_id": "item:material:f3fe549c15c1",
+      "display_name": "G91精密触发器",
+      "atlas_region": [
+        98,
+        45,
+        44,
+        24
+      ]
+    },
+    {
+      "source_release": "starhome_lz_ry",
+      "source_class": "JiJiaFuShuJingTi1",
+      "source_file": "cltobj/stuffclt2.fcc",
+      "source_line": 40044,
+      "source_logical_path": "pic3/stuff/JiJiaFuShuJingTi1.ale",
+      "source_sha256": "12da762ac61180058ca5759b5921b9cffb77beb8f345a573e489881fb3cf9f6e",
+      "source_palette": "",
+      "source_palette_sha256": "",
+      "resource": "res://assets/items/materials/mech_auxiliary_crystal_1/icon.tres",
+      "source_frame": 0,
+      "source_frame_count": 1,
+      "source_crop": [
+        2,
+        2,
+        39,
+        39
+      ],
+      "item_definition_id": "item:material:abb79c50c89f",
+      "display_name": "机甲附属晶体I",
+      "atlas_region": [
+        146,
+        45,
+        37,
+        37
+      ]
+    },
+    {
+      "source_release": "starhome_lz_ry",
+      "source_class": "JiJiaFuShuJingTi2",
+      "source_file": "cltobj/stuffclt2.fcc",
+      "source_line": 40065,
+      "source_logical_path": "pic3/stuff/JiJiaFuShuJingTi2.ale",
+      "source_sha256": "37a793e5bd716d699bf7d309236e66df69661e34e82ce69ec8ff5f297b75e3c8",
+      "source_palette": "",
+      "source_palette_sha256": "",
+      "resource": "res://assets/items/materials/mech_auxiliary_crystal_2/icon.tres",
+      "source_frame": 0,
+      "source_frame_count": 1,
+      "source_crop": [
+        0,
+        0,
+        38,
+        39
+      ],
+      "item_definition_id": "item:material:33d330a61be3",
+      "display_name": "机甲附属晶体II",
+      "atlas_region": [
+        194,
+        45,
+        38,
+        39
+      ]
+    },
+    {
+      "source_release": "starhome_lz_ry",
+      "source_class": "JiJiaFuShuJingTi3",
+      "source_file": "cltobj/stuffclt2.fcc",
+      "source_line": 40086,
+      "source_logical_path": "pic3/stuff/JiJiaFuShuJingTi3.ale",
+      "source_sha256": "e3b09cf1af627b9c1509e954cfcfd69a47a2e42fb32c39873aa2edfd8038d682",
+      "source_palette": "",
+      "source_palette_sha256": "",
+      "resource": "res://assets/items/materials/mech_auxiliary_crystal_3/icon.tres",
+      "source_frame": 0,
+      "source_frame_count": 1,
+      "source_crop": [
+        4,
+        4,
+        39,
+        37
+      ],
+      "item_definition_id": "item:material:e283667ae437",
+      "display_name": "机甲附属晶体III",
+      "atlas_region": [
+        242,
+        45,
+        35,
+        33
+      ]
+    },
+    {
+      "source_release": "starhome_lz_ry",
+      "source_class": "JiJiaYueHuiJingTi1",
+      "source_file": "cltobj/stuffclt2.fcc",
+      "source_line": 40376,
+      "source_logical_path": "pic3/stuff/JiJiaYueHuiJingTi1.ale",
+      "source_sha256": "487bc4796a66f2db5e349c18478fb74da0cc915c09b327ca8b393130843517b6",
+      "source_palette": "",
+      "source_palette_sha256": "",
+      "resource": "res://assets/items/materials/mech_moonlight_crystal_1/icon.tres",
+      "source_frame": 0,
+      "source_frame_count": 1,
+      "source_crop": [
+        0,
+        2,
+        36,
+        33
+      ],
+      "item_definition_id": "item:material:062a265c9544",
+      "display_name": "机甲月辉晶体I",
+      "atlas_region": [
+        290,
+        45,
+        36,
+        31
+      ]
+    },
+    {
+      "source_release": "starhome_lz_ry",
+      "source_class": "JiJiaYueHuiJingTi2",
+      "source_file": "cltobj/stuffclt2.fcc",
+      "source_line": 40397,
+      "source_logical_path": "pic3/stuff/JiJiaYueHuiJingTi2.ale",
+      "source_sha256": "a684c14b18cfd7d5788cab362ffc44aef988de50fc23e75f052795dd8d8afc3c",
+      "source_palette": "",
+      "source_palette_sha256": "",
+      "resource": "res://assets/items/materials/mech_moonlight_crystal_2/icon.tres",
+      "source_frame": 0,
+      "source_frame_count": 1,
+      "source_crop": [
+        0,
+        2,
+        36,
+        33
+      ],
+      "item_definition_id": "item:material:3ed7f1287e45",
+      "display_name": "机甲月辉晶体II",
+      "atlas_region": [
+        2,
+        2,
+        36,
+        31
+      ]
+    },
+    {
+      "source_release": "starhome_lz_ry",
+      "source_class": "JiJiaYueHuiJingTi3",
+      "source_file": "cltobj/stuffclt2.fcc",
+      "source_line": 40418,
+      "source_logical_path": "pic3/stuff/JiJiaYueHuiJingTi3.ale",
+      "source_sha256": "e47cb2e12374098fa3fc2bd2125d356ef3ec265077443790b9975f978aa78335",
+      "source_palette": "",
+      "source_palette_sha256": "",
+      "resource": "res://assets/items/materials/mech_moonlight_crystal_3/icon.tres",
+      "source_frame": 0,
+      "source_frame_count": 1,
+      "source_crop": [
+        0,
+        2,
+        36,
+        33
+      ],
+      "item_definition_id": "item:material:743ceffa7af7",
+      "display_name": "机甲月辉晶体III",
+      "atlas_region": [
+        42,
+        2,
+        36,
+        31
+      ]
+    },
+    {
+      "source_release": "starhome_lz_ry",
+      "source_class": "LanCrystal",
+      "source_file": "cltobj/stuffclt2.fcc",
+      "source_line": 39350,
+      "source_logical_path": "pic3/stuff/LanCrystal.ale",
+      "source_sha256": "f793646c8c28c27a7c9369a2c1218f32646786eb8be56504d6113bfc0c83dccd",
+      "source_palette": "",
+      "source_palette_sha256": "",
+      "resource": "res://assets/items/materials/blue_crystal_source/icon.tres",
+      "source_frame": 0,
+      "source_frame_count": 1,
+      "source_crop": [
+        1,
+        1,
+        30,
+        36
+      ],
+      "item_definition_id": "item:material:a55a9a5d270a",
+      "display_name": "蓝晶源",
+      "atlas_region": [
+        82,
+        2,
+        29,
+        35
+      ]
+    },
+    {
+      "source_release": "starhome_lz_ry",
+      "source_class": "LvCrystal",
+      "source_file": "cltobj/stuffclt2.fcc",
+      "source_line": 39371,
+      "source_logical_path": "pic3/stuff/LvCrystal.ale",
+      "source_sha256": "080e6df77b9822e3f4914fc31a445e2727470945fc5553999f8dad04dd3e4d0d",
+      "source_palette": "",
+      "source_palette_sha256": "",
+      "resource": "res://assets/items/materials/green_crystal_source/icon.tres",
+      "source_frame": 0,
+      "source_frame_count": 1,
+      "source_crop": [
+        1,
+        1,
+        30,
+        36
+      ],
+      "item_definition_id": "item:material:7df65e194766",
+      "display_name": "绿晶源",
+      "atlas_region": [
+        122,
+        2,
+        29,
+        35
+      ]
+    },
+    {
+      "source_release": "starhome_lz_ry",
+      "source_class": "MorColourfulCrystal",
+      "source_file": "cltobj/stuffclt2.fcc",
+      "source_line": 39287,
+      "source_logical_path": "pic3/stuff/MorColourfulCrystal.ale",
+      "source_sha256": "56f9da82adde952babb732c097e838a8d11df5f0c14e576402c53d33d145d6d2",
+      "source_palette": "",
+      "source_palette_sha256": "",
+      "resource": "res://assets/items/materials/seven_color_crystal/icon.tres",
+      "source_frame": 0,
+      "source_frame_count": 1,
+      "source_crop": [
+        1,
+        0,
+        30,
+        36
+      ],
+      "item_definition_id": "item:material:920f37756918",
+      "display_name": "七彩水晶",
+      "atlas_region": [
+        162,
+        2,
+        29,
+        36
+      ]
+    },
+    {
+      "source_release": "starhome_lz_ry",
+      "source_class": "NewJointImpactChip",
+      "source_file": "ven/stuffclt2_ven.fcc",
+      "source_line": 3772,
+      "source_logical_path": "pic3/stuff/NewJointImpactChip.ale",
+      "source_sha256": "3a6059c240c2fd6a66437801e6fb9d8b20a04f03d98612bcf2f7c53c13fb4bd0",
+      "source_palette": "",
+      "source_palette_sha256": "",
+      "resource": "res://assets/items/materials/impact_crystal/icon.tres",
+      "source_frame": 0,
+      "source_frame_count": 1,
+      "source_crop": [
+        1,
+        0,
+        34,
+        33
+      ],
+      "item_definition_id": "item:material:f65184d5f9b2",
+      "display_name": "冲击晶体",
+      "atlas_region": [
+        202,
+        2,
+        33,
+        33
+      ]
+    },
+    {
+      "source_release": "starhome_lz_ry",
+      "source_class": "QuantumElement",
+      "source_file": "cltobj/stuffclt2.fcc",
+      "source_line": 25911,
+      "source_logical_path": "pic3/stuff/QuantumElement.ale",
+      "source_sha256": "bef538a219ef226ac94ae4f5f010f8ce395026b8ba3316a59cbd1e5741b2a94b",
+      "source_palette": "",
+      "source_palette_sha256": "",
+      "resource": "res://assets/items/materials/quantum_element/icon.tres",
+      "source_frame": 0,
+      "source_frame_count": 1,
+      "source_crop": [
+        0,
+        0,
+        29,
+        35
+      ],
+      "item_definition_id": "item:material:5dbe93b102a3",
+      "display_name": "量子元素",
+      "atlas_region": [
+        242,
+        2,
+        29,
+        35
+      ]
+    },
+    {
+      "source_release": "starhome_lz_ry",
+      "source_class": "RYRime:0 1001 0",
+      "source_file": "cltobj/stuffclt2.fcc",
+      "source_line": 42507,
+      "source_logical_path": "pic3/stuff/RYRime1001.ale",
+      "source_sha256": "14f3f2b40ab6573fe9d93c85a1ae01237a1e87c980092e7d967ecac67358cd56",
+      "source_palette": "",
+      "source_palette_sha256": "",
+      "resource": "res://assets/items/materials/flawed_firepower_crystal/icon.tres",
+      "source_frame": 0,
+      "source_frame_count": 1,
+      "source_crop": [
+        1,
+        0,
+        27,
+        28
+      ],
+      "item_definition_id": "item:material:a7bccd7c1408",
+      "display_name": "有瑕疵的火力晶石",
+      "atlas_region": [
+        2,
+        42,
+        26,
+        28
+      ]
+    },
+    {
+      "source_release": "starhome_lz_ry",
+      "source_class": "RYRime:0 1002 0",
+      "source_file": "cltobj/stuffclt2.fcc",
+      "source_line": 42507,
+      "source_logical_path": "pic3/stuff/RYRime1002.ale",
+      "source_sha256": "72bc54ea58dd1e55ddc54e9ce773cf78ff15640257b7b619ac4b7397bd5532d8",
+      "source_palette": "",
+      "source_palette_sha256": "",
+      "resource": "res://assets/items/materials/flawed_health_crystal/icon.tres",
+      "source_frame": 0,
+      "source_frame_count": 1,
+      "source_crop": [
+        1,
+        0,
+        27,
+        28
+      ],
+      "item_definition_id": "item:material:794588abb6cf",
+      "display_name": "有瑕疵的生命晶石",
+      "atlas_region": [
+        42,
+        42,
+        26,
+        28
+      ]
+    },
+    {
+      "source_release": "starhome_lz_ry",
+      "source_class": "RYRime:0 1003 0",
+      "source_file": "cltobj/stuffclt2.fcc",
+      "source_line": 42507,
+      "source_logical_path": "pic3/stuff/RYRime1003.ale",
+      "source_sha256": "b32668193060d6ba87ed7df8bef7f4519a4311062b21922262a8e87a6b77fd29",
+      "source_palette": "",
+      "source_palette_sha256": "",
+      "resource": "res://assets/items/materials/flawed_defense_crystal/icon.tres",
+      "source_frame": 0,
+      "source_frame_count": 1,
+      "source_crop": [
+        1,
+        1,
+        24,
+        30
+      ],
+      "item_definition_id": "item:material:d690c44b6030",
+      "display_name": "有瑕疵的防御晶石",
+      "atlas_region": [
+        82,
+        42,
+        23,
+        29
+      ]
+    },
+    {
+      "source_release": "starhome_lz_ry",
+      "source_class": "RYRime:0 1004 0",
+      "source_file": "cltobj/stuffclt2.fcc",
+      "source_line": 42507,
+      "source_logical_path": "pic3/stuff/RYRime1004.ale",
+      "source_sha256": "9ce6fd934c8e3e9da18fb02cdc286e956151037aded7045a39d8e6423905d72e",
+      "source_palette": "",
+      "source_palette_sha256": "",
+      "resource": "res://assets/items/materials/flawed_guidance_crystal/icon.tres",
+      "source_frame": 0,
+      "source_frame_count": 1,
+      "source_crop": [
+        1,
+        0,
+        26,
+        28
+      ],
+      "item_definition_id": "item:material:a095c982b884",
+      "display_name": "有瑕疵的制导晶石",
+      "atlas_region": [
+        122,
+        42,
+        25,
+        28
+      ]
+    },
+    {
+      "source_release": "starhome_lz_ry",
+      "source_class": "RYRime:0 1005 0",
+      "source_file": "cltobj/stuffclt2.fcc",
+      "source_line": 42507,
+      "source_logical_path": "pic3/stuff/RYRime1005.ale",
+      "source_sha256": "4f584c208924b01aced30bdadaa374382e3b2f012e4ab9fde71e72aff226dc1d",
+      "source_palette": "",
+      "source_palette_sha256": "",
+      "resource": "res://assets/items/materials/flawed_critical_crystal/icon.tres",
+      "source_frame": 0,
+      "source_frame_count": 1,
+      "source_crop": [
+        1,
+        0,
+        33,
+        28
+      ],
+      "item_definition_id": "item:material:c0cad9b715fb",
+      "display_name": "有瑕疵的暴击晶石",
+      "atlas_region": [
+        162,
+        42,
+        32,
+        28
+      ]
+    },
+    {
+      "source_release": "starhome_lz_ry",
+      "source_class": "RYRime:0 1006 0",
+      "source_file": "cltobj/stuffclt2.fcc",
+      "source_line": 42507,
+      "source_logical_path": "pic3/stuff/RYRime1006.ale",
+      "source_sha256": "cdf89f2f8a4ca9407ed5657be9670dc4169bbd4bf47cacf0c87b5e0b3c91b7db",
+      "source_palette": "",
+      "source_palette_sha256": "",
+      "resource": "res://assets/items/materials/flawed_rocket_crystal/icon.tres",
+      "source_frame": 0,
+      "source_frame_count": 1,
+      "source_crop": [
+        1,
+        0,
+        33,
+        28
+      ],
+      "item_definition_id": "item:material:7dd51398ea4c",
+      "display_name": "有瑕疵的火箭晶石",
+      "atlas_region": [
+        202,
+        42,
+        32,
+        28
+      ]
+    },
+    {
+      "source_release": "starhome_lz_ry",
+      "source_class": "RYRimeFragment",
+      "source_file": "cltobj/stuffclt2.fcc",
+      "source_line": 42779,
+      "source_logical_path": "pic3/stuff/RYRimeFragment.ale",
+      "source_sha256": "697e451f32cd463f9820cfbca093e167b48f61121ca9b6d4bba1e575688b8bab",
+      "source_palette": "",
+      "source_palette_sha256": "",
+      "resource": "res://assets/items/materials/socket_crystal_fragment/icon.tres",
+      "source_frame": 0,
+      "source_frame_count": 1,
+      "source_crop": [
+        1,
+        1,
+        31,
+        27
+      ],
+      "item_definition_id": "item:material:1d49c09bf017",
+      "display_name": "晶石碎片",
+      "atlas_region": [
+        242,
+        42,
+        30,
+        26
+      ]
+    },
+    {
+      "source_release": "starhome_lz_ry",
+      "source_class": "TGSteelChip",
+      "source_file": "cltobj/stuffclt2.fcc",
+      "source_line": 39476,
+      "source_logical_path": "pic3/stuff/TGSteelChip.ale",
+      "source_sha256": "fc8c99ffc4ac6d3e93621303441be1225988a4e12df52271421f2acb2d6b9317",
+      "source_palette": "",
+      "source_palette_sha256": "",
+      "resource": "res://assets/items/materials/iron_hook_steel_plate/icon.tres",
+      "source_frame": 0,
+      "source_frame_count": 1,
+      "source_crop": [
+        0,
+        1,
+        35,
+        35
+      ],
+      "item_definition_id": "item:material:558e8a4df8ad",
+      "display_name": "铁钩钢片",
+      "atlas_region": [
+        2,
+        2,
+        35,
+        34
+      ]
+    },
+    {
+      "source_release": "starhome_lz_ry",
+      "source_class": "TLPHSuspension",
+      "source_file": "cltobj/stuffclt2.fcc",
+      "source_line": 39644,
+      "source_logical_path": "pic3/stuff/TLPHSuspension.ale",
+      "source_sha256": "5bc1ec805edc5fca08848d9795fe32fd8c67e0fd5dd6e56863f7e368a17d086d",
+      "source_palette": "",
+      "source_palette_sha256": "",
+      "resource": "res://assets/items/materials/gyroscopic_suspension/icon.tres",
+      "source_frame": 0,
+      "source_frame_count": 1,
+      "source_crop": [
+        0,
+        1,
+        35,
+        34
+      ],
+      "item_definition_id": "item:material:093a64c39287",
+      "display_name": "陀螺平衡悬挂",
+      "atlas_region": [
+        41,
+        2,
+        35,
+        33
+      ]
+    },
+    {
+      "source_release": "starhome_lz_ry",
+      "source_class": "TZNLY_G91",
+      "source_file": "cltobj/stuffclt2.fcc",
+      "source_line": 33319,
+      "source_logical_path": "pic3/stuff/TZNLY_G91.ale",
+      "source_sha256": "6bc2ab4871157389093cd1cd7059ac043a741e10478eb4538317d4f7342cdda3",
+      "source_palette": "",
+      "source_palette_sha256": "",
+      "resource": "res://assets/items/materials/g91_energy_source/icon.tres",
+      "source_frame": 0,
+      "source_frame_count": 1,
+      "source_crop": [
+        1,
+        1,
+        34,
+        31
+      ],
+      "item_definition_id": "item:material:bc5a18415358",
+      "display_name": "G91特制能量源",
+      "atlas_region": [
+        80,
+        2,
+        33,
+        30
+      ]
+    },
+    {
+      "source_release": "starhome_lz_ry",
+      "source_class": "TZNLY_G92",
+      "source_file": "cltobj/stuffclt2.fcc",
+      "source_line": 33336,
+      "source_logical_path": "pic3/stuff/TZNLY_G92.ale",
+      "source_sha256": "63fa2cacf8ae125b278039be6e4b7ccea1dec2ea6bcd4524f55d1db9a6d5e663",
+      "source_palette": "",
+      "source_palette_sha256": "",
+      "resource": "res://assets/items/materials/g92_energy_source/icon.tres",
+      "source_frame": 0,
+      "source_frame_count": 1,
+      "source_crop": [
+        3,
+        1,
+        35,
+        35
+      ],
+      "item_definition_id": "item:material:b517321630b8",
+      "display_name": "G92特制能量源",
+      "atlas_region": [
+        119,
+        2,
+        32,
+        34
+      ]
+    },
+    {
+      "source_release": "starhome_lz_ry",
+      "source_class": "TopHongCrystal",
+      "source_file": "cltobj/stuffclt2.fcc",
+      "source_line": 39413,
+      "source_logical_path": "pic3/stuff/TopHongCrystal.ale",
+      "source_sha256": "daf75f232da3c1d53fb7d5c7b124f5ee82d0876559c7b42750d56774c19976e7",
+      "source_palette": "",
+      "source_palette_sha256": "",
+      "resource": "res://assets/items/materials/high_grade_red_crystal_source/icon.tres",
+      "source_frame": 0,
+      "source_frame_count": 1,
+      "source_crop": [
+        2,
+        1,
+        26,
+        32
+      ],
+      "item_definition_id": "item:material:f5ec2ce95368",
+      "display_name": "高级红晶源",
+      "atlas_region": [
+        158,
+        2,
+        24,
+        31
+      ]
+    },
+    {
+      "source_release": "starhome_lz_ry",
+      "source_class": "TopLanCrystal",
+      "source_file": "cltobj/stuffclt2.fcc",
+      "source_line": 39434,
+      "source_logical_path": "pic3/stuff/TopLanCrystal.ale",
+      "source_sha256": "13cd193a03b99f749113cace5c876e541deeb01b56c551f575a3003b2dbdf8d1",
+      "source_palette": "",
+      "source_palette_sha256": "",
+      "resource": "res://assets/items/materials/high_grade_blue_crystal_source/icon.tres",
+      "source_frame": 0,
+      "source_frame_count": 1,
+      "source_crop": [
+        1,
+        0,
+        25,
+        31
+      ],
+      "item_definition_id": "item:material:d6e5deb49f86",
+      "display_name": "高级蓝晶源",
+      "atlas_region": [
+        197,
+        2,
+        24,
+        31
+      ]
+    },
+    {
+      "source_release": "starhome_lz_ry",
+      "source_class": "TopLvCrystal",
+      "source_file": "cltobj/stuffclt2.fcc",
+      "source_line": 39455,
+      "source_logical_path": "pic3/stuff/TopLvCrystal.ale",
+      "source_sha256": "cc23535cfeacad5325d9bd1f4424191e1baead9176f3d73f1b824efe0d16b124",
+      "source_palette": "",
+      "source_palette_sha256": "",
+      "resource": "res://assets/items/materials/high_grade_green_crystal_source/icon.tres",
+      "source_frame": 0,
+      "source_frame_count": 1,
+      "source_crop": [
+        1,
+        1,
+        25,
+        32
+      ],
+      "item_definition_id": "item:material:0465103df5d2",
+      "display_name": "高级绿晶源",
+      "atlas_region": [
+        236,
+        2,
+        24,
+        31
+      ]
+    },
+    {
+      "source_release": "starhome_lz_ry",
+      "source_class": "TopZiCrystal",
+      "source_file": "cltobj/stuffclt2.fcc",
+      "source_line": 39392,
+      "source_logical_path": "pic3/stuff/TopZiCrystal.ale",
+      "source_sha256": "4e0ae42986f0e41e78045dbd8173e26dc86a762825e4d6132b2bc248486576a0",
+      "source_palette": "",
+      "source_palette_sha256": "",
+      "resource": "res://assets/items/materials/high_grade_purple_crystal_source/icon.tres",
+      "source_frame": 0,
+      "source_frame_count": 1,
+      "source_crop": [
+        2,
+        2,
+        24,
+        31
+      ],
+      "item_definition_id": "item:material:6ac284bb6c59",
+      "display_name": "高级紫晶源",
+      "atlas_region": [
+        2,
+        41,
+        22,
+        29
+      ]
+    },
+    {
+      "source_release": "starhome_lz_ry",
+      "source_class": "TurbineWDQ",
+      "source_file": "cltobj/stuffclt2.fcc",
+      "source_line": 39602,
+      "source_logical_path": "pic3/stuff/TurbineWDQ.ale",
+      "source_sha256": "fb8fa353961780c1fd62985405a6cec8498222c13805d8cc49752f177e7f30c2",
+      "source_palette": "",
+      "source_palette_sha256": "",
+      "resource": "res://assets/items/materials/turbine_stabilizer/icon.tres",
+      "source_frame": 0,
+      "source_frame_count": 1,
+      "source_crop": [
+        0,
+        1,
+        35,
+        34
+      ],
+      "item_definition_id": "item:material:f7c412f12300",
+      "display_name": "涡轮稳定器",
+      "atlas_region": [
+        41,
+        41,
+        35,
+        33
+      ]
+    },
+    {
+      "source_release": "starhome_lz_ry",
+      "source_class": "WXSteelChip",
+      "source_file": "cltobj/stuffclt2.fcc",
+      "source_line": 39518,
+      "source_logical_path": "pic3/stuff/WXSteelChip.ale",
+      "source_sha256": "7b10e898a97205ca24b1d5785e096c63364410e72d5d7f34ebf8f0276087a1b1",
+      "source_palette": "",
+      "source_palette_sha256": "",
+      "resource": "res://assets/items/materials/five_element_steel_plate/icon.tres",
+      "source_frame": 0,
+      "source_frame_count": 1,
+      "source_crop": [
+        0,
+        0,
+        35,
+        35
+      ],
+      "item_definition_id": "item:material:073e4b22d062",
+      "display_name": "五行钢片",
+      "atlas_region": [
+        80,
+        41,
+        35,
+        35
+      ]
+    },
+    {
+      "source_release": "starhome_lz_ry",
+      "source_class": "XingCiCrystal",
+      "source_file": "cltobj/stuffclt2.fcc",
+      "source_line": 1233,
+      "source_logical_path": "pic3/stuff/XingCiCrystal.ale",
+      "source_sha256": "eba3b76c22439e010aa342e4e85107be7cc11a4c70b04696e7dfa42d8c349a73",
+      "source_palette": "",
+      "source_palette_sha256": "",
+      "resource": "res://assets/items/materials/stellar_magnetic_crystal/icon.tres",
+      "source_frame": 0,
+      "source_frame_count": 1,
+      "source_crop": [
+        0,
+        0,
+        31,
+        29
+      ],
+      "item_definition_id": "item:material:583a985508e9",
+      "display_name": "星磁晶体",
+      "atlas_region": [
+        119,
+        41,
+        31,
+        29
+      ]
+    },
+    {
+      "source_release": "starhome_lz_ry",
+      "source_class": "XingGuangCrystal",
+      "source_file": "cltobj/stuffclt2.fcc",
+      "source_line": 1199,
+      "source_logical_path": "pic3/stuff/XingGuangCrystal.ale",
+      "source_sha256": "f03c79070fcf1e7452706b7f37d2903ff5e4b487109df37b7e6b7405b37db806",
+      "source_palette": "",
+      "source_palette_sha256": "",
+      "resource": "res://assets/items/materials/starlight_crystal/icon.tres",
+      "source_frame": 0,
+      "source_frame_count": 1,
+      "source_crop": [
+        0,
+        0,
+        32,
+        29
+      ],
+      "item_definition_id": "item:material:f1a46cb86792",
+      "display_name": "星光晶体",
+      "atlas_region": [
+        158,
+        41,
+        32,
+        29
+      ]
+    },
+    {
+      "source_release": "starhome_lz_ry",
+      "source_class": "XingHuiCrystal",
+      "source_file": "cltobj/stuffclt2.fcc",
+      "source_line": 1250,
+      "source_logical_path": "pic3/stuff/XingHuiCrystal.ale",
+      "source_sha256": "7ff653308a4c15cc4d3cf6c3cd292a70bddd6ff795177e49331aa40037dafb78",
+      "source_palette": "",
+      "source_palette_sha256": "",
+      "resource": "res://assets/items/materials/stellar_radiance_crystal/icon.tres",
+      "source_frame": 0,
+      "source_frame_count": 1,
+      "source_crop": [
+        0,
+        0,
+        32,
+        29
+      ],
+      "item_definition_id": "item:material:77157411f2c7",
+      "display_name": "星辉晶体",
+      "atlas_region": [
+        197,
+        41,
+        32,
+        29
+      ]
+    },
+    {
+      "source_release": "starhome_lz_ry",
+      "source_class": "XingYaoCrystal",
+      "source_file": "cltobj/stuffclt2.fcc",
+      "source_line": 1268,
+      "source_logical_path": "pic3/stuff/XingYaoCrystal.ale",
+      "source_sha256": "e089972b0a49938d939aac113f7a6cb8c5770e1cacbc0d7a0571164251eb9eb4",
+      "source_palette": "",
+      "source_palette_sha256": "",
+      "resource": "res://assets/items/materials/stellar_brilliance_crystal/icon.tres",
+      "source_frame": 0,
+      "source_frame_count": 1,
+      "source_crop": [
+        0,
+        0,
+        31,
+        29
+      ],
+      "item_definition_id": "item:material:6bce58752c7d",
+      "display_name": "星耀晶体",
+      "atlas_region": [
+        236,
+        41,
+        31,
+        29
+      ]
+    },
+    {
+      "source_release": "starhome_lz_ry",
+      "source_class": "XingYuanCrystal",
+      "source_file": "cltobj/stuffclt2.fcc",
+      "source_line": 1216,
+      "source_logical_path": "pic3/stuff/XingYuanCrystal.ale",
+      "source_sha256": "28b2384d01fd08ded4737f944095f6a83c55d65991161dc897a762c9805cd125",
+      "source_palette": "",
+      "source_palette_sha256": "",
+      "resource": "res://assets/items/materials/stellar_source_crystal/icon.tres",
+      "source_frame": 0,
+      "source_frame_count": 1,
+      "source_crop": [
+        0,
+        0,
+        32,
+        29
+      ],
+      "item_definition_id": "item:material:beb673694521",
+      "display_name": "星源晶体",
+      "atlas_region": [
+        2,
+        2,
+        32,
+        29
+      ]
+    },
+    {
+      "source_release": "starhome_lz_ry",
+      "source_class": "YHOfInterstellar",
+      "source_file": "cltobj/stuffclt2.fcc",
+      "source_line": 31949,
+      "source_logical_path": "pic3/stuff/YHOfInterstellar.ale",
+      "source_sha256": "d1de7471bf7023b12751f482a7101600548a9042eeb0508be847cf52c87c50b2",
+      "source_palette": "",
+      "source_palette_sha256": "",
+      "resource": "res://assets/items/materials/crystal_moon_mark/icon.tres",
+      "source_frame": 0,
+      "source_frame_count": 1,
+      "source_crop": [
+        1,
+        0,
+        31,
+        39
+      ],
+      "item_definition_id": "item:material:bba50542ed38",
+      "display_name": "水晶月痕",
+      "atlas_region": [
+        68,
+        2,
+        30,
+        39
+      ]
+    },
+    {
+      "source_release": "starhome_lz_ry",
+      "source_class": "YHOfInterstellar_Frag",
+      "source_file": "cltobj/stuffclt2.fcc",
+      "source_line": 32059,
+      "source_logical_path": "pic3/stuff/YHOfInterstellar_Frag.ale",
+      "source_sha256": "716f89d8a60b127ddd5221b6aeb22c19d1161161f8f9560a8597f3183640df58",
+      "source_palette": "",
+      "source_palette_sha256": "",
+      "resource": "res://assets/items/materials/crystal_moon_fragment/icon.tres",
+      "source_frame": 0,
+      "source_frame_count": 1,
+      "source_crop": [
+        2,
+        4,
+        40,
+        25
+      ],
+      "item_definition_id": "item:material:049296cd8264",
+      "display_name": "水晶月痕碎片",
+      "atlas_region": [
+        134,
+        2,
+        38,
+        21
+      ]
+    },
+    {
+      "source_release": "starhome_lz_ry",
+      "source_class": "ZNGJTimeCard15",
+      "source_file": "cltobj/stuffclt2.fcc",
+      "source_line": 28030,
+      "source_logical_path": "pic3/stuff/ZNGJTimeCard15.ale",
+      "source_sha256": "8f710c875ef11d5e8aee5bc8c50f3ea61dc89d7d9d1f42a1738e3992c1a20c19",
+      "source_palette": "",
+      "source_palette_sha256": "",
+      "resource": "res://assets/items/materials/assistant_time_card_15min/icon.tres",
+      "source_frame": 0,
+      "source_frame_count": 1,
+      "source_crop": [
+        1,
+        1,
+        63,
+        34
+      ],
+      "item_definition_id": "item:material:34fd6a87af72",
+      "display_name": "挂机辅助时间卡（15分钟）",
+      "atlas_region": [
+        200,
+        2,
+        62,
+        33
+      ]
+    },
+    {
+      "source_release": "starhome_lz_ry",
+      "source_class": "ZWFibar",
+      "source_file": "cltobj/stuffclt2.fcc",
+      "source_line": 39539,
+      "source_logical_path": "pic3/stuff/ZWFibar.ale",
+      "source_sha256": "32f85a09053e22d1ebb12f1e568b9c3f336523364fee59267786eca573c9facf",
+      "source_palette": "",
+      "source_palette_sha256": "",
+      "resource": "res://assets/items/materials/megawatt_fiber/icon.tres",
+      "source_frame": 0,
+      "source_frame_count": 1,
+      "source_crop": [
+        0,
+        2,
+        35,
+        34
+      ],
+      "item_definition_id": "item:material:1916f1df829a",
+      "display_name": "兆瓦纤维",
+      "atlas_region": [
+        266,
+        2,
+        35,
+        32
+      ]
+    },
+    {
+      "source_release": "starhome_lz_ry",
+      "source_class": "ZiCrystal",
+      "source_file": "cltobj/stuffclt2.fcc",
+      "source_line": 39308,
+      "source_logical_path": "pic3/stuff/ZiCrystal.ale",
+      "source_sha256": "3af21f6aceb1b4f921c140be89fd7de1567bd6fb4749d214520e93b527c8001a",
+      "source_palette": "",
+      "source_palette_sha256": "",
+      "resource": "res://assets/items/materials/purple_crystal_source/icon.tres",
+      "source_frame": 0,
+      "source_frame_count": 1,
+      "source_crop": [
+        1,
+        1,
+        30,
+        36
+      ],
+      "item_definition_id": "item:material:5773d6d74168",
+      "display_name": "紫晶源",
+      "atlas_region": [
+        332,
+        2,
+        29,
+        35
+      ]
+    },
+    {
+      "source_release": "starhome_lz_ry",
+      "source_class": "new002",
+      "source_file": "cltobj/stuffclt2.fcc",
+      "source_line": 350,
+      "source_logical_path": "pic3/stuff/jiejing01.ale",
+      "source_sha256": "114999188d5f44213cd42e5896e9934c73a636e92f5b4d399a48d8d65909fa51",
+      "source_palette": "",
+      "source_palette_sha256": "",
+      "resource": "res://assets/items/materials/thermal_crystal/icon.tres",
+      "source_frame": 0,
+      "source_frame_count": 1,
+      "source_crop": [
+        0,
+        0,
+        32,
+        22
+      ],
+      "item_definition_id": "item:material:9a81c6572eee",
+      "display_name": "高热结晶体",
+      "atlas_region": [
+        398,
+        2,
+        32,
+        22
+      ]
+    },
+    {
+      "source_release": "starhome_lz_ry",
+      "source_class": "new003",
+      "source_file": "cltobj/stuffclt2.fcc",
+      "source_line": 367,
+      "source_logical_path": "pic3/stuff/jiejing02.ale",
+      "source_sha256": "daa9b059071570a1f2c3447318da0bc1528339996c148b25ec53a9c0bdd34387",
+      "source_palette": "",
+      "source_palette_sha256": "",
+      "resource": "res://assets/items/materials/corrosive_crystal/icon.tres",
+      "source_frame": 0,
+      "source_frame_count": 1,
+      "source_crop": [
+        0,
+        0,
+        32,
+        22
+      ],
+      "item_definition_id": "item:material:17500b513d35",
+      "display_name": "腐蚀结晶体",
+      "atlas_region": [
+        2,
+        45,
+        32,
+        22
+      ]
+    },
+    {
+      "source_release": "starhome_lz_ry",
+      "source_class": "new004",
+      "source_file": "cltobj/stuffclt2.fcc",
+      "source_line": 384,
+      "source_logical_path": "pic3/stuff/jiejing03.ale",
+      "source_sha256": "7747a52e7ddba272f9986a8459f82e4dcc05be3c67e2b510af4cba5a1ad597bc",
+      "source_palette": "",
+      "source_palette_sha256": "",
+      "resource": "res://assets/items/materials/magnetic_crystal/icon.tres",
+      "source_frame": 0,
+      "source_frame_count": 1,
+      "source_crop": [
+        0,
+        0,
+        32,
+        22
+      ],
+      "item_definition_id": "item:material:d407556cd129",
+      "display_name": "磁化结晶体",
+      "atlas_region": [
+        68,
+        45,
+        32,
+        22
+      ]
+    },
+    {
+      "source_release": "starhome_lz_ry",
+      "source_class": "new005",
+      "source_file": "cltobj/stuffclt2.fcc",
+      "source_line": 401,
+      "source_logical_path": "pic3/stuff/xinpian01.ale",
+      "source_sha256": "cb5e70bd50d99dd546012eb04060c0bb287b90a971244a6d8e4563fe118f2121",
+      "source_palette": "",
+      "source_palette_sha256": "",
+      "resource": "res://assets/items/materials/thermal_chip/icon.tres",
+      "source_frame": 0,
+      "source_frame_count": 1,
+      "source_crop": [
+        0,
+        1,
+        34,
+        21
+      ],
+      "item_definition_id": "item:material:43ed7eecc949",
+      "display_name": "高热芯片",
+      "atlas_region": [
+        134,
+        45,
+        34,
+        20
+      ]
+    },
+    {
+      "source_release": "starhome_lz_ry",
+      "source_class": "new006",
+      "source_file": "cltobj/stuffclt2.fcc",
+      "source_line": 418,
+      "source_logical_path": "pic3/stuff/xinpian02.ale",
+      "source_sha256": "b349cb6b8030f0dbfaf900eff3c78268d68fa67e21fc1c168cd75be3b6033a4a",
+      "source_palette": "",
+      "source_palette_sha256": "",
+      "resource": "res://assets/items/materials/corrosive_chip/icon.tres",
+      "source_frame": 0,
+      "source_frame_count": 1,
+      "source_crop": [
+        0,
+        1,
+        34,
+        21
+      ],
+      "item_definition_id": "item:material:ee509dbc2244",
+      "display_name": "腐蚀芯片",
+      "atlas_region": [
+        200,
+        45,
+        34,
+        20
+      ]
+    },
+    {
+      "source_release": "starhome_lz_ry",
+      "source_class": "new007",
+      "source_file": "cltobj/stuffclt2.fcc",
+      "source_line": 435,
+      "source_logical_path": "pic3/stuff/xinpian03.ale",
+      "source_sha256": "863df6517c35dced289597410645a81999cc23da15c0158a3dc8866851bb31a7",
+      "source_palette": "",
+      "source_palette_sha256": "",
+      "resource": "res://assets/items/materials/magnetic_chip/icon.tres",
+      "source_frame": 0,
+      "source_frame_count": 1,
+      "source_crop": [
+        0,
+        1,
+        34,
+        21
+      ],
+      "item_definition_id": "item:material:f5fe4a61399b",
+      "display_name": "磁化芯片",
+      "atlas_region": [
+        266,
+        45,
+        34,
+        20
+      ]
+    },
+    {
+      "source_release": "starhome_lz_ry",
+      "source_class": "中级四足甲的壳",
+      "source_file": "cltobj/stuffclt2.fcc",
+      "source_line": 801,
+      "source_logical_path": "pic3/stuff/CHN_2005_06_28_18_35_28_782.ale",
+      "source_sha256": "dc80a7326e391bcf61d78fb31b3e24e3b9527784e17d3890366bb0c09c2c21c9",
+      "source_palette": "pic3/act/shellblue.act",
+      "source_palette_sha256": "cca6dda44fafea0b3f754ae87aa48614e109fe843de3c59c943bdf1d06c58911",
+      "resource": "res://assets/items/materials/middle_grade_quadruped_shell/icon.png",
+      "item_definition_id": "item:material:b76edad9fa8e",
+      "display_name": "中级四足甲的壳"
+    },
+    {
+      "source_release": "starhome_lz_ry",
+      "source_class": "中级生物硅",
+      "source_file": "cltobj/stuffclt2.fcc",
+      "source_line": 745,
+      "source_logical_path": "pic3/stuff/CHN_2005_06_28_18_35_21_781.ale",
+      "source_sha256": "1d8bde55a500f763b47f521a342e7e02f040d4d8803c357afd5cb011904b8940",
+      "source_palette": "pic3/act/siliconblue.act",
+      "source_palette_sha256": "cfe32864313cf5da458d378c0ace1aa6a0898f1e31ce0010a531b945706d9dce",
+      "resource": "res://assets/items/materials/middle_grade_biosilicon/icon.png",
+      "item_definition_id": "item:material:deb4b85e31bd",
+      "display_name": "中级生物硅"
+    },
+    {
+      "source_release": "starhome_lz_ry",
+      "source_class": "中级类胶",
+      "source_file": "cltobj/stuffclt2.fcc",
+      "source_line": 47,
+      "source_logical_path": "pic3/stuff/gluey.ale",
+      "source_sha256": "d02b1c89ceb0fc4750d1b65665d31729a71e1fe820d5c57d8fc709d6b1bc442a",
+      "source_palette": "pic3/act/rubberblue.act",
+      "source_palette_sha256": "cca6dda44fafea0b3f754ae87aa48614e109fe843de3c59c943bdf1d06c58911",
+      "resource": "res://assets/items/materials/middle_grade_gel/icon.png",
+      "item_definition_id": "item:material:472d2fb951cb",
+      "display_name": "中级类胶"
+    },
+    {
+      "source_release": "starhome_lz_ry",
+      "source_class": "中级能量催化剂",
+      "source_file": "cltobj/stuffclt2.fcc",
+      "source_line": 687,
+      "source_logical_path": "pic3/stuff/CHN_2005_06_28_18_34_48_776.ale",
+      "source_sha256": "c43ff2017f9ab1d7338dc98583f8cce165e905c1f8f783fede1cefd3e87275fb",
+      "source_palette": "pic3/act/activatorblue.act",
+      "source_palette_sha256": "cca6dda44fafea0b3f754ae87aa48614e109fe843de3c59c943bdf1d06c58911",
+      "resource": "res://assets/items/materials/middle_grade_energy_catalyst/icon.png",
+      "item_definition_id": "item:material:fa905bea2130",
+      "display_name": "中级能量催化剂"
+    },
+    {
+      "source_release": "starhome_lz_ry",
+      "source_class": "中级能量包",
+      "source_file": "cltobj/stuffclt2.fcc",
+      "source_line": 160,
+      "source_logical_path": "pic3/stuff/NLB02.ale",
+      "source_sha256": "2db0bb809cb108223eafd6c6a68827b0df529042d780bcfa5a502fff940e2a15",
+      "source_palette": "",
+      "source_palette_sha256": "",
+      "resource": "res://assets/items/materials/middle_grade_energy_pack/icon.tres",
+      "source_frame": 0,
+      "source_frame_count": 1,
+      "source_crop": [
+        0,
+        0,
+        47,
+        35
+      ],
+      "item_definition_id": "item:material:cfa52e059e34",
+      "display_name": "中级能量包",
+      "atlas_region": [
+        332,
+        45,
+        47,
+        35
+      ]
+    },
+    {
+      "source_release": "starhome_lz_ry",
+      "source_class": "传感器",
+      "source_file": "cltobj/stuffclt2.fcc",
+      "source_line": 4131,
+      "source_logical_path": "pic3/stuff/KL_npc02.ale",
+      "source_sha256": "7dce6a4056af017d8eddbb0114c3e2461924ae2fbec6f37ecac1a4b4cd45275d",
+      "source_palette": "",
+      "source_palette_sha256": "",
+      "resource": "res://assets/items/materials/sensor/icon.tres",
+      "source_frame": 0,
+      "source_frame_count": 1,
+      "source_crop": [
+        49,
+        289,
+        79,
+        322
+      ],
+      "item_definition_id": "item:material:a4f7cbe44e92",
+      "display_name": "传感器",
+      "atlas_region": [
+        398,
+        45,
+        30,
+        33
+      ]
+    },
+    {
+      "source_release": "starhome_lz_ry",
+      "source_class": "低级四足甲的壳",
+      "source_file": "cltobj/stuffclt2.fcc",
+      "source_line": 781,
+      "source_logical_path": "pic3/stuff/CHN_2005_06_28_18_35_28_782.ale",
+      "source_sha256": "dc80a7326e391bcf61d78fb31b3e24e3b9527784e17d3890366bb0c09c2c21c9",
+      "source_palette": "pic3/act/shellyellow.act",
+      "source_palette_sha256": "6d4c21a8aeb93d4ab04db2cbcbc92b22e2986e31e58f5f5e35ec73274778a3e9",
+      "resource": "res://assets/items/materials/low_grade_quadruped_shell/world_icon.png",
+      "item_definition_id": "low_grade_quadruped_shell",
+      "display_name": "低级四足甲的壳"
+    },
+    {
+      "source_release": "starhome_lz_ry",
+      "source_class": "低级生物硅",
+      "source_file": "cltobj/stuffclt2.fcc",
+      "source_line": 724,
+      "source_logical_path": "pic3/stuff/CHN_2005_06_28_18_35_21_781.ale",
+      "source_sha256": "1d8bde55a500f763b47f521a342e7e02f040d4d8803c357afd5cb011904b8940",
+      "source_palette": "pic3/act/siliconyellow.act",
+      "source_palette_sha256": "62a35bb6c5ede77e67fc8b4aa13a093f1952f06aaa1f8a997d76288479a6b543",
+      "resource": "res://assets/items/materials/low_grade_biosilicon/world_icon.png",
+      "item_definition_id": "low_grade_biosilicon",
+      "display_name": "低级生物硅"
+    },
+    {
+      "source_release": "starhome_lz_ry",
+      "source_class": "低级类胶",
+      "source_file": "cltobj/stuffclt2.fcc",
+      "source_line": 26,
+      "source_logical_path": "pic3/stuff/gluey.ale",
+      "source_sha256": "d02b1c89ceb0fc4750d1b65665d31729a71e1fe820d5c57d8fc709d6b1bc442a",
+      "source_palette": "pic3/act/rubberyellow.act",
+      "source_palette_sha256": "6d4c21a8aeb93d4ab04db2cbcbc92b22e2986e31e58f5f5e35ec73274778a3e9",
+      "resource": "res://assets/items/materials/low_grade_gel/world_icon.png",
+      "item_definition_id": "low_grade_gel",
+      "display_name": "低级类胶"
+    },
+    {
+      "source_release": "starhome_lz_ry",
+      "source_class": "低级能量催化剂",
+      "source_file": "cltobj/stuffclt2.fcc",
+      "source_line": 667,
+      "source_logical_path": "pic3/stuff/CHN_2005_06_28_18_34_48_776.ale",
+      "source_sha256": "c43ff2017f9ab1d7338dc98583f8cce165e905c1f8f783fede1cefd3e87275fb",
+      "source_palette": "pic3/act/activatoryellow.act",
+      "source_palette_sha256": "6d4c21a8aeb93d4ab04db2cbcbc92b22e2986e31e58f5f5e35ec73274778a3e9",
+      "resource": "res://assets/items/materials/low_grade_energy_catalyst/world_icon.png",
+      "item_definition_id": "low_grade_energy_catalyst",
+      "display_name": "低级能量催化剂"
+    },
+    {
+      "source_release": "starhome_lz_ry",
+      "source_class": "低级能量包",
+      "source_file": "cltobj/stuffclt2.fcc",
+      "source_line": 84,
+      "source_logical_path": "pic3/stuff/NLB01.ale",
+      "source_sha256": "675b19dea058d370671347a659e85355a0cbd02ace281c42de3b6a8f1f8aec68",
+      "source_palette": "",
+      "source_palette_sha256": "",
+      "resource": "res://assets/items/materials/low_grade_energy_pack/world_icon.png",
+      "item_definition_id": "low_grade_energy_pack",
+      "display_name": "低级能量包"
+    },
+    {
+      "source_release": "starhome_lz_ry",
+      "source_class": "动力板",
+      "source_file": "cltobj/stuffclt2.fcc",
+      "source_line": 4165,
+      "source_logical_path": "pic3/stuff/KL_npc04.ale",
+      "source_sha256": "716a3121428c755abf2f7589f166d458559ff896e34221be251867c33f8bce8e",
+      "source_palette": "",
+      "source_palette_sha256": "",
+      "resource": "res://assets/items/materials/power_board/icon.tres",
+      "source_frame": 0,
+      "source_frame_count": 1,
+      "source_crop": [
+        99,
+        295,
+        146,
+        324
+      ],
+      "item_definition_id": "item:material:7e5440c2f103",
+      "display_name": "动力板",
+      "atlas_region": [
+        2,
+        2,
+        47,
+        29
+      ]
+    },
+    {
+      "source_release": "starhome_lz_ry",
+      "source_class": "变接器",
+      "source_file": "cltobj/stuffclt2.fcc",
+      "source_line": 4114,
+      "source_logical_path": "pic3/stuff/KL_npc01.ale",
+      "source_sha256": "3bce2edefa8b98e87bf25b36371ac94918f688670224c6ca885e01b47e9209e2",
+      "source_palette": "",
+      "source_palette_sha256": "",
+      "resource": "res://assets/items/materials/adapter/icon.tres",
+      "source_frame": 0,
+      "source_frame_count": 1,
+      "source_crop": [
+        0,
+        0,
+        32,
+        39
+      ],
+      "item_definition_id": "item:material:3e5df1aed65c",
+      "display_name": "变接器",
+      "atlas_region": [
+        58,
+        2,
+        32,
+        39
+      ]
+    },
+    {
+      "source_release": "starhome_lz_ry",
+      "source_class": "扩充器",
+      "source_file": "cltobj/stuffclt2.fcc",
+      "source_line": 6345,
+      "source_logical_path": "pic3/stuff/bulletXP_1.ale",
+      "source_sha256": "9fb35e25e9f76017c012635840a5b1aa63c44401d211c304139a54fa6df9f755",
+      "source_palette": "",
+      "source_palette_sha256": "",
+      "resource": "res://assets/items/materials/capacity_expander/icon.tres",
+      "source_frame": 0,
+      "source_frame_count": 1,
+      "source_crop": [
+        0,
+        0,
+        46,
+        24
+      ],
+      "item_definition_id": "item:material:f046399c4dff",
+      "display_name": "扩充器+10",
+      "atlas_region": [
+        114,
+        2,
+        46,
+        24
+      ]
+    },
+    {
+      "source_release": "starhome_lz_ry",
+      "source_class": "扩流器1",
+      "source_file": "cltobj/stuffclt2.fcc",
+      "source_line": 5834,
+      "source_logical_path": "pic3/stuff/kuoliuqi01.ale",
+      "source_sha256": "9f846f9bf07a4d2908a352375e15bc2f9c08286d0c083dbcb4192ca53f2f541c",
+      "source_palette": "",
+      "source_palette_sha256": "",
+      "resource": "res://assets/items/materials/flow_expander/icon.tres",
+      "source_frame": 0,
+      "source_frame_count": 1,
+      "source_crop": [
+        1,
+        1,
+        33,
+        18
+      ],
+      "item_definition_id": "item:material:47b24f797e14",
+      "display_name": "扩流器+2",
+      "atlas_region": [
+        170,
+        2,
+        32,
+        17
+      ]
+    },
+    {
+      "source_release": "starhome_lz_ry",
+      "source_class": "接合器升级碎片",
+      "source_file": "ven/stuffclt2_ven.fcc",
+      "source_line": 3724,
+      "source_logical_path": "pic3/stuff/NewJointDebris.ale",
+      "source_sha256": "18e022423af1dd8e1d10c57462fcbeb8d699e8ed2776149a73c843399cb0a04b",
+      "source_palette": "",
+      "source_palette_sha256": "",
+      "resource": "res://assets/items/materials/attachment_upgrade_fragment/icon.png",
+      "item_definition_id": "item:material:9713f13ede8d",
+      "display_name": "接合器升级碎片"
+    },
+    {
+      "source_release": "starhome_lz_ry",
+      "source_class": "撒玛合金5",
+      "source_file": "cltobj/stuffclt2.fcc",
+      "source_line": 5746,
+      "source_logical_path": "pic3/stuff/samahejin01.ale",
+      "source_sha256": "f67505dfcbc8826e3670aeb7b61e1d6fd7cf9edec44fc3f218d2f50e00f6d92a",
+      "source_palette": "",
+      "source_palette_sha256": "",
+      "resource": "res://assets/items/materials/sama_upgrade_alloy/icon.tres",
+      "source_frame": 0,
+      "source_frame_count": 1,
+      "source_crop": [
+        1,
+        1,
+        34,
+        19
+      ],
+      "item_definition_id": "item:material:3481b7371d1e",
+      "display_name": "撒玛合金+10",
+      "atlas_region": [
+        226,
+        2,
+        33,
+        18
+      ]
+    },
+    {
+      "source_release": "starhome_lz_ry",
+      "source_class": "火力元件",
+      "source_file": "cltobj/stuffclt2.fcc",
+      "source_line": 6294,
+      "source_logical_path": "pic3/stuff/attackXP_1.ale",
+      "source_sha256": "8f3760c685563af76b67f28b323592350c2fb7def5de6ced4466a462a9c248f6",
+      "source_palette": "",
+      "source_palette_sha256": "",
+      "resource": "res://assets/items/materials/firepower_component/icon.tres",
+      "source_frame": 0,
+      "source_frame_count": 1,
+      "source_crop": [
+        3,
+        0,
+        55,
+        44
+      ],
+      "item_definition_id": "item:material:198e40429499",
+      "display_name": "火力元件+1",
+      "atlas_region": [
+        282,
+        2,
+        52,
+        44
+      ]
+    },
+    {
+      "source_release": "starhome_lz_ry",
+      "source_class": "热敏电阻",
+      "source_file": "cltobj/stuffclt2.fcc",
+      "source_line": 4148,
+      "source_logical_path": "pic3/stuff/KL_npc03.ale",
+      "source_sha256": "55335ba7debd674e4635e3bb2f8a5c2a6584c83e21f29edde2c33096787d60c8",
+      "source_palette": "",
+      "source_palette_sha256": "",
+      "resource": "res://assets/items/materials/thermistor/icon.tres",
+      "source_frame": 0,
+      "source_frame_count": 1,
+      "source_crop": [
+        231,
+        280,
+        262,
+        322
+      ],
+      "item_definition_id": "item:material:dc8a42c2781e",
+      "display_name": "热敏电阻",
+      "atlas_region": [
+        338,
+        2,
+        31,
+        42
+      ]
+    },
+    {
+      "source_release": "starhome_lz_ry",
+      "source_class": "聚能晶片5",
+      "source_file": "cltobj/stuffclt2.fcc",
+      "source_line": 5924,
+      "source_logical_path": "pic3/stuff/junengxp01.ale",
+      "source_sha256": "ec0d0002671e73224c11841fd30e441c5f6a46a283ad94f04a148f98d28fddf4",
+      "source_palette": "",
+      "source_palette_sha256": "",
+      "resource": "res://assets/items/materials/energy_focusing_chip/icon.tres",
+      "source_frame": 0,
+      "source_frame_count": 1,
+      "source_crop": [
+        1,
+        1,
+        33,
+        18
+      ],
+      "item_definition_id": "item:material:e24d172fada7",
+      "display_name": "聚能晶片+10",
+      "atlas_region": [
+        2,
+        50,
+        32,
+        17
+      ]
+    },
+    {
+      "source_release": "starhome_lz_ry",
+      "source_class": "超磁体1",
+      "source_file": "cltobj/stuffclt2.fcc",
+      "source_line": 6043,
+      "source_logical_path": "pic3/stuff/chaociti01.ale",
+      "source_sha256": "fa3adce0ac49cb2fdce45076f3886d061e01c370bcc5004c7cc833df93df6862",
+      "source_palette": "",
+      "source_palette_sha256": "",
+      "resource": "res://assets/items/materials/super_magnet/icon.tres",
+      "source_frame": 0,
+      "source_frame_count": 1,
+      "source_crop": [
+        1,
+        1,
+        33,
+        18
+      ],
+      "item_definition_id": "item:material:02212ea88168",
+      "display_name": "超磁体+2",
+      "atlas_region": [
+        58,
+        50,
+        32,
+        17
+      ]
+    },
+    {
+      "source_release": "starhome_lz_ry",
+      "source_class": "高级四足甲的壳",
+      "source_file": "cltobj/stuffclt2.fcc",
+      "source_line": 819,
+      "source_logical_path": "pic3/stuff/CHN_2005_06_28_18_35_28_782.ale",
+      "source_sha256": "dc80a7326e391bcf61d78fb31b3e24e3b9527784e17d3890366bb0c09c2c21c9",
+      "source_palette": "pic3/act/shellred.act",
+      "source_palette_sha256": "c11c70a4ee6277a6135b223ebe7309f401cd16e899e3f42e0ffe6525e1099b9e",
+      "resource": "res://assets/items/materials/high_grade_quadruped_shell/icon.png",
+      "item_definition_id": "item:material:485f08ad24d4",
+      "display_name": "高级四足甲的壳"
+    },
+    {
+      "source_release": "starhome_lz_ry",
+      "source_class": "高级生物硅",
+      "source_file": "cltobj/stuffclt2.fcc",
+      "source_line": 763,
+      "source_logical_path": "pic3/stuff/CHN_2005_06_28_18_35_21_781.ale",
+      "source_sha256": "1d8bde55a500f763b47f521a342e7e02f040d4d8803c357afd5cb011904b8940",
+      "source_palette": "pic3/act/siliconred.act",
+      "source_palette_sha256": "9d35a91769078179a6f35ed0b3d916094af01132f92296ac48a8071b37b5984a",
+      "resource": "res://assets/items/materials/high_grade_biosilicon/icon.png",
+      "item_definition_id": "item:material:99d2d25d7142",
+      "display_name": "高级生物硅"
+    },
+    {
+      "source_release": "starhome_lz_ry",
+      "source_class": "高级类胶",
+      "source_file": "cltobj/stuffclt2.fcc",
+      "source_line": 65,
+      "source_logical_path": "pic3/stuff/gluey.ale",
+      "source_sha256": "d02b1c89ceb0fc4750d1b65665d31729a71e1fe820d5c57d8fc709d6b1bc442a",
+      "source_palette": "pic3/act/rubberred.act",
+      "source_palette_sha256": "c11c70a4ee6277a6135b223ebe7309f401cd16e899e3f42e0ffe6525e1099b9e",
+      "resource": "res://assets/items/materials/high_grade_gel/icon.png",
+      "item_definition_id": "item:material:fa5a837875bb",
+      "display_name": "高级类胶"
+    },
+    {
+      "source_release": "starhome_lz_ry",
+      "source_class": "高级能量催化剂",
+      "source_file": "cltobj/stuffclt2.fcc",
+      "source_line": 705,
+      "source_logical_path": "pic3/stuff/CHN_2005_06_28_18_34_48_776.ale",
+      "source_sha256": "c43ff2017f9ab1d7338dc98583f8cce165e905c1f8f783fede1cefd3e87275fb",
+      "source_palette": "pic3/act/activatorred.act",
+      "source_palette_sha256": "c11c70a4ee6277a6135b223ebe7309f401cd16e899e3f42e0ffe6525e1099b9e",
+      "resource": "res://assets/items/materials/high_grade_energy_catalyst/icon.png",
+      "item_definition_id": "item:material:fdae75215694",
+      "display_name": "高级能量催化剂"
+    }
+  ]
+}
