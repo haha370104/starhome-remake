@@ -65,6 +65,8 @@ def item_ids():
 def build_drops():
     """One independent roll per species/item; original weight is deliberately not interpreted."""
     ids = item_ids()
+    from drop_expectation_policy import apply_policy
+    policy = read("data/gameplay/drop_expectation_policy_v1.json")
     rows = []
     for monster in read("data/gameplay/glory/glory_monsters_v1.json")["definitions"]:
         grouped = {}
@@ -77,13 +79,14 @@ def build_drops():
                 minimum_quantity=candidate["minimum_quantity"], maximum_quantity=candidate["maximum_quantity"], chance=0.25))
             entry["minimum_quantity"] = min(entry["minimum_quantity"], candidate["minimum_quantity"])
             entry["maximum_quantity"] = max(entry["maximum_quantity"], candidate["maximum_quantity"])
+        apply_policy(grouped, ids, policy)
         if monster["id"] in CRAWLERS:
             grouped[ids[FRAGMENT]] = dict(item_definition_id=ids[FRAGMENT], minimum_quantity=1, maximum_quantity=3, chance=0.75)
         rows.append(dict(monster_id=monster["id"], display_name=monster["display_name"], drops=list(grouped.values())))
     document = dict(schema_version=1, content_version="original-monster-drops-v1", mode="replace",
         source_audit=dict(source_release="starhome_lz_ry", source_catalog="glory/glory_monsters_v1.json",
-            policy="2026-09-16 user approved all candidates with uniform remake 25% probability; original raw_weight unconfirmed",
-            duplicate_policy="one roll per species/item; min/max envelope of original quantities",
+            policy="2026-09-16 user-approved expectations in drop_expectation_policy_v1.json; original raw_weight unconfirmed",
+            duplicate_policy="one roll per species/item; original quantity envelope unless expectation policy overrides",
             fragment_policy="only crawler 046 and forgotten crawler 114 plus variants; uniform 0..3, E=1.5"), definitions=rows)
     # Generated records stay one drop per line, so reviewers can compare each relationship directly.
     header = json.dumps({k: v for k, v in document.items() if k != "definitions"}, ensure_ascii=False, indent=2)[:-2]

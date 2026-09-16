@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "policy": "user_requested_2026_09_16",
+  "biological_materials": {
+    "families": ["类胶", "能量催化剂", "四足甲的壳", "生物硅"],
+    "grades": ["低级", "中级", "高级"],
+    "highest_expected_quantity": 0.75,
+    "lower_grade_multiplier": 2,
+    "distributions_by_grade_distance": [
+      {"minimum_quantity": 1, "maximum_quantity": 2, "chance": 0.5},
+      {"minimum_quantity": 1, "maximum_quantity": 3, "chance": 0.75},
+      {"minimum_quantity": 2, "maximum_quantity": 4, "chance": 1.0}
+    ]
+  },
+  "fixed_expectations": [
+    {"category": "挂机辅助卡", "expected_quantity": 0.05, "source_classes": ["ZNGJTimeCard15"]},
+    {"category": "特制能量源", "expected_quantity": 0.01, "source_classes": ["TZNLY_G91", "TZNLY_G92"]},
+    {"category": "密度柔解剂", "expected_quantity": 0.1, "source_classes": ["Activator2"]},
+    {"category": "瑕疵晶石", "expected_quantity": 0.1, "source_classes": [
+      "RYRime:0 1001 0", "RYRime:0 1002 0", "RYRime:0 1003 0",
+      "RYRime:0 1004 0", "RYRime:0 1005 0", "RYRime:0 1006 0"
+    ]},
+    {"category": "装备强化材料", "expected_quantity": 0.1, "source_classes": [
+      "超磁体1", "扩流器1", "撒玛合金5", "聚能晶片5", "扩充器", "火力元件", "NewJointImpactChip",
+      "new002", "new003", "new004", "new005", "new006", "new007",
+      "TGSteelChip", "DJSteelChip", "WXSteelChip", "ZWFibar", "DCProtecter", "HSRifling",
+      "TurbineWDQ", "ElectronicZX", "TLPHSuspension",
+      "JiJiaFuShuJingTi1", "JiJiaFuShuJingTi2", "JiJiaFuShuJingTi3",
+      "JiJiaYueHuiJingTi1", "JiJiaYueHuiJingTi2", "JiJiaYueHuiJingTi3",
+      "ColourfulCrystal", "MorColourfulCrystal", "HongCrystal", "LanCrystal", "LvCrystal", "ZiCrystal",
+      "TopHongCrystal", "TopLanCrystal", "TopLvCrystal", "TopZiCrystal", "DJBJJ", "DJBXP"
+    ]}
+  ],
+  "other_items": "Keep previous independent 25% probability and original quantity range.",
+  "crawler_fragment": "Unchanged: only two crawler species and variants; P(0)=P(1)=P(2)=P(3)=25%, E=1.5."
+}

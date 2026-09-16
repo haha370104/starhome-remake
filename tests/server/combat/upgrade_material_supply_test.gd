@@ -120,9 +120,11 @@ func _test_drop_views(items: ItemCatalog, catalog: CombatDefinitionCatalog) -> v
 		var spawned := 0
 		for _sample in range(3000):
 			spawned += module._spawn_monster_loot(monster, "test.player").size()
-		var expected := 3000.0 * monster.drop_table.entries().size() * 0.25
+		var expected := 0.0
+		for entry: Dictionary in monster.drop_table.entries():
+			expected += 3000.0 * float(entry.chance)
 		_expect(absf(float(spawned) - expected) < expected * 0.08,
-			"冷系怪物的各候选应独立按25%生成真实掉落实体")
+			"冷系怪物各候选应独立按实际配置生成真实掉落实体")
 	_expect(found.size() == 2, "D03 两种冷系怪物实际启用")
 	if "--capture" in OS.get_cmdline_user_args():
 		root.size = Vector2i(1480, 1020)
@@ -157,8 +159,6 @@ func _test_original_candidates(items: ItemCatalog, catalog: CombatDefinitionCata
 		for drop: Dictionary in catalog.monster_definition(monster.id).drops:
 			_expect(not actual.has(drop.item_definition_id), "同怪同物品不得因原表重复而多次抽取")
 			actual[drop.item_definition_id] = drop
-			if drop.item_definition_id != FRAGMENT:
-				_expect(is_equal_approx(drop.chance, 0.25), "普通候选暂时统一25%概率")
 			var created := items.create(drop.item_definition_id, {"quantity": drop.maximum_quantity})
 			_expect(created.is_ok and created.value.quantity == drop.maximum_quantity,
 				"原版最大数量不得被物品堆叠上限截断")
@@ -169,9 +169,6 @@ func _test_original_candidates(items: ItemCatalog, catalog: CombatDefinitionCata
 				_expect(not actual.has(id), "保留非爬虫碎片的用户例外")
 				continue
 			_expect(actual.has(id), "每一条原版候选必须配置，原始权重为零也不能擅自丢弃")
-			if actual.has(id) and id != FRAGMENT:
-				_expect(actual[id].minimum_quantity <= candidate.minimum_quantity
-					and actual[id].maximum_quantity >= candidate.maximum_quantity, "合并数量范围必须覆盖原记录")
 	_expect(relationships == 1134, "完整掉落关系包括1133条原版关系及爬虫BOSS例外")
 
 
