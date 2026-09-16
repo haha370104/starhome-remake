@@ -42,7 +42,7 @@ var suspended_at_server_tick := -1
 func can_suspend_runtime() -> bool:
 	return entities.is_empty() and navigation != null \
 		and (combat_module == null or (combat_module.pending_projectiles.is_empty() \
-			and combat_module.pending_monster_attacks.is_empty())) \
+			and combat_module.pending_monster_attacks.is_empty() and combat_module.corrosion.is_empty())) \
 		and (mining_module == null or mining_module.can_suspend())
 
 

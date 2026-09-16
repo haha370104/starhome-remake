@@ -79,9 +79,65 @@ func _run() -> void:
 	_expect(controller.active_contact_impact_count() == 1, "one contact impact should be active")
 	controller.advance(0.34)
 	_expect(controller.active_contact_impact_count() == 0, "five 66 ms frames should finish after 0.33 seconds")
+	await _test_corrosion(controller, world)
 	controller.queue_free()
 	world.queue_free()
 	_finish()
+
+
+## 验证毒雾使用八方向喷吐原图，残留依快照重建、附着跟随及切图清理。
+## [param controller] 实际怪物攻击表现组件。
+## [param world] 活动世界节点。
+func _test_corrosion(controller: MonsterAttackEffectController, world: Node2D) -> void:
+	controller.set_process(false)
+	var player := Node2D.new()
+	player.position = Vector2(220, 530)
+	world.add_child(player)
+	for direction in range(8):
+		var origin := Vector2(130 + (direction % 4) * 240, 140 + floori(direction / 4.0) * 240)
+		var target := origin + Vector2.from_angle(-direction * PI / 4.0) * 110
+		var attack := {"attack_id": "gel.%d" % direction, "attack_archetype": "corrosive_projectile",
+			"combat_actor_id": "toxic_gel_cold", "origin": [origin.x, origin.y],
+			"target_position": [target.x, target.y], "projectile_speed": 110}
+		_expect(controller.present_attack(attack), "每个方向可以创建原版喷吐")
+		_expect(not controller.present_attack(attack), "腐蚀开始事件重放不重复生成")
+		var flight: CorrosiveEffectController.Flight = controller._corrosion._flights["gel.%d" % direction]
+		_expect(flight.first_frame == direction * 5, "选择正确的五帧方向组")
+		_expect(flight.node.position == origin, "喷吐从嘴部生长，不把整条特效平移")
+		if "--capture" in OS.get_cmdline_user_args():
+			var label := Label.new()
+			label.text = ["东", "东北", "北", "西北", "西", "西南", "南", "东南"][direction]
+			label.position = origin + Vector2(-10, 30)
+			label.add_theme_font_override("font", preload("res://assets/ui/fonts/legacy_panel_font.tres"))
+			world.add_child(label)
+	controller.advance(0.81)
+	var snapshot := {"local_entity_id": "p", "corrosive_clouds": [
+		{"effect_id": "attached", "attached_actor_id": "p", "position": [200, 514]},
+		{"effect_id": "ground", "attached_actor_id": "", "position": [650, 530]},
+	]}
+	controller.apply_corrosion_snapshot(snapshot, player)
+	controller.apply_corrosion_snapshot(snapshot, player)
+	_expect(controller._corrosion._clouds.size() == 2, "新加入可以从完整快照重建且不重复")
+	var attached: CorrosiveEffectController.Cloud = controller._corrosion._clouds.attached
+	var ground: CorrosiveEffectController.Cloud = controller._corrosion._clouds.ground
+	_expect(attached.node.position == player.position + Vector2(0, -16), "附着使用本地预测位置")
+	player.position.x += 40
+	controller.advance(0.01)
+	_expect(attached.node.position == player.position + Vector2(0, -16), "两次网络快照之间也会跟随战车")
+	_expect(ground.node.position == Vector2(650, 530), "地面毒雾不会跟着战车移动")
+	if "--capture" in OS.get_cmdline_user_args():
+		root.size = Vector2i(1000, 600)
+		await RenderingServer.frame_post_draw
+		root.get_texture().get_image().save_png("res://.godot/corrosion-effects.png")
+	controller.settle_corrosion_attack({"attack_id": "gel.0"})
+	_expect(controller.active_projectile_count() == 7, "实际撞击会提前终止喷吐")
+	controller.advance(1.61)
+	_expect(controller._corrosion._clouds.size() == 2, "残留800ms循环多次，不按一次性命中特效删掉")
+	controller.apply_corrosion_snapshot({"corrosive_clouds": []}, player)
+	_expect(controller._corrosion._clouds.is_empty(), "权威到期快照清理残留")
+	controller.apply_corrosion_snapshot(snapshot, player)
+	controller.clear()
+	_expect(controller._corrosion._clouds.is_empty() and controller.active_projectile_count() == 0, "切图清空喷吐和附着")
 
 
 ## 记录布尔断言结果。

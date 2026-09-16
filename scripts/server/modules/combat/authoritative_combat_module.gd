@@ -23,6 +23,7 @@ var death_events: Array[Dictionary] = []
 var respawn_events: Array[Dictionary] = []
 var pending_projectiles: Array[Dictionary] = []
 var pending_monster_attacks: Array[Dictionary] = []
+var corrosion := AuthoritativeCorrosionModule.new()
 var ground_loot: Dictionary = {}
 var _random := RandomNumberGenerator.new()
 var _monster_position_resolver := Callable()
@@ -63,6 +64,7 @@ func configure(
 	respawn_events.clear()
 	pending_projectiles.clear()
 	pending_monster_attacks.clear()
+	corrosion.clear()
 	ground_loot.clear()
 	return DomainResult.ok(self)
 
@@ -202,6 +204,7 @@ func remove_dead_monsters(map_instance_id: String) -> Array[String]:
 ## [param actor_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## 返回该函数计算、查询或操作得到的结果。
 func unregister_vehicle(actor_id: String) -> bool:
+	corrosion.detach(actor_id)
 	return actors.erase(actor_id)
 
 
@@ -841,6 +844,8 @@ func advance_ticks(tick_count: int, simulate_monster_ai := true) -> DomainResult
 		_settle_due_self_repairs()
 		_settle_due_projectiles()
 		_settle_due_monster_attacks()
+		for event: Dictionary in corrosion.advance(current_tick, actors):
+			_record_combat_event(event)
 		_commit_actor_position_samples()
 		for monster_id: String in monsters:
 			var monster: MonsterLifecycle = monsters[monster_id]
@@ -906,6 +911,7 @@ func snapshot_for_actor(actor_id: String) -> Dictionary:
 		"local_vehicle": local_vehicle,
 		"monsters": monster_snapshots,
 		"ground_loot": _ground_loot_for_map(map_instance_id),
+		"corrosive_clouds": corrosion.snapshots(map_instance_id, actors),
 		"recent_events": combat_events.slice(maxi(0, combat_events.size() - 32)).duplicate(true),
 	}
 
@@ -1171,7 +1177,12 @@ func _resolve_monster_attack(attack: Dictionary) -> void:
 	var vehicle_state: VehicleCombatState = actor["vehicle_state"]
 	if vehicle_state.health <= 0:
 		return
-	var damage_result := vehicle_state.apply_damage(int(attack["damage"]))
+	var damage := int(attack["damage"])
+	if StringName(attack["attack_archetype"]) == &"corrosive_projectile":
+		corrosion.add(CorrosiveCloud.new(attack, actor.position + ACTOR_PROJECTILE_HITBOX_OFFSET,
+			target_id, current_tick, simulation_hz), current_tick)
+		damage = 0
+	var damage_result := vehicle_state.apply_damage(damage)
 	if not damage_result.is_ok:
 		return
 	var impact_position := Vector2(
@@ -1197,6 +1208,8 @@ func _resolve_monster_attack(attack: Dictionary) -> void:
 ## [param attack] 正在结束的权威怪物攻击状态。
 ## [param impact_position] 弹体无伤害消失的世界坐标。
 func _record_monster_attack_expired(attack: Dictionary, impact_position: Vector2) -> void:
+	if StringName(attack["attack_archetype"]) == &"corrosive_projectile":
+		corrosion.add(CorrosiveCloud.new(attack, impact_position, "", current_tick, simulation_hz), current_tick)
 	_record_combat_event({
 		"event_type": &"monster_attack_expired",
 		"server_tick": current_tick,

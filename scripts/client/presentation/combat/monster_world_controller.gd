@@ -111,6 +111,8 @@ func apply_snapshot(combat_snapshot: Dictionary) -> void:
 		stale.queue_free()
 		_views.erase(entity_id)
 	_apply_recent_events(combat_snapshot)
+	if _attack_effects != null:
+		_attack_effects.apply_corrosion_snapshot(combat_snapshot, _local_player)
 
 
 ## 执行 `nearest_target` 对应的模块操作。
@@ -216,6 +218,8 @@ func _apply_recent_events(combat_snapshot: Dictionary) -> void:
 			CombatTraceLogger.record(&"client", &"authoritative_projectile_event_observed", event)
 		if event_type == &"monster_attack_started" and _attack_effects != null:
 			_attack_effects.present_attack(event)
+		if event_type in [&"monster_attack_resolved", &"monster_attack_expired"] and _attack_effects != null:
+			_attack_effects.settle_corrosion_attack(event)
 		if event_type in [
 			&"energy_cannon_hit", &"rocket_launcher_hit", &"missile_hit",
 			&"monster_attack_resolved",

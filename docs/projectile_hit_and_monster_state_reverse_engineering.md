@@ -392,15 +392,47 @@ MonsterSnapshot {
 
 ### 9.4 怪物攻击素材、到达时序与躲避判定已完成
 
-怪物快照带 `action_sequence`，同一 `attack` 状态下的新一次攻击也会从首帧重播。奥姆虫、奥姆幼虫和毒胶按 `monster_attack_started` 使用各自荣耀版弹体素材；旋转弹会按权威起点到目标点的矢量设置节点角度。感光质保留 `contact_melee`：攻击开始时只播放身体动画，不伪造远程弹体；收到 `monster_attack_resolved` 后，才在受击战车位置播放 5 帧白蓝覆盖效果。
+怪物快照带 `action_sequence`，同一 `attack` 状态下的新一次攻击也会从首帧重播。奥姆虫、奥姆幼虫按 `monster_attack_started` 使用各自荣耀版弹体素材；旋转弹会按权威起点到目标点的矢量设置节点角度。毒胶已改为下节的喷吐和持续腐蚀。感光质保留 `contact_melee`：攻击开始时只播放身体动画，不伪造远程弹体；收到 `monster_attack_resolved` 后，才在受击战车位置播放 5 帧白蓝覆盖效果。
 
 远程怪物发射时只冻结起点、朝向和旧瞄准点，不再冻结“必中的目标”。服务端以 20 Hz 将每颗在途弹体从上一位置推进到新位置；同一逻辑步内，还会取得玩家脚点的上一位置和当前位置，在相对坐标中做线段—圆连续求交。玩家受击圆当前采用脚点上方 16 px、半径 18 px，与现有动态角色碰撞尺度一致。这样既不会因弹体单步跨过战车而穿透，也不会因开火时曾经瞄准玩家而在其横向躲开后仍强制扣血。
 
-第一次求交发生时才产生 `monster_attack_resolved` 并扣血；弹体抵达旧瞄准点仍没有碰到玩家时产生零伤害 `monster_attack_expired`。`impact_tick` 现在表示飞到旧瞄准点的最晚寿命，而不是预先承诺的命中时刻。多人同图时按交点参数选择路径上最先接触的存活玩家，因此另一辆战车也能实际挡下炮弹。
+普通弹体第一次求交发生时才产生 `monster_attack_resolved` 并扣血；弹体抵达旧瞄准点仍没有碰到玩家时产生零伤害 `monster_attack_expired`。腐蚀弹的命中/落空事件改为创建残留，伤害由后续脉冲产生。`impact_tick` 表示飞到旧瞄准点的最晚寿命，而不是预先承诺的命中时刻。多人同图时按交点参数选择路径上最先接触的存活玩家，因此另一辆战车也能实际挡下炮弹。
 
 该方案每逻辑步的成本是 `O(P × A)`，`P` 为当前在途怪物弹体数，`A` 为同地图存活玩家数。20 Hz、8 名玩家、同时 100 颗怪物弹体时只有约 1.6 万次简单线段—圆求交/秒，对几人私服可以忽略；不需要按客户端 60/144 FPS 推演。以后单图达到数百玩家或数千弹体时，再按地图网格筛选候选玩家即可，协议和命中语义不变。
 
 奥姆虫与奥姆幼虫当前共享 `416.666667 px/s`：该值来自对荣耀运行容器 `nMFly` 的反汇编换算，而不是把 FCC 的 `m_nspeed=1000` 直接当作像素/秒。完整公式、速度档与无弹道例外见 [monster_projectile_speed_reverse_engineering.md](monster_projectile_speed_reverse_engineering.md)。结算事件保留 `combat_actor_id` 与权威 `impact_position`，使表现层无需用中文名猜命中特效，并能在后续按权威接触点校正预测弹体。
+
+### 9.5 毒胶喷吐与持续腐蚀（2026-09-16）
+
+**来源确认**：荣耀 `bullet.fcc:981` 的 `rotbullet` 忽略构造参数里的旧怪物弹丸图，实际使用
+`pic3/effect/CHN_2005_06_28_19_12_40_1162.ale`（八方向、每方向五帧、200ms喷吐），
+及 `pic3/effect/CHN_2005_06_28_19_12_34_1161.ale`（三帧、800ms循环残留）。
+原注释明确碰撞由服务器处理；用户补充了地面残留或附着战车并持续扣血的玩法。
+素材按语义导入 `assets/monsters/toxic_gel/shared/effects/corrosion`，清单保留原始路径与 SHA-256。
+
+**复刻默认**：原服务器寿命与伤害周期无法从本地客户端恢复，当前设持续4秒，每秒一次、
+每次 `ceil(攻击力×0.25)`，沿用 `VehicleCombatState` 的减伤与生命规则；命中不额外造成瞬时完整伤害。
+地面残留半径38px，仅对该地图范围内的存活战车结算；附着只伤害命中战车，移动仍然生效。
+同一怪物对同一战车重复命中只刷新4秒寿命，不叠层、不推迟下一脉冲；同源相邻地面残留也合并。
+不同怪物的腐蚀独立结算。以上集中在领域常量中，不能声称还原了原服数值。
+
+**边界**：[CorrosiveCloud](../scripts/domain/combat/corrosive_cloud.gd) 拥有范围、合并、寿命及脉冲规则；
+[AuthoritativeCorrosionModule](../scripts/server/modules/combat/authoritative_corrosion_module.gd) 适配现有战车记录，
+推进领域时钟并调用战车伤害，不让 UI 扣血。
+`AuthoritativeCombatModule` 只在弹体命中/落空时创建对象，转发推进及快照。
+`combat.corrosive_clouds` 完整快照包含 `effect_id`、`attached_actor_id`、`position`、`expires_tick`；
+新加入或漏收事件也能重建残留。脉冲仍发布 `monster_attack_resolved`，另带 `corrosion_pulse=true`，
+复用权威死亡处理与飘字，不重复生成弹丸。附着死亡、注销、离图立即失效；空地图等残留结清再休眠。
+
+**表现**：[CorrosiveEffectController](../scripts/client/presentation/combat/corrosive_effect_controller.gd)
+选择原图八方向帧，喷吐锚定发射点并按权威射程延伸，避免把整条原图当成小子弹平移。
+地面原图800ms循环；本地附着每帧跟随预测战车，其他玩家附着使用权威快照坐标。
+切图清空表现；实际命中事件提前终止喷吐，残留消失以完整快照为准。
+
+专项：`tests/server/combat/corrosive_attack_test.gd` 33项、
+`tests/client/presentation/combat/monster_attack_effect_controller_test.gd` 56项本轮通过，均纳入总门禁。
+覆盖实际D03物种弹体、直接命中、躲避、地面进出、附着移动、异图隔离、刷新、致死、注销、空图休眠和重复快照。
+OpenGL八方向与两种残留截图 `.godot/corrosion-effects.png` 已检查。
 
 ## 10. 实施记录与后续顺序
 

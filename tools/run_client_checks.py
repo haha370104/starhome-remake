@@ -21,6 +21,8 @@ TESTS = (
     "server/commerce/attachment_upgrade_test.gd",
     "server/commerce/daily_activity_test.gd",
     "server/combat/upgrade_material_supply_test.gd",
+    "server/combat/corrosive_attack_test.gd",
+    "client/presentation/combat/monster_attack_effect_controller_test.gd",
     "server/manufacturing/industrial_supply_chain_test.gd",
     "server/authoritative_server_smoke_test.gd",
     "ui/runtime/daily_hud_and_assistant_test.gd",

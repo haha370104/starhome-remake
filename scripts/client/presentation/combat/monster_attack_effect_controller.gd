@@ -11,6 +11,7 @@ var _presented_attack_ids: Dictionary = {}
 var _presented_impact_ids: Dictionary = {}
 var _ale_repository: RefCounted
 var _glory_presentations: RefCounted
+var _corrosion: CorrosiveEffectController
 
 
 ## 配置怪物远程攻击表现所需的业务清单和世界节点。
@@ -26,6 +27,11 @@ func configure(manifest: Dictionary, world_parent: Node2D) -> Error:
 	if not effects_value is Dictionary:
 		return ERR_INVALID_DATA
 	_effect_definitions = (effects_value as Dictionary).duplicate(true)
+	if _corrosion == null:
+		_corrosion = CorrosiveEffectController.new()
+		add_child(_corrosion)
+	if not _corrosion.configure(_world_parent):
+		return ERR_INVALID_DATA
 	return OK
 
 
@@ -44,6 +50,11 @@ func present_attack(event: Dictionary) -> bool:
 	var attack_id := String(event.get("attack_id", ""))
 	if attack_id.is_empty() or _presented_attack_ids.has(attack_id):
 		return false
+	if StringName(event.get("attack_archetype", "")) == &"corrosive_projectile":
+		if _corrosion == null or not _corrosion.present(event):
+			return false
+		_presented_attack_ids[attack_id] = true
+		return true
 	if StringName(event.get("attack_archetype", "")) == &"contact_melee":
 		_presented_attack_ids[attack_id] = true
 		return false
@@ -227,6 +238,8 @@ func _present_ale_contact_impact(event: Dictionary, target_position: Vector2) ->
 func advance(delta_seconds: float) -> void:
 	if delta_seconds <= 0.0:
 		return
+	if _corrosion != null:
+		_corrosion.advance(delta_seconds)
 	for index in range(_active_projectiles.size() - 1, -1, -1):
 		var state: Dictionary = _active_projectiles[index]
 		state["elapsed"] = float(state["elapsed"]) + delta_seconds
@@ -273,6 +286,8 @@ func advance(delta_seconds: float) -> void:
 
 ## 清除地图切换前仍在飞行的弹体与事件游标。
 func clear() -> void:
+	if _corrosion != null:
+		_corrosion.clear()
 	for state in _active_projectiles:
 		_free_projectile(state)
 	for state in _active_impacts:
@@ -286,7 +301,22 @@ func clear() -> void:
 ## 统计当前仍在飞行的怪物弹体。
 ## 返回活跃弹体节点数量。
 func active_projectile_count() -> int:
-	return _active_projectiles.size()
+	return _active_projectiles.size() + (0 if _corrosion == null else _corrosion.flight_count())
+
+
+## 将权威残留投影给独立腐蚀表现组件。
+## [param snapshot] 当前地图完整战斗快照。
+## [param local_player] 本地预测战车锚点。
+func apply_corrosion_snapshot(snapshot: Dictionary, local_player: Node2D) -> void:
+	if _corrosion != null:
+		_corrosion.apply_snapshot(snapshot, local_player)
+
+
+## 结束已命中或落空的腐蚀喷吐；持续扣血事件不重新生成表现。
+## [param event] 权威攻击结束事件。
+func settle_corrosion_attack(event: Dictionary) -> void:
+	if _corrosion != null:
+		_corrosion.settle(String(event.get("attack_id", "")))
 
 
 ## 统计当前仍在播放的贴身攻击命中特效。
