@@ -33,7 +33,10 @@ func initialize(items: ItemCatalog) -> DomainResult:
 	for monster: Dictionary in monsters.definitions:
 		if places.has(monster.id):
 			species_by_name[monster.display_name] = monster.id
-	var available := _available_materials(items)
+	var combat := CombatDefinitionCatalog.load_default()
+	if not combat.is_ok:
+		return combat
+	var available := _available_materials(items, places, combat.value)
 	for raw: Dictionary in source.value.tasks:
 		var rule := MercenaryDefinition.new(raw, policy.rewards)
 		if rule.kind == 1:
@@ -61,18 +64,15 @@ func initialize(items: ItemCatalog) -> DomainResult:
 
 ## 从实际掉落、启用矿池和原料闭合的配方推导可获取材料，排除仅登记的旧物品。
 ## [param items] 当前物品定义目录。
+## [param places] 实际启用的怪物物种与地图索引。
+## [param combat] 已校验的最终战斗目录，包含替换及补充掉落规则。
 ## 返回中文名或原类名到实际产出 ID 的映射。
-func _available_materials(items: ItemCatalog) -> Dictionary:
+func _available_materials(items: ItemCatalog, places: Dictionary, combat: CombatDefinitionCatalog) -> Dictionary:
 	var ids: Dictionary = {}
 	var result: Dictionary = {}
-	var drops := JsonConfigLoader.load_dictionary("res://data/gameplay/stage3/monsters_v1.json").value as Dictionary
-	for monster: Dictionary in drops.definitions:
+	for species_id: String in places:
+		var monster := combat.monster_definition(species_id)
 		for drop: Dictionary in monster.get("drops", []):
-			if float(drop.get("chance", 0)) > 0:
-				ids[drop.item_definition_id] = true
-	var materials := JsonConfigLoader.load_dictionary("res://data/gameplay/monster_material_drops_v1.json").value as Dictionary
-	for monster: Dictionary in materials.definitions:
-		for drop: Dictionary in monster.drops:
 			if float(drop.get("chance", 0)) > 0:
 				ids[drop.item_definition_id] = true
 	var mining := JsonConfigLoader.load_dictionary("res://data/gameplay/mining_v1.json").value as Dictionary
@@ -91,9 +91,9 @@ func _available_materials(items: ItemCatalog) -> Dictionary:
 		for recipe: Dictionary in recipes:
 			var ready := true
 			for ingredient: Dictionary in recipe.materials:
-				ready = ready and ids.has(ingredient.definition_id)
+				ready = ready and ids.has(ItemDefinitionAliases.canonical(String(ingredient.definition_id)))
 			if ready:
-				ids[recipe.product_definition_id] = true
+				ids[ItemDefinitionAliases.canonical(String(recipe.product_definition_id))] = true
 		if ids.size() == count:
 			break
 	for id: String in ids:

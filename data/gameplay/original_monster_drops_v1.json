@@ -1,0 +1,1743 @@
+{
+  "schema_version": 1,
+  "content_version": "original-monster-drops-v1",
+  "mode": "replace",
+  "source_audit": {
+    "source_release": "starhome_lz_ry",
+    "source_catalog": "glory/glory_monsters_v1.json",
+    "policy": "2026-09-16 user approved all candidates with uniform remake 25% probability; original raw_weight unconfirmed",
+    "duplicate_policy": "one roll per species/item; min/max envelope of original quantities",
+    "fragment_policy": "only crawler 046 and forgotten crawler 114 plus variants; uniform 0..3, E=1.5"
+  },
+  "definitions": [
+    {
+      "monster_id": "toxic_gel", "display_name": "毒胶",
+      "drops": [
+        {"item_definition_id": "low_grade_gel", "minimum_quantity": 1, "maximum_quantity": 3, "chance": 0.25}
+      ]
+    },
+    {
+      "monster_id": "photosensitive_orb", "display_name": "感光质",
+      "drops": [
+        {"item_definition_id": "low_grade_energy_pack", "minimum_quantity": 1, "maximum_quantity": 3, "chance": 0.25},
+        {"item_definition_id": "low_grade_energy_catalyst", "minimum_quantity": 1, "maximum_quantity": 3, "chance": 0.25}
+      ]
+    },
+    {
+      "monster_id": "om_larva", "display_name": "奥姆幼虫",
+      "drops": [
+        {"item_definition_id": "low_grade_biosilicon", "minimum_quantity": 1, "maximum_quantity": 3, "chance": 0.25}
+      ]
+    },
+    {
+      "monster_id": "om_adult", "display_name": "奥姆虫",
+      "drops": [
+        {"item_definition_id": "low_grade_biosilicon", "minimum_quantity": 1, "maximum_quantity": 3, "chance": 0.25},
+        {"item_definition_id": "low_grade_quadruped_shell", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25}
+      ]
+    },
+    {
+      "monster_id": "glory_monster_005", "display_name": "低温毒胶",
+      "drops": [
+        {"item_definition_id": "low_grade_gel", "minimum_quantity": 1, "maximum_quantity": 3, "chance": 0.25},
+        {"item_definition_id": "item:material:472d2fb951cb", "minimum_quantity": 1, "maximum_quantity": 3, "chance": 0.25},
+        {"item_definition_id": "low_grade_energy_pack", "minimum_quantity": 2, "maximum_quantity": 4, "chance": 0.25}
+      ]
+    },
+    {
+      "monster_id": "glory_monster_006", "display_name": "低温感光质",
+      "drops": [
+        {"item_definition_id": "low_grade_energy_catalyst", "minimum_quantity": 1, "maximum_quantity": 3, "chance": 0.25},
+        {"item_definition_id": "item:material:fa905bea2130", "minimum_quantity": 1, "maximum_quantity": 3, "chance": 0.25},
+        {"item_definition_id": "low_grade_energy_pack", "minimum_quantity": 2, "maximum_quantity": 4, "chance": 0.25}
+      ]
+    },
+    {
+      "monster_id": "glory_monster_007", "display_name": "毒性奥姆幼虫",
+      "drops": [
+        {"item_definition_id": "low_grade_biosilicon", "minimum_quantity": 1, "maximum_quantity": 3, "chance": 0.25},
+        {"item_definition_id": "item:material:deb4b85e31bd", "minimum_quantity": 1, "maximum_quantity": 3, "chance": 0.25},
+        {"item_definition_id": "low_grade_energy_pack", "minimum_quantity": 2, "maximum_quantity": 4, "chance": 0.25}
+      ]
+    },
+    {
+      "monster_id": "glory_monster_008", "display_name": "毒性奥姆虫",
+      "drops": [
+        {"item_definition_id": "low_grade_biosilicon", "minimum_quantity": 1, "maximum_quantity": 3, "chance": 0.25},
+        {"item_definition_id": "item:material:deb4b85e31bd", "minimum_quantity": 1, "maximum_quantity": 3, "chance": 0.25},
+        {"item_definition_id": "low_grade_quadruped_shell", "minimum_quantity": 1, "maximum_quantity": 4, "chance": 0.25},
+        {"item_definition_id": "item:material:b76edad9fa8e", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "low_grade_energy_pack", "minimum_quantity": 2, "maximum_quantity": 4, "chance": 0.25}
+      ]
+    },
+    {
+      "monster_id": "glory_monster_009", "display_name": "恶性毒胶",
+      "drops": [
+        {"item_definition_id": "item:material:472d2fb951cb", "minimum_quantity": 1, "maximum_quantity": 3, "chance": 0.25},
+        {"item_definition_id": "item:material:fa5a837875bb", "minimum_quantity": 1, "maximum_quantity": 3, "chance": 0.25},
+        {"item_definition_id": "low_grade_energy_pack", "minimum_quantity": 3, "maximum_quantity": 5, "chance": 0.25}
+      ]
+    },
+    {
+      "monster_id": "glory_monster_010", "display_name": "恶性感光质",
+      "drops": [
+        {"item_definition_id": "low_grade_energy_catalyst", "minimum_quantity": 1, "maximum_quantity": 3, "chance": 0.25},
+        {"item_definition_id": "item:material:fa905bea2130", "minimum_quantity": 1, "maximum_quantity": 3, "chance": 0.25},
+        {"item_definition_id": "item:material:fdae75215694", "minimum_quantity": 1, "maximum_quantity": 3, "chance": 0.25},
+        {"item_definition_id": "low_grade_energy_pack", "minimum_quantity": 3, "maximum_quantity": 5, "chance": 0.25}
+      ]
+    },
+    {
+      "monster_id": "glory_monster_011", "display_name": "血腥的奥姆幼虫",
+      "drops": [
+        {"item_definition_id": "low_grade_biosilicon", "minimum_quantity": 1, "maximum_quantity": 3, "chance": 0.25},
+        {"item_definition_id": "item:material:99d2d25d7142", "minimum_quantity": 1, "maximum_quantity": 3, "chance": 0.25},
+        {"item_definition_id": "low_grade_energy_pack", "minimum_quantity": 3, "maximum_quantity": 7, "chance": 0.25}
+      ]
+    },
+    {
+      "monster_id": "glory_monster_012", "display_name": "血腥的奥姆虫",
+      "drops": [
+        {"item_definition_id": "item:material:deb4b85e31bd", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "low_grade_quadruped_shell", "minimum_quantity": 2, "maximum_quantity": 4, "chance": 0.25},
+        {"item_definition_id": "item:material:b76edad9fa8e", "minimum_quantity": 1, "maximum_quantity": 4, "chance": 0.25},
+        {"item_definition_id": "item:material:485f08ad24d4", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "low_grade_energy_pack", "minimum_quantity": 3, "maximum_quantity": 7, "chance": 0.25},
+        {"item_definition_id": "item:material:34fd6a87af72", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25}
+      ]
+    },
+    {
+      "monster_id": "glory_monster_013", "display_name": "胶虫",
+      "drops": [
+        {"item_definition_id": "low_grade_gel", "minimum_quantity": 1, "maximum_quantity": 3, "chance": 0.25},
+        {"item_definition_id": "item:material:472d2fb951cb", "minimum_quantity": 1, "maximum_quantity": 3, "chance": 0.25},
+        {"item_definition_id": "item:material:fa5a837875bb", "minimum_quantity": 1, "maximum_quantity": 3, "chance": 0.25},
+        {"item_definition_id": "low_grade_energy_pack", "minimum_quantity": 3, "maximum_quantity": 7, "chance": 0.25},
+        {"item_definition_id": "item:material:34fd6a87af72", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25}
+      ]
+    },
+    {
+      "monster_id": "glory_monster_014", "display_name": "温和的罗格当虫",
+      "drops": [
+        {"item_definition_id": "low_grade_gel", "minimum_quantity": 1, "maximum_quantity": 3, "chance": 0.25},
+        {"item_definition_id": "item:material:472d2fb951cb", "minimum_quantity": 1, "maximum_quantity": 3, "chance": 0.25},
+        {"item_definition_id": "item:material:fa5a837875bb", "minimum_quantity": 1, "maximum_quantity": 3, "chance": 0.25},
+        {"item_definition_id": "low_grade_energy_pack", "minimum_quantity": 3, "maximum_quantity": 7, "chance": 0.25},
+        {"item_definition_id": "item:material:34fd6a87af72", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25}
+      ]
+    },
+    {
+      "monster_id": "glory_monster_015", "display_name": "甲壳奥姆虫",
+      "drops": [
+        {"item_definition_id": "low_grade_biosilicon", "minimum_quantity": 1, "maximum_quantity": 3, "chance": 0.25},
+        {"item_definition_id": "item:material:485f08ad24d4", "minimum_quantity": 1, "maximum_quantity": 3, "chance": 0.25},
+        {"item_definition_id": "item:material:deb4b85e31bd", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "low_grade_energy_pack", "minimum_quantity": 3, "maximum_quantity": 7, "chance": 0.25},
+        {"item_definition_id": "item:material:34fd6a87af72", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25}
+      ]
+    },
+    {
+      "monster_id": "glory_monster_016", "display_name": "温和的艾格丝虫",
+      "drops": [
+        {"item_definition_id": "low_grade_biosilicon", "minimum_quantity": 1, "maximum_quantity": 3, "chance": 0.25},
+        {"item_definition_id": "item:material:485f08ad24d4", "minimum_quantity": 1, "maximum_quantity": 3, "chance": 0.25},
+        {"item_definition_id": "item:material:deb4b85e31bd", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "low_grade_energy_pack", "minimum_quantity": 3, "maximum_quantity": 7, "chance": 0.25},
+        {"item_definition_id": "item:material:34fd6a87af72", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25}
+      ]
+    },
+    {
+      "monster_id": "glory_monster_017", "display_name": "恶性胶虫",
+      "drops": [
+        {"item_definition_id": "low_grade_gel", "minimum_quantity": 4, "maximum_quantity": 8, "chance": 0.25},
+        {"item_definition_id": "item:material:472d2fb951cb", "minimum_quantity": 1, "maximum_quantity": 3, "chance": 0.25},
+        {"item_definition_id": "item:material:fa5a837875bb", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "low_grade_energy_pack", "minimum_quantity": 3, "maximum_quantity": 9, "chance": 0.25},
+        {"item_definition_id": "item:material:34fd6a87af72", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:558e8a4df8ad", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25}
+      ]
+    },
+    {
+      "monster_id": "glory_monster_018", "display_name": "残酷的撒玛卫士",
+      "drops": [
+        {"item_definition_id": "low_grade_energy_pack", "minimum_quantity": 3, "maximum_quantity": 9, "chance": 0.25},
+        {"item_definition_id": "item:material:02212ea88168", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "low_grade_quadruped_shell", "minimum_quantity": 2, "maximum_quantity": 4, "chance": 0.25},
+        {"item_definition_id": "item:material:34fd6a87af72", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:1916f1df829a", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25}
+      ]
+    },
+    {
+      "monster_id": "glory_monster_019", "display_name": "警觉的罗格当虫",
+      "drops": [
+        {"item_definition_id": "low_grade_gel", "minimum_quantity": 4, "maximum_quantity": 8, "chance": 0.25},
+        {"item_definition_id": "item:material:fa5a837875bb", "minimum_quantity": 1, "maximum_quantity": 3, "chance": 0.25},
+        {"item_definition_id": "item:material:472d2fb951cb", "minimum_quantity": 1, "maximum_quantity": 3, "chance": 0.25},
+        {"item_definition_id": "low_grade_energy_pack", "minimum_quantity": 3, "maximum_quantity": 9, "chance": 0.25},
+        {"item_definition_id": "item:material:34fd6a87af72", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:f7c412f12300", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25}
+      ]
+    },
+    {
+      "monster_id": "glory_monster_020", "display_name": "警觉的撒玛近卫军",
+      "drops": [
+        {"item_definition_id": "item:material:47b24f797e14", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "low_grade_energy_pack", "minimum_quantity": 1, "maximum_quantity": 9, "chance": 0.25},
+        {"item_definition_id": "item:material:34fd6a87af72", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:558e8a4df8ad", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:d2a1d9d06fbc", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25}
+      ]
+    },
+    {
+      "monster_id": "glory_monster_021", "display_name": "冷酷的甲壳奥姆虫",
+      "drops": [
+        {"item_definition_id": "low_grade_biosilicon", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:deb4b85e31bd", "minimum_quantity": 1, "maximum_quantity": 3, "chance": 0.25},
+        {"item_definition_id": "item:material:485f08ad24d4", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "low_grade_energy_pack", "minimum_quantity": 3, "maximum_quantity": 9, "chance": 0.25},
+        {"item_definition_id": "item:material:34fd6a87af72", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:1916f1df829a", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:82b550887686", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25}
+      ]
+    },
+    {
+      "monster_id": "glory_monster_022", "display_name": "警觉的艾格丝虫",
+      "drops": [
+        {"item_definition_id": "low_grade_biosilicon", "minimum_quantity": 1, "maximum_quantity": 3, "chance": 0.25},
+        {"item_definition_id": "item:material:deb4b85e31bd", "minimum_quantity": 1, "maximum_quantity": 3, "chance": 0.25},
+        {"item_definition_id": "item:material:485f08ad24d4", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "low_grade_energy_pack", "minimum_quantity": 3, "maximum_quantity": 9, "chance": 0.25},
+        {"item_definition_id": "item:material:34fd6a87af72", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:f7c412f12300", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:95aa2445915e", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25}
+      ]
+    },
+    {
+      "monster_id": "glory_monster_023", "display_name": "血腥的胶虫",
+      "drops": [
+        {"item_definition_id": "low_grade_gel", "minimum_quantity": 1, "maximum_quantity": 3, "chance": 0.25},
+        {"item_definition_id": "item:material:472d2fb951cb", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:fa5a837875bb", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "low_grade_energy_pack", "minimum_quantity": 3, "maximum_quantity": 9, "chance": 0.25},
+        {"item_definition_id": "item:material:34fd6a87af72", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:558e8a4df8ad", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:d2a1d9d06fbc", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25}
+      ]
+    },
+    {
+      "monster_id": "glory_monster_024", "display_name": "暴戾的罗格当虫",
+      "drops": [
+        {"item_definition_id": "low_grade_gel", "minimum_quantity": 1, "maximum_quantity": 3, "chance": 0.25},
+        {"item_definition_id": "item:material:fa5a837875bb", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:472d2fb951cb", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "low_grade_energy_pack", "minimum_quantity": 3, "maximum_quantity": 9, "chance": 0.25},
+        {"item_definition_id": "item:material:34fd6a87af72", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:1916f1df829a", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:82b550887686", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25}
+      ]
+    },
+    {
+      "monster_id": "glory_monster_025", "display_name": "嗜血的甲壳奥姆虫",
+      "drops": [
+        {"item_definition_id": "item:material:deb4b85e31bd", "minimum_quantity": 1, "maximum_quantity": 3, "chance": 0.25},
+        {"item_definition_id": "low_grade_quadruped_shell", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:485f08ad24d4", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "low_grade_energy_pack", "minimum_quantity": 3, "maximum_quantity": 9, "chance": 0.25},
+        {"item_definition_id": "item:material:34fd6a87af72", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:f7c412f12300", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:95aa2445915e", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25}
+      ]
+    },
+    {
+      "monster_id": "glory_monster_026", "display_name": "暴戾的艾格丝虫",
+      "drops": [
+        {"item_definition_id": "item:material:deb4b85e31bd", "minimum_quantity": 1, "maximum_quantity": 3, "chance": 0.25},
+        {"item_definition_id": "low_grade_quadruped_shell", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:485f08ad24d4", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:b76edad9fa8e", "minimum_quantity": 1, "maximum_quantity": 3, "chance": 0.25},
+        {"item_definition_id": "low_grade_energy_pack", "minimum_quantity": 3, "maximum_quantity": 9, "chance": 0.25},
+        {"item_definition_id": "item:material:34fd6a87af72", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:558e8a4df8ad", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:1916f1df829a", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:f7c412f12300", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25}
+      ]
+    },
+    {
+      "monster_id": "glory_monster_027", "display_name": "温和的骷髅龙",
+      "drops": [
+        {"item_definition_id": "item:material:deb4b85e31bd", "minimum_quantity": 1, "maximum_quantity": 3, "chance": 0.25},
+        {"item_definition_id": "low_grade_quadruped_shell", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:485f08ad24d4", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:b76edad9fa8e", "minimum_quantity": 1, "maximum_quantity": 3, "chance": 0.25},
+        {"item_definition_id": "low_grade_energy_pack", "minimum_quantity": 3, "maximum_quantity": 9, "chance": 0.25},
+        {"item_definition_id": "item:material:34fd6a87af72", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:558e8a4df8ad", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:1916f1df829a", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:f7c412f12300", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25}
+      ]
+    },
+    {
+      "monster_id": "glory_monster_028", "display_name": "撒玛士兵",
+      "drops": [
+        {"item_definition_id": "item:material:3481b7371d1e", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:e24d172fada7", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:02212ea88168", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:5dbe93b102a3", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "low_grade_energy_pack", "minimum_quantity": 3, "maximum_quantity": 9, "chance": 0.25},
+        {"item_definition_id": "item:material:34fd6a87af72", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:d2a1d9d06fbc", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25}
+      ]
+    },
+    {
+      "monster_id": "glory_monster_029", "display_name": "自走车",
+      "drops": [
+        {"item_definition_id": "item:material:e24d172fada7", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:f046399c4dff", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:198e40429499", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:5dbe93b102a3", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "low_grade_energy_pack", "minimum_quantity": 3, "maximum_quantity": 9, "chance": 0.25},
+        {"item_definition_id": "item:material:34fd6a87af72", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:82b550887686", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25}
+      ]
+    },
+    {
+      "monster_id": "glory_monster_030", "display_name": "鱼鳞战车",
+      "drops": [
+        {"item_definition_id": "item:material:3481b7371d1e", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:e24d172fada7", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "low_grade_energy_pack", "minimum_quantity": 1, "maximum_quantity": 9, "chance": 0.25},
+        {"item_definition_id": "item:material:5dbe93b102a3", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:34fd6a87af72", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:95aa2445915e", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25}
+      ]
+    },
+    {
+      "monster_id": "glory_monster_031", "display_name": "韦德战车",
+      "drops": [
+        {"item_definition_id": "low_grade_energy_pack", "minimum_quantity": 1, "maximum_quantity": 9, "chance": 0.25},
+        {"item_definition_id": "item:material:47b24f797e14", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:02212ea88168", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:3481b7371d1e", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:5dbe93b102a3", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:34fd6a87af72", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:bc5a18415358", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:d2a1d9d06fbc", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:073e4b22d062", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:bba50542ed38", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:049296cd8264", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:b517321630b8", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25}
+      ]
+    },
+    {
+      "monster_id": "glory_monster_032", "display_name": "撒玛卫士",
+      "drops": [
+        {"item_definition_id": "item:material:47b24f797e14", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:02212ea88168", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "low_grade_energy_pack", "minimum_quantity": 1, "maximum_quantity": 9, "chance": 0.25},
+        {"item_definition_id": "item:material:5dbe93b102a3", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:34fd6a87af72", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:bc5a18415358", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:82b550887686", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:d247fd43ad3c", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:bba50542ed38", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:049296cd8264", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:b517321630b8", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25}
+      ]
+    },
+    {
+      "monster_id": "glory_monster_033", "display_name": "警觉的骷髅龙",
+      "drops": [
+        {"item_definition_id": "item:material:deb4b85e31bd", "minimum_quantity": 2, "maximum_quantity": 6, "chance": 0.25},
+        {"item_definition_id": "item:material:99d2d25d7142", "minimum_quantity": 1, "maximum_quantity": 3, "chance": 0.25},
+        {"item_definition_id": "item:material:b76edad9fa8e", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:5dbe93b102a3", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "low_grade_energy_pack", "minimum_quantity": 5, "maximum_quantity": 15, "chance": 0.25},
+        {"item_definition_id": "item:material:34fd6a87af72", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:bc5a18415358", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:95aa2445915e", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:093a64c39287", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:bba50542ed38", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:049296cd8264", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:b517321630b8", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25}
+      ]
+    },
+    {
+      "monster_id": "glory_monster_034", "display_name": "撒玛近卫军",
+      "drops": [
+        {"item_definition_id": "item:material:47b24f797e14", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:02212ea88168", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "low_grade_energy_pack", "minimum_quantity": 1, "maximum_quantity": 15, "chance": 0.25},
+        {"item_definition_id": "item:material:5dbe93b102a3", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:34fd6a87af72", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:bc5a18415358", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:d2a1d9d06fbc", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:073e4b22d062", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:bba50542ed38", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:049296cd8264", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:b517321630b8", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25}
+      ]
+    },
+    {
+      "monster_id": "glory_monster_035", "display_name": "冷酷的撒玛士兵",
+      "drops": [
+        {"item_definition_id": "item:material:3481b7371d1e", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:f046399c4dff", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:e24d172fada7", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "low_grade_energy_pack", "minimum_quantity": 1, "maximum_quantity": 15, "chance": 0.25},
+        {"item_definition_id": "item:material:5dbe93b102a3", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:34fd6a87af72", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:bc5a18415358", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:82b550887686", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:d247fd43ad3c", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:bba50542ed38", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:049296cd8264", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:b517321630b8", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25}
+      ]
+    },
+    {
+      "monster_id": "glory_monster_036", "display_name": "熔岩",
+      "drops": [
+        {"item_definition_id": "low_grade_energy_pack", "minimum_quantity": 1, "maximum_quantity": 15, "chance": 0.25},
+        {"item_definition_id": "low_grade_energy_catalyst", "minimum_quantity": 1, "maximum_quantity": 3, "chance": 0.25},
+        {"item_definition_id": "item:material:fa905bea2130", "minimum_quantity": 1, "maximum_quantity": 3, "chance": 0.25},
+        {"item_definition_id": "item:material:02212ea88168", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:5dbe93b102a3", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:34fd6a87af72", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:bc5a18415358", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:95aa2445915e", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:093a64c39287", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:fdae75215694", "minimum_quantity": 1, "maximum_quantity": 5, "chance": 0.25},
+        {"item_definition_id": "item:material:bba50542ed38", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:049296cd8264", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:b517321630b8", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25}
+      ]
+    },
+    {
+      "monster_id": "glory_monster_037", "display_name": "暴戾的骷髅龙",
+      "drops": [
+        {"item_definition_id": "item:material:b76edad9fa8e", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:485f08ad24d4", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:99d2d25d7142", "minimum_quantity": 1, "maximum_quantity": 3, "chance": 0.25},
+        {"item_definition_id": "item:material:5dbe93b102a3", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "low_grade_energy_pack", "minimum_quantity": 5, "maximum_quantity": 15, "chance": 0.25},
+        {"item_definition_id": "item:material:34fd6a87af72", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:bc5a18415358", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:d2a1d9d06fbc", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:073e4b22d062", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:bba50542ed38", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:049296cd8264", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:b517321630b8", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25}
+      ]
+    },
+    {
+      "monster_id": "glory_monster_038", "display_name": "警觉的鱼鳞战车",
+      "drops": [
+        {"item_definition_id": "item:material:3481b7371d1e", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:e24d172fada7", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "low_grade_energy_pack", "minimum_quantity": 1, "maximum_quantity": 15, "chance": 0.25},
+        {"item_definition_id": "item:material:5dbe93b102a3", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:34fd6a87af72", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:bc5a18415358", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:82b550887686", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:d247fd43ad3c", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:bba50542ed38", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:049296cd8264", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:b517321630b8", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25}
+      ]
+    },
+    {
+      "monster_id": "glory_monster_039", "display_name": "血腥的撒玛士兵",
+      "drops": [
+        {"item_definition_id": "low_grade_energy_pack", "minimum_quantity": 1, "maximum_quantity": 15, "chance": 0.25},
+        {"item_definition_id": "item:material:3481b7371d1e", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:198e40429499", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:e24d172fada7", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:5dbe93b102a3", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:34fd6a87af72", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:bc5a18415358", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:95aa2445915e", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:093a64c39287", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:bba50542ed38", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:049296cd8264", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:b517321630b8", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25}
+      ]
+    },
+    {
+      "monster_id": "glory_monster_040", "display_name": "沙蝎",
+      "drops": [
+        {"item_definition_id": "item:material:b76edad9fa8e", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:485f08ad24d4", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:47b24f797e14", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:99d2d25d7142", "minimum_quantity": 1, "maximum_quantity": 3, "chance": 0.25},
+        {"item_definition_id": "item:material:5dbe93b102a3", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "low_grade_energy_pack", "minimum_quantity": 5, "maximum_quantity": 15, "chance": 0.25},
+        {"item_definition_id": "item:material:34fd6a87af72", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:bc5a18415358", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:d2a1d9d06fbc", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:82b550887686", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:95aa2445915e", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:bba50542ed38", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:049296cd8264", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:b517321630b8", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25}
+      ]
+    },
+    {
+      "monster_id": "glory_monster_041", "display_name": "暴戾的鱼鳞战车",
+      "drops": [
+        {"item_definition_id": "item:material:e24d172fada7", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "low_grade_energy_pack", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:198e40429499", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:f046399c4dff", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:5dbe93b102a3", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:cfa52e059e34", "minimum_quantity": 3, "maximum_quantity": 6, "chance": 0.25},
+        {"item_definition_id": "item:material:bc5a18415358", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:073e4b22d062", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:bba50542ed38", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:049296cd8264", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:b517321630b8", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25}
+      ]
+    },
+    {
+      "monster_id": "glory_monster_042", "display_name": "嗜血的撒玛卫士",
+      "drops": [
+        {"item_definition_id": "low_grade_energy_pack", "minimum_quantity": 1, "maximum_quantity": 15, "chance": 0.25},
+        {"item_definition_id": "item:material:02212ea88168", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:198e40429499", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:f046399c4dff", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:5dbe93b102a3", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:cfa52e059e34", "minimum_quantity": 3, "maximum_quantity": 6, "chance": 0.25},
+        {"item_definition_id": "item:material:bc5a18415358", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:d247fd43ad3c", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:bba50542ed38", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:049296cd8264", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:b517321630b8", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25}
+      ]
+    },
+    {
+      "monster_id": "glory_monster_043", "display_name": "暴戾的撒玛近卫军",
+      "drops": [
+        {"item_definition_id": "low_grade_energy_pack", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:47b24f797e14", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:198e40429499", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:f046399c4dff", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:5dbe93b102a3", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:cfa52e059e34", "minimum_quantity": 3, "maximum_quantity": 6, "chance": 0.25},
+        {"item_definition_id": "item:material:bc5a18415358", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:093a64c39287", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:bba50542ed38", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:049296cd8264", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:b517321630b8", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25}
+      ]
+    },
+    {
+      "monster_id": "glory_monster_044", "display_name": "钢锁",
+      "drops": [
+        {"item_definition_id": "item:material:02212ea88168", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:e24d172fada7", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:f046399c4dff", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:198e40429499", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "low_grade_energy_pack", "minimum_quantity": 1, "maximum_quantity": 2, "chance": 0.25},
+        {"item_definition_id": "item:material:5dbe93b102a3", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:cfa52e059e34", "minimum_quantity": 4, "maximum_quantity": 8, "chance": 0.25},
+        {"item_definition_id": "item:material:bc5a18415358", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:f3fe549c15c1", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:073e4b22d062", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:d247fd43ad3c", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:093a64c39287", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:f65184d5f9b2", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:a7bccd7c1408", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:794588abb6cf", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:d690c44b6030", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:a095c982b884", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:c0cad9b715fb", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:7dd51398ea4c", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:78f2a523a761", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:1d49c09bf017", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:43ed7eecc949", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:ee509dbc2244", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:f5fe4a61399b", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:9a81c6572eee", "minimum_quantity": 1, "maximum_quantity": 2, "chance": 0.25},
+        {"item_definition_id": "item:material:17500b513d35", "minimum_quantity": 1, "maximum_quantity": 2, "chance": 0.25},
+        {"item_definition_id": "item:material:d407556cd129", "minimum_quantity": 1, "maximum_quantity": 2, "chance": 0.25},
+        {"item_definition_id": "item:material:bba50542ed38", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:049296cd8264", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:6bce58752c7d", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:77157411f2c7", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:583a985508e9", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:beb673694521", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:f1a46cb86792", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:760ebf2df00d", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:71548d3aa10f", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:abb79c50c89f", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:33d330a61be3", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:e283667ae437", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:b517321630b8", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:062a265c9544", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:3ed7f1287e45", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:743ceffa7af7", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25}
+      ]
+    },
+    {
+      "monster_id": "glory_monster_045", "display_name": "猛犸战车",
+      "drops": [
+        {"item_definition_id": "item:material:02212ea88168", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:3481b7371d1e", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:e24d172fada7", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "low_grade_energy_pack", "minimum_quantity": 1, "maximum_quantity": 2, "chance": 0.25},
+        {"item_definition_id": "item:material:5dbe93b102a3", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:cfa52e059e34", "minimum_quantity": 4, "maximum_quantity": 8, "chance": 0.25},
+        {"item_definition_id": "item:material:bc5a18415358", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:f3fe549c15c1", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:073e4b22d062", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:d247fd43ad3c", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:093a64c39287", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:f65184d5f9b2", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:a7bccd7c1408", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:794588abb6cf", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:d690c44b6030", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:a095c982b884", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:c0cad9b715fb", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:7dd51398ea4c", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:78f2a523a761", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:1d49c09bf017", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:43ed7eecc949", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:ee509dbc2244", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:f5fe4a61399b", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:9a81c6572eee", "minimum_quantity": 1, "maximum_quantity": 2, "chance": 0.25},
+        {"item_definition_id": "item:material:17500b513d35", "minimum_quantity": 1, "maximum_quantity": 2, "chance": 0.25},
+        {"item_definition_id": "item:material:d407556cd129", "minimum_quantity": 1, "maximum_quantity": 2, "chance": 0.25},
+        {"item_definition_id": "item:material:bba50542ed38", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:049296cd8264", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:6bce58752c7d", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:77157411f2c7", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:583a985508e9", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:beb673694521", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:f1a46cb86792", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:760ebf2df00d", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:71548d3aa10f", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:abb79c50c89f", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:33d330a61be3", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:e283667ae437", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:b517321630b8", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:062a265c9544", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:3ed7f1287e45", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:743ceffa7af7", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25}
+      ]
+    },
+    {
+      "monster_id": "glory_monster_046", "display_name": "机器爬虫",
+      "drops": [
+        {"item_definition_id": "item:material:47b24f797e14", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:3481b7371d1e", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:e24d172fada7", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "low_grade_energy_pack", "minimum_quantity": 1, "maximum_quantity": 2, "chance": 0.25},
+        {"item_definition_id": "item:material:5dbe93b102a3", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:cfa52e059e34", "minimum_quantity": 4, "maximum_quantity": 8, "chance": 0.25},
+        {"item_definition_id": "item:material:bc5a18415358", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:f3fe549c15c1", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:073e4b22d062", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:d247fd43ad3c", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:093a64c39287", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:f65184d5f9b2", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:a7bccd7c1408", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:794588abb6cf", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:d690c44b6030", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:a095c982b884", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:c0cad9b715fb", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:7dd51398ea4c", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:78f2a523a761", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:1d49c09bf017", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:43ed7eecc949", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:ee509dbc2244", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:f5fe4a61399b", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:9a81c6572eee", "minimum_quantity": 1, "maximum_quantity": 2, "chance": 0.25},
+        {"item_definition_id": "item:material:17500b513d35", "minimum_quantity": 1, "maximum_quantity": 2, "chance": 0.25},
+        {"item_definition_id": "item:material:d407556cd129", "minimum_quantity": 1, "maximum_quantity": 2, "chance": 0.25},
+        {"item_definition_id": "item:material:bba50542ed38", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:049296cd8264", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:6bce58752c7d", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:77157411f2c7", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:583a985508e9", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:beb673694521", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:f1a46cb86792", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:760ebf2df00d", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:71548d3aa10f", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:abb79c50c89f", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:33d330a61be3", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:e283667ae437", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:b517321630b8", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:062a265c9544", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:3ed7f1287e45", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:743ceffa7af7", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:9713f13ede8d", "minimum_quantity": 1, "maximum_quantity": 3, "chance": 0.75}
+      ]
+    },
+    {
+      "monster_id": "glory_monster_047", "display_name": "安格列蛛",
+      "drops": [
+        {"item_definition_id": "item:material:47b24f797e14", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:3481b7371d1e", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:e24d172fada7", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "low_grade_energy_pack", "minimum_quantity": 1, "maximum_quantity": 2, "chance": 0.25},
+        {"item_definition_id": "item:material:5dbe93b102a3", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:cfa52e059e34", "minimum_quantity": 4, "maximum_quantity": 8, "chance": 0.25},
+        {"item_definition_id": "item:material:bc5a18415358", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:f3fe549c15c1", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:073e4b22d062", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:d247fd43ad3c", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:093a64c39287", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:f65184d5f9b2", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:a7bccd7c1408", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:794588abb6cf", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:d690c44b6030", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:a095c982b884", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:c0cad9b715fb", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:7dd51398ea4c", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:78f2a523a761", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:1d49c09bf017", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:43ed7eecc949", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:ee509dbc2244", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:f5fe4a61399b", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:9a81c6572eee", "minimum_quantity": 1, "maximum_quantity": 2, "chance": 0.25},
+        {"item_definition_id": "item:material:17500b513d35", "minimum_quantity": 1, "maximum_quantity": 2, "chance": 0.25},
+        {"item_definition_id": "item:material:d407556cd129", "minimum_quantity": 1, "maximum_quantity": 2, "chance": 0.25},
+        {"item_definition_id": "item:material:bba50542ed38", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:049296cd8264", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:6bce58752c7d", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:77157411f2c7", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:583a985508e9", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:beb673694521", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:f1a46cb86792", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:760ebf2df00d", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:71548d3aa10f", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:abb79c50c89f", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:33d330a61be3", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:e283667ae437", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:b517321630b8", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:062a265c9544", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:3ed7f1287e45", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:743ceffa7af7", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25}
+      ]
+    },
+    {
+      "monster_id": "glory_monster_048", "display_name": "悬浮兵",
+      "drops": [
+        {"item_definition_id": "item:material:02212ea88168", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:99d2d25d7142", "minimum_quantity": 2, "maximum_quantity": 4, "chance": 0.25},
+        {"item_definition_id": "item:material:cfa52e059e34", "minimum_quantity": 3, "maximum_quantity": 9, "chance": 0.25},
+        {"item_definition_id": "item:material:f65184d5f9b2", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25}
+      ]
+    },
+    {
+      "monster_id": "glory_monster_049", "display_name": "机枪兵",
+      "drops": [
+        {"item_definition_id": "item:material:f046399c4dff", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:fa5a837875bb", "minimum_quantity": 2, "maximum_quantity": 4, "chance": 0.25},
+        {"item_definition_id": "item:material:cfa52e059e34", "minimum_quantity": 3, "maximum_quantity": 9, "chance": 0.25},
+        {"item_definition_id": "item:material:f65184d5f9b2", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25}
+      ]
+    },
+    {
+      "monster_id": "glory_monster_050", "display_name": "机械兵",
+      "drops": [
+        {"item_definition_id": "item:material:47b24f797e14", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:fdae75215694", "minimum_quantity": 2, "maximum_quantity": 4, "chance": 0.25},
+        {"item_definition_id": "item:material:7e5440c2f103", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:3e5df1aed65c", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:cfa52e059e34", "minimum_quantity": 3, "maximum_quantity": 9, "chance": 0.25},
+        {"item_definition_id": "item:material:f65184d5f9b2", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25}
+      ]
+    },
+    {
+      "monster_id": "glory_monster_051", "display_name": "重机甲",
+      "drops": [
+        {"item_definition_id": "item:material:e24d172fada7", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:485f08ad24d4", "minimum_quantity": 2, "maximum_quantity": 4, "chance": 0.25},
+        {"item_definition_id": "item:material:7e5440c2f103", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:3e5df1aed65c", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:cfa52e059e34", "minimum_quantity": 3, "maximum_quantity": 9, "chance": 0.25},
+        {"item_definition_id": "item:material:f65184d5f9b2", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25}
+      ]
+    },
+    {
+      "monster_id": "glory_monster_052", "display_name": "多足怪",
+      "drops": [
+        {"item_definition_id": "item:material:3481b7371d1e", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:fdae75215694", "minimum_quantity": 2, "maximum_quantity": 4, "chance": 0.25},
+        {"item_definition_id": "item:material:dc8a42c2781e", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:a4f7cbe44e92", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:cfa52e059e34", "minimum_quantity": 3, "maximum_quantity": 9, "chance": 0.25},
+        {"item_definition_id": "item:material:f65184d5f9b2", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25}
+      ]
+    },
+    {
+      "monster_id": "glory_monster_053", "display_name": "狂暴甲",
+      "drops": [
+        {"item_definition_id": "item:material:198e40429499", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:fdae75215694", "minimum_quantity": 2, "maximum_quantity": 4, "chance": 0.25},
+        {"item_definition_id": "item:material:7e5440c2f103", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:3e5df1aed65c", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:cfa52e059e34", "minimum_quantity": 3, "maximum_quantity": 9, "chance": 0.25},
+        {"item_definition_id": "item:material:f65184d5f9b2", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25}
+      ]
+    },
+    {
+      "monster_id": "glory_monster_054", "display_name": "威猛的水晶吞噬者",
+      "drops": [
+        {"item_definition_id": "item:material:47b24f797e14", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:f046399c4dff", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:198e40429499", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:02212ea88168", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:3481b7371d1e", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:e24d172fada7", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:cfa52e059e34", "minimum_quantity": 4, "maximum_quantity": 8, "chance": 0.25},
+        {"item_definition_id": "item:material:bc5a18415358", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:f3fe549c15c1", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:073e4b22d062", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:d247fd43ad3c", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:093a64c39287", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:f65184d5f9b2", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:a7bccd7c1408", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:794588abb6cf", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:d690c44b6030", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:a095c982b884", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:c0cad9b715fb", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:7dd51398ea4c", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:78f2a523a761", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:1d49c09bf017", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:43ed7eecc949", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:ee509dbc2244", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:f5fe4a61399b", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:9a81c6572eee", "minimum_quantity": 1, "maximum_quantity": 2, "chance": 0.25},
+        {"item_definition_id": "item:material:17500b513d35", "minimum_quantity": 1, "maximum_quantity": 2, "chance": 0.25},
+        {"item_definition_id": "item:material:d407556cd129", "minimum_quantity": 1, "maximum_quantity": 2, "chance": 0.25},
+        {"item_definition_id": "item:material:bba50542ed38", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:049296cd8264", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:6bce58752c7d", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:77157411f2c7", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:583a985508e9", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:beb673694521", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:f1a46cb86792", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:760ebf2df00d", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:71548d3aa10f", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:f6487f0e04b8", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:5773d6d74168", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:390575d3e7c8", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:a55a9a5d270a", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:7df65e194766", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:abb79c50c89f", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:33d330a61be3", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:e283667ae437", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:920f37756918", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:6ac284bb6c59", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:f5ec2ce95368", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:d6e5deb49f86", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:0465103df5d2", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:062a265c9544", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:3ed7f1287e45", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:743ceffa7af7", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25}
+      ]
+    },
+    {
+      "monster_id": "glory_monster_055", "display_name": "凶恶的水晶吞噬者",
+      "drops": [
+        {"item_definition_id": "item:material:47b24f797e14", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:f046399c4dff", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:198e40429499", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:02212ea88168", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:3481b7371d1e", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:e24d172fada7", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:cfa52e059e34", "minimum_quantity": 4, "maximum_quantity": 8, "chance": 0.25},
+        {"item_definition_id": "item:material:bc5a18415358", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:f3fe549c15c1", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:073e4b22d062", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:d247fd43ad3c", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:093a64c39287", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:f65184d5f9b2", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:a7bccd7c1408", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:794588abb6cf", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:d690c44b6030", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:a095c982b884", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:c0cad9b715fb", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:7dd51398ea4c", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:78f2a523a761", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:1d49c09bf017", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:43ed7eecc949", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:ee509dbc2244", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:f5fe4a61399b", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:9a81c6572eee", "minimum_quantity": 1, "maximum_quantity": 2, "chance": 0.25},
+        {"item_definition_id": "item:material:17500b513d35", "minimum_quantity": 1, "maximum_quantity": 2, "chance": 0.25},
+        {"item_definition_id": "item:material:d407556cd129", "minimum_quantity": 1, "maximum_quantity": 2, "chance": 0.25},
+        {"item_definition_id": "item:material:bba50542ed38", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:049296cd8264", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:6bce58752c7d", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:77157411f2c7", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:583a985508e9", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:beb673694521", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:f1a46cb86792", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:760ebf2df00d", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:71548d3aa10f", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:f6487f0e04b8", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:5773d6d74168", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:390575d3e7c8", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:a55a9a5d270a", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:7df65e194766", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:abb79c50c89f", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:33d330a61be3", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:e283667ae437", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:920f37756918", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:6ac284bb6c59", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:f5ec2ce95368", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:d6e5deb49f86", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:0465103df5d2", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:062a265c9544", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:3ed7f1287e45", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:743ceffa7af7", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25}
+      ]
+    },
+    {
+      "monster_id": "glory_monster_056", "display_name": "嗜血的水晶变异者",
+      "drops": [
+        {"item_definition_id": "item:material:47b24f797e14", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:f046399c4dff", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:198e40429499", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:02212ea88168", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:3481b7371d1e", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:e24d172fada7", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:cfa52e059e34", "minimum_quantity": 4, "maximum_quantity": 8, "chance": 0.25},
+        {"item_definition_id": "item:material:bc5a18415358", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:f3fe549c15c1", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:073e4b22d062", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:d247fd43ad3c", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:093a64c39287", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:f65184d5f9b2", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:a7bccd7c1408", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:794588abb6cf", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:d690c44b6030", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:a095c982b884", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:c0cad9b715fb", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:7dd51398ea4c", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:78f2a523a761", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:1d49c09bf017", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:43ed7eecc949", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:ee509dbc2244", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:f5fe4a61399b", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:9a81c6572eee", "minimum_quantity": 1, "maximum_quantity": 2, "chance": 0.25},
+        {"item_definition_id": "item:material:17500b513d35", "minimum_quantity": 1, "maximum_quantity": 2, "chance": 0.25},
+        {"item_definition_id": "item:material:d407556cd129", "minimum_quantity": 1, "maximum_quantity": 2, "chance": 0.25},
+        {"item_definition_id": "item:material:bba50542ed38", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:049296cd8264", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:6bce58752c7d", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:77157411f2c7", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:583a985508e9", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:beb673694521", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:f1a46cb86792", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:760ebf2df00d", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:71548d3aa10f", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:f6487f0e04b8", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:5773d6d74168", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:390575d3e7c8", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:a55a9a5d270a", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:7df65e194766", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:abb79c50c89f", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:33d330a61be3", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:e283667ae437", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:920f37756918", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:6ac284bb6c59", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:f5ec2ce95368", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:d6e5deb49f86", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:0465103df5d2", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:062a265c9544", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:3ed7f1287e45", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:743ceffa7af7", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25}
+      ]
+    },
+    {
+      "monster_id": "glory_monster_057", "display_name": "残忍的水晶变异者",
+      "drops": [
+        {"item_definition_id": "item:material:47b24f797e14", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:f046399c4dff", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:198e40429499", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:02212ea88168", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:3481b7371d1e", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:e24d172fada7", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:cfa52e059e34", "minimum_quantity": 4, "maximum_quantity": 8, "chance": 0.25},
+        {"item_definition_id": "item:material:bc5a18415358", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:f3fe549c15c1", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:073e4b22d062", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:d247fd43ad3c", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:093a64c39287", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:f65184d5f9b2", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:a7bccd7c1408", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:794588abb6cf", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:d690c44b6030", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:a095c982b884", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:c0cad9b715fb", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:7dd51398ea4c", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:78f2a523a761", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:1d49c09bf017", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:43ed7eecc949", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:ee509dbc2244", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:f5fe4a61399b", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:9a81c6572eee", "minimum_quantity": 1, "maximum_quantity": 2, "chance": 0.25},
+        {"item_definition_id": "item:material:17500b513d35", "minimum_quantity": 1, "maximum_quantity": 2, "chance": 0.25},
+        {"item_definition_id": "item:material:d407556cd129", "minimum_quantity": 1, "maximum_quantity": 2, "chance": 0.25},
+        {"item_definition_id": "item:material:bba50542ed38", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:049296cd8264", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:6bce58752c7d", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:77157411f2c7", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:583a985508e9", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:beb673694521", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:f1a46cb86792", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:760ebf2df00d", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:71548d3aa10f", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:f6487f0e04b8", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:5773d6d74168", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:390575d3e7c8", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:a55a9a5d270a", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:7df65e194766", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:abb79c50c89f", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:33d330a61be3", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:e283667ae437", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:920f37756918", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:6ac284bb6c59", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:f5ec2ce95368", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:d6e5deb49f86", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:0465103df5d2", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:062a265c9544", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:3ed7f1287e45", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:743ceffa7af7", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25}
+      ]
+    },
+    {
+      "monster_id": "glory_monster_058", "display_name": "狂暴的水晶破坏者",
+      "drops": [
+        {"item_definition_id": "item:material:47b24f797e14", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:f046399c4dff", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:198e40429499", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:02212ea88168", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:3481b7371d1e", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:e24d172fada7", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:cfa52e059e34", "minimum_quantity": 4, "maximum_quantity": 8, "chance": 0.25},
+        {"item_definition_id": "item:material:bc5a18415358", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:f3fe549c15c1", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:073e4b22d062", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:d247fd43ad3c", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:093a64c39287", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:f65184d5f9b2", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:a7bccd7c1408", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:794588abb6cf", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:d690c44b6030", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:a095c982b884", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:c0cad9b715fb", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:7dd51398ea4c", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:78f2a523a761", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:1d49c09bf017", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:43ed7eecc949", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:ee509dbc2244", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:f5fe4a61399b", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:9a81c6572eee", "minimum_quantity": 1, "maximum_quantity": 2, "chance": 0.25},
+        {"item_definition_id": "item:material:17500b513d35", "minimum_quantity": 1, "maximum_quantity": 2, "chance": 0.25},
+        {"item_definition_id": "item:material:d407556cd129", "minimum_quantity": 1, "maximum_quantity": 2, "chance": 0.25},
+        {"item_definition_id": "item:material:bba50542ed38", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:049296cd8264", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:6bce58752c7d", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:77157411f2c7", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:583a985508e9", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:beb673694521", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:f1a46cb86792", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:760ebf2df00d", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:71548d3aa10f", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:f6487f0e04b8", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:5773d6d74168", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:390575d3e7c8", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:a55a9a5d270a", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:7df65e194766", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:abb79c50c89f", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:33d330a61be3", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:e283667ae437", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:920f37756918", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:6ac284bb6c59", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:f5ec2ce95368", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:d6e5deb49f86", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:0465103df5d2", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:062a265c9544", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:3ed7f1287e45", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:743ceffa7af7", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25}
+      ]
+    },
+    {
+      "monster_id": "glory_monster_059", "display_name": "冷酷的水晶破坏者",
+      "drops": [
+        {"item_definition_id": "item:material:47b24f797e14", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:f046399c4dff", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:198e40429499", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:02212ea88168", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:3481b7371d1e", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:e24d172fada7", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:cfa52e059e34", "minimum_quantity": 4, "maximum_quantity": 8, "chance": 0.25},
+        {"item_definition_id": "item:material:bc5a18415358", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:f3fe549c15c1", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:073e4b22d062", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:d247fd43ad3c", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:093a64c39287", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:f65184d5f9b2", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:a7bccd7c1408", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:794588abb6cf", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:d690c44b6030", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:a095c982b884", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:c0cad9b715fb", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:7dd51398ea4c", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:78f2a523a761", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:1d49c09bf017", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:43ed7eecc949", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:ee509dbc2244", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:f5fe4a61399b", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:9a81c6572eee", "minimum_quantity": 1, "maximum_quantity": 2, "chance": 0.25},
+        {"item_definition_id": "item:material:17500b513d35", "minimum_quantity": 1, "maximum_quantity": 2, "chance": 0.25},
+        {"item_definition_id": "item:material:d407556cd129", "minimum_quantity": 1, "maximum_quantity": 2, "chance": 0.25},
+        {"item_definition_id": "item:material:bba50542ed38", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:049296cd8264", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:6bce58752c7d", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:77157411f2c7", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:583a985508e9", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:beb673694521", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:f1a46cb86792", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:760ebf2df00d", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:71548d3aa10f", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:f6487f0e04b8", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:5773d6d74168", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:390575d3e7c8", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:a55a9a5d270a", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:7df65e194766", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:abb79c50c89f", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:33d330a61be3", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:e283667ae437", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:920f37756918", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:6ac284bb6c59", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:f5ec2ce95368", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:d6e5deb49f86", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:0465103df5d2", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:062a265c9544", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:3ed7f1287e45", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:743ceffa7af7", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25}
+      ]
+    },
+    {
+      "monster_id": "glory_monster_060", "display_name": "威猛的水晶吞噬者(精英)",
+      "drops": [
+        {"item_definition_id": "item:material:47b24f797e14", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:f046399c4dff", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:198e40429499", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:02212ea88168", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:3481b7371d1e", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:e24d172fada7", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:cfa52e059e34", "minimum_quantity": 4, "maximum_quantity": 8, "chance": 0.25},
+        {"item_definition_id": "item:material:bc5a18415358", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:f3fe549c15c1", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:073e4b22d062", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:d247fd43ad3c", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:093a64c39287", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:f65184d5f9b2", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:a7bccd7c1408", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:794588abb6cf", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:d690c44b6030", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:a095c982b884", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:c0cad9b715fb", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:7dd51398ea4c", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:78f2a523a761", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:1d49c09bf017", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:43ed7eecc949", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:ee509dbc2244", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:f5fe4a61399b", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:9a81c6572eee", "minimum_quantity": 1, "maximum_quantity": 2, "chance": 0.25},
+        {"item_definition_id": "item:material:17500b513d35", "minimum_quantity": 1, "maximum_quantity": 2, "chance": 0.25},
+        {"item_definition_id": "item:material:d407556cd129", "minimum_quantity": 1, "maximum_quantity": 2, "chance": 0.25},
+        {"item_definition_id": "item:material:bba50542ed38", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:049296cd8264", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:6bce58752c7d", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:77157411f2c7", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:583a985508e9", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:beb673694521", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:f1a46cb86792", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:760ebf2df00d", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:71548d3aa10f", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:f6487f0e04b8", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:5773d6d74168", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:390575d3e7c8", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:a55a9a5d270a", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:7df65e194766", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:abb79c50c89f", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:33d330a61be3", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:e283667ae437", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:920f37756918", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:6ac284bb6c59", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:f5ec2ce95368", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:d6e5deb49f86", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:0465103df5d2", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:062a265c9544", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:3ed7f1287e45", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:743ceffa7af7", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25}
+      ]
+    },
+    {
+      "monster_id": "glory_monster_061", "display_name": "凶恶的水晶吞噬者(精英)",
+      "drops": [
+        {"item_definition_id": "item:material:47b24f797e14", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:f046399c4dff", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:198e40429499", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:02212ea88168", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:3481b7371d1e", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:e24d172fada7", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:cfa52e059e34", "minimum_quantity": 4, "maximum_quantity": 8, "chance": 0.25},
+        {"item_definition_id": "item:material:bc5a18415358", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:f3fe549c15c1", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:073e4b22d062", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:d247fd43ad3c", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:093a64c39287", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:f65184d5f9b2", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:a7bccd7c1408", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:794588abb6cf", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:d690c44b6030", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:a095c982b884", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:c0cad9b715fb", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:7dd51398ea4c", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:78f2a523a761", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:1d49c09bf017", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:43ed7eecc949", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:ee509dbc2244", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:f5fe4a61399b", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:9a81c6572eee", "minimum_quantity": 1, "maximum_quantity": 2, "chance": 0.25},
+        {"item_definition_id": "item:material:17500b513d35", "minimum_quantity": 1, "maximum_quantity": 2, "chance": 0.25},
+        {"item_definition_id": "item:material:d407556cd129", "minimum_quantity": 1, "maximum_quantity": 2, "chance": 0.25},
+        {"item_definition_id": "item:material:bba50542ed38", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:049296cd8264", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:6bce58752c7d", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:77157411f2c7", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:583a985508e9", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:beb673694521", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:f1a46cb86792", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:760ebf2df00d", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:71548d3aa10f", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:f6487f0e04b8", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:5773d6d74168", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:390575d3e7c8", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:a55a9a5d270a", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:7df65e194766", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:abb79c50c89f", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:33d330a61be3", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:e283667ae437", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:920f37756918", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:6ac284bb6c59", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:f5ec2ce95368", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:d6e5deb49f86", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:0465103df5d2", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:062a265c9544", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:3ed7f1287e45", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:743ceffa7af7", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25}
+      ]
+    },
+    {
+      "monster_id": "glory_monster_062", "display_name": "嗜血的水晶变异者(精英)",
+      "drops": [
+        {"item_definition_id": "item:material:47b24f797e14", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:f046399c4dff", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:198e40429499", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:02212ea88168", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:3481b7371d1e", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:e24d172fada7", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:cfa52e059e34", "minimum_quantity": 4, "maximum_quantity": 8, "chance": 0.25},
+        {"item_definition_id": "item:material:bc5a18415358", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:f3fe549c15c1", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:073e4b22d062", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:d247fd43ad3c", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:093a64c39287", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:f65184d5f9b2", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:a7bccd7c1408", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:794588abb6cf", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:d690c44b6030", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:a095c982b884", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:c0cad9b715fb", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:7dd51398ea4c", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:78f2a523a761", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:1d49c09bf017", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:43ed7eecc949", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:ee509dbc2244", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:f5fe4a61399b", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:9a81c6572eee", "minimum_quantity": 1, "maximum_quantity": 2, "chance": 0.25},
+        {"item_definition_id": "item:material:17500b513d35", "minimum_quantity": 1, "maximum_quantity": 2, "chance": 0.25},
+        {"item_definition_id": "item:material:d407556cd129", "minimum_quantity": 1, "maximum_quantity": 2, "chance": 0.25},
+        {"item_definition_id": "item:material:bba50542ed38", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:049296cd8264", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:6bce58752c7d", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:77157411f2c7", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:583a985508e9", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:beb673694521", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:f1a46cb86792", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:760ebf2df00d", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:71548d3aa10f", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:f6487f0e04b8", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:5773d6d74168", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:390575d3e7c8", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:a55a9a5d270a", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:7df65e194766", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:abb79c50c89f", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:33d330a61be3", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:e283667ae437", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:920f37756918", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:6ac284bb6c59", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:f5ec2ce95368", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:d6e5deb49f86", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:0465103df5d2", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:062a265c9544", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:3ed7f1287e45", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:743ceffa7af7", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25}
+      ]
+    },
+    {
+      "monster_id": "glory_monster_063", "display_name": "残忍的水晶变异者(精英)",
+      "drops": [
+        {"item_definition_id": "item:material:47b24f797e14", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:f046399c4dff", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:198e40429499", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:02212ea88168", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:3481b7371d1e", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:e24d172fada7", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:cfa52e059e34", "minimum_quantity": 4, "maximum_quantity": 8, "chance": 0.25},
+        {"item_definition_id": "item:material:bc5a18415358", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:f3fe549c15c1", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:073e4b22d062", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:d247fd43ad3c", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:093a64c39287", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:f65184d5f9b2", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:a7bccd7c1408", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:794588abb6cf", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:d690c44b6030", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:a095c982b884", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:c0cad9b715fb", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:7dd51398ea4c", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:78f2a523a761", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:1d49c09bf017", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:43ed7eecc949", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:ee509dbc2244", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:f5fe4a61399b", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:9a81c6572eee", "minimum_quantity": 1, "maximum_quantity": 2, "chance": 0.25},
+        {"item_definition_id": "item:material:17500b513d35", "minimum_quantity": 1, "maximum_quantity": 2, "chance": 0.25},
+        {"item_definition_id": "item:material:d407556cd129", "minimum_quantity": 1, "maximum_quantity": 2, "chance": 0.25},
+        {"item_definition_id": "item:material:bba50542ed38", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:049296cd8264", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:6bce58752c7d", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:77157411f2c7", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:583a985508e9", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:beb673694521", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:f1a46cb86792", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:760ebf2df00d", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:71548d3aa10f", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:f6487f0e04b8", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:5773d6d74168", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:390575d3e7c8", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:a55a9a5d270a", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:7df65e194766", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:abb79c50c89f", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:33d330a61be3", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:e283667ae437", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:920f37756918", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:6ac284bb6c59", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:f5ec2ce95368", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:d6e5deb49f86", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:0465103df5d2", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:062a265c9544", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:3ed7f1287e45", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:743ceffa7af7", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25}
+      ]
+    },
+    {
+      "monster_id": "glory_monster_064", "display_name": "狂暴的水晶破坏者(精英)",
+      "drops": [
+        {"item_definition_id": "item:material:47b24f797e14", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:f046399c4dff", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:198e40429499", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:02212ea88168", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:3481b7371d1e", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:e24d172fada7", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:cfa52e059e34", "minimum_quantity": 4, "maximum_quantity": 8, "chance": 0.25},
+        {"item_definition_id": "item:material:bc5a18415358", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:f3fe549c15c1", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:073e4b22d062", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:d247fd43ad3c", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:093a64c39287", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:f65184d5f9b2", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:a7bccd7c1408", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:794588abb6cf", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:d690c44b6030", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:a095c982b884", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:c0cad9b715fb", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:7dd51398ea4c", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:78f2a523a761", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:1d49c09bf017", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:43ed7eecc949", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:ee509dbc2244", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:f5fe4a61399b", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:9a81c6572eee", "minimum_quantity": 1, "maximum_quantity": 2, "chance": 0.25},
+        {"item_definition_id": "item:material:17500b513d35", "minimum_quantity": 1, "maximum_quantity": 2, "chance": 0.25},
+        {"item_definition_id": "item:material:d407556cd129", "minimum_quantity": 1, "maximum_quantity": 2, "chance": 0.25},
+        {"item_definition_id": "item:material:bba50542ed38", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:049296cd8264", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:6bce58752c7d", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:77157411f2c7", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:583a985508e9", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:beb673694521", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:f1a46cb86792", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:760ebf2df00d", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:71548d3aa10f", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:f6487f0e04b8", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:5773d6d74168", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:390575d3e7c8", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:a55a9a5d270a", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:7df65e194766", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:abb79c50c89f", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:33d330a61be3", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:e283667ae437", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:920f37756918", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:6ac284bb6c59", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:f5ec2ce95368", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:d6e5deb49f86", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:0465103df5d2", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:062a265c9544", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:3ed7f1287e45", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:743ceffa7af7", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25}
+      ]
+    },
+    {
+      "monster_id": "glory_monster_065", "display_name": "冷酷的水晶破坏者(精英)",
+      "drops": [
+        {"item_definition_id": "item:material:47b24f797e14", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:f046399c4dff", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:198e40429499", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:02212ea88168", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:3481b7371d1e", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:e24d172fada7", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:cfa52e059e34", "minimum_quantity": 4, "maximum_quantity": 8, "chance": 0.25},
+        {"item_definition_id": "item:material:bc5a18415358", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:f3fe549c15c1", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:073e4b22d062", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:d247fd43ad3c", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:093a64c39287", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:f65184d5f9b2", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:a7bccd7c1408", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:794588abb6cf", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:d690c44b6030", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:a095c982b884", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:c0cad9b715fb", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:7dd51398ea4c", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:78f2a523a761", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:1d49c09bf017", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:43ed7eecc949", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:ee509dbc2244", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:f5fe4a61399b", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:9a81c6572eee", "minimum_quantity": 1, "maximum_quantity": 2, "chance": 0.25},
+        {"item_definition_id": "item:material:17500b513d35", "minimum_quantity": 1, "maximum_quantity": 2, "chance": 0.25},
+        {"item_definition_id": "item:material:d407556cd129", "minimum_quantity": 1, "maximum_quantity": 2, "chance": 0.25},
+        {"item_definition_id": "item:material:bba50542ed38", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:049296cd8264", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:6bce58752c7d", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:77157411f2c7", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:583a985508e9", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:beb673694521", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:f1a46cb86792", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:760ebf2df00d", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:71548d3aa10f", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:f6487f0e04b8", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:5773d6d74168", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:390575d3e7c8", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:a55a9a5d270a", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:7df65e194766", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:abb79c50c89f", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:33d330a61be3", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:e283667ae437", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:920f37756918", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:6ac284bb6c59", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:f5ec2ce95368", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:d6e5deb49f86", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:0465103df5d2", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:062a265c9544", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:3ed7f1287e45", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25},
+        {"item_definition_id": "item:material:743ceffa7af7", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25}
+      ]
+    },
+    {
+      "monster_id": "glory_monster_067", "display_name": "仿生毒胶",
+      "drops": [
+        {"item_definition_id": "low_grade_energy_pack", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25}
+      ]
+    },
+    {
+      "monster_id": "glory_monster_068", "display_name": "仿生感光质",
+      "drops": [
+        {"item_definition_id": "low_grade_energy_pack", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25}
+      ]
+    },
+    {
+      "monster_id": "glory_monster_069", "display_name": "仿生奥姆虫",
+      "drops": [
+        {"item_definition_id": "low_grade_energy_pack", "minimum_quantity": 1, "maximum_quantity": 1, "chance": 0.25}
+      ]
+    },
+    {
+      "monster_id": "glory_monster_070", "display_name": "变异毒胶",
+      "drops": [
+      ]
+    },
+    {
+      "monster_id": "glory_monster_071", "display_name": "变异感光质",
+      "drops": [
+      ]
+    },
+    {
+      "monster_id": "glory_monster_072", "display_name": "变异奥姆幼虫",
+      "drops": [
+      ]
+    },
+    {
+      "monster_id": "glory_monster_073", "display_name": "变异奥姆虫",
+      "drops": [
+      ]
+    },
+    {
+      "monster_id": "glory_monster_074", "display_name": "变异低温毒胶",
+      "drops": [
+      ]
+    },
+    {
+      "monster_id": "glory_monster_075", "display_name": "变异低温感光质",
+      "drops": [
+      ]
+    },
+    {
+      "monster_id": "glory_monster_076", "display_name": "变异毒性奥姆幼虫",
+      "drops": [
+      ]
+    },
+    {
+      "monster_id": "glory_monster_077", "display_name": "变异毒性奥姆虫",
+      "drops": [
+      ]
+    },
+    {
+      "monster_id": "glory_monster_078", "display_name": "变异恶性毒胶",
+      "drops": [
+      ]
+    },
+    {
+      "monster_id": "glory_monster_079", "display_name": "变异恶性感光质",
+      "drops": [
+      ]
+    },
+    {
+      "monster_id": "glory_monster_080", "display_name": "变异血腥奥姆幼虫",
+      "drops": [
+      ]
+    },
+    {
+      "monster_id": "glory_monster_081", "display_name": "变异胶虫",
+      "drops": [
+      ]
+    },
+    {
+      "monster_id": "glory_monster_082", "display_name": "变异罗格当虫",
+      "drops": [
+      ]
+    },
+    {
+      "monster_id": "glory_monster_083", "display_name": "变异甲壳奥姆虫",
+      "drops": [
+      ]
+    },
+    {
+      "monster_id": "glory_monster_084", "display_name": "变异艾格丝虫",
+      "drops": [
+      ]
+    },
+    {
+      "monster_id": "glory_monster_085", "display_name": "变异恶性胶虫",
+      "drops": [
+      ]
+    },
+    {
+      "monster_id": "glory_monster_086", "display_name": "变异毒性罗格当虫",
+      "drops": [
+      ]
+    },
+    {
+      "monster_id": "glory_monster_087", "display_name": "变异冷酷甲壳奥姆虫",
+      "drops": [
+      ]
+    },
+    {
+      "monster_id": "glory_monster_088", "display_name": "变异毒性艾格丝虫",
+      "drops": [
+      ]
+    },
+    {
+      "monster_id": "glory_monster_089", "display_name": "变异熔岩",
+      "drops": [
+      ]
+    },
+    {
+      "monster_id": "glory_monster_090", "display_name": "变异撒玛近卫军",
+      "drops": [
+      ]
+    },
+    {
+      "monster_id": "glory_monster_091", "display_name": "变异撒玛士兵",
+      "drops": [
+      ]
+    },
+    {
+      "monster_id": "glory_monster_092", "display_name": "变异骷髅龙",
+      "drops": [
+      ]
+    },
+    {
+      "monster_id": "glory_monster_093", "display_name": "变异鱼鳞战车",
+      "drops": [
+      ]
+    },
+    {
+      "monster_id": "glory_monster_094", "display_name": "变异撒玛卫士",
+      "drops": [
+      ]
+    },
+    {
+      "monster_id": "glory_monster_095", "display_name": "变异韦德战车",
+      "drops": [
+      ]
+    },
+    {
+      "monster_id": "glory_monster_096", "display_name": "变异沙蝎",
+      "drops": [
+      ]
+    },
+    {
+      "monster_id": "glory_monster_097", "display_name": "恐怖的奥姆幼虫(精英)",
+      "drops": [
+      ]
+    },
+    {
+      "monster_id": "glory_monster_098", "display_name": "凶猛的奥姆虫(精英)",
+      "drops": [
+      ]
+    },
+    {
+      "monster_id": "glory_monster_099", "display_name": "狂热的胶虫(精英)",
+      "drops": [
+      ]
+    },
+    {
+      "monster_id": "glory_monster_100", "display_name": "残暴的罗格当虫(精英)",
+      "drops": [
+      ]
+    },
+    {
+      "monster_id": "glory_monster_101", "display_name": "暴怒甲壳奥姆虫(精英)",
+      "drops": [
+      ]
+    },
+    {
+      "monster_id": "glory_monster_102", "display_name": "疯狂的艾格丝虫(精英)",
+      "drops": [
+      ]
+    },
+    {
+      "monster_id": "glory_monster_103", "display_name": "残忍的熔岩(精英)",
+      "drops": [
+      ]
+    },
+    {
+      "monster_id": "glory_monster_104", "display_name": "残忍撒玛近卫军(精英)",
+      "drops": [
+      ]
+    },
+    {
+      "monster_id": "glory_monster_105", "display_name": "残忍的撒玛士兵(精英)",
+      "drops": [
+      ]
+    },
+    {
+      "monster_id": "glory_monster_106", "display_name": "残忍的骷髅龙(精英)",
+      "drops": [
+      ]
+    },
+    {
+      "monster_id": "glory_monster_107", "display_name": "残忍的鱼鳞战车(精英)",
+      "drops": [
+      ]
+    },
+    {
+      "monster_id": "glory_monster_108", "display_name": "残忍的撒玛卫士(精英)",
+      "drops": [
+      ]
+    },
+    {
+      "monster_id": "glory_monster_109", "display_name": "残忍的韦德战车(精英)",
+      "drops": [
+      ]
+    },
+    {
+      "monster_id": "glory_monster_110", "display_name": "残忍的沙蝎(精英)",
+      "drops": [
+      ]
+    },
+    {
+      "monster_id": "glory_monster_111", "display_name": "堕落的毒心虫（BOSS）",
+      "drops": [
+      ]
+    },
+    {
+      "monster_id": "glory_monster_112", "display_name": "暴走邪恶机甲（BOSS）",
+      "drops": [
+      ]
+    },
+    {
+      "monster_id": "glory_monster_113", "display_name": "漂浮机甲兵（BOSS）",
+      "drops": [
+      ]
+    },
+    {
+      "monster_id": "glory_monster_114", "display_name": "被遗忘的爬虫（BOSS）",
+      "drops": [
+        {"item_definition_id": "item:material:9713f13ede8d", "minimum_quantity": 1, "maximum_quantity": 3, "chance": 0.75}
+      ]
+    },
+    {
+      "monster_id": "glory_monster_115", "display_name": "蜘蛛邪恶王（BOSS）",
+      "drops": [
+      ]
+    },
+    {
+      "monster_id": "glory_monster_116", "display_name": "狂暴甲拉格（BOSS）",
+      "drops": [
+      ]
+    },
+    {
+      "monster_id": "glory_monster_127", "display_name": "炽热重甲王（BOSS）",
+      "drops": [
+      ]
+    },
+    {
+      "monster_id": "glory_monster_128", "display_name": "炼狱天灾怒火（BOSS）",
+      "drops": [
+      ]
+    },
+    {
+      "monster_id": "glory_monster_129", "display_name": "电王阿希科瑞尔BOSS",
+      "drops": [
+      ]
+    },
+    {
+      "monster_id": "glory_monster_130", "display_name": "撒玛议会咆哮者BOSS",
+      "drops": [
+      ]
+    }
+  ]
+}

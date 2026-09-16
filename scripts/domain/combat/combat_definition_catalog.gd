@@ -568,12 +568,15 @@ func _configure(catalog: Dictionary, documents: Dictionary) -> DomainResult:
 	return _validate_runtime_links()
 
 
-## 将明确批准的材料投放合并到怪物定义，原始候选字段继续只作证据。
+## 装载明确批准的掉落规则；完整表替换旧规则，补充表仍兼容追加模式。
 ## [param document] 单独版本化的材料投放配置。
 ## 返回全部条目通过领域掉落校验后的结果。
 func _apply_material_drops(document: Dictionary) -> DomainResult:
 	if int(document.get("schema_version", 0)) != 1 or not document.get("definitions") is Array:
 		return DomainResult.failure(&"combat.invalid_material_drops", "材料投放配置格式错误")
+	var mode := String(document.get("mode", "append"))
+	if mode not in ["append", "replace"]:
+		return DomainResult.failure(&"combat.invalid_material_drops", "未知掉落配置模式")
 	var seen: Dictionary = {}
 	for raw: Variant in document.definitions:
 		if not raw is Dictionary or not raw.get("monster_id") is String or not raw.get("drops") is Array:
@@ -587,7 +590,7 @@ func _apply_material_drops(document: Dictionary) -> DomainResult:
 		if not validation.is_ok:
 			return validation
 		var species: Dictionary = _monsters_by_id[id]
-		var combined: Array = species.drops.duplicate(true) if species.get("drops") is Array else []
+		var combined: Array = species.drops.duplicate(true) if mode == "append" and species.get("drops") is Array else []
 		combined.append_array(table.entries())
 		species.drops = combined
 	return DomainResult.ok()
