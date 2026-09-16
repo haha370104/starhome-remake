@@ -613,8 +613,10 @@ func _test_monster_projectile_can_be_dodged() -> void:
 ## 验证导弹锁定与火箭范围伤害使用不同的服务器判定模式。
 func _test_secondary_weapon_modes() -> void:
 	var module := _new_module(110)
+	var catalog: CombatDefinitionCatalog = CombatDefinitionCatalog.load_default().value
+	var missile_definition: Dictionary = catalog.starter_secondary_weapons(20).value["missile.primary"]
 	var weapons := {
-		"missile.primary": _secondary_weapon("missile", &"homing_missile", 17, 600.0),
+		"missile.primary": missile_definition,
 		"rocket_launcher.primary": _secondary_weapon("rocket_launcher", &"rocket_aoe", 24, 1000.0),
 	}
 	weapons["rocket_launcher.primary"]["minimum_range"] = 150.0
@@ -626,9 +628,17 @@ func _test_secondary_weapon_modes() -> void:
 		"player.secondary", _ability_intent("missile.primary", Vector2(200.0, 0.0), 1)
 	)
 	_expect(missile.is_ok and String(missile.value["target_entity_id"]) == "monster.locked", "missile should lock the nearest clicked monster")
+	_expect(is_equal_approx(missile.value["weapon_flight"]["projectile_speed"], 250.0), "服务端向客户端发布原版导弹有效速度")
+	var origin: Array = missile.value["origin"]
+	var distance := Vector2(origin[0], origin[1]).distance_to(Vector2(200, 0))
+	var expected_ticks := ceili(distance / 250.0 * 20.0)
+	_expect(int(missile.value["impact_tick"]) == expected_ticks, "权威命中时刻也必须按250像素/秒计算")
 	module.monster_for("monster.locked").position = Vector2(240.0, 40.0)
-	module.advance_ticks(int(missile.value["impact_tick"]) - module.current_tick)
+	module.advance_ticks(expected_ticks - 1)
+	_expect(module.monster_for("monster.locked").health == 50, "导弹飞抵前不能提前扣血")
+	module.advance_ticks(1)
 	_expect(module.monster_for("monster.locked").health == 33, "homing missile should hit its living locked target after movement")
+	module.advance_ticks(40)
 	var no_lock := module.handle_weapon_attack(
 		"player.secondary", _ability_intent("missile.primary", Vector2(350.0, 350.0), 2)
 	)

@@ -66,6 +66,8 @@ func _initialize() -> void:
 		var actual: Dictionary = updated.value.weapons[ability_id]
 		_expect(updated.value.weapons.size() == 2 and actual.weapon_id == definition_id, "仅登记实际安装的副武器")
 		_expect(actual.minimum_damage == secondary.base_attack and actual.working_energy_cost == secondary.working_energy_per_shot, "副武器伤害与能耗来自装备")
+		if secondary.combat_mode() == "missile":
+			_expect(is_equal_approx(actual.projectile_speed, 250.0), "所有导弹型号共享原引擎换算后的250像素/秒")
 		var stat_key := "missile_attack" if secondary.combat_mode() == "missile" else "rocket_attack"
 		_expect(player.calculate_vehicle_stats()[stat_key] == secondary.base_attack, "战车面板包含副武器基础攻击")
 	_finish()

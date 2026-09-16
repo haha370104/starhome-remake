@@ -268,7 +268,7 @@
         "lock_range": 400,
         "max_durability": 900,
         "attack_interval_seconds": 2.0,
-        "runtime_projectile_speed": 600,
+        "runtime_projectile_speed": 250,
         "runtime_muzzle_offset": [0, -16],
         "runtime_muzzle_forward_offset": 28,
         "runtime_target_selection_radius": 55
@@ -283,7 +283,14 @@
       "source_audit": {
         "source_release": "starhome_lz_ry",
         "source_file": "cltobj/appendequipcltclass.fcc",
-        "source_line": 706
+        "source_line": 706,
+        "runtime_projectile_speed": {
+          "status": "client_confirmed",
+          "source_file": "bullet.fcc:421,509-510",
+          "client_line_speed_parameter": 600,
+          "engine_time_divisor": 2.4,
+          "reason": "MissileBullet default speed converted through the original nMFly controller: 600 / 2.4 = 250 map pixels per second."
+        }
       }
     }
   ]

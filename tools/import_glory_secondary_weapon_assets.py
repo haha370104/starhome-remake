@@ -14,7 +14,7 @@ SOURCES = {
         "expected_frames": 1,
         "direction_mode": "shared",
         "frames_per_direction": 1,
-        "world_visible": True,
+        "world_visible": False,
         "relationship_evidence": "client_confirmed_FireGun1_m_sMoveSrc",
     },
     "starter_rocket_projectile": {
@@ -64,7 +64,7 @@ SOURCES = {
         "expected_frames": 1,
         "direction_mode": "shared",
         "frames_per_direction": 1,
-        "world_visible": True,
+        "world_visible": False,
         "relationship_evidence": "client_confirmed_Missile1_m_sMoveSrc",
     },
     "starter_missile_impact": {

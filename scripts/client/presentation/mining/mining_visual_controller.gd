@@ -32,7 +32,6 @@ func apply_snapshot(snapshot: Dictionary) -> void:
 	if not applied:
 		clear()
 		return
-	_avatar.set_combat_weapon_layer(&"primary_weapon")
 	_active = true
 
 

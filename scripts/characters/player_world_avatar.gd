@@ -26,7 +26,6 @@ var _combat_manifest: Dictionary = {}
 var _current_action := &"stand"
 var _current_direction := 6
 var _animation_speed_scale := 1.0
-var _combat_weapon_layer := &"primary_weapon"
 var _vehicle_destroyed := false
 var _equipped_combat_actor_id: StringName = &""
 
@@ -130,7 +129,6 @@ func apply_map_presentation(presentation: Dictionary) -> Error:
 	combat_presenter.visible = true
 	combat_name_label.visible = true
 	combat_status_bar.visible = true
-	set_combat_weapon_layer(_combat_weapon_layer)
 	_apply_active_pose()
 	return OK
 
@@ -163,16 +161,6 @@ func set_combat_layer_pose(layer_id: StringName, action: StringName, direction: 
 func clear_combat_layer_action(layer_id: StringName) -> void:
 	if combat_presenter != null:
 		combat_presenter.clear_layer_action(layer_id)
-
-
-## 切换当前战斗形态中唯一可见的武器表现图层。
-## [param layer_id] 需要显示的主炮、火箭或导弹图层业务标识。
-func set_combat_weapon_layer(layer_id: StringName) -> void:
-	_combat_weapon_layer = layer_id
-	if combat_presenter == null:
-		return
-	for candidate: StringName in [&"primary_weapon", &"rocket_weapon", &"missile_weapon"]:
-		combat_presenter.set_layer_visible(candidate, candidate == layer_id)
 
 
 ## 用当前 PlayerVehicle 装配选择业务化战车 actor，替换地图中的新兵占位外观。
@@ -208,12 +196,6 @@ func apply_vehicle_equipment(vehicle: PlayerVehicle) -> bool:
 		if primary_weapon is VehicleMiningArm:
 			primary_layer["actions"]["collect"] = weapon_component["action"].duplicate(true)
 		layers.append(primary_layer)
-	var secondary := vehicle.loadout.at(13) as VehicleWeapon
-	if secondary != null:
-		var component := _equipment_component(secondary)
-		var layer_id := &"missile_weapon" if secondary.combat_mode() == "missile" else &"rocket_weapon"
-		if not component.is_empty():
-			layers.append(_vehicle_layer(layer_id, 2, component, false))
 	var actor_id := &"equipped_combat_vehicle"
 	var registered: Error = combat_presenter.register_actor(actor_id, {
 		"display_name": chassis.display_name,
@@ -230,7 +212,6 @@ func apply_vehicle_equipment(vehicle: PlayerVehicle) -> bool:
 		return false
 	_equipped_combat_actor_id = actor_id
 	combat_actor_id = actor_id if presentation_kind == COMBAT_ACTOR_KIND else &""
-	set_combat_weapon_layer(_combat_weapon_layer)
 	_apply_active_pose()
 	return true
 

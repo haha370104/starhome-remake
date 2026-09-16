@@ -115,11 +115,12 @@ func _test_secondary_weapons(controller: Node, world_parent: Node2D, manifest: D
 		_tracked_target_position,
 	)
 	_expect(bool(missile.get("ok", false)), "missile shot should start")
+	var missile_origin: Vector2 = controller._projectiles[0]["position"]
 	controller.advance(0.25)
 	var missile_node := world_parent.get_node_or_null("WeaponProjectile") as Node2D
 	_expect(
-		missile_node != null and missile_node.position.x > 140.0,
-		"missile should begin at the original 600 pixel-per-second speed",
+		missile_node != null and is_equal_approx(missile_origin.distance_to(missile_node.position), 62.5),
+		"导弹原速度参数600应换算为250像素/秒，0.25秒前进62.5像素",
 	)
 	tracked_target = Vector2(300, 150)
 	controller.advance(0.1)

@@ -148,8 +148,6 @@ func _build_hud(initial_bundle: Dictionary) -> void:
 	hud.npc_action_requested.connect(interactions.on_npc_action_requested)
 	hud.hud_action_requested.connect(interactions.on_hud_action_requested)
 	combat.configure(world_view, local_player_controller, hud, map_travel)
-	hud.selected_action_changed.connect(combat.on_weapon_slot_selected)
-	combat.on_weapon_slot_selected(hud.selected_action())
 	combat.vehicle_destroyed_dialog = VehicleDestroyedDialog.new()
 	combat.vehicle_destroyed_dialog.configure()
 	combat.vehicle_destroyed_dialog.wait_selected.connect(combat.on_destroyed_wait_selected)

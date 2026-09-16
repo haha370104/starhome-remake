@@ -60,7 +60,8 @@ HUD 按 `VehicleWeapon.combat_mode()` 判断副武器，所有同类装备共用
 
 此前野外只认识少量预先导出的组件，未命中的高级炮会保留上一件外观；攻击控制器也始终使用新兵弹体。
 现在世界表现优先读取已有组件，其余装备读取自身的 world ALE；缺失时清除该层，不遗留上一件装备。
-副武器层仅由实际 Location 13 装备产生。`CombatAnimationLibrary` 复用现有荣耀内容包，缓存动画并保留每帧原点；没有新增或混用其他版本素材。
+副武器最初也曾被加入世界图层；该行为已按下节 2026-09-17 的用户澄清移除。
+`CombatAnimationLibrary` 复用现有荣耀内容包，缓存动画并保留每帧原点；没有新增或混用其他版本素材。
 
 弹体关系由 `tools/build_weapon_visual_bindings.py` 离线编译为 `data/presentation/weapon_visual_bindings_v1.json`。
 来源是荣耀 `cltobj/equipcltclass.fcc`、`cltobj/appendequipcltclass.fcc`、`cltobj/fireguncltclass.fcc` 等装备类。
@@ -98,3 +99,16 @@ HUD 按 `VehicleWeapon.combat_mode()` 判断副武器，所有同类装备共用
 附加 `-- --capture-equipment` 的 OpenGL 运行通过 150 项，增加前景窗口像素遮挡检查，并输出
 `.godot/equipment_window_stacking.png` 与 `.godot/equipment_weapon_preview.png`，两张实际渲染均已核对。
 测试使用内存聚合和隔离状态，不操作日常存档。
+
+## 2026-09-17 副武器固定槽位与主装置外观
+
+副武器只显示在装备面板的「装置1」位置（显示标签为「副武器」，逻辑 Location 13），以及底部 HUD 的副武器按钮。
+野外战车仅合成底盘、主装置和对应阴影；选中或发射导弹/火箭都不会隐藏主炮、替换主炮素材或改变其朝向。
+主装置本身的换装、主炮开火瞄准和采掘臂采集动作仍有各自的表现。
+
+移除 HUD 选择到世界外观的信号连接及旧的互斥武器图层 API；默认地图占位 actor 也不再包含两种副武器层。
+副武器接受事件只创建其弹体/炮口效果，不触发主装置姿态。这样运行时实际装配、地图初始占位和智脑轮换使用同一规则。
+
+装备场景检查更新为185项，覆盖全部在售副武器的来回选择、确认开火、主炮资源/帧/位置不变与装置1图标；
+OpenGL渲染186项通过，已检查选中火箭时野外仍为虎式主炮，面板副武器仍位于独立槽位。
+导弹速度换算及客户端/权威计时说明见[弹体速度逆向](monster_projectile_speed_reverse_engineering.md#6-2026-09-17-玩家导弹速度修正)。

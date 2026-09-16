@@ -150,9 +150,11 @@ func _present_confirmed_attack(event: Dictionary) -> void:
 	var resolver := _combat_target_position.bind(String(event.get("target_entity_id", ""))) if mode_id == "missile" else Callable()
 	if not controller.present_confirmed_shot(event, resolver):
 		return
+	# 副武器只有弹体表现；不能替换主装置或改变其动作和朝向。
+	if mode_id != "energy_cannon":
+		return
 	var direction: Array = event.get("direction", [1, 0])
-	var layer_id := StringName(CombatActions.WEAPON_MODES[mode_id]["layer_id"])
-	world_view.player.set_combat_weapon_layer(layer_id)
+	var layer_id := &"primary_weapon"
 	world_view.player.set_combat_layer_pose(layer_id, &"attack", LocalPlayerController.direction_index(Vector2(direction[0], direction[1])))
 	_restore_locomotion_after_attack(local_player_controller.has_active_route(), layer_id)
 
@@ -326,14 +328,6 @@ func on_combat_event_received(event: Dictionary) -> void:
 	elif event_type == &"self_repair_stopped":
 		var reason := StringName(event.get("reason", &""))
 		hud.show_status("战车已修复完成" if reason == &"full_health" else "自维修已停止")
-
-
-## 响应底栏武器槽选择并切换玩家战车的可见武器图层。
-## [param slot_id] 被选中的底栏武器槽标识。
-func on_weapon_slot_selected(slot_id: String) -> void:
-	var mode: Dictionary = CombatActions.WEAPON_MODES.get(slot_id, {})
-	if world_view.player != null and not mode.is_empty():
-		world_view.player.set_combat_weapon_layer(StringName(mode["layer_id"]))
 
 
 ## 合并切图、基地救援等待和战车击毁状态，供输入协调器使用。

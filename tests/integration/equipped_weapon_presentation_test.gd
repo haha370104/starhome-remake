@@ -65,8 +65,17 @@ func _run() -> void:
 			var equipment := player.vehicle.loadout.at(13) as VehicleWeapon
 			var mode := equipment.combat_mode()
 			_expect(hall.hud.state.tactical_action_id == mode, "任意等级副武器均显示对应HUD按钮：" + id)
+			var primary_sprite: AnimatedSprite2D = hall.world_view.player.combat_presenter._layers[&"primary_weapon"]
+			var primary_frames := primary_sprite.sprite_frames
+			var primary_frame := primary_sprite.frame
+			var primary_offset := primary_sprite.offset
 			hall.hud.select_action(mode)
 			_expect(hall.hud.selected_action() == mode, "副武器HUD可以实际选中")
+			_expect(primary_sprite.visible and primary_sprite.sprite_frames == primary_frames and primary_sprite.frame == primary_frame and primary_sprite.offset == primary_offset,
+				"切换副武器不能隐藏、移动或替换战车主炮")
+			hall.hud.select_action("energy_cannon")
+			_expect(primary_sprite.visible and primary_sprite.sprite_frames == primary_frames and primary_sprite.frame == primary_frame, "切回主武器保持同一炮身")
+			hall.hud.select_action(mode)
 			var visual: WeaponAttackVisualController = hall.world_view.combat_attack_controllers[mode]
 			_expect(not visual._weapon.is_empty(), "副武器弹效已配置：" + id)
 			panel.apply_snapshot({"equipped": [projector._equipment_view(equipment, "vehicle")]})
@@ -74,7 +83,14 @@ func _run() -> void:
 			var icon := panel._slot_root.get_node_or_null("Location_13_" + equipment.definition_id) as TextureRect
 			_expect(icon != null and icon.texture != null and icon.position == Vector2(96, 58), "副武器必须绘制在可见槽位：" + id)
 			var layer_id := &"missile_weapon" if mode == "missile" else &"rocket_weapon"
-			_expect(hall.world_view.player.combat_presenter.layer_frame(layer_id) >= 0, "实际副武器世界模型可用")
+			_expect(not hall.world_view.player.combat_presenter._layers.has(layer_id), "副武器只在装置1槽位显示，不叠加到车身")
+			hall.combat.on_combat_event_received({"event_type": mode + "_projectile_spawned", "skill_id": mode,
+				"attacker_id": String(hall.multiplayer_presenter.session.local_entity_id), "weapon_id": id,
+				"shot_id": "test.secondary." + id, "input_sequence": 10,
+				"actor_position": [200, 200], "endpoint": [500, 200], "direction": [1, 0]})
+			_expect(visual.active_projectile_count() == 1 and primary_sprite.visible and primary_sprite.sprite_frames == primary_frames and primary_sprite.frame == primary_frame,
+				"副武器确认开火只产生弹体，主炮保持显示")
+			visual.clear_effects()
 	panel.apply_snapshot(projector.build_bundle(player).vehicle)
 	panel.position = Vector2(24, 24)
 	panel.show()
