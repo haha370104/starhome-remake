@@ -357,6 +357,1371 @@
           29
         ]
       }
+    },
+    "item:material:78f2a523a761": {
+      "display_name": "初级密度柔解剂",
+      "world": {
+        "texture": "res://assets/items/materials/density_solvent/icon.tres",
+        "native_size": [
+          25,
+          26
+        ],
+        "origin": [
+          -13,
+          -15
+        ]
+      },
+      "inventory": {
+        "icon": "res://assets/items/materials/density_solvent/icon.tres",
+        "native_size": [
+          25,
+          26
+        ]
+      }
+    },
+    "item:material:f6487f0e04b8": {
+      "display_name": "五彩水晶",
+      "world": {
+        "texture": "res://assets/items/materials/five_color_crystal/icon.tres",
+        "native_size": [
+          34,
+          33
+        ],
+        "origin": [
+          -16,
+          -19
+        ]
+      },
+      "inventory": {
+        "icon": "res://assets/items/materials/five_color_crystal/icon.tres",
+        "native_size": [
+          34,
+          33
+        ]
+      }
+    },
+    "item:material:d247fd43ad3c": {
+      "display_name": "电磁护具",
+      "world": {
+        "texture": "res://assets/items/materials/electromagnetic_protector/icon.tres",
+        "native_size": [
+          35,
+          35
+        ],
+        "origin": [
+          -21,
+          -19
+        ]
+      },
+      "inventory": {
+        "icon": "res://assets/items/materials/electromagnetic_protector/icon.tres",
+        "native_size": [
+          35,
+          35
+        ]
+      }
+    },
+    "item:material:71548d3aa10f": {
+      "display_name": "电激波结晶",
+      "world": {
+        "texture": "res://assets/items/materials/electric_wave_crystal/icon.tres",
+        "native_size": [
+          37,
+          35
+        ],
+        "origin": [
+          -19,
+          -18
+        ]
+      },
+      "inventory": {
+        "icon": "res://assets/items/materials/electric_wave_crystal/icon.tres",
+        "native_size": [
+          37,
+          35
+        ]
+      }
+    },
+    "item:material:760ebf2df00d": {
+      "display_name": "电激波芯片",
+      "world": {
+        "texture": "res://assets/items/materials/electric_wave_chip/icon.tres",
+        "native_size": [
+          31,
+          29
+        ],
+        "origin": [
+          -14,
+          -16
+        ]
+      },
+      "inventory": {
+        "icon": "res://assets/items/materials/electric_wave_chip/icon.tres",
+        "native_size": [
+          31,
+          29
+        ]
+      }
+    },
+    "item:material:d2a1d9d06fbc": {
+      "display_name": "冻结钢片",
+      "world": {
+        "texture": "res://assets/items/materials/frozen_steel_plate/icon.tres",
+        "native_size": [
+          35,
+          34
+        ],
+        "origin": [
+          -19,
+          -16
+        ]
+      },
+      "inventory": {
+        "icon": "res://assets/items/materials/frozen_steel_plate/icon.tres",
+        "native_size": [
+          35,
+          34
+        ]
+      }
+    },
+    "item:material:95aa2445915e": {
+      "display_name": "电子制芯",
+      "world": {
+        "texture": "res://assets/items/materials/electronic_control_chip/icon.tres",
+        "native_size": [
+          35,
+          33
+        ],
+        "origin": [
+          -18,
+          -18
+        ]
+      },
+      "inventory": {
+        "icon": "res://assets/items/materials/electronic_control_chip/icon.tres",
+        "native_size": [
+          35,
+          33
+        ]
+      }
+    },
+    "item:material:82b550887686": {
+      "display_name": "黑石膛线",
+      "world": {
+        "texture": "res://assets/items/materials/blackstone_rifling/icon.tres",
+        "native_size": [
+          35,
+          34
+        ],
+        "origin": [
+          -18,
+          -14
+        ]
+      },
+      "inventory": {
+        "icon": "res://assets/items/materials/blackstone_rifling/icon.tres",
+        "native_size": [
+          35,
+          34
+        ]
+      }
+    },
+    "item:material:390575d3e7c8": {
+      "display_name": "红晶源",
+      "world": {
+        "texture": "res://assets/items/materials/red_crystal_source/icon.tres",
+        "native_size": [
+          28,
+          35
+        ],
+        "origin": [
+          -13,
+          -17
+        ]
+      },
+      "inventory": {
+        "icon": "res://assets/items/materials/red_crystal_source/icon.tres",
+        "native_size": [
+          28,
+          35
+        ]
+      }
+    },
+    "item:material:f3fe549c15c1": {
+      "display_name": "G91精密触发器",
+      "world": {
+        "texture": "res://assets/items/materials/g91_precision_trigger/icon.tres",
+        "native_size": [
+          44,
+          24
+        ],
+        "origin": [
+          -26,
+          -12
+        ]
+      },
+      "inventory": {
+        "icon": "res://assets/items/materials/g91_precision_trigger/icon.tres",
+        "native_size": [
+          44,
+          24
+        ]
+      }
+    },
+    "item:material:abb79c50c89f": {
+      "display_name": "机甲附属晶体I",
+      "world": {
+        "texture": "res://assets/items/materials/mech_auxiliary_crystal_1/icon.tres",
+        "native_size": [
+          37,
+          37
+        ],
+        "origin": [
+          -20,
+          -19
+        ]
+      },
+      "inventory": {
+        "icon": "res://assets/items/materials/mech_auxiliary_crystal_1/icon.tres",
+        "native_size": [
+          37,
+          37
+        ]
+      }
+    },
+    "item:material:33d330a61be3": {
+      "display_name": "机甲附属晶体II",
+      "world": {
+        "texture": "res://assets/items/materials/mech_auxiliary_crystal_2/icon.tres",
+        "native_size": [
+          38,
+          39
+        ],
+        "origin": [
+          -21,
+          -20
+        ]
+      },
+      "inventory": {
+        "icon": "res://assets/items/materials/mech_auxiliary_crystal_2/icon.tres",
+        "native_size": [
+          38,
+          39
+        ]
+      }
+    },
+    "item:material:e283667ae437": {
+      "display_name": "机甲附属晶体III",
+      "world": {
+        "texture": "res://assets/items/materials/mech_auxiliary_crystal_3/icon.tres",
+        "native_size": [
+          35,
+          33
+        ],
+        "origin": [
+          -18,
+          -18
+        ]
+      },
+      "inventory": {
+        "icon": "res://assets/items/materials/mech_auxiliary_crystal_3/icon.tres",
+        "native_size": [
+          35,
+          33
+        ]
+      }
+    },
+    "item:material:062a265c9544": {
+      "display_name": "机甲月辉晶体I",
+      "world": {
+        "texture": "res://assets/items/materials/mech_moonlight_crystal_1/icon.tres",
+        "native_size": [
+          36,
+          31
+        ],
+        "origin": [
+          -19,
+          -14
+        ]
+      },
+      "inventory": {
+        "icon": "res://assets/items/materials/mech_moonlight_crystal_1/icon.tres",
+        "native_size": [
+          36,
+          31
+        ]
+      }
+    },
+    "item:material:3ed7f1287e45": {
+      "display_name": "机甲月辉晶体II",
+      "world": {
+        "texture": "res://assets/items/materials/mech_moonlight_crystal_2/icon.tres",
+        "native_size": [
+          36,
+          31
+        ],
+        "origin": [
+          -19,
+          -14
+        ]
+      },
+      "inventory": {
+        "icon": "res://assets/items/materials/mech_moonlight_crystal_2/icon.tres",
+        "native_size": [
+          36,
+          31
+        ]
+      }
+    },
+    "item:material:743ceffa7af7": {
+      "display_name": "机甲月辉晶体III",
+      "world": {
+        "texture": "res://assets/items/materials/mech_moonlight_crystal_3/icon.tres",
+        "native_size": [
+          36,
+          31
+        ],
+        "origin": [
+          -19,
+          -14
+        ]
+      },
+      "inventory": {
+        "icon": "res://assets/items/materials/mech_moonlight_crystal_3/icon.tres",
+        "native_size": [
+          36,
+          31
+        ]
+      }
+    },
+    "item:material:a55a9a5d270a": {
+      "display_name": "蓝晶源",
+      "world": {
+        "texture": "res://assets/items/materials/blue_crystal_source/icon.tres",
+        "native_size": [
+          29,
+          35
+        ],
+        "origin": [
+          -13,
+          -17
+        ]
+      },
+      "inventory": {
+        "icon": "res://assets/items/materials/blue_crystal_source/icon.tres",
+        "native_size": [
+          29,
+          35
+        ]
+      }
+    },
+    "item:material:7df65e194766": {
+      "display_name": "绿晶源",
+      "world": {
+        "texture": "res://assets/items/materials/green_crystal_source/icon.tres",
+        "native_size": [
+          29,
+          35
+        ],
+        "origin": [
+          -13,
+          -17
+        ]
+      },
+      "inventory": {
+        "icon": "res://assets/items/materials/green_crystal_source/icon.tres",
+        "native_size": [
+          29,
+          35
+        ]
+      }
+    },
+    "item:material:920f37756918": {
+      "display_name": "七彩水晶",
+      "world": {
+        "texture": "res://assets/items/materials/seven_color_crystal/icon.tres",
+        "native_size": [
+          29,
+          36
+        ],
+        "origin": [
+          -15,
+          -20
+        ]
+      },
+      "inventory": {
+        "icon": "res://assets/items/materials/seven_color_crystal/icon.tres",
+        "native_size": [
+          29,
+          36
+        ]
+      }
+    },
+    "item:material:f65184d5f9b2": {
+      "display_name": "冲击晶体",
+      "world": {
+        "texture": "res://assets/items/materials/impact_crystal/icon.tres",
+        "native_size": [
+          33,
+          33
+        ],
+        "origin": [
+          -18,
+          -16
+        ]
+      },
+      "inventory": {
+        "icon": "res://assets/items/materials/impact_crystal/icon.tres",
+        "native_size": [
+          33,
+          33
+        ]
+      }
+    },
+    "item:material:5dbe93b102a3": {
+      "display_name": "量子元素",
+      "world": {
+        "texture": "res://assets/items/materials/quantum_element/icon.tres",
+        "native_size": [
+          29,
+          35
+        ],
+        "origin": [
+          -14,
+          -17
+        ]
+      },
+      "inventory": {
+        "icon": "res://assets/items/materials/quantum_element/icon.tres",
+        "native_size": [
+          29,
+          35
+        ]
+      }
+    },
+    "item:material:a7bccd7c1408": {
+      "display_name": "有瑕疵的火力晶石",
+      "world": {
+        "texture": "res://assets/items/materials/flawed_firepower_crystal/icon.tres",
+        "native_size": [
+          26,
+          28
+        ],
+        "origin": [
+          -16,
+          -16
+        ]
+      },
+      "inventory": {
+        "icon": "res://assets/items/materials/flawed_firepower_crystal/icon.tres",
+        "native_size": [
+          26,
+          28
+        ]
+      }
+    },
+    "item:material:794588abb6cf": {
+      "display_name": "有瑕疵的生命晶石",
+      "world": {
+        "texture": "res://assets/items/materials/flawed_health_crystal/icon.tres",
+        "native_size": [
+          26,
+          28
+        ],
+        "origin": [
+          -16,
+          -16
+        ]
+      },
+      "inventory": {
+        "icon": "res://assets/items/materials/flawed_health_crystal/icon.tres",
+        "native_size": [
+          26,
+          28
+        ]
+      }
+    },
+    "item:material:d690c44b6030": {
+      "display_name": "有瑕疵的防御晶石",
+      "world": {
+        "texture": "res://assets/items/materials/flawed_defense_crystal/icon.tres",
+        "native_size": [
+          23,
+          29
+        ],
+        "origin": [
+          -11,
+          -18
+        ]
+      },
+      "inventory": {
+        "icon": "res://assets/items/materials/flawed_defense_crystal/icon.tres",
+        "native_size": [
+          23,
+          29
+        ]
+      }
+    },
+    "item:material:a095c982b884": {
+      "display_name": "有瑕疵的制导晶石",
+      "world": {
+        "texture": "res://assets/items/materials/flawed_guidance_crystal/icon.tres",
+        "native_size": [
+          25,
+          28
+        ],
+        "origin": [
+          -15,
+          -14
+        ]
+      },
+      "inventory": {
+        "icon": "res://assets/items/materials/flawed_guidance_crystal/icon.tres",
+        "native_size": [
+          25,
+          28
+        ]
+      }
+    },
+    "item:material:c0cad9b715fb": {
+      "display_name": "有瑕疵的暴击晶石",
+      "world": {
+        "texture": "res://assets/items/materials/flawed_critical_crystal/icon.tres",
+        "native_size": [
+          32,
+          28
+        ],
+        "origin": [
+          -14,
+          -15
+        ]
+      },
+      "inventory": {
+        "icon": "res://assets/items/materials/flawed_critical_crystal/icon.tres",
+        "native_size": [
+          32,
+          28
+        ]
+      }
+    },
+    "item:material:7dd51398ea4c": {
+      "display_name": "有瑕疵的火箭晶石",
+      "world": {
+        "texture": "res://assets/items/materials/flawed_rocket_crystal/icon.tres",
+        "native_size": [
+          32,
+          28
+        ],
+        "origin": [
+          -14,
+          -16
+        ]
+      },
+      "inventory": {
+        "icon": "res://assets/items/materials/flawed_rocket_crystal/icon.tres",
+        "native_size": [
+          32,
+          28
+        ]
+      }
+    },
+    "item:material:1d49c09bf017": {
+      "display_name": "晶石碎片",
+      "world": {
+        "texture": "res://assets/items/materials/socket_crystal_fragment/icon.tres",
+        "native_size": [
+          30,
+          26
+        ],
+        "origin": [
+          -14,
+          -13
+        ]
+      },
+      "inventory": {
+        "icon": "res://assets/items/materials/socket_crystal_fragment/icon.tres",
+        "native_size": [
+          30,
+          26
+        ]
+      }
+    },
+    "item:material:558e8a4df8ad": {
+      "display_name": "铁钩钢片",
+      "world": {
+        "texture": "res://assets/items/materials/iron_hook_steel_plate/icon.tres",
+        "native_size": [
+          35,
+          34
+        ],
+        "origin": [
+          -21,
+          -17
+        ]
+      },
+      "inventory": {
+        "icon": "res://assets/items/materials/iron_hook_steel_plate/icon.tres",
+        "native_size": [
+          35,
+          34
+        ]
+      }
+    },
+    "item:material:093a64c39287": {
+      "display_name": "陀螺平衡悬挂",
+      "world": {
+        "texture": "res://assets/items/materials/gyroscopic_suspension/icon.tres",
+        "native_size": [
+          35,
+          33
+        ],
+        "origin": [
+          -20,
+          -18
+        ]
+      },
+      "inventory": {
+        "icon": "res://assets/items/materials/gyroscopic_suspension/icon.tres",
+        "native_size": [
+          35,
+          33
+        ]
+      }
+    },
+    "item:material:bc5a18415358": {
+      "display_name": "G91特制能量源",
+      "world": {
+        "texture": "res://assets/items/materials/g91_energy_source/icon.tres",
+        "native_size": [
+          33,
+          30
+        ],
+        "origin": [
+          -16,
+          -13
+        ]
+      },
+      "inventory": {
+        "icon": "res://assets/items/materials/g91_energy_source/icon.tres",
+        "native_size": [
+          33,
+          30
+        ]
+      }
+    },
+    "item:material:b517321630b8": {
+      "display_name": "G92特制能量源",
+      "world": {
+        "texture": "res://assets/items/materials/g92_energy_source/icon.tres",
+        "native_size": [
+          32,
+          34
+        ],
+        "origin": [
+          -16,
+          -15
+        ]
+      },
+      "inventory": {
+        "icon": "res://assets/items/materials/g92_energy_source/icon.tres",
+        "native_size": [
+          32,
+          34
+        ]
+      }
+    },
+    "item:material:f5ec2ce95368": {
+      "display_name": "高级红晶源",
+      "world": {
+        "texture": "res://assets/items/materials/high_grade_red_crystal_source/icon.tres",
+        "native_size": [
+          24,
+          31
+        ],
+        "origin": [
+          -13,
+          -14
+        ]
+      },
+      "inventory": {
+        "icon": "res://assets/items/materials/high_grade_red_crystal_source/icon.tres",
+        "native_size": [
+          24,
+          31
+        ]
+      }
+    },
+    "item:material:d6e5deb49f86": {
+      "display_name": "高级蓝晶源",
+      "world": {
+        "texture": "res://assets/items/materials/high_grade_blue_crystal_source/icon.tres",
+        "native_size": [
+          24,
+          31
+        ],
+        "origin": [
+          -14,
+          -15
+        ]
+      },
+      "inventory": {
+        "icon": "res://assets/items/materials/high_grade_blue_crystal_source/icon.tres",
+        "native_size": [
+          24,
+          31
+        ]
+      }
+    },
+    "item:material:0465103df5d2": {
+      "display_name": "高级绿晶源",
+      "world": {
+        "texture": "res://assets/items/materials/high_grade_green_crystal_source/icon.tres",
+        "native_size": [
+          24,
+          31
+        ],
+        "origin": [
+          -14,
+          -14
+        ]
+      },
+      "inventory": {
+        "icon": "res://assets/items/materials/high_grade_green_crystal_source/icon.tres",
+        "native_size": [
+          24,
+          31
+        ]
+      }
+    },
+    "item:material:6ac284bb6c59": {
+      "display_name": "高级紫晶源",
+      "world": {
+        "texture": "res://assets/items/materials/high_grade_purple_crystal_source/icon.tres",
+        "native_size": [
+          22,
+          29
+        ],
+        "origin": [
+          -13,
+          -13
+        ]
+      },
+      "inventory": {
+        "icon": "res://assets/items/materials/high_grade_purple_crystal_source/icon.tres",
+        "native_size": [
+          22,
+          29
+        ]
+      }
+    },
+    "item:material:f7c412f12300": {
+      "display_name": "涡轮稳定器",
+      "world": {
+        "texture": "res://assets/items/materials/turbine_stabilizer/icon.tres",
+        "native_size": [
+          35,
+          33
+        ],
+        "origin": [
+          -19,
+          -17
+        ]
+      },
+      "inventory": {
+        "icon": "res://assets/items/materials/turbine_stabilizer/icon.tres",
+        "native_size": [
+          35,
+          33
+        ]
+      }
+    },
+    "item:material:073e4b22d062": {
+      "display_name": "五行钢片",
+      "world": {
+        "texture": "res://assets/items/materials/five_element_steel_plate/icon.tres",
+        "native_size": [
+          35,
+          35
+        ],
+        "origin": [
+          -20,
+          -15
+        ]
+      },
+      "inventory": {
+        "icon": "res://assets/items/materials/five_element_steel_plate/icon.tres",
+        "native_size": [
+          35,
+          35
+        ]
+      }
+    },
+    "item:material:583a985508e9": {
+      "display_name": "星磁晶体",
+      "world": {
+        "texture": "res://assets/items/materials/stellar_magnetic_crystal/icon.tres",
+        "native_size": [
+          31,
+          29
+        ],
+        "origin": [
+          -16,
+          -17
+        ]
+      },
+      "inventory": {
+        "icon": "res://assets/items/materials/stellar_magnetic_crystal/icon.tres",
+        "native_size": [
+          31,
+          29
+        ]
+      }
+    },
+    "item:material:f1a46cb86792": {
+      "display_name": "星光晶体",
+      "world": {
+        "texture": "res://assets/items/materials/starlight_crystal/icon.tres",
+        "native_size": [
+          32,
+          29
+        ],
+        "origin": [
+          -18,
+          -18
+        ]
+      },
+      "inventory": {
+        "icon": "res://assets/items/materials/starlight_crystal/icon.tres",
+        "native_size": [
+          32,
+          29
+        ]
+      }
+    },
+    "item:material:77157411f2c7": {
+      "display_name": "星辉晶体",
+      "world": {
+        "texture": "res://assets/items/materials/stellar_radiance_crystal/icon.tres",
+        "native_size": [
+          32,
+          29
+        ],
+        "origin": [
+          -18,
+          -18
+        ]
+      },
+      "inventory": {
+        "icon": "res://assets/items/materials/stellar_radiance_crystal/icon.tres",
+        "native_size": [
+          32,
+          29
+        ]
+      }
+    },
+    "item:material:6bce58752c7d": {
+      "display_name": "星耀晶体",
+      "world": {
+        "texture": "res://assets/items/materials/stellar_brilliance_crystal/icon.tres",
+        "native_size": [
+          31,
+          29
+        ],
+        "origin": [
+          -18,
+          -18
+        ]
+      },
+      "inventory": {
+        "icon": "res://assets/items/materials/stellar_brilliance_crystal/icon.tres",
+        "native_size": [
+          31,
+          29
+        ]
+      }
+    },
+    "item:material:beb673694521": {
+      "display_name": "星源晶体",
+      "world": {
+        "texture": "res://assets/items/materials/stellar_source_crystal/icon.tres",
+        "native_size": [
+          32,
+          29
+        ],
+        "origin": [
+          -18,
+          -18
+        ]
+      },
+      "inventory": {
+        "icon": "res://assets/items/materials/stellar_source_crystal/icon.tres",
+        "native_size": [
+          32,
+          29
+        ]
+      }
+    },
+    "item:material:bba50542ed38": {
+      "display_name": "水晶月痕",
+      "world": {
+        "texture": "res://assets/items/materials/crystal_moon_mark/icon.tres",
+        "native_size": [
+          30,
+          39
+        ],
+        "origin": [
+          -18,
+          -17
+        ]
+      },
+      "inventory": {
+        "icon": "res://assets/items/materials/crystal_moon_mark/icon.tres",
+        "native_size": [
+          30,
+          39
+        ]
+      }
+    },
+    "item:material:049296cd8264": {
+      "display_name": "水晶月痕碎片",
+      "world": {
+        "texture": "res://assets/items/materials/crystal_moon_fragment/icon.tres",
+        "native_size": [
+          38,
+          21
+        ],
+        "origin": [
+          -23,
+          -11
+        ]
+      },
+      "inventory": {
+        "icon": "res://assets/items/materials/crystal_moon_fragment/icon.tres",
+        "native_size": [
+          38,
+          21
+        ]
+      }
+    },
+    "item:material:34fd6a87af72": {
+      "display_name": "挂机辅助时间卡（15分钟）",
+      "world": {
+        "texture": "res://assets/items/materials/assistant_time_card_15min/icon.tres",
+        "native_size": [
+          62,
+          33
+        ],
+        "origin": [
+          -33,
+          -17
+        ]
+      },
+      "inventory": {
+        "icon": "res://assets/items/materials/assistant_time_card_15min/icon.tres",
+        "native_size": [
+          62,
+          33
+        ]
+      }
+    },
+    "item:material:1916f1df829a": {
+      "display_name": "兆瓦纤维",
+      "world": {
+        "texture": "res://assets/items/materials/megawatt_fiber/icon.tres",
+        "native_size": [
+          35,
+          32
+        ],
+        "origin": [
+          -19,
+          -14
+        ]
+      },
+      "inventory": {
+        "icon": "res://assets/items/materials/megawatt_fiber/icon.tres",
+        "native_size": [
+          35,
+          32
+        ]
+      }
+    },
+    "item:material:5773d6d74168": {
+      "display_name": "紫晶源",
+      "world": {
+        "texture": "res://assets/items/materials/purple_crystal_source/icon.tres",
+        "native_size": [
+          29,
+          35
+        ],
+        "origin": [
+          -13,
+          -17
+        ]
+      },
+      "inventory": {
+        "icon": "res://assets/items/materials/purple_crystal_source/icon.tres",
+        "native_size": [
+          29,
+          35
+        ]
+      }
+    },
+    "item:material:9a81c6572eee": {
+      "display_name": "高热结晶体",
+      "world": {
+        "texture": "res://assets/items/materials/thermal_crystal/icon.tres",
+        "native_size": [
+          32,
+          22
+        ],
+        "origin": [
+          -15,
+          -9
+        ]
+      },
+      "inventory": {
+        "icon": "res://assets/items/materials/thermal_crystal/icon.tres",
+        "native_size": [
+          32,
+          22
+        ]
+      }
+    },
+    "item:material:17500b513d35": {
+      "display_name": "腐蚀结晶体",
+      "world": {
+        "texture": "res://assets/items/materials/corrosive_crystal/icon.tres",
+        "native_size": [
+          32,
+          22
+        ],
+        "origin": [
+          -16,
+          -8
+        ]
+      },
+      "inventory": {
+        "icon": "res://assets/items/materials/corrosive_crystal/icon.tres",
+        "native_size": [
+          32,
+          22
+        ]
+      }
+    },
+    "item:material:d407556cd129": {
+      "display_name": "磁化结晶体",
+      "world": {
+        "texture": "res://assets/items/materials/magnetic_crystal/icon.tres",
+        "native_size": [
+          32,
+          22
+        ],
+        "origin": [
+          -16,
+          -10
+        ]
+      },
+      "inventory": {
+        "icon": "res://assets/items/materials/magnetic_crystal/icon.tres",
+        "native_size": [
+          32,
+          22
+        ]
+      }
+    },
+    "item:material:43ed7eecc949": {
+      "display_name": "高热芯片",
+      "world": {
+        "texture": "res://assets/items/materials/thermal_chip/icon.tres",
+        "native_size": [
+          34,
+          20
+        ],
+        "origin": [
+          -17,
+          -8
+        ]
+      },
+      "inventory": {
+        "icon": "res://assets/items/materials/thermal_chip/icon.tres",
+        "native_size": [
+          34,
+          20
+        ]
+      }
+    },
+    "item:material:ee509dbc2244": {
+      "display_name": "腐蚀芯片",
+      "world": {
+        "texture": "res://assets/items/materials/corrosive_chip/icon.tres",
+        "native_size": [
+          34,
+          20
+        ],
+        "origin": [
+          -17,
+          -9
+        ]
+      },
+      "inventory": {
+        "icon": "res://assets/items/materials/corrosive_chip/icon.tres",
+        "native_size": [
+          34,
+          20
+        ]
+      }
+    },
+    "item:material:f5fe4a61399b": {
+      "display_name": "磁化芯片",
+      "world": {
+        "texture": "res://assets/items/materials/magnetic_chip/icon.tres",
+        "native_size": [
+          34,
+          20
+        ],
+        "origin": [
+          -17,
+          -9
+        ]
+      },
+      "inventory": {
+        "icon": "res://assets/items/materials/magnetic_chip/icon.tres",
+        "native_size": [
+          34,
+          20
+        ]
+      }
+    },
+    "item:material:cfa52e059e34": {
+      "display_name": "中级能量包",
+      "world": {
+        "texture": "res://assets/items/materials/middle_grade_energy_pack/icon.tres",
+        "native_size": [
+          47,
+          35
+        ],
+        "origin": [
+          -30,
+          -16
+        ]
+      },
+      "inventory": {
+        "icon": "res://assets/items/materials/middle_grade_energy_pack/icon.tres",
+        "native_size": [
+          47,
+          35
+        ]
+      }
+    },
+    "item:material:a4f7cbe44e92": {
+      "display_name": "传感器",
+      "world": {
+        "texture": "res://assets/items/materials/sensor/icon.tres",
+        "native_size": [
+          30,
+          33
+        ],
+        "origin": [
+          -16,
+          -15
+        ]
+      },
+      "inventory": {
+        "icon": "res://assets/items/materials/sensor/icon.tres",
+        "native_size": [
+          30,
+          33
+        ]
+      }
+    },
+    "item:material:7e5440c2f103": {
+      "display_name": "动力板",
+      "world": {
+        "texture": "res://assets/items/materials/power_board/icon.tres",
+        "native_size": [
+          47,
+          29
+        ],
+        "origin": [
+          -24,
+          -13
+        ]
+      },
+      "inventory": {
+        "icon": "res://assets/items/materials/power_board/icon.tres",
+        "native_size": [
+          47,
+          29
+        ]
+      }
+    },
+    "item:material:3e5df1aed65c": {
+      "display_name": "变接器",
+      "world": {
+        "texture": "res://assets/items/materials/adapter/icon.tres",
+        "native_size": [
+          32,
+          39
+        ],
+        "origin": [
+          -17,
+          -22
+        ]
+      },
+      "inventory": {
+        "icon": "res://assets/items/materials/adapter/icon.tres",
+        "native_size": [
+          32,
+          39
+        ]
+      }
+    },
+    "item:material:f046399c4dff": {
+      "display_name": "扩充器+10",
+      "world": {
+        "texture": "res://assets/items/materials/capacity_expander/icon.tres",
+        "native_size": [
+          46,
+          24
+        ],
+        "origin": [
+          -25,
+          -10
+        ]
+      },
+      "inventory": {
+        "icon": "res://assets/items/materials/capacity_expander/icon.tres",
+        "native_size": [
+          46,
+          24
+        ]
+      }
+    },
+    "item:material:47b24f797e14": {
+      "display_name": "扩流器+2",
+      "world": {
+        "texture": "res://assets/items/materials/flow_expander/icon.tres",
+        "native_size": [
+          32,
+          17
+        ],
+        "origin": [
+          -19,
+          -6
+        ]
+      },
+      "inventory": {
+        "icon": "res://assets/items/materials/flow_expander/icon.tres",
+        "native_size": [
+          32,
+          17
+        ]
+      }
+    },
+    "item:material:3481b7371d1e": {
+      "display_name": "撒玛合金+10",
+      "world": {
+        "texture": "res://assets/items/materials/sama_upgrade_alloy/icon.tres",
+        "native_size": [
+          33,
+          18
+        ],
+        "origin": [
+          -20,
+          -7
+        ]
+      },
+      "inventory": {
+        "icon": "res://assets/items/materials/sama_upgrade_alloy/icon.tres",
+        "native_size": [
+          33,
+          18
+        ]
+      }
+    },
+    "item:material:198e40429499": {
+      "display_name": "火力元件+1",
+      "world": {
+        "texture": "res://assets/items/materials/firepower_component/icon.tres",
+        "native_size": [
+          52,
+          44
+        ],
+        "origin": [
+          -31,
+          -25
+        ]
+      },
+      "inventory": {
+        "icon": "res://assets/items/materials/firepower_component/icon.tres",
+        "native_size": [
+          52,
+          44
+        ]
+      }
+    },
+    "item:material:dc8a42c2781e": {
+      "display_name": "热敏电阻",
+      "world": {
+        "texture": "res://assets/items/materials/thermistor/icon.tres",
+        "native_size": [
+          31,
+          42
+        ],
+        "origin": [
+          -17,
+          -18
+        ]
+      },
+      "inventory": {
+        "icon": "res://assets/items/materials/thermistor/icon.tres",
+        "native_size": [
+          31,
+          42
+        ]
+      }
+    },
+    "item:material:e24d172fada7": {
+      "display_name": "聚能晶片+10",
+      "world": {
+        "texture": "res://assets/items/materials/energy_focusing_chip/icon.tres",
+        "native_size": [
+          32,
+          17
+        ],
+        "origin": [
+          -19,
+          -6
+        ]
+      },
+      "inventory": {
+        "icon": "res://assets/items/materials/energy_focusing_chip/icon.tres",
+        "native_size": [
+          32,
+          17
+        ]
+      }
+    },
+    "item:material:02212ea88168": {
+      "display_name": "超磁体+2",
+      "world": {
+        "texture": "res://assets/items/materials/super_magnet/icon.tres",
+        "native_size": [
+          32,
+          17
+        ],
+        "origin": [
+          -19,
+          -6
+        ]
+      },
+      "inventory": {
+        "icon": "res://assets/items/materials/super_magnet/icon.tres",
+        "native_size": [
+          32,
+          17
+        ]
+      }
     }
   }
 }
