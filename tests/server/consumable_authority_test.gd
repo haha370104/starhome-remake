@@ -109,8 +109,10 @@ func _test_live_server() -> void:
 	state = server.autosave_service.state_for(id)
 	result = server.handle_peer_player_panel_command(77, {"type": "use_inventory_item", "instance_id": "龙舌兰酒", "inventory_revision": state.inventory_revision})
 	_expect(result.ok, "服务器使用回血食品")
+	# 以已提交的使用时刻为基准，避免初始化跨秒后把三秒误算成四秒。
+	var used_state := server.autosave_service.state_for(id)
+	var now := int(used_state.food_status.active.filter(func(effect: Dictionary) -> bool: return int(effect.kind) == 18)[0].last_tick)
 	server._advance_food_status()
-	var now := int(Time.get_unix_time_from_system())
 	server._food_runtime.advance(server.sessions.all_sessions(), now + 3)
 	state = server.autosave_service.state_for(id)
 	_expect(state.character_health == 40, "服务器食品时钟实际结算人物回血")
