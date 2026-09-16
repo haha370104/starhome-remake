@@ -340,6 +340,8 @@ func handle_weapon_attack(actor_id: String, raw_intent: Variant) -> DomainResult
 		"origin": [origin.x, origin.y],
 		"direction": [direction.x, direction.y],
 		"maximum_distance": resolved_distance,
+		"actor_position": [actor_position.x, actor_position.y],
+		"endpoint": [endpoint.x, endpoint.y],
 		"impact_position": [impact_position.x, impact_position.y],
 		"damage": 0,
 		"working_energy": vehicle_state.working_energy,

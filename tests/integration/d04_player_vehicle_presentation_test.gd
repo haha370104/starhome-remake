@@ -52,6 +52,10 @@ func _run() -> void:
 		)
 		_expect(player.position == d04_spawn.position, "战车与玩家脚点必须共享 D04 权威出生坐标")
 
+	player.set_combat_status({"health": 70, "max_health": 70, "working_energy": 25.0, "working_energy_capacity": 100.0})
+	_expect(is_equal_approx(player.combat_status_bar._energy_ratio, 0.25), "战车蓝条必须显示工作能量百分比")
+	player.set_combat_status({"health": 70, "max_health": 70, "working_energy": 0.0, "working_energy_capacity": 100.0})
+	_expect(is_zero_approx(player.combat_status_bar._energy_ratio), "工作能量耗尽后蓝条必须清空")
 	_expect(player.presentation_kind == &"combat_actor", "D04 玩家必须切换为战斗载具")
 	_expect(player.combat_actor_id == &"starter_combat_vehicle", "D04 必须选择业务化新兵战车")
 	_expect(not player.human_character.visible, "D04 不得把人形层叠在战车下方")
@@ -248,7 +252,11 @@ func _test_move_and_fire_keeps_route(hall: Node2D) -> void:
 	hall.combat.handle_world_combat_left_click(origin + Vector2(120, 0))
 	_expect(hall.local_player_controller.has_active_route(), "开火不得停止活动路线")
 	_expect(hall.local_player_controller.path_points == route_before_fire, "开火不得改写尚未完成的路径折线")
-	_expect(hall.world_view.combat_attack_controller.active_projectile_count() == 1, "移动中开火仍须生成弹体")
+	_expect(hall.world_view.combat_attack_controller.active_projectile_count() == 0, "没有权威接受事件时不得提前生成弹体")
+	hall.combat.on_combat_event_received({"event_type": "energy_cannon_projectile_spawned", "skill_id": "energy_cannon",
+		"attacker_id": String(hall.multiplayer_presenter.session.local_entity_id), "shot_id": "moving.accepted", "input_sequence": 4,
+		"actor_position": [origin.x, origin.y], "endpoint": [origin.x + 120, origin.y], "direction": [1, 0]})
+	_expect(hall.world_view.combat_attack_controller.active_projectile_count() == 1, "移动中已确认的开火仍须生成弹体")
 	current.vehicle.loadout = original_loadout
 
 

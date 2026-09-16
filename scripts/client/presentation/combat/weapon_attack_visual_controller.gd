@@ -18,6 +18,7 @@ var _muzzles: Array[Dictionary] = []
 var _visual_collision_resolver := Callable()
 var _visual_shot_sequence := 0
 var _last_authoritative_event_id := 0
+var _confirmed_shots: Dictionary = {}
 
 
 ## 向增强输入公开当前武器射程，避免读取内部武器字典。
@@ -94,12 +95,14 @@ func set_visual_collision_resolver(resolver: Callable) -> void:
 ## [param origin] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## [param requested_target] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## [param tracking_target_resolver] 可选的导弹目标实时坐标解析器。
+## [param preview_only] 仅校验并解析瞄准，不创建弹体；输入侧等待服务器确认后再播放。
 ## 返回该函数计算、查询或操作得到的结果。
 ## 设计：超出武器表现射程的点击会被钳制到射程边缘；伤害与命中仍必须由服务端裁决。
 func request_fire(
 	origin: Vector2,
 	requested_target: Vector2,
 	tracking_target_resolver: Callable = Callable(),
+	preview_only: bool = false,
 ) -> Dictionary:
 	if _weapon.is_empty() or _world_parent == null:
 		return {"ok": false, "code": &"unconfigured"}
@@ -119,6 +122,10 @@ func request_fire(
 	var maximum_range := float(_weapon["maximum_visual_range"])
 	var resolved_distance := minf(aim.length(), maximum_range)
 	var resolved_target := origin + direction * resolved_distance
+	if preview_only:
+		_cooldown_remaining = float(_weapon["cooldown_seconds"])
+		return {"ok": true, "resolved_target": resolved_target, "direction": direction,
+			"range_clamped": aim.length() > maximum_range}
 	var muzzle_values: Array = _weapon["muzzle_offset"]
 	var muzzle_offset := Vector2(float(muzzle_values[0]), float(muzzle_values[1]))
 	var forward_offset := minf(float(_weapon.get("muzzle_forward_offset", MUZZLE_FORWARD_OFFSET)), resolved_distance * 0.5)
@@ -169,6 +176,30 @@ func bind_input_sequence(visual_shot_id: String, input_sequence: int) -> void:
 		if String(state["visual_shot_id"]) == visual_shot_id:
 			state["input_sequence"] = input_sequence
 			return
+
+
+## 仅为服务器已扣能并接受的开火创建一次弹体，快照重发不重复播放。
+## [param event] 含发射者坐标、瞄准终点及 shot_id 的已确认开火事件。
+## [param tracking_target_resolver] 导弹目标位置查询器。
+## 返回本次是否产生新的已确认表现。
+func present_confirmed_shot(event: Dictionary, tracking_target_resolver: Callable = Callable()) -> bool:
+	var shot_id := String(event.get("shot_id", ""))
+	var actor_point: Variant = event.get("actor_position", [])
+	var endpoint: Variant = event.get("endpoint", [])
+	if shot_id.is_empty() or _confirmed_shots.has(shot_id) \
+			or not actor_point is Array or actor_point.size() != 2 \
+			or not endpoint is Array or endpoint.size() != 2:
+		return false
+	# 服务端已经通过冷却校验，网络延迟不能让本地旧冷却吞掉合法开火。
+	_cooldown_remaining = 0.0
+	var fired := request_fire(Vector2(actor_point[0], actor_point[1]), Vector2(endpoint[0], endpoint[1]), tracking_target_resolver)
+	if not bool(fired.get("ok", false)):
+		return false
+	_confirmed_shots[shot_id] = true
+	if _confirmed_shots.size() > 128:
+		_confirmed_shots.erase(_confirmed_shots.keys()[0])
+	bind_input_sequence(String(fired["visual_shot_id"]), int(event.get("input_sequence", -1)))
+	return true
 
 
 ## 接收本玩家的权威弹道参数和最终结果，同步后续发射并终结尚在飞行的对应弹体。
@@ -276,6 +307,7 @@ func clear_effects() -> void:
 	for state in _muzzles:
 		_free_state_node(state)
 	_projectiles.clear()
+	_confirmed_shots.clear()
 	_last_authoritative_event_id = 0
 	_impacts.clear()
 	_muzzles.clear()

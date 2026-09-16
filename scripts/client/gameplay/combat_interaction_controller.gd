@@ -65,7 +65,7 @@ func request_mining(source_position: Vector2) -> void:
 
 ## 优先拾取掉落，再按选中槽位及实际主装置分发采矿、维修或武器意图。
 ## [param world_position] 鼠标命中的地图世界坐标。
-## 设计：当前切片立即反馈弹体与命中特效；伤害、能耗和真实命中仍只接受服务端事件。
+## 设计：点击只提交开火意图；弹体、能耗和命中均由服务端接受事件驱动。
 func handle_world_combat_left_click(world_position: Vector2) -> void:
 	if world_view.ground_loot_world_controller != null:
 		var loot_id := world_view.ground_loot_world_controller.loot_at(world_position)
@@ -100,7 +100,7 @@ func request_weapon_attack(world_position: Vector2) -> void:
 	if selected_mode == "missile":
 		tracking_resolver = _combat_target_position.bind(target_entity_id)
 	var result: Dictionary = attack_controller.request_fire(
-		world_view.player.position, authoritative_target, tracking_resolver
+		world_view.player.position, authoritative_target, tracking_resolver, true
 	)
 	if not bool(result.get("ok", false)):
 		var code := StringName(result.get("code", &""))
@@ -112,6 +112,7 @@ func request_weapon_attack(world_position: Vector2) -> void:
 			hud.show_status("当前无法开火")
 		return
 	var resolved_target: Vector2 = result["resolved_target"]
+	hud.show_status("正在请求开火")
 	var ability_payload: Dictionary = multiplayer_presenter.request_use_ability(
 		String(mode["ability_id"]), resolved_target
 	)
@@ -132,26 +133,29 @@ func request_weapon_attack(world_position: Vector2) -> void:
 		CombatTraceLogger.record(&"client", &"ability_intent_not_submitted", trace_fields)
 		return
 	CombatTraceLogger.record(&"client", &"ability_intent_submitted", trace_fields)
-	attack_controller.bind_input_sequence(
-		String(result["visual_shot_id"]), int(ability_payload["input_sequence"])
-	)
-	var was_moving: bool = local_player_controller.has_active_route()
-	var direction: Vector2 = result["direction"]
-	var weapon_direction := LocalPlayerController.direction_index(direction)
-	var layer_id := StringName(mode["layer_id"])
+
+
+## 播放本玩家已经被服务器接受的攻击，拒绝开火时不会产生炮弹或炮口动画。
+## [param event] 权威发射事件；其他玩家或非发射事件直接忽略。
+func _present_confirmed_attack(event: Dictionary) -> void:
+	var mode_id := String(event.get("skill_id", ""))
+	if String(event.get("event_type", "")) != mode_id + "_projectile_spawned":
+		return
+	var local_id := String(multiplayer_presenter.session.local_entity_id) if multiplayer_presenter != null and multiplayer_presenter.session != null else ""
+	if local_id.is_empty() or String(event.get("attacker_id", "")) != local_id:
+		return
+	var controller: WeaponAttackVisualController = world_view.combat_attack_controllers.get(mode_id)
+	if controller == null:
+		return
+	var resolver := _combat_target_position.bind(String(event.get("target_entity_id", ""))) if mode_id == "missile" else Callable()
+	if not controller.present_confirmed_shot(event, resolver):
+		return
+	var direction: Array = event.get("direction", [1, 0])
+	var layer_id := StringName(CombatActions.WEAPON_MODES[mode_id]["layer_id"])
 	world_view.player.set_combat_weapon_layer(layer_id)
-	world_view.player.set_combat_layer_pose(layer_id, &"attack", weapon_direction)
-	if bool(result.get("range_clamped", false)):
-		hud.show_status("目标超出射程，向极限点 %d, %d 开火" % [
-			roundi(resolved_target.x),
-			roundi(resolved_target.y),
-		])
-	else:
-		hud.show_status("向 %d, %d 开火" % [
-			roundi(resolved_target.x),
-			roundi(resolved_target.y),
-		])
-	_restore_locomotion_after_attack(was_moving, layer_id)
+	world_view.player.set_combat_layer_pose(layer_id, &"attack", LocalPlayerController.direction_index(Vector2(direction[0], direction[1])))
+	_restore_locomotion_after_attack(local_player_controller.has_active_route(), layer_id)
+
 
 
 ## 根据实际主装置消费工程臂点击，能量炮继续进入既有开火流程。
@@ -228,6 +232,8 @@ func _restore_locomotion_after_attack(was_moving: bool, layer_id: StringName) ->
 ## [param snapshot] 会话已接收的战斗实体和本地战车快照。
 func on_combat_snapshot_received(snapshot: Dictionary) -> void:
 	world_view.mining_visual_controller.apply_snapshot(snapshot)
+	for event: Dictionary in snapshot.get("recent_events", []):
+		_present_confirmed_attack(event)
 	for mode_id: String in world_view.combat_attack_controllers:
 		var mode: Dictionary = CombatActions.WEAPON_MODES[mode_id]
 		world_view.combat_attack_controllers[mode_id].apply_authoritative_snapshot(snapshot, String(mode["ability_id"]))
@@ -293,6 +299,7 @@ func on_destroyed_wait_selected() -> void:
 ## 将已确认的战斗、维修、拾取和采矿事件转换为本地提示。
 ## [param event] 会话下发的已确认业务事件。
 func on_combat_event_received(event: Dictionary) -> void:
+	_present_confirmed_attack(event)
 	var event_type := StringName(event.get("event_type", ""))
 	if event_type == &"loot_picked_up":
 		if world_view.ground_loot_world_controller != null:

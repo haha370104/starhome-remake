@@ -26,6 +26,12 @@ func _initialize() -> void:
 			controller.configure(manifest_value, world_parent, WEAPON_ID) == OK,
 			"starter cannon effects should configure",
 		)
+		var preview: Dictionary = controller.request_fire(Vector2.ZERO, Vector2(200, 0), Callable(), true)
+		_expect(preview.ok and controller.active_projectile_count() == 0 and controller.active_muzzle_count() == 0, "提交意图前仅校验目标，服务器拒绝时没有弹体")
+		var event := {"shot_id": "accepted.1", "input_sequence": 1, "actor_position": [0, 0], "endpoint": [200, 0]}
+		_expect(controller.present_confirmed_shot(event) and controller.active_projectile_count() == 1, "服务器接受后才显示炮弹")
+		_expect(not controller.present_confirmed_shot(event) and controller.active_projectile_count() == 1, "重发接受事件不能重复生成炮弹")
+		controller.clear_effects()
 		_test_fire_lifecycle(controller)
 		_test_secondary_weapons(controller, world_parent, manifest_value)
 		_test_authoritative_flight(controller, world_parent, manifest_value)

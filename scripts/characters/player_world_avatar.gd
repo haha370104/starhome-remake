@@ -281,7 +281,7 @@ func set_combat_status(snapshot: Dictionary) -> void:
 	combat_status_bar.set_health(float(snapshot.get("health", 0)), float(snapshot.get("max_health", 1)))
 	combat_status_bar.set_energy(
 		float(snapshot.get("working_energy", 0.0)),
-		float(snapshot.get("max_working_energy", 1.0)),
+		float(snapshot.get("working_energy_capacity", 1.0)),
 	)
 
 
