@@ -66,51 +66,7 @@ func execute(
 	progression_config: Dictionary,
 	quality_roll: float = 0.0,
 ) -> DomainResult:
-	if player == null or item_catalog == null or recipe_id.is_empty():
-		return DomainResult.failure(&"manufacturing.recipe_invalid", "recipe is unavailable")
-	var effective_level := player.skills.effective_level(skill_id, player.character_equipment)
-	var probability := success_probability(effective_level)
-	if station_id != "cooking" and probability <= 0.0:
-		return DomainResult.failure(&"manufacturing.skill_insufficient", "生产技能等级不足")
-	var succeeded := probability >= 1.0 or clampf(random_roll, 0.0, 1.0) < probability
-	if not succeeded:
-		var consumed := player.inventory.consume_requirements(materials)
-		if not consumed.is_ok:
-			return consumed
-		return DomainResult.ok({
-			"recipe_id": recipe_id,
-			"succeeded": false,
-			"success_probability": probability,
-			"consumed": consumed.value,
-		})
-	var created := item_catalog.create(product_definition_id, {
-		"instance_id": product_instance_id,
-		"quantity": output_quantity,
-		"container_id": "main",
-		"position_px": [0, 0],
-		"equipment_quality": item_catalog.quality_rules.manufactured_state(product_definition_id, quality_roll),
-	})
-	if not created.is_ok:
-		return created
-	var crafted := player.inventory.craft_product(materials, created.value)
-	if not crafted.is_ok:
-		return crafted
-	var progression := player.grant_skill_experience(
-		skill_id, skill_experience, progression_config, "manufacturing"
-	)
-	if not progression.is_ok and progression.error_code == &"skill_maximum_level":
-		progression = DomainResult.ok({"upgraded": false, "maximum_level_reached": true})
-	if not progression.is_ok:
-		return progression
-	return DomainResult.ok({
-		"recipe_id": recipe_id,
-		"succeeded": true,
-		"success_probability": probability,
-		"product_definition_id": product_definition_id,
-		"output_quantity": output_quantity,
-		"quality_description": item_catalog.quality_rules.manufacturing_description(product_definition_id),
-		"progression": progression.value,
-	})
+	return ManufacturingBatch.execute(self, player, item_catalog, product_instance_id, random_roll, progression_config, [quality_roll])
 
 
 ## 投影生产面板所需的只读配方状态。

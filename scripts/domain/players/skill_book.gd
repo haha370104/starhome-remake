@@ -95,8 +95,8 @@ func grant_experience(
 	amount: float,
 	progression_config: Dictionary,
 ) -> DomainResult:
-	if not progression_config.get("coefficient_bands", {}) is Dictionary \
-			or not progression_config["coefficient_bands"].has(skill_id):
+	var coefficient_bands: Variant = progression_config.get("coefficient_bands")
+	if not coefficient_bands is Dictionary or not coefficient_bands.has(skill_id):
 		return DomainResult.failure(&"unknown_skill", "Unknown skill: %s" % skill_id)
 	var state := _state_for(skill_id)
 	var result := SkillProgressionScript.apply_exp(state, amount, progression_config)
