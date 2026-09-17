@@ -221,13 +221,13 @@ func _apply_recent_events(combat_snapshot: Dictionary) -> void:
 		if event_type in [&"monster_attack_resolved", &"monster_attack_expired"] and _attack_effects != null:
 			_attack_effects.settle_attack(event)
 		if event_type in [
-			&"energy_cannon_hit", &"rocket_launcher_hit", &"missile_hit",
+			&"energy_cannon_hit", &"rocket_launcher_hit", &"missile_hit", &"generator_heat_hit",
 			&"monster_attack_resolved",
 		]:
 			_present_damage(event, combat_snapshot)
 		if event_type == &"monster_attack_resolved":
 			_present_attack_impact(event, combat_snapshot)
-		if event_type in [&"energy_cannon_hit", &"rocket_launcher_hit", &"missile_hit"]:
+		if event_type in [&"energy_cannon_hit", &"rocket_launcher_hit", &"missile_hit", &"generator_heat_hit"]:
 			_present_nested_death(event)
 
 

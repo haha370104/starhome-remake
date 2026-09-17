@@ -25,7 +25,7 @@ var _interval_ticks := 20
 ## [param simulation_hz] 服务器频率。
 func apply(profile: GeneratorRules.Profile, actor_id: String, instance_id: String, tick: int, simulation_hz: int) -> void:
 	_interval_ticks = maxi(1, simulation_hz)
-	var found: Active
+	var found: Active = null
 	for entry: Active in _active:
 		if entry.source_actor == actor_id and entry.source_instance == instance_id: found = entry
 	if found == null:
@@ -44,7 +44,7 @@ func apply(profile: GeneratorRules.Profile, actor_id: String, instance_id: Strin
 func advance(tick: int) -> HeatPulse:
 	for index: int in range(_active.size() - 1, -1, -1):
 		if _active[index].expires_tick < tick: _active.remove_at(index)
-	var strongest: Active
+	var strongest: Active = null
 	for entry: Active in _active:
 		if entry.profile.heat_damage > 0 and (strongest == null or entry.profile.heat_damage > strongest.profile.heat_damage): strongest = entry
 	if strongest == null:

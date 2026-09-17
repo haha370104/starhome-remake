@@ -44,6 +44,7 @@ var population_kind: StringName = &"ordinary"
 var death_generation := 0
 var last_killer_id := ""
 var _wander_random := RandomNumberGenerator.new()
+var generator_afflictions := GeneratorAfflictions.new()
 
 
 ## 从地图生成配置组装完整怪物领域对象。
@@ -73,6 +74,7 @@ func configure(definition: Dictionary, simulation_hz: int, current_tick := 0) ->
 	if not MonsterAggroPolicyScript.is_supported(requested_policy):
 		return DomainResult.failure(&"combat.invalid_engagement_policy", "monster engagement policy is invalid")
 	monster_id = requested_id
+	generator_afflictions.clear()
 	entity_id = requested_id
 	map_instance_id = requested_map_instance_id
 	position = requested_position
@@ -119,15 +121,17 @@ func configure(definition: Dictionary, simulation_hz: int, current_tick := 0) ->
 ## [param attacker_id] 伤害来源玩家标识。
 ## [param current_tick] 当前权威逻辑 tick。
 ## 返回实际伤害、生命、死亡和重生信息。
-func apply_damage(amount: int, attacker_id: String, current_tick: int) -> DomainResult:
+## [param bypass_defense] 已确认的持续高热直接扣生命，普通炮击仍经过实时防御。
+func apply_damage(amount: int, attacker_id: String, current_tick: int, bypass_defense := false) -> DomainResult:
 	if health <= 0:
 		return DomainResult.failure(&"combat.target_already_dead", "monster is already dead")
 	if amount < 0 or attacker_id.is_empty() or current_tick < 0:
 		return DomainResult.failure(&"combat.invalid_damage", "damage attribution is invalid")
-	var applied := mini(CombatDefense.mitigate(amount, defense), health)
+	var applied := mini(amount if bypass_defense else CombatDefense.mitigate(amount, generator_afflictions.defense_after(defense)), health)
 	health -= applied
 	var died := health == 0
 	if died:
+		generator_afflictions.clear()
 		death_generation += 1
 		last_killer_id = attacker_id
 		respawn_at_tick = current_tick + respawn_delay_ticks
@@ -167,6 +171,7 @@ func advance_to_tick(current_tick: int) -> DomainResult:
 ## 将怪物恢复到出生点及空闲 AI 状态。
 ## [param current_tick] 当前权威逻辑 tick。
 func reset_to_home(current_tick: int) -> void:
+	generator_afflictions.clear()
 	position = home_position
 	target_actor_id = ""
 	pause_wander(current_tick)

@@ -595,7 +595,7 @@ func drain_skill_progression_events() -> Array[Dictionary]:
 			continue
 		_last_progression_combat_event_id = maxi(_last_progression_combat_event_id, event_id)
 		var event_type := StringName(combat_event.get("event_type", &""))
-		if event_type in [&"energy_cannon_hit", &"rocket_launcher_hit", &"missile_hit"] \
+		if event_type in [&"energy_cannon_hit", &"rocket_launcher_hit", &"missile_hit", &"generator_heat_hit"] \
 				and int(combat_event.get("damage", 0)) > 0:
 			events.append({
 				"entity_id": String(combat_event.get("attacker_id", "")),

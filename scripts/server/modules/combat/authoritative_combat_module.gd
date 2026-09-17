@@ -24,6 +24,7 @@ var respawn_events: Array[Dictionary] = []
 var pending_projectiles: Array[Dictionary] = []
 var pending_monster_attacks: Array[Dictionary] = []
 var corrosion := AuthoritativeCorrosionModule.new()
+var generators := AuthoritativeGeneratorModule.new()
 var ground_loot: Dictionary = {}
 var rewards: AuthoritativeRewardService
 var _random := RandomNumberGenerator.new()
@@ -69,6 +70,7 @@ func configure(
 	pending_projectiles.clear()
 	pending_monster_attacks.clear()
 	corrosion.clear()
+	generators.reset(random_seed ^ 724315)
 	ground_loot.clear()
 	return DomainResult.ok(self)
 
@@ -182,6 +184,7 @@ func refresh_achievement_loadout(actor_id: String, loadout: Dictionary) -> Domai
 	(actor["clothing_effects"] as ClothingCombatEffects).repair_wait_reduction = float(assembly.get("repair_wait_reduction", 0))
 	actor["weapons"] = normalized
 	actor["equipment_condition"] = (assembly.get("equipment_condition", EquipmentConditionLoadout.new()) as EquipmentConditionLoadout).duplicate_loadout()
+	generators.retain_sources(actor_id, AuthoritativeGeneratorModule.instances(actor.equipment_condition), monsters)
 	actor["self_repair_bonus_strength"] = int(assembly.get("self_repair_bonus_strength", 0))
 	var repair: Dictionary = actor["self_repair"]
 	if bool(repair["active"]):
@@ -223,6 +226,7 @@ func remove_dead_monsters(map_instance_id: String) -> Array[String]:
 ## 返回该函数计算、查询或操作得到的结果。
 func unregister_vehicle(actor_id: String) -> bool:
 	corrosion.detach(actor_id)
+	generators.retain_sources(actor_id, PackedStringArray(), monsters)
 	return actors.erase(actor_id)
 
 
@@ -345,6 +349,7 @@ func handle_weapon_attack(actor_id: String, raw_intent: Variant) -> DomainResult
 		"attacker_id": actor_id,
 		"target_entity_id": target_id,
 		"weapon": weapon.duplicate(true),
+		"generator_instances": AuthoritativeGeneratorModule.instances(equipment_condition),
 		"impact_position": impact_position,
 		"attack_mode": attack_mode,
 	})
@@ -672,20 +677,11 @@ func _settle_projectile(projectile: Dictionary) -> void:
 		"target_health": damage_result.value["health"],
 	})
 	if bool(damage_result.value["died"]):
-		var spawned_loot := _spawn_monster_loot(monster, attacker_id)
-		var death_event := {
-			"event_type": &"monster_died",
-			"server_tick": current_tick,
-			"monster_id": target_id,
-			"killer_id": attacker_id,
-			"death_generation": damage_result.value["death_generation"],
-			"respawn_at_tick": damage_result.value["respawn_at_tick"],
-			"position": [monster.position.x, monster.position.y],
-			"loot_drops": spawned_loot,
-		}
-		death_events.append(death_event)
-		_record_quest_kill(monster, attacker_id)
-		event["death"] = death_event.duplicate(true)
+		event["death"] = _record_monster_death(monster, attacker_id)
+	elif String(weapon.get("skill_id", "")) == "energy_cannon" and actors.has(attacker_id):
+		var actor: Dictionary = actors[attacker_id]
+		generators.on_hit(attacker_id, projectile.get("generator_instances", PackedStringArray()), actor.equipment_condition,
+			actor.vehicle_state, monster, current_tick, simulation_hz)
 
 
 ## 在火箭抵达落点时一次结算范围内的全部存活怪物。
@@ -726,22 +722,40 @@ func _settle_rocket_projectile(projectile: Dictionary) -> void:
 			"target_health": damage_result.value["health"],
 		})
 		if bool(damage_result.value["died"]):
-			var spawned_loot := _spawn_monster_loot(monster, String(projectile["attacker_id"]))
-			var death_event := {
-				"event_type": &"monster_died",
-				"server_tick": current_tick,
-				"monster_id": monster_id,
-				"killer_id": projectile["attacker_id"],
-				"death_generation": damage_result.value["death_generation"],
-				"respawn_at_tick": damage_result.value["respawn_at_tick"],
-				"position": [monster.position.x, monster.position.y],
-				"loot_drops": spawned_loot,
-			}
-			death_events.append(death_event)
-			_record_quest_kill(monster, String(projectile["attacker_id"]))
-			event["death"] = death_event.duplicate(true)
+			event["death"] = _record_monster_death(monster, String(projectile["attacker_id"]))
 	if not hit_any:
 		_record_projectile_expired(projectile, impact_position, &"no_aoe_target_at_impact_tick")
+
+
+## 所有致死伤害共用一次死亡、奖励和任务记录，持续伤害不另造发奖链。
+## [param monster] 本次刚死亡的怪物。
+## [param killer_id] 已验证的伤害来源。
+## 返回独立死亡事件，供实际伤害事件携带。
+func _record_monster_death(monster: MonsterLifecycle, killer_id: String) -> Dictionary:
+	var death := {"event_type": &"monster_died", "server_tick": current_tick,
+		"monster_id": monster.monster_id, "killer_id": killer_id,
+		"death_generation": monster.death_generation, "respawn_at_tick": monster.respawn_at_tick,
+		"position": [monster.position.x, monster.position.y], "loot_drops": _spawn_monster_loot(monster, killer_id)}
+	death_events.append(death)
+	_record_quest_kill(monster, killer_id)
+	return death.duplicate(true)
+
+
+## 推进每个目标自己的发生器时钟，并把持续伤害交给已有权威结算。
+func _advance_generator_effects() -> void:
+	for monster: MonsterLifecycle in monsters.values():
+		if not monster.is_alive(): continue
+		var pulse := monster.generator_afflictions.advance(current_tick)
+		if pulse == null or not actors.has(pulse.source_actor): continue
+		var actor: Dictionary = actors[pulse.source_actor]
+		if (actor.vehicle_state as VehicleCombatState).health <= 0 or String(actor.map_instance_id) != monster.map_instance_id: continue
+		var damaged := monster.apply_damage(pulse.damage, pulse.source_actor, current_tick, true)
+		if not damaged.is_ok: continue
+		var event := _record_combat_event({"event_type": &"generator_heat_hit", "server_tick": current_tick,
+			"attacker_id": pulse.source_actor, "source_instance_id": pulse.source_instance, "skill_id": "energy_cannon",
+			"target_entity_id": monster.monster_id, "impact_position": [monster.position.x, monster.position.y],
+			"damage": damaged.value.applied_damage, "target_health": monster.health})
+		if bool(damaged.value.died): event["death"] = _record_monster_death(monster, pulse.source_actor)
 
 
 ## 死亡进度独立于仅保留64条的表现事件环；群攻大量击杀也不会丢失训练计数。
@@ -878,6 +892,7 @@ func advance_ticks(tick_count: int, simulate_monster_ai := true) -> DomainResult
 			if vehicle_state.health > 0 and not (actor.position as Vector2).is_equal_approx(actor.previous_position):
 				(actor.equipment_condition as EquipmentConditionLoadout).record_use("movement", fixed_delta)
 		_settle_due_self_repairs()
+		_advance_generator_effects()
 		_settle_due_projectiles()
 		_settle_due_monster_attacks()
 		for event: Dictionary in corrosion.advance(current_tick, actors):
@@ -935,6 +950,7 @@ func snapshot_for_actor(actor_id: String) -> Dictionary:
 			"health": monster.health,
 			"max_health": monster.max_health,
 			"alive": monster.is_alive(),
+			"generator_statuses": Array(monster.generator_afflictions.labels()),
 			"action": String(monster.action),
 			"action_sequence": monster.action_sequence,
 			"facing_index": monster.facing_direction,
@@ -1127,7 +1143,7 @@ func _begin_monster_attack(monster_id: String, target_id: String, target_positio
 		"attacker_id": monster_id,
 		"target_entity_id": target_id,
 		"map_instance_id": monster.map_instance_id,
-		"damage": monster.attack_mode.base_attack,
+		"damage": monster.generator_afflictions.attack_after(monster.attack_mode.base_attack),
 		"attack_archetype": attack_archetype,
 		"combat_actor_id": monster.combat_actor_id,
 		"projectile_speed": monster.attack_mode.projectile_speed,
@@ -1321,6 +1337,7 @@ func _record_combat_event(event: Dictionary) -> Dictionary:
 		effects.damaged(current_tick, simulation_hz)
 		if bool(event.get("target_destroyed", false)):
 			effects.reset_chain()
+			generators.retain_sources(damaged_actor, PackedStringArray(), monsters)
 	event_sequence += 1
 	var recorded := event.duplicate(true)
 	recorded["event_id"] = event_sequence

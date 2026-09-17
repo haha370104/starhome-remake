@@ -17,6 +17,11 @@ class Profile extends RefCounted:
 	var defense := 0
 	var energy_cannon_attack := 0
 
+	## 只为当前确有怪物适用目标的临时效果消耗弹药。
+	## 返回高热、减防或通用磁化至少一项可用时为真。
+	func has_pve_effect() -> bool:
+		return heat_damage > 0 or defense_flat_reduction > 0 or defense_percent_reduction > 0 or attack_percent_reduction > 0
+
 	## 按统一属性名投影常驻增益，不叠加尚未接入的专属品质。
 	## [param attribute] 战车属性名。
 	## 返回原版基础加值。
@@ -34,14 +39,14 @@ class Profile extends RefCounted:
 		for field: String in ["max_health", "defense", "energy_cannon_attack"]:
 			if passive_bonus(field) > 0:
 				lines.append("%s +%d" % [{"max_health": "战车生命", "defense": "战车防御", "energy_cannon_attack": "能量炮攻击"}[field], passive_bonus(field)])
-		if chance > 0:
+		if chance > 0 and has_pve_effect():
 			lines.append("能量炮命中时 %.0f%% 触发，持续 %s 秒" % [chance * 100, str(duration_seconds)])
 			if heat_damage > 0: lines.append("高热：每秒 %d 伤害" % heat_damage)
 			if defense_flat_reduction > 0: lines.append("蚀甲：防御 -%d" % defense_flat_reduction)
 			if defense_percent_reduction > 0: lines.append("腐蚀：防御 -%.0f%%" % (defense_percent_reduction * 100))
 			if attack_percent_reduction > 0: lines.append("磁化：攻击 -%.0f%%" % (attack_percent_reduction * 100))
-			if energy_attack_percent_reduction > 0: lines.append("能量炮压制 %.0f%%：当前怪物武器类型未核实，暂不生效" % (energy_attack_percent_reduction * 100))
 			lines.append("触发消耗 1 发弹药、%s 工作能量；冷却 %s 秒" % [str(working_energy_cost), str(cooldown_seconds)])
+		if energy_attack_percent_reduction > 0: lines.append("能量炮压制 %.0f%%：当前怪物武器类型未核实，暂不生效" % (energy_attack_percent_reduction * 100))
 		lines.append("发生器最多装备两件；同类临时效果取最强值")
 		return "\n".join(lines)
 
