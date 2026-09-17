@@ -25,7 +25,7 @@
 | 如何启动和手工验证？ | [仓库 README](../README.md)、[使用说明](../使用说明.md) |
 | 独立服务器与离线直连到底共用了什么？ | [双运行模式架构](./runtime_modes_architecture.md) |
 | 为什么采用这些边界？ | [技术架构](./technical_architecture.md)，注意目标结构不等于现有目录 |
-| 接下来做什么？ | [开发路线图](./development_roadmap.md)，阶段完成只指各自验收范围 |
+| 接下来做什么？ | [非多人玩法补齐计划](pve_completion_plan.md)是当前玩法顺序；[开发路线图](./development_roadmap.md)保留工程阶段和历史验收 |
 | 全量资源与可玩内容有什么区别？ | [运行内容与资源包](./runtime_content.md) |
 
 证据优先级：用户确认的玩法/工程约束决定“应该怎样”；当前源码、配置和可复现测试决定
