@@ -7,6 +7,9 @@
 
 ## 1. 先看结论
 
+P6 [设置与退出](client_settings_and_exit.md)：正常退出经 `AuthoritativeExitService` 采集、原子保存和清理会话，
+客户端 `ClientExitController` 只凭匹配回执退出；服务端故障/重试入口见 `tests/server/persistence/graceful_exit_test.gd`。
+
 2026-09-17 P1 新增[战车加工](vehicle_workshop.md)：审查孔槽资格、跨装备同类上限、裂纹堆叠身份、
 失败扣料/损毁确认、满包摘取回滚，以及加工快照进入真实战斗和存档的链路。客户端回归 75/75。
 

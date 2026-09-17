@@ -6,6 +6,7 @@ signal target_repair_requested(world_position: Vector2)
 const CombatActions := preload("res://scripts/client/gameplay/client_combat_actions.gd")
 
 var vehicle_destroyed := false
+var application_exiting := false
 var vehicle_destroyed_dialog: VehicleDestroyedDialog
 var world_view: ClientWorldView
 var local_player_controller: LocalPlayerController
@@ -268,7 +269,7 @@ func on_combat_snapshot_received(snapshot: Dictionary) -> void:
 
 ## 提交主动回城或击毁后的回基地选择；目的地图、三秒等待和回血规则均由服务器决定。
 func request_vehicle_recovery() -> void:
-	if map_travel.is_locked() or multiplayer_presenter == null:
+	if application_exiting or map_travel.is_locked() or multiplayer_presenter == null:
 		return
 	map_travel.stop_moving("正在请求返回基地")
 	if multiplayer_presenter.request_vehicle_recovery().is_empty():
@@ -334,6 +335,6 @@ func on_combat_event_received(event: Dictionary) -> void:
 ## 合并切图、基地救援等待和战车击毁状态，供输入协调器使用。
 ## 返回世界操作是否必须暂停。
 func is_input_locked() -> bool:
-	return map_travel.is_locked() or vehicle_destroyed or (multiplayer_presenter != null \
+	return application_exiting or map_travel.is_locked() or vehicle_destroyed or (multiplayer_presenter != null \
 		and multiplayer_presenter.session != null and multiplayer_presenter.session.is_vehicle_recovery_pending())
 

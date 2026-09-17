@@ -35,6 +35,7 @@ var map_preloader: ClientMapPreloader
 var map_route_resolver: RuntimeMapRouteResolver
 var panel_session: PlayerPanelSession
 var game_window_manager: GameWindowManager
+var exit_controller := ClientExitController.new()
 var initial_loading_screen: CanvasLayer
 
 
@@ -198,6 +199,8 @@ func _build_multiplayer_presentation() -> void:
 	_build_game_windows()
 	combat.bind_session(multiplayer_presenter, panel_session)
 	interactions.bind_player_windows(game_window_manager)
+	add_child(exit_controller)
+	exit_controller.configure(multiplayer_presenter, panel_session, combat, game_window_manager.navigation_windows["system"])
 	local_player_controller.set_multiplayer_presenter(multiplayer_presenter)
 	var start_error: Error = multiplayer_presenter.start({
 		"offline_debug_enabled": multiplayer_offline_debug_enabled,

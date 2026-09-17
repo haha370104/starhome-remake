@@ -25,8 +25,8 @@ func execute(peer_id: int, session: ServerSession, command: Dictionary) -> Domai
 	var identity: Variant = command.get("request_id")
 	if not valid_request_id(identity): return DomainResult.failure(&"exit.invalid_request", "退出请求编号无效")
 	if _receipts.has(peer_id) and session == null:
-		var receipt := _receipts[peer_id]
-		if receipt.request_id == identity: return DomainResult.ok({"exit_receipt": receipt.duplicate(true)})
+		var cached_receipt := _receipts[peer_id]
+		if cached_receipt.request_id == identity: return DomainResult.ok({"exit_receipt": cached_receipt.duplicate(true)})
 		return DomainResult.failure(&"exit.session_closed", "此会话已保存退出")
 	if session == null or session.peer_id != peer_id:
 		return DomainResult.failure(&"exit.session_missing", "当前没有可保存的角色会话")
