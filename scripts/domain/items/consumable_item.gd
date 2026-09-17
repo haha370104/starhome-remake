@@ -23,7 +23,9 @@ func _init(definition: Dictionary = {}, state: Dictionary = {}) -> void:
 func use_description() -> String:
 	var lines := PackedStringArray()
 	if energy > 0:
-		lines.append("恢复战车储备能量 %d" % energy)
+		lines.append("每包恢复战车储备能量 %d" % energy)
+		lines.append("自动批量补给，仅使用当前堆叠")
+		lines.append("剩余不足一包时消耗一包补满")
 	if physical > 0:
 		lines.append("恢复体力 %d（上限100）" % physical)
 	for effect: FoodEffect in effects:

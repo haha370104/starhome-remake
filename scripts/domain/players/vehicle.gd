@@ -31,6 +31,18 @@ func _init(state: Dictionary = {}) -> void:
 	output_power = maxf(0.0, float(state.get("output_power", 0.0)))
 
 
+## 计算一次补给能容纳的整包数量；不足一包的余量允许消耗一包补满。
+## [param energy_per_pack] 权威物品目录定义的单包储备能量。
+## [param available_count] 本次选中堆叠中可消耗的数量。
+## 返回不超过现有数量的使用量；满能量、损毁或参数无效时返回零。
+## 设计：容量与取整规则属于战车，客户端不能指定恢复量或消耗包数。
+func energy_pack_use_count(energy_per_pack: int, available_count: int) -> int:
+	var missing := reserve_energy_capacity - reserve_energy
+	if health <= 0 or missing <= 0.0 or energy_per_pack <= 0 or available_count <= 0:
+		return 0
+	return mini(available_count, maxi(1, floori(missing / float(energy_per_pack))))
+
+
 ## 汇总底盘、引擎、武器、装甲及维修器得到当前战车属性。
 ## [param character_self_repair_bonus] 人物已穿装备提供的额外自维修力。
 ## [param character_external_repair_bonus] 人物已穿装备提供的对外维修力。

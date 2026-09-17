@@ -92,19 +92,40 @@ func _test_live_server() -> void:
 	var id := session.entity_id
 	var state := server.autosave_service.state_for(id)
 	for label: String in ["低级能量包", "龙舌兰酒", "比萨"]:
-		var item := _item(label, 3)
-		state = server.player_panel_service.grant_loot(state, {"loot_id": label, "item_definition_id": item.definition_id, "quantity": 3}).value.candidate
+		var quantity := 10 if label == "低级能量包" else 3
+		var item := _item(label, quantity)
+		state = server.player_panel_service.grant_loot(state, {"loot_id": label, "item_definition_id": item.definition_id, "quantity": quantity}).value.candidate
 	state.character_health = 10
 	server.autosave_service.commit_player_state(id, state)
 	var map: AuthoritativeMapInstance = server.map_registry.instance_by_id(session.map_instance_id)
 	var runtime := map.vehicle_combat_state_for(id)
-	runtime.reserve_energy = 100
+	runtime.reserve_energy = 3500
 	var actor: Dictionary = map.combat_module.actors[id]
 	actor.cooldown_ready_ticks["energy_cannon.primary"] = 999
 	state = server.autosave_service.state_for(id)
-	var result := server.handle_peer_player_panel_command(77, {"type": "use_inventory_item", "instance_id": "低级能量包", "inventory_revision": state.inventory_revision})
-	_expect(result.ok and runtime.reserve_energy == 1100, "使用能量包以地图实时能源为准并写回运行态")
+	var command := {"type": "use_inventory_item", "instance_id": "低级能量包", "inventory_revision": state.inventory_revision,
+		"quantity": 999, "energy": 999999, "reserve_energy": 0}
+	var result := server.handle_peer_player_panel_command(77, command)
+	state = server.autosave_service.state_for(id)
+	var player: Player = mapper.to_domain(state).value
+	_expect(result.ok and runtime.reserve_energy == 9500 and state.reserve_energy == 9500
+		and player.inventory.find("低级能量包").quantity == 4,
+		"以地图实时能源3500批量补到9500，并原子保存只消耗六包；忽略客户端伪造数量和能源")
 	_expect(actor.cooldown_ready_ticks.get("energy_cannon.primary") == 999, "使用不会重置射击冷却")
+	_expect(not server.handle_peer_player_panel_command(77, command).ok and runtime.reserve_energy == 9500,
+		"权威背包版本拒绝成功后的重复补给请求")
+	command.inventory_revision = state.inventory_revision
+	result = server.handle_peer_player_panel_command(77, command)
+	state = server.autosave_service.state_for(id)
+	player = mapper.to_domain(state).value
+	_expect(result.ok and runtime.reserve_energy == 10000 and state.reserve_energy == 10000
+		and player.inventory.find("低级能量包").quantity == 3, "第二次使用一包，运行态和存档同时补满")
+	command.inventory_revision = state.inventory_revision
+	var previous_revision := state.revision
+	result = server.handle_peer_player_panel_command(77, command)
+	_expect(not result.ok and result.code == &"items.energy_full"
+		and server.autosave_service.state_for(id).revision == previous_revision,
+		"第三次满能量返回明确错误且不提交存档")
 	state = server.autosave_service.state_for(id)
 	result = server.handle_peer_player_panel_command(77, {"type": "use_inventory_item", "instance_id": "龙舌兰酒", "inventory_revision": state.inventory_revision})
 	_expect(result.ok, "服务器使用回血食品")

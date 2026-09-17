@@ -8,6 +8,7 @@ var catalog := ItemCatalog.new()
 func _initialize() -> void:
 	_expect(catalog.initialize().is_ok, "初始化目录")
 	_test_foods()
+	_test_energy_packs()
 	_test_stacks()
 	for failure: String in failures:
 		push_error(failure)
@@ -45,6 +46,64 @@ func _test_foods() -> void:
 	_expect(restored.eat(_food("伏特加"), 6000) == 100, "伏特加即时恢复100战车生命")
 	_expect(FoodStatus.valid_state(restored.to_dictionary()), "合法状态可保存")
 	_expect(not FoodStatus.valid_state({"physical": NAN}) and not FoodStatus.valid_state({"active": [{"kind": 99}]}), "拒绝非法状态")
+
+
+## 验证能量包整批补给、尾包截断、库存边界与失败事务不消耗。
+func _test_energy_packs() -> void:
+	var player := Player.new({"character_id": "energy.pack.test", "vehicle": {
+		"max_health": 70, "health": 70, "reserve_energy_capacity": 10000,
+		"reserve_energy": 3500, "working_energy_capacity": 100, "working_energy": 25}})
+	var pack := _food("低级能量包")
+	pack.quantity = 10
+	player.inventory.restore_items([pack])
+	var used := player.use_inventory_item(pack.instance_id, 0, 1000)
+	_expect(used.is_ok and pack.quantity == 4 and player.vehicle.reserve_energy == 9500,
+		"3500/10000一次消耗六个1000包，得到9500")
+	_expect(player.inventory.revision == 1 and player.vehicle.working_energy == 25,
+		"整批只推进一次背包版本，不直接增加工作能量")
+	_expect(not player.use_inventory_item(pack.instance_id, 0, 1000).is_ok
+		and pack.quantity == 4 and player.vehicle.reserve_energy == 9500, "重复旧版本不再次消耗六包")
+	used = player.use_inventory_item(pack.instance_id, 1, 1000)
+	_expect(used.is_ok and pack.quantity == 3 and player.vehicle.reserve_energy == 10000,
+		"第二次只用一包补足500，不保留溢出量")
+	var food_before := player.food_status.to_dictionary()
+	used = player.use_inventory_item(pack.instance_id, 2, 1000)
+	_expect(not used.is_ok and used.error_code == &"items.energy_full" and pack.quantity == 3
+		and player.inventory.revision == 2 and player.food_status.to_dictionary() == food_before,
+		"第三次满能量明确报错，物品、版本及食品状态不变")
+	for row: Array in [[4000, 10, 10000, 4], [3500, 3, 6500, 0], [9999.5, 2, 10000, 1],
+		[0, 10, 10000, 0], [9500, 1, 10000, 0]]:
+		pack = _food("低级能量包")
+		pack.quantity = int(row[1])
+		player.inventory.restore_items([pack])
+		player.vehicle.reserve_energy = float(row[0])
+		used = player.use_inventory_item(pack.instance_id, player.inventory.revision, 1000)
+		_expect(used.is_ok and player.vehicle.reserve_energy == float(row[2]) and pack.quantity == int(row[3]),
+			"整除、缺包、浮点余量或只剩一包均按有效库存补给：%s" % str(row))
+		_expect((player.inventory.find(pack.instance_id) == null) == (int(row[3]) == 0),
+			"消耗至零才移除选中堆叠")
+	pack = _food("中级能量包")
+	pack.quantity = 5
+	var other := pack.copy_stack("other.energy.stack", 4) as ConsumableItem
+	player.inventory.restore_items([pack, other])
+	player.vehicle.reserve_energy_capacity = 45000
+	player.vehicle.reserve_energy = 1000
+	used = player.use_inventory_item(pack.instance_id, player.inventory.revision, 1000)
+	_expect(used.is_ok and pack.quantity == 1 and player.vehicle.reserve_energy == 41000
+		and other.quantity == 4, "10000能量包使用四包，其他堆叠不参与扣除")
+	pack.locked = true
+	used = player.use_inventory_item(pack.instance_id, player.inventory.revision, 1000)
+	_expect(not used.is_ok and pack.quantity == 1 and player.vehicle.reserve_energy == 41000,
+		"锁定能量包不能使用")
+	pack.locked = false
+	player.vehicle.health = 0
+	used = player.use_inventory_item(pack.instance_id, player.inventory.revision, 1000)
+	_expect(not used.is_ok and used.error_code == &"items.vehicle_destroyed" and pack.quantity == 1,
+		"战车损毁禁止批量补给")
+	player.vehicle.health = 70
+	player.health = 0
+	used = player.use_inventory_item(pack.instance_id, player.inventory.revision, 1000)
+	_expect(not used.is_ok and pack.quantity == 1, "人物死亡禁止批量补给")
 
 
 ## 验证拆分不会被自动合并，容量、锁定、绑定和上限均保持原子性。
