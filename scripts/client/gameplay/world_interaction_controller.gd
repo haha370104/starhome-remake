@@ -12,6 +12,17 @@ var map_travel: MapTravelController
 var combat: CombatInteractionController
 var game_window_manager: GameWindowManager
 var smart_assistant: SmartAssistantController
+var death_journal: PveDeathJournalController
+
+
+## 在会话启动前绑定窗口与被动日志；未开启智脑也会记录权威击毁。
+## [param manager] 已配置共享玩家会话的窗口管理器。
+func bind_player_windows(manager: GameWindowManager) -> void:
+	game_window_manager = manager
+	death_journal = PveDeathJournalController.new()
+	add_child(death_journal)
+	death_journal.configure(combat.multiplayer_presenter, manager.panel_session,
+		active_world_controller, manager.navigation_windows["pve_death_journal"])
 
 
 ## 初始化时暂停输入，直到启动依赖全部配置完毕。

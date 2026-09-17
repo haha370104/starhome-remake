@@ -29,6 +29,7 @@ func _initialize() -> void:
 	_test_monster_projectile_can_be_dodged()
 	_test_secondary_weapon_modes()
 	_test_line_projectile_uses_live_geometry()
+	_test_pve_death_identity()
 	if failures.is_empty():
 		print("AUTHORITATIVE_COMBAT_MODULE_OK (%d assertions)" % assertions)
 		quit(0)
@@ -849,3 +850,29 @@ func _expect(condition: bool, message: String) -> void:
 	assertions += 1
 	if not condition:
 		failures.append(message)
+
+
+## 从真实怪物攻击检验击毁身份、来源及快照重复发送的一致性。
+func _test_pve_death_identity() -> void:
+	var module := _new_module(904)
+	module.register_vehicle("player.journal", MAP_INSTANCE_ID, Vector2.ZERO, _assembly_result().value, {})
+	var monster := _behavior_monster_definition("monster.journal", &"aggressive")
+	monster["display_name"] = "日志测试怪"
+	monster["base_attack"] = 1000
+	module.register_monster(monster)
+	module.advance_ticks(30)
+	var deaths: Array[Dictionary] = []
+	for event: Dictionary in module.combat_events:
+		if event.has("death_id"): deaths.append(event)
+	_expect(deaths.size() == 1 and module.vehicle_state_for("player.journal").health == 0, "实际击毁只产生一次日志身份")
+	if deaths.is_empty(): return
+	var death := deaths[0]
+	_expect(String(death.death_id).length() == 32 and int(death.death_time) > 0, "日志身份和时刻来自权威事件")
+	_expect(death.attacker_display_name == "日志测试怪" and death.death_map_instance_id == MAP_INSTANCE_ID, "保存实际来源及地图")
+	var replay := module.snapshot_for_actor("player.journal")
+	_expect(replay.recent_events.has(death), "快照复用原身份而非生成新死亡")
+	module.advance_ticks(50)
+	var after := 0
+	for event: Dictionary in module.combat_events:
+		if event.has("death_id"): after += 1
+	_expect(after == 1, "持续停留死亡状态不会重复记录")

@@ -197,6 +197,7 @@ func _build_multiplayer_presentation() -> void:
 	map_travel.map_committed.connect(player_binding.refresh_local_movement_availability)
 	_build_game_windows()
 	combat.bind_session(multiplayer_presenter, panel_session)
+	interactions.bind_player_windows(game_window_manager)
 	local_player_controller.set_multiplayer_presenter(multiplayer_presenter)
 	var start_error: Error = multiplayer_presenter.start({
 		"offline_debug_enabled": multiplayer_offline_debug_enabled,
@@ -232,7 +233,6 @@ func _build_game_windows() -> void:
 	panel_session.player_changed.connect(player_binding.on_current_player_changed)
 	game_window_manager.configure(panel_session)
 	player_binding.panel_session = panel_session
-	interactions.game_window_manager = game_window_manager
 	multiplayer_presenter.skill_level_up_received.connect(player_binding.on_skill_level_up)
 
 

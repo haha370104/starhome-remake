@@ -2,6 +2,7 @@ class_name SmartAssistantPanel
 extends ModernNavigationWindow
 
 signal settings_changed(values: Dictionary)
+signal journal_requested
 var toggles: Dictionary[String, CheckButton] = {}
 var threshold: HSlider
 var threshold_label: Label
@@ -19,7 +20,7 @@ var _inventory: Inventory
 
 ## 创建使用共享字体和窗口壳的智脑设置；所有自动功能默认关闭。
 func _ready() -> void:
-	build_modern_window(Vector2(680, 616), "智脑系统")
+	build_modern_window(Vector2(680, 658), "智脑系统")
 	var labels := {"enabled": "启用智脑", "gun_missile_mode": "炮导模式：每0.5秒切换能量炮 / 导弹",
 		"auto_attack": "站定时自动攻击当前武器射程内的怪物",
 		"auto_pickup": "自动拾取身边掉落物", "auto_repair": "低生命时自助维修",
@@ -50,6 +51,7 @@ func _ready() -> void:
 	status.clip_text = true
 	var help := make_label("食品效果到期也会补给；同类冷却、锁定及能量包批量规则照常生效。\n设置自动保存；死亡、切图或重登后需手动启用。", Rect2(24, 568, 632, 42))
 	help.add_theme_font_size_override("font_size", 14)
+	make_button("PVE 击毁记录", Rect2(476, 614, 180, 32), journal_requested.emit)
 
 
 ## 创建10%到90%的资源阈值输入。

@@ -109,6 +109,9 @@ func _test_refresh_and_lifecycle() -> void:
 	(module.actors.p.vehicle_state as VehicleCombatState).health = 5
 	module.advance_ticks(20, false)
 	_expect((module.actors.p.vehicle_state as VehicleCombatState).health == 0 and module.corrosion.is_empty(), "致死脉冲与附着一起结清")
+	var death: Dictionary = module.combat_events[-1]
+	_expect(death.has("death_id") and bool(death.get("corrosion_pulse", false)) \
+		and death.get("attacker_display_name") == "低温毒胶", "真实毒雾致死保存来源与独立日志身份")
 	var instance := AuthoritativeMapInstance.new()
 	instance.navigation = RefCounted.new()
 	instance.combat_module = module

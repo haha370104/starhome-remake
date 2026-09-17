@@ -81,6 +81,7 @@ func configure(session: PlayerPanelSession) -> bool:
 	manufacturing_window.command_requested.connect(panel_session.dispatch)
 	_add_window(manufacturing_window)
 	var navigation_scripts := {
+		"pve_death_journal": preload("res://scripts/client/ui/windows/navigation/pve_death_journal_panel.gd"),
 		"personal_warehouse": preload("res://scripts/client/ui/windows/navigation/personal_warehouse_panel.gd"),
 		"scene_players": preload("res://scripts/client/ui/windows/navigation/scene_players_panel.gd"),
 		"missions": preload("res://scripts/client/ui/windows/navigation/mission_journal_panel.gd"),
@@ -118,6 +119,7 @@ func configure(session: PlayerPanelSession) -> bool:
 		navigation_windows[action] = window
 		_add_window(window)
 	navigation_windows["premium_shop"].attachment_upgrade_requested.connect(_open_attachment_upgrades)
+	navigation_windows["smart_assistant"].journal_requested.connect(func() -> void: toggle("pve_death_journal"))
 	var refresh := Timer.new()
 	refresh.wait_time = 2.0
 	refresh.timeout.connect(_refresh_navigation)
@@ -183,7 +185,7 @@ func toggle(action_id: String) -> bool:
 		window.call("clamp_to_viewport", size)
 		if action_id == "scene_players":
 			panel_session.dispatch({"type": "query_scene_players"})
-		elif action_id not in ["system", "premium_shop", "mercenary", "experience", "smart_assistant"]:
+		elif action_id not in ["system", "premium_shop", "mercenary", "experience", "smart_assistant", "pve_death_journal"]:
 			panel_session.dispatch({"type": "query"})
 	return true
 

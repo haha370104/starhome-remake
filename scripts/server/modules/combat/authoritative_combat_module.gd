@@ -1338,6 +1338,12 @@ func _record_combat_event(event: Dictionary) -> Dictionary:
 		if bool(event.get("target_destroyed", false)):
 			effects.reset_chain()
 			generators.retain_sources(damaged_actor, PackedStringArray(), monsters)
+			if String(event.get("event_type", "")) == "monster_attack_resolved":
+				event["death_id"] = Crypto.new().generate_random_bytes(16).hex_encode()
+				event["death_time"] = int(Time.get_unix_time_from_system())
+				event["death_map_instance_id"] = String(actors[damaged_actor].map_instance_id)
+				var source: MonsterLifecycle = monsters.get(String(event.get("attacker_id", "")))
+				event["attacker_display_name"] = source.display_name if source != null else "未知来源"
 	event_sequence += 1
 	var recorded := event.duplicate(true)
 	recorded["event_id"] = event_sequence
