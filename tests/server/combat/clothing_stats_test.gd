@@ -41,6 +41,7 @@ func _run() -> void:
 		var persisted: PlayerStateRecord = mapper.to_record(player).value
 		var restored: Player = mapper.to_domain(persisted).value
 		_expect(restored.calculate_vehicle_stats() == stats, attribute + "存档重算一致")
+	_test_armor()
 	var player: Player = mapper.to_domain(fixture._state).value
 	var shirt := player.inventory.find("inventory.training_shirt") as Clothing
 	shirt.enhancement.prefix = "phoenix"
@@ -89,3 +90,31 @@ func _expect(condition: bool, message: String) -> void:
 	checks += 1
 	if not condition:
 		failures.append(message)
+
+
+## 验证旧护甲字段完整进入战车防御，再接受龟前缀的百分比修正。
+func _test_armor() -> void:
+	var armor_id := ""
+	for id: String in items.definition_ids():
+		var definition := items.definition(id)
+		if int(definition.get("equipment_location", -1)) not in [5, 6, 7, 8]:
+			continue
+		var legacy: Dictionary = definition.get("stats", {}).get("legacy_properties", {})
+		if not legacy.has("m_narmor"):
+			continue
+		_expect(float(definition.stats.get("armor", -1)) == float(legacy.m_narmor), "护甲防御规范化：" + id)
+		if int(definition.equipment_location) == 5 and float(definition.stats.armor) > 0:
+			armor_id = id
+	_expect(not armor_id.is_empty(), "正式目录有可用前护甲")
+	var player: Player = mapper.to_domain(fixture._state).value
+	var before := int(player.calculate_vehicle_stats().defense)
+	var armor: VehicleEquipment = items.create(armor_id, {"instance_id": "armor"}).value
+	player.vehicle.loadout.restore(armor)
+	var base := before + int(armor.stat("armor", 0))
+	_expect(int(player.calculate_vehicle_stats().defense) == base, "实际装配护甲计入防御")
+	var shirt := player.inventory.find("inventory.training_shirt") as Clothing
+	shirt.enhancement.prefix = "turtle"
+	shirt.enhancement.prefix_quality = 6
+	player.equip_character_item(shirt.instance_id, "upper_body", player.inventory.revision, player.revision)
+	var loadout := _loadout(player)
+	_expect(int(loadout.assembly.defense) == roundi(base * 1.3), "龟前缀提升实际装甲防御")

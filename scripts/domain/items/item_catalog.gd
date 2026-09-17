@@ -244,9 +244,9 @@ func _normalize_legacy_vehicle_stats(item_definition: Dictionary) -> void:
 	if not legacy_value is Dictionary:
 		return
 	var legacy: Dictionary = legacy_value
+	_set_missing_numeric_stat(stats, "armor", legacy.get("m_narmor", 0))
 	match String(item_definition.get("kind", "")):
 		"vehicle_chassis":
-			_set_missing_numeric_stat(stats, "armor", legacy.get("m_narmor", 0))
 			_set_missing_numeric_stat(
 				stats, "working_energy_capacity", legacy.get("m_nenergy", stats.get("energy_cost", 0))
 			)

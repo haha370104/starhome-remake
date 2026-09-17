@@ -48,6 +48,7 @@ func _run() -> void:
 	_test_failures()
 	_test_synthesis()
 	_test_transfer()
+	_test_live_server()
 	for failure: String in failures:
 		push_error(failure)
 	print("CLOTHING_ENHANCEMENT_AUTHORITY checks=%d failures=%d" % [checks, failures.size()])
@@ -150,3 +151,45 @@ func _expect(condition: bool, message: String) -> void:
 	checks += 1
 	if not condition:
 		failures.append(message)
+
+
+## 通过真实会话命令在野外强化，保持实时资源、武器冷却并立即更新移动属性。
+func _test_live_server() -> void:
+	var config := DedicatedServerConfig.new()
+	config.network_enabled = false
+	config.map_config_path = "res://data/maps/d04_field_zone.json"
+	config.player_state_store_path = "res://.godot/clothing-live-%d.json" % Time.get_ticks_usec()
+	var server := AuthoritativeServer.new()
+	_expect(server.initialize(config).ok, "野外隔离服务器初始化")
+	var opened := server.open_session(91, {"protocol_version": config.protocol_version, "content_version": config.content_version}, 1000)
+	_expect(opened.ok, "正式玩家会话可进入野外")
+	var session := server.sessions.session_for_peer(91)
+	var record := server.autosave_service.state_for(session.entity_id)
+	var player: Player = mapper.to_domain(record).value
+	player.inventory.currency = 100000
+	var shirt: Clothing = items.create("male_sleeveless_shirt", {"instance_id": "live-shirt"}).value
+	player.receive_loot(shirt)
+	player.equip_character_item(shirt.instance_id, "upper_body", player.inventory.revision, player.revision)
+	_give(player, "enhancement:gem:movement_speed:1", "live-stone", 2)
+	server.autosave_service.commit_player_state(session.entity_id, mapper.to_record(player).value)
+	var map := server.map_registry.instance_by_id(session.map_instance_id)
+	_expect(map.is_vehicle_combat_active(), "在真实战斗地图验证")
+	var runtime := map.vehicle_combat_state_for(session.entity_id)
+	runtime.health = 23
+	runtime.working_energy = 17
+	var actor: Dictionary = map.combat_module.actors[session.entity_id]
+	actor.cooldown_ready_ticks["energy_cannon.primary"] = 999
+	var old_speed: float = map.entities[session.entity_id].movement_speed
+	record = server.autosave_service.state_for(session.entity_id)
+	var command := {"type": "enhance_clothing", "instance_id": "live-shirt", "stone_id": "live-stone",
+		"state_revision": record.revision, "inventory_revision": record.inventory_revision}
+	var result := server.handle_peer_player_panel_command(91, command)
+	_expect(result.ok, "真实命令入口可完成强化")
+	_expect(runtime == map.vehicle_combat_state_for(session.entity_id) and runtime.health == 23 and runtime.working_energy == 17, "强化保留实际战车对象及实时资源")
+	_expect(actor.cooldown_ready_ticks["energy_cannon.primary"] == 999, "野外强化不重置冷却")
+	_expect(is_equal_approx(map.entities[session.entity_id].movement_speed, minf(240, old_speed + 2)), "宝石立即影响实际地图速度")
+	var saved := server.autosave_service.state_for(session.entity_id)
+	_expect(PlayerEnhancementActions.clothing(mapper.to_domain(saved).value, "live-shirt").enhancement.gem_stage == 1, "强化写回真实仓储")
+	_expect(not server.handle_peer_player_panel_command(91, command).ok, "真实会话拒绝旧版本强化重放")
+	server.free()
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(config.player_state_store_path))
