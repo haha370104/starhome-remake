@@ -22,6 +22,7 @@ const GAMEPLAY_PATHS := [
 	"res://data/gameplay/armor_refinement_items_v1.json",
 	"res://data/gameplay/clothing_improvement_items_v1.json",
 	"res://data/gameplay/equipment_memory_items_v1.json",
+	"res://data/gameplay/equipment_dismantle_materials_v1.json",
 ]
 const PRESENTATION_PATHS := [
 	"res://data/presentation/player_equipment_v1.json",
