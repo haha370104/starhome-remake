@@ -21,6 +21,7 @@ const GAMEPLAY_PATHS := [
 	"res://data/gameplay/equipment_strengthening_items_v1.json",
 	"res://data/gameplay/armor_refinement_items_v1.json",
 	"res://data/gameplay/clothing_improvement_items_v1.json",
+	"res://data/gameplay/equipment_memory_items_v1.json",
 ]
 const PRESENTATION_PATHS := [
 	"res://data/presentation/player_equipment_v1.json",
@@ -37,6 +38,7 @@ var extra_attribute_rules: ExtraAttributeRules
 var strengthening_rules: EquipmentStrengtheningRules
 var armor_refinement_rules: ArmorRefinementRules
 var clothing_improvement_rules: ClothingImprovementRules
+var memory_rules: EquipmentMemoryRules
 
 
 ## 读取所有当前启用的物品定义和语义化表现目录。
@@ -110,6 +112,11 @@ func initialize() -> DomainResult:
 	var clothing_result := ClothingImprovementRules.from_dictionary(clothing_data.value)
 	if not clothing_result.is_ok: return clothing_result
 	clothing_improvement_rules = clothing_result.value
+	var memory_data := JsonConfigLoader.load_dictionary("res://data/gameplay/equipment_memory_rules_v1.json")
+	if not memory_data.is_ok: return memory_data
+	var memory_result := EquipmentMemoryRules.from_dictionary(memory_data.value)
+	if not memory_result.is_ok: return memory_result
+	memory_rules = memory_result.value
 	for id: String in clothing_improvement_rules.slots:
 		var slot: String = clothing_improvement_rules.slots[id]
 		if slot == "head" and _definitions[id].get("character_slot") == "upper_body":
@@ -133,6 +140,8 @@ func initialize() -> DomainResult:
 ## [param state] 存档中的实例状态。
 ## 返回服装、战车底盘、引擎、武器、采掘臂、通用装备或普通物品的具体实例。
 func create(definition_id: String, state: Dictionary) -> DomainResult:
+	var memory := EquipmentMemory.restore(state.get("equipment_memory", {}))
+	if not memory.is_ok: return memory
 	var improved := ClothingImprovement.restore(state.get("clothing_improvement", {}))
 	if not improved.is_ok: return improved
 	var improved_check := (improved.value as ClothingImprovement).validate_for(ItemDefinitionAliases.canonical(definition_id), clothing_improvement_rules)
@@ -166,9 +175,12 @@ func create(definition_id: String, state: Dictionary) -> DomainResult:
 	if not result.is_ok:
 		return result
 	var item: GameItem = result.value
+	var memory_check := (memory.value as EquipmentMemory).validate_for(item.module_type if item is EquipmentMemoryModule else 0, self)
+	if not memory_check.is_ok: return memory_check
 	if item is Clothing:
 		item.improvement_rules = clothing_improvement_rules
 	if item is Equipment:
+		item.memory_profile = memory_rules.profiles.get(item.definition_id)
 		item.armor_refinement_profile = armor_refinement_rules.profiles.get(item.definition_id)
 		item.extra_attribute_rules = extra_attribute_rules
 		item.strengthening_rules = strengthening_rules
@@ -218,6 +230,8 @@ func _create_item(definition_id: String, state: Dictionary) -> DomainResult:
 	if item_definition.has("use_rule"):
 		return DomainResult.ok(ConsumableItem.new(item_definition, state))
 	match kind:
+		"equipment_memory_module":
+			return DomainResult.ok(EquipmentMemoryModule.new(item_definition, state))
 		"clothing_improvement_material":
 			return DomainResult.ok(ClothingImprovementMaterial.new(item_definition, state))
 		"armor_refinement_material":
