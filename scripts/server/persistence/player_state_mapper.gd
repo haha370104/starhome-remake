@@ -83,6 +83,7 @@ func to_domain(record: PlayerStateRecord) -> DomainResult:
 			"upgrade_level": stack.upgrade_level,
 			"enhancement": stack.enhancement.to_dictionary(),
 			"vehicle_sockets": stack.vehicle_sockets.to_dictionary(),
+			"processing": stack.processing.to_dictionary(),
 			"crystal_cracks": stack.crystal_cracks,
 		})
 		if not created.is_ok:
@@ -100,6 +101,7 @@ func to_domain(record: PlayerStateRecord) -> DomainResult:
 			"upgrade_level": slot.upgrade_level,
 			"enhancement": slot.enhancement.to_dictionary(),
 			"vehicle_sockets": slot.vehicle_sockets.to_dictionary(),
+			"processing": slot.processing.to_dictionary(),
 			"locked": slot.locked,
 			"bound": slot.bound,
 			"equipment_location": slot.slot_location,
@@ -157,6 +159,7 @@ func to_record(player: Player) -> DomainResult:
 			"upgrade_level": (item as Equipment).upgrade_level if item is Equipment else 0,
 			"enhancement": (item as Clothing).enhancement.to_dictionary() if item is Clothing else {},
 			"vehicle_sockets": (item as VehicleEquipment).sockets.to_dictionary() if item is VehicleEquipment else {},
+			"processing": (item as Equipment).processing.to_dictionary() if item is Equipment else {},
 			"crystal_cracks": (item as VehicleCrystal).cracks if item is VehicleCrystal else 0,
 		})
 		stack_index += 1
@@ -241,6 +244,7 @@ func _equipment_record(
 		"upgrade_level": equipment.upgrade_level,
 		"enhancement": (equipment as Clothing).enhancement.to_dictionary() if equipment is Clothing else {},
 		"vehicle_sockets": (equipment as VehicleEquipment).sockets.to_dictionary() if equipment is VehicleEquipment else {},
+		"processing": equipment.processing.to_dictionary(),
 		"locked": equipment.locked,
 		"bound": equipment.bound,
 		"slot_location": location,

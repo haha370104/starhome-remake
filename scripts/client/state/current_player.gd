@@ -143,6 +143,7 @@ func _restore_inventory(raw_items: Variant) -> bool:
 			"upgrade_level": raw_item.get("upgrade_level", 0),
 			"enhancement": raw_item.get("enhancement", {}),
 			"vehicle_sockets": raw_item.get("vehicle_sockets", {}),
+			"processing": raw_item.get("processing", {}),
 			"crystal_cracks": raw_item.get("crystal_cracks", 0),
 		})
 		if not created.is_ok:
@@ -183,6 +184,7 @@ func _create_equipment(raw_equipment: Variant) -> Equipment:
 		"upgrade_level": raw_equipment.get("upgrade_level", 0),
 		"enhancement": raw_equipment.get("enhancement", {}),
 		"vehicle_sockets": raw_equipment.get("vehicle_sockets", {}),
+		"processing": raw_equipment.get("processing", {}),
 		"locked": raw_equipment.get("locked", false),
 		"bound": raw_equipment.get("bound", false),
 		"equipment_location": raw_equipment.get("location", -1),

@@ -16,6 +16,11 @@ var required_repair_skill_level: int
 ## [param state] 存档中的底盘实例状态。
 func _init(definition: Dictionary = {}, state: Dictionary = {}) -> void:
 	super(definition, state)
+	refresh_processed_stats()
+
+
+## 将实例加工增量同步到生命与输出功率等底盘属性。
+func refresh_processed_stats() -> void:
 	base_max_health = maxi(1, int(stat("max_health", 1)))
 	base_armor = maxi(0, int(stat("armor", 0)))
 	working_energy_capacity = maxf(0.0, float(stat("working_energy_capacity", 0.0)))

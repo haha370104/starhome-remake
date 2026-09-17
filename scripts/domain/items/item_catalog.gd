@@ -15,6 +15,7 @@ const GAMEPLAY_PATHS := [
 	"res://data/gameplay/material_upgrade_items_v1.json",
 	"res://data/gameplay/clothing_enhancement_items_v1.json",
 	"res://data/gameplay/vehicle_workshop_items_v1.json",
+	"res://data/gameplay/equipment_processing_items_v1.json",
 ]
 const PRESENTATION_PATHS := [
 	"res://data/presentation/player_equipment_v1.json",
@@ -25,6 +26,7 @@ const PRESENTATION_PATHS := [
 var _definitions: Dictionary = {}
 var _definition_ids_by_display_name: Dictionary = {}
 var socket_rules: VehicleSocketRules
+var processing_rules: EquipmentProcessingRules
 
 
 ## 读取所有当前启用的物品定义和语义化表现目录。
@@ -64,6 +66,13 @@ func initialize() -> DomainResult:
 	if not socket_result.is_ok:
 		return socket_result
 	socket_rules = socket_result.value
+	var processing_data := JsonConfigLoader.load_dictionary("res://data/gameplay/equipment_processing_rules_v1.json")
+	if not processing_data.is_ok:
+		return processing_data
+	var processing_result := EquipmentProcessingRules.from_dictionary(processing_data.value)
+	if not processing_result.is_ok:
+		return processing_result
+	processing_rules = processing_result.value
 	_index_display_names()
 	return DomainResult.ok(self)
 
@@ -73,6 +82,12 @@ func initialize() -> DomainResult:
 ## [param state] 存档中的实例状态。
 ## 返回服装、战车底盘、引擎、武器、采掘臂、通用装备或普通物品的具体实例。
 func create(definition_id: String, state: Dictionary) -> DomainResult:
+	var processed := EquipmentProcessing.restore(state.get("processing", {}))
+	if not processed.is_ok:
+		return processed
+	var processing_check := (processed.value as EquipmentProcessing).validate_for(processing_rules.profile(ItemDefinitionAliases.canonical(definition_id)))
+	if not processing_check.is_ok:
+		return processing_check
 	var sockets_result := VehicleSockets.restore(state.get("vehicle_sockets", {}))
 	if not sockets_result.is_ok:
 		return sockets_result
@@ -83,6 +98,8 @@ func create(definition_id: String, state: Dictionary) -> DomainResult:
 	if not result.is_ok:
 		return result
 	var item: GameItem = result.value
+	if item is Equipment:
+		item.processing_rules = processing_rules
 	if not item is VehicleCrystal and cracks.value != 0:
 		return DomainResult.failure(&"sockets.invalid_state", "非晶石物品不能带有裂纹")
 	var checked := (sockets_result.value as VehicleSockets).validate_for(

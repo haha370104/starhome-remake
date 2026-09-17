@@ -8,6 +8,8 @@ var purchase_value: int
 var sell_value: int
 var required_skill_level: int
 var _stats: Dictionary
+var processing := EquipmentProcessing.new()
+var processing_rules: EquipmentProcessingRules
 
 
 ## 初始化具有耐久和数值配置的装备实例。
@@ -25,6 +27,9 @@ func _init(definition: Dictionary = {}, state: Dictionary = {}) -> void:
 	purchase_value = maxi(0, int(_stats.get("purchase_value", 0)))
 	sell_value = maxi(0, int(_stats.get("sell_value", 0)))
 	required_skill_level = maxi(0, int(_stats.get("required_skill_level", 0)))
+	var restored := EquipmentProcessing.restore(state.get("processing", {}))
+	if restored.is_ok:
+		processing = restored.value
 
 
 ## 让装备承受磨损并保证耐久不小于零。
@@ -43,9 +48,15 @@ func repair(max_decrease: int) -> void:
 ## 查询配置表中的单项装备数值。
 ## [param stat_id] stats 中的字段名。
 ## [param fallback] 字段不存在时采用的默认值。
-## 返回未经修改的配置值。
+## 返回配置基数与该实例的加工增量。
 func stat(stat_id: String, fallback: Variant = 0) -> Variant:
-	return _stats.get(stat_id, fallback)
+	var base: Variant = _stats.get(stat_id, fallback)
+	return base + processing.bonus(stat_id) if base is int or base is float else base
+
+
+## 在成功加工后同步子类缓存，供装配与战斗使用同一组数值。
+func refresh_processed_stats() -> void:
+	pass
 
 
 ## 导出装备提示框所需的完整安全视图。
@@ -56,4 +67,9 @@ func to_view_dictionary() -> Dictionary:
 	view["max_durability"] = max_durability
 	view["upgrade_level"] = upgrade_level
 	view["stats"] = _stats.duplicate(true)
+	for attribute: String in EquipmentProcessing.ATTRIBUTES:
+		if processing.bonus(attribute) > 0:
+			view.stats[attribute] = stat(attribute)
+	view["processing"] = processing.to_dictionary()
+	view["processing_eligible"] = processing_rules != null and processing_rules.profile(definition_id) != null
 	return view

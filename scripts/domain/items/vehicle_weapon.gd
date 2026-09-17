@@ -12,6 +12,11 @@ var attack_interval_seconds: float
 ## [param state] 存档中的武器实例状态。
 func _init(definition: Dictionary = {}, state: Dictionary = {}) -> void:
 	super(definition, state)
+	refresh_processed_stats()
+
+
+## 同步攻击和射程加工；不改变武器的冷却与能耗。
+func refresh_processed_stats() -> void:
 	base_attack = maxi(0, int(stat("base_attack", 0)))
 	working_energy_per_shot = maxf(0.0, float(stat("working_energy_per_shot", 0.0)))
 	attack_range = maxf(0.0, float(stat("range", 0.0)))

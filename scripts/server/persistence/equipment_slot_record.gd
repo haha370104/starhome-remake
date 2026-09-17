@@ -11,6 +11,7 @@ var durability := 0
 var upgrade_level := 0
 var enhancement := ClothingEnhancement.new()
 var vehicle_sockets := VehicleSockets.new()
+var processing := EquipmentProcessing.new()
 var locked := false
 var bound := false
 var slot_location := -1
@@ -35,6 +36,10 @@ static func from_dictionary(raw: Variant) -> DomainResult:
 	if not enhanced.is_ok:
 		return enhanced
 	slot.enhancement = enhanced.value
+	var processed := EquipmentProcessing.restore(raw.get("processing", {}))
+	if not processed.is_ok:
+		return processed
+	slot.processing = processed.value
 	var sockets := VehicleSockets.restore(raw.get("vehicle_sockets", {}))
 	if not sockets.is_ok:
 		return sockets
@@ -68,6 +73,7 @@ func to_dictionary() -> Dictionary:
 		"upgrade_level": upgrade_level,
 		"enhancement": enhancement.to_dictionary(),
 		"vehicle_sockets": vehicle_sockets.to_dictionary(),
+		"processing": processing.to_dictionary(),
 		"locked": locked,
 		"bound": bound,
 		"slot_location": slot_location,
