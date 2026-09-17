@@ -173,7 +173,7 @@ def enrich_items():
             crystal_type = raw_name.split()[1]
             case = re.search(r'case\s+' + crystal_type + r'\s*:(.*?)(?:break;)', body, re.S)[1]
             name = clean(field(case, 'm_sObjName'))
-            description = '原版镶嵌晶石。镶嵌系统尚未开放，当前可拾取并保留。'
+            description = '原版战车晶石，可镶嵌到已开启的装备孔。背包右键进入加工；同类全身最多四颗生效。'
             sprite_path = f'pic3/stuff/RYRime{crystal_type}.ale'
         else:
             sprite_path = re.search(r'"\.\./([^"\n]+\.ale)"', sprite_expr)[1]

@@ -38,8 +38,8 @@ def build():
                      source_file=source['source_file'], source_line=source['source_line'],
                      source_logical_path=logical, source_sha256=file_hash(RAW / logical, 'sha256'),
                      source_crop=list(crop), source_frame=0)
-        description = ('原版明亮晶石，可由5个同类有瑕疵晶石制造。镶嵌系统尚未开放。' if subtype
-                       else '原版高级密度柔解剂，可由5个初级密度柔解剂提炼。装备开槽系统尚未开放。')
+        description = ('原版明亮晶石，可由5个同类有瑕疵晶石制造。背包右键进入战车晶石加工；同类全身最多四颗生效。' if subtype
+                       else '原版高级密度柔解剂，可由5个初级密度柔解剂提炼。用于符合资格的战车装备开槽，失败仅消耗材料；具体概率见加工预览。')
         items.append(dict(id=semantic, kind='material', display_name=name, description=description, max_stack=99,
             source_class=audit['source_class'], source_audit=audit,
             presentation=dict(world=dict(texture=resource, native_size=list(image.size), origin=[frame.origin_x+crop[0], frame.origin_y+crop[1]]),

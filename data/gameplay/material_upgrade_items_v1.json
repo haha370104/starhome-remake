@@ -5,7 +5,7 @@
       "id": "high_grade_density_solvent",
       "kind": "material",
       "display_name": "高级密度柔解剂",
-      "description": "原版高级密度柔解剂，可由5个初级密度柔解剂提炼。装备开槽系统尚未开放。",
+      "description": "原版高级密度柔解剂，可由5个初级密度柔解剂提炼。用于符合资格的战车装备开槽，失败仅消耗材料；具体概率见加工预览。",
       "max_stack": 99,
       "source_class": "Activator3",
       "source_audit": {
@@ -48,7 +48,7 @@
       "id": "bright_firepower_crystal",
       "kind": "material",
       "display_name": "明亮的火力晶石",
-      "description": "原版明亮晶石，可由5个同类有瑕疵晶石制造。镶嵌系统尚未开放。",
+      "description": "原版明亮晶石，可由5个同类有瑕疵晶石制造。背包右键进入战车晶石加工；同类全身最多四颗生效。",
       "max_stack": 99,
       "source_class": "RYRime:0 2001 0",
       "source_audit": {
@@ -91,7 +91,7 @@
       "id": "bright_health_crystal",
       "kind": "material",
       "display_name": "明亮的生命晶石",
-      "description": "原版明亮晶石，可由5个同类有瑕疵晶石制造。镶嵌系统尚未开放。",
+      "description": "原版明亮晶石，可由5个同类有瑕疵晶石制造。背包右键进入战车晶石加工；同类全身最多四颗生效。",
       "max_stack": 99,
       "source_class": "RYRime:0 2002 0",
       "source_audit": {
@@ -134,7 +134,7 @@
       "id": "bright_defense_crystal",
       "kind": "material",
       "display_name": "明亮的防御晶石",
-      "description": "原版明亮晶石，可由5个同类有瑕疵晶石制造。镶嵌系统尚未开放。",
+      "description": "原版明亮晶石，可由5个同类有瑕疵晶石制造。背包右键进入战车晶石加工；同类全身最多四颗生效。",
       "max_stack": 99,
       "source_class": "RYRime:0 2003 0",
       "source_audit": {
@@ -177,7 +177,7 @@
       "id": "bright_guidance_crystal",
       "kind": "material",
       "display_name": "明亮的制导晶石",
-      "description": "原版明亮晶石，可由5个同类有瑕疵晶石制造。镶嵌系统尚未开放。",
+      "description": "原版明亮晶石，可由5个同类有瑕疵晶石制造。背包右键进入战车晶石加工；同类全身最多四颗生效。",
       "max_stack": 99,
       "source_class": "RYRime:0 2004 0",
       "source_audit": {
@@ -220,7 +220,7 @@
       "id": "bright_critical_crystal",
       "kind": "material",
       "display_name": "明亮的暴击晶石",
-      "description": "原版明亮晶石，可由5个同类有瑕疵晶石制造。镶嵌系统尚未开放。",
+      "description": "原版明亮晶石，可由5个同类有瑕疵晶石制造。背包右键进入战车晶石加工；同类全身最多四颗生效。",
       "max_stack": 99,
       "source_class": "RYRime:0 2005 0",
       "source_audit": {
@@ -263,7 +263,7 @@
       "id": "bright_rocket_crystal",
       "kind": "material",
       "display_name": "明亮的火箭晶石",
-      "description": "原版明亮晶石，可由5个同类有瑕疵晶石制造。镶嵌系统尚未开放。",
+      "description": "原版明亮晶石，可由5个同类有瑕疵晶石制造。背包右键进入战车晶石加工；同类全身最多四颗生效。",
       "max_stack": 99,
       "source_class": "RYRime:0 2006 0",
       "source_audit": {

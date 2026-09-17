@@ -2,6 +2,7 @@ class_name InventoryPanel
 extends DraggableGameWindow
 
 signal enhancement_requested(instance_id: String, is_stone: bool)
+signal vehicle_workshop_requested(instance_id: String, is_material: bool)
 
 signal command_requested(command: Dictionary)
 
@@ -44,6 +45,7 @@ func _ready() -> void:
 	context_menu = InventoryContextMenu.new()
 	context_menu.command_requested.connect(command_requested.emit)
 	context_menu.enhancement_requested.connect(enhancement_requested.emit)
+	context_menu.vehicle_workshop_requested.connect(vehicle_workshop_requested.emit)
 	add_child(context_menu)
 	visibility_changed.connect(func() -> void:
 		if not visible:

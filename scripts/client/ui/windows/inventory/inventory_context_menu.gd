@@ -2,6 +2,7 @@ class_name InventoryContextMenu
 extends Node
 
 signal enhancement_requested(instance_id: String, is_stone: bool)
+signal vehicle_workshop_requested(instance_id: String, is_material: bool)
 
 signal command_requested(command: Dictionary)
 
@@ -51,6 +52,8 @@ func open_for(item: GameItem, revision: int, point: Vector2) -> void:
 		_add_action("装备", "equip", item.locked)
 	if item is Clothing or item is EnhancementStone:
 		_add_action("人物强化 / 合成", "clothing_enhancement", false)
+	if item is VehicleEquipment or item is VehicleCrystal:
+		_add_action("战车开槽 / 晶石", "vehicle_sockets", false)
 	if item is ConsumableItem:
 		_add_action("使用", "use_inventory_item", item.locked)
 	if item.max_stack > 1:
@@ -80,6 +83,9 @@ func _select_action(id: int) -> void:
 	if id < 0 or id >= _actions.size() or _item == null:
 		return
 	var action := _actions[id]
+	if action == "vehicle_sockets":
+		vehicle_workshop_requested.emit(_item.instance_id, _item is VehicleCrystal)
+		return
 	if action == "clothing_enhancement":
 		enhancement_requested.emit(_item.instance_id, _item is EnhancementStone)
 		return

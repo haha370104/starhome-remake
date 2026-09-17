@@ -79,6 +79,7 @@ func snapshot(player: Player, operation: Dictionary) -> Dictionary:
 		row["presentation"] = item.presentation_for("inventory")
 		if item is VehicleEquipment and _items.socket_rules.profile(item.definition_id) != null:
 			row["installed"] = player.inventory.find(item.instance_id) == null
+			row["socket_views"] = _socket_views(item)
 			equipment.append(row)
 		elif item is VehicleCrystal or _items.socket_rules.solvent(item.definition_id) != null \
 			or item.definition_id in [_items.socket_rules.hammer_id, _items.socket_rules.expansion_material]:
@@ -139,7 +140,7 @@ func _preview(player: Player, operation: Dictionary) -> Dictionary:
 			lines.append("精密摘取：消耗精密锤头 ×1，不增加裂纹。" if use_hammer else (
 				"普通摘取：晶石已有三裂，将永久损毁！" if slot.cracks >= 3 else "普通摘取：晶石返回背包并新增一个裂纹。"))
 	lines.append("\n装配后同类仅最高四颗有效，瑕疵与明亮共用名额。\n暴击晶石只增加能量炮 1.5 倍暴击率。")
-	preview.text = "\n\n".join(lines)
+	preview.text = "\n".join(lines)
 	return preview
 
 
@@ -147,3 +148,14 @@ func _preview(player: Player, operation: Dictionary) -> Dictionary:
 ## 返回随机 128 位实例标识。
 func _new_id() -> String:
 	return "workshop." + Crypto.new().generate_random_bytes(16).hex_encode()
+
+
+## 将孔中的稳定身份转为可读名称，界面不负责查询游戏规则目录。
+## [param item] 已校验的装备。
+## 返回按孔序排列的只读显示数据。
+func _socket_views(item: VehicleEquipment) -> Array[Dictionary]:
+	var rows: Array[Dictionary] = []
+	for index: int in item.sockets.capacity():
+		var slot := item.sockets.slot_at(index)
+		rows.append({"opened": slot.opened, "name": "" if slot.crystal_id.is_empty() else _items.display_name(slot.crystal_id), "cracks": slot.cracks})
+	return rows

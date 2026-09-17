@@ -49,6 +49,7 @@ func configure(session: PlayerPanelSession) -> bool:
 	inventory_panel.position = Vector2(460, 70)
 	inventory_panel.command_requested.connect(panel_session.dispatch)
 	inventory_panel.enhancement_requested.connect(_open_clothing_enhancement)
+	inventory_panel.vehicle_workshop_requested.connect(_open_vehicle_sockets)
 	_add_window(inventory_panel)
 	vehicle_panel = VehiclePanelScript.new()
 	vehicle_panel.name = "VehicleEquipmentPanel"
@@ -75,6 +76,7 @@ func configure(session: PlayerPanelSession) -> bool:
 		"system": preload("res://scripts/client/ui/windows/navigation/system_menu_panel.gd"),
 		"premium_shop": preload("res://scripts/client/ui/windows/navigation/premium_shop_panel.gd"),
 		"clothing_enhancement": preload("res://scripts/client/ui/windows/navigation/clothing_enhancement_panel.gd"),
+		"vehicle_sockets": preload("res://scripts/client/ui/windows/navigation/vehicle_socket_panel.gd"),
 		"attachment_upgrades": preload("res://scripts/client/ui/windows/navigation/attachment_upgrade_panel.gd"),
 		"mercenary": preload("res://scripts/client/ui/windows/navigation/daily_activities_panel.gd"),
 		"experience": preload("res://scripts/client/ui/windows/navigation/daily_activities_panel.gd"),
@@ -85,7 +87,7 @@ func configure(session: PlayerPanelSession) -> bool:
 		var window: NavigationWindow = navigation_scripts[action].new()
 		if action in ["mercenary", "experience"]:
 			window.mode = action
-		if action in ["premium_shop", "mercenary", "experience", "attachment_upgrades", "clothing_enhancement"]:
+		if action in ["premium_shop", "mercenary", "experience", "attachment_upgrades", "clothing_enhancement", "vehicle_sockets"]:
 			window.command_requested.connect(panel_session.dispatch)
 		window.position = Vector2(120, 70)
 		window.notice_requested.connect(notice_requested.emit)
@@ -177,6 +179,7 @@ func _refresh_navigation() -> void:
 ## 将会话消息中的名单、商店、制造和任务日志分发到对应窗口。
 ## [param bundle] 已由玩家会话接收的权威消息；可能只包含某个辅助窗口的数据。
 func _apply_auxiliary_bundle(bundle: Dictionary) -> void:
+	navigation_windows["vehicle_sockets"].apply_socket_bundle(bundle)
 	navigation_windows["clothing_enhancement"].apply_enhancement_bundle(bundle)
 	navigation_windows["attachment_upgrades"].apply_upgrade_bundle(bundle)
 	for action: String in ["mercenary", "experience"]:
@@ -270,3 +273,14 @@ func _open_clothing_enhancement(id: String = "", is_stone: bool = false) -> void
 	window.move_to_front()
 	window.clamp_to_viewport(size)
 	window.focus_item(id, is_stone)
+
+
+## 从背包装备或晶石进入独立加工窗口。
+## [param id] 可选实例身份。
+## [param is_material] 是否定位到材料。
+func _open_vehicle_sockets(id: String = "", is_material: bool = false) -> void:
+	var window: VehicleSocketPanel = navigation_windows["vehicle_sockets"]
+	window.show()
+	window.move_to_front()
+	window.clamp_to_viewport(size)
+	window.focus_item(id, is_material)
