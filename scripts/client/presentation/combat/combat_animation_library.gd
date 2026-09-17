@@ -55,6 +55,7 @@ static func load_ale(asset_reference: String) -> SpriteFrames:
 ## 从实际装备的世界表现构建八向或共享动作，不回退为上一件装备。
 ## [param equipment] 当前装配物品。
 ## 返回包含动作和方向信息的组件；没有可用世界素材时返回空字典。
+## 设计：战车底盘遵循原版 multisrc 八方向分组，尾部附图不属于移动动作，不能因总帧数不整除8而改为单向循环。
 static func equipment_component(equipment: VehicleEquipment) -> Dictionary:
 	if equipment == null:
 		return {}
@@ -65,7 +66,9 @@ static func equipment_component(equipment: VehicleEquipment) -> Dictionary:
 	if frames == null:
 		return {}
 	var count := frames.get_frame_count(&"raw")
-	var directional := count >= 8 and count % 8 == 0
+	var directional := equipment is VehicleChassis or (count >= 8 and count % 8 == 0)
+	if directional and count < 8:
+		return {}
 	return {"action": {"ale_reference": asset_reference,
 		"direction_mode": "eight_way" if directional else "shared",
 		"frames_per_direction": floori(float(count) / 8.0) if directional else count,

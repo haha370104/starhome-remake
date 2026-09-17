@@ -27,6 +27,7 @@ func _run() -> void:
 	var primary: Dictionary = JsonConfigLoader.load_dictionary("res://data/gameplay/commerce/weapon_merchant_v1.json").value.merchant.official_whitelist_ids
 	var bindings: Dictionary = JsonConfigLoader.load_dictionary("res://data/presentation/weapon_visual_bindings_v1.json").value.weapons
 	var controller: WeaponAttackVisualController = hall.world_view.combat_attack_controllers["energy_cannon"]
+	await _test_chassis_directional_motion(hall, player, catalog, primary.vehicle_chassis)
 	for id: String in primary.energy_cannon:
 		_install(player, catalog, id, 1)
 		hall.player_binding.on_current_player_changed(player)
@@ -173,3 +174,68 @@ func _expect(condition: bool, message: String) -> void:
 	checks += 1
 	if not condition:
 		failures.append(message)
+
+
+## 检查所有在售底盘在八个方向完整循环，征服者的第33帧附图不能进入移动动画。
+## [param hall] 已进入野外的隔离客户端场景。
+## [param player] 本测试的内存玩家。
+## [param catalog] 已初始化的装备目录。
+## [param chassis_ids] 当前商店实际出售的战车定义。
+func _test_chassis_directional_motion(hall: Node2D, player: Player, catalog: ItemCatalog, chassis_ids: Array) -> void:
+	var avatar: PlayerWorldAvatar = hall.world_view.player
+	for id: String in chassis_ids:
+		_install(player, catalog, id, 0)
+		hall.player_binding.on_current_player_changed(player)
+		var presenter: CombatVisualPresenter = avatar.combat_presenter
+		var action: Dictionary = presenter._layer_configs[&"chassis"].actions.move
+		_expect(action.direction_mode == "eight_way" and action.frames_per_direction == 4, "在售底盘必须保持八向四帧分组：" + id)
+		if id == "glory_equipment_tank8_eccf445ff5":
+			_expect(presenter.layer_frames_resource(&"chassis").get_frame_count(&"raw") == 33, "征服者保留原版33帧资源，不修改原始素材")
+		for direction in range(8):
+			avatar.set_action("stand", direction)
+			_expect(presenter.layer_frame(&"chassis") == direction * 4, "停止时保持指定方向首帧")
+			avatar.set_action("move", direction)
+			# 跑过完整原始素材时长，不能把其他方向或尾部拼图误当作移动帧。
+			for step in range(40):
+				presenter.advance(0.1)
+				var frame := presenter.layer_frame(&"chassis")
+				_expect(frame >= direction * 4 and frame < direction * 4 + 4, "直行期间不得跨方向播放：%s direction=%d step=%d frame=%d" % [id, direction, step, frame])
+			avatar.set_action("stand", direction)
+			_expect(presenter.layer_frame(&"chassis") == direction * 4, "停止移动后回到同方向首帧")
+		if id == "glory_equipment_tank8_eccf445ff5" and "--capture-chassis" in OS.get_cmdline_user_args():
+			await _capture_chassis_frames(presenter)
+	_install(player, catalog, "recruit_tank", 0)
+	avatar.set_action("stand", 6)
+	hall.player_binding.on_current_player_changed(player)
+
+
+## 用实际底盘表现器绘制八方向四帧矩阵，供检查行进动画是否混入其他方向。
+## [param presenter] 已装配征服者的真实世界表现器。
+func _capture_chassis_frames(presenter: CombatVisualPresenter) -> void:
+	var surface := CanvasLayer.new()
+	surface.layer = 80
+	root.add_child(surface)
+	var background := ColorRect.new()
+	background.color = Color("15222e")
+	background.size = Vector2(1280, 720)
+	surface.add_child(background)
+	var directions := ["东", "东北", "北", "西北", "西", "西南", "南", "东南"]
+	for direction in range(8):
+		var label := Label.new()
+		label.text = directions[direction]
+		label.position = Vector2(35, 60 + direction * 80)
+		surface.add_child(label)
+		for phase in range(4):
+			var preview := CombatVisualPresenter.new()
+			surface.add_child(preview)
+			preview.configure({"direction_order": directions, "actors": {"conqueror": presenter._actor}})
+			preview.present_actor(&"conqueror")
+			preview.set_action(&"move")
+			preview.set_direction(direction)
+			preview.advance((float(phase) + 0.1) / 10.0)
+			preview.position = Vector2(220 + phase * 240, 65 + direction * 80)
+			preview.scale = Vector2(1.5, 1.5)
+	await process_frame
+	await RenderingServer.frame_post_draw
+	root.get_texture().get_image().save_png("res://.godot/conqueror_direction_frames.png")
+	surface.free()
