@@ -2,6 +2,7 @@ class_name CorrosiveEffectController
 extends Node
 
 const MANIFEST := "res://assets/monsters/toxic_gel/shared/effects/corrosion/manifest.json"
+const SPRAY_FADE_SECONDS := 3.0
 
 class Flight:
 	extends RefCounted
@@ -10,6 +11,8 @@ class Flight:
 	var first_frame: int
 	var elapsed := 0.0
 	var duration: float
+	var settled := false
+	var fade_elapsed := 0.0
 
 class Cloud:
 	extends RefCounted
@@ -119,24 +122,35 @@ func apply_snapshot(snapshot: Dictionary, local_player: Node2D) -> void:
 			_clouds.erase(id)
 
 
-## 收到实际碰撞或落空事件时立即结束对应喷吐。
+## 收到碰撞或落空事件时结束喷射推进，保留末帧并用三秒消散。
 ## [param attack_id] 原攻击 ID；脉冲 ID 不会误删其他弹体。
 func settle(attack_id: String) -> void:
-	if _flights.has(attack_id):
-		_flights[attack_id].node.free()
-		_flights.erase(attack_id)
+	var flight: Flight = _flights.get(attack_id)
+	if flight == null or flight.settled:
+		return
+	flight.settled = true
+	flight.elapsed = flight.duration
+	_show_flight_frame(flight)
 
 
-## 推进本地动画，附着跟随预测战车，生命期完全由权威快照控制。
+## 推进喷射和无伤害的消散尾迹；附着跟随战车，腐蚀寿命仍由权威快照控制。
 ## [param delta] 渲染帧秒数。
 func advance(delta: float) -> void:
 	for id: String in _flights.keys():
 		var flight := _flights[id]
-		flight.elapsed += delta
-		if flight.elapsed >= flight.duration:
-			settle(id)
+		if flight.settled:
+			flight.fade_elapsed += delta
 		else:
+			flight.elapsed += delta
 			_show_flight_frame(flight)
+			if flight.elapsed >= flight.duration:
+				flight.fade_elapsed = flight.elapsed - flight.duration
+				settle(id)
+		if flight.settled:
+			flight.node.modulate.a = clampf(1.0 - flight.fade_elapsed / SPRAY_FADE_SECONDS, 0.0, 1.0)
+			if flight.fade_elapsed >= SPRAY_FADE_SECONDS:
+				flight.node.free()
+				_flights.erase(id)
 	for cloud: Cloud in _clouds.values():
 		cloud.elapsed += delta
 		_show_cloud_frame(cloud)
@@ -155,10 +169,14 @@ func clear() -> void:
 	_local_player = null
 
 
-## 获取当前未结束的喷吐数量。
-## 返回活跃喷吐数。
+## 获取仍在向目标推进的喷吐数量，消散尾迹不算在途弹体。
+## 返回未结算的喷吐数。
 func flight_count() -> int:
-	return _flights.size()
+	var count := 0
+	for flight: Flight in _flights.values():
+		if not flight.settled:
+			count += 1
+	return count
 
 
 ## 读取规范化原图帧，保留每帧原点，不烘焙错误的固定居中偏移。

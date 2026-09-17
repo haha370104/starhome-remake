@@ -138,7 +138,8 @@ def combat_definition(row: dict[str, str]) -> dict[str, Any]:
         "aggro_radius": 300 if contact else 400,
         "leash_distance": 600,
         "attack_interval_seconds": 1.5,
-        "runtime_projectile_speed": None if contact else (1000 if corrosive else 416.666667),
+        # 2026-09-17 玩家调速：毒胶喷射采用此前速度的40%，不改普通弹体。
+        "runtime_projectile_speed": None if contact else (400 if corrosive else 416.666667),
         "respawn_seconds": 30,
         "projectile_hitbox": {"offset": [0, -30 if contact else -24], "radius": 28},
     }

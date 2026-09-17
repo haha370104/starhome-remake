@@ -8,6 +8,7 @@ var catalog: CombatDefinitionCatalog
 ## 加载真实目录后验证毒胶弹体、腐蚀脉冲和地图生命周期。
 func _initialize() -> void:
 	catalog = CombatDefinitionCatalog.load_default().value
+	_test_spray_speed()
 	_test_attachment()
 	_test_ground()
 	_test_refresh_and_lifecycle()
@@ -48,14 +49,16 @@ func _test_attachment() -> void:
 	if clouds.is_empty():
 		return
 	_expect(clouds[0].attached_actor_id == "p", "附着对象是实际碰撞战车")
-	module.advance_ticks(12, false)
+	module.advance_ticks(15, false)
 	_expect(state.health == 990, "首个一秒脉冲扣四分之一伤害")
 	module.update_actor_position("p", Vector2(800, 800))
 	module.advance_ticks(20, false)
 	_expect(state.health == 980, "离开命中地点仍承受附着伤害")
 	_expect(module.snapshot_for_actor("p").corrosive_clouds[0].position == [800.0, 784.0], "附着快照跟随战车")
 	_expect(module.snapshot_for_actor("remote").corrosive_clouds.is_empty(), "异图不泄漏毒雾快照")
-	module.advance_ticks(60, false)
+	module.advance_ticks(20, false)
+	_expect(state.health == 970 and not module.corrosion.is_empty(), "附着满三秒时仍可见且按周期扣血")
+	module.advance_ticks(40, false)
 	_expect(state.health == 960 and module.corrosion.is_empty(), "四个脉冲后彻底结束")
 	module.advance_ticks(100, false)
 	_expect(state.health == 960, "消失后不再暗中扣血")
@@ -113,6 +116,29 @@ func _test_refresh_and_lifecycle() -> void:
 	_expect(not instance.can_suspend_runtime(), "地面残留未过期时不能冻结空图")
 	module.advance_ticks(80, false)
 	_expect(instance.can_suspend_runtime(), "残留结清后允许空图休眠")
+
+
+## 验证所有毒胶目录、下发事件和权威推进同步采用原速度的四成。
+func _test_spray_speed() -> void:
+	var species_count := 0
+	for id: String in catalog.monster_ids():
+		var definition := catalog.monster_definition(id)
+		if definition.combat.attack_archetype == "corrosive_projectile":
+			species_count += 1
+			_expect(is_equal_approx(float(definition.combat.runtime_projectile_speed), 400.0), "%s毒胶喷射速度为原1000的40%%" % id)
+	_expect(species_count == 7, "覆盖普通、低温、恶性、仿生及三种变异毒胶")
+	_expect(is_equal_approx(float(catalog.monster_definition("om_adult").combat.runtime_projectile_speed), 416.666667),
+		"普通奥姆虫弹速不受毒胶调速影响")
+	var module := _fixture()
+	module._begin_monster_attack("gel", "p", Vector2(100, 0))
+	var attack: Dictionary = module.combat_events.back()
+	_expect(attack.projectile_speed == 400.0 and attack.impact_tick == 6, "权威开始事件下发降速后的预计到达时间")
+	module.advance_ticks(1, false)
+	var pending: Dictionary = module.pending_monster_attacks[0]
+	_expect(is_equal_approx((pending.current_position as Vector2).distance_to(pending.origin), 20.0), "20Hz下每tick推进20像素")
+	module.advance_ticks(1, false)
+	_expect(module.corrosion.is_empty(), "降低速度后不会沿用原1000速度提前命中")
+	_expect(CorrosiveCloud.DURATION_SECONDS >= 3.0, "地面与附着腐蚀至少保持三秒")
 
 
 ## 汇总业务断言。

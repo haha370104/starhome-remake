@@ -222,7 +222,7 @@
         "aggro_radius": 400,
         "leash_distance": 600,
         "attack_interval_seconds": 1.5,
-        "runtime_projectile_speed": 1000,
+        "runtime_projectile_speed": 400,
         "respawn_seconds": 30,
         "projectile_hitbox": {"offset": [0, -22], "radius": 28},
         "persistent_damage": null

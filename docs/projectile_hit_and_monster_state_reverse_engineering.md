@@ -427,7 +427,13 @@ MonsterSnapshot {
 **表现**：[CorrosiveEffectController](../scripts/client/presentation/combat/corrosive_effect_controller.gd)
 选择原图八方向帧，喷吐锚定发射点并按权威射程延伸，避免把整条原图当成小子弹平移。
 地面原图800ms循环；本地附着每帧跟随预测战车，其他玩家附着使用权威快照坐标。
-切图清空表现；实际命中事件提前终止喷吐，残留消失以完整快照为准。
+切图清空表现；实际命中事件结束喷射推进，残留消失以完整快照为准。
+
+2026-09-17用户调速：全部七种毒胶定义（包括不主动攻击的变体）统一由1000改为400像素/秒，
+旧stage3毒胶定义与目录生成工具同步修改；这是复刻调参，不是新增原服逆向结论。
+服务端据此推进碰撞并下发速度，客户端直接使用该速度播放五帧喷吐，不重复乘倍率。
+喷吐到达或提前命中后保留末帧，以3秒渐隐消散；重复命中通知和完整快照不会重启消散时钟。
+渐隐尾迹不参与伤害、碰撞或在途弹体计数，切图立即清空。地面及车身腐蚀继续采用上述4秒领域寿命。
 
 专项：`tests/server/combat/corrosive_attack_test.gd` 33项、
 `tests/client/presentation/combat/monster_attack_effect_controller_test.gd` 56项本轮通过，均纳入总门禁。

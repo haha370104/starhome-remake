@@ -90,6 +90,13 @@ func _run() -> void:
 ## [param world] 活动世界节点。
 func _test_corrosion(controller: MonsterAttackEffectController, world: Node2D) -> void:
 	controller.set_process(false)
+	var capture_viewport: SubViewport
+	if "--capture" in OS.get_cmdline_user_args():
+		capture_viewport = SubViewport.new()
+		capture_viewport.size = Vector2i(1000, 600)
+		capture_viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+		root.add_child(capture_viewport)
+		world.reparent(capture_viewport)
 	var player := Node2D.new()
 	player.position = Vector2(220, 530)
 	world.add_child(player)
@@ -126,18 +133,43 @@ func _test_corrosion(controller: MonsterAttackEffectController, world: Node2D) -
 	_expect(attached.node.position == player.position + Vector2(0, -16), "两次网络快照之间也会跟随战车")
 	_expect(ground.node.position == Vector2(650, 530), "地面毒雾不会跟着战车移动")
 	if "--capture" in OS.get_cmdline_user_args():
-		root.size = Vector2i(1000, 600)
 		await RenderingServer.frame_post_draw
-		root.get_texture().get_image().save_png("res://.godot/corrosion-effects.png")
+		capture_viewport.get_texture().get_image().save_png("res://.godot/corrosion-slow-spray.png")
 	controller.settle_corrosion_attack({"attack_id": "gel.0"})
-	_expect(controller.active_projectile_count() == 7, "实际撞击会提前终止喷吐")
+	_expect(controller.active_projectile_count() == 7, "实际撞击会结束在途状态")
+	var fading: CorrosiveEffectController.Flight = controller._corrosion._flights["gel.0"]
+	_expect(fading.settled and fading.node.modulate.a == 1.0, "命中不瞬间删除喷雾，开始独立消散")
 	controller.advance(1.61)
+	_expect(controller._corrosion._flights.size() == 8 and fading.node.modulate.a > 0.0, "喷吐完成后1.61秒仍在消散")
+	if capture_viewport != null:
+		await RenderingServer.frame_post_draw
+		capture_viewport.get_texture().get_image().save_png("res://.godot/corrosion-slow-fade.png")
+	controller.settle_corrosion_attack({"attack_id": "gel.0"})
+	controller.advance(1.38)
+	_expect(controller._corrosion._flights.has("gel.0") and fading.fade_elapsed > 2.98, "重复结算不重置消散时钟，三秒前仍存在")
+	controller.advance(0.02)
+	_expect(not controller._corrosion._flights.has("gel.0"), "达到三秒消散期限才释放喷吐")
 	_expect(controller._corrosion._clouds.size() == 2, "残留800ms循环多次，不按一次性命中特效删掉")
 	controller.apply_corrosion_snapshot({"corrosive_clouds": []}, player)
 	_expect(controller._corrosion._clouds.is_empty(), "权威到期快照清理残留")
 	controller.apply_corrosion_snapshot(snapshot, player)
 	controller.clear()
 	_expect(controller._corrosion._clouds.is_empty() and controller.active_projectile_count() == 0, "切图清空喷吐和附着")
+	# 使用真实配置速度验证客户端五帧进度，而非在渲染层再次乘40%。
+	var slowed := {"attack_id": "gel.slow", "attack_archetype": "corrosive_projectile", "combat_actor_id": "toxic_gel_cold",
+		"origin": [0, 0], "target_position": [400, 0], "projectile_speed": 400}
+	_expect(controller.present_attack(slowed), "降速事件创建喷吐")
+	var flight: CorrosiveEffectController.Flight = controller._corrosion._flights["gel.slow"]
+	_expect(is_equal_approx(flight.duration, 1.0), "400像素距离以400像素每秒播放一秒")
+	controller.advance(0.4)
+	_expect(not flight.settled and controller.active_projectile_count() == 1, "旧速度已经到达的时刻仍在喷射")
+	controller.advance(0.6)
+	_expect(flight.settled and is_equal_approx(flight.fade_elapsed, 0.0), "喷射完成才开始三秒消散")
+	controller.advance(2.9)
+	_expect(controller._corrosion._flights.has("gel.slow"), "自然到达也保留完整三秒尾迹")
+	controller.advance(0.11)
+	_expect(controller._corrosion._flights.is_empty(), "自然到达的尾迹按时释放")
+	controller.clear()
 
 
 ## 记录布尔断言结果。
