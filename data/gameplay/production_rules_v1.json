@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "maximum_cycles": 10000,
+  "maximum_speed": 10,
+  "cycle_milliseconds": 2000,
+  "source_notes": {
+    "maximum_speed": "荣耀版 maceinesysclt.fcc:1602-1609 明确限制 1-10",
+    "experience": "荣耀版 code_string.fcc:6581 明确速度不增加经验",
+    "maximum_cycles": "复刻输入上限",
+    "cycle_milliseconds": "复刻默认；原服周期由服务端决定，不能由界面动画推算",
+    "settlement": "复刻在每轮完成时原子扣料、入产物和经验；取消未完成轮不扣料"
+  }
+}

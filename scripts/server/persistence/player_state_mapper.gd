@@ -80,6 +80,7 @@ func to_domain(record: PlayerStateRecord) -> DomainResult:
 	var warehouse_result := record.warehouse.to_domain(_catalog)
 	if not warehouse_result.is_ok: return warehouse_result
 	player.warehouse = warehouse_result.value
+	player.production = record.production.duplicate_queue()
 	for slot in record.equipment_slots:
 		var created := _catalog.create(slot.item_definition_id, {
 			"instance_id": slot.item_instance_id,
@@ -181,6 +182,7 @@ func to_record(player: Player) -> DomainResult:
 		"achievements": player.achievements.to_dictionary(),
 		"daily_activities": player.daily_activities.to_dictionary(),
 		"food_status": player.food_status.to_dictionary(),
+		"production": player.production.to_dictionary(),
 		"vehicle_id": player.vehicle.vehicle_id,
 		"vehicle_definition_id": player.vehicle.definition_id,
 		"vehicle_max_health": player.vehicle.max_health,

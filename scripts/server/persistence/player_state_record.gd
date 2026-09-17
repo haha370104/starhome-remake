@@ -16,6 +16,7 @@ var vehicle_loadout_revision := 0
 var inventory_capacity := 40
 var inventory_stacks: Array[InventoryStackRecord] = []
 var warehouse := PersonalWarehouseRecord.new()
+var production := ProductionQueue.new()
 var equipment_slots: Array[EquipmentSlotRecord] = []
 var currency := 0
 var amethyst := 0
@@ -129,6 +130,9 @@ static func from_dictionary(raw: Variant) -> DomainResult:
 	var warehouse_result := PersonalWarehouseRecord.from_dictionary(raw.get("warehouse", {}))
 	if not warehouse_result.is_ok: return warehouse_result
 	record.warehouse = warehouse_result.value
+	var production_result := ProductionQueue.restore(raw.get("production", {}))
+	if not production_result.is_ok: return production_result
+	record.production = production_result.value
 	var validation := record.validate()
 	return DomainResult.ok(record) if validation.is_ok else validation
 
@@ -136,6 +140,8 @@ static func from_dictionary(raw: Variant) -> DomainResult:
 ## 校验 `validate` 对应的模块状态。
 ## 返回该函数计算、查询或操作得到的结果。
 func validate() -> DomainResult:
+	if production == null or not ProductionQueue.restore(production.to_dictionary()).is_ok:
+		return DomainResult.failure(&"persistence.invalid_player_state", "production state is invalid")
 	if not FoodStatus.valid_state(food_status):
 		return DomainResult.failure(&"persistence.invalid_player_state", "food status is invalid")
 	if account_id.is_empty() or account_name.is_empty() or account_status.is_empty() \
@@ -236,6 +242,7 @@ func to_dictionary(include_warehouse: bool = true) -> Dictionary:
 		"achievements": achievements.duplicate(true),
 		"daily_activities": daily_activities.duplicate(true),
 		"food_status": food_status.duplicate(true),
+		"production": production.to_dictionary(),
 		"vehicle_id": vehicle_id,
 		"vehicle_definition_id": vehicle_definition_id,
 		"vehicle_max_health": vehicle_max_health,
