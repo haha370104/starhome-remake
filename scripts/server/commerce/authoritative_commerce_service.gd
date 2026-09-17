@@ -29,6 +29,7 @@ var _armor_refinement: ArmorRefinementService
 var _clothing_improvement: ClothingImprovementService
 var _equipment_memory: EquipmentMemoryService
 var _equipment_dismantle: EquipmentDismantleService
+var _equipment_forging: EquipmentForgingService
 var _catalog: ItemCatalog
 var _merchants: Dictionary = {}
 var quests = QuestServiceScript.new()
@@ -58,6 +59,7 @@ func initialize(rewards: RewardPipeline = null) -> DomainResult:
 	_clothing_improvement = ClothingImprovementService.new(_catalog)
 	_equipment_memory = EquipmentMemoryService.new(_catalog)
 	_equipment_dismantle = EquipmentDismantleService.new(_catalog)
+	_equipment_forging = EquipmentForgingService.new(_catalog)
 	var daily_loaded := daily.initialize(_catalog)
 	if not daily_loaded.is_ok:
 		return daily_loaded
@@ -90,7 +92,7 @@ static func handles(command_type: String) -> bool:
 		or command_type in EquipmentMaintenanceService.COMMANDS or command_type in ExtraAttributeService.COMMANDS \
 		or command_type in EquipmentStrengtheningService.COMMANDS or command_type in ArmorRefinementService.COMMANDS \
 		or command_type in ClothingImprovementService.COMMANDS or command_type in EquipmentMemoryService.COMMANDS \
-		or command_type in EquipmentDismantleService.COMMANDS
+		or command_type in EquipmentDismantleService.COMMANDS or command_type in EquipmentForgingService.COMMANDS
 
 
 ## 执行一次由会话绑定玩家身份的权威交易或任务命令。
@@ -111,7 +113,7 @@ func execute(state: PlayerStateRecord, command: Dictionary) -> DomainResult:
 		return DomainResult.failure(&"commerce.merchant_missing", "merchant is not registered")
 	var changed := command_type not in ["query_weapon_merchant", "query_premium_shop", "query_attachment_upgrades", "query_clothing_enhancement", "query_vehicle_sockets", "query_equipment_processing", "query_equipment_maintenance", "query_extra_attributes", "query_equipment_strengthening", "query_armor_refinement"]
 	if command_type == "query_clothing_improvement": changed = false
-	if command_type in ["query_equipment_memory", "query_equipment_dismantle"]: changed = false
+	if command_type in ["query_equipment_memory", "query_equipment_dismantle", "query_equipment_forging"]: changed = false
 	var operation := _execute_command(player, command_type, command, merchant_id, merchant)
 	if not operation.is_ok:
 		return operation
@@ -201,6 +203,8 @@ func _execute_command(
 		return _armor_refinement.execute(player, command)
 	if command_type in ClothingImprovementService.COMMANDS:
 		return _clothing_improvement.execute(player, command)
+	if command_type in EquipmentForgingService.COMMANDS:
+		return _equipment_forging.execute(player, command)
 	if command_type in EquipmentDismantleService.COMMANDS:
 		return _equipment_dismantle.execute(player, command)
 	if command_type in EquipmentMemoryService.COMMANDS:
@@ -314,6 +318,8 @@ func _build_bundle(
 		bundle["clothing_improvement"] = _clothing_improvement.snapshot(player, operation)
 	if String(operation.get("action", "")) in EquipmentMemoryService.COMMANDS:
 		bundle["equipment_memory"] = _equipment_memory.snapshot(player, operation)
+	if String(operation.get("action", "")) in EquipmentForgingService.COMMANDS:
+		bundle["equipment_forging"] = _equipment_forging.snapshot(player, operation)
 	if String(operation.get("action", "")) in EquipmentDismantleService.COMMANDS:
 		bundle["equipment_dismantle"] = _equipment_dismantle.snapshot(player, operation)
 	if String(operation.get("action", "")) in EquipmentStrengtheningService.COMMANDS:

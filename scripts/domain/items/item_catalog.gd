@@ -263,6 +263,8 @@ func _create_item(definition_id: String, state: Dictionary) -> DomainResult:
 	if item_definition.has("use_rule"):
 		return DomainResult.ok(ConsumableItem.new(item_definition, state))
 	match kind:
+		"equipment_forging_material":
+			return DomainResult.ok(EquipmentForgingMaterial.new(item_definition, state))
 		"equipment_memory_module":
 			return DomainResult.ok(EquipmentMemoryModule.new(item_definition, state))
 		"clothing_improvement_material":

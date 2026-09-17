@@ -34,6 +34,8 @@ TESTS = (
     "domain/equipment_forging_model_test.gd",
     "domain/equipment_forging_integration_test.gd",
     "domain/equipment_forging_actions_test.gd",
+    "server/commerce/equipment_forging_authority_test.gd",
+    "ui/runtime/equipment_forging_panel_test.gd",
     "domain/equipment_dismantle_test.gd",
     "server/commerce/equipment_dismantle_authority_test.gd",
     "ui/runtime/equipment_dismantle_panel_test.gd",

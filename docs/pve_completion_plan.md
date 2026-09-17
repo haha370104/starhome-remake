@@ -10,7 +10,7 @@ P2 见[普通属性加工](equipment_processing.md)和[耐久维护/磨损/弹�
 P3-A [萤石/耀石](extra_attribute_processing.md)、P3-B [独立十星强化](equipment_strengthening.md)与[护甲精工](armor_refinement.md)、P3-C [季节时装改良](clothing_improvement.md)已完成。
 五行能量石原版证据仅见装备之间克制，PVE范围待用户确认；此期间继续P3-D分解转移，不视为P3整体已完成。
 P3-D [记忆模块](equipment_memory.md)五类、[普通品质](equipment_quality.md)与[15款装备拆解](equipment_dismantling.md)已接通。
-锻造上限与对应第七类记忆模块仍需核对，五行能量石范围仍待确认，P3尚未整体关闭。
+[锻造上限](equipment_forging.md)的实例、交易、供给和UI已接通，对应第七类记忆模块接续实现；五行能量石范围仍待确认，P3尚未整体关闭。
 
 ## 1. 范围
 
