@@ -11,6 +11,8 @@ import time
 
 ROOT = Path(__file__).resolve().parents[1]
 TESTS = (
+    "content/glory_ale_sprite_repository_test.gd",
+    "integration/recovered_assets_runtime_test.gd",
     "domain/reward_pipeline_test.gd",
     "server/reward_authority_test.gd",
     "domain/consumable_and_stack_test.gd",

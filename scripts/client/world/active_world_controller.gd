@@ -12,6 +12,7 @@ const NpcBaseScript := preload("res://scripts/npcs/npc_base.gd")
 const ShopNpcScript := preload("res://scripts/npcs/shop_npc.gd")
 const QuestNpcScript := preload("res://scripts/npcs/quest_npc.gd")
 const TransitionViewScript := preload("res://scripts/client/world/map_transition_view.gd")
+const RecoveredDecorationScript := preload("res://scripts/client/world/recovered_scene_decoration.gd")
 const FacilityInteractionScript := preload(
 	"res://scripts/client/world/world_facility_interaction.gd"
 )
@@ -209,6 +210,9 @@ func _stage_bundle(bundle: Dictionary, spawn_position: Vector2) -> Dictionary:
 	var staged_facilities: Array[Node2D] = []
 	var staged_transition_views: Array[Node2D] = []
 	if not _stage_scene_nodes(staged_manifest, container, staged_scene_nodes):
+		container.free()
+		return {}
+	if not RecoveredDecorationScript.stage(staged_definition.map_id, container, staged_scene_nodes):
 		container.free()
 		return {}
 	if not _stage_npcs(staged_definition, staged_navigation, container, staged_npcs):
