@@ -134,26 +134,51 @@ func _test_energy_confirmation(hall: Node2D, player: Player) -> void:
 	server.configure(20, 17, 0.0)
 	var actor_id := String(hall.multiplayer_presenter.session.local_entity_id)
 	_expect(not actor_id.is_empty(), "客户端会话已有本地玩家身份")
-	var registered := server.register_vehicle(actor_id, "equipment.test", Vector2(200, 200), loadout.value.assembly, loadout.value.weapons)
+	var movement: LocalPlayerController = hall.local_player_controller
+	var saved_presenter: Node = movement._multiplayer_presenter
+	movement.set_multiplayer_presenter(null)
+	var start: Vector2 = hall.active_world_controller.navigation.closest_walkable_position(Vector2(1500, 1450))
+	movement.set_position(start)
+	hall.hud.map_navigation_requested.emit(start + Vector2(320, 0), &"")
+	_expect(movement.has_active_route(), "小地图点击须创建真实本地行进路线")
+	var aim := start + Vector2(240, 0)
+	var registered := server.register_vehicle(actor_id, "equipment.test", start, loadout.value.assembly, loadout.value.weapons)
 	_expect(registered.is_ok, "测试战车可登记权威战斗状态")
 	var state: VehicleCombatState = registered.value
 	var controller: WeaponAttackVisualController = hall.world_view.combat_attack_controllers["energy_cannon"]
 	state.working_energy = 20.0
-	var rejected := server.handle_weapon_attack(actor_id, UseAbilityIntent.new("equipment.test", "energy_cannon.primary", Vector2(500, 200), 1).to_dictionary())
+	var rejected := server.handle_weapon_attack(actor_id, UseAbilityIntent.new("equipment.test", "energy_cannon.primary", aim, 1).to_dictionary())
 	_expect(not rejected.is_ok and rejected.error_code == &"combat.insufficient_working_energy", "虎式开炮真实拒绝能量不足")
 	hall.combat.on_combat_snapshot_received(server.snapshot_for_actor(actor_id))
 	_expect(server.pending_projectiles.is_empty() and controller.active_projectile_count() == 0, "拒绝开火不产生权威或客户端弹体")
 	_expect(is_equal_approx(hall.world_view.player.combat_status_bar._energy_ratio, 0.2), "真实权威快照将蓝条显示为20%")
 	state.working_energy = state.working_energy_capacity
-	var accepted := server.handle_weapon_attack(actor_id, UseAbilityIntent.new("equipment.test", "energy_cannon.primary", Vector2(500, 200), 2).to_dictionary())
+	var accepted := server.handle_weapon_attack(actor_id, UseAbilityIntent.new("equipment.test", "energy_cannon.primary", aim, 2).to_dictionary())
 	_expect(accepted.is_ok, "足够工作能量时允许虎式开火")
 	if accepted.is_ok:
+		movement.advance(0.2)
+		var visible_position := movement.position()
+		_expect(visible_position.distance_to(start) > 2.0, "模拟确认延迟期间车身须继续移动")
+		var event: Dictionary = accepted.value
+		var event_before := event.duplicate(true)
+		var authority_muzzle := Vector2(event.origin[0], event.origin[1])
+		var expected_muzzle := visible_position + authority_muzzle - start
 		hall.combat.on_combat_event_received(accepted.value)
+		_expect(movement.position() == visible_position and movement.has_active_route(),
+			"确认开炮不能回写历史车身坐标或取消小地图路线")
+		_expect(controller._projectiles[0].origin.is_equal_approx(expected_muzzle),
+			"移动中确认开炮须从当前可见战车炮口出射，而非服务器历史脚点")
+		_expect(controller._projectiles[0].target == Vector2(event.endpoint[0], event.endpoint[1]),
+			"移动只校准视觉起点，不能平移或重新钳制权威弹道终点")
+		_expect(event == event_before and server.pending_projectiles[0].origin == authority_muzzle,
+			"表现修正不得篡改事件或权威弹体")
 		hall.combat.on_combat_snapshot_received(server.snapshot_for_actor(actor_id))
 		_expect(controller.active_projectile_count() == 1, "开火事件和重复快照合计只播放一次")
 		_expect(is_equal_approx(hall.world_view.player.combat_status_bar._energy_ratio, 0.5), "虎式每炮扣50能量并投影为半条")
 		_expect(controller._weapon.projectile.ale_reference == "pic3/bullet/bullet8", "真实开火事件仍使用虎式专属弹体")
 	controller.clear_effects()
+	movement.cancel_route()
+	movement.set_multiplayer_presenter(saved_presenter)
 
 
 ## 用目录物品替换内存玩家的指定槽位，跳过商城但保留真实装配规则。

@@ -12,6 +12,8 @@ var position: Vector2
 var facing_direction: int
 var action_id: StringName
 var speed: float
+## 可用移动速度，即使静止也保留；-1 表示旧协议未提供。
+var movement_speed: float
 var state_revision: int
 var acknowledged_input_sequence: int
 
@@ -25,6 +27,7 @@ var acknowledged_input_sequence: int
 ## [param requested_speed] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## [param requested_state_revision] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## [param requested_acknowledged_input_sequence] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param requested_movement_speed] 权威可用移速；旧快照省略时为 -1。
 ## 设计：该函数只处理协议边界，不信任未经校验的外部状态。
 func _init(
 	requested_entity_id: String,
@@ -35,6 +38,7 @@ func _init(
 	requested_speed: float,
 	requested_state_revision: int,
 	requested_acknowledged_input_sequence: int,
+	requested_movement_speed: float = -1.0,
 ) -> void:
 	entity_id = requested_entity_id
 	server_tick = requested_server_tick
@@ -42,6 +46,7 @@ func _init(
 	facing_direction = requested_facing_direction
 	action_id = requested_action_id
 	speed = requested_speed
+	movement_speed = requested_movement_speed
 	state_revision = requested_state_revision
 	acknowledged_input_sequence = requested_acknowledged_input_sequence
 
@@ -57,7 +62,7 @@ func validate():
 ## 返回该函数计算、查询或操作得到的结果。
 ## 设计：该函数只处理协议边界，不信任未经校验的外部状态。
 func to_dictionary() -> Dictionary:
-	return {
+	var payload := {
 		"entity_id": entity_id,
 		"server_tick": server_tick,
 		"position": Validation.vector2_to_dictionary(position),
@@ -67,6 +72,9 @@ func to_dictionary() -> Dictionary:
 		"state_revision": state_revision,
 		"acknowledged_input_sequence": acknowledged_input_sequence,
 	}
+	if movement_speed != -1.0:
+		payload["movement_speed"] = movement_speed
+	return payload
 
 
 ## 加载并校验 `from_dictionary` 对应的模块状态。
@@ -101,6 +109,12 @@ static func from_dictionary(raw: Variant):
 	var speed_result = Validation.require_number(source, &"speed", 0.0, Protocol.MAX_SPEED)
 	if not speed_result.is_ok:
 		return speed_result
+	var available_speed := -1.0
+	if source.has("movement_speed"):
+		var movement_result = Validation.require_number(source, &"movement_speed", 0.0, Protocol.MAX_SPEED)
+		if not movement_result.is_ok:
+			return movement_result
+		available_speed = movement_result.value
 	var revision_result = Validation.require_integer(source, &"state_revision", 0, Protocol.MAX_SEQUENCE)
 	if not revision_result.is_ok:
 		return revision_result
@@ -121,4 +135,5 @@ static func from_dictionary(raw: Variant):
 		speed_result.value,
 		revision_result.value,
 		acknowledgement_result.value,
+		available_speed,
 	))

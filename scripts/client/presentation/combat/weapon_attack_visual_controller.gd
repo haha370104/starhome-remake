@@ -139,20 +139,7 @@ func request_fire(
 	var muzzle_offset := Vector2(float(muzzle_values[0]), float(muzzle_values[1]))
 	var forward_offset := minf(float(_weapon.get("muzzle_forward_offset", MUZZLE_FORWARD_OFFSET)), resolved_distance * 0.5)
 	var muzzle_position := origin + muzzle_offset + direction * forward_offset
-	_visual_shot_sequence += 1
-	var visual_shot_id := "%s.visual.%d.%d.%d" % [
-		String(_weapon_id),
-		OS.get_process_id(),
-		Time.get_ticks_usec(),
-		_visual_shot_sequence,
-	]
-	_spawn_muzzle(muzzle_position)
-	_spawn_projectile(
-		muzzle_position,
-		resolved_target,
-		tracking_target_resolver,
-		visual_shot_id,
-	)
+	var visual_shot_id := _spawn_visual_shot(muzzle_position, resolved_target, tracking_target_resolver)
 	_cooldown_remaining = float(_weapon["cooldown_seconds"])
 	CombatTraceLogger.record(&"client", &"visual_projectile_spawned", {
 		"visual_shot_id": visual_shot_id,
@@ -190,8 +177,14 @@ func bind_input_sequence(visual_shot_id: String, input_sequence: int) -> void:
 ## 仅为服务器已扣能并接受的开火创建一次弹体，快照重发不重复播放。
 ## [param event] 含发射者坐标、瞄准终点及 shot_id 的已确认开火事件。
 ## [param tracking_target_resolver] 导弹目标位置查询器。
+## [param actor_view_position] 当前可见车身在特效父节点坐标系下的脚点；缺省保留权威发射位置。
 ## 返回本次是否产生新的已确认表现。
-func present_confirmed_shot(event: Dictionary, tracking_target_resolver: Callable = Callable()) -> bool:
+## 设计：只把权威炮口相对车身的偏移投影到当前车身，终点及权威命中仍保持原值。
+func present_confirmed_shot(
+	event: Dictionary,
+	tracking_target_resolver: Callable = Callable(),
+	actor_view_position := Vector2.INF,
+) -> bool:
 	var shot_id := String(event.get("shot_id", ""))
 	var actor_point: Variant = event.get("actor_position", [])
 	var endpoint: Variant = event.get("endpoint", [])
@@ -199,21 +192,57 @@ func present_confirmed_shot(event: Dictionary, tracking_target_resolver: Callabl
 			or not actor_point is Array or actor_point.size() != 2 \
 			or not endpoint is Array or endpoint.size() != 2:
 		return false
+	var actor_position := Vector2(actor_point[0], actor_point[1])
+	var target := Vector2(endpoint[0], endpoint[1])
+	if not actor_position.is_finite() or not target.is_finite() or _world_parent == null:
+		return false
 	var confirmed_weapon := StringName(event.get("weapon_id", _weapon_id))
 	if select_weapon(confirmed_weapon) != OK:
 		return false
 	if event.get("weapon_flight") is Dictionary:
 		_apply_flight_parameters(event["weapon_flight"])
-	# 服务端已经通过冷却校验，网络延迟不能让本地旧冷却吞掉合法开火。
-	_cooldown_remaining = 0.0
-	var fired := request_fire(Vector2(actor_point[0], actor_point[1]), Vector2(endpoint[0], endpoint[1]), tracking_target_resolver)
-	if not bool(fired.get("ok", false)):
+	var aim := target - actor_position
+	var offset: Array = _weapon["muzzle_offset"]
+	var forward := minf(float(_weapon.get("muzzle_forward_offset", MUZZLE_FORWARD_OFFSET)), aim.length() * 0.5)
+	var authoritative_muzzle := actor_position + Vector2(offset[0], offset[1]) + aim.normalized() * forward
+	if event.has("origin"):
+		var origin: Variant = event["origin"]
+		if not origin is Array or origin.size() != 2:
+			return false
+		authoritative_muzzle = Vector2(origin[0], origin[1])
+	if not authoritative_muzzle.is_finite():
 		return false
+	var visible_actor := actor_view_position if actor_view_position.is_finite() else actor_position
+	var visible_muzzle := visible_actor + authoritative_muzzle - actor_position
+	# 已接受的开火不能再次按移动后的距离校验或钳制，否则会吞弹或偏移权威终点。
+	var visual_shot_id := _spawn_visual_shot(visible_muzzle, target, tracking_target_resolver)
+	_cooldown_remaining = float(_weapon["cooldown_seconds"])
 	_confirmed_shots[shot_id] = true
 	if _confirmed_shots.size() > 128:
 		_confirmed_shots.erase(_confirmed_shots.keys()[0])
-	bind_input_sequence(String(fired["visual_shot_id"]), int(event.get("input_sequence", -1)))
+	bind_input_sequence(visual_shot_id, int(event.get("input_sequence", -1)))
+	CombatTraceLogger.record(&"client", &"visual_projectile_spawned", {
+		"visual_shot_id": visual_shot_id, "shot_id": shot_id, "weapon_id": String(_weapon_id),
+		"actor_view_position": visible_actor, "actor_authoritative_position": actor_position,
+		"muzzle_position": visible_muzzle, "authoritative_muzzle_position": authoritative_muzzle,
+		"resolved_target": target, "projectile_speed": float(_weapon.projectile.travel_pixels_per_second),
+	})
 	return true
+
+
+## 在同一世界坐标系创建炮口与弹体，不重做已经完成的攻击规则校验。
+## [param muzzle_position] 本次表现实际使用的炮口位置。
+## [param target] 确认后的弹道终点。
+## [param tracking_target_resolver] 导弹使用的动态目标解析器。
+## 返回本地唯一弹体编号，供诊断与意图对账。
+func _spawn_visual_shot(muzzle_position: Vector2, target: Vector2, tracking_target_resolver: Callable) -> String:
+	_visual_shot_sequence += 1
+	var visual_shot_id := "%s.visual.%d.%d.%d" % [
+		String(_weapon_id), OS.get_process_id(), Time.get_ticks_usec(), _visual_shot_sequence,
+	]
+	_spawn_muzzle(muzzle_position)
+	_spawn_projectile(muzzle_position, target, tracking_target_resolver, visual_shot_id)
+	return visual_shot_id
 
 
 ## 接收本玩家的权威弹道参数和最终结果，同步后续发射并终结尚在飞行的对应弹体。

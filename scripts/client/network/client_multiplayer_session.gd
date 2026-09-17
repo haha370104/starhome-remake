@@ -309,6 +309,7 @@ func _on_world_snapshot(snapshot: Dictionary) -> void:
 				entity.acknowledged_input_sequence,
 				entity.position,
 				entity.action_id,
+				entity.movement_speed,
 			)
 		else:
 			remote_entities.append(entity.to_dictionary())

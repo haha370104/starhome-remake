@@ -148,7 +148,7 @@ func _present_confirmed_attack(event: Dictionary) -> void:
 	if controller == null:
 		return
 	var resolver := _combat_target_position.bind(String(event.get("target_entity_id", ""))) if mode_id == "missile" else Callable()
-	if not controller.present_confirmed_shot(event, resolver):
+	if not controller.present_confirmed_shot(event, resolver, world_view.player.position):
 		return
 	# 副武器只有弹体表现；不能替换主装置或改变其动作和朝向。
 	if mode_id != "energy_cannon":

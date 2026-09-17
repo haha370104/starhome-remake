@@ -32,12 +32,39 @@ func _initialize() -> void:
 		_expect(controller.present_confirmed_shot(event) and controller.active_projectile_count() == 1, "服务器接受后才显示炮弹")
 		_expect(not controller.present_confirmed_shot(event) and controller.active_projectile_count() == 1, "重发接受事件不能重复生成炮弹")
 		controller.clear_effects()
+		_test_moving_confirmation(controller)
 		_test_fire_lifecycle(controller)
 		_test_secondary_weapons(controller, world_parent, manifest_value)
 		_test_authoritative_flight(controller, world_parent, manifest_value)
 	controller.free()
 	world_parent.free()
 	_finish()
+
+
+## 验证迟到确认从当前炮口出射，保持权威终点、去重及最终命中对账。
+## [param controller] 使用真实弹道配置的表现控制器。
+func _test_moving_confirmation(controller: Node) -> void:
+	var event := {"shot_id": "accepted.moving", "input_sequence": 42,
+		"actor_position": [100, 100], "origin": [128, 84], "endpoint": [300, 100]}
+	var original := event.duplicate(true)
+	var visible_position := Vector2(800, 600)
+	_expect(controller.present_confirmed_shot(event, Callable(), visible_position),
+		"已确认的射击不因车身移动后超出视觉射程而拒绝")
+	var state: Dictionary = controller._projectiles[0]
+	_expect(state.origin == Vector2(828, 584), "炮口偏移须跟随当前车身位置")
+	_expect(state.target == Vector2(300, 100), "终点必须保留权威值，不平移或再次钳制")
+	_expect(state.node.get_parent() == controller._world_parent, "弹体发射后属于世界，不能跟随车身平移")
+	_expect(not controller.present_confirmed_shot(event, Callable(), visible_position + Vector2(50, 0))
+		and controller.active_projectile_count() == 1 and state.origin == Vector2(828, 584),
+		"重复确认不能在新位置再次发射或移动旧弹体")
+	_expect(event == original, "视觉校准不得修改共享权威事件")
+	controller.apply_authoritative_snapshot({"local_entity_id": "test.moving", "recent_events": [{
+		"event_id": 1, "attacker_id": "test.moving", "input_sequence": 42,
+		"event_type": "energy_cannon_hit", "impact_position": [250, 100]}]}, "energy_cannon.primary")
+	_expect(controller.active_projectile_count() == 0 and controller.active_impact_count() == 1,
+		"视觉起点修正后仍须按意图序号消费权威命中")
+	_expect(controller._impacts[0].node.position == Vector2(250, 100), "最终爆炸仍位于权威命中点")
+	controller.clear_effects()
 
 
 ## 执行 `test_fire_lifecycle` 对应的模块操作。

@@ -115,6 +115,9 @@ main_hall.tscn / main_hall.gd                  dedicated_server.tscn
 ### C. 传输、移动预测与切图（最高优先级）
 
 先读[双运行模式架构](./runtime_modes_architecture.md)，再看[技术架构 §2、§6](./technical_architecture.md)。
+2026-09-17 移动开炮重点核对[移速及炮口同步](combat_diagnostics.md#2026-09-17-移动途中开炮的坐标同步)：
+静止快照也必须提供装备移速，旧 tick 不回退速度，客户端跨拐点不丢距离；确认发射只校准
+可见炮口，不能平移权威终点、修改命中或回写玩家位置。
 代码：[LocalPlayerController](../scripts/client/gameplay/local_player_controller.gd)、
 [LocalMovementPredictor](../scripts/client/network/local_movement_predictor.gd)、
 [ClientMultiplayerSession](../scripts/client/network/client_multiplayer_session.gd)、

@@ -31,6 +31,7 @@ var _correction_origin := Vector2.ZERO
 var _correction_target := Vector2.ZERO
 var _correction_elapsed := 0.0
 var _correction_duration := 0.0
+var _movement_speed := -1.0
 
 
 ## 配置并初始化 `configure` 对应的模块状态。
@@ -59,6 +60,7 @@ func reset(position: Vector2, starting_sequence: int = 1, emit_change: bool = tr
 	next_input_sequence = maxi(1, starting_sequence)
 	last_acknowledged_sequence = next_input_sequence - 1
 	last_server_tick = -1
+	_movement_speed = -1.0
 	_pending_intents.clear()
 	_active_intent_sequence = 0
 	_active_route_finished = false
@@ -128,6 +130,7 @@ func finish_local_route(input_sequence: int) -> bool:
 ## [param acknowledged_input_sequence] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## [param server_position] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## [param server_action] 权威实体当前是仍在执行路线还是已经停下。
+## [param server_movement_speed] 已校验的权威可用移速；-1 表示旧快照未提供。
 ## 返回该函数计算、查询或操作得到的结果。
 ## 设计：该函数位于客户端交互或表现边界，最终状态以服务器权威结果为准。
 func apply_authoritative_snapshot(
@@ -135,11 +138,14 @@ func apply_authoritative_snapshot(
 	acknowledged_input_sequence: int,
 	server_position: Vector2,
 	server_action: StringName = &"idle",
+	server_movement_speed: float = -1.0,
 ) -> bool:
 	if server_tick <= last_server_tick:
 		stale_snapshot_rejected.emit(server_tick)
 		return false
 	last_server_tick = server_tick
+	if is_finite(server_movement_speed) and server_movement_speed >= 0.0:
+		_movement_speed = server_movement_speed
 	authoritative_position = server_position
 	last_acknowledged_sequence = maxi(last_acknowledged_sequence, acknowledged_input_sequence)
 	_mark_acknowledged_intents(last_acknowledged_sequence)
@@ -231,7 +237,7 @@ func pending_intent_count() -> int:
 ## 返回该函数计算、查询或操作得到的结果。
 ## 设计：该函数位于客户端交互或表现边界，最终状态以服务器权威结果为准。
 func presentation_state() -> Dictionary:
-	return {
+	var state := {
 		"position": predicted_position,
 		"authoritative_position": authoritative_position,
 		"correction_mode": correction_mode,
@@ -241,6 +247,9 @@ func presentation_state() -> Dictionary:
 		"active_intent_sequence": _active_intent_sequence,
 		"active_route_finished": _active_route_finished,
 	}
+	if _movement_speed >= 0.0:
+		state["movement_speed"] = _movement_speed
+	return state
 
 
 ## 执行 `discard_acknowledged_intents` 对应的模块操作。

@@ -85,6 +85,7 @@ func snapshot(server_tick: int) -> Dictionary:
 		movement_speed if action == &"walking" else 0.0,
 		state_revision,
 		maxi(0, last_input_sequence),
+		movement_speed,
 	)
 	return contract.to_dictionary()
 

@@ -48,6 +48,7 @@ TESTS = (
     "integration/combat_click_routing_test.gd",
     "ui/runtime/map_navigation_test.gd",
     "integration/map_navigation_scene_test.gd",
+    "integration/local_movement_speed_sync_test.gd",
     "domain/achievements_test.gd",
     "server/achievements_authority_test.gd",
     "ui/runtime/achievements_panel_test.gd",

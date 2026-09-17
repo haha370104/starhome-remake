@@ -58,6 +58,7 @@ func set_navigation(navigation: RefCounted) -> void:
 
 
 ## 切换当前地图上的移动许可；野外战车没有有效推进力时关闭。
+## [param enabled] 是否允许接受和继续移动路线。
 func set_movement_enabled(enabled: bool) -> void:
 	_movement_enabled = enabled
 	if not enabled:
@@ -114,31 +115,40 @@ func request_move(requested_position: Vector2) -> Dictionary:
 	}
 
 
-## 执行 `advance` 对应的模块操作。
-## [param delta] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## 按权威移速消费本帧距离，跨越路径拐点后继续使用剩余距离。
+## [param delta] 本帧经过的秒数；非正数不推进。
 func advance(delta: float) -> void:
-	if _character == null or path_index >= path_points.size():
+	if _character == null or path_index >= path_points.size() or delta <= 0.0 or _movement_speed <= 0.0:
 		return
 	var previous_position := position()
-	var waypoint := path_points[path_index]
-	var delta_to_target := waypoint - previous_position
-	var distance := delta_to_target.length()
-	if distance <= _movement_speed * delta:
-		_write_position(waypoint)
-		path_index += 1
-		if path_index >= path_points.size():
-			_record_predicted_delta(position() - previous_position)
-			_complete_route()
-			return
+	var next_position := previous_position
+	var remaining_distance := _movement_speed * delta
+	var blocked := false
+	while remaining_distance > 0.0 and path_index < path_points.size():
+		var waypoint := path_points[path_index]
+		var motion := waypoint - next_position
+		var distance := motion.length()
+		if distance > 0.001:
+			current_direction = direction_index(motion)
+		if distance <= 0.001 or distance <= remaining_distance:
+			next_position = waypoint
+			remaining_distance -= distance if distance > 0.001 else 0.0
+			path_index += 1
 		else:
-			_begin_current_segment()
-	else:
-		var next_position := previous_position + delta_to_target.normalized() * _movement_speed * delta
-		if not _navigation.is_walkable(next_position):
-			cancel_route("路径被阻挡")
-			return
-		_write_position(next_position)
+			var candidate := next_position.move_toward(waypoint, remaining_distance)
+			if not _navigation.is_walkable(candidate):
+				blocked = true
+				break
+			next_position = candidate
+			remaining_distance = 0.0
+	_write_position(next_position)
 	_record_predicted_delta(position() - previous_position)
+	if blocked:
+		cancel_route("路径被阻挡")
+	elif path_index >= path_points.size():
+		_complete_route()
+	else:
+		_begin_current_segment()
 
 
 ## 执行 `apply_authoritative_presentation` 对应的模块操作。
@@ -147,6 +157,9 @@ func advance(delta: float) -> void:
 func apply_authoritative_presentation(state: Dictionary) -> void:
 	if _character == null:
 		return
+	var available_speed := float(state.get("movement_speed", -1.0))
+	if is_finite(available_speed) and available_speed >= 0.0:
+		_movement_speed = available_speed
 	if _authority_position_held:
 		_write_position(_held_position)
 		return
