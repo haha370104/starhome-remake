@@ -68,7 +68,68 @@ func _run() -> void:
 	await process_frame
 	_expect(bool(_state.quest_states.arms_npc_supply.accepted), "接受任务应写入权威任务状态")
 	_expect(window._task_primary_button.disabled, "材料不足时完成任务按钮应禁用")
+	await _test_generators(manager)
 	_finish(manager)
+
+
+## 通过窗口购买四款基础发生器，验证实际实例、费用、重复提交与长说明裁切。
+## [param manager] 已连接隔离权威服务的窗口管理器。
+func _test_generators(manager: GameWindowManager) -> void:
+	_state.currency = 4000000
+	manager.open_weapon_merchant("buy", "special_weapon_merchant")
+	await process_frame
+	await process_frame
+	var window := manager.weapon_merchant_window
+	var generators: Array[Dictionary] = []
+	for offer: Dictionary in window._commerce.get("offers", []):
+		if offer.category == "generator": generators.append(offer)
+		if offer.category in ["stealth_device", "radar_device"]:
+			_expect("暂未开放" in String(offer.description), "商店必须明确装置的PVE边界")
+	_expect(generators.size() == 4, "只上架四款基础发生器，不混入赠品和高阶装备")
+	for offer: Dictionary in generators:
+		var before := _state.currency
+		var previous_revision := _state.inventory_revision
+		window._request_trade(offer)
+		await process_frame
+		_expect(before - _state.currency == int(offer.price), "发生器按服务端价格扣款")
+		var found := false
+		for stack: InventoryStackRecord in _state.inventory_stacks:
+			if stack.item_definition_id == offer.definition_id: found = true
+		_expect(found, "买入产生可装配的发生器实例")
+		var duplicate: DomainResult = _service.execute(_state, {
+			"type": "buy_from_weapon_merchant", "merchant_id": "special_weapon_merchant",
+			"definition_id": offer.definition_id, "inventory_revision": previous_revision,
+		})
+		_expect(not duplicate.is_ok and duplicate.error_code == &"inventory.revision_conflict", "重发旧购买不能再次扣款")
+	var heat: Dictionary = {}
+	for offer: Dictionary in generators:
+		if offer.definition_id == "glory_equipment_gaoregun_217b753365": heat = offer
+	if heat.is_empty(): return
+	var row: Control = window._list.get_child((window._commerce.offers as Array).find(heat))
+	window._on_row_entered(row, heat)
+	window._list_scroll.ensure_control_visible(row)
+	await process_frame
+	await process_frame
+	_expect("17" in window._description_body.text, "商品说明包含实际高热数值")
+	_expect(window._description_title.text == "高热发生器", "显示名称不能包含原版颜色控制码")
+	_expect(window._description_scroll.clip_contents and window._description_scroll.get_v_scroll_bar().visible,
+		"长说明在原有详情框内滚动，不越过底部")
+	_expect(window._description_body.size.x <= window._description_scroll.size.x, "说明不能水平溢出")
+	window._description_scroll.scroll_vertical = 40
+	window._on_row_entered(row, heat)
+	_expect(window._description_scroll.scroll_vertical == 0, "切换商品从说明顶部开始")
+	if DisplayServer.get_name() != "headless":
+		await RenderingServer.frame_post_draw
+		root.get_texture().get_image().save_png("res://.godot/generator-merchant.png")
+	var poor := _state.duplicate_record()
+	poor.currency = 999999
+	var rejected: DomainResult = _service.execute(poor, {
+		"type": "buy_from_weapon_merchant", "merchant_id": "special_weapon_merchant",
+		"definition_id": heat.definition_id, "inventory_revision": poor.inventory_revision,
+		"price": 1,
+	})
+	_expect(not rejected.is_ok and rejected.error_code == &"commerce.insufficient_currency", "伪造价格不能购买发生器")
+	_expect(poor.currency == 999999, "不足额的购买不扣款")
 
 
 ## 通过真实权威服务校验高档价格、地面维修臂购买和太空工程臂禁售。

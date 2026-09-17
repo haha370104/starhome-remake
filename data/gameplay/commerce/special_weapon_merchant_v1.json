@@ -4,7 +4,7 @@
     "id": "special_weapon_merchant",
     "display_name": "特种武器商人",
     "maximum_required_level": 280,
-    "sell_categories": ["rocket_weapon", "missile_weapon", "stealth_device", "radar_device"],
+    "sell_categories": ["rocket_weapon", "missile_weapon", "stealth_device", "radar_device", "generator"],
     "official_whitelist_ids": {
       "rocket_weapon": [
         "glory_equipment_space_firegun1_49553e4065", "official_rocket_firegun_2",
@@ -21,6 +21,10 @@
         "glory_equipment_hermit3_6cc56176f5", "glory_equipment_hermit4_8c106d5a91",
         "glory_equipment_hermit5_8fa522ec70"
       ],
+      "generator": [
+        "glory_equipment_firesubgun_c0454bb680", "glory_equipment_gaoregun_217b753365",
+        "glory_equipment_fushigun_58270fb9ae", "glory_equipment_cihuagun_78a44fee79"
+      ],
       "radar_device": [
         "glory_equipment_radar1_f2644a77fb", "glory_equipment_radar2_8acc8d9020",
         "glory_equipment_radar3_cf3a58a093", "glory_equipment_radar4_b1e1fb3849",
@@ -29,6 +33,7 @@
     },
     "buys_all_unbound_items": true
   },
+  "remake_generator_supply": "Four basic generators sold by the existing special weapon merchant at original m_nWorth prices: FireSubGun 2000, heat/corrosion/magnetism 1000000 each. Gift and advanced generators remain outside this ordinary shop; this supply decision is not evidence of original NPC stock.",
   "source_evidence": [
     "https://jz.ftxjjy.com/EquiIntro_Missle_1.shtml",
     "https://jz.ftxjjy.com/EquiIntro_Hermit_1.shtml",

@@ -98,6 +98,8 @@ func to_view_dictionary() -> Dictionary:
 	if generator_profile != null:
 		view["description"] = String(view.get("description", "")) + "\n\n" + generator_profile.description()
 		view["generator_effects"] = generator_profile.description()
+	if _definition.has("pve_scope_notice"):
+		view["description"] = String(view.get("description", "")) + "\n\n" + String(_definition.pve_scope_notice)
 	view["equipment_location"] = equipment_location
 	view["location"] = equipment_location
 	view["equip_kind"] = equip_kind

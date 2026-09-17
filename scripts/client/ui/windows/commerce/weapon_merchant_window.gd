@@ -25,6 +25,7 @@ var _list: VBoxContainer
 var _list_scroll: ScrollContainer
 var _description_title: Label
 var _description_body: Label
+var _description_scroll: ScrollContainer
 var _preview: TextureRect
 var _currency_label: Label
 var _task_root: Control
@@ -129,7 +130,13 @@ func _build_trade_view() -> void:
 	description_frame.add_child(_preview)
 	_description_title = _label_on(description_frame, "ItemTitle", Vector2(10, 108), Vector2(175, 24), 13, BOLD_FONT)
 	_description_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_description_body = _label_on(description_frame, "ItemDescription", Vector2(10, 136), Vector2(175, 164), 12, REGULAR_FONT)
+	_description_scroll = ScrollContainer.new()
+	_description_scroll.position = Vector2(10, 136)
+	_description_scroll.size = Vector2(175, 164)
+	_description_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	description_frame.add_child(_description_scroll)
+	_description_body = _label_on(_description_scroll, "ItemDescription", Vector2.ZERO, Vector2.ZERO, 12, REGULAR_FONT)
+	_description_body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_description_body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_description_body.vertical_alignment = VERTICAL_ALIGNMENT_TOP
 	_currency_label = _label("Currency", Vector2(28, 416), Vector2(280, 18), 12, REGULAR_FONT)
@@ -244,6 +251,7 @@ func _on_row_entered(row: PanelContainer, entry: Dictionary) -> void:
 	else:
 		description += "\n\n收购价：%d" % int(entry.get("unit_price", 0))
 	_description_body.text = description.strip_edges()
+	_description_scroll.scroll_vertical = 0
 	var presentation: Dictionary = entry.get("presentation", {})
 	var inventory_value: Variant = presentation.get("inventory", presentation)
 	var resolved: Dictionary = TextureResolverScript.resolve(

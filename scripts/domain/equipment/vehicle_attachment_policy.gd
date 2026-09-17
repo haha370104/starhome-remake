@@ -9,6 +9,12 @@ const FAMILY_SLOTS := {
 ## 在内容适配边界识别原版继承树，生成复刻装配契约；不修改原始归档。
 ## [param definition] 待规范化的装备定义。
 static func adapt(definition: Dictionary) -> void:
+	var secondary_kind := int(definition.get("stats", {}).get("legacy_properties", {}).get("m_nEquipKind2", -1))
+	if int(definition.get("equipment_location", -1)) == 13:
+		if secondary_kind == 6:
+			definition["pve_scope_notice"] = "隐身暂未开放：当前单人地图没有已确认的适用目标，不会让普通怪物停止索敌。"
+		elif secondary_kind == 7:
+			definition["pve_scope_notice"] = "雷达暂未开放：原版可探测的隐身陷阱尚未投放；侦测接合器暂不提供实际探测效果。"
 	var ancestry := String(definition.get("source_audit", {}).get("inheritance", "")).split(" > ")
 	var family := ""
 	if "NewJointBase" in ancestry:

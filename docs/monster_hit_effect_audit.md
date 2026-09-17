@@ -185,6 +185,12 @@
 
 ## 防回归与本轮验证
 
+2026-09-18 P4复查：9个缺口仍为水晶变异者/破坏者四种及其四种精英、炼狱天灾怒火。
+`OnNpcmyattack`/`OnNpcattack` 的效果索引来自服务端参数；现有NPC表的 `hit_effect`
+仍不足以证明这个索引，部分值实际上指向身体动画。故本期不更改这9项映射。
+另已找到怪物的 `COnAddMagicEff`/`COnClearMagicEff` 原版入口，发生器三类持续状态的
+动画已接通，详见[P4装置台账](pve_devices.md)；持续状态和普通弹体命中分别处理。
+
 - `GloryMonsterPresentationCatalog` 不再沿用npcinfo的旧hit_effect字段，只有显式配置可以提供普通爆炸。
 - `monster_hit_presentation_test.gd` 通过真实快照入口逐怪播放103种效果，检查位置、层级、逐帧推进、
   终结弹体、单次播放、重放去重、晚到开始、落空、切图清理，以及9种未核实项/7种腐蚀排除。

@@ -141,6 +141,7 @@ func initialize() -> DomainResult:
 	for id: String in generator_rules.profiles:
 		if not _definitions.has(id) or _definitions[id].get("attachment_family", "") != "generator":
 			return DomainResult.failure(&"generator.rules", "发生器规则引用未装配的物品类型")
+		_definitions[id]["display_name"] = generator_rules.profiles[id].label
 	var dismantle_data := JsonConfigLoader.load_dictionary("res://data/gameplay/equipment_dismantle_rules_v1.json")
 	if not dismantle_data.is_ok: return dismantle_data
 	var dismantle_result := EquipmentDismantleRules.from_dictionary(dismantle_data.value, self)

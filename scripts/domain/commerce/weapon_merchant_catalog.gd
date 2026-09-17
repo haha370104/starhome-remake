@@ -184,7 +184,9 @@ func _merchant_category(definition: Dictionary) -> String:
 			var stats: Dictionary = definition.get("stats", {})
 			var properties: Dictionary = stats.get("legacy_properties", {})
 			var equipment_type := int(properties.get("m_nEquipKind2", -1))
-			if equipment_type == 3:
+			if definition.get("attachment_family", "") == "generator":
+				category = "generator"
+			elif equipment_type == 3:
 				category = "repair_arm"
 			elif equipment_type == 4:
 				category = "mining_arm"
@@ -220,10 +222,14 @@ func _offer(definition: Dictionary, category: String) -> Dictionary:
 	var stats: Dictionary = definition.get("stats", {})
 	var properties: Dictionary = stats.get("legacy_properties", {})
 	var presentation: Dictionary = definition.get("presentation", {})
+	var description := String(definition.get("description", ""))
+	var profile: GeneratorRules.Profile = _item_catalog.generator_rules.profiles.get(String(definition.get("id", "")))
+	if profile != null: description += "\n\n" + profile.description()
+	if definition.has("pve_scope_notice"): description += "\n\n" + String(definition.pve_scope_notice)
 	return {
 		"definition_id": String(definition.get("id", "")),
 		"display_name": String(definition.get("display_name", "")),
-		"description": String(definition.get("description", "")),
+		"description": description,
 		"category": category,
 		"required_level": _required_level(properties),
 		"price": _sale_price(definition),
