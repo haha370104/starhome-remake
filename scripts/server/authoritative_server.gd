@@ -770,7 +770,7 @@ func handle_peer_player_panel_command(peer_id: int, command: Dictionary) -> Dict
 	if session == null:
 		return _failure(&"panels.session_missing", "peer has no active authoritative session")
 	if autosave_service == null or player_panel_service == null or commerce_service == null \
-			or manufacturing_service == null or warehouse_service == null:
+			or manufacturing_service == null:
 		return _failure(&"panels.persistence_required", "player panels require authoritative persistence")
 	var current := autosave_service.state_for(session.entity_id)
 	if current == null:
@@ -780,9 +780,11 @@ func handle_peer_player_panel_command(peer_id: int, command: Dictionary) -> Dict
 		return _success({"scene_players": ScenePlayerListProjector.build(
 			session.map_instance_id, sessions, autosave_service
 		)})
+	var is_warehouse := command_type in PersonalWarehouseService.COMMANDS
+	if is_warehouse and warehouse_service == null:
+		return _failure(&"warehouse.unavailable", "个人仓库尚未初始化")
 	var is_commerce: bool = commerce_service.handles(command_type)
 	var is_manufacturing: bool = manufacturing_service.handles(command_type)
-	var is_warehouse := command_type in PersonalWarehouseService.COMMANDS
 	var current_map := map_registry.instance_by_id(session.map_instance_id)
 	var captured: DomainResult = _capture_persistent_player_state(current)
 	if not captured.is_ok:

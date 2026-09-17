@@ -47,6 +47,8 @@ func _run() -> void:
 	var response := server.handle_peer_player_panel_command(1, {"type": "query_scene_players", "map_instance_id": "field"})
 	_expect(response.ok and response.value.scene_players.map_instance_id == "hall", "服务器忽略伪造地图参数")
 	_expect(response.value.scene_players.players.size() == 1, "真实处理器返回命名名单协议")
+	var warehouse_response := server.handle_peer_player_panel_command(1, {"type": "query_personal_warehouse"})
+	_expect(not warehouse_response.ok and warehouse_response.code == &"warehouse.unavailable", "仓库缺失只拒绝仓库命令，不影响只读名单")
 	_expect(not server.handle_peer_player_panel_command(99, {"type": "query_scene_players"}).ok, "无会话不能查询名单")
 	sessions.session_for_peer(1).map_instance_id = "field"
 	response = server.handle_peer_player_panel_command(1, {"type": "query_scene_players"})
