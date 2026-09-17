@@ -72,6 +72,7 @@ TESTS = (
     "integration/d04_player_vehicle_presentation_test.gd",
     "integration/equipped_weapon_presentation_test.gd",
     "server/combat/equipped_vehicle_authority_test.gd",
+    "server/combat/vehicle_energy_endurance_test.gd",
     "domain/weapon_merchant_domain_test.gd",
     "integration/map_transition_scene_smoke_test.gd",
     "integration/persisted_map_startup_scene_test.gd",

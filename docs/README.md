@@ -61,6 +61,7 @@
 | [运行内容与资源包](./runtime_content.md) | 当前地图/动画/物品/配方/矿源数量和完整性边界 |
 | [已知内容注册表](./known_content_registry.md) | 身份和来源查询；旧 runtime 映射不能替代新运行目录 |
 | [战斗诊断](./combat_diagnostics.md) | JSONL 位置、同一发子弹的跨端关联、复现采集方式 |
+| [工作能量与连续输出](vehicle_energy_endurance.md) | 四五秒验收、八档车炮实测、储备耗尽及连点/换车回归 |
 | [采矿、主装置与错误文案](mining_equipment_and_player_messages.md) | 装配准入、三秒周期、重启入账身份、两类工程臂 HUD/空点击 |
 | [矿物渲染与装备叠层](mineral_rendering_and_equipment_layers.md) | 重复乘色修复、矿源变体、采掘臂帧率与面板层级 |
 | [工业制造](industrial_manufacturing.md) | 提炼、主/附属装备、合金和维护包；83 条可执行规则与排除项 |
