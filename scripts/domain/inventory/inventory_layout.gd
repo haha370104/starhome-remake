@@ -97,6 +97,7 @@ static func first_available_position(items: Array, _footprint: Vector2i) -> Vect
 ## 返回虚拟格子的左上角整数坐标，只供整理和新物品默认落位使用。
 ## [param index] 范围为 0..39 的格子索引。
 ## 返回与 UI 五列八行划分一致的坐标。
+## 计算整理或新增物品的默认落点，不限制玩家自由摆放。
 static func grid_position(index: int) -> Vector2i:
 	return Vector2i(
 		floori(float(index % GRID_COLUMNS) * MAIN_SIZE.x / GRID_COLUMNS),

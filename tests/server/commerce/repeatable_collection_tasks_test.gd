@@ -41,6 +41,9 @@ func _initialize() -> void:
 	quit(0 if failures.is_empty() else 1)
 
 
+## 累计收集任务行为检查。
+## [param condition] 当前预期条件。
+## [param message] 失败诊断。
 func _expect(condition: bool, message: String) -> void:
 	checks += 1
 	if not condition:

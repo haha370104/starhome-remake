@@ -5,6 +5,7 @@ var failures: Array[String] = []
 var _now := 1788710400
 
 
+## 验证训练分级、跨日进度和权威结算的完整路径。
 func _initialize() -> void:
 	var items := ItemCatalog.new()
 	_expect(items.initialize().is_ok, "物品加载")
@@ -100,6 +101,9 @@ func _test_persistence_and_authority() -> void:
 	_expect(not commerce.quests.execute(full, "combat_trainer", {"type": "accept_weapon_merchant_task", "task_id": "training_energy_cannon"}).is_ok, "满级不接训练")
 
 
+## 累计训练任务行为断言。
+## [param condition] 当前预期条件。
+## [param message] 失败诊断。
 func _expect(condition: bool, message: String) -> void:
 	checks += 1
 	if not condition:

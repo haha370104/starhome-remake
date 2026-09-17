@@ -10,6 +10,8 @@ var training_targets: Array[Dictionary] = []
 
 
 ## 加载配置并校验所有需求、里程碑物品和发布者引用；无效配置阻止服务启动。
+## [param items] 校验材料和奖励身份的统一物品目录。
+## 返回目录加载结果或配置错误。
 func initialize(items: ItemCatalog) -> DomainResult:
 	var loaded := JsonConfigLoader.load_dictionary(CONFIG_PATH)
 	if not loaded.is_ok:
@@ -49,6 +51,7 @@ func initialize(items: ItemCatalog) -> DomainResult:
 
 
 ## 目标取自现有十级普通怪物分级且必须有启用刷怪配置，避免接到无处击杀的任务。
+## 返回目标表加载结果；没有投放目标的等级区间使加载失败。
 func _load_training_targets() -> DomainResult:
 	training_targets.clear()
 	var encounters := JsonConfigLoader.load_dictionary("res://data/gameplay/glory/glory_monster_encounters_v1.json")
@@ -88,16 +91,24 @@ func _load_training_targets() -> DomainResult:
 
 
 ## 注入服务器时钟生成业务日期；默认按配置的北京时间零点换日。
+## [param unix_seconds] 服务器提供的UTC秒时间戳。
+## 返回应用配置时区后的业务日期。
 func day_key(unix_seconds: int) -> String:
 	return Time.get_date_string_from_unix_time(unix_seconds + int(training_policy.get("timezone_offset_seconds", 28800)))
 
 
 ## 创建纯领域训练规则。
+## [param definition] 已验证的单项训练定义。
+## 返回持有独立配置副本的训练规则。
 func training_rule(definition: Dictionary) -> RepeatableTrainingTask:
 	return RepeatableTrainingTask.new(definition, training_policy, training_targets)
 
 
 ## 统一任务日志和 NPC 窗口投影，避免把训练任务误当成零材料收集任务。
+## [param player] 当前权威玩家。
+## [param definition] 指定任务定义。
+## [param day] 服务器业务日期。
+## 返回对应任务类型的只读进度。
 func snapshot(player: Player, definition: Dictionary, day: String) -> Dictionary:
 	var state: Dictionary = player.quest_states.get(String(definition["id"]), {})
 	if String(definition.get("kind", "")) == "kill_training":
@@ -106,6 +117,8 @@ func snapshot(player: Player, definition: Dictionary, day: String) -> Dictionary
 
 
 ## 按发布者列出任务，保持 JSON 配置顺序。
+## [param provider_id] 注册的任务发布者身份。
+## 返回该发布者任务定义的独立副本。
 func tasks_for(provider_id: String) -> Array[Dictionary]:
 	var result: Array[Dictionary] = []
 	for entry: Dictionary in definitions.values():
@@ -115,6 +128,9 @@ func tasks_for(provider_id: String) -> Array[Dictionary]:
 
 
 ## 兼容单奖励对象及多奖励数组，支持护甲成对发放。
+## [param definition] 包含里程碑奖励的任务定义。
+## [param completions] 已完成轮数。
+## 返回下一个未达成里程碑的全部奖励。
 static func next_rewards(definition: Dictionary, completions: int) -> Array:
 	var next := 2147483647
 	for milestone: String in definition.get("milestone_rewards", {}):
@@ -124,6 +140,9 @@ static func next_rewards(definition: Dictionary, completions: int) -> Array:
 
 
 ## 返回指定轮次的全部额外物品奖励。
+## 按精确完成轮次查找里程碑，兼容单件和多件奖励配置。
+## [param definition] 原始任务定义。
+## [param completion] 要查询的完成轮次。
 static func rewards_at(definition: Dictionary, completion: int) -> Array:
 	var value: Variant = definition.get("milestone_rewards", {}).get(str(completion), [])
 	return value.duplicate(true) if value is Array else [value.duplicate(true)] if value is Dictionary and not value.is_empty() else []

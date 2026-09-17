@@ -71,6 +71,7 @@ func _run() -> void:
 ## 构造在图标相同抓取点按下/松开的鼠标事件。
 ## [param pressed] 是否按下。
 ## [param double_click] 是否双击。
+## 返回可发送给物品图标的独立鼠标事件。
 func _button(pressed: bool, double_click: bool = false) -> InputEventMouseButton:
 	var event := InputEventMouseButton.new()
 	event.button_index = MOUSE_BUTTON_LEFT

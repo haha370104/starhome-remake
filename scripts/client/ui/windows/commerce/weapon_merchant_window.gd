@@ -355,6 +355,7 @@ func _render_task() -> void:
 
 
 ## 五种训练共用原版任务窗，切换只读详情，不自动接取或重抽目标。
+## [param index] 当前发布者任务列表索引。
 func _select_task(index: int) -> void:
 	var tasks: Array = _commerce.get("tasks", [])
 	if index < 0 or index >= tasks.size():

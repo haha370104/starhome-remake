@@ -7,6 +7,7 @@ var _service: AuthoritativeCommerceService
 var _window: WeaponMerchantWindow
 
 
+## 创建实际训练任务窗口，检查交互、日志与发布者投放。
 func _initialize() -> void:
 	call_deferred("_run")
 
@@ -71,6 +72,8 @@ func _run() -> void:
 	quit(0 if failures.is_empty() else 1)
 
 
+## 将窗口意图交给真实权威服务并刷新已提交快照。
+## [param command] 窗口生成的任务命令。
 func _dispatch(command: Dictionary) -> void:
 	var result := _service.execute(_state, command)
 	_expect(result.is_ok, "窗口命令：" + result.error_message)
@@ -81,6 +84,7 @@ func _dispatch(command: Dictionary) -> void:
 	_window.apply_commerce_bundle(result.value["panel_bundle"])
 
 
+## 核对每个任务发布者的场景路由、导航及可达落点。
 func _check_npcs() -> void:
 	var npcs: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/npcs/yian_harbor_hall_floor_1.json"))
 	var directory: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/maps/glory_map_directory_v1.json"))
@@ -109,6 +113,9 @@ func _check_npcs() -> void:
 		_expect(found, "NPC已经放入对应地图：" + provider)
 
 
+## 累计窗口与地图检查。
+## [param condition] 当前预期条件。
+## [param message] 失败诊断。
 func _expect(condition: bool, message: String) -> void:
 	checks += 1
 	if not condition:

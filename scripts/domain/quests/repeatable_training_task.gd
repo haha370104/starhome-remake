@@ -7,6 +7,9 @@ var _targets: Array[Dictionary]
 
 
 ## 训练规则仅消费配置、权威日期和随机种子，不读取时钟或网络。
+## [param definition] 任务次数、击杀数量和奖励配置。
+## [param policy] 技能分级和每日限制规则。
+## [param targets] 已确认投放的候选怪物。
 func _init(definition: Dictionary, policy: Dictionary, targets: Array[Dictionary]) -> void:
 	_definition = definition.duplicate(true)
 	_policy = policy.duplicate(true)
@@ -14,6 +17,8 @@ func _init(definition: Dictionary, policy: Dictionary, targets: Array[Dictionary
 
 
 ## 使用左闭合累计上界：≤50、51–100……501以上；不会重复命中边界。
+## [param skill_level] 接取时的基础技能等级。
+## 返回该等级允许抽取的目标副本。
 func eligible_targets(skill_level: int) -> Array[Dictionary]:
 	var tiers: Array = []
 	for band: Dictionary in _policy.get("level_bands", []):
@@ -29,6 +34,11 @@ func eligible_targets(skill_level: int) -> Array[Dictionary]:
 
 
 ## 接取时冻结目标，跨天只重置接取次数，未完成任务和击杀进度保留。
+## [param state] 当前任务进度。
+## [param skill_level] 接取时的技能等级。
+## [param day] 服务器业务日期。
+## [param random_seed] 权威随机种子。
+## 返回冻结目标的新进度或次数限制错误。
 func accept(state: Dictionary, skill_level: int, day: String, random_seed: int) -> DomainResult:
 	if bool(state.get("accepted", false)):
 		return DomainResult.failure(&"quest.already_accepted", "此项训练尚未完成")
@@ -51,11 +61,18 @@ func accept(state: Dictionary, skill_level: int, day: String, random_seed: int) 
 
 
 ## 返回指定服务器日期已经接取的次数，不依赖客户端时钟。
+## 按业务日期判断旧进度是否仍计入当日。
+## [param state] 保存的任务进度。
+## [param day] 当前业务日期。
 func daily_accepted(state: Dictionary, day: String) -> int:
 	return int(state.get("daily_accepted", 0)) if String(state.get("accept_day", "")) == day else 0
 
 
 ## 只消费匹配物种的击杀；同一死亡标识最多一次，进度不超过目标数量。
+## [param state] 当前任务进度。
+## [param species_id] 权威死亡事件的物种身份。
+## [param death_id] 用于去重的死亡事件身份。
+## 返回进度副本；不匹配或重复时返回原状态。
 func record_kill(state: Dictionary, species_id: String, death_id: String) -> Dictionary:
 	if not bool(state.get("accepted", false)) or death_id.is_empty():
 		return state
@@ -78,6 +95,8 @@ func record_kill(state: Dictionary, species_id: String, death_id: String) -> Dic
 
 
 ## 验证击杀完成，仅返回新状态，技能奖励由玩家聚合结算。
+## [param state] 待交付的训练进度。
+## 返回完成轮次更新后的候选或目标未完成错误。
 func turn_in(state: Dictionary) -> DomainResult:
 	if not bool(state.get("accepted", false)):
 		return DomainResult.failure(&"quest.not_accepted", "请先接取训练任务")
@@ -90,6 +109,9 @@ func turn_in(state: Dictionary) -> DomainResult:
 
 
 ## 统一为收集任务兼容的只读进度 DTO，额外携带每日接取次数与技能奖励。
+## [param state] 当前训练进度。
+## [param day] 服务器业务日期。
+## 返回接取次数、冻结目标、击杀量与奖励说明。
 func snapshot(state: Dictionary, day: String) -> Dictionary:
 	var accepted := bool(state.get("accepted", false))
 	var count := daily_accepted(state, day)

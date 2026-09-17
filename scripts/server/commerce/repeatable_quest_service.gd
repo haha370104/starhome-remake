@@ -8,6 +8,8 @@ var clock := Callable()
 
 
 ## 初始化任务消费器，不在代码内指定任何 NPC 材料或奖励表。
+## [param items] 权威物品目录。
+## 返回任务配置加载结果。
 func initialize(items: ItemCatalog) -> DomainResult:
 	_items = items
 	var loaded := JsonConfigLoader.load_dictionary("res://data/gameplay/skill_progression.json")
@@ -18,6 +20,10 @@ func initialize(items: ItemCatalog) -> DomainResult:
 
 
 ## 只允许发布者操作属于自己的任务；调用方提供隔离的待提交玩家聚合。
+## [param player] 隔离事务中的玩家聚合。
+## [param provider_id] 当前交互发布者。
+## [param command] 客户端任务选择意图。
+## 返回操作结果或发布者、地图、材料等校验错误。
 func execute(player: Player, provider_id: String, command: Dictionary) -> DomainResult:
 	var candidates := catalog.tasks_for(provider_id)
 	var task_id := String(command.get("task_id", candidates[0]["id"] if candidates.size() == 1 else ""))
@@ -57,6 +63,9 @@ func execute(player: Player, provider_id: String, command: Dictionary) -> Domain
 
 
 ## 构建发布者所有任务的实时进度，不修改存档。
+## [param player] 当前权威玩家。
+## [param provider_id] 指定发布者。
+## 返回该发布者全部任务的当前进度。
 func snapshots(player: Player, provider_id: String) -> Array[Dictionary]:
 	var result: Array[Dictionary] = []
 	for definition: Dictionary in catalog.tasks_for(provider_id):
@@ -65,11 +74,16 @@ func snapshots(player: Player, provider_id: String) -> Array[Dictionary]:
 
 
 ## 服务器日期可注入以测试午夜，不接受命令中的日期或随机种子。
+## 返回由注入时钟或系统时钟确定的业务日期。
 func current_day() -> String:
 	return catalog.day_key(int(clock.call()) if clock.is_valid() else int(Time.get_unix_time_from_system()))
 
 
 ## 训练交付不消耗背包；+1取交付时技能等级，而不是冻结的接取等级。
+## [param player] 待提交玩家聚合。
+## [param definition] 已验证的训练任务定义。
+## [param command] 接取或交付意图。
+## 返回冻结目标或技能奖励的实际结算结果。
 func _execute_training(player: Player, definition: Dictionary, command: Dictionary) -> DomainResult:
 	var task_id := String(definition["id"])
 	var skill_id := String(definition["skill_id"])
@@ -97,6 +111,9 @@ func _execute_training(player: Player, definition: Dictionary, command: Dictiona
 
 
 ## 内部权威死亡入口；不提供对应客户端 RPC。一次击杀可推进多个匹配目标的已接任务。
+## [param player] 击杀者的隔离聚合。
+## [param event] 服务器生成的死亡事件。
+## 返回是否至少推进了一项训练。
 func record_monster_kill(player: Player, event: Dictionary) -> bool:
 	if String(event.get("killer_id", "")) != player.entity_id:
 		return false
@@ -115,6 +132,9 @@ func record_monster_kill(player: Player, event: Dictionary) -> bool:
 
 
 ## 按物品最大堆叠数拆分奖励，实例 ID 跨进程重启保持随机唯一。
+## [param player] 接收里程碑奖励的隔离聚合。
+## [param reward] 已验证的定义身份和数量。
+## 返回全部入包成功或容量错误，由外层事务决定提交。
 func _grant_item(player: Player, reward: Dictionary) -> DomainResult:
 	var remaining := int(reward["quantity"])
 	while remaining > 0:
