@@ -5,6 +5,7 @@ const TextureLoaderScript := preload("res://scripts/content/runtime_texture_load
 const DEFAULT_INDEX_PATH := "res://data/content/glory_sprite_runtime_index_v1.json"
 const DEFAULT_PALETTE_INDEX_PATH := "res://data/content/glory_monster_palette_runtime_index_v1.json"
 const DEFAULT_MINE_PALETTE_INDEX_PATH := "res://data/content/glory_mine_palette_runtime_index_v1.json"
+const DEFAULT_RECOVERED_INDEX_PATH := "res://data/content/recovered_sprite_runtime_index_v1.json"
 
 var content_version := ""
 var errors: PackedStringArray = []
@@ -21,7 +22,9 @@ func load_default() -> bool:
 		return false
 	if not merge_file(DEFAULT_PALETTE_INDEX_PATH):
 		return false
-	return merge_file(DEFAULT_MINE_PALETTE_INDEX_PATH)
+	if not merge_file(DEFAULT_MINE_PALETTE_INDEX_PATH):
+		return false
+	return merge_file(DEFAULT_RECOVERED_INDEX_PATH)
 
 
 ## 加载并校验 `load_file` 对应的模块数据。
@@ -67,7 +70,8 @@ func _merge_file(path: String) -> bool:
 		var row: Dictionary = row_value
 		var logical_id := normalize_reference(String(row.get("logical_id", "")))
 		var frames_path := String(row.get("frames_path", ""))
-		if logical_id.is_empty() or not frames_path.begins_with("res://content/glory/"):
+		var allowed_path := frames_path.begins_with("res://content/glory/") or frames_path.begins_with("res://assets/recovered/")
+		if logical_id.is_empty() or not allowed_path or frames_path.contains(".."):
 			_add_error("row", "ALE 精灵条目路径无效")
 			continue
 		if _by_logical_id.has(logical_id):
@@ -193,7 +197,7 @@ func load_animation(asset_reference: String, preferred_prefix := "") -> Dictiona
 		),
 		"bounds_origin": bounds.position,
 		"bounds_size": bounds.size,
-		"source_release": "starhome_lz_ry",
+		"source_release": definition.get("source_release", "starhome_lz_ry"),
 	}
 
 

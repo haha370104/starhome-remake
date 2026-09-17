@@ -33,6 +33,8 @@
 
 ## 当前模块说明
 
+- [缺失素材跨版本检索与恢复](cross_release_asset_recovery.md)：免费/激战候选、用户差异选择、15项正式恢复及完整结果表。
+
 - [经验与掉落倍率切面](reward_modifiers.md)：账号/技能/物品规则、食品经验迁移、VIP扩展端口及权威结算。
 
 - [日常活动与智脑](daily_activities_and_smart_assistant.md)：佣兵/历练紫晶收入、八按钮 HUD、主动回城与客户端增强。

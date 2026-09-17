@@ -18,7 +18,13 @@ func _initialize() -> void:
 	_expect(packs.mount_all(false), "精灵包应可挂载：%s" % "; ".join(packs.errors))
 	var repository = RepositoryScript.new()
 	_expect(repository.load_default(), "ALE 索引应有效：%s" % "; ".join(repository.errors))
-	_expect(repository.size() == 13994, "基础 ALE 与两类 ACT 变种索引数量不匹配")
+	_expect(repository.size() == 14009, "基础 ALE、两类 ACT 变种与15项已确认恢复素材的数量不匹配")
+	var recovered: Array = JsonConfigLoader.load_dictionary(RepositoryScript.DEFAULT_RECOVERED_INDEX_PATH).value.sprites
+	for row: Dictionary in recovered:
+		var restored: Dictionary = repository.load_animation(row.logical_id)
+		_expect(restored.get("source_release") == "starhome_lz_fr", "跨版本恢复不能冒充荣耀来源")
+		_expect(restored.get("frames", []).size() == int(row.frame_count), "恢复的背包、面板、世界帧均可加载")
+	_expect(repository.resolve("pic3/equip/body/monarchtank").frames_path != repository.resolve("pic2/equip/body/monarchtank").frames_path, "已存在的荣耀帝王不能被千级帝王替换")
 	var adult := repository.resolve("../pic3/npc/CHN_2005_06_28_18_49_17_921.ale")
 	_expect(not adult.is_empty(), "应按旧 FCC 相对路径解析奥姆虫移动动画")
 	var animation := repository.load_animation(

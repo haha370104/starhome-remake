@@ -17,6 +17,7 @@ const GAMEPLAY_PATHS := [
 const PRESENTATION_PATHS := [
 	"res://data/presentation/player_equipment_v1.json",
 	"res://data/presentation/ground_loot_v1.json",
+	"res://data/presentation/recovered_equipment_v1.json",
 ]
 
 var _definitions: Dictionary = {}

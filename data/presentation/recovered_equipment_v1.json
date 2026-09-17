@@ -1,0 +1,147 @@
+{
+  "schema_version": 1,
+  "definitions": {
+    "glory_equipment_finaltank_036fecf00f": {
+      "inventory": {
+        "ale_reference": "../pic2/equip/bag/FinalTank.ale",
+        "frame": 0,
+        "asset_status": "recovered_from_user_approved_release",
+        "source_release": "starhome_lz_fr"
+      },
+      "dialog": {
+        "ale_reference": "../pic2/equip/dlg/FinalTank.ale",
+        "frame": 0,
+        "asset_status": "recovered_from_user_approved_release",
+        "source_release": "starhome_lz_fr"
+      },
+      "world": {
+        "ale_reference": "../pic2/equip/body/FinalTank.ale",
+        "frame": 0,
+        "asset_status": "recovered_from_user_approved_release",
+        "source_release": "starhome_lz_fr"
+      }
+    },
+    "glory_equipment_finaltank_warrior_f6e890c3e9": {
+      "inventory": {
+        "ale_reference": "../pic2/equip/bag/FinalTank.ale",
+        "frame": 0,
+        "asset_status": "recovered_from_user_approved_release",
+        "source_release": "starhome_lz_fr"
+      },
+      "dialog": {
+        "ale_reference": "../pic2/equip/dlg/FinalTank.ale",
+        "frame": 0,
+        "asset_status": "recovered_from_user_approved_release",
+        "source_release": "starhome_lz_fr"
+      },
+      "world": {
+        "ale_reference": "../pic2/equip/body/FinalTank.ale",
+        "frame": 0,
+        "asset_status": "recovered_from_user_approved_release",
+        "source_release": "starhome_lz_fr"
+      }
+    },
+    "glory_equipment_finaltank_warrior_1_11d3a8cd2d": {
+      "inventory": {
+        "ale_reference": "../pic2/equip/bag/FinalTank.ale",
+        "frame": 0,
+        "asset_status": "recovered_from_user_approved_release",
+        "source_release": "starhome_lz_fr"
+      },
+      "dialog": {
+        "ale_reference": "../pic2/equip/dlg/FinalTank.ale",
+        "frame": 0,
+        "asset_status": "recovered_from_user_approved_release",
+        "source_release": "starhome_lz_fr"
+      },
+      "world": {
+        "ale_reference": "../pic2/equip/body/FinalTank.ale",
+        "frame": 0,
+        "asset_status": "recovered_from_user_approved_release",
+        "source_release": "starhome_lz_fr"
+      }
+    },
+    "glory_equipment_monarchfinaltank_6be62938f4": {
+      "inventory": {
+        "ale_reference": "../pic2/equip/bag/MonarchTank.ale",
+        "frame": 0,
+        "asset_status": "recovered_from_user_approved_release",
+        "source_release": "starhome_lz_fr"
+      },
+      "dialog": {
+        "ale_reference": "../pic2/equip/dlg/MonarchTank.ale",
+        "frame": 0,
+        "asset_status": "recovered_from_user_approved_release",
+        "source_release": "starhome_lz_fr"
+      },
+      "world": {
+        "ale_reference": "../pic2/equip/body/MonarchTank.ale",
+        "frame": 0,
+        "asset_status": "recovered_from_user_approved_release",
+        "source_release": "starhome_lz_fr"
+      }
+    },
+    "glory_equipment_xmastank_d5d4117f3d": {
+      "inventory": {
+        "ale_reference": "../pic3/equip/bag/Xmastank.ale",
+        "frame": 0,
+        "asset_status": "recovered_from_user_approved_release",
+        "source_release": "starhome_lz_fr"
+      },
+      "dialog": {
+        "ale_reference": "../pic3/equip/dlg/Xmastank.ale",
+        "frame": 0,
+        "asset_status": "recovered_from_user_approved_release",
+        "source_release": "starhome_lz_fr"
+      },
+      "world": {
+        "ale_reference": "../pic3/equip/body/Xmastank.ale",
+        "frame": 0,
+        "asset_status": "recovered_from_user_approved_release",
+        "source_release": "starhome_lz_fr"
+      }
+    },
+    "glory_equipment_tankdragon_8ee199a53c": {
+      "inventory": {
+        "ale_reference": "../pic2/equip/bag/btankDragon.ale",
+        "frame": 0,
+        "asset_status": "recovered_from_user_approved_release",
+        "source_release": "starhome_lz_fr"
+      },
+      "dialog": {
+        "ale_reference": "../pic2/equip/dlg/dtankDragon.ale",
+        "frame": 0,
+        "asset_status": "recovered_from_user_approved_release",
+        "source_release": "starhome_lz_fr"
+      },
+      "world": {
+        "ale_reference": "../pic2/equip/body/mtankDragon.ale",
+        "frame": 0,
+        "asset_status": "recovered_from_user_approved_release",
+        "source_release": "starhome_lz_fr"
+      }
+    },
+    "glory_equipment_frontarmor8_ba8b9d2d18": {
+      "inventory": {
+        "ale_reference": "../pic2/equip/armor/frontarmor8b.ale",
+        "frame": 0,
+        "asset_status": "recovered_from_user_approved_release",
+        "source_release": "starhome_lz_fr"
+      },
+      "dialog": {
+        "ale_reference": "../pic2/equip/armor/frontarmor8.ale",
+        "frame": 0,
+        "asset_status": "recovered_from_user_approved_release",
+        "source_release": "starhome_lz_fr"
+      }
+    },
+    "glory_equipment_monarchfinalgun_b74cf1aa2e": {
+      "dialog": {
+        "ale_reference": "../pic2/equip/dlg/MonarchGun.ale",
+        "frame": 0,
+        "asset_status": "recovered_from_user_approved_release",
+        "source_release": "starhome_lz_fr"
+      }
+    }
+  }
+}

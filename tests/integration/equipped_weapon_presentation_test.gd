@@ -182,11 +182,9 @@ func _expect(condition: bool, message: String) -> void:
 ## [param catalog] 已初始化的装备目录。
 ## [param chassis_ids] 当前在售定义，用于区分本次额外审计的未在售底盘。
 func _test_chassis_directional_motion(hall: Node2D, player: Player, catalog: ItemCatalog, chassis_ids: Array) -> void:
-	var unavailable := ["glory_equipment_finaltank_036fecf00f", "glory_equipment_finaltank_warrior_f6e890c3e9",
-		"glory_equipment_finaltank_warrior_1_11d3a8cd2d", "glory_equipment_monarchfinaltank_6be62938f4",
-		"glory_equipment_xmastank_d5d4117f3d", "glory_equipment_tankdragon_8ee199a53c"]
+
 	# 原版 ALE 逐帧审计结果；其余普通底盘均为每方向4帧，不能由待测组件反推预期。
-	var special_groups := {"tankg91": 8, "tankg92": 8, "tankxxx": 8, "home_tank1": 3, "monarchtank": 5}
+	var special_groups := {"tankg91": 8, "tankg92": 8, "tankxxx": 8, "home_tank1": 3, "monarchtank": 5, "finaltank": 8, "xmastank": 8}
 	var definitions: Array = JsonConfigLoader.load_dictionary("res://data/gameplay/glory/glory_items_v1.json").value.definitions
 	var avatar: PlayerWorldAvatar = hall.world_view.player
 	var available_count := 0
@@ -202,10 +200,7 @@ func _test_chassis_directional_motion(hall: Node2D, player: Player, catalog: Ite
 		var presenter: CombatVisualPresenter = avatar.combat_presenter
 		if not chassis_ids.has(id):
 			non_sale_count += 1
-		if unavailable.has(id):
-			missing_count += 1
-			_expect(presenter.current_actor_id == &"" and presenter._layers.is_empty(), "素材缺失时不能残留上一辆战车：" + id)
-			continue
+
 		available_count += 1
 		_expect(presenter._layer_configs.has(&"chassis"), "每款有素材的底盘都必须实际装配并绘制：" + id)
 		if not presenter._layer_configs.has(&"chassis"):
@@ -252,7 +247,7 @@ func _test_chassis_directional_motion(hall: Node2D, player: Player, catalog: Ite
 			await _capture_chassis_frames(presenter, source_name, &"move", group_size)
 			if source_name == "tankg92":
 				await _capture_chassis_frames(presenter, source_name, &"idle", group_size)
-	_expect(available_count == 34 and missing_count == 6 and non_sale_count == 32, "完整审计40款荣耀底盘，其中32款未在售、6款缺素材")
+	_expect(available_count == 40 and missing_count == 0 and non_sale_count == 32, "完整审计40款荣耀底盘，其中32款未在售、6款已恢复免费版素材")
 	print("CHASSIS_AUDIT available=%d missing=%d non_sale=%d" % [available_count, missing_count, non_sale_count])
 	_install(player, catalog, "recruit_tank", 0)
 	avatar.set_action("stand", 6)

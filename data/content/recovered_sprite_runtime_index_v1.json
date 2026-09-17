@@ -1,0 +1,186 @@
+{
+  "schema_version": 1,
+  "content_version": "approved-recovered-sprites-v1",
+  "sprites": [
+    {
+      "logical_id": "pic2/equip/bag/finaltank",
+      "frames_path": "res://assets/recovered/vehicles/tanlang_chassis/inventory/frames.json",
+      "page_paths": [
+        "res://assets/recovered/vehicles/tanlang_chassis/inventory/atlas.png"
+      ],
+      "frame_count": 1,
+      "source_release": "starhome_lz_fr",
+      "source_logical_path": "pic2/equip/bag/finaltank.ale",
+      "source_replaced_reference": "../pic2/equip/bag/FinalTank.ale",
+      "source_sha256": "81023f2cf6c9a04684f0b7a9dccd7a0f5ca8b188fba997714c6cdf0a848ea803"
+    },
+    {
+      "logical_id": "pic2/equip/dlg/finaltank",
+      "frames_path": "res://assets/recovered/vehicles/tanlang_chassis/equipment_panel/frames.json",
+      "page_paths": [
+        "res://assets/recovered/vehicles/tanlang_chassis/equipment_panel/atlas.png"
+      ],
+      "frame_count": 1,
+      "source_release": "starhome_lz_fr",
+      "source_logical_path": "pic2/equip/dlg/finaltank.ale",
+      "source_replaced_reference": "../pic2/equip/dlg/FinalTank.ale",
+      "source_sha256": "420e90784a4306ad2b12b23d608e79675ad36a70cb93d47c3cbb1831216cf327"
+    },
+    {
+      "logical_id": "pic2/equip/body/finaltank",
+      "frames_path": "res://assets/recovered/vehicles/tanlang_chassis/locomotion/frames.json",
+      "page_paths": [
+        "res://assets/recovered/vehicles/tanlang_chassis/locomotion/atlas.png"
+      ],
+      "frame_count": 64,
+      "source_release": "starhome_lz_fr",
+      "source_logical_path": "pic2/equip/body/finaltank.ale",
+      "source_replaced_reference": "../pic2/equip/body/FinalTank.ale",
+      "source_sha256": "5f1d0d0c27ba95958c8b566469085024b1936e0cc43882bfe9b12a517ce31a94"
+    },
+    {
+      "logical_id": "pic2/equip/bag/monarchtank",
+      "frames_path": "res://assets/recovered/vehicles/monarch_chassis/inventory/frames.json",
+      "page_paths": [
+        "res://assets/recovered/vehicles/monarch_chassis/inventory/atlas.png"
+      ],
+      "frame_count": 1,
+      "source_release": "starhome_lz_fr",
+      "source_logical_path": "pic2/equip/bag/monarchtank.ale",
+      "source_replaced_reference": "../pic2/equip/bag/MonarchTank.ale",
+      "source_sha256": "53153a3304328773d07f7f2861d13895a455b5406a214a7905137ef82d37997d"
+    },
+    {
+      "logical_id": "pic2/equip/dlg/monarchtank",
+      "frames_path": "res://assets/recovered/vehicles/monarch_chassis/equipment_panel/frames.json",
+      "page_paths": [
+        "res://assets/recovered/vehicles/monarch_chassis/equipment_panel/atlas.png"
+      ],
+      "frame_count": 1,
+      "source_release": "starhome_lz_fr",
+      "source_logical_path": "pic2/equip/dlg/monarchtank.ale",
+      "source_replaced_reference": "../pic2/equip/dlg/MonarchTank.ale",
+      "source_sha256": "62afd2400df00410307727351a30052ffb8d304b364608e0b8259b8323bb484d"
+    },
+    {
+      "logical_id": "pic2/equip/body/monarchtank",
+      "frames_path": "res://assets/recovered/vehicles/monarch_chassis/locomotion/frames.json",
+      "page_paths": [
+        "res://assets/recovered/vehicles/monarch_chassis/locomotion/atlas.png"
+      ],
+      "frame_count": 40,
+      "source_release": "starhome_lz_fr",
+      "source_logical_path": "pic2/equip/body/monarchtank.ale",
+      "source_replaced_reference": "../pic2/equip/body/MonarchTank.ale",
+      "source_sha256": "e0a8c0f55d467dd3bfd363bd631803b7698570d67e80eeb19c4d169ba7b4025e"
+    },
+    {
+      "logical_id": "pic3/equip/bag/xmastank",
+      "frames_path": "res://assets/recovered/vehicles/christmas_chassis/inventory/frames.json",
+      "page_paths": [
+        "res://assets/recovered/vehicles/christmas_chassis/inventory/atlas.png"
+      ],
+      "frame_count": 1,
+      "source_release": "starhome_lz_fr",
+      "source_logical_path": "pic2/equip/bag/xmastank.ale",
+      "source_replaced_reference": "../pic3/equip/bag/Xmastank.ale",
+      "source_sha256": "2d6f41c279a6ede5a59a248cae7b8633702f319442a9a6d46fb0f2f6cbb82a11"
+    },
+    {
+      "logical_id": "pic3/equip/dlg/xmastank",
+      "frames_path": "res://assets/recovered/vehicles/christmas_chassis/equipment_panel/frames.json",
+      "page_paths": [
+        "res://assets/recovered/vehicles/christmas_chassis/equipment_panel/atlas.png"
+      ],
+      "frame_count": 1,
+      "source_release": "starhome_lz_fr",
+      "source_logical_path": "pic2/equip/dlg/xmastank.ale",
+      "source_replaced_reference": "../pic3/equip/dlg/Xmastank.ale",
+      "source_sha256": "8a7087df04b37d5400ed4c96158a2cb04306db5e18c88af6f20c5f6ad4e48da8"
+    },
+    {
+      "logical_id": "pic3/equip/body/xmastank",
+      "frames_path": "res://assets/recovered/vehicles/christmas_chassis/locomotion/frames.json",
+      "page_paths": [
+        "res://assets/recovered/vehicles/christmas_chassis/locomotion/atlas.png"
+      ],
+      "frame_count": 64,
+      "source_release": "starhome_lz_fr",
+      "source_logical_path": "pic2/equip/body/xmastank.ale",
+      "source_replaced_reference": "../pic3/equip/body/Xmastank.ale",
+      "source_sha256": "3a5e150256f7a915d34fd1ffa15b97719e98cdf6f726a13808075438d80d9d41"
+    },
+    {
+      "logical_id": "pic2/equip/bag/btankdragon",
+      "frames_path": "res://assets/recovered/vehicles/dragon_recruit_chassis/inventory/frames.json",
+      "page_paths": [
+        "res://assets/recovered/vehicles/dragon_recruit_chassis/inventory/atlas.png"
+      ],
+      "frame_count": 1,
+      "source_release": "starhome_lz_fr",
+      "source_logical_path": "pic2/equip/bag/btankdragon.ale",
+      "source_replaced_reference": "../pic2/equip/bag/btankDragon.ale",
+      "source_sha256": "70178ac6cd07a062533c5e8c1279ffdc8a27db52fc92575cb0f0bf4cac3cbe0a"
+    },
+    {
+      "logical_id": "pic2/equip/dlg/dtankdragon",
+      "frames_path": "res://assets/recovered/vehicles/dragon_recruit_chassis/equipment_panel/frames.json",
+      "page_paths": [
+        "res://assets/recovered/vehicles/dragon_recruit_chassis/equipment_panel/atlas.png"
+      ],
+      "frame_count": 1,
+      "source_release": "starhome_lz_fr",
+      "source_logical_path": "pic2/equip/dlg/dtankdragon.ale",
+      "source_replaced_reference": "../pic2/equip/dlg/dtankDragon.ale",
+      "source_sha256": "3bad7c67ece589bb73a5b30bb84cbc4231848d9b67728139842e74bd209bc887"
+    },
+    {
+      "logical_id": "pic2/equip/body/mtankdragon",
+      "frames_path": "res://assets/recovered/vehicles/dragon_recruit_chassis/locomotion/frames.json",
+      "page_paths": [
+        "res://assets/recovered/vehicles/dragon_recruit_chassis/locomotion/atlas.png"
+      ],
+      "frame_count": 33,
+      "source_release": "starhome_lz_fr",
+      "source_logical_path": "pic2/equip/body/mtankdragon.ale",
+      "source_replaced_reference": "../pic2/equip/body/mtankDragon.ale",
+      "source_sha256": "68490248faf415b7889c986911538c64e379e1441017790375302ed5c4bab35e"
+    },
+    {
+      "logical_id": "pic2/equip/armor/frontarmor8b",
+      "frames_path": "res://assets/recovered/equipment/nano_front_armor/inventory/frames.json",
+      "page_paths": [
+        "res://assets/recovered/equipment/nano_front_armor/inventory/atlas.png"
+      ],
+      "frame_count": 1,
+      "source_release": "starhome_lz_fr",
+      "source_logical_path": "pic2/equip/armor/frontarmor8b.ale",
+      "source_replaced_reference": "pic2/equip/armor/frontarmor8b.ale",
+      "source_sha256": "fded58544ccd3635ef3542901f43531f19c4a4840c09aa41e66470624ef2e87b"
+    },
+    {
+      "logical_id": "pic2/equip/armor/frontarmor8",
+      "frames_path": "res://assets/recovered/equipment/nano_front_armor/equipment_panel/frames.json",
+      "page_paths": [
+        "res://assets/recovered/equipment/nano_front_armor/equipment_panel/atlas.png"
+      ],
+      "frame_count": 1,
+      "source_release": "starhome_lz_fr",
+      "source_logical_path": "pic2/equip/armor/frontarmor8.ale",
+      "source_replaced_reference": "pic2/equip/armor/frontarmor8.ale",
+      "source_sha256": "8d1cddb60ab987fcbc93b03cda361f77de22eb5152e0ad34ddb5d48febdd63ab"
+    },
+    {
+      "logical_id": "pic2/equip/dlg/monarchgun",
+      "frames_path": "res://assets/recovered/equipment/monarch_energy_cannon/equipment_panel/frames.json",
+      "page_paths": [
+        "res://assets/recovered/equipment/monarch_energy_cannon/equipment_panel/atlas.png"
+      ],
+      "frame_count": 1,
+      "source_release": "starhome_lz_fr",
+      "source_logical_path": "pic2/equip/dlg/monarchgun.ale",
+      "source_replaced_reference": "pic2/equip/dlg/monarchgun.ale",
+      "source_sha256": "e4f0d1a2510e605c547a1cf50f2837ab8005a46f2366db1ccc1c5ed59cd0210d"
+    }
+  ]
+}

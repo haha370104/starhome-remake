@@ -246,17 +246,21 @@ func _run() -> void:
 	_finish(manager)
 
 
-## 检查荣耀目录中不同底盘使用自己的大图尺寸和原点，而非固定新兵矩形。
+## 检查原有及跨版本恢复的底盘使用各自大图尺寸、原点和背包图。
 func _test_imported_dialog_geometry() -> void:
 	var catalog := ItemCatalog.new()
 	_expect(catalog.initialize().is_ok, "导入装备几何回归应加载目录")
 	var projector := PlayerPanelProjector.new(catalog)
 	for definition_id: String in [
 		"glory_equipment_tank1_c2ba1ac5af", "glory_equipment_tank1000_27ae5e8059",
+		"glory_equipment_finaltank_036fecf00f", "glory_equipment_finaltank_warrior_f6e890c3e9",
+		"glory_equipment_finaltank_warrior_1_11d3a8cd2d", "glory_equipment_monarchfinaltank_6be62938f4",
+		"glory_equipment_xmastank_d5d4117f3d", "glory_equipment_tankdragon_8ee199a53c",
 	]:
 		var equipment: Equipment = catalog.create(definition_id, {}).value
 		var view := projector._equipment_view(equipment, "vehicle")
 		var resolved := ItemPresentationTextureResolver.resolve(equipment.presentation_for("dialog"))
+		_expect(not ItemPresentationTextureResolver.resolve(equipment.presentation_for("inventory")).is_empty(), "恢复底盘同时具备背包图标")
 		var panel := VehicleEquipmentPanel.new()
 		root.add_child(panel)
 		panel.apply_snapshot({"equipped": [view]})
