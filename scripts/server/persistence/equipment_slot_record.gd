@@ -16,6 +16,7 @@ var processing := EquipmentProcessing.new()
 var extra_attributes := ExtraAttributes.new()
 var strengthening := EquipmentStrengthening.new()
 var equipment_quality := EquipmentQuality.new()
+var forging := EquipmentForging.new()
 var usage := EquipmentUsage.new()
 var magazine := WeaponMagazine.new()
 var locked := false
@@ -52,6 +53,9 @@ static func from_dictionary(raw: Variant) -> DomainResult:
 	var extra := ExtraAttributes.restore(raw.get("extra_attributes", {}))
 	if not extra.is_ok: return extra
 	slot.extra_attributes = extra.value
+	var forged := EquipmentForging.restore(raw.get("forging", {}))
+	if not forged.is_ok: return forged
+	slot.forging = forged.value
 	var quality := EquipmentQuality.restore(raw.get("equipment_quality", {}))
 	if not quality.is_ok: return quality
 	slot.equipment_quality = quality.value
@@ -103,6 +107,7 @@ func to_dictionary() -> Dictionary:
 		"extra_attributes": extra_attributes.to_dictionary(),
 		"strengthening": strengthening.to_dictionary(),
 		"equipment_quality": equipment_quality.to_dictionary(),
+		"forging": forging.to_dictionary(),
 		"usage": usage.to_dictionary(),
 		"magazine": magazine.to_dictionary(),
 		"locked": locked,

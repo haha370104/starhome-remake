@@ -15,7 +15,7 @@ static func preview(player: Player, id: String, material_id: String) -> DomainRe
 	if material == null or material.locked:
 		return DomainResult.failure(&"processing.material_unavailable", "请选择未锁定的加工材料")
 	var rules := item.processing_rules
-	var profile := rules.profile(item.definition_id)
+	var profile := item.processing_profile()
 	var special := rules.material(material.definition_id)
 	var checked := item.processing.preview(profile, special)
 	if not checked.is_ok:
@@ -57,7 +57,7 @@ static func execute(player: Player, id: String, material_id: String, revision: i
 	var item := player.inventory.find(id) as Equipment
 	var material := player.inventory.find(material_id)
 	var candidate: EquipmentProcessing = EquipmentProcessing.restore(item.processing.to_dictionary()).value
-	var applied := candidate.apply(item.processing_rules.profile(item.definition_id), item.processing_rules.material(material.definition_id))
+	var applied := candidate.apply(item.processing_profile(), item.processing_rules.material(material.definition_id))
 	if not applied.is_ok:
 		return applied
 	var paid := player.inventory.pay_upgrade_cost(quote.value.requirements, quote.value.currency)

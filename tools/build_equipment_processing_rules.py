@@ -88,7 +88,7 @@ def build(check=False):
             stat, cap_key = ATTRS[label]
             base = float(row.get("stats", {}).get(stat, legacy.get("m_nBulletCount", 0) if stat == "ammunition_capacity" else 0))
             cap = float(legacy.get(cap_key, row.get("stats", {}).get({"base_attack": "attack_limit", "range": "range_limit", "drive": "drive_limit"}.get(stat, ""), 0)))
-            if cap <= base or base <= 0:
+            if cap < base or base <= 0:
                 continue
             materials = []
             for term in terms[1:]:
@@ -97,7 +97,7 @@ def build(check=False):
                 materials.append({"definition_id": by_name[name]["id"], "quantity": int(quantity) * scale})
             attrs.append({"attribute": stat, "label": label, "base": base, "limit": cap,
                           "required_skill_level": skill, "materials": materials, "currency": 0})
-        if attrs:
+        if any(attr["limit"] > attr["base"] for attr in attrs):
             profiles.append({"definition_id": row["id"], "display_name": row["display_name"], "attributes": attrs,
                              "source_class": source_class, "recipe_class": matched,
                              "source_status": "unbound_recipe_repairs_missing_quantity" if repaired_recipe else "remake_scaled_last_family_recipe" if extrapolated else "client_table"})

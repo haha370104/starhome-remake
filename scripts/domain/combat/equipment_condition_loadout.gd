@@ -27,6 +27,8 @@ func duplicate_loadout() -> EquipmentConditionLoadout:
 		copied.strengthening_profile = item.strengthening_profile
 		copied.strengthening_rules = item.strengthening_rules
 		copied.quality_profile = item.quality_profile
+		copied.forging_rules = item.forging_rules
+		copied.forging_profile = item.forging_profile
 		if copied is Clothing: copied.improvement_rules = (item as Clothing).improvement_rules
 		copied.refresh_processed_stats()
 		result._items[copied.instance_id] = copied

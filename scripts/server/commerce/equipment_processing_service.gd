@@ -46,7 +46,7 @@ func snapshot(player: Player, operation: Dictionary) -> Dictionary:
 	for item: GameItem in all_items:
 		var row := item.to_view_dictionary()
 		row["presentation"] = item.presentation_for("inventory")
-		var profile := _items.processing_rules.profile(item.definition_id)
+		var profile: EquipmentProcessingRules.Profile = item.processing_profile() if item is Equipment else null
 		if item is Equipment and profile != null:
 			row["installed"] = player.inventory.find(item.instance_id) == null
 			var attributes: PackedStringArray = []

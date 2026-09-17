@@ -23,6 +23,9 @@ var memory_profile: EquipmentMemoryRules.Profile
 var quality := EquipmentQuality.new()
 var quality_profile: EquipmentQualityRules.Profile
 var dismantle_eligible := false
+var forging := EquipmentForging.new()
+var forging_rules: EquipmentForgingRules
+var forging_profile: EquipmentForgingRules.Profile
 
 
 ## 初始化具有耐久和数值配置的装备实例。
@@ -40,6 +43,8 @@ func _init(definition: Dictionary = {}, state: Dictionary = {}) -> void:
 	purchase_value = maxi(0, int(_stats.get("purchase_value", 0)))
 	sell_value = maxi(0, int(_stats.get("sell_value", 0)))
 	required_skill_level = maxi(0, int(_stats.get("required_skill_level", 0)))
+	var forged := EquipmentForging.restore(state.get("forging", {}))
+	if forged.is_ok: forging = forged.value
 	var restored := EquipmentProcessing.restore(state.get("processing", {}))
 	var quality_result := EquipmentQuality.restore(state.get("equipment_quality", {}))
 	if quality_result.is_ok: quality = quality_result.value
@@ -122,7 +127,13 @@ func maintain(tool: EquipmentMaintenanceRules.RepairTool = null) -> DomainResult
 func stat(stat_id: String, fallback: Variant = 0) -> Variant:
 	var base: Variant = _stats.get(stat_id, fallback)
 	return base + processing.bonus(stat_id) + extra_attributes.bonus(stat_id, extra_attribute_rules) \
-		+ strengthening.bonus(stat_id, strengthening_profile) + quality.bonus(stat_id, quality_profile) if base is int or base is float else base
+		+ strengthening.bonus(stat_id, strengthening_profile) + quality.bonus(stat_id, quality_profile) + forging.direct_bonus(stat_id, forging_rules) if base is int or base is float else base
+
+
+## 查询当前实例的加工上限，包含锻造扩展且不改写共享目录。
+## 返回实例适用的属性规则，没有加工资格时返回空值。
+func processing_profile() -> EquipmentProcessingRules.Profile:
+	return forging.expanded_processing(processing_rules.profile(definition_id), forging_rules) if processing_rules != null else null
 
 
 ## 在成功加工后同步子类缓存，供装配与战斗使用同一组数值。
@@ -142,6 +153,17 @@ func to_view_dictionary() -> Dictionary:
 	view["max_durability"] = max_durability
 	view["upgrade_level"] = upgrade_level
 	view["stats"] = _stats.duplicate(true)
+	view["forging"] = forging.to_dictionary()
+	view["equipment_forging_eligible"] = forging_profile != null
+	if forging_rules != null:
+		for kind: int in forging.extensions:
+			var channel: EquipmentForgingRules.Channel = forging_rules.channels[kind]
+			if channel.direct_bonus: view.stats[channel.attribute] = stat(channel.attribute)
+	var profile := processing_profile()
+	if profile != null:
+		for attribute: String in profile.attributes:
+			var limit_key := "attack_limit" if attribute == "base_attack" else attribute + "_limit"
+			view.stats[limit_key] = profile.attributes[attribute].limit
 	view["equipment_quality"] = quality.to_dictionary()
 	if quality.grade > 0:
 		view["display_name"] = "[%s]%s" % [EquipmentQuality.LABELS[quality.grade], view.display_name]

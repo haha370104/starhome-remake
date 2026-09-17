@@ -23,6 +23,7 @@ const GAMEPLAY_PATHS := [
 	"res://data/gameplay/clothing_improvement_items_v1.json",
 	"res://data/gameplay/equipment_memory_items_v1.json",
 	"res://data/gameplay/equipment_dismantle_materials_v1.json",
+	"res://data/gameplay/equipment_forging_items_v1.json",
 ]
 const PRESENTATION_PATHS := [
 	"res://data/presentation/player_equipment_v1.json",
@@ -42,6 +43,7 @@ var clothing_improvement_rules: ClothingImprovementRules
 var memory_rules: EquipmentMemoryRules
 var quality_rules: EquipmentQualityRules
 var dismantle_rules: EquipmentDismantleRules
+var forging_rules: EquipmentForgingRules
 
 
 ## 读取所有当前启用的物品定义和语义化表现目录。
@@ -125,6 +127,11 @@ func initialize() -> DomainResult:
 	var quality_result := EquipmentQualityRules.from_dictionary(quality_data.value)
 	if not quality_result.is_ok: return quality_result
 	quality_rules = quality_result.value
+	var forging_data := JsonConfigLoader.load_dictionary("res://data/gameplay/equipment_forging_rules_v1.json")
+	if not forging_data.is_ok: return forging_data
+	var forging_result := EquipmentForgingRules.from_dictionary(forging_data.value)
+	if not forging_result.is_ok: return forging_result
+	forging_rules = forging_result.value
 	var dismantle_data := JsonConfigLoader.load_dictionary("res://data/gameplay/equipment_dismantle_rules_v1.json")
 	if not dismantle_data.is_ok: return dismantle_data
 	var dismantle_result := EquipmentDismantleRules.from_dictionary(dismantle_data.value, self)
@@ -176,10 +183,15 @@ func create(definition_id: String, state: Dictionary) -> DomainResult:
 	var used := EquipmentUsage.restore(state.get("usage", {}))
 	if not used.is_ok:
 		return used
+	var forged := EquipmentForging.restore(state.get("forging", {}))
+	if not forged.is_ok: return forged
+	var forging: EquipmentForging = forged.value
+	var forging_check := forging.validate_for(forging_rules.profiles.get(ItemDefinitionAliases.canonical(definition_id)))
+	if not forging_check.is_ok: return forging_check
 	var processed := EquipmentProcessing.restore(state.get("processing", {}))
 	if not processed.is_ok:
 		return processed
-	var processing_check := (processed.value as EquipmentProcessing).validate_for(processing_rules.profile(ItemDefinitionAliases.canonical(definition_id)))
+	var processing_check := (processed.value as EquipmentProcessing).validate_for(forging.expanded_processing(processing_rules.profile(ItemDefinitionAliases.canonical(definition_id)), forging_rules))
 	if not processing_check.is_ok:
 		return processing_check
 	var sockets_result := VehicleSockets.restore(state.get("vehicle_sockets", {}))
@@ -197,6 +209,8 @@ func create(definition_id: String, state: Dictionary) -> DomainResult:
 	if item is Clothing:
 		item.improvement_rules = clothing_improvement_rules
 	if item is Equipment:
+		item.forging_rules = forging_rules
+		item.forging_profile = forging_rules.profiles.get(item.definition_id)
 		item.quality_profile = quality_rules.profiles.get(item.definition_id)
 		item.dismantle_eligible = dismantle_rules.profiles.has(item.definition_id)
 		item.memory_profile = memory_rules.profiles.get(item.definition_id)

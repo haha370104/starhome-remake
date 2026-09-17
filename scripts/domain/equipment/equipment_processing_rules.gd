@@ -47,7 +47,7 @@ static func from_dictionary(data: Dictionary) -> DomainResult:
 			rule.currency = int(value.get("currency", 0))
 			if rule.attribute not in EquipmentProcessing.ATTRIBUTES or equipment_profile.attributes.has(rule.attribute) \
 				or not is_finite(rule.base) or not is_finite(rule.limit) or rule.base < 0 \
-				or rule.limit <= rule.base or rule.required_skill_level < 0 or rule.currency < 0:
+				or rule.limit < rule.base or rule.required_skill_level < 0 or rule.currency < 0:
 				return DomainResult.failure(&"processing.rules_invalid", "加工属性与上限无效")
 			for cost: Dictionary in value.get("materials", []):
 				if String(cost.get("definition_id", "")).is_empty() or int(cost.get("quantity", 0)) < 1:
