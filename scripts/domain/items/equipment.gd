@@ -13,6 +13,8 @@ var processing_rules: EquipmentProcessingRules
 var maintenance_profile: EquipmentMaintenanceRules.Profile
 var usage := EquipmentUsage.new()
 var magazine := WeaponMagazine.new()
+var extra_attributes := ExtraAttributes.new()
+var extra_attribute_rules: ExtraAttributeRules
 
 
 ## 初始化具有耐久和数值配置的装备实例。
@@ -33,6 +35,9 @@ func _init(definition: Dictionary = {}, state: Dictionary = {}) -> void:
 	var restored := EquipmentProcessing.restore(state.get("processing", {}))
 	if restored.is_ok:
 		processing = restored.value
+	var extra := ExtraAttributes.restore(state.get("extra_attributes", {}))
+	if extra.is_ok:
+		extra_attributes = extra.value
 	var used := EquipmentUsage.restore(state.get("usage", {}))
 	if used.is_ok:
 		usage = used.value
@@ -103,7 +108,7 @@ func maintain(tool: EquipmentMaintenanceRules.RepairTool = null) -> DomainResult
 ## 返回配置基数与该实例的加工增量。
 func stat(stat_id: String, fallback: Variant = 0) -> Variant:
 	var base: Variant = _stats.get(stat_id, fallback)
-	return base + processing.bonus(stat_id) if base is int or base is float else base
+	return base + processing.bonus(stat_id) + extra_attributes.bonus(stat_id, extra_attribute_rules) if base is int or base is float else base
 
 
 ## 在成功加工后同步子类缓存，供装配与战斗使用同一组数值。
@@ -123,6 +128,11 @@ func to_view_dictionary() -> Dictionary:
 		if processing.bonus(attribute) > 0:
 			view.stats[attribute] = stat(attribute)
 	view["processing"] = processing.to_dictionary()
+	for attribute: String in ExtraAttributeRules.ATTRIBUTES:
+		if extra_attributes.bonus(attribute, extra_attribute_rules) > 0:
+			view.stats[attribute] = stat(attribute)
+	view["extra_attributes"] = extra_attributes.to_dictionary()
+	view["extra_attribute_eligible"] = extra_attribute_rules != null and not extra_attribute_rules.allowed(definition_id).is_empty()
 	view["usage"] = usage.to_dictionary()
 	view["magazine"] = magazine.to_dictionary()
 	view["ammunition_capacity"] = ammunition_capacity()

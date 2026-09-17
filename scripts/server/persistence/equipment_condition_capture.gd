@@ -8,7 +8,7 @@ extends RefCounted
 static func apply(state: PlayerStateRecord, conditions: Dictionary) -> void:
 	for slot: EquipmentSlotRecord in state.equipment_slots:
 		var current: Dictionary = conditions.get(slot.item_instance_id, {})
-		if current.get("definition_id", "") != slot.item_definition_id: continue
+		if current.get("definition_id", "") != ItemDefinitionAliases.canonical(slot.item_definition_id): continue
 		slot.durability = int(current.durability)
 		slot.max_durability = int(current.max_durability)
 		slot.usage = EquipmentUsage.restore(current.usage).value

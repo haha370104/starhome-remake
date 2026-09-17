@@ -650,9 +650,8 @@ func _settle_projectile(projectile: Dictionary) -> void:
 	var weapon: Dictionary = projectile["weapon"]
 	var attacker_id := String(projectile["attacker_id"])
 	var damage := _random.randi_range(int(weapon["minimum_damage"]), int(weapon["maximum_damage"]))
-	if float(weapon.get("critical_chance", 0)) > 0:
-		damage = VehicleCrystalHit.resolve(damage, String(weapon["skill_id"]),
-			float(weapon["critical_chance"]), float(weapon.get("critical_multiplier", 1.5)), _random.randf())
+	if float(weapon.get("critical_chance", 0)) > 0 or float(weapon.get("double_damage_chance", 0)) > 0:
+		damage = VehicleCrystalHit.resolve_extra(damage, weapon, _random.randf(), _random.randf())
 	damage = roundi(damage * (1.0 + _pursuit_bonus(attacker_id, target_id, weapon)))
 	var damage_result := monster.apply_damage(damage, attacker_id, current_tick)
 	if not damage_result.is_ok:
@@ -1570,6 +1569,7 @@ func _normalize_energy_cannon(definition: Dictionary) -> DomainResult:
 		"attack_mode": attack_mode,
 		"pursuit_bonus": clampf(float(definition.get("pursuit_bonus", 0)), 0.0, 0.25),
 		"critical_chance": clampf(float(definition.get("critical_chance", 0)), 0.0, 1.0) if skill_id == "energy_cannon" else 0.0,
+		"double_damage_chance": clampf(float(definition.get("double_damage_chance", 0)), 0.0, 1.0) if skill_id == "energy_cannon" else 0.0,
 		"critical_multiplier": clampf(float(definition.get("critical_multiplier", 1.5)), 1.0, 3.0),
 		"minimum_damage": minimum_damage,
 		"maximum_damage": maximum_damage,

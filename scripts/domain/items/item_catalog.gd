@@ -17,6 +17,7 @@ const GAMEPLAY_PATHS := [
 	"res://data/gameplay/vehicle_workshop_items_v1.json",
 	"res://data/gameplay/equipment_processing_items_v1.json",
 	"res://data/gameplay/equipment_maintenance_items_v1.json",
+	"res://data/gameplay/extra_attribute_items_v1.json",
 ]
 const PRESENTATION_PATHS := [
 	"res://data/presentation/player_equipment_v1.json",
@@ -29,6 +30,7 @@ var _definition_ids_by_display_name: Dictionary = {}
 var socket_rules: VehicleSocketRules
 var processing_rules: EquipmentProcessingRules
 var maintenance_rules: EquipmentMaintenanceRules
+var extra_attribute_rules: ExtraAttributeRules
 
 
 ## 读取所有当前启用的物品定义和语义化表现目录。
@@ -82,6 +84,11 @@ func initialize() -> DomainResult:
 	if not maintenance_result.is_ok:
 		return maintenance_result
 	maintenance_rules = maintenance_result.value
+	var extra_data := JsonConfigLoader.load_dictionary("res://data/gameplay/extra_attribute_rules_v1.json")
+	if not extra_data.is_ok: return extra_data
+	var extra_result := ExtraAttributeRules.from_dictionary(extra_data.value)
+	if not extra_result.is_ok: return extra_result
+	extra_attribute_rules = extra_result.value
 	var ammunition_data := JsonConfigLoader.load_dictionary("res://data/gameplay/equipment_ammunition_rules_v1.json")
 	if not ammunition_data.is_ok: return ammunition_data
 	for row: Dictionary in ammunition_data.value.get("equipment", []):
@@ -98,6 +105,10 @@ func initialize() -> DomainResult:
 ## [param state] 存档中的实例状态。
 ## 返回服装、战车底盘、引擎、武器、采掘臂、通用装备或普通物品的具体实例。
 func create(definition_id: String, state: Dictionary) -> DomainResult:
+	var extra := ExtraAttributes.restore(state.get("extra_attributes", {}))
+	if not extra.is_ok: return extra
+	var extra_check := (extra.value as ExtraAttributes).validate_for(ItemDefinitionAliases.canonical(definition_id), extra_attribute_rules)
+	if not extra_check.is_ok: return extra_check
 	var rounds := WeaponMagazine.restore(state.get("magazine", {}))
 	if not rounds.is_ok: return rounds
 	var used := EquipmentUsage.restore(state.get("usage", {}))
@@ -120,8 +131,11 @@ func create(definition_id: String, state: Dictionary) -> DomainResult:
 		return result
 	var item: GameItem = result.value
 	if item is Equipment:
+		item.extra_attribute_rules = extra_attribute_rules
+		item.refresh_processed_stats()
 		var ammunition_check := (rounds.value as WeaponMagazine).bind_capacity(item.ammunition_capacity())
 		if not ammunition_check.is_ok: return ammunition_check
+		item.magazine = rounds.value
 		item.processing_rules = processing_rules
 		item.maintenance_profile = maintenance_rules.profile(item.definition_id)
 	if not item is VehicleCrystal and cracks.value != 0:

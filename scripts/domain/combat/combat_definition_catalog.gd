@@ -295,6 +295,7 @@ func vehicle_combat_loadout(
 		if effect == "energy_cannon_attack":
 			weapons[ability_id]["range"] = clothing.apply_value("energy_cannon_range", float(weapons[ability_id]["range"]))
 			weapons[ability_id]["critical_chance"] = player.vehicle.loadout.socket_bonus("critical_chance")
+			weapons[ability_id]["double_damage_chance"] = float(primary_weapon.stat("double_damage_chance", 0))
 			weapons[ability_id]["critical_multiplier"] = chassis.socket_rules.critical_multiplier if chassis.socket_rules != null else 1.5
 		weapons[ability_id]["working_energy_cost"] *= 1.0 - clothing.trait_value("economy")
 		weapons[ability_id]["pursuit_bonus"] = clothing.trait_value("pursuit")

@@ -106,6 +106,7 @@ func calculate_stats(
 		"speed": movement_speed(driving_level),
 		"energy_cannon_attack": cannon_attack,
 		"energy_cannon_critical_chance": loadout.socket_bonus("critical_chance"),
+		"energy_cannon_double_damage_chance": _cannon_double_damage_chance(),
 		"energy_cannon_attack_base": primary_attack,
 		"energy_cannon_attack_bonus": cannon_attack - primary_attack,
 		"energy_cannon_range_bonus": clothing_bonuses.apply_value("energy_cannon_range", achievement_bonuses.energy_cannon_range),
@@ -177,6 +178,13 @@ func _secondary_attack(mode: String) -> int:
 	return weapon.base_attack if weapon != null and weapon.durability > 0 and weapon.combat_mode() == mode else 0
 
 
+## 查询能量炮自身的萤石/耀石双倍伤害概率。
+## 返回健全主炮的概率，无能量炮时为零。
+func _cannon_double_damage_chance() -> float:
+	var weapon := loadout.at(1) as VehicleWeapon
+	return float(weapon.stat("double_damage_chance", 0)) if weapon != null and weapon.durability > 0 and weapon.combat_mode() == "energy_cannon" else 0.0
+
+
 ## 统一计算武器的强化伤害，未装配该武器时不凭空产生攻击。
 ## [param attribute] 伤害属性类型。
 ## [param base] 武器基础伤害。
@@ -197,11 +205,13 @@ func enhanced_attack(attribute: String, base: int, title_bonus: int, food_kind: 
 func movement_speed(driving_level: int, multiplier: float = 1500.0, cap: float = 240.0) -> float:
 	var total_weight := 0
 	var effective := 0.0
+	var extra_speed := 0.0
 	for item: VehicleEquipment in loadout.items():
 		total_weight += item.weight
 		if item is VehicleEngine and item.durability > 0:
 			effective += (item as VehicleEngine).drive * (minf(1.0, float(driving_level) / item.required_skill_level) if item.required_skill_level > 0 else 1.0)
+			extra_speed += float(item.stat("movement_speed", 0))
 	if effective <= 0.0 or total_weight <= 0:
 		return 0.0
-	var base := minf(floorf(effective * multiplier / total_weight), cap) + loadout.attachment_bonus("speed")
+	var base := minf(floorf(effective * multiplier / total_weight), cap) + loadout.attachment_bonus("speed") + extra_speed
 	return clampf(clothing_bonuses.apply_value("movement_speed", base), 1.0, cap)

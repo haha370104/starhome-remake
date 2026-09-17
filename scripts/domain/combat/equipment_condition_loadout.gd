@@ -22,6 +22,9 @@ func duplicate_loadout() -> EquipmentConditionLoadout:
 	for item: Equipment in _items.values():
 		var copied: Equipment = item.get_script().new(item._definition, item.to_view_dictionary())
 		copied.maintenance_profile = item.maintenance_profile
+		copied.processing_rules = item.processing_rules
+		copied.extra_attribute_rules = item.extra_attribute_rules
+		copied.refresh_processed_stats()
 		result._items[copied.instance_id] = copied
 	return result
 
