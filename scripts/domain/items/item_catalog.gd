@@ -122,6 +122,10 @@ func _create_item(definition_id: String, state: Dictionary) -> DomainResult:
 		return DomainResult.failure(&"items.definition_missing", "item definition does not exist")
 	var item_definition: Dictionary = _definitions[definition_id].duplicate(true)
 	var kind := String(item_definition.get("kind", ""))
+	var processing_material := processing_rules.material(definition_id)
+	if processing_material != null:
+		item_definition["processing_material"] = {"attribute": processing_material.attribute, "points": processing_material.points}
+		return DomainResult.ok(EquipmentProcessingMaterial.new(item_definition, state))
 	if socket_rules.crystal(definition_id) != null:
 		return DomainResult.ok(VehicleCrystal.new(item_definition, state))
 	if item_definition.has("use_rule"):

@@ -35,7 +35,7 @@ static func from_dictionary(data: Dictionary) -> DomainResult:
 	if not is_finite(rules.success_chance) or rules.success_chance < 0 or rules.success_chance > 1:
 		return DomainResult.failure(&"processing.rules_invalid", "加工成功率无效")
 	for raw: Dictionary in data.get("equipment", []):
-		var profile := Profile.new()
+		var equipment_profile := Profile.new()
 		var id := String(raw.get("definition_id", ""))
 		for value: Dictionary in raw.get("attributes", []):
 			var rule := AttributeRule.new()
@@ -45,7 +45,7 @@ static func from_dictionary(data: Dictionary) -> DomainResult:
 			rule.limit = float(value.get("limit", 0))
 			rule.required_skill_level = int(value.get("required_skill_level", 0))
 			rule.currency = int(value.get("currency", 0))
-			if rule.attribute not in EquipmentProcessing.ATTRIBUTES or profile.attributes.has(rule.attribute) \
+			if rule.attribute not in EquipmentProcessing.ATTRIBUTES or equipment_profile.attributes.has(rule.attribute) \
 				or not is_finite(rule.base) or not is_finite(rule.limit) or rule.base < 0 \
 				or rule.limit <= rule.base or rule.required_skill_level < 0 or rule.currency < 0:
 				return DomainResult.failure(&"processing.rules_invalid", "加工属性与上限无效")
@@ -53,19 +53,19 @@ static func from_dictionary(data: Dictionary) -> DomainResult:
 				if String(cost.get("definition_id", "")).is_empty() or int(cost.get("quantity", 0)) < 1:
 					return DomainResult.failure(&"processing.rules_invalid", "加工材料无效")
 				rule.materials.append(cost.duplicate(true))
-			profile.attributes[rule.attribute] = rule
-		if id.is_empty() or rules._profiles.has(id) or profile.attributes.is_empty():
+			equipment_profile.attributes[rule.attribute] = rule
+		if id.is_empty() or rules._profiles.has(id) or equipment_profile.attributes.is_empty():
 			return DomainResult.failure(&"processing.rules_invalid", "加工装备资格无效")
-		rules._profiles[id] = profile
+		rules._profiles[id] = equipment_profile
 	for raw: Dictionary in data.get("materials", []):
-		var material := ProcessingMaterial.new()
-		material.definition_id = String(raw.get("definition_id", ""))
-		material.attribute = String(raw.get("attribute", ""))
-		material.points = int(raw.get("points", 0))
-		if material.definition_id.is_empty() or rules._materials.has(material.definition_id) \
-			or material.attribute not in EquipmentProcessing.ATTRIBUTES or material.points <= 0:
+		var special_material := ProcessingMaterial.new()
+		special_material.definition_id = String(raw.get("definition_id", ""))
+		special_material.attribute = String(raw.get("attribute", ""))
+		special_material.points = int(raw.get("points", 0))
+		if special_material.definition_id.is_empty() or rules._materials.has(special_material.definition_id) \
+			or special_material.attribute not in EquipmentProcessing.ATTRIBUTES or special_material.points <= 0:
 			return DomainResult.failure(&"processing.rules_invalid", "特殊加工材料无效")
-		rules._materials[material.definition_id] = material
+		rules._materials[special_material.definition_id] = special_material
 	return DomainResult.ok(rules)
 
 
