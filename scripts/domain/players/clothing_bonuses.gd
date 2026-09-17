@@ -26,6 +26,12 @@ func _init() -> void:
 ## 返回与战车装配解耦的类型化效果汇总。
 static func collect(clothes: Array[Clothing], rules: ClothingEnhancementRules) -> ClothingBonuses:
 	var result := ClothingBonuses.new()
+	for item: Clothing in clothes:
+		if item.durability <= 0 or item.improvement.level == 0 or item.improvement_rules == null: continue
+		var channel: ClothingImprovementRules.Channel = item.improvement_rules.channels.get(item.improvement.attribute)
+		if channel != null:
+			result._flat[ATTRIBUTES.find(channel.attribute)] += channel.increment * item.improvement.level
+			result.active_instances.append("%s:improvement" % item.instance_id)
 	for family: String in ["prefix", "trait", "gem"]:
 		var sorted := clothes.duplicate()
 		sorted.sort_custom(func(a: Clothing, b: Clothing) -> bool:
