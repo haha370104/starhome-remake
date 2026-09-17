@@ -18,6 +18,7 @@ var extra_attribute_rules: ExtraAttributeRules
 var strengthening := EquipmentStrengthening.new()
 var strengthening_profile: EquipmentStrengtheningRules.Profile
 var strengthening_rules: EquipmentStrengtheningRules
+var armor_refinement_profile: ArmorRefinementRules.Profile
 
 
 ## 初始化具有耐久和数值配置的装备实例。
@@ -127,6 +128,8 @@ func refresh_processed_stats() -> void:
 ## 返回在通用物品字段上追加耐久与配置数值的 DTO。
 func to_view_dictionary() -> Dictionary:
 	var view := super()
+	view["armor_refinement_eligible"] = armor_refinement_profile != null
+	view["armor_refinement_level"] = armor_refinement_profile.level if armor_refinement_profile != null else 0
 	view["durability"] = durability
 	view["max_durability"] = max_durability
 	view["upgrade_level"] = upgrade_level

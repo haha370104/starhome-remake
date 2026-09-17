@@ -19,6 +19,7 @@ const GAMEPLAY_PATHS := [
 	"res://data/gameplay/equipment_maintenance_items_v1.json",
 	"res://data/gameplay/extra_attribute_items_v1.json",
 	"res://data/gameplay/equipment_strengthening_items_v1.json",
+	"res://data/gameplay/armor_refinement_items_v1.json",
 ]
 const PRESENTATION_PATHS := [
 	"res://data/presentation/player_equipment_v1.json",
@@ -33,6 +34,7 @@ var processing_rules: EquipmentProcessingRules
 var maintenance_rules: EquipmentMaintenanceRules
 var extra_attribute_rules: ExtraAttributeRules
 var strengthening_rules: EquipmentStrengtheningRules
+var armor_refinement_rules: ArmorRefinementRules
 
 
 ## 读取所有当前启用的物品定义和语义化表现目录。
@@ -96,6 +98,11 @@ func initialize() -> DomainResult:
 	var strengthening_result := EquipmentStrengtheningRules.from_dictionary(strengthening_data.value)
 	if not strengthening_result.is_ok: return strengthening_result
 	strengthening_rules = strengthening_result.value
+	var armor_data := JsonConfigLoader.load_dictionary("res://data/gameplay/armor_refinement_rules_v1.json")
+	if not armor_data.is_ok: return armor_data
+	var armor_result := ArmorRefinementRules.from_dictionary(armor_data.value)
+	if not armor_result.is_ok: return armor_result
+	armor_refinement_rules = armor_result.value
 	var ammunition_data := JsonConfigLoader.load_dictionary("res://data/gameplay/equipment_ammunition_rules_v1.json")
 	if not ammunition_data.is_ok: return ammunition_data
 	for row: Dictionary in ammunition_data.value.get("equipment", []):
@@ -142,6 +149,7 @@ func create(definition_id: String, state: Dictionary) -> DomainResult:
 		return result
 	var item: GameItem = result.value
 	if item is Equipment:
+		item.armor_refinement_profile = armor_refinement_rules.profiles.get(item.definition_id)
 		item.extra_attribute_rules = extra_attribute_rules
 		item.strengthening_rules = strengthening_rules
 		item.strengthening_profile = strengthening_rules.profiles.get(item.definition_id)
@@ -190,6 +198,8 @@ func _create_item(definition_id: String, state: Dictionary) -> DomainResult:
 	if item_definition.has("use_rule"):
 		return DomainResult.ok(ConsumableItem.new(item_definition, state))
 	match kind:
+		"armor_refinement_material":
+			return DomainResult.ok(ArmorRefinementMaterial.new(item_definition, state))
 		"equipment_strengthening_material":
 			return DomainResult.ok(EquipmentStrengtheningMaterial.new(item_definition, state))
 		"character_clothing":
