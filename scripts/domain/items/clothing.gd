@@ -5,6 +5,8 @@ var character_slot: String
 var required_sex: String
 var clothing_effects: Dictionary
 var enhancement := ClothingEnhancement.new()
+var improvement := ClothingImprovement.new()
+var improvement_rules: ClothingImprovementRules
 
 
 ## 初始化固定人物槽位上的服装实例。
@@ -20,6 +22,8 @@ func _init(definition: Dictionary = {}, state: Dictionary = {}) -> void:
 	var restored := ClothingEnhancement.restore(state.get("enhancement", {}))
 	if restored.is_ok:
 		enhancement = restored.value
+	var improved := ClothingImprovement.restore(state.get("clothing_improvement", {}))
+	if improved.is_ok: improvement = improved.value
 
 
 ## 判断当前服装能否穿到指定人物槽位。
@@ -38,4 +42,6 @@ func to_view_dictionary() -> Dictionary:
 	view["character_slot"] = character_slot
 	view["equipment_location"] = -1
 	view["enhancement"] = enhancement.to_dictionary()
+	view["clothing_improvement"] = improvement.to_dictionary()
+	view["clothing_improvement_eligible"] = improvement_rules != null and improvement_rules.slots.has(definition_id)
 	return view
