@@ -179,6 +179,51 @@ func _test_assistant(hall: Node2D, probe: IntentProbe, current: Player) -> void:
 	brain._process(0.4)
 	_expect(probe.abilities.size() == before, "关闭智脑立即停止真实动作")
 	_test_gun_missile_mode(hall, probe, current, brain)
+	_test_smart_supplies(hall, probe, current, brain)
+
+
+## 在实际战斗场景验证补给共用面板命令、失败节流及死亡和切图停用。
+## [param hall] 真实场景。[param probe] 权威消息输入。[param current] 同一玩家投影。[param brain] 实际智脑控制器。
+func _test_smart_supplies(hall: Node2D, probe: IntentProbe, current: Player, brain: SmartAssistantController) -> void:
+	var sent: Array[Dictionary] = []
+	hall.panel_session.command_dispatched.connect(func(command: Dictionary) -> void: sent.append(command.duplicate(true)))
+	current.health = 100
+	current.inventory = Inventory.new()
+	var pack_id := catalog.definition_id_by_display_name("低级能量包")
+	var food_id := catalog.definition_id_by_display_name("比萨")
+	current.inventory.add_reward(catalog.create(pack_id, {"instance_id": "brain.pack", "quantity": 10}).value)
+	current.inventory.add_reward(catalog.create(food_id, {"instance_id": "brain.food", "quantity": 3}).value)
+	brain.policy.apply({"enabled": true, "auto_energy": true, "energy_definition_id": pack_id})
+	var snapshot := {"vehicle_combat_active": true, "local_vehicle": {"health": 70, "max_health": 70,
+		"reserve_energy": 100, "reserve_energy_capacity": 10000}, "ground_loot": [], "monsters": []}
+	probe.combat_snapshot_received.emit(snapshot)
+	brain._process(0.4)
+	brain._process(0.4)
+	_expect(sent.size() == 1 and sent[0].type == "use_inventory_item" and sent[0].instance_id == "brain.pack"
+		and sent[0].inventory_revision == current.inventory.revision, "自动补包使用真实手动命令和当前库存版本，等待时不重发")
+	_expect(current.inventory.find("brain.pack").quantity == 10, "客户端不预测消耗和补能")
+	brain._retry_at.clear()
+	snapshot.local_vehicle.reserve_energy = 10000
+	probe.combat_snapshot_received.emit(snapshot)
+	brain._process(0.4)
+	_expect(sent.size() == 1, "满能量无补给请求")
+	brain.policy.apply({"enabled": true, "auto_food": true, "food_definition_id": food_id})
+	current.food_status = FoodStatus.new()
+	var previous_kind: StringName = hall.world_view.player.presentation_kind
+	hall.world_view.player.presentation_kind = PlayerWorldAvatar.CHARACTER_KIND
+	brain._process(0.4)
+	_expect(sent.size() == 2 and sent[1].instance_id == "brain.food", "城区制造期间也可使用食品，仍复用同一手动事务")
+	hall.world_view.player.presentation_kind = previous_kind
+	snapshot.local_vehicle.health = 0
+	probe.combat_snapshot_received.emit(snapshot)
+	_expect(not brain.policy.enabled and not brain._panel.toggles.enabled.button_pressed, "权威击毁立即停用并同步开关")
+	snapshot.local_vehicle.health = 70
+	probe.combat_snapshot_received.emit(snapshot)
+	brain._process(0.4)
+	_expect(sent.size() == 2 and not brain.policy.enabled, "后续恢复生命不自动启用")
+	brain.policy.enabled = true
+	probe.map_joined.emit(&"another", "another.default", Vector2.ZERO, 1)
+	_expect(not brain.policy.enabled and brain._snapshot.is_empty(), "切图显式停用并清除旧目标")
 
 
 ## 验证原版半秒炮导切换、连续手动点击、自动攻击及暂停边界。

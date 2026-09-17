@@ -12,6 +12,7 @@ var _retry_at: Dictionary = {}
 var _settings_path := ""
 var _observed_at := 0
 var _weapon_elapsed := 0.0
+var _stopped_reason := "未启用"
 
 
 ## 绑定已有战斗输入和设置面板，不创建另一个网络或玩家状态所有者。
@@ -30,9 +31,11 @@ func configure(combat: CombatInteractionController, panel: SmartAssistantPanel) 
 		values["enabled"] = false
 		policy.apply(values)
 	_panel.apply_settings(policy.snapshot())
+	_combat.panel_session.player_changed.connect(_refresh_supplies)
+	_refresh_supplies(_combat.panel_session.current_player)
 
 
-## 切图后立即丢弃旧目标，等待新地图快照再恢复增强功能。
+## 切图后立即丢弃旧目标并停用自动操作，新地图必须由用户再次启用。
 ## [param _map_id] 新地图定义 ID。
 ## [param _instance] 新地图实例 ID。
 ## [param _position] 新出生点。
@@ -41,6 +44,7 @@ func _map_changed(_map_id: StringName, _instance: String, _position: Vector2, _v
 	_snapshot.clear()
 	_retry_at.clear()
 	_weapon_elapsed = 0.0
+	_stop("已停用：切换地图后需手动启用")
 
 
 ## 只保存服务器已投影的可见对象，不修改生命或掉落状态。
@@ -48,12 +52,15 @@ func _map_changed(_map_id: StringName, _instance: String, _position: Vector2, _v
 func _observe(snapshot: Dictionary) -> void:
 	_snapshot = snapshot.duplicate(true)
 	_observed_at = Time.get_ticks_msec()
+	if bool(snapshot.get("vehicle_combat_active", false)) and int(snapshot.get("local_vehicle", {}).get("health", 0)) <= 0:
+		_stop("已停用：战车被击毁")
 
 
 ## 保存当前角色的界面偏好，启停立即生效。
 ## [param values] 设置面板发布的选项。
 func _apply_settings(values: Dictionary) -> void:
 	policy.apply(values)
+	_stopped_reason = "未启用"
 	_weapon_elapsed = 0.0
 	var saved := ConfigFile.new()
 	saved.set_value("assistant", "preferences", policy.snapshot())
@@ -71,9 +78,9 @@ func _process(delta: float) -> void:
 		return
 	_elapsed = 0.0
 	if not policy.enabled:
-		_panel.show_status("未启用")
+		_panel.show_status(_stopped_reason)
 		return
-	if _combat.is_input_locked() or _combat.world_view.player == null or not _combat.world_view.player.is_combat_actor_active() \
+	if _combat.is_input_locked() or _combat.world_view.player == null \
 			or _combat.multiplayer_presenter.session.is_vehicle_recovery_pending():
 		_panel.show_status("已暂停：当前状态不允许操作")
 		return
@@ -82,6 +89,14 @@ func _process(delta: float) -> void:
 		return
 	_panel.show_status("运行中 · 手动移动时暂停自动攻击")
 	var vehicle: Dictionary = _snapshot.get("local_vehicle", {})
+	var supply := policy.next_supply(_combat.panel_session.current_player, vehicle, int(Time.get_unix_time_from_system()))
+	if not supply.is_empty() and _may_attempt("supply", 2.0):
+		_combat.panel_session.dispatch({"type": "use_inventory_item", "instance_id": supply,
+			"inventory_revision": _combat.panel_session.current_player.inventory.revision})
+		return
+	if not _combat.world_view.player.is_combat_actor_active():
+		_panel.show_status("运行中 · 当前地图仅自动补给")
+		return
 	if policy.needs_repair(vehicle) and _may_attempt("repair", 5.0):
 		_combat.request_self_repair()
 		return
@@ -117,6 +132,7 @@ func _advance_weapon_switch(delta: float) -> void:
 	if _combat == null or not policy.enabled or not policy.gun_missile_mode \
 		or _combat.is_input_locked() or _combat.world_view.player == null \
 		or not _combat.world_view.player.is_combat_actor_active() or _snapshot.is_empty() \
+		or _combat.multiplayer_presenter.session.is_vehicle_recovery_pending() \
 		or Time.get_ticks_msec() - _observed_at > 3000 \
 		or bool(_snapshot.get("local_vehicle", {}).get("self_repair_active", false)):
 		_weapon_elapsed = 0.0
@@ -144,3 +160,22 @@ func _may_attempt(key: String, seconds: float) -> bool:
 		return false
 	_retry_at[key] = now + int(seconds * 1000)
 	return true
+
+
+## 用当前背包类型更新补给选择，保留已选但暂时耗尽的类型。
+## [param player] 收到权威事务后的玩家投影。
+func _refresh_supplies(player: Player) -> void:
+	_panel.apply_supplies(player.inventory)
+
+
+## 保留用户选项但停用所有自动动作，不在死亡或切图后自动恢复。
+## [param message] 生命周期停止原因。
+func _stop(message: String) -> void:
+	if not policy.enabled and _stopped_reason == message: return
+	policy.enabled = false
+	_stopped_reason = message
+	_retry_at.clear()
+	_weapon_elapsed = 0
+	if _panel != null:
+		_panel.apply_settings(policy.snapshot())
+		_panel.show_status(message)
