@@ -27,7 +27,9 @@ static func prepare(inventory: Inventory, catalog: ItemCatalog, removed_id: Stri
 	var copies: Array[GameItem] = []
 	for item: GameItem in inventory.items():
 		if item.instance_id == removed_id: continue
-		var copied := catalog.create(item.definition_id, item.to_view_dictionary())
+		var state := item.to_view_dictionary()
+		state["quantity"] = item.quantity
+		var copied := catalog.create(item.definition_id, state)
 		if not copied.is_ok: return copied
 		copies.append(copied.value)
 	var restored := candidate.restore_items(copies)

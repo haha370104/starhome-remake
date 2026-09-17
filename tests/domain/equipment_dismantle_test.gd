@@ -30,9 +30,27 @@ func _initialize() -> void:
 			var record := mapper.to_record(player)
 			_check(record.is_ok and mapper.to_domain(record.value).is_ok, "persist complete result")
 	_test_rejections()
+	_test_unrelated_stacks()
 	print("Equipment dismantling: %d checks, %d failures" % [_checks, _failures.size()])
 	for failure in _failures: push_error(failure)
 	quit(0 if _failures.is_empty() else 1)
+
+
+## 拆解一件装备不能改写背包其他堆叠的数量、裂纹或绑定。
+func _test_unrelated_stacks() -> void:
+	var player := _player("glory_equipment_gun8_e7ce1423fa")
+	var gel := _catalog.create("low_grade_gel", {"instance_id": "keep.gel", "quantity": 50, "locked": true}).value as GameItem
+	var crystal := _catalog.create("bright_firepower_crystal", {"instance_id": "keep.crystal", "quantity": 7, "crystal_cracks": 2, "bound": true}).value as GameItem
+	_check(player.inventory.add_reward(gel).is_ok and player.inventory.add_reward(crystal).is_ok, "unrelated stacks stocked")
+	var before := _snapshot(player)
+	var preview := PlayerEquipmentDismantleActions.preview(player, _catalog, "source", "preserve")
+	_check(preview.is_ok and _snapshot(player) == before, "preview preserves original stacks")
+	var result := PlayerEquipmentDismantleActions.execute(player, _catalog, "source", player.inventory.revision, true, 0.05, "preserve")
+	_check(result.is_ok, "dismantle while carrying materials")
+	_check(player.inventory.find("keep.gel").quantity == 50 and player.inventory.find("keep.gel").locked, "unrelated locked stack keeps quantity")
+	var kept := player.inventory.find("keep.crystal") as VehicleCrystal
+	_check(kept.quantity == 7 and kept.cracks == 2 and kept.bound, "unrelated crystal keeps quantity and state")
+	_check(gel.quantity == 50 and crystal.quantity == 7, "original references remain independent")
 
 
 ## 用独立玩家检查所有前置失败和最差容量，不通过概率逃避满包检查。
