@@ -152,7 +152,7 @@ func to_record(player: Player) -> DomainResult:
 			equipment.equipment_location,
 			equipment.equip_kind,
 		))
-	return PlayerStateRecordScript.from_dictionary({
+	var result := PlayerStateRecordScript.from_dictionary({
 		"schema_version": PlayerStateRecordScript.CURRENT_SCHEMA_VERSION,
 		"account_id": player.account_id,
 		"account_name": player.account_name,
@@ -172,7 +172,6 @@ func to_record(player: Player) -> DomainResult:
 		"character_residence": player.residence,
 		"character_description": player.description,
 		"inventory_stacks": inventory_stacks,
-		"warehouse": warehouse_result.value.to_dictionary(),
 		"equipment_slots": equipment_slots,
 		"character_max_health": player.max_health,
 		"character_health": player.health,
@@ -197,6 +196,10 @@ func to_record(player: Player) -> DomainResult:
 		"facing_direction": player.facing_direction,
 		"checkpoint_id": player.checkpoint_id,
 	})
+	if not result.is_ok: return result
+	result.value.warehouse = warehouse_result.value
+	var checked: DomainResult = result.value.validate()
+	return result if checked.is_ok else checked
 
 
 ## 将装备实例转换为持久化槽位记录。

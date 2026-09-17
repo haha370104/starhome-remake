@@ -194,24 +194,20 @@ func validate() -> DomainResult:
 			return DomainResult.failure(&"persistence.invalid_equipment_slot", "equipment slot or item instance is duplicated")
 		equipment_keys[slot_key] = true
 		item_instance_ids[equipment.item_instance_id] = true
-	for cabinet: PersonalWarehouseRecord.Cabinet in warehouse.cabinets:
-		for stack: InventoryStackRecord in cabinet.stacks:
-			if stack_ids.has(stack.stack_id) or item_instance_ids.has(stack.stack_id):
-				return DomainResult.failure(&"warehouse.identity", "仓库物品与背包或装备身份重复")
-			stack_ids[stack.stack_id] = true
-	return DomainResult.ok()
+	return warehouse.validate_disjoint(stack_ids, item_instance_ids)
 
 
-## 序列化或保存 `to_dictionary` 对应的模块状态。
-## 返回该函数计算、查询或操作得到的结果。
-func to_dictionary() -> Dictionary:
+## 序列化玩家事实，磁盘保存包含仓库；内部快照复制可共用不可变仓库记录。
+## [param include_warehouse] 是否展开仓库物品用于JSON序列化。
+## 返回独立玩家字典。
+func to_dictionary(include_warehouse: bool = true) -> Dictionary:
 	var serialized_stacks: Array[Dictionary] = []
 	for stack: InventoryStackRecord in inventory_stacks:
 		serialized_stacks.append(stack.to_dictionary())
 	var serialized_equipment: Array[Dictionary] = []
 	for equipment: EquipmentSlotRecord in equipment_slots:
 		serialized_equipment.append(equipment.to_dictionary())
-	return {
+	var state := {
 		"schema_version": CURRENT_SCHEMA_VERSION,
 		"account_id": account_id,
 		"account_name": account_name,
@@ -231,7 +227,6 @@ func to_dictionary() -> Dictionary:
 		"character_residence": character_residence,
 		"character_description": character_description,
 		"inventory_stacks": serialized_stacks,
-		"warehouse": warehouse.to_dictionary(),
 		"equipment_slots": serialized_equipment,
 		"character_max_health": character_max_health,
 		"character_health": character_health,
@@ -256,12 +251,16 @@ func to_dictionary() -> Dictionary:
 		"facing_direction": facing_direction,
 		"checkpoint_id": checkpoint_id,
 	}
+	if include_warehouse: state["warehouse"] = warehouse.to_dictionary()
+	return state
 
 
-## 执行 `duplicate_record` 对应的模块操作。
-## 返回该函数计算、查询或操作得到的结果。
+## 复制可变玩家状态，并共享封装后的不可变仓库快照，避免日常事务展开数百件物品。
+## 返回独立玩家记录；仓库实际存取生成新快照，不改写此处共享的旧记录。
 func duplicate_record() -> PlayerStateRecord:
-	return PlayerStateRecord.from_dictionary(to_dictionary()).value
+	var copied: PlayerStateRecord = PlayerStateRecord.from_dictionary(to_dictionary(false)).value
+	copied.warehouse = warehouse
+	return copied if copied.validate().is_ok else null
 
 
 ## 执行 `load_inventory` 对应的模块操作。

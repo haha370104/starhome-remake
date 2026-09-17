@@ -7,6 +7,12 @@ var revision := 0
 var _cabinets: Array[Inventory] = [Inventory.new()]
 
 
+## 在首次访问物品前完成存储适配器的按需还原；纯内存仓库无需额外工作。
+## 返回加载结果，失败必须保留原存储，不能把空列表当作已清空的仓库。
+func materialize() -> DomainResult:
+	return DomainResult.ok()
+
+
 ## 查询已开通的个人柜数量，未开通的柜不能持有物品。
 ## 返回一至六个柜子。
 func cabinet_count() -> int:
@@ -17,6 +23,7 @@ func cabinet_count() -> int:
 ## [param cabinet] 从一开始的柜号。
 ## 返回物品数组，未开通柜返回空数组。
 func items(cabinet: int) -> Array[GameItem]:
+	if not materialize().is_ok: return [] as Array[GameItem]
 	return _cabinets[cabinet - 1].items() if cabinet >= 1 and cabinet <= cabinet_count() else [] as Array[GameItem]
 
 
@@ -24,6 +31,7 @@ func items(cabinet: int) -> Array[GameItem]:
 ## [param id] 稳定实例身份。
 ## 返回仓库内物品，没有时为空。
 func find(id: String) -> GameItem:
+	if not materialize().is_ok: return null
 	for cabinet: Inventory in _cabinets:
 		var item := cabinet.find(id)
 		if item != null: return item
@@ -45,6 +53,8 @@ func transfer(backpack: Inventory, cabinet: int, deposit: bool, id: String, amou
 	if not checked.is_ok: return checked
 	if warehouse_revision != revision:
 		return DomainResult.failure(&"warehouse.revision", "仓库状态已更新，请重试")
+	checked = materialize()
+	if not checked.is_ok: return checked
 	if cabinet < 1 or cabinet > cabinet_count():
 		return DomainResult.failure(&"warehouse.cabinet", "请先开通该储物柜")
 	if deposit and find(id) != null:
@@ -66,6 +76,8 @@ func transfer(backpack: Inventory, cabinet: int, deposit: bool, id: String, amou
 func expand(wallet: AmethystWallet, rules: WarehouseRules, expected_revision: int) -> DomainResult:
 	if expected_revision != revision:
 		return DomainResult.failure(&"warehouse.revision", "仓库状态已更新，请重试")
+	var loaded := materialize()
+	if not loaded.is_ok: return loaded
 	if cabinet_count() >= MAX_CABINETS:
 		return DomainResult.failure(&"warehouse.maximum", "已开通全部六个储物柜")
 	var checked := wallet.can_spend(rules.expansion_cost)

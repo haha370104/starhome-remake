@@ -134,6 +134,7 @@ func _test_expansion_and_invalid_state() -> void:
 func _player() -> Player:
 	var player: Player = mapper.to_domain(fixture._state).value
 	player.inventory = Inventory.new()
+	player.warehouse.materialize()
 	return player
 
 
