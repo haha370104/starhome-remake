@@ -767,6 +767,7 @@ func handle_peer_player_panel_command(peer_id: int, command: Dictionary) -> Dict
 	var current_map := map_registry.instance_by_id(session.map_instance_id)
 	if command_type == "use_inventory_item" or command_type in ClothingEnhancementService.COMMANDS \
 		or command_type in EquipmentProcessingService.COMMANDS \
+		or command_type in EquipmentMaintenanceService.COMMANDS \
 		or command_type in VehicleSocketService.COMMANDS or command_type in ["equip_character_item", "unequip_character_item"]:
 		var captured: DomainResult = _capture_persistent_player_state(current)
 		if not captured.is_ok:
@@ -803,6 +804,7 @@ func handle_peer_player_panel_command(peer_id: int, command: Dictionary) -> Dict
 		_apply_food_runtime(session.entity_id, committed.value)
 	elif (command_type in ClothingEnhancementService.COMMANDS or command_type in VehicleSocketService.COMMANDS \
 		or command_type in EquipmentProcessingService.COMMANDS \
+		or command_type in EquipmentMaintenanceService.COMMANDS \
 		or command_type in ["equip_character_item", "unequip_character_item"]) \
 		and current_map != null and current_map.is_vehicle_combat_active():
 		var enhanced_loadout := current_map.refresh_achievement_loadout(session.entity_id, prepared_loadout)

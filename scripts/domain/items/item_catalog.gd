@@ -132,6 +132,10 @@ func _create_item(definition_id: String, state: Dictionary) -> DomainResult:
 		return DomainResult.failure(&"items.definition_missing", "item definition does not exist")
 	var item_definition: Dictionary = _definitions[definition_id].duplicate(true)
 	var kind := String(item_definition.get("kind", ""))
+	var maintenance_tool := maintenance_rules.repair_tool(definition_id)
+	if maintenance_tool != null:
+		item_definition["maintenance_tool"] = {"scope": maintenance_tool.scope, "kind": maintenance_tool.kind, "amount": maintenance_tool.amount}
+		return DomainResult.ok(EquipmentMaintenanceTool.new(item_definition, state))
 	var processing_material := processing_rules.material(definition_id)
 	if processing_material != null:
 		item_definition["processing_material"] = {"attribute": processing_material.attribute, "points": processing_material.points}
