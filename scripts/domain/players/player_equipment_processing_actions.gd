@@ -23,22 +23,13 @@ static func preview(player: Player, id: String, material_id: String) -> DomainRe
 	var rule := profile.attributes[special.attribute]
 	var requirements: Array[Dictionary] = rule.materials.duplicate(true)
 	requirements.append({"definition_id": material.definition_id, "quantity": 1})
-	var bound := item.bound
-	var costs: Array[Dictionary] = []
-	var affordable := player.inventory.currency >= rule.currency
-	for requirement: Dictionary in requirements:
-		var available := 0
-		for owned: GameItem in player.inventory.items():
-			if owned.definition_id == ItemDefinitionAliases.canonical(requirement.definition_id) and not owned.locked:
-				available += owned.quantity
-				bound = bound or owned.bound
-		costs.append({"definition_id": requirement.definition_id, "quantity": requirement.quantity, "available": available})
-		affordable = affordable and available >= int(requirement.quantity)
+	var payment := player.inventory.quote_upgrade_cost(requirements, rule.currency)
+	var affordable: bool = payment.can_execute
 	var skill := player.skills.base_level(rules.skill_id)
 	var enough_skill := skill >= rule.required_skill_level
 	var result: Dictionary = checked.value.duplicate()
-	result.merge({"requirements": requirements, "costs": costs, "currency": rule.currency,
-		"bound": bound, "required_skill_level": rule.required_skill_level, "skill_level": skill,
+	result.merge({"requirements": requirements, "costs": payment.costs, "currency": rule.currency,
+		"bound": item.bound or bool(payment.bound_material), "required_skill_level": rule.required_skill_level, "skill_level": skill,
 		"label": rule.label, "limit": rule.limit, "chance": rules.success_chance,
 		"can_execute": affordable and enough_skill,
 		"reason": "" if affordable and enough_skill else ("加工技能等级不足" if not enough_skill else "加工材料或星际币不足")})

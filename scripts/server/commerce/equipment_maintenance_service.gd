@@ -45,7 +45,7 @@ func execute(player: Player, command: Dictionary) -> DomainResult:
 				return DomainResult.failure(&"maintenance.offer", "速修工具或数量无效")
 			var created := _items.create(definition_id, {"instance_id": "maintenance." + Crypto.new().generate_random_bytes(16).hex_encode(), "quantity": quantity})
 			if not created.is_ok: return created
-			result = PlayerVehicleSocketActions.purchase(player, created.value, int(_items.definition(definition_id).get("workshop_unit_price", 0)), int(command.get("inventory_revision", -1)))
+			result = PlayerWorkshopPurchases.purchase(player, created.value, int(_items.definition(definition_id).get("workshop_unit_price", 0)), int(command.get("inventory_revision", -1)))
 		_:
 			return DomainResult.failure(&"maintenance.unknown_command", "未知维护操作")
 	if result.is_ok:

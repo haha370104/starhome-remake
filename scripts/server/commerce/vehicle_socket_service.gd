@@ -55,7 +55,7 @@ func execute(player: Player, command: Dictionary) -> DomainResult:
 			var created := _items.create(definition_id, {"instance_id": _new_id(), "quantity": quantity})
 			if not created.is_ok:
 				return created
-			result = PlayerVehicleSocketActions.purchase(player, created.value, _offers[definition_id], revision)
+			result = PlayerWorkshopPurchases.purchase(player, created.value, _offers[definition_id], revision)
 		_:
 			return DomainResult.failure(&"sockets.unknown_command", "未知战车晶石操作")
 	if result.is_ok:

@@ -153,19 +153,7 @@ static func expand(player: Player, id: String, expected_revision: int) -> Domain
 ## [param expected_revision] 确认时背包版本。
 ## 返回购买结果或原子失败。
 static func purchase(player: Player, product: GameItem, unit_price: int, expected_revision: int) -> DomainResult:
-	var checked := player.inventory.require_revision(expected_revision)
-	if not checked.is_ok:
-		return checked
-	if product == null or unit_price <= 0 or product.quantity < 1 or product.quantity > 99:
-		return DomainResult.failure(&"sockets.offer_invalid", "加工材料购买数量无效")
-	var total := unit_price * product.quantity
-	if player.inventory.currency < total:
-		return DomainResult.failure(&"sockets.currency", "星际币不足")
-	var added := player.inventory.add_reward(product)
-	if not added.is_ok:
-		return added
-	player.inventory.currency -= total
-	return DomainResult.ok({"message": "已购买 %s ×%d" % [product.display_name, product.quantity], "price": total})
+	return PlayerWorkshopPurchases.purchase(player, product, unit_price, expected_revision)
 
 
 ## 配方混合堆叠时保守传播绑定，防止用自动选料洗掉绑定。

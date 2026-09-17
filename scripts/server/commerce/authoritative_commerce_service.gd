@@ -24,6 +24,7 @@ var _vehicle_sockets: VehicleSocketService
 var _equipment_processing: EquipmentProcessingService
 var _equipment_maintenance: EquipmentMaintenanceService
 var _extra_attributes: ExtraAttributeService
+var _equipment_strengthening: EquipmentStrengtheningService
 var _catalog: ItemCatalog
 var _merchants: Dictionary = {}
 var quests = QuestServiceScript.new()
@@ -48,6 +49,7 @@ func initialize(rewards: RewardPipeline = null) -> DomainResult:
 	_vehicle_sockets = VehicleSocketService.new(_catalog)
 	_equipment_processing = EquipmentProcessingService.new(_catalog)
 	_extra_attributes = ExtraAttributeService.new(_catalog)
+	_equipment_strengthening = EquipmentStrengtheningService.new(_catalog)
 	var daily_loaded := daily.initialize(_catalog)
 	if not daily_loaded.is_ok:
 		return daily_loaded
@@ -77,7 +79,8 @@ static func handles(command_type: String) -> bool:
 	return command_type in COMMAND_TYPES or command_type in DailyActivityService.COMMANDS \
 		or command_type in ClothingEnhancementService.COMMANDS or command_type in VehicleSocketService.COMMANDS \
 		or command_type in EquipmentProcessingService.COMMANDS \
-		or command_type in EquipmentMaintenanceService.COMMANDS or command_type in ExtraAttributeService.COMMANDS
+		or command_type in EquipmentMaintenanceService.COMMANDS or command_type in ExtraAttributeService.COMMANDS \
+		or command_type in EquipmentStrengtheningService.COMMANDS
 
 
 ## 执行一次由会话绑定玩家身份的权威交易或任务命令。
@@ -96,7 +99,7 @@ func execute(state: PlayerStateRecord, command: Dictionary) -> DomainResult:
 	var merchant = _merchants.get(merchant_id)
 	if merchant == null:
 		return DomainResult.failure(&"commerce.merchant_missing", "merchant is not registered")
-	var changed := command_type not in ["query_weapon_merchant", "query_premium_shop", "query_attachment_upgrades", "query_clothing_enhancement", "query_vehicle_sockets", "query_equipment_processing", "query_equipment_maintenance", "query_extra_attributes"]
+	var changed := command_type not in ["query_weapon_merchant", "query_premium_shop", "query_attachment_upgrades", "query_clothing_enhancement", "query_vehicle_sockets", "query_equipment_processing", "query_equipment_maintenance", "query_extra_attributes", "query_equipment_strengthening"]
 	var operation := _execute_command(player, command_type, command, merchant_id, merchant)
 	if not operation.is_ok:
 		return operation
@@ -182,6 +185,8 @@ func _execute_command(
 		return _equipment_maintenance.execute(player, command)
 	if command_type in ExtraAttributeService.COMMANDS:
 		return _extra_attributes.execute(player, command)
+	if command_type in EquipmentStrengtheningService.COMMANDS:
+		return _equipment_strengthening.execute(player, command)
 	match command_type:
 		"query_attachment_upgrades":
 			return DomainResult.ok({"action": "attachment_upgrade_query"})
@@ -283,6 +288,8 @@ func _build_bundle(
 		bundle["equipment_maintenance"] = _equipment_maintenance.snapshot(player, operation)
 	if String(operation.get("action", "")) in ExtraAttributeService.COMMANDS:
 		bundle["extra_attributes"] = _extra_attributes.snapshot(player, operation)
+	if String(operation.get("action", "")) in EquipmentStrengtheningService.COMMANDS:
+		bundle["equipment_strengthening"] = _equipment_strengthening.snapshot(player, operation)
 	bundle["daily_activities"] = daily.snapshot(player)
 	var tasks: Array[Dictionary] = quests.snapshots(player, merchant_id)
 	var sell_items: Array[Dictionary] = []

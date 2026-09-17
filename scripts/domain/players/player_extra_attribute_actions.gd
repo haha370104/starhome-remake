@@ -20,19 +20,10 @@ static func preview(player: Player, id: String, material_id: String) -> DomainRe
 	if not result.is_ok: return result
 	var requirements: Array[Dictionary] = channel.materials.duplicate(true)
 	requirements.append({"definition_id": material.definition_id, "quantity": 1})
-	var bound := item.bound
-	var costs: Array[Dictionary] = []
-	var affordable := player.inventory.currency >= channel.currency
-	for requirement: Dictionary in requirements:
-		var available := 0
-		for owned: GameItem in player.inventory.items():
-			if owned.definition_id == ItemDefinitionAliases.canonical(requirement.definition_id) and not owned.locked:
-				available += owned.quantity
-				bound = bound or owned.bound
-		costs.append({"definition_id": requirement.definition_id, "quantity": requirement.quantity, "available": available})
-		affordable = affordable and available >= int(requirement.quantity)
-	result.value.merge({"requirements": requirements, "costs": costs, "currency": channel.currency,
-		"bound": bound, "can_execute": affordable, "reason": "" if affordable else "加工材料或星际币不足"})
+	var payment := player.inventory.quote_upgrade_cost(requirements, channel.currency)
+	result.value.merge(payment)
+	result.value.merge({"bound": item.bound or bool(payment.bound_material),
+		"reason": "" if payment.can_execute else "加工材料或星际币不足"})
 	return result
 
 

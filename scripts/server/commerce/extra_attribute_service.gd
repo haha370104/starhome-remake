@@ -35,7 +35,7 @@ func execute(player: Player, command: Dictionary) -> DomainResult:
 				return DomainResult.failure(&"extra.offer_invalid", "额外属性材料或数量无效")
 			var created := _items.create(definition_id, {"instance_id": "extra." + Crypto.new().generate_random_bytes(16).hex_encode(), "quantity": quantity})
 			if not created.is_ok: return created
-			result = PlayerVehicleSocketActions.purchase(player, created.value, int(_items.definition(definition_id).workshop_unit_price), int(command.get("inventory_revision", -1)))
+			result = PlayerWorkshopPurchases.purchase(player, created.value, int(_items.definition(definition_id).workshop_unit_price), int(command.get("inventory_revision", -1)))
 		_:
 			return DomainResult.failure(&"extra.unknown_command", "未知额外属性操作")
 	if result.is_ok:

@@ -165,6 +165,25 @@ func pay_upgrade_cost(requirements: Array[Dictionary], currency_cost: int) -> Do
 	return DomainResult.ok({"materials": consumed, "currency": currency_cost})
 
 
+## 为一次材料/金币交易报价，使用与支付相同的锁定和重复定义校验。
+## [param requirements] 规则生成的材料要求。
+## [param currency_cost] 非负金币报价。
+## 返回各材料现有量、是否可支付及保守绑定传播标志，不改变库存。
+func quote_upgrade_cost(requirements: Array[Dictionary], currency_cost: int) -> Dictionary:
+	var costs: Array[Dictionary] = []
+	var bound_material := false
+	for requirement: Dictionary in requirements:
+		var id := ItemDefinitionAliases.canonical(String(requirement.get("definition_id", "")))
+		var available := 0
+		for item: GameItem in _items:
+			if item.definition_id == id and not item.locked:
+				available += item.quantity
+				bound_material = bound_material or item.bound
+		costs.append({"definition_id": id, "quantity": int(requirement.get("quantity", 0)), "available": available})
+	return {"costs": costs, "requirements": requirements.duplicate(true), "currency": currency_cost,
+		"bound_material": bound_material, "can_execute": currency_cost >= 0 and currency >= currency_cost and _validate_requirements(requirements).is_ok}
+
+
 ## 在一个背包事务中消耗材料并加入制作产物。
 ## [param requirements] 含 definition_id 与 quantity 的材料要求数组。
 ## [param product] 已由物品目录创建的产物实例。
