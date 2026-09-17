@@ -15,6 +15,7 @@ var inventory_revision := 0
 var vehicle_loadout_revision := 0
 var inventory_capacity := 40
 var inventory_stacks: Array[InventoryStackRecord] = []
+var warehouse := PersonalWarehouseRecord.new()
 var equipment_slots: Array[EquipmentSlotRecord] = []
 var currency := 0
 var amethyst := 0
@@ -125,6 +126,9 @@ static func from_dictionary(raw: Variant) -> DomainResult:
 	var equipment_result := record._load_equipment(raw.get("equipment_slots"))
 	if not equipment_result.is_ok:
 		return equipment_result
+	var warehouse_result := PersonalWarehouseRecord.from_dictionary(raw.get("warehouse", {}))
+	if not warehouse_result.is_ok: return warehouse_result
+	record.warehouse = warehouse_result.value
 	var validation := record.validate()
 	return DomainResult.ok(record) if validation.is_ok else validation
 
@@ -186,10 +190,15 @@ func validate() -> DomainResult:
 	var item_instance_ids: Dictionary = {}
 	for equipment: EquipmentSlotRecord in equipment_slots:
 		var slot_key := "%s:%s" % [equipment.owner_kind, equipment.slot_id]
-		if equipment_keys.has(slot_key) or item_instance_ids.has(equipment.item_instance_id):
+		if equipment_keys.has(slot_key) or item_instance_ids.has(equipment.item_instance_id) or stack_ids.has(equipment.item_instance_id):
 			return DomainResult.failure(&"persistence.invalid_equipment_slot", "equipment slot or item instance is duplicated")
 		equipment_keys[slot_key] = true
 		item_instance_ids[equipment.item_instance_id] = true
+	for cabinet: PersonalWarehouseRecord.Cabinet in warehouse.cabinets:
+		for stack: InventoryStackRecord in cabinet.stacks:
+			if stack_ids.has(stack.stack_id) or item_instance_ids.has(stack.stack_id):
+				return DomainResult.failure(&"warehouse.identity", "仓库物品与背包或装备身份重复")
+			stack_ids[stack.stack_id] = true
 	return DomainResult.ok()
 
 
@@ -222,6 +231,7 @@ func to_dictionary() -> Dictionary:
 		"character_residence": character_residence,
 		"character_description": character_description,
 		"inventory_stacks": serialized_stacks,
+		"warehouse": warehouse.to_dictionary(),
 		"equipment_slots": serialized_equipment,
 		"character_max_health": character_max_health,
 		"character_health": character_health,

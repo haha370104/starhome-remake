@@ -70,36 +70,16 @@ func to_domain(record: PlayerStateRecord) -> DomainResult:
 	player.reward_pipeline = _reward_policy.value
 	var inventory_items: Array[GameItem] = []
 	for stack in record.inventory_stacks:
-		var created := _catalog.create(stack.item_definition_id, {
-			"instance_id": stack.stack_id,
-			"quantity": stack.quantity,
-			"container_id": stack.container_id,
-			"position_px": [stack.position_px.x, stack.position_px.y],
-			"footprint_px": [stack.footprint_px.x, stack.footprint_px.y],
-			"locked": stack.locked,
-			"bound": stack.bound,
-			"max_durability": stack.max_durability,
-			"durability": stack.durability,
-			"upgrade_level": stack.upgrade_level,
-			"enhancement": stack.enhancement.to_dictionary(),
-			"clothing_improvement": stack.clothing_improvement.to_dictionary(),
-			"equipment_memory": stack.equipment_memory.to_dictionary(),
-			"vehicle_sockets": stack.vehicle_sockets.to_dictionary(),
-			"processing": stack.processing.to_dictionary(),
-			"extra_attributes": stack.extra_attributes.to_dictionary(),
-			"strengthening": stack.strengthening.to_dictionary(),
-			"equipment_quality": stack.equipment_quality.to_dictionary(),
-			"forging": stack.forging.to_dictionary(),
-			"usage": stack.usage.to_dictionary(),
-			"magazine": stack.magazine.to_dictionary(),
-			"crystal_cracks": stack.crystal_cracks,
-		})
+		var created := _catalog.create(stack.item_definition_id, stack.item_state())
 		if not created.is_ok:
 			return created
 		inventory_items.append(created.value)
 	var inventory_result := player.inventory.restore_items(inventory_items)
 	if not inventory_result.is_ok:
 		return inventory_result
+	var warehouse_result := record.warehouse.to_domain(_catalog)
+	if not warehouse_result.is_ok: return warehouse_result
+	player.warehouse = warehouse_result.value
 	for slot in record.equipment_slots:
 		var created := _catalog.create(slot.item_definition_id, {
 			"instance_id": slot.item_instance_id,
@@ -152,40 +132,14 @@ func to_domain(record: PlayerStateRecord) -> DomainResult:
 func to_record(player: Player) -> DomainResult:
 	if player == null:
 		return DomainResult.failure(&"player.mapping_unavailable", "player is missing")
+	var warehouse_result := PersonalWarehouseRecord.from_domain(player.warehouse)
+	if not warehouse_result.is_ok: return warehouse_result
 	var inventory_stacks: Array[Dictionary] = []
 	var stack_index := 0
 	for item: GameItem in player.inventory.items():
-		var durability := 0
-		var max_durability := 0
-		if item is Equipment:
-			durability = (item as Equipment).durability
-			max_durability = (item as Equipment).max_durability
-		inventory_stacks.append({
-			"stack_id": item.instance_id,
-			"item_definition_id": item.definition_id,
-			"quantity": item.quantity,
-			"slot_index": stack_index,
-			"container_id": item.container_id,
-			"position_px": [item.position_px.x, item.position_px.y],
-			"footprint_px": [item.footprint_px.x, item.footprint_px.y],
-			"locked": item.locked,
-			"bound": item.bound,
-			"max_durability": max_durability,
-			"durability": durability,
-			"upgrade_level": (item as Equipment).upgrade_level if item is Equipment else 0,
-			"enhancement": (item as Clothing).enhancement.to_dictionary() if item is Clothing else {},
-			"clothing_improvement": (item as Clothing).improvement.to_dictionary() if item is Clothing else {},
-			"equipment_memory": (item as EquipmentMemoryModule).memory.to_dictionary() if item is EquipmentMemoryModule else {},
-			"vehicle_sockets": (item as VehicleEquipment).sockets.to_dictionary() if item is VehicleEquipment else {},
-			"processing": (item as Equipment).processing.to_dictionary() if item is Equipment else {},
-			"extra_attributes": (item as Equipment).extra_attributes.to_dictionary() if item is Equipment else {},
-			"strengthening": (item as Equipment).strengthening.to_dictionary() if item is Equipment else {},
-			"equipment_quality": (item as Equipment).quality.to_dictionary() if item is Equipment else {},
-			"forging": (item as Equipment).forging.to_dictionary() if item is Equipment else {},
-			"usage": (item as Equipment).usage.to_dictionary() if item is Equipment else {},
-			"magazine": (item as Equipment).magazine.to_dictionary() if item is Equipment else {},
-			"crystal_cracks": (item as VehicleCrystal).cracks if item is VehicleCrystal else 0,
-		})
+		var recorded := InventoryStackRecord.from_item(item, stack_index)
+		if not recorded.is_ok: return recorded
+		inventory_stacks.append(recorded.value.to_dictionary())
 		stack_index += 1
 	var equipment_slots: Array[Dictionary] = []
 	for clothing: Clothing in player.character_equipment.items():
@@ -218,6 +172,7 @@ func to_record(player: Player) -> DomainResult:
 		"character_residence": player.residence,
 		"character_description": player.description,
 		"inventory_stacks": inventory_stacks,
+		"warehouse": warehouse_result.value.to_dictionary(),
 		"equipment_slots": equipment_slots,
 		"character_max_health": player.max_health,
 		"character_health": player.health,

@@ -20,6 +20,7 @@ var map_id: String
 var map_instance_id: String
 var checkpoint_id: String
 var inventory: Inventory
+var warehouse := PersonalWarehouse.new()
 var character_equipment: CharacterEquipment
 var vehicle: PlayerVehicle
 var skills: SkillBook

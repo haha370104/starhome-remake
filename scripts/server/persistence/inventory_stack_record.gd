@@ -141,3 +141,49 @@ func to_dictionary() -> Dictionary:
 ## 返回该函数计算、查询或操作得到的结果。
 func duplicate_record() -> InventoryStackRecord:
 	return InventoryStackRecord.from_dictionary(to_dictionary()).value
+
+
+## 从具体物品提取全部原始实例状态，背包和仓库使用同一套保存字段。
+## [param item] 已经通过目录校验的领域物品。
+## [param stack_index] 所在容器内的稳定排列序号。
+## 返回经过校验的持久化记录，不使用可能省略字段的UI投影。
+static func from_item(item: GameItem, stack_index: int) -> DomainResult:
+	var saved_durability := 0
+	var saved_max_durability := 0
+	if item is Equipment:
+		saved_durability = (item as Equipment).durability
+		saved_max_durability = (item as Equipment).max_durability
+	return from_dictionary({
+		"stack_id": item.instance_id,
+		"item_definition_id": item.definition_id,
+		"quantity": item.quantity,
+		"slot_index": stack_index,
+		"container_id": item.container_id,
+		"position_px": [item.position_px.x, item.position_px.y],
+		"footprint_px": [item.footprint_px.x, item.footprint_px.y],
+		"locked": item.locked,
+		"bound": item.bound,
+		"max_durability": saved_max_durability,
+		"durability": saved_durability,
+		"upgrade_level": (item as Equipment).upgrade_level if item is Equipment else 0,
+		"enhancement": (item as Clothing).enhancement.to_dictionary() if item is Clothing else {},
+		"clothing_improvement": (item as Clothing).improvement.to_dictionary() if item is Clothing else {},
+		"equipment_memory": (item as EquipmentMemoryModule).memory.to_dictionary() if item is EquipmentMemoryModule else {},
+		"vehicle_sockets": (item as VehicleEquipment).sockets.to_dictionary() if item is VehicleEquipment else {},
+		"processing": (item as Equipment).processing.to_dictionary() if item is Equipment else {},
+		"extra_attributes": (item as Equipment).extra_attributes.to_dictionary() if item is Equipment else {},
+		"strengthening": (item as Equipment).strengthening.to_dictionary() if item is Equipment else {},
+		"equipment_quality": (item as Equipment).quality.to_dictionary() if item is Equipment else {},
+		"forging": (item as Equipment).forging.to_dictionary() if item is Equipment else {},
+		"usage": (item as Equipment).usage.to_dictionary() if item is Equipment else {},
+		"magazine": (item as Equipment).magazine.to_dictionary() if item is Equipment else {},
+		"crystal_cracks": (item as VehicleCrystal).cracks if item is VehicleCrystal else 0,
+	})
+
+
+## 把持久化记录转换成物品工厂接收的实例事实。
+## 返回独立状态，字段名转换只发生在持久化边界。
+func item_state() -> Dictionary:
+	var state := to_dictionary()
+	state["instance_id"] = stack_id
+	return state

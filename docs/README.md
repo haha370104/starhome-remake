@@ -43,6 +43,7 @@
 - [普通装备拆解](equipment_dismantling.md)：15款绿色以上装备、四档返还、容量预检与销毁确认。
 - [装备锻造](equipment_forging.md)：原版扩展上限、失败与加工清除、锻造模块转移。
 - [PVE装置能力](pve_devices.md)：发生器规则、权威触发与原版状态特效；隐身和雷达范围核查。
+- [个人仓库](personal_warehouse.md)：六柜存取、原版扩容费用、完整实例状态与旧档兼容。
 - [装备十星强化](equipment_strengthening.md)：P3-B 独立星级、材料投入与失败降星。
 - [萤石与耀石加工](extra_attribute_processing.md)：P3-A 独立通道、失败退级、获取与实际属性。
 - [维护、磨损与弹药](equipment_maintenance.md)：P2 常规维护/速修、实际使用余量、补弹与验收。

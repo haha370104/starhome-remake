@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "maximum_cabinets": 6,
+  "cabinet_capacity": 40,
+  "expansion_cost_amethyst": 1888,
+  "allowed_map_ids": ["yian_harbor_hall_floor_1", "yian_harbor_city"],
+  "source_evidence": {
+    "cabinet_count": "starhome_lz_ry_fcc_source/dzl/bank/bankface.fcc:12-76",
+    "expansion_cost": "starhome_lz_ry_fcc_source/great/code_string.fcc:6936 hp_string87",
+    "item_transfer": "starhome_lz_ry_fcc_source/dzl/bank/bank_userclt.fcc:34-94"
+  },
+  "remake_policy": "40 stacks per cabinet; personal inventory entry; service limits transfers and expansion to Dragon City and its base hall. No shared warehouse or bank password in the local PVE flow."
+}
