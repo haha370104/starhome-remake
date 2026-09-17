@@ -113,7 +113,10 @@ func register_vehicle(
 	var state_result := vehicle_state.configure(assembly)
 	if not state_result.is_ok:
 		return state_result
+	var clothing_effects := ClothingCombatEffects.new()
+	clothing_effects.repair_wait_reduction = float(assembly.get("repair_wait_reduction", 0))
 	actors[actor_id] = {
+		"clothing_effects": clothing_effects,
 		"map_instance_id": map_instance_id,
 		"position": position,
 		"previous_position": position,
@@ -172,6 +175,7 @@ func refresh_achievement_loadout(actor_id: String, loadout: Dictionary) -> Domai
 	candidate.reserve_energy = minf(previous_reserve, candidate.reserve_energy_capacity)
 	candidate.working_energy = minf(previous_working, candidate.working_energy_capacity)
 	actor["vehicle_state"] = candidate
+	(actor["clothing_effects"] as ClothingCombatEffects).repair_wait_reduction = float(assembly.get("repair_wait_reduction", 0))
 	actor["weapons"] = normalized
 	actor["self_repair_bonus_strength"] = int(assembly.get("self_repair_bonus_strength", 0))
 	var repair: Dictionary = actor["self_repair"]
@@ -307,6 +311,7 @@ func handle_weapon_attack(actor_id: String, raw_intent: Variant) -> DomainResult
 	var energy_result := vehicle_state.consume_working_energy(float(weapon["working_energy_cost"]))
 	if not energy_result.is_ok:
 		return energy_result
+	(actor["clothing_effects"] as ClothingCombatEffects).observe_weapon(String(weapon["weapon_id"]))
 	interrupt_self_repair(actor_id, &"attack")
 	actor["cooldown_ready_ticks"][ability_id] = current_tick + int(weapon["cooldown_ticks"])
 	var impact_position := Vector2(collision.get("position", endpoint))
@@ -635,6 +640,7 @@ func _settle_projectile(projectile: Dictionary) -> void:
 	var weapon: Dictionary = projectile["weapon"]
 	var attacker_id := String(projectile["attacker_id"])
 	var damage := _random.randi_range(int(weapon["minimum_damage"]), int(weapon["maximum_damage"]))
+	damage = roundi(damage * (1.0 + _pursuit_bonus(attacker_id, target_id, weapon)))
 	var damage_result := monster.apply_damage(damage, attacker_id, current_tick)
 	if not damage_result.is_ok:
 		_record_projectile_expired(projectile, impact_position, &"damage_rejected_at_impact_tick")
@@ -685,8 +691,10 @@ func _settle_rocket_projectile(projectile: Dictionary) -> void:
 			continue
 		if monster.position.distance_squared_to(impact_position) > radius * radius:
 			continue
+		var pursuit := _pursuit_bonus(String(projectile["attacker_id"]), monster_id, weapon) if not hit_any else 0.0
 		hit_any = true
 		var damage := _random.randi_range(int(weapon["minimum_damage"]), int(weapon["maximum_damage"]))
+		damage = roundi(damage * (1.0 + pursuit))
 		var damage_result := monster.apply_damage(damage, String(projectile["attacker_id"]), current_tick)
 		if not damage_result.is_ok:
 			continue
@@ -774,7 +782,8 @@ func _settle_due_self_repairs() -> void:
 	for actor_id: String in actor_ids:
 		var actor: Dictionary = actors[actor_id]
 		var repair_state: Dictionary = actor["self_repair"]
-		if not bool(repair_state["active"]) or current_tick < int(repair_state["next_cycle_tick"]):
+		if not bool(repair_state["active"]) or current_tick < int(repair_state["next_cycle_tick"]) \
+			or current_tick < (actor["clothing_effects"] as ClothingCombatEffects).repair_ready_tick:
 			continue
 		var vehicle_state: VehicleCombatState = actor["vehicle_state"]
 		if vehicle_state.health <= 0:
@@ -1280,6 +1289,12 @@ func _is_valid_actor_target(monster: MonsterLifecycle, actor_id: String) -> bool
 ## 返回该函数计算、查询或操作得到的结果。
 ## 设计：快照携带短事件窗口以容忍 UDP/快照丢包，客户端按事件号去重。
 func _record_combat_event(event: Dictionary) -> Dictionary:
+	var damaged_actor := String(event.get("target_entity_id", ""))
+	if int(event.get("damage", 0)) > 0 and actors.has(damaged_actor):
+		var effects: ClothingCombatEffects = actors[damaged_actor]["clothing_effects"]
+		effects.damaged(current_tick, simulation_hz)
+		if bool(event.get("target_destroyed", false)):
+			effects.reset_chain()
 	event_sequence += 1
 	var recorded := event.duplicate(true)
 	recorded["event_id"] = event_sequence
@@ -1525,6 +1540,7 @@ func _normalize_energy_cannon(definition: Dictionary) -> DomainResult:
 		"weapon_id": weapon_id,
 		"skill_id": skill_id,
 		"attack_mode": attack_mode,
+		"pursuit_bonus": clampf(float(definition.get("pursuit_bonus", 0)), 0.0, 0.25),
 		"minimum_damage": minimum_damage,
 		"maximum_damage": maximum_damage,
 		"working_energy_cost": working_energy_cost,
@@ -1539,3 +1555,19 @@ func _normalize_energy_cannon(definition: Dictionary) -> DomainResult:
 		"area_radius": area_radius,
 		"target_selection_radius": target_selection_radius,
 	})
+
+
+## 在已验证的单次主目标命中中结算追击，范围旁伤不增加层数。
+## [param actor_id] 发射者身份。
+## [param target_id] 主目标身份。
+## [param weapon] 发射时冻结的权威武器定义。
+## 返回本次额外伤害比例。
+func _pursuit_bonus(actor_id: String, target_id: String, weapon: Dictionary) -> float:
+	if not actors.has(actor_id):
+		return 0.0
+	var actor: Dictionary = actors[actor_id]
+	var effects: ClothingCombatEffects = actor["clothing_effects"]
+	if (actor["vehicle_state"] as VehicleCombatState).health <= 0:
+		effects.reset_chain()
+		return 0.0
+	return effects.hit(String(weapon["weapon_id"]), target_id, current_tick, simulation_hz, float(weapon.get("pursuit_bonus", 0)))

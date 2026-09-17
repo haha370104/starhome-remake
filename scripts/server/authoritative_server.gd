@@ -403,7 +403,7 @@ func handle_peer_use_ability(peer_id: int, intent: Dictionary) -> Dictionary:
 				var rejected := _failure(allowed.error_code, allowed.error_message)
 				_trace_ability_command_result(peer_id, session.entity_id, intent, rejected)
 				return rejected
-			authoritative_context["mining_time_reduction_ms"] = allowed.value
+			authoritative_context.merge(allowed.value)
 		var skill_id := "repair" if ability_id == AuthoritativeCombatModule.SELF_REPAIR_ABILITY_ID \
 			else "mining"
 		var skill_state: Variant = current.character_skills.get(skill_id, {})
@@ -990,7 +990,9 @@ func _validate_mining_equipment(state: PlayerStateRecord) -> DomainResult:
 	var checked := player.vehicle.loadout.validate_mining(player.skills.base_level("mining"))
 	if not checked.is_ok:
 		return checked
-	return DomainResult.ok(player.vehicle.loadout.attachment_bonus("mining_time_ms"))
+	return DomainResult.ok({"mining_time_reduction_ms": player.vehicle.loadout.attachment_bonus("mining_time_ms"),
+		"mining_power": player.vehicle.clothing_bonuses.apply_value("mining_power", 0),
+		"prospecting_chance": player.vehicle.clothing_bonuses.trait_value("prospecting")})
 
 
 ## 向仍在线的采矿者报告异步背包/存档拒绝。

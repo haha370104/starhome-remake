@@ -302,6 +302,8 @@ func handle_use_ability(
 			int(authoritative_context.get("mining_skill_level", -1)),
 			intent.input_sequence,
 			int(authoritative_context.get("mining_time_reduction_ms", 0)),
+			float(authoritative_context.get("mining_power", 0)),
+			float(authoritative_context.get("prospecting_chance", 0)),
 		)
 		return _success(mining_result.value) if mining_result.is_ok \
 			else _failure(mining_result.error_code, mining_result.error_message)

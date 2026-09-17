@@ -5,6 +5,7 @@ const MineSourceScript := preload("res://scripts/domain/mining/mine_source.gd")
 
 const COLLECT_ABILITY_ID := "mining.collect"
 
+var _enhancement_random := RandomNumberGenerator.new()
 var current_tick := 0
 var simulation_hz := 20
 var map_id := ""
@@ -66,6 +67,8 @@ func configure(
 ## [param aim_world_position] 调用方传入的 `aim_world_position` 参数。
 ## [param mining_level] 调用方传入的 `mining_level` 参数。
 ## [param command_sequence] 调用方传入的 `command_sequence` 参数。
+## [param mining_power] 人物宝石挖掘力，每点提高1%采掘效率。
+## [param prospecting_chance] 权威探矿特性额外采出一份的概率。
 ## [param time_reduction_ms] 服务器从已装配接合器派生的间隔减值；周期最短 0.1 秒。
 ## 返回该函数计算、查询或操作得到的结果。
 func begin_collection(
@@ -75,6 +78,8 @@ func begin_collection(
 	mining_level: int,
 	command_sequence: int,
 	time_reduction_ms: int = 0,
+	mining_power: float = 0.0,
+	prospecting_chance: float = 0.0,
 ) -> DomainResult:
 	if _policy.is_empty():
 		return DomainResult.failure(&"mining.not_available", "this map has no mineral population")
@@ -92,9 +97,10 @@ func begin_collection(
 		return DomainResult.failure(&"mining.out_of_range", "mine source is outside collection range")
 	if mining_level < source.required_mining_level:
 		return DomainResult.failure(&"mining.skill_too_low", "mining skill does not meet the source requirement")
-	var interval := maxf(0.1, float(_policy["collection_interval_seconds"]) - float(maxi(0, time_reduction_ms)) / 1000.0)
+	var interval := maxf(0.1, (float(_policy["collection_interval_seconds"]) - float(maxi(0, time_reduction_ms)) / 1000.0) / (1.0 + maxf(0, mining_power) / 100.0))
 	_actions[actor_id] = {
 		"interval_seconds": interval,
+		"prospecting_chance": clampf(prospecting_chance, 0, 0.12),
 		"source_id": source.source_id,
 		"next_cycle_tick": current_tick + _seconds_to_ticks(interval),
 	}
@@ -254,7 +260,14 @@ func _reserve_due_cycles() -> void:
 		if source == null or source.remaining <= 0:
 			_actions.erase(actor_id)
 			continue
-		var quantity := mini(int(_policy["yield_per_cycle"]), source.remaining)
+		var available := int(source.remaining)
+		for pending: Dictionary in _pending_cycles.values():
+			if String(pending.source_id) == String(source.source_id):
+				available -= int(pending.quantity)
+		if available <= 0:
+			continue
+		var extra := 1 if _enhancement_random.randf() < float(action.get("prospecting_chance", 0)) else 0
+		var quantity := mini(int(_policy["yield_per_cycle"]) + extra, available)
 		var token := "%s.mining.%s.cycle.%d" % [map_instance_id, _reward_namespace, _cycle_sequence]
 		_cycle_sequence += 1
 		var reservation := {
