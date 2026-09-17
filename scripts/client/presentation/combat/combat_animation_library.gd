@@ -59,17 +59,36 @@ static func load_ale(asset_reference: String) -> SpriteFrames:
 static func equipment_component(equipment: VehicleEquipment) -> Dictionary:
 	if equipment == null:
 		return {}
-	var asset_reference := String(equipment.presentation_for("world").get("ale_reference", ""))
+	var world := equipment.presentation_for("world")
+	var action := _equipment_action(String(world.get("ale_reference", "")), equipment is VehicleChassis)
+	if action.is_empty():
+		return {}
+	var component := {"action": action}
+	var idle_reference := String(world.get("idle_ale_reference", ""))
+	if not idle_reference.is_empty():
+		var idle := _equipment_action(idle_reference, equipment is VehicleChassis)
+		if idle.is_empty():
+			return {}
+		idle["fps"] = float(world.get("idle_fps", 10.0))
+		component["idle_action"] = idle
+	return component
+
+
+## 从单个世界素材构造动作，每种动作按自身帧数独立分组。
+## [param asset_reference] 本地表现目录指定的荣耀 ALE 引用。
+## [param require_eight_way] 底盘必须使用八方向，其他装备保留原有共享动作兼容。
+## 返回动作定义；缺失或不足一个完整方向组时返回空字典。
+static func _equipment_action(asset_reference: String, require_eight_way: bool) -> Dictionary:
 	if asset_reference.is_empty():
 		return {}
 	var frames := load_ale(asset_reference)
 	if frames == null:
 		return {}
 	var count := frames.get_frame_count(&"raw")
-	var directional := equipment is VehicleChassis or (count >= 8 and count % 8 == 0)
+	var directional := require_eight_way or (count >= 8 and count % 8 == 0)
 	if directional and count < 8:
 		return {}
-	return {"action": {"ale_reference": asset_reference,
+	return {"ale_reference": asset_reference,
 		"direction_mode": "eight_way" if directional else "shared",
 		"frames_per_direction": floori(float(count) / 8.0) if directional else count,
-		"fps": 10.0, "loop": true, "offset": [0, 0]}}
+		"fps": 10.0, "loop": true, "offset": [0, 0]}

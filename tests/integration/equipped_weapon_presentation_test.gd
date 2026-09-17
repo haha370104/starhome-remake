@@ -176,66 +176,128 @@ func _expect(condition: bool, message: String) -> void:
 		failures.append(message)
 
 
-## 检查所有在售底盘在八个方向完整循环，征服者的第33帧附图不能进入移动动画。
+## 检查全部荣耀底盘，缺失素材单独计数；可用底盘必须在移动和待机时保持方向。
 ## [param hall] 已进入野外的隔离客户端场景。
 ## [param player] 本测试的内存玩家。
 ## [param catalog] 已初始化的装备目录。
-## [param chassis_ids] 当前商店实际出售的战车定义。
+## [param chassis_ids] 当前在售定义，用于区分本次额外审计的未在售底盘。
 func _test_chassis_directional_motion(hall: Node2D, player: Player, catalog: ItemCatalog, chassis_ids: Array) -> void:
+	var unavailable := ["glory_equipment_finaltank_036fecf00f", "glory_equipment_finaltank_warrior_f6e890c3e9",
+		"glory_equipment_finaltank_warrior_1_11d3a8cd2d", "glory_equipment_monarchfinaltank_6be62938f4",
+		"glory_equipment_xmastank_d5d4117f3d", "glory_equipment_tankdragon_8ee199a53c"]
+	# 原版 ALE 逐帧审计结果；其余普通底盘均为每方向4帧，不能由待测组件反推预期。
+	var special_groups := {"tankg91": 8, "tankg92": 8, "tankxxx": 8, "home_tank1": 3, "monarchtank": 5}
+	var definitions: Array = JsonConfigLoader.load_dictionary("res://data/gameplay/glory/glory_items_v1.json").value.definitions
 	var avatar: PlayerWorldAvatar = hall.world_view.player
-	for id: String in chassis_ids:
+	var available_count := 0
+	var missing_count := 0
+	var non_sale_count := 0
+	var captured: Array[String] = []
+	for definition: Dictionary in definitions:
+		if definition.kind != "vehicle_chassis":
+			continue
+		var id := String(definition.id)
 		_install(player, catalog, id, 0)
 		hall.player_binding.on_current_player_changed(player)
 		var presenter: CombatVisualPresenter = avatar.combat_presenter
-		var action: Dictionary = presenter._layer_configs[&"chassis"].actions.move
-		_expect(action.direction_mode == "eight_way" and action.frames_per_direction == 4, "在售底盘必须保持八向四帧分组：" + id)
-		if id == "glory_equipment_tank8_eccf445ff5":
+		if not chassis_ids.has(id):
+			non_sale_count += 1
+		if unavailable.has(id):
+			missing_count += 1
+			_expect(presenter.current_actor_id == &"" and presenter._layers.is_empty(), "素材缺失时不能残留上一辆战车：" + id)
+			continue
+		available_count += 1
+		_expect(presenter._layer_configs.has(&"chassis"), "每款有素材的底盘都必须实际装配并绘制：" + id)
+		if not presenter._layer_configs.has(&"chassis"):
+			continue
+		var actions: Dictionary = presenter._layer_configs[&"chassis"].actions
+		var source_name := String(definition.presentation.world.ale_reference).get_file().get_basename().to_lower()
+		var group_size := int(special_groups.get(source_name, 4))
+		_expect(actions.move.direction_mode == "eight_way" and actions.move.frames_per_direction == group_size, "底盘必须保持原版八向分组：" + id)
+		if source_name == "tank8":
 			_expect(presenter.layer_frames_resource(&"chassis").get_frame_count(&"raw") == 33, "征服者保留原版33帧资源，不修改原始素材")
+		if source_name == "tankg92":
+			_expect(actions.idle.ale_reference == "../pic3/equip/body/tankg92stand.ale" and is_equal_approx(actions.idle.fps, 12.5) and actions.idle.loop,
+				"G92使用独立站立素材，按原版80ms循环")
+		else:
+			_expect(is_zero_approx(actions.idle.fps), "普通底盘站立保持静止：" + id)
 		for direction in range(8):
 			avatar.set_action("stand", direction)
-			_expect(presenter.layer_frame(&"chassis") == direction * 4, "停止时保持指定方向首帧")
 			avatar.set_action("move", direction)
-			# 跑过完整原始素材时长，不能把其他方向或尾部拼图误当作移动帧。
+			var seen: Dictionary = {}
+			# 超过最长素材的一轮时长，确保不混入其他方向或尾部拼图。
 			for step in range(40):
 				presenter.advance(0.1)
 				var frame := presenter.layer_frame(&"chassis")
-				_expect(frame >= direction * 4 and frame < direction * 4 + 4, "直行期间不得跨方向播放：%s direction=%d step=%d frame=%d" % [id, direction, step, frame])
+				seen[frame] = true
+				_expect(frame >= direction * group_size and frame < (direction + 1) * group_size,
+					"直行期间不得跨方向播放：%s direction=%d step=%d frame=%d" % [id, direction, step, frame])
+			_expect(seen.size() == group_size, "直行循环应遍历本方向的全部帧：" + id)
 			avatar.set_action("stand", direction)
-			_expect(presenter.layer_frame(&"chassis") == direction * 4, "停止移动后回到同方向首帧")
-		if id == "glory_equipment_tank8_eccf445ff5" and "--capture-chassis" in OS.get_cmdline_user_args():
-			await _capture_chassis_frames(presenter)
+			_expect(presenter.layer_frame(&"chassis") == direction * group_size, "停止移动后从同方向待机首帧开始")
+			# 避开二进制浮点数恰落在80ms帧边界的取整误差。
+			presenter.advance(0.001)
+			for step in range(16):
+				presenter.advance(0.08)
+				var expected := direction * group_size + (posmod(step + 1, group_size) if source_name == "tankg92" else 0)
+				_expect(presenter.layer_frame(&"chassis") == expected, "站立保持朝向并遵循该底盘的独立动作：" + id)
+			if source_name == "tankg92":
+				_expect(presenter.layer_frames_resource(&"chassis") == CombatAnimationLibrary.load_ale("../pic3/equip/body/tankg92stand.ale"), "停车后实际切换到G92站立图集")
+			avatar.set_action("move", direction)
+			_expect(presenter.layer_frame(&"chassis") == direction * group_size, "再次行走回到行走图集同方向首帧")
+		var capture_all := "--capture-all-chassis" in OS.get_cmdline_user_args()
+		var capture_conqueror := source_name == "tank8" and "--capture-chassis" in OS.get_cmdline_user_args()
+		if (capture_all or capture_conqueror) and not captured.has(source_name):
+			captured.append(source_name)
+			await _capture_chassis_frames(presenter, source_name, &"move", group_size)
+			if source_name == "tankg92":
+				await _capture_chassis_frames(presenter, source_name, &"idle", group_size)
+	_expect(available_count == 34 and missing_count == 6 and non_sale_count == 32, "完整审计40款荣耀底盘，其中32款未在售、6款缺素材")
+	print("CHASSIS_AUDIT available=%d missing=%d non_sale=%d" % [available_count, missing_count, non_sale_count])
 	_install(player, catalog, "recruit_tank", 0)
 	avatar.set_action("stand", 6)
 	hall.player_binding.on_current_player_changed(player)
 
 
-## 用实际底盘表现器绘制八方向四帧矩阵，供检查行进动画是否混入其他方向。
-## [param presenter] 已装配征服者的真实世界表现器。
-func _capture_chassis_frames(presenter: CombatVisualPresenter) -> void:
+## 用实际底盘表现器绘制八方向全部动画帧，供人工核对素材中的方向和原点。
+## [param presenter] 已装配当前底盘的真实世界表现器。
+## [param source_name] 当前素材的审计名，仅用于生成测试截图文件。
+## [param action_id] 当前要核对的行走或待机动作。
+## [param group_size] 从原版素材独立核对的每方向帧数。
+func _capture_chassis_frames(presenter: CombatVisualPresenter, source_name: String, action_id: StringName, group_size: int) -> void:
+	root.size = Vector2i(1280, 960)
 	var surface := CanvasLayer.new()
 	surface.layer = 80
 	root.add_child(surface)
 	var background := ColorRect.new()
 	background.color = Color("15222e")
-	background.size = Vector2(1280, 720)
+	background.size = Vector2(1280, 960)
 	surface.add_child(background)
+	var heading := Label.new()
+	heading.text = "%s / %s / %d frames per direction" % [source_name, action_id, group_size]
+	heading.position = Vector2(30, 5)
+	surface.add_child(heading)
 	var directions := ["东", "东北", "北", "西北", "西", "西南", "南", "东南"]
+	var actions: Dictionary = presenter._layer_configs[&"chassis"].actions
 	for direction in range(8):
 		var label := Label.new()
 		label.text = directions[direction]
-		label.position = Vector2(35, 60 + direction * 80)
+		label.position = Vector2(20, 75 + direction * 110)
 		surface.add_child(label)
-		for phase in range(4):
+		for phase in range(group_size):
 			var preview := CombatVisualPresenter.new()
 			surface.add_child(preview)
-			preview.configure({"direction_order": directions, "actors": {"conqueror": presenter._actor}})
-			preview.present_actor(&"conqueror")
-			preview.set_action(&"move")
+			preview.configure({"direction_order": directions, "actors": {"audit": presenter._actor}})
+			preview.present_actor(&"audit")
+			preview.set_action(action_id)
 			preview.set_direction(direction)
-			preview.advance((float(phase) + 0.1) / 10.0)
-			preview.position = Vector2(220 + phase * 240, 65 + direction * 80)
-			preview.scale = Vector2(1.5, 1.5)
+			preview.advance((float(phase) + 0.1) / float(actions[action_id].fps))
+			preview.position = Vector2(155 + phase * (1120.0 / group_size), 85 + direction * 110)
+			preview.scale = Vector2(0.85, 0.85)
 	await process_frame
 	await RenderingServer.frame_post_draw
-	root.get_texture().get_image().save_png("res://.godot/conqueror_direction_frames.png")
+	var output_dir := ProjectSettings.globalize_path("res://.godot/chassis_audit")
+	_expect(DirAccess.make_dir_recursive_absolute(output_dir) == OK, "审计截图目录可创建")
+	_expect(root.get_texture().get_image().save_png(output_dir.path_join("%s_%s.png" % [source_name, action_id])) == OK, "底盘逐帧截图成功保存")
 	surface.free()
+	root.size = Vector2i(1280, 720)

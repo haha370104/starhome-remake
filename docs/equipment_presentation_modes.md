@@ -128,3 +128,88 @@ OpenGL渲染186项通过，已检查选中火箭时野外仍为虎式主炮，�
 验证移动不跨方向、停止后回到同方向首帧、征服者附图不进入动画。该测试仍纳入56项客户端总门禁。
 附加 `-- --capture-chassis` 可由真实表现器输出 `.godot/conqueror_direction_frames.png`；
 本轮已检查OpenGL渲染的八行四帧矩阵，行内车身方向一致，车轮动画正常变化。
+
+## 2026-09-17 未在售战车动画审计
+
+范围为荣耀物品目录中的40款 `vehicle_chassis`（含赠送、绑定等独立定义），其中当前在售8款、未在售32款。
+本轮检查野外行走、八方向分组、停止和再次行走的外观；不据此宣称这些未投放装备的特殊战斗能力已实现。
+34款有可用行走素材，共20套不同ALE；其中26款未在售。没有再发现征服者以外的尾部附图或方向串组。
+新兵绑定版、逆天之御、奥玛、撒玛王等沿用各自原版声明的共享车身，不按名称猜测新外观。
+
+### 已修复：G92站立动画漏接
+
+荣耀 `cltobj/equipcltclass.fcc:1133` 的 `tankg92` 同时声明行走和站立ALE；
+`cltobj/equipclt.fcc::bodywork.Stand` 对G92调用 `StandPlay`，
+`mainclient_char.fcc:8583` 以80ms重复播放站立动作。两个素材均为64帧、八方向各8帧，已在现有荣耀内容包中。
+此前复刻把所有底盘的 idle 固定为行走首帧，漏掉了G92的站立循环。
+
+`player_equipment_v1.json` 现在为G92提供独立 `idle_ale_reference` 和 `idle_fps: 12.5`；
+`CombatAnimationLibrary` 为每个动作独立分组，`PlayerWorldAvatar` 保留明确配置的待机循环。
+其他底盘仍按原来规则停车静止，移动保留各自每方向3、4、5或8帧，不硬编码G92身份到表现器。
+使用现有素材包，没有新增素材或修改资源子模块。
+
+### 未在售32款逐项结果
+
+名称中的未解析原版常量仅在本表按荣耀字符串定义解释，没有借审计修改商店或装备属性。
+
+| 战车 | 原版类（区分赠送/绑定等变体） | 每方向行走帧数 | 本轮结果 |
+| --- | --- | ---: | --- |
+| G91战车 | `tankg91` | 8 | 移动、停止、换向通过 |
+| G92战车 | `tankg92` | 8 | 已补独立站立循环；移动通过 |
+| 贪狼之千级战车 | `FinalTank` | — | 缺失，尚不能验证外观 |
+| 贪狼之千级战车（赠） | `FinalTank_Warrior` | — | 缺失，尚不能验证外观 |
+| 贪狼之千级战车（新） | `FinalTank_Warrior_1` | — | 缺失，尚不能验证外观 |
+| 该亚级战车（纷腾军资） | `tank14_FT` | 4 | 移动、停止、换向通过 |
+| 蚩尤战车（赠） | `tank13_Z` | 4 | 移动、停止、换向通过 |
+| 圣诞战车 | `Xmastank` | — | 缺失，尚不能验证外观 |
+| 勇敢者战车（绑） | `tank3_Binding` | 4 | 移动、停止、换向通过 |
+| 千级帝王战车 | `MonarchFinalTank` | — | 缺失，尚不能验证外观 |
+| 大禹战车 | `tank11` | 4 | 移动、停止、换向通过 |
+| 大禹战车（赠） | `tank11_Binding` | 4 | 移动、停止、换向通过 |
+| 奥玛战车 | `tank2new` | 4 | 移动、停止、换向通过 |
+| 家园周年纪念战车（赠） | `Home_tank1` | 3 | 移动、停止、换向通过 |
+| 尧级战车 | `tank12` | 4 | 移动、停止、换向通过 |
+| 尧级战车 | `tank12_Z` | 4 | 移动、停止、换向通过 |
+| 尧级战车（赠） | `tank12_Binding` | 4 | 移动、停止、换向通过 |
+| 帝王级战车 | `MonarchTank` | 5 | 移动、停止、换向通过 |
+| 撒玛王战车 | `tank1000` | 4 | 移动、停止、换向通过 |
+| 新兵战车（绑） | `tank1_Binding` | 4 | 移动、停止、换向通过 |
+| 炎帝战车 | `tank9` | 4 | 移动、停止、换向通过 |
+| 炎帝战车（归） | `tank9_G` | 4 | 移动、停止、换向通过 |
+| 炎帝战车（赠） | `tank9_Binding` | 4 | 移动、停止、换向通过 |
+| 神秘战车 | `tankXXX` | 8 | 移动、停止、换向通过 |
+| 蚩尤战车 | `tank13` | 4 | 移动、停止、换向通过 |
+| 蚩尤战车 | `tank13_Z2` | 4 | 移动、停止、换向通过 |
+| 该亚级战车 | `tank14` | 4 | 移动、停止、换向通过 |
+| 该亚级战车 | `tank14_Z` | 4 | 移动、停止、换向通过 |
+| 逆天之御战车 | `Memory_tank1` | 4 | 移动、停止、换向通过 |
+| 黄帝战车 | `tank10` | 4 | 移动、停止、换向通过 |
+| 黄帝战车（赠） | `tank10_Binding` | 4 | 移动、停止、换向通过 |
+| 龙腾新兵战车 | `tankDragon` | — | 缺失，尚不能验证外观 |
+
+### 6款缺失素材的检索证据
+
+以下4个精确路径在荣耀 `raw`、解析目录、官方惰性缓存及运行时索引均没有可用世界动画。
+2026-09-17向荣耀官网同路径请求，均返回HTTP 404；恢复记录位于本地原版档案
+`starhome_lz_ry_full_parsed/official_lazy_cache/official_recovery_manifest.json`。
+
+| 原版类 | FCC声明的世界素材 | 精确官网请求 |
+| --- | --- | --- |
+| FinalTank、FinalTank_Warrior、FinalTank_Warrior_1 | `pic2/equip/body/FinalTank.ale` | `http://update.ftxjjy.com/gameser/ry_www/pic2/equip/body/FinalTank.ale`：404 |
+| MonarchFinalTank | `pic2/equip/body/MonarchTank.ale` | `http://update.ftxjjy.com/gameser/ry_www/pic2/equip/body/MonarchTank.ale`：404 |
+| Xmastank | `pic3/equip/body/Xmastank.ale` | `http://update.ftxjjy.com/gameser/ry_www/pic3/equip/body/Xmastank.ale`：404 |
+| tankDragon | `pic2/equip/body/mtankDragon.ale` | `http://update.ftxjjy.com/gameser/ry_www/pic2/equip/body/mtankDragon.ale`：404 |
+
+可用的帝王级使用 `pic3/equip/body/MonarchTank.ale`，与缺失的千级帝王 `pic2` 路径并非同一装备素材，不能用同名尾缀替换。
+缺失6款仍未投放，测试单独验证换装失败时清除原车身，不能把“没有残留旧图”算作外观可用。
+
+### 验证与复现
+
+装备集成专项现检查全部40款，逐方向连续移动4秒、遍历该方向全部帧、停车和重新移动；
+G92还验证独立站立资源、80ms循环及8个方向。无渲染专项16433项，实际OpenGL专项16475项。
+额外42项检查对应21张逐帧矩阵的目录和保存结果，不把它们冒充人工视觉断言。
+
+运行 `equipped_weapon_presentation_test.gd` 时附加 `-- --capture-all-chassis`，
+由真实世界表现器输出 `.godot/chassis_audit/<source_name>_<move或idle>.png`。
+每行一个方向、每列一帧；已检查方向总览和不同帧数组的矩阵。`--capture-chassis` 仍可只输出征服者矩阵，
+新输出位置为 `.godot/chassis_audit/tank8_move.png`。测试全程使用内存玩家，日常存档不参与。

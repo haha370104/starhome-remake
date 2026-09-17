@@ -232,6 +232,8 @@ func _vehicle_layer(
 	var idle := source_action.duplicate(true)
 	idle["fps"] = 0.0
 	idle["loop"] = false
+	if component.has("idle_action"):
+		idle = component["idle_action"].duplicate(true)
 	var move := source_action.duplicate(true)
 	if not animated_while_moving:
 		move["fps"] = 0.0
