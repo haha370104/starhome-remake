@@ -40,6 +40,7 @@ var armor_refinement_rules: ArmorRefinementRules
 var clothing_improvement_rules: ClothingImprovementRules
 var memory_rules: EquipmentMemoryRules
 var quality_rules: EquipmentQualityRules
+var dismantle_rules: EquipmentDismantleRules
 
 
 ## 读取所有当前启用的物品定义和语义化表现目录。
@@ -123,6 +124,11 @@ func initialize() -> DomainResult:
 	var quality_result := EquipmentQualityRules.from_dictionary(quality_data.value)
 	if not quality_result.is_ok: return quality_result
 	quality_rules = quality_result.value
+	var dismantle_data := JsonConfigLoader.load_dictionary("res://data/gameplay/equipment_dismantle_rules_v1.json")
+	if not dismantle_data.is_ok: return dismantle_data
+	var dismantle_result := EquipmentDismantleRules.from_dictionary(dismantle_data.value, self)
+	if not dismantle_result.is_ok: return dismantle_result
+	dismantle_rules = dismantle_result.value
 	for id: String in clothing_improvement_rules.slots:
 		var slot: String = clothing_improvement_rules.slots[id]
 		if slot == "head" and _definitions[id].get("character_slot") == "upper_body":
@@ -191,6 +197,7 @@ func create(definition_id: String, state: Dictionary) -> DomainResult:
 		item.improvement_rules = clothing_improvement_rules
 	if item is Equipment:
 		item.quality_profile = quality_rules.profiles.get(item.definition_id)
+		item.dismantle_eligible = dismantle_rules.profiles.has(item.definition_id)
 		item.memory_profile = memory_rules.profiles.get(item.definition_id)
 		item.armor_refinement_profile = armor_refinement_rules.profiles.get(item.definition_id)
 		item.extra_attribute_rules = extra_attribute_rules
