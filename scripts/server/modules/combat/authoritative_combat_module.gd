@@ -32,6 +32,7 @@ var _monster_route_resolver := Callable()
 var _shot_sequence := 0
 var _monster_attack_sequence := 0
 var _loot_sequence := 0
+var _loot_namespace := ""
 var _quest_kills: Array[Dictionary] = []
 var _quest_event_namespace := ""
 
@@ -54,6 +55,8 @@ func configure(
 	_shot_sequence = 0
 	_monster_attack_sequence = 0
 	_loot_sequence = 0
+	# 掉落编号会随物品保存；模块重建后必须换命名空间，不能复用旧存档中的编号。
+	_loot_namespace = Crypto.new().generate_random_bytes(16).hex_encode()
 	_quest_kills.clear()
 	_quest_event_namespace = Crypto.new().generate_random_bytes(16).hex_encode()
 	working_energy_regen_factor = regen_factor
@@ -1009,7 +1012,7 @@ func _spawn_monster_loot(monster: MonsterLifecycle, killer_id: String) -> Array[
 		return spawned
 	for rolled: Dictionary in drops.value:
 		_loot_sequence += 1
-		var loot_id := "%s.loot.%d.%d" % [monster.monster_id, monster.death_generation, _loot_sequence]
+		var loot_id := "%s.loot.%s.%d" % [monster.map_instance_id, _loot_namespace, _loot_sequence]
 		var loot := {
 			"loot_id": loot_id,
 			"map_instance_id": monster.map_instance_id,
