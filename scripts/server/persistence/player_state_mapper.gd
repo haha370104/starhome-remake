@@ -100,6 +100,7 @@ func to_domain(record: PlayerStateRecord) -> DomainResult:
 	for slot in record.equipment_slots:
 		var created := _catalog.create(slot.item_definition_id, {
 			"instance_id": slot.item_instance_id,
+			"equipped_character_slot": slot.slot_id if slot.owner_kind == "character" else "",
 			"quantity": 1,
 			"max_durability": slot.max_durability,
 			"durability": slot.durability,

@@ -15,6 +15,9 @@ var improvement_rules: ClothingImprovementRules
 func _init(definition: Dictionary = {}, state: Dictionary = {}) -> void:
 	super(definition, state)
 	character_slot = String(definition.get("character_slot", ""))
+	var prior_slot := String(state.get("equipped_character_slot", ""))
+	if not prior_slot.is_empty() and prior_slot == String(definition.get("legacy_character_slot", "")):
+		character_slot = prior_slot
 	required_sex = String(definition.get("required_sex", "any"))
 	var raw_effects: Variant = stat("skill_modifiers", {})
 	clothing_effects = (raw_effects as Dictionary).duplicate(true) \
@@ -35,11 +38,17 @@ func can_equip(slot_id: String, character_sex: String) -> bool:
 		and (required_sex == "any" or required_sex == character_sex)
 
 
+## 服装离开旧装备槽后恢复正确部位，避免强制迁移挤掉另一件头饰。
+func restore_default_slot() -> void:
+	character_slot = String(_definition.get("character_slot", ""))
+
+
 ## 导出包含人物槽位的服装视图。
 ## 返回通用装备 DTO 加服装槽位信息。
 func to_view_dictionary() -> Dictionary:
 	var view := super()
 	view["character_slot"] = character_slot
+	view["equipped_character_slot"] = character_slot
 	view["equipment_location"] = -1
 	view["enhancement"] = enhancement.to_dictionary()
 	view["clothing_improvement"] = improvement.to_dictionary()

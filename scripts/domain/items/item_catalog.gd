@@ -110,6 +110,11 @@ func initialize() -> DomainResult:
 	var clothing_result := ClothingImprovementRules.from_dictionary(clothing_data.value)
 	if not clothing_result.is_ok: return clothing_result
 	clothing_improvement_rules = clothing_result.value
+	for id: String in clothing_improvement_rules.slots:
+		var slot: String = clothing_improvement_rules.slots[id]
+		if slot == "head" and _definitions[id].get("character_slot") == "upper_body":
+			_definitions[id]["legacy_character_slot"] = "upper_body"
+		_definitions[id]["character_slot"] = slot
 	for profile: ArmorRefinementRules.Profile in armor_refinement_rules.profiles.values():
 		_definitions[profile.definition_id]["display_name"] = profile.display_name
 	var ammunition_data := JsonConfigLoader.load_dictionary("res://data/gameplay/equipment_ammunition_rules_v1.json")

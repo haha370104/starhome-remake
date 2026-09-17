@@ -183,6 +183,7 @@ func _create_equipment(raw_equipment: Variant) -> Equipment:
 		return null
 	var created := _catalog.create(String(raw_equipment.get("definition_id", "")), {
 		"instance_id": raw_equipment.get("instance_id", ""),
+		"equipped_character_slot": raw_equipment.get("slot_id", ""),
 		"quantity": 1,
 		"max_durability": raw_equipment.get("max_durability", 1),
 		"durability": raw_equipment.get("durability", 1),

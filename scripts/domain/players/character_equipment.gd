@@ -29,6 +29,7 @@ func equip(clothing: Clothing, slot_id: String, character_sex: String) -> Domain
 		return DomainResult.failure(&"equipment.location_rejected", "clothing cannot be equipped in requested slot")
 	var replaced: Clothing = _equipped.get(slot_id)
 	_equipped[slot_id] = clothing
+	if replaced != null: replaced.restore_default_slot()
 	return DomainResult.ok(replaced)
 
 
@@ -40,6 +41,7 @@ func unequip(slot_id: String) -> DomainResult:
 		return DomainResult.failure(&"equipment.slot_empty", "character equipment slot is empty")
 	var clothing: Clothing = _equipped[slot_id]
 	_equipped.erase(slot_id)
+	clothing.restore_default_slot()
 	return DomainResult.ok(clothing)
 
 
