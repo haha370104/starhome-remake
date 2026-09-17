@@ -12,7 +12,7 @@ static func purchase(player: Player, product: GameItem, unit_price: int, expecte
 	var checked := player.inventory.require_revision(expected_revision)
 	if not checked.is_ok:
 		return checked
-	if product == null or unit_price <= 0 or product.quantity < 1 or product.quantity > 99:
+	if product == null or unit_price <= 0 or product.quantity < 1 or product.quantity > mini(9999, product.max_stack):
 		return DomainResult.failure(&"sockets.offer_invalid", "加工材料购买数量无效")
 	var total := unit_price * product.quantity
 	if player.inventory.currency < total:

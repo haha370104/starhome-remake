@@ -49,11 +49,12 @@ func preview(definition_id: String, rules: ClothingImprovementRules, selected_at
 		return DomainResult.failure(&"clothing_improvement.quantity", "本阶段每次可投入1～%d份纤维" % guaranteed)
 	var chance := mini(100, floori(quantity * 100.0 / guaranteed))
 	if chance <= 0: return DomainResult.failure(&"clothing_improvement.chance", "投入数量不足，成功率会被取整为0%")
+	var requirements: Array[Dictionary] = [{"definition_id": channel.material_id, "quantity": quantity}]
 	return DomainResult.ok({"before": level, "after": level + 1, "attribute": channel.attribute,
 		"attribute_label": channel.label, "bonus_before": channel.increment * level,
 		"bonus_after": channel.increment * (level + 1), "chance": chance / 100.0,
 		"guaranteed_quantity": guaranteed, "currency": 0,
-		"requirements": [{"definition_id": channel.material_id, "quantity": quantity}]})
+		"requirements": requirements})
 
 
 ## 只在服务端确认支付可行后对候选结算；失败保留现有方向和等级。
