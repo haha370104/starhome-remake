@@ -81,6 +81,7 @@ func configure(session: PlayerPanelSession) -> bool:
 	manufacturing_window.command_requested.connect(panel_session.dispatch)
 	_add_window(manufacturing_window)
 	var navigation_scripts := {
+		"vehicle_presets": preload("res://scripts/client/ui/windows/navigation/vehicle_loadout_presets_panel.gd"),
 		"pve_death_journal": preload("res://scripts/client/ui/windows/navigation/pve_death_journal_panel.gd"),
 		"personal_warehouse": preload("res://scripts/client/ui/windows/navigation/personal_warehouse_panel.gd"),
 		"scene_players": preload("res://scripts/client/ui/windows/navigation/scene_players_panel.gd"),
@@ -112,7 +113,7 @@ func configure(session: PlayerPanelSession) -> bool:
 			window.command_requested.connect(panel_session.dispatch)
 		if window is EquipmentProcessingPanel:
 			window.workshop_requested.connect(_open_workshop)
-		if window is PersonalWarehousePanel:
+		if window is PersonalWarehousePanel or window is VehicleLoadoutPresetsPanel:
 			window.command_requested.connect(panel_session.dispatch)
 		window.position = Vector2(120, 70)
 		window.notice_requested.connect(notice_requested.emit)
@@ -120,6 +121,7 @@ func configure(session: PlayerPanelSession) -> bool:
 		_add_window(window)
 	navigation_windows["premium_shop"].attachment_upgrade_requested.connect(_open_attachment_upgrades)
 	navigation_windows["smart_assistant"].journal_requested.connect(func() -> void: toggle("pve_death_journal"))
+	navigation_windows["smart_assistant"].presets_requested.connect(_open_vehicle_presets)
 	var refresh := Timer.new()
 	refresh.wait_time = 2.0
 	refresh.timeout.connect(_refresh_navigation)
@@ -205,6 +207,7 @@ func _refresh_navigation() -> void:
 ## 将会话消息中的名单、商店、制造和任务日志分发到对应窗口。
 ## [param bundle] 已由玩家会话接收的权威消息；可能只包含某个辅助窗口的数据。
 func _apply_auxiliary_bundle(bundle: Dictionary) -> void:
+	navigation_windows["vehicle_presets"].apply_bundle(bundle, panel_session.current_player)
 	var warehouse: PersonalWarehousePanel = navigation_windows["personal_warehouse"]
 	if bundle.get("personal_warehouse") is Dictionary:
 		warehouse.apply_snapshot(PersonalWarehouseSnapshot.from_payload(bundle.personal_warehouse, panel_session.current_player.inventory))
@@ -234,6 +237,14 @@ func _apply_auxiliary_bundle(bundle: Dictionary) -> void:
 		manufacturing_window.apply_manufacturing_bundle(bundle)
 	if bundle.get("mission_journal") is Array:
 		navigation_windows["missions"].apply_entries(bundle["mission_journal"])
+
+
+## 从智脑进入整套换装窗口，沿用同一玩家会话和窗口堆叠上下文。
+func _open_vehicle_presets() -> void:
+	var window: VehicleLoadoutPresetsPanel = navigation_windows["vehicle_presets"]
+	window.open_board()
+	window.move_to_front()
+	window.clamp_to_viewport(size)
 
 
 ## 从商城进入强化窗口，使用共享会话查询权威材料及装备状态。

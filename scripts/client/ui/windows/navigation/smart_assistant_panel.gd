@@ -3,6 +3,7 @@ extends ModernNavigationWindow
 
 signal settings_changed(values: Dictionary)
 signal journal_requested
+signal presets_requested
 var toggles: Dictionary[String, CheckButton] = {}
 var threshold: HSlider
 var threshold_label: Label
@@ -52,6 +53,7 @@ func _ready() -> void:
 	var help := make_label("食品效果到期也会补给；同类冷却、锁定及能量包批量规则照常生效。\n设置自动保存；死亡、切图或重登后需手动启用。", Rect2(24, 568, 632, 42))
 	help.add_theme_font_size_override("font_size", 14)
 	make_button("PVE 击毁记录", Rect2(476, 614, 180, 32), journal_requested.emit)
+	make_button("战车装备方案", Rect2(272, 614, 180, 32), presets_requested.emit)
 
 
 ## 创建10%到90%的资源阈值输入。
