@@ -4,6 +4,7 @@ extends Equipment
 var character_slot: String
 var required_sex: String
 var clothing_effects: Dictionary
+var enhancement := ClothingEnhancement.new()
 
 
 ## 初始化固定人物槽位上的服装实例。
@@ -16,6 +17,9 @@ func _init(definition: Dictionary = {}, state: Dictionary = {}) -> void:
 	var raw_effects: Variant = stat("skill_modifiers", {})
 	clothing_effects = (raw_effects as Dictionary).duplicate(true) \
 		if raw_effects is Dictionary else {}
+	var restored := ClothingEnhancement.restore(state.get("enhancement", {}))
+	if restored.is_ok:
+		enhancement = restored.value
 
 
 ## 判断当前服装能否穿到指定人物槽位。
@@ -33,4 +37,5 @@ func to_view_dictionary() -> Dictionary:
 	var view := super()
 	view["character_slot"] = character_slot
 	view["equipment_location"] = -1
+	view["enhancement"] = enhancement.to_dictionary()
 	return view

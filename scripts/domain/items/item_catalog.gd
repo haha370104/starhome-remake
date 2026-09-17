@@ -72,7 +72,12 @@ func create(definition_id: String, state: Dictionary) -> DomainResult:
 		return DomainResult.ok(ConsumableItem.new(item_definition, state))
 	match kind:
 		"character_clothing":
+			var checked := ClothingEnhancement.restore(state.get("enhancement", {}))
+			if not checked.is_ok:
+				return checked
 			return DomainResult.ok(Clothing.new(item_definition, state))
+		"enhancement_stone":
+			return DomainResult.ok(EnhancementStone.new(item_definition, state))
 		"vehicle_chassis":
 			return DomainResult.ok(VehicleChassis.new(item_definition, state))
 		"vehicle_engine":
