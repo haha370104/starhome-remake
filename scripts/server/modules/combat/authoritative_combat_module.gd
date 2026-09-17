@@ -161,9 +161,17 @@ func refresh_achievement_loadout(actor_id: String, loadout: Dictionary) -> Domai
 		return DomainResult.failure(&"combat.invalid_assembly", "achievement health is invalid")
 	var actor: Dictionary = actors[actor_id]
 	var state: VehicleCombatState = actor["vehicle_state"]
-	state.max_health = int(assembly["max_health"])
-	state.food_defense = maxi(0, int(assembly.get("food_defense", 0)))
-	state.health = mini(state.health, state.max_health)
+	var previous_health := state.health
+	var previous_reserve := state.reserve_energy
+	var previous_working := state.working_energy
+	var candidate := VehicleCombatState.new()
+	var configured := candidate.configure(assembly)
+	if not configured.is_ok:
+		return configured
+	candidate.health = mini(previous_health, candidate.max_health)
+	candidate.reserve_energy = minf(previous_reserve, candidate.reserve_energy_capacity)
+	candidate.working_energy = minf(previous_working, candidate.working_energy_capacity)
+	actor["vehicle_state"] = candidate
 	actor["weapons"] = normalized
 	actor["self_repair_bonus_strength"] = int(assembly.get("self_repair_bonus_strength", 0))
 	var repair: Dictionary = actor["self_repair"]

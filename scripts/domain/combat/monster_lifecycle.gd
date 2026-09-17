@@ -121,7 +121,7 @@ func apply_damage(amount: int, attacker_id: String, current_tick: int) -> Domain
 		return DomainResult.failure(&"combat.target_already_dead", "monster is already dead")
 	if amount < 0 or attacker_id.is_empty() or current_tick < 0:
 		return DomainResult.failure(&"combat.invalid_damage", "damage attribution is invalid")
-	var applied := mini(amount, health)
+	var applied := mini(CombatDefense.mitigate(amount, defense), health)
 	health -= applied
 	var died := health == 0
 	if died:

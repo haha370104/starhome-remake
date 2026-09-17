@@ -34,7 +34,7 @@ func advance(tick: int, actors: Dictionary) -> Array[Dictionary]:
 				var center: Vector2 = actor.position + BODY_OFFSET
 				if vehicle.health <= 0 or not cloud.affects(actor_id, String(actor.map_instance_id), center):
 					continue
-				var result := vehicle.apply_damage(cloud.damage_per_tick)
+				var result := vehicle.apply_damage(cloud.damage_per_tick, true)
 				events.append({"event_type": &"monster_attack_resolved", "server_tick": tick,
 					"impact_tick": tick, "attack_id": "%s.pulse.%d.%s" % [cloud.effect_id, tick, actor_id],
 					"attacker_id": cloud.attacker_id, "target_entity_id": actor_id,

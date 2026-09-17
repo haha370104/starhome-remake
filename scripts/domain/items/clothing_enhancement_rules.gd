@@ -2,6 +2,7 @@ class_name ClothingEnhancementRules
 extends RefCounted
 
 const PATH := "res://data/gameplay/clothing_enhancement_rules_v1.json"
+static var _cached: ClothingEnhancementRules
 var _gems := PackedFloat64Array()
 var _prefix_percent: Array[PackedFloat64Array] = []
 var _prefix_penalty: Array[PackedFloat64Array] = []
@@ -11,6 +12,8 @@ var _trait_values: Array[PackedFloat64Array] = []
 ## 在配置边界验证所有效果的有限非负数值并转换为类型化数组。
 ## 返回可供领域对象使用的目录或配置错误。
 static func load_default() -> DomainResult:
+	if _cached != null:
+		return DomainResult.ok(_cached)
 	var loaded := JsonConfigLoader.load_dictionary(PATH)
 	if not loaded.is_ok:
 		return loaded
@@ -38,6 +41,7 @@ static func load_default() -> DomainResult:
 		if values.size() != 6:
 			return DomainResult.failure(&"enhancement.invalid_rules", "特性品质配置错误")
 		rules._trait_values.append(values)
+	_cached = rules
 	return DomainResult.ok(rules)
 
 

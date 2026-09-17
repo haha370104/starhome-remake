@@ -220,6 +220,7 @@ func grant_skill_experience(
 ## 返回战车基础属性、自维修力拆分和能源状态。
 ## 设计：人物服装归 Player 所有，战车不反向持有人物；Player 作为聚合根完成跨子对象组合。
 func calculate_vehicle_stats() -> Dictionary:
+	refresh_clothing_bonuses()
 	var self_repair_bonus := 0
 	var external_repair_bonus := 0
 	for clothing: Clothing in character_equipment.items():
@@ -227,7 +228,7 @@ func calculate_vehicle_stats() -> Dictionary:
 			continue
 		self_repair_bonus += maxi(0, int(clothing.stat("self_repair_bonus", 0)))
 		external_repair_bonus += maxi(0, int(clothing.stat("external_repair_bonus", 0)))
-	return vehicle.calculate_stats(self_repair_bonus, external_repair_bonus)
+	return vehicle.calculate_stats(self_repair_bonus, external_repair_bonus, skills.effective_level("driving", character_equipment))
 
 
 ## 移动背包物品并由背包维护自身 revision。
@@ -427,6 +428,8 @@ func equip_character_item(
 		if not returned.is_ok:
 			return returned
 	inventory.commit_transfer()
+	refresh_clothing_bonuses()
+	vehicle.reconcile_loadout_state(false)
 	return DomainResult.ok()
 
 
@@ -458,6 +461,8 @@ func unequip_character_item(
 	if not returned.is_ok:
 		return returned
 	inventory.commit_transfer()
+	refresh_clothing_bonuses()
+	vehicle.reconcile_loadout_state(false)
 	return DomainResult.ok()
 
 
@@ -496,3 +501,10 @@ func claim_daily_reward(command: Dictionary, catalog: DailyActivityCatalog) -> D
 		if String(command.type) == "complete_mercenary":
 			record_achievement(AchievementEvent.new(AchievementEvent.Kind.QUEST_COMPLETED, "mercenary", 1, String(result.value.ticket)))
 	return result
+
+
+## 从当前穿着收集强化效果，查询不改变生命或能量。
+func refresh_clothing_bonuses() -> void:
+	var loaded := ClothingEnhancementRules.load_default()
+	if loaded.is_ok:
+		vehicle.clothing_bonuses = ClothingBonuses.collect(character_equipment.items(), loaded.value)

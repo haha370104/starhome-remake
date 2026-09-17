@@ -101,6 +101,7 @@ func apply_bundle(bundle: Dictionary) -> bool:
 		return false
 	vehicle.achievement_bonuses = achievements.bonuses()
 	vehicle.food_status = food_status
+	refresh_clothing_bonuses()
 	vehicle.reconcile_loadout_state(false)
 	changed.emit(self)
 	return true

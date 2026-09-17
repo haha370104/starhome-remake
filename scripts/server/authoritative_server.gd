@@ -765,7 +765,7 @@ func handle_peer_player_panel_command(peer_id: int, command: Dictionary) -> Dict
 	var is_commerce: bool = commerce_service.handles(command_type)
 	var is_manufacturing: bool = manufacturing_service.handles(command_type)
 	var current_map := map_registry.instance_by_id(session.map_instance_id)
-	if command_type == "use_inventory_item":
+	if command_type == "use_inventory_item" or command_type in ClothingEnhancementService.COMMANDS or command_type in ["equip_character_item", "unequip_character_item"]:
 		var captured: DomainResult = _capture_persistent_player_state(current)
 		if not captured.is_ok:
 			return _failure(captured.error_code, captured.error_message)
@@ -799,6 +799,13 @@ func handle_peer_player_panel_command(peer_id: int, command: Dictionary) -> Dict
 		current_map.mining_module.interrupt(session.entity_id, &"equipment_changed")
 	if command_type == "use_inventory_item":
 		_apply_food_runtime(session.entity_id, committed.value)
+	elif (command_type in ClothingEnhancementService.COMMANDS or command_type in ["equip_character_item", "unequip_character_item"]) \
+		and current_map != null and current_map.is_vehicle_combat_active():
+		var enhanced_loadout := current_map.refresh_achievement_loadout(session.entity_id, prepared_loadout)
+		if not enhanced_loadout.is_ok:
+			return _failure(enhanced_loadout.error_code, enhanced_loadout.error_message)
+		if current_map.mining_module != null:
+			current_map.mining_module.interrupt(session.entity_id, &"clothing_changed")
 	elif command_type not in ["split_inventory_item", "merge_inventory_item"] \
 		and current_map != null and current_map.is_vehicle_combat_active():
 		var refreshed_loadout := current_map.set_vehicle_combat_loadout(

@@ -42,6 +42,8 @@ static func enhance(player: Player, clothing_id: String, stone_id: String, inven
 	if not consumed.is_ok:
 		return consumed
 	item.enhancement.apply_stone(stone)
+	player.refresh_clothing_bonuses()
+	player.vehicle.reconcile_loadout_state(false)
 	item.bound = item.bound or stone.bound
 	player.inventory.currency -= price
 	return DomainResult.ok({"action": "enhance_clothing", "instance_id": clothing_id,
@@ -98,6 +100,8 @@ static func transfer(player: Player, source_id: String, target_id: String, inven
 	if player.inventory.currency < price:
 		return DomainResult.failure(&"enhancement.currency", "星际币不足")
 	source.enhancement.transfer_gem_to(target.enhancement)
+	player.refresh_clothing_bonuses()
+	player.vehicle.reconcile_loadout_state(false)
 	target.bound = target.bound or source.bound
 	player.inventory.currency -= price
 	player.inventory.commit_transfer()
@@ -121,6 +125,8 @@ static func reset(player: Player, id: String, inventory_revision: int, state_rev
 	if player.inventory.currency < 1000:
 		return DomainResult.failure(&"enhancement.currency", "星际币不足")
 	item.enhancement.reset_gem()
+	player.refresh_clothing_bonuses()
+	player.vehicle.reconcile_loadout_state(false)
 	player.inventory.currency -= 1000
 	player.inventory.commit_transfer()
 	return DomainResult.ok({"action": "reset_clothing_gems", "instance_id": id, "currency_cost": 1000})

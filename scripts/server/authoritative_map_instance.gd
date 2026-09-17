@@ -905,6 +905,11 @@ func refresh_achievement_loadout(entity_id: String, loadout: Dictionary) -> Doma
 		if not updated.is_ok:
 			return updated
 	_combat_loadout_by_entity[entity_id] = loadout.duplicate(true)
+	var entity: AuthoritativeEntity = entities.get(entity_id)
+	if entity != null and is_vehicle_combat_active():
+		entity.movement_speed = clampf(float(loadout.assembly.get("movement_speed", 0)), 0, movement_speed_cap)
+		if entity.movement_speed <= 0:
+			entity.stop_moving()
 	return DomainResult.ok()
 
 

@@ -13,6 +13,7 @@ var working_energy: float
 var output_power: float
 var achievement_bonuses := AchievementBonuses.new()
 var food_status := FoodStatus.new()
+var clothing_bonuses := ClothingBonuses.new()
 
 
 ## 初始化玩家拥有的战车实体及其运行时资源。
@@ -33,16 +34,18 @@ func _init(state: Dictionary = {}) -> void:
 ## 汇总底盘、引擎、武器、装甲及维修器得到当前战车属性。
 ## [param character_self_repair_bonus] 人物已穿装备提供的额外自维修力。
 ## [param character_external_repair_bonus] 人物已穿装备提供的对外维修力。
+## [param driving_level] 当前有效驾驶技能，影响实际移动速度。
 ## 返回战斗和装备面板共同消费的属性字典。
 ## 设计：属性计算属于战车聚合；UI 与应用服务只投影结果，不重复理解装备字段。
 func calculate_stats(
 	character_self_repair_bonus: int = 0,
 	character_external_repair_bonus: int = 0,
+	driving_level: int = 1000000,
 ) -> Dictionary:
 	var total_weight := 0
 	var propulsion := 0
 	var primary_attack := 0
-	var defense := food_status.bonus(17)
+	var defense := 0
 	var armor_by_location := {5: 0, 6: 0, 7: 0, 8: 0}
 	var chassis_base_health := 0
 	var self_repair_base := 0
@@ -71,25 +74,28 @@ func calculate_stats(
 		defense += armor_value
 		if armor_by_location.has(equipment.equipment_location):
 			armor_by_location[equipment.equipment_location] += armor_value
+	self_repair_bonus += roundi(clothing_bonuses.apply_value("self_repair", 0))
+	var final_defense := maxi(0, roundi(clothing_bonuses.apply_value("defense", defense)) + food_status.bonus(17))
+	var cannon_attack := enhanced_attack("energy_cannon_attack", primary_attack, achievement_bonuses.energy_cannon_attack, 13)
 	return {
 		"health": health,
 		"max_health": max_health,
 		"max_health_base": chassis_base_health,
 		"max_health_bonus": maxi(0, max_health - chassis_base_health),
-		"defense": defense,
-		"defense_base": defense - food_status.bonus(17),
-		"defense_bonus": food_status.bonus(17),
+		"defense": final_defense,
+		"defense_base": defense,
+		"defense_bonus": final_defense - defense,
 		"armor_front": int(armor_by_location[5]),
 		"armor_rear": int(armor_by_location[6]),
 		"armor_left": int(armor_by_location[7]),
 		"armor_right": int(armor_by_location[8]),
-		"speed": propulsion + (loadout.attachment_bonus("speed") if propulsion > 0 else 0),
-		"energy_cannon_attack": primary_attack + ((achievement_bonuses.energy_cannon_attack + loadout.attachment_bonus("energy_cannon_attack") + food_status.bonus(13)) if primary_attack > 0 else 0),
+		"speed": movement_speed(driving_level),
+		"energy_cannon_attack": cannon_attack,
 		"energy_cannon_attack_base": primary_attack,
-		"energy_cannon_attack_bonus": (achievement_bonuses.energy_cannon_attack + loadout.attachment_bonus("energy_cannon_attack") + food_status.bonus(13)) if primary_attack > 0 else 0,
-		"energy_cannon_range_bonus": achievement_bonuses.energy_cannon_range,
-		"missile_attack": _secondary_attack("missile") + achievement_bonuses.missile_attack + loadout.attachment_bonus("missile_attack") + food_status.bonus(14),
-		"rocket_attack": _secondary_attack("rocket_launcher") + achievement_bonuses.rocket_attack + loadout.attachment_bonus("rocket_attack") + food_status.bonus(15),
+		"energy_cannon_attack_bonus": cannon_attack - primary_attack,
+		"energy_cannon_range_bonus": clothing_bonuses.apply_value("energy_cannon_range", achievement_bonuses.energy_cannon_range),
+		"missile_attack": enhanced_attack("missile_attack", _secondary_attack("missile"), achievement_bonuses.missile_attack, 14),
+		"rocket_attack": enhanced_attack("rocket_attack", _secondary_attack("rocket_launcher"), achievement_bonuses.rocket_attack, 15),
 		"propulsion": propulsion,
 		"output_power": output_power,
 		"weight": total_weight,
@@ -118,12 +124,19 @@ func reconcile_loadout_state(preserve_resource_ratios := true) -> bool:
 	var reserve_ratio := _resource_ratio(reserve_energy, reserve_energy_capacity)
 	var working_ratio := _resource_ratio(working_energy, working_energy_capacity)
 	definition_id = chassis.definition_id
-	max_health = chassis.base_max_health + achievement_bonuses.max_health + loadout.attachment_bonus("max_health") + food_status.bonus(16)
+	max_health = maxi(1, roundi(clothing_bonuses.apply_value("max_health", chassis.base_max_health + achievement_bonuses.max_health + loadout.attachment_bonus("max_health"))) + food_status.bonus(16))
 	reserve_energy_capacity = chassis.reserve_energy_capacity
 	working_energy_capacity = chassis.working_energy_capacity
 	output_power = chassis.output_power
+	for equipment: VehicleEquipment in loadout.items():
+		if equipment != chassis:
+			reserve_energy_capacity += float(equipment.stat("reserve_energy_capacity", 0.0))
+			working_energy_capacity += float(equipment.stat("working_energy_capacity", 0.0))
+			output_power += float(equipment.stat("power_output", 0.0))
+	working_energy_capacity = maxf(1.0, clothing_bonuses.apply_value("working_energy_capacity", working_energy_capacity))
+	output_power = maxf(0.0, clothing_bonuses.apply_value("output_power", output_power))
 	if preserve_resource_ratios:
-		health = clampi(roundi(health_ratio * float(max_health)), 0, max_health)
+		health = clampi(floori(health_ratio * float(max_health) + 0.000001), 0, max_health)
 		reserve_energy = clampf(reserve_ratio * reserve_energy_capacity, 0.0, reserve_energy_capacity)
 		working_energy = clampf(working_ratio * working_energy_capacity, 0.0, working_energy_capacity)
 	else:
@@ -147,3 +160,33 @@ func _resource_ratio(current_value: float, capacity: float) -> float:
 func _secondary_attack(mode: String) -> int:
 	var weapon := loadout.at(13) as VehicleWeapon
 	return weapon.base_attack if weapon != null and weapon.combat_mode() == mode else 0
+
+
+## 统一计算武器的强化伤害，未装配该武器时不凭空产生攻击。
+## [param attribute] 伤害属性类型。
+## [param base] 武器基础伤害。
+## [param title_bonus] 成就称号的固定加成。
+## [param food_kind] 临时食品效果标识。
+## 返回非负最终伤害。
+func enhanced_attack(attribute: String, base: int, title_bonus: int, food_kind: int) -> int:
+	if base <= 0:
+		return 0
+	return maxi(0, roundi(clothing_bonuses.apply_value(attribute, base + title_bonus + loadout.attachment_bonus(attribute))) + food_status.bonus(food_kind))
+
+
+## 计算实际移动速度，宝石加在重量与驾驶技能折算后，最终受速度上限限制。
+## [param driving_level] 有效驾驶技能。
+## [param multiplier] 推进力和重量到像素每秒的换算值。
+## [param cap] 地图规则速度上限。
+## 返回实际像素每秒；缺少引擎或推进力时仍为零。
+func movement_speed(driving_level: int, multiplier: float = 1500.0, cap: float = 240.0) -> float:
+	var total_weight := 0
+	var effective := 0.0
+	for item: VehicleEquipment in loadout.items():
+		total_weight += item.weight
+		if item is VehicleEngine:
+			effective += (item as VehicleEngine).drive * (minf(1.0, float(driving_level) / item.required_skill_level) if item.required_skill_level > 0 else 1.0)
+	if effective <= 0.0 or total_weight <= 0:
+		return 0.0
+	var base := minf(floorf(effective * multiplier / total_weight), cap) + loadout.attachment_bonus("speed")
+	return clampf(clothing_bonuses.apply_value("movement_speed", base), 1.0, cap)

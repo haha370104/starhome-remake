@@ -120,6 +120,7 @@ func to_domain(record: PlayerStateRecord) -> DomainResult:
 			var restored_vehicle := player.vehicle.loadout.restore(created.value)
 			if not restored_vehicle.is_ok:
 				return restored_vehicle
+	player.refresh_clothing_bonuses()
 	player.vehicle.reconcile_loadout_state(record.food_status.is_empty())
 	return DomainResult.ok(player)
 

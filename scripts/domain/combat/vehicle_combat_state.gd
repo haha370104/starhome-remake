@@ -3,6 +3,8 @@ extends RefCounted
 
 
 var food_defense := 0
+var defense := 0
+var corrosion_reduction := 0.0
 var max_health := 0
 var health := 0
 var reserve_energy_capacity := 0.0
@@ -30,6 +32,8 @@ func configure(assembly: Dictionary) -> DomainResult:
 	if requested_output < 0.0 or requested_load < 0.0:
 		return DomainResult.failure(&"combat.invalid_assembly", "vehicle power budget is invalid")
 	food_defense = maxi(0, int(assembly.get("food_defense", 0)))
+	defense = maxi(0, int(assembly.get("defense", 0)))
+	corrosion_reduction = clampf(float(assembly.get("corrosion_reduction", 0.0)), 0.0, 0.3)
 	max_health = requested_health
 	health = max_health
 	reserve_energy_capacity = requested_reserve
@@ -78,11 +82,15 @@ func regenerate_working_energy(elapsed_seconds: float, regen_factor: float = 1.0
 ## 执行 `apply_damage` 对应的模块操作。
 ## [param amount] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## 返回该函数计算、查询或操作得到的结果。
-func apply_damage(amount: int) -> DomainResult:
+## [param corrosion_damage] 是否为地面或附着腐蚀的持续伤害。
+func apply_damage(amount: int, corrosion_damage := false) -> DomainResult:
 	if amount < 0:
 		return DomainResult.failure(&"combat.invalid_damage", "damage cannot be negative")
 	var was_alive := health > 0
-	var applied := mini(maxi(0, amount - food_defense), health)
+	var mitigated := CombatDefense.mitigate(maxi(0, amount - food_defense), defense)
+	if corrosion_damage:
+		mitigated = maxi(1, roundi(mitigated * (1.0 - corrosion_reduction))) if mitigated > 0 else 0
+	var applied := mini(mitigated, health)
 	health -= applied
 	return DomainResult.ok({
 		"applied_damage": applied,

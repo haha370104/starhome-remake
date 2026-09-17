@@ -205,6 +205,8 @@ func vehicle_combat_loadout(
 ) -> DomainResult:
 	if player == null or simulation_hz <= 0:
 		return DomainResult.failure(&"combat.invalid_player_loadout", "player combat loadout is unavailable")
+	var stats := player.calculate_vehicle_stats()
+	var clothing := player.vehicle.clothing_bonuses
 	var chassis := player.vehicle.loadout.at(0) as VehicleChassis
 	var primary_weapon := player.vehicle.loadout.at(1)
 	if chassis == null:
@@ -227,7 +229,6 @@ func vehicle_combat_loadout(
 	}
 	var components: Array[Dictionary] = []
 	var equipment_hardiness: Dictionary = {chassis.definition_id: chassis.max_durability}
-	var self_repair_bonus := maxi(0, int(chassis.stat("self_repair_bonus", 0)))
 	for equipment: VehicleEquipment in player.vehicle.loadout.items():
 		if equipment == chassis:
 			continue
@@ -243,7 +244,6 @@ func vehicle_combat_loadout(
 			component["propulsion"] = (equipment as VehicleEngine).drive
 			component["required_driving_level"] = equipment.required_skill_level
 		components.append(component)
-		self_repair_bonus += maxi(0, int(equipment.stat("self_repair_bonus", 0)))
 		equipment_hardiness[equipment.definition_id] = equipment.max_durability
 	var driving_level := player.skills.effective_level("driving", player.character_equipment)
 	var assembly_result := VehicleAssemblyCalculator.calculate(
@@ -252,12 +252,19 @@ func vehicle_combat_loadout(
 	if not assembly_result.is_ok:
 		return assembly_result
 	var assembly: Dictionary = assembly_result.value
-	if float(assembly["movement_speed"]) > 0.0:
-		assembly["movement_speed"] = minf(float(movement_config.get("base_speed_cap", 240.0)),
-			float(assembly["movement_speed"]) + player.vehicle.loadout.attachment_bonus("speed"))
+	assembly["movement_speed"] = player.vehicle.movement_speed(driving_level,
+		float(movement_config.get("base_speed_multiplier", 1500)), float(movement_config.get("base_speed_cap", 240)))
+	assembly["max_health"] = stats.max_health
+	assembly["defense"] = stats.defense
+	assembly["working_energy_capacity"] = clothing.apply_value("working_energy_capacity", float(assembly.working_energy_capacity))
+	assembly["power_output"] = clothing.apply_value("output_power", float(assembly.power_output))
+	assembly["available_power_output"] = maxf(0, float(assembly.power_output) - float(assembly.passive_power_load))
+	assembly["power_overloaded"] = float(assembly.passive_power_load) > float(assembly.power_output)
+	assembly["repair_wait_reduction"] = clothing.trait_value("repair")
+	assembly["corrosion_reduction"] = clothing.trait_value("purification")
 	assembly["vehicle_id"] = chassis.definition_id
 	assembly["self_repair_base_strength"] = chassis.self_repair_power()
-	assembly["self_repair_bonus_strength"] = self_repair_bonus + player.vehicle.achievement_bonuses.self_repair
+	assembly["self_repair_bonus_strength"] = int(stats.self_repair_bonus)
 	assembly["self_repair_energy_cost"] = chassis.self_repair_energy_cost
 	assembly["self_repair_required_skill_level"] = chassis.required_repair_skill_level
 	assembly["equipment_hardiness"] = equipment_hardiness
@@ -277,10 +284,13 @@ func vehicle_combat_loadout(
 		var effect := String({"energy_cannon": "energy_cannon_attack", "missile": "missile_attack",
 			"rocket_launcher": "rocket_attack"}.get(weapons[ability_id].get("skill_id", ""), ""))
 		var food_kind := int({"energy_cannon_attack": 13, "missile_attack": 14, "rocket_attack": 15}.get(effect, 0))
-		var bonus := player.vehicle.loadout.attachment_bonus(effect) + player.food_status.bonus(food_kind)
-		weapons[ability_id]["minimum_damage"] += bonus
-		weapons[ability_id]["maximum_damage"] += bonus
-	assembly["food_defense"] = player.food_status.bonus(17)
+		var bonus := player.vehicle.loadout.attachment_bonus(effect)
+		for field: String in ["minimum_damage", "maximum_damage"]:
+			weapons[ability_id][field] = maxi(0, roundi(clothing.apply_value(effect, float(weapons[ability_id][field]) + bonus)) + player.food_status.bonus(food_kind))
+		if effect == "energy_cannon_attack":
+			weapons[ability_id]["range"] = clothing.apply_value("energy_cannon_range", float(weapons[ability_id]["range"]))
+		weapons[ability_id]["working_energy_cost"] *= 1.0 - clothing.trait_value("economy")
+		weapons[ability_id]["pursuit_bonus"] = clothing.trait_value("pursuit")
 	return DomainResult.ok({"assembly": assembly, "weapons": weapons})
 
 
