@@ -24,6 +24,8 @@ var health_bar: WorldCombatStatusBar
 var visual_collision_offset := Vector2.ZERO
 var visual_collision_radius := 24.0
 var _last_action_sequence := -1
+var generator_status: GeneratorStatusView
+var _generator_repository: RefCounted
 
 
 ## 执行 `configure` 对应的模块操作。
@@ -91,6 +93,7 @@ func configure(
 	health_bar = WorldCombatStatusBarScript.new()
 	health_bar.configure(HEALTH_BAR_WIDTH, false, HEALTH_BAR_OFFSET)
 	add_child(health_bar)
+	_generator_repository = ale_repository
 	apply_snapshot(snapshot)
 	return OK
 
@@ -110,6 +113,7 @@ func apply_snapshot(snapshot: Dictionary) -> void:
 	var point: Array = snapshot["position"]
 	position = Vector2(float(point[0]), float(point[1]))
 	visible = bool(snapshot["alive"])
+	_apply_generator_status(snapshot.get("generator_statuses", []) if visible else [])
 	name_label.text = String(snapshot["display_name"])
 	health_bar.set_health(float(snapshot["health"]), float(snapshot["max_health"]))
 	presenter.set_direction(int(snapshot["facing_index"]))
@@ -125,6 +129,18 @@ func apply_snapshot(snapshot: Dictionary) -> void:
 func _process(delta: float) -> void:
 	if presenter != null and visible:
 		presenter.advance(delta)
+		if generator_status != null: generator_status.advance(delta)
+
+
+## 只有首次中招才创建状态表现，未受影响的大量怪物不增加额外精灵或文本节点。
+## [param statuses] 当前有效状态列表，死亡时为空。
+func _apply_generator_status(statuses: Variant) -> void:
+	if generator_status == null:
+		if not statuses is Array or statuses.is_empty(): return
+		generator_status = GeneratorStatusView.new()
+		add_child(generator_status)
+		generator_status.configure(_generator_repository)
+	generator_status.apply_statuses(statuses)
 
 
 ## 执行 `is_selectable_at` 对应的模块操作。

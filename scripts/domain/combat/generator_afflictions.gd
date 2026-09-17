@@ -103,8 +103,16 @@ func clear() -> void:
 ## 返回去重的名称列表，供怪物血条旁显示。
 func labels() -> PackedStringArray:
 	var result := PackedStringArray()
+	for id: String in effect_ids(): result.append({"heat": "高热", "corrosion": "蚀甲", "magnetism": "磁化"}[id])
+	return result
+
+
+## 导出稳定状态身份，协议和资源匹配不依赖中文名称。
+## 返回本目标实际生效的高热、蚀甲、磁化集合。
+func effect_ids() -> PackedStringArray:
+	var result := PackedStringArray()
 	for entry: Active in _active:
-		if entry.profile.heat_damage > 0 and "高热" not in result: result.append("高热")
-		if (entry.profile.defense_flat_reduction > 0 or entry.profile.defense_percent_reduction > 0) and "蚀甲" not in result: result.append("蚀甲")
-		if entry.profile.attack_percent_reduction > 0 and "磁化" not in result: result.append("磁化")
+		if entry.profile.heat_damage > 0 and "heat" not in result: result.append("heat")
+		if (entry.profile.defense_flat_reduction > 0 or entry.profile.defense_percent_reduction > 0) and "corrosion" not in result: result.append("corrosion")
+		if entry.profile.attack_percent_reduction > 0 and "magnetism" not in result: result.append("magnetism")
 	return result

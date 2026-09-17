@@ -950,7 +950,7 @@ func snapshot_for_actor(actor_id: String) -> Dictionary:
 			"health": monster.health,
 			"max_health": monster.max_health,
 			"alive": monster.is_alive(),
-			"generator_statuses": Array(monster.generator_afflictions.labels()),
+			"generator_statuses": Array(monster.generator_afflictions.effect_ids()),
 			"action": String(monster.action),
 			"action_sequence": monster.action_sequence,
 			"facing_index": monster.facing_direction,

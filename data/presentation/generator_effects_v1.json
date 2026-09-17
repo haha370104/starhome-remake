@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "source_release": "starhome_lz_ry",
+  "source_evidence": ["effect.fcc:179 MagicEff indices 1/2/3: high heat/corrosion/magnetism, 80 ms frames", "npcbasecltmain.fcc:907 COnAddMagicEff follows NPC at -5,-5; COnClearMagicEff removes the matching status"],
+  "remake_policy": "Expose verified status icons and original generic status animations for the same effective PVE afflictions; newer generator-only index 15 is not substituted by a same-name path.",
+  "effects": {
+    "heat": {"label": "高热", "source_animation": "pic3/interface/npc/jijia/JJb_BZ2.ale", "frames": 9, "fps": 12.5, "offset": [-5, -5]},
+    "corrosion": {"label": "蚀甲", "source_animation": "pic3/interface/npc/jijia/JJc_BZ2.ale", "frames": 7, "fps": 12.5, "offset": [-5, -5]},
+    "magnetism": {"label": "磁化", "source_animation": "pic3/interface/npc/jijia/JJa_BZ2.ale", "frames": 8, "fps": 12.5, "offset": [-5, -5]}
+  }
+}

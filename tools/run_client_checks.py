@@ -31,6 +31,7 @@ TESTS = (
     "ui/runtime/clothing_improvement_panel_test.gd",
     "domain/equipment_memory_model_test.gd",
     "domain/equipment_quality_test.gd",
+    "client/presentation/combat/generator_status_view_test.gd",
     "server/combat/generator_rules_test.gd",
     "domain/generator_loadout_test.gd",
     "server/combat/generator_combat_test.gd",
