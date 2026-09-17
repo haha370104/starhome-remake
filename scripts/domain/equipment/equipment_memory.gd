@@ -7,6 +7,8 @@ var processing := EquipmentProcessing.new()
 var extra := ExtraAttributes.new()
 var strengthening := EquipmentStrengthening.new()
 var sockets := VehicleSockets.new()
+var forging := EquipmentForging.new()
+var source_forging := EquipmentForging.new()
 
 
 ## 恢复模块内唯一一种成长，拒绝不完整、空载伪装和混合载荷。
@@ -16,10 +18,18 @@ static func restore(raw: Variant) -> DomainResult:
 	if not raw is Dictionary: return DomainResult.failure(&"memory.state", "记忆模块状态必须为对象")
 	var result := EquipmentMemory.new()
 	if raw.is_empty(): return DomainResult.ok(result)
-	if raw.get("version") != 1 or not raw.get("source_definition_id") is String or String(raw.source_definition_id).is_empty() or raw.get("module_type") not in EquipmentMemoryRules.TYPES:
+	var kind: Variant = raw.get("module_type")
+	if not (kind is int or kind is float) or not is_finite(float(kind)) or float(kind) != int(kind) or int(kind) not in EquipmentMemoryRules.TYPES:
+		return DomainResult.failure(&"memory.state", "记忆模块类型无效")
+	if raw.get("version") != 1 or not raw.get("source_definition_id") is String or String(raw.source_definition_id).is_empty():
 		return DomainResult.failure(&"memory.state", "记忆模块来源或类型无效")
 	result.source_definition_id = raw.source_definition_id
 	result.module_type = int(raw.module_type)
+	var source := EquipmentForging.restore(raw.get("source_forging", {}))
+	if not source.is_ok: return source
+	result.source_forging = source.value
+	if result.module_type != 1 and not result.source_forging.extensions.is_empty():
+		return DomainResult.failure(&"memory.metadata", "只有普通加工模块可携带来源锻造上限")
 	var payload: Variant = raw.get("payload", {})
 	var checked: DomainResult
 	match result.module_type:
@@ -35,6 +45,9 @@ static func restore(raw: Variant) -> DomainResult:
 		6:
 			checked = VehicleSockets.restore(payload)
 			if checked.is_ok: result.sockets = checked.value
+		7:
+			checked = EquipmentForging.restore(payload)
+			if checked.is_ok: result.forging = checked.value
 	if not checked.is_ok: return checked
 	if not result.has_growth(): return DomainResult.failure(&"memory.empty_payload", "记忆模块没有可转移成长")
 	if result.module_type in [3, 4]:
@@ -52,6 +65,7 @@ func has_growth() -> bool:
 		3, 4: return not extra.to_dictionary().levels.is_empty()
 		5: return strengthening.level > 0
 		6: return sockets.opened_count() > 0
+		7: return not forging.extensions.is_empty()
 	return false
 
 
@@ -63,6 +77,7 @@ func equipment_state() -> Dictionary:
 		3, 4: return {"extra_attributes": extra.to_dictionary()}
 		5: return {"strengthening": strengthening.to_dictionary()}
 		6: return {"vehicle_sockets": sockets.to_dictionary()}
+		7: return {"forging": forging.to_dictionary()}
 	return {}
 
 
@@ -75,7 +90,9 @@ func validate_for(expected_type: int, catalog: ItemCatalog) -> DomainResult:
 	var profile: EquipmentMemoryRules.Profile = catalog.memory_rules.profiles.get(source_definition_id)
 	if module_type != expected_type or profile == null or module_type not in profile.extract_types:
 		return DomainResult.failure(&"memory.incompatible", "模块与原装备成长不兼容")
-	var checked := catalog.create(source_definition_id, equipment_state())
+	var source_state := equipment_state()
+	if module_type == 1: source_state["forging"] = source_forging.to_dictionary()
+	var checked := catalog.create(source_definition_id, source_state)
 	return DomainResult.ok() if checked.is_ok else checked
 
 
@@ -95,11 +112,15 @@ static func capture(equipment: VehicleEquipment, kind: int) -> DomainResult:
 			payload = {"version": 1, "levels": levels}
 		5: payload = equipment.strengthening.to_dictionary()
 		6: payload = equipment.sockets.to_dictionary()
-	return restore({"version": 1, "source_definition_id": equipment.definition_id, "module_type": kind, "payload": payload})
+		7: payload = equipment.forging.to_dictionary()
+	return restore({"version": 1, "source_definition_id": equipment.definition_id, "module_type": kind, "payload": payload,
+		"source_forging": equipment.forging.to_dictionary() if kind == 1 else {}})
 
 
 ## 保存原始来源和独立成长载荷，空模块保持空对象兼容旧档。
 ## 返回可序列化状态。
 func to_dictionary() -> Dictionary:
 	if source_definition_id.is_empty(): return {}
-	return {"version": 1, "source_definition_id": source_definition_id, "module_type": module_type, "payload": equipment_state().values()[0]}
+	var result := {"version": 1, "source_definition_id": source_definition_id, "module_type": module_type, "payload": equipment_state().values()[0]}
+	if module_type == 1 and not source_forging.extensions.is_empty(): result["source_forging"] = source_forging.to_dictionary()
+	return result

@@ -8,7 +8,7 @@ class Profile extends RefCounted:
 	var extract_types := PackedInt32Array()
 	var transfer_types := PackedInt32Array()
 
-const TYPES := [1, 3, 4, 5, 6]
+const TYPES := [1, 3, 4, 5, 6, 7]
 var profiles: Dictionary[String, Profile] = {}
 var chance: float
 var stabilized_chance: float

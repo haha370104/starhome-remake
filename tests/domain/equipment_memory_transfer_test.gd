@@ -11,7 +11,7 @@ var failures := 0
 func _initialize() -> void:
 	_check(items.initialize().is_ok and fixture.initialize().is_ok, "初始化")
 	mapper = PlayerStateMapper.new(items)
-	for kind: int in [1, 3, 4, 5, 6]:
+	for kind: int in [1, 3, 4, 5, 6, 7]:
 		var player := _player(kind)
 		var old: VehicleEquipment = player.inventory.find("source")
 		var before := old.to_view_dictionary()
@@ -84,6 +84,7 @@ func _player(kind: int) -> Player:
 		3: state["extra_attributes"] = {"levels": {"fluorite:3": 1}}
 		4: state["extra_attributes"] = {"levels": {"brilliant:3": 1}}
 		5: state["strengthening"] = {"level": 3}
+		7: state["forging"] = {"extensions": {"1": 50, "3": 3}}
 	var source: VehicleEquipment = items.create(id, state).value
 	if kind == 6:
 		source.sockets.settle_open(0, true, "")
@@ -91,7 +92,7 @@ func _player(kind: int) -> Player:
 	source.durability -= 5
 	_check(player.inventory.add_reward(source).is_ok, "来源")
 	_check(player.inventory.add_reward(items.create(id, {"instance_id": "target"}).value).is_ok, "目标")
-	var semantic: String = {1: "processing", 3: "fluorite", 4: "brilliant", 5: "strengthening", 6: "sockets"}[kind]
+	var semantic: String = {1: "processing", 3: "fluorite", 4: "brilliant", 5: "strengthening", 6: "sockets", 7: "forging"}[kind]
 	_check(player.inventory.add_reward(items.create("equipment_memory_" + semantic, {"instance_id": "module"}).value).is_ok, "模块")
 	_check(player.inventory.add_reward(items.create("equipment_memory_stabilizer", {"instance_id": "stabilizer", "quantity": 4}).value).is_ok, "稳压剂")
 	return player

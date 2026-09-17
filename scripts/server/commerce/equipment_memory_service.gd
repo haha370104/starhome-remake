@@ -83,6 +83,7 @@ func snapshot(player: Player, operation: Dictionary) -> Dictionary:
 		var lines := PackedStringArray([EquipmentMemoryDescription.describe(memory, _items), "\n成功率：%d%%" % roundi(float(preview.chance) * 100)])
 		if mode == "extract": lines.append("成功：所选成长移入模块，原装备保留。\n失败：空白模块消失，原装备完全不变。")
 		else: lines.append("成功：模块成长写入目标，模块消失。\n失败：模块及其中成长消失，目标不变。\n目标必须没有同类成长，超上限时拒绝。")
+		if candidate.discarded_rounds > 0: lines.append("成功提取后弹仓缩小，超出的%d发弹药丢弃；请确认。" % candidate.discarded_rounds)
 		lines.append("未选择的加工、孔槽及晶石都保留。\n失败处理和禁止覆盖为复刻规则。")
 		lines.append("电磁稳压剂 ×1（持有 %d）" % player.inventory.count_consumable_definition(PlayerEquipmentMemoryActions.STABILIZER) if stabilized else "未使用稳压剂；勾选后成功率100%。")
 		if not preview.can_execute: lines.append(String(preview.reason))

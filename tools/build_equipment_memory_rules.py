@@ -10,7 +10,7 @@ from build_extra_attribute_rules import source_classes, inherited
 from build_equipment_strengthening_rules import lineage, code_only
 
 MODULES = [(1, "UpgradeModule", "processing"), (3, "FluoriteModule", "fluorite"),
-           (4, "StoneModule", "brilliant"), (5, "StrenStoneModule", "strengthening"), (6, "RimeModule", "sockets")]
+           (4, "StoneModule", "brilliant"), (5, "StrenStoneModule", "strengthening"), (6, "RimeModule", "sockets"), (7, "SmithingModule", "forging")]
 
 
 def method_body(classes, name, method):
@@ -37,6 +37,7 @@ def build(check=False):
     stars = {r["definition_id"] for r in read("data/gameplay/equipment_strengthening_rules_v1.json")["equipment"]}
     sockets = {r["definition_id"] for r in read("data/gameplay/vehicle_socket_rules_v1.json")["equipment"]}
     extras = {r["definition_id"]: r["channels"] for r in read("data/gameplay/extra_attribute_rules_v1.json")["equipment"]}
+    forging = {r["definition_id"] for r in read("data/gameplay/equipment_forging_rules_v1.json")["equipment"]}
     profiles = []
     for row in definitions.values():
         name = STARTERS.get(row["id"], row.get("source_class", ""))
@@ -56,7 +57,7 @@ def build(check=False):
         for module_type, _, family in MODULES:
             branch = re.search(r"case\s+" + str(module_type) + r"\s*:(.*?)(?=case\s+\d+\s*:|\Z)", method, re.S)
             if not branch or not re.search(r"nTemp\s*=\s*1", code_only(branch[1])): continue
-            enabled = row["id"] in {"processing": processing, "strengthening": stars, "sockets": sockets}.get(family, set())
+            enabled = row["id"] in {"processing": processing, "strengthening": stars, "sockets": sockets, "forging": forging}.get(family, set())
             if family in ["fluorite", "brilliant"]:
                 enabled = any(c.startswith(family + ":") for c in extras.get(row["id"], []))
             if enabled: supported.append(module_type)
@@ -93,7 +94,7 @@ def build(check=False):
     write("data/gameplay/equipment_memory_rules_v1.json", {"schema_version": 1, "chance": 0.8, "stabilized_chance": 1.0,
           "source": "ven/OterNPC_C.fcc:2173; ven/FormClass_ven.fcc:8480,9013; inherited IsCanAbsorb/GetEquipAttr",
           "remake_policy": "Successful extraction moves only selected growth; failure consumes empty module. Transfer requires empty matching growth, consumes loaded module on success or failure; target unchanged on failure. Other growth remains. Reject over-cap transfer; no skill-level restriction evidenced. Stabilizer consumes one; no extra fee.",
-          "deferred_types": {"2": "energy stone scope pending", "7": "forging maximums not part of implemented ordinary processing"},
+          "deferred_types": {"2": "energy stone scope pending"},
           "equipment": sorted(profiles, key=lambda r: r["definition_id"])}, check)
     print(f"Equipment memory: {len(profiles)} eligible equipment, {len(materials)} materials")
 

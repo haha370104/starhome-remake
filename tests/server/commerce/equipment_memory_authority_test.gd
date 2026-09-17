@@ -39,7 +39,7 @@ func _initialize() -> void:
 	var preview := service.execute(result.value.candidate, query)
 	_check(preview.is_ok and not preview.value.changed, "查询无副作用")
 	_check(preview.value.panel_bundle.equipment_memory.preview.text.contains("3星") and preview.value.panel_bundle.equipment_memory.preview.text.contains("100%"), "可读成长与概率")
-	_check(preview.value.panel_bundle.equipment_memory.offers.size() == 6, "完整供给")
+	_check(preview.value.panel_bundle.equipment_memory.offers.size() == 7, "完整供给")
 	var transferred := service.execute(result.value.candidate, command)
 	_check(transferred.is_ok, "权威转移")
 	player = mapper.to_domain(transferred.value.candidate).value

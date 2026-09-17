@@ -4,6 +4,7 @@ extends RefCounted
 class Candidate extends RefCounted:
 	var equipment: VehicleEquipment
 	var module: EquipmentMemoryModule
+	var discarded_rounds := 0
 
 
 ## 构造抽取成功候选，只清除一种成长并保留源装备与其他状态。
@@ -21,15 +22,20 @@ static func extract(equipment: VehicleEquipment, module: EquipmentMemoryModule, 
 	if not captured.is_ok: return captured
 	var item_state := equipment.to_view_dictionary()
 	_remove_selected_growth(item_state, module.module_type)
+	item_state.magazine = {"remaining": 0}
 	var cleared := catalog.create(equipment.definition_id, item_state)
-	if not cleared.is_ok: return cleared
+	if not cleared.is_ok:
+		return DomainResult.failure(&"memory.remaining_growth", "提取后剩余成长将越过上限，请先提取普通加工：" + cleared.error_message)
+	var cleared_item: VehicleEquipment = cleared.value
+	cleared_item.magazine.remaining = mini(equipment.magazine.remaining, cleared_item.ammunition_capacity())
 	var module_state := module.to_view_dictionary()
 	module_state["equipment_memory"] = captured.value.to_dictionary()
 	module_state["bound"] = equipment.bound or module.bound or bind_material or _has_bound_crystal(captured.value)
 	var loaded := catalog.create(module.definition_id, module_state)
 	if not loaded.is_ok: return loaded
 	var result := Candidate.new()
-	result.equipment = cleared.value
+	result.equipment = cleared_item
+	result.discarded_rounds = equipment.magazine.remaining - cleared_item.magazine.remaining
 	result.module = loaded.value
 	return DomainResult.ok(result)
 
@@ -80,6 +86,7 @@ static func _remove_selected_growth(state: Dictionary, kind: int) -> void:
 				if key.begins_with("fluorite:" if kind == 3 else "brilliant:"): levels.erase(key)
 		5: state["strengthening"] = {}
 		6: state["vehicle_sockets"] = {}
+		7: state["forging"] = {}
 
 
 ## 保留晶石的绑定传播，不能通过模块洗掉已镶嵌晶石的绑定。

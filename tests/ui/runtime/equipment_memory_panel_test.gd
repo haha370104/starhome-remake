@@ -32,7 +32,7 @@ func _run() -> void:
 	await process_frame
 	_manager._open_workshop("equipment_memory")
 	var panel: EquipmentMemoryPanel = _manager.navigation_windows.equipment_memory
-	_check(panel.visible and panel.shop.item_count == 6, "获取入口和六种商品")
+	_check(panel.visible and panel.shop.item_count == 7, "获取入口和七种商品")
 	var menu := _manager.inventory_panel.context_menu
 	for id: String in ["source", "module"]:
 		menu.open_for(_manager.panel_session.current_player.inventory.find(id), player.inventory.revision, Vector2(200, 200))

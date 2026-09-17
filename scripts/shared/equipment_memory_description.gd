@@ -16,6 +16,9 @@ static func describe(memory: EquipmentMemory, catalog: ItemCatalog) -> String:
 		1:
 			for attribute: String in memory.processing.to_dictionary().increments:
 				lines.append("%s加工 +%d" % [NAMES.get(attribute, attribute), memory.processing.bonus(attribute)])
+		7:
+			for kind: int in memory.forging.extensions:
+				lines.append("%s扩展：+%d" % [catalog.forging_rules.channels[kind].label, memory.forging.extensions[kind]])
 		3, 4:
 			for id: String in memory.extra.to_dictionary().levels:
 				var channel: ExtraAttributeRules.Channel = catalog.extra_attribute_rules.channels[id]

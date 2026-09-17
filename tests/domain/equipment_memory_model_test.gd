@@ -4,7 +4,7 @@ var checks := 0
 var failures := 0
 
 
-## 覆盖五类记忆的提取快照、目录资格、非法成长和晶石裂纹绑定。
+## 覆盖六类记忆的提取快照、目录资格、非法成长和晶石裂纹绑定。
 func _initialize() -> void:
 	var catalog := ItemCatalog.new()
 	_check(catalog.initialize().is_ok, "目录初始化")
@@ -18,13 +18,16 @@ func _initialize() -> void:
 			match kind:
 				1:
 					var processed := catalog.processing_rules.profile(item.definition_id)
-					var attribute: String = processed.attributes.keys()[0]
+					var attribute := ""
+					for rule: EquipmentProcessingRules.AttributeRule in processed.attributes.values():
+						if rule.limit > rule.base: attribute = rule.attribute; break
 					payload = {"processing": {"increments": {attribute: 1}}}
 				3, 4:
 					var levels := {}
 					for channel: String in catalog.extra_attribute_rules.allowed(item.definition_id):
 						if channel.begins_with("fluorite:" if kind == 3 else "brilliant:"): levels[channel] = 1
 					payload = {"extra_attributes": {"levels": levels}}
+				7: payload = {"forging": {"extensions": {str(item.forging_profile.limits.keys()[0]): 1}}}
 				5: payload = {"strengthening": {"level": 1}}
 				6:
 					item.sockets.settle_open(0, true, "")
@@ -37,14 +40,15 @@ func _initialize() -> void:
 			var captured := EquipmentMemory.capture(recreated.value, kind)
 			_check(captured.is_ok, "提取有成长的类型 " + str(kind))
 			if not captured.is_ok: continue
-			var semantic: String = {1: "processing", 3: "fluorite", 4: "brilliant", 5: "strengthening", 6: "sockets"}[kind]
+			var semantic: String = {1: "processing", 3: "fluorite", 4: "brilliant", 5: "strengthening", 6: "sockets", 7: "forging"}[kind]
 			var module := catalog.create("equipment_memory_" + semantic, {"instance_id": "module", "equipment_memory": captured.value.to_dictionary()})
+			_check(EquipmentMemory.restore(JSON.parse_string(JSON.stringify(captured.value.to_dictionary()))).is_ok, "真实JSON往返")
 			_check(module.is_ok and module.value.memory.to_dictionary() == captured.value.to_dictionary(), "记忆目录恢复一致")
 			_check(not catalog.create("low_grade_gel", {"equipment_memory": captured.value.to_dictionary()}).is_ok, "非模块不能藏成长")
 			if kind == 6:
 				_check(module.value.memory.sockets.slot_at(0).cracks == 2 and module.value.memory.sockets.slot_at(0).bound, "晶石裂纹绑定完整")
 			seen[kind] = true
-	_check(seen.size() == 5, "五类均被实际覆盖")
+	_check(seen.size() == 6, "六类均被实际覆盖")
 	for invalid: Variant in [[], {"version": 2}, {"version": 1, "source_definition_id": "recruit_tank", "module_type": 7}, {"version": 1, "source_definition_id": "recruit_tank", "module_type": 5, "payload": {"level": 0}}]:
 		_check(not EquipmentMemory.restore(invalid).is_ok, "拒绝空载伪装或非法记录")
 	var mixed := {"version": 1, "source_definition_id": "recruit_tank", "module_type": 3, "payload": {"levels": {"brilliant:3": 1}}}
