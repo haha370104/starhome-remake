@@ -41,6 +41,7 @@ TESTS = (
     "ui/runtime/daily_hud_and_assistant_test.gd",
     "ui/runtime/premium_shop_ui_test.gd",
     "ui/runtime/attachment_upgrade_ui_test.gd",
+    "ui/runtime/clothing_enhancement_ui_test.gd",
     "integration/combat_click_routing_test.gd",
     "ui/runtime/map_navigation_test.gd",
     "integration/map_navigation_scene_test.gd",

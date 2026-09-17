@@ -1,6 +1,8 @@
 class_name InventoryContextMenu
 extends Node
 
+signal enhancement_requested(instance_id: String, is_stone: bool)
+
 signal command_requested(command: Dictionary)
 
 var menu := PopupMenu.new()
@@ -47,6 +49,8 @@ func open_for(item: GameItem, revision: int, point: Vector2) -> void:
 	menu.add_separator(item.display_name)
 	if item is VehicleEquipment or item is Clothing:
 		_add_action("装备", "equip", item.locked)
+	if item is Clothing or item is EnhancementStone:
+		_add_action("人物强化 / 合成", "clothing_enhancement", false)
 	if item is ConsumableItem:
 		_add_action("使用", "use_inventory_item", item.locked)
 	if item.max_stack > 1:
@@ -76,6 +80,9 @@ func _select_action(id: int) -> void:
 	if id < 0 or id >= _actions.size() or _item == null:
 		return
 	var action := _actions[id]
+	if action == "clothing_enhancement":
+		enhancement_requested.emit(_item.instance_id, _item is EnhancementStone)
+		return
 	if action == "use_inventory_item" and food_status != null:
 		for effect: FoodEffect in (_item as ConsumableItem).effects:
 			if food_status.bonus(effect.kind) > 0:

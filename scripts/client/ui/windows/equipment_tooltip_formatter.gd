@@ -30,7 +30,7 @@ const STAT_NAMES := {
 ## 返回名称、说明、有效属性和耐久组成的多行文本。
 static func format(equipment: Dictionary, action_hint: String = "双击卸下") -> String:
 	var lines := PackedStringArray()
-	lines.append(String(equipment.get("display_name", "未知装备")))
+	lines.append(EnhancementText.title(String(equipment.get("display_name", "未知装备")), equipment.get("enhancement", {})))
 	var description := String(equipment.get("description", ""))
 	if not description.is_empty():
 		lines.append(description)
@@ -46,6 +46,8 @@ static func format(equipment: Dictionary, action_hint: String = "双击卸下") 
 	var maximum := int(equipment.get("max_durability", 0))
 	if maximum > 0:
 		lines.append("耐久：%d / %d" % [durability, maximum])
+	if equipment.has("enhancement"):
+		lines.append(EnhancementText.describe(equipment.enhancement))
 	if not action_hint.is_empty():
 		lines.append(action_hint)
 	return "\n".join(lines)

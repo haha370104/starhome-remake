@@ -54,6 +54,7 @@ func execute(player: Player, command: Dictionary) -> DomainResult:
 ## [param operation] 最近一次操作及选择身份。
 ## 返回只读窗口数据，禁止客户端自行确认扣费。
 func snapshot(player: Player, operation: Dictionary) -> Dictionary:
+	player.refresh_clothing_bonuses()
 	var clothes: Array[Dictionary] = []
 	var stones: Array[Dictionary] = []
 	var all_items: Array = player.inventory.items()
@@ -63,11 +64,16 @@ func snapshot(player: Player, operation: Dictionary) -> Dictionary:
 			var row := item.to_view_dictionary()
 			row["installed"] = player.inventory.find(item.instance_id) == null
 			row["presentation"] = item.presentation_for("inventory")
+			row["suppressed"] = []
+			for effect: String in player.vehicle.clothing_bonuses.suppressed_effects:
+				if effect.begins_with(item.instance_id + ":"):
+					row.suppressed.append(effect.get_slice(":", effect.get_slice_count(":") - 1))
 			clothes.append(row)
 		elif item is EnhancementStone:
 			var stone := item as EnhancementStone
 			var row := item.to_view_dictionary()
 			row["presentation"] = item.presentation_for("inventory")
+			row["quantity"] = stone.quantity
 			row["synthesis_count"] = stone.synthesis_count()
 			row["synthesis_price"] = PlayerEnhancementActions.synthesis_price(stone)
 			row["can_synthesize"] = not stone.locked and not stone.next_definition_id().is_empty() \

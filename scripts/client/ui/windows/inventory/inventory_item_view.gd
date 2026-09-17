@@ -55,6 +55,8 @@ func configure(
 	]
 	if item is Equipment:
 		item_tooltip = TooltipFormatter.format(item.to_view_dictionary(), "双击装备")
+	elif item is EnhancementStone:
+		item_tooltip = item.display_name + "\n" + EnhancementText.stone_description(item_snapshot) + "\n右键进入人物强化 / 合成"
 	elif item is ConsumableItem:
 		item_tooltip = item.display_name + "\n" + (item as ConsumableItem).use_description() + "\n右键使用 / 拆分 / 合并"
 	gui_input.connect(_on_gui_input)
@@ -83,6 +85,18 @@ func configure(
 		amount_label.add_theme_constant_override("outline_size", 2)
 		amount_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		add_child(amount_label)
+
+	if item is EnhancementStone and (item as EnhancementStone).family == "gem":
+		var badge := Label.new()
+		badge.name = "GemLevelBadge"
+		badge.text = "L%d" % (item as EnhancementStone).rank
+		badge.position = Vector2(0, 0)
+		badge.add_theme_font_size_override("font_size", 11)
+		badge.add_theme_color_override("font_color", Color("fff1ad"))
+		badge.add_theme_color_override("font_outline_color", Color.BLACK)
+		badge.add_theme_constant_override("outline_size", 4)
+		badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		add_child(badge)
 
 	if item.locked:
 		modulate = Color(0.65, 0.65, 0.65)

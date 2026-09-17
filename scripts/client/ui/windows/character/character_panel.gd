@@ -2,6 +2,7 @@ class_name CharacterPanel
 extends DraggableGameWindow
 
 signal command_requested(command: Dictionary)
+signal enhancement_requested
 signal skill_panel_requested
 
 const EquipmentLayer := preload("res://scripts/client/ui/components/equipment_layer_view.gd")
@@ -115,6 +116,15 @@ func _build_identity_fields() -> void:
 	_skill_button.add_theme_color_override("font_hover_color", Color("ffd6df"))
 	_skill_button.pressed.connect(func() -> void: skill_panel_requested.emit())
 	content_root.add_child(_skill_button)
+	var enhance := Button.new()
+	enhance.name = "ClothingEnhancementButton"
+	enhance.text = "人物强化"
+	enhance.position = Vector2(266, 274)
+	enhance.size = Vector2(70, 28)
+	enhance.add_theme_font_override("font", LEGACY_PANEL_FONT)
+	enhance.add_theme_font_size_override("font_size", 14)
+	enhance.pressed.connect(enhancement_requested.emit)
+	content_root.add_child(enhance)
 
 
 ## 按权威穿着快照重建服装叠层。
