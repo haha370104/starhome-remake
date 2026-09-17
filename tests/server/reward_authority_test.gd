@@ -101,15 +101,15 @@ func _test_manufacturing(server: AuthoritativeServer, source: PlayerStateRecord)
 	var state: PlayerStateRecord = mapper.to_record(player).value
 	state.map_id = "glory_nft_bl_factory1"
 	state.character_skills.refining = {"level": 150, "current_exp": 0, "fractional_exp": 0.0}
-	var command := {"type": "craft_recipe", "recipe_id": recipe.recipe_id, "station_id": "refining", "inventory_revision": state.inventory_revision, "multiplier": 999}
-	var crafted: DomainResult = server.manufacturing_service.execute(state, command)
+	var command := {"type": "start_production", "recipe_id": recipe.recipe_id, "station_id": "refining", "inventory_revision": state.inventory_revision, "multiplier": 999}
+	var crafted: DomainResult = ProductionTestDriver.execute(server.manufacturing_service, state, command)
 	_expect(crafted.is_ok, "生产事务成功")
 	if not crafted.is_ok:
 		return
 	_expect(int(crafted.value.candidate.character_skills.refining.current_exp) == 100, "提炼40基础经验经VIP变为100")
 	var next: Player = mapper.to_domain(crafted.value.candidate).value
 	_expect(next.inventory.count_definition(recipe.product_definition_id) == 1, "经验倍率不增加生产物品")
-	_expect(not server.manufacturing_service.execute(crafted.value.candidate, command).is_ok, "重复生产请求不重复发经验")
+	_expect(not ProductionTestDriver.execute(server.manufacturing_service, crafted.value.candidate, command).is_ok, "重复生产请求不重复发经验")
 
 
 ## 抽样验证任意非整数倍率的概率溢出和稀有物概率，不只放大已命中数量。

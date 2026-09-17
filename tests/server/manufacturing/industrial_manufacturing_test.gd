@@ -27,7 +27,7 @@ func _initialize() -> void:
 	_expect(int(iron.materials[0].required) == 10, "原版十个铁矿产一个铁")
 	_supply(state, iron)
 	var original := state.to_dictionary()
-	var result := service.execute(state, _command(state, iron))
+	var result := ProductionTestDriver.execute(service, state, _command(state, iron))
 	_expect(result.is_ok and result.value.operation.succeeded, "提炼应成功")
 	_expect(state.to_dictionary() == original, "服务不直接修改提交前存档")
 	if result.is_ok:
@@ -35,7 +35,7 @@ func _initialize() -> void:
 		_expect(_quantity(candidate, String(iron.product_definition_id)) == 1, "提炼产物入包")
 		_expect(_quantity(candidate, String(iron.materials[0].definition_id)) == 0, "提炼材料扣完")
 		_expect(int(candidate.character_skills.refining.level) == 11, "提炼20点经验达到十级门槛，应升至十一级")
-		_expect(not service.execute(candidate, _command(state, iron)).is_ok, "旧背包版本不得重复生产")
+		_expect(not ProductionTestDriver.execute(service, candidate, _command(state, iron)).is_ok, "旧背包版本不得重复生产")
 	for map_id: String in ["dragon_city_refinery_floor_2", "dragon_city_refinery_floor_3"]:
 		state.map_id = map_id
 		_expect(not _find(service, state, "refining", "铁").is_empty(), "提炼厂多层均可使用")
@@ -45,7 +45,7 @@ func _initialize() -> void:
 	_expect(not beginner.is_empty() and int(beginner.required_skill_level) == 0, "零级制造技能必须有入门配方")
 	if not beginner.is_empty():
 		_supply(state, beginner)
-		var novice_result := service.execute(state, _command(state, beginner))
+		var novice_result := ProductionTestDriver.execute(service, state, _command(state, beginner))
 		_expect(novice_result.is_ok, "零级玩家可以生产第一件合金并学习：%s" % novice_result.error_message)
 	state.character_skills["manufacturing"] = {"level": 320, "current_exp": 0, "fractional_exp": 0.0}
 	var tank := _find(service, state, "equipment_manufacturing", "炎帝战车")
@@ -59,7 +59,7 @@ func _initialize() -> void:
 	_supply(state, tank)
 	var missing_materials := state.duplicate_record()
 	missing_materials.inventory_stacks.clear()
-	_expect(not service.execute(missing_materials, _command(missing_materials, tank)).is_ok, "缺少材料时拒绝且不凭空生成装备")
+	_expect(not ProductionTestDriver.execute(service, missing_materials, _command(missing_materials, tank)).is_ok, "缺少材料时拒绝且不凭空生成装备")
 	var parsed_state := PlayerStateRecord.from_dictionary(state.to_dictionary())
 	_expect(parsed_state.is_ok, "制造前存档合法：%s" % parsed_state.error_message)
 	if not parsed_state.is_ok:
@@ -67,8 +67,8 @@ func _initialize() -> void:
 		return
 	var insufficient: PlayerStateRecord = parsed_state.value
 	insufficient.character_skills["manufacturing"] = {"level": 319, "current_exp": 0, "fractional_exp": 0.0}
-	_expect(not service.execute(insufficient, _command(insufficient, tank)).is_ok, "未达等级不得生产炎帝")
-	result = service.execute(state, _command(state, tank))
+	_expect(not ProductionTestDriver.execute(service, insufficient, _command(insufficient, tank)).is_ok, "未达等级不得生产炎帝")
+	result = ProductionTestDriver.execute(service, state, _command(state, tank))
 	_expect(result.is_ok, "无需征服者战车，直接制造炎帝")
 	if result.is_ok:
 		var candidate: PlayerStateRecord = result.value.candidate
@@ -86,17 +86,17 @@ func _initialize() -> void:
 			_expect(serialized.is_ok and _quantity(serialized.value, String(tank.product_definition_id)) == 1, "产物可完成存档往返")
 	var restarted := Service.new()
 	_expect(restarted.initialize().is_ok, "服务重建应成功")
-	var again := restarted.execute(state, _command(state, tank))
+	var again := ProductionTestDriver.execute(restarted, state, _command(state, tank))
 	if result.is_ok and again.is_ok:
 		_expect(result.value.candidate.inventory_stacks[0].stack_id != again.value.candidate.inventory_stacks[0].stack_id, "重启后生成的物品实例ID不能碰撞")
 	var capped := state.duplicate_record()
 	capped.character_skills["manufacturing"] = {"level": 700, "current_exp": 0, "fractional_exp": 0.0}
-	_expect(service.execute(capped, _command(capped, tank)).is_ok, "满级仍可生产，只停止获得经验")
+	_expect(ProductionTestDriver.execute(service, capped, _command(capped, tank)).is_ok, "满级仍可生产，只停止获得经验")
 	var wrong_station := _command(state, tank)
 	wrong_station.station_id = "alloy"
-	_expect(not service.execute(state, wrong_station).is_ok, "合金机不得执行装备配方")
+	_expect(not ProductionTestDriver.execute(service, state, wrong_station).is_ok, "合金机不得执行装备配方")
 	state.map_id = "yian_harbor_hall_floor_1"
-	_expect(not service.execute(state, _command(state, tank)).is_ok, "换图后旧窗口不能远程制造")
+	_expect(not ProductionTestDriver.execute(service, state, _command(state, tank)).is_ok, "换图后旧窗口不能远程制造")
 	_finish()
 
 
@@ -105,7 +105,7 @@ func _initialize() -> void:
 ## [param station] 设施类型。[param product] 产品显示名。
 ## 返回匹配的只读配方快照，缺失返回空字典。
 func _find(service: RefCounted, state: PlayerStateRecord, station: String, product: String) -> Dictionary:
-	var result: DomainResult = service.execute(state, {"type": "query_manufacturing", "station_id": station})
+	var result: DomainResult = ProductionTestDriver.execute(service, state, {"type": "query_manufacturing", "station_id": station})
 	if result.is_ok:
 		for recipe: Dictionary in result.value.panel_bundle.manufacturing.recipes:
 			if recipe.display_name == product:
@@ -138,7 +138,7 @@ func _supply(state: PlayerStateRecord, recipe: Dictionary) -> void:
 ## [param state] 提供背包版本。[param recipe] 选定配方。
 ## 返回网络兼容命令。
 func _command(state: PlayerStateRecord, recipe: Dictionary) -> Dictionary:
-	return {"type": "craft_recipe", "station_id": recipe.station_id,
+	return {"type": "start_production", "station_id": recipe.station_id,
 		"recipe_id": recipe.recipe_id, "inventory_revision": state.inventory_revision}
 
 

@@ -36,7 +36,7 @@ func _initialize() -> void:
 	_check(not service.execute(state, command).is_ok, "重放开始拒绝")
 	_check(not service.execute(state, {"type": "complete_production_cycle", "station_id": "refining"}).is_ok, "没有客户端完成命令")
 	_check(not service.complete_production_cycle(state).is_ok, "时钟未到拒绝")
-	_check(not service.execute(state, {"type": "craft_recipe", "station_id": "refining", "recipe_id": recipe.recipe_id, "inventory_revision": state.inventory_revision}).is_ok, "订单运行期间旧单次入口不能并行结算")
+	_check(not service.execute(state, {"type": "craft_recipe", "station_id": "refining", "recipe_id": recipe.recipe_id, "inventory_revision": state.inventory_revision}).is_ok, "旧单次入口已关闭，不能并行结算")
 	var query := service.execute(state, {"type": "query_production"})
 	_check(query.is_ok and not query.value.changed and query.value.panel_bundle.manufacturing.production.order.speed == 2, "查询只读订单和规则")
 	for completed in range(1, 3):

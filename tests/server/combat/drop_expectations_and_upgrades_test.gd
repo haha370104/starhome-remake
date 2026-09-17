@@ -96,24 +96,24 @@ func _test_upgrades() -> void:
 		var state: PlayerStateRecord = mapper.to_record(player).value
 		state.map_id = "glory_nft_bl_factory1" if recipe.station_id == "refining" else "glory_nft_bl_armshop1"
 		state.character_skills[recipe.skill_id].level = 149
-		var command := {"type": "craft_recipe", "station_id": recipe.station_id,
+		var command := {"type": "start_production", "station_id": recipe.station_id,
 			"recipe_id": recipe.recipe_id, "inventory_revision": state.inventory_revision}
 		var before := state.to_dictionary()
-		_expect(service.execute(state, command).error_code == &"manufacturing.skill_insufficient"
+		_expect(ProductionTestDriver.execute(service, state, command).error_code == &"manufacturing.skill_insufficient"
 			and state.to_dictionary() == before, "149级拒绝且不扣材料")
 		state.character_skills[recipe.skill_id].level = 150
-		var result := service.execute(state, command)
+		var result := ProductionTestDriver.execute(service, state, command)
 		_expect(result.is_ok, "150级可执行提炼或制造")
 		if not result.is_ok:
 			continue
 		var next: Player = mapper.to_domain(result.value.candidate).value
 		_expect(next.inventory.count_definition(ingredient) == 1
 			and next.inventory.count_definition(recipe.product_definition_id) == 1, "真实候选存档扣五产一")
-		_expect(not service.execute(result.value.candidate, command).is_ok, "过期版本不得重复加工")
+		_expect(not ProductionTestDriver.execute(service, result.value.candidate, command).is_ok, "过期版本不得重复加工")
 		var created: GameItem = items.create(recipe.product_definition_id, {"quantity": 1}).value
 		var image := ItemPresentationTextureResolver.resolve(created.presentation_for("inventory"))
 		_expect(not image.is_empty(), "产物恢复荣耀图像")
-		_expect(not service.execute(result.value.candidate, {"type": "craft_recipe", "station_id": recipe.station_id,
+		_expect(not ProductionTestDriver.execute(service, result.value.candidate, {"type": "start_production", "station_id": recipe.station_id,
 			"recipe_id": recipe.recipe_id, "inventory_revision": result.value.candidate.inventory_revision}).is_ok,
 			"不足五个不能继续升级")
 

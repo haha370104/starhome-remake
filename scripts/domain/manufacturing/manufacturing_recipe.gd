@@ -76,11 +76,13 @@ func execute(
 func to_view_dictionary(player: Player, item_catalog: ItemCatalog) -> Dictionary:
 	var material_views: Array[Dictionary] = []
 	var ready := true
+	var available_batches := 2147483647
 	for requirement: Dictionary in materials:
 		var definition_id := String(requirement["definition_id"])
 		var required := int(requirement["quantity"])
 		var owned := player.inventory.count_consumable_definition(definition_id)
 		ready = ready and owned >= required
+		available_batches = mini(available_batches, floori(float(owned) / maxi(1, required)))
 		material_views.append({
 			"definition_id": definition_id,
 			"display_name": item_catalog.display_name(definition_id),
@@ -103,6 +105,7 @@ func to_view_dictionary(player: Player, item_catalog: ItemCatalog) -> Dictionary
 		"skill_experience": skill_experience,
 		"success_probability": probability,
 		"can_craft": ready and probability > 0.0,
+		"available_batches": available_batches if probability > 0.0 else 0,
 		"materials": material_views,
 	}
 

@@ -28,7 +28,7 @@ func _initialize() -> void:
 	_append_stack(state, "material.synthetic_cotton", "item:material:b366aac2e554", 1, 2, [120, 0])
 	_append_stack(state, "material.synthetic_thread", "item:material:0f2b9045caf2", 1, 3, [150, 0])
 	_append_stack(state, "material.iron", "item:material:8f615d2ef879", 5, 4, [180, 0])
-	var queried: DomainResult = service.execute(state, {
+	var queried: DomainResult = ProductionTestDriver.execute(service, state, {
 		"type": "query_manufacturing", "station_id": "tailoring",
 	})
 	_expect(queried.is_ok, "裁缝机查询应返回权威配方")
@@ -36,8 +36,8 @@ func _initialize() -> void:
 		var recipes: Array = queried.value.panel_bundle.manufacturing.recipes
 		_expect(recipes.size() == 65, "裁缝机应登记荣耀 sewlist 的65条可执行配方")
 		_expect(_find_recipe(recipes, "裁缝紧身裤(男)").can_craft, "材料与等级满足时配方应可制作")
-	var crafted: DomainResult = service.execute(state, {
-		"type": "craft_recipe",
+	var crafted: DomainResult = ProductionTestDriver.execute(service, state, {
+		"type": "start_production",
 		"station_id": "tailoring",
 		"recipe_id": "glory_recipe_manufacturing_076",
 		"inventory_revision": state.inventory_revision,
@@ -49,7 +49,7 @@ func _initialize() -> void:
 		_expect(_stack_quantity(candidate, "glory_equipment_1_09f6c8233d") == 1, "产物应作为同一物品对象进入背包")
 		_expect(int(candidate.character_skills.tailoring.current_exp) == 33, "成功裁缝应发放配方记录的33点经验")
 	state.map_id = "glory_nft_bl_foodroom1"
-	var cooking: DomainResult = service.execute(state, {
+	var cooking: DomainResult = ProductionTestDriver.execute(service, state, {
 		"type": "query_manufacturing", "station_id": "cooking",
 	})
 	_expect(cooking.is_ok and not cooking.value.panel_bundle.manufacturing.recipes.is_empty(), "烹饪台应只下发名称和产物均可解析的旧客户端配方")

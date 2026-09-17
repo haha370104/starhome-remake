@@ -35,7 +35,7 @@ func _run() -> void:
 			var before := state.to_dictionary()
 			_expect(_craft(state, recipe).error_code == &"manufacturing.skill_insufficient" and state.to_dictionary() == before, "低一级拒绝且状态不变：" + name)
 			state.character_skills[recipe.skill_id].level = int(expected[name])
-			var queried := service.execute(state, {"type": "query_manufacturing", "station_id": station})
+			var queried := ProductionTestDriver.execute(service, state, {"type": "query_manufacturing", "station_id": station})
 			_expect(queried.is_ok, "真实设施可查询：" + name)
 			var result := _craft(state, recipe)
 			_expect(result.is_ok, "达到门槛加工成功：" + name)
@@ -45,7 +45,7 @@ func _run() -> void:
 			_expect(_quantity(next, recipe.product_definition_id) == 1 and _quantity(state, recipe.product_definition_id) == 0, "只在隔离候选中产出：" + name)
 			for material: Dictionary in recipe.materials:
 				_expect(_quantity(next, material.definition_id) == 1, "恰好消费配置材料：" + name)
-			var replay := service.execute(next, {"type": "craft_recipe", "station_id": station,
+			var replay := ProductionTestDriver.execute(service, next, {"type": "start_production", "station_id": station,
 				"recipe_id": recipe.recipe_id, "inventory_revision": state.inventory_revision})
 			_expect(not replay.is_ok, "旧版本不能重放制作：" + name)
 			var mapped: Player = PlayerStateMapper.new(items).to_domain(state).value
@@ -143,7 +143,7 @@ func _state_with_materials(recipe: ManufacturingRecipe) -> PlayerStateRecord:
 ## [param recipe] 只提供配方身份。
 ## 返回服务事务结果。
 func _craft(state: PlayerStateRecord, recipe: ManufacturingRecipe) -> DomainResult:
-	return service.execute(state, {"type": "craft_recipe", "station_id": recipe.station_id, "recipe_id": recipe.recipe_id,
+	return ProductionTestDriver.execute(service, state, {"type": "start_production", "station_id": recipe.station_id, "recipe_id": recipe.recipe_id,
 		"inventory_revision": state.inventory_revision, "quantity": 999, "required_skill_level": 0})
 
 

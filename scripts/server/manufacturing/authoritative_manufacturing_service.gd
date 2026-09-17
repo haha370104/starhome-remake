@@ -10,7 +10,7 @@ const PlayerPanelProjectorScript := preload(
 	"res://scripts/shared/player_panel_projector.gd"
 )
 
-const COMMAND_TYPES := ["query_manufacturing", "query_production", "craft_recipe"]
+const COMMAND_TYPES := ["query_manufacturing", "query_production"]
 const STATION_NAMES := {
 	"tailoring": "裁缝机", "cooking": "烹饪台", "refining": "提炼机",
 	"alloy": "合金制造机", "maintenance": "维护包制造机",
@@ -24,8 +24,6 @@ var _orders: ProductionOrderService
 var _mapper: PlayerStateMapper
 var _projector: PlayerPanelProjector
 var _progression_config: Dictionary = {}
-var _random := RandomNumberGenerator.new()
-var _next_instance_serial := 1
 var _facility_maps: Dictionary = {}
 
 
@@ -57,7 +55,6 @@ func initialize(rewards: RewardPipeline = null) -> DomainResult:
 	if not production_rules.is_ok: return production_rules
 	_production_rules = production_rules.value
 	_orders = ProductionOrderService.new(_item_catalog, _recipe_book, _mapper, _production_rules, _progression_config)
-	_random.randomize()
 	return DomainResult.ok(self)
 
 
@@ -68,9 +65,9 @@ func handles(command_type: String) -> bool:
 	return command_type in COMMAND_TYPES or command_type in ProductionOrderService.COMMANDS
 
 
-## 查询配方或执行一次由服务器随机判定的生产事务。
+## 查询生产状态或处理订单意图，产出仅由服务器计时完成。
 ## [param state] 当前权威玩家存档副本。
-## [param command] 只含设施、配方与背包 revision 的客户端意图。
+## [param command] 设施、配方、数量及相关版本组成的客户端意图。
 ## 返回待提交存档、制造投影和统一玩家面板快照。
 func execute(state: PlayerStateRecord, command: Dictionary) -> DomainResult:
 	if state == null or _mapper == null or _recipe_book == null:
@@ -94,40 +91,10 @@ func execute(state: PlayerStateRecord, command: Dictionary) -> DomainResult:
 		return mapped
 	var player: Player = mapped.value
 	var operation := {"action": "query", "station_id": station_id}
-	var changed := command_type == "craft_recipe"
-	if changed:
-		if player.production.order != null:
-			return DomainResult.failure(&"production.busy", "已有生产订单，请先取消或完成")
-		var revision_result := player.inventory.require_revision(
-			int(command.get("inventory_revision", -1))
-		)
-		if not revision_result.is_ok:
-			return revision_result
-		var recipe: RefCounted = _recipe_book.recipe(String(command.get("recipe_id", "")))
-		if recipe == null or not recipe.belongs_to_station(station_id):
-			return DomainResult.failure(&"manufacturing.recipe_missing", "recipe is not available at this station")
-		var executed: DomainResult = recipe.execute(
-			player,
-			_item_catalog,
-			_new_instance_id(recipe.product_definition_id),
-			_random.randf(),
-			_progression_config,
-			_random.randf(),
-		)
-		if not executed.is_ok:
-			return executed
-		operation = (executed.value as Dictionary).duplicate(true)
-		operation["action"] = "craft"
-		operation["station_id"] = station_id
 	var candidate := state.duplicate_record()
-	if changed:
-		var persisted := _mapper.to_record(player)
-		if not persisted.is_ok:
-			return persisted
-		candidate = persisted.value
 	return DomainResult.ok({
 		"candidate": candidate,
-		"changed": changed,
+		"changed": false,
 		"operation": operation,
 		"panel_bundle": _build_bundle(player, station_id, operation),
 	})
@@ -185,15 +152,6 @@ func complete_production_cycle(state: PlayerStateRecord) -> DomainResult:
 		return DomainResult.ok({"candidate": candidate, "changed": true,
 			"operation": {"station_id": order.station_id, "action": "pause_production", "message": candidate.production.order.pause_reason}})
 	return _orders.complete(state)
-
-
-## 生成当前服务进程内唯一的制造产物实例 ID。
-## [param definition_id] 产物稳定定义标识。
-## 返回不依赖客户端输入的实例标识。
-func _new_instance_id(definition_id: String) -> String:
-	var value := "crafted.%s.%d.%s" % [Crypto.new().generate_random_bytes(16).hex_encode(), _next_instance_serial, definition_id]
-	_next_instance_serial += 1
-	return value
 
 
 ## 核验权威存档所在地图是否登记了所请求的设施。

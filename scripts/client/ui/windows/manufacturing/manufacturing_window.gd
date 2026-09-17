@@ -1,198 +1,241 @@
 class_name ManufacturingWindow
-extends DraggableGameWindow
+extends ModernNavigationWindow
 
 signal command_requested(command: Dictionary)
 
-const REGULAR_FONT := preload("res://assets/ui/fonts/legacy_panel_font.tres")
-const BOLD_FONT := preload("res://assets/ui/fonts/legacy_panel_bold_font.tres")
-const WINDOW_SIZE := Vector2(560, 450)
-const TEXT_COLOR := Color("faf0c8")
-
+var recipe_list: ItemList
+var details: RichTextLabel
+var cycles: SpinBox
+var speed: SpinBox
+var start_button: Button
+var pause_button: Button
+var cancel_button: Button
+var progress: ProgressBar
+var confirmation: ConfirmationDialog
+var _facility: Label
+var _order_label: Label
+var _status: Label
 var _station_id := "tailoring"
-var _snapshot: Dictionary = {}
-var _inventory_revision := -1
-var _title_label: Label
-var _recipe_list: VBoxContainer
-var _detail_label: Label
-var _status_label: Label
+var _snapshot: ManufacturingSnapshot
+var _recipe_id := ""
+var _waiting := false
+var _pending: Dictionary = {}
+var _remaining := 0.0
+var _poll_elapsed := 0.0
 
 
-## 创建非模态生产窗口的固定布局。
+## 组合配方、投入预览和订单控制，客户端只展示进度、不发放生产结果。
 func _ready() -> void:
-	configure(WINDOW_SIZE, null, Vector2(532, 12))
-	var panel := Panel.new()
-	panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	panel.add_theme_stylebox_override("panel", _panel_style())
-	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	content_root.add_child(panel)
-	_title_label = _label("Title", Vector2(34, 12), Vector2(492, 24), 16, BOLD_FONT)
-	_title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	var scroll := ScrollContainer.new()
-	scroll.position = Vector2(16, 54)
-	scroll.size = Vector2(300, 346)
-	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	content_root.add_child(scroll)
-	_recipe_list = VBoxContainer.new()
-	_recipe_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_recipe_list.add_theme_constant_override("separation", 2)
-	scroll.add_child(_recipe_list)
-	_detail_label = _label("RecipeDetail", Vector2(330, 58), Vector2(214, 300), 12, REGULAR_FONT)
-	_detail_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_detail_label.vertical_alignment = VERTICAL_ALIGNMENT_TOP
-	_status_label = _label("Status", Vector2(20, 410), Vector2(520, 20), 12, REGULAR_FONT)
+	build_modern_window(Vector2(840, 650), "批量生产")
+	_facility = make_label("正在读取设施…", Rect2(24, 58, 790, 26))
+	recipe_list = ItemList.new()
+	recipe_list.position = Vector2(24, 96)
+	recipe_list.size = Vector2(294, 358)
+	recipe_list.add_theme_stylebox_override("panel", _surface_style("0b1620", "304b5e"))
+	recipe_list.add_theme_constant_override("v_separation", 9)
+	recipe_list.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	recipe_list.item_selected.connect(_select_recipe)
+	content_root.add_child(recipe_list)
+	details = RichTextLabel.new()
+	details.position = Vector2(338, 98)
+	details.size = Vector2(478, 258)
+	details.text = "选择配方查看材料与产量"
+	content_root.add_child(details)
+	make_label("运行次数", Rect2(338, 376, 100, 28))
+	cycles = _number(Vector2(450, 372), 10000)
+	make_label("生产速度", Rect2(596, 376, 100, 28))
+	speed = _number(Vector2(700, 372), 10)
+	make_label("速度提高每轮投入和产量；经验仍按一轮计算。", Rect2(338, 420, 478, 30)).add_theme_font_size_override("font_size", 14)
+	_order_label = make_label("暂无生产订单", Rect2(24, 474, 792, 28))
+	_order_label.clip_text = true
+	progress = ProgressBar.new()
+	progress.position = Vector2(24, 510)
+	progress.size = Vector2(792, 22)
+	progress.show_percentage = false
+	progress.add_theme_stylebox_override("background", _surface_style("0b1620", "304b5e"))
+	progress.add_theme_stylebox_override("fill", _surface_style("397f99", "63c5d6"))
+	content_root.add_child(progress)
+	_status = make_label("每轮结束时扣料；取消保留已完成成果。", Rect2(24, 542, 792, 26))
+	_status.clip_text = true
+	start_button = make_button("开始生产", Rect2(24, 594, 164, 34), _start)
+	pause_button = make_button("暂停", Rect2(202, 594, 164, 34), _control)
+	cancel_button = make_button("取消订单", Rect2(380, 594, 164, 34), _ask_cancel)
+	for button: Button in [start_button, pause_button, cancel_button,
+		make_button("刷新", Rect2(700, 594, 116, 34), _query)]: _style_button(button)
+	confirmation = ConfirmationDialog.new()
+	confirmation.title = "取消生产订单"
+	confirmation.ok_button_text = "取消剩余轮次"
+	confirmation.cancel_button_text = "继续保留"
+	confirmation.confirmed.connect(_confirm_cancel)
+	confirmation.canceled.connect(func() -> void: _pending.clear())
+	add_child(confirmation)
+	visibility_changed.connect(_dismiss_confirmation)
+	_update_actions()
 
 
-## 打开指定设施窗口并请求权威配方与背包状态。
-## [param requested_station_id] 由当前地图机器声明的生产设施类型。
+## 创建带整数限制的投入输入框，手工键入值会在开始前正式提交到控件。
+## [param at] 局部位置。[param maximum] 初始上限，后续以权威配置覆盖。
+## 返回输入框。
+func _number(at: Vector2, maximum: int) -> SpinBox:
+	var input := SpinBox.new()
+	input.position = at
+	input.size = Vector2(116, 36)
+	input.min_value = 1
+	input.max_value = maximum
+	input.step = 1
+	input.value_changed.connect(func(_value: float) -> void: _show_recipe())
+	content_root.add_child(input)
+	return input
+
+
+## 打开设施并拉取订单；已有别处订单时转为该订单的查看和取消入口。
+## [param requested_station_id] 实际设施声明的类型。
 func open_station(requested_station_id: String) -> void:
 	_station_id = requested_station_id
-	_snapshot.clear()
-	_inventory_revision = -1
+	_snapshot = null
+	_recipe_id = ""
 	visible = true
 	move_to_front()
-	_render()
-	command_requested.emit({"type": "query_manufacturing", "station_id": _station_id})
+	_query()
 
 
-## 应用权威服务器返回的生产与背包组合快照。
-## [param bundle] 含 manufacturing 和 inventory 的面板 bundle。
+## 提交只读查询，运行时推送之外低频校正剩余时间和地点限制。
+func _query() -> void:
+	_waiting = true
+	_update_actions()
+	command_requested.emit({"type": "query_production", "station_id": _station_id})
+
+
+## 将协议转换为具名展示快照，恢复配方选择并保留尚未提交的次数和速度。
+## [param bundle] 同一事务的制造与背包响应。
 func apply_manufacturing_bundle(bundle: Dictionary) -> void:
-	var value: Variant = bundle.get("manufacturing", {})
-	if not value is Dictionary:
-		return
-	if String(value.get("station_id", "")) != _station_id:
-		return
-	_snapshot = (value as Dictionary).duplicate(true)
-	_station_id = String(_snapshot.get("station_id", _station_id))
-	var inventory_value: Variant = bundle.get("inventory", {})
-	if inventory_value is Dictionary:
-		_inventory_revision = int((inventory_value as Dictionary).get("revision", -1))
-	_render()
+	_snapshot = ManufacturingSnapshot.from_bundle(bundle)
+	_station_id = _snapshot.station_id
+	_waiting = false
+	_poll_elapsed = 0
+	cycles.max_value = _snapshot.maximum_cycles
+	speed.max_value = _snapshot.maximum_speed
+	_facility.text = _snapshot.title + ("　· 每轮 %.1f 秒" % (_snapshot.cycle_milliseconds / 1000.0) if _snapshot.available else "　· 请返回原设施地图后继续")
+	var order := _snapshot.production.order
+	if order != null and _recipe_id.is_empty(): _recipe_id = order.recipe_id
+	recipe_list.clear()
+	for recipe in _snapshot.recipes:
+		var index := recipe_list.add_item("%3d级　%s" % [recipe.level, recipe.title])
+		recipe_list.set_item_tooltip(index, recipe.title)
+		if recipe.id == _recipe_id: recipe_list.select(index)
+	_remaining = float(order.remaining_milliseconds) if order != null else 0.0
+	if order == null:
+		_order_label.text = "暂无生产订单；材料在每轮结束时扣除。"
+	else:
+		var selected := _snapshot.recipe_by_id(order.recipe_id)
+		_order_label.text = "%s　%d / %d轮　速度%d　%s" % [selected.title if selected != null else "生产", order.completed, order.cycles, order.speed, "已暂停" if order.paused else "进行中"]
+	_status.text = order.pause_reason if order != null and order.paused else _snapshot.message
+	if _status.text.is_empty(): _status.text = "关闭窗口不会停止生产；离开设施、断线或重登后暂停。"
+	_status.tooltip_text = _status.text
+	_show_recipe()
+	_update_progress()
 
 
-## 读取当前生产窗口绑定的设施标识，供运行时回归测试使用。
-## 返回当前生产设施类型。
+## 向设施交互测试与窗口管理器公开当前绑定设施。
+## 返回稳定设施类型。
 func station_id() -> String:
 	return _station_id
 
 
-## 按最新快照重建配方按钮、详情和生产结果。
-func _render() -> void:
-	if not is_node_ready():
-		return
-	_title_label.text = String(_snapshot.get(
-		"display_name", "正在读取生产配方…"
-	))
-	for child: Node in _recipe_list.get_children():
-		child.queue_free()
-	var recipes_value: Variant = _snapshot.get("recipes", [])
-	if recipes_value is Array:
-		for value: Variant in recipes_value:
-			if value is Dictionary:
-				_recipe_list.add_child(_recipe_button(value as Dictionary))
-	_detail_label.text = "选择配方查看所需材料"
-	var operation: Dictionary = _snapshot.get("operation", {})
-	if String(operation.get("action", "")) == "craft":
-		_status_label.text = "制作成功" if bool(operation.get("succeeded", false)) else "制作失败，材料已消耗"
-	else:
-		_status_label.text = "配方与结算由权威服务器控制"
+## 保存选择的配方身份而非列表位置。
+## [param index] 用户点选的可见行。
+func _select_recipe(index: int) -> void:
+	if _snapshot == null or index < 0 or index >= _snapshot.recipes.size(): return
+	_recipe_id = _snapshot.recipes[index].id
+	_show_recipe()
 
 
-## 为一条配方创建可悬浮查看、可点击制作的按钮。
-## [param recipe] 服务端投影的配方状态。
-## 返回已绑定交互的按钮。
-func _recipe_button(recipe: Dictionary) -> Button:
-	var button := Button.new()
-	button.text = "%3d级  %s" % [
-		int(recipe.get("required_skill_level", 0)),
-		String(recipe.get("display_name", "未知配方")),
-	]
-	button.custom_minimum_size = Vector2(282, 26)
-	button.alignment = HORIZONTAL_ALIGNMENT_LEFT
-	button.add_theme_font_override("font", REGULAR_FONT)
-	button.add_theme_font_size_override("font_size", 12)
-	button.add_theme_color_override("font_color", TEXT_COLOR)
-	button.disabled = not bool(recipe.get("can_craft", false))
-	button.mouse_entered.connect(_show_recipe.bind(recipe.duplicate(true)))
-	button.pressed.connect(_request_craft.bind(recipe.duplicate(true)))
-	return button
+## 根据权威基础数值格式化当前输入的单轮与整单预览。
+func _show_recipe() -> void:
+	if _snapshot == null or speed == null: return
+	var recipe := _snapshot.recipe_by_id(_recipe_id)
+	details.text = recipe.description(int(cycles.value), int(speed.value)) if recipe != null else "选择配方查看材料与产量"
+	_update_actions()
 
 
-## 在右栏展示配方等级、成功率和逐项材料进度。
-## [param recipe] 当前悬浮的配方快照。
-func _show_recipe(recipe: Dictionary) -> void:
-	var lines := PackedStringArray([
-		String(recipe.get("display_name", "")),
-		"需求等级：%d（当前 %d）" % [
-			int(recipe.get("required_skill_level", 0)),
-			int(recipe.get("effective_skill_level", 0)),
-		],
-		"成功率：%d%%" % roundi(float(recipe.get("success_probability", 0.0)) * 100.0),
-		"产量：%d" % int(recipe.get("output_quantity", 1)),
-		String(recipe.get("quality_description", "")),
-		"",
-		"所需材料：",
-	])
-	for value: Variant in recipe.get("materials", []):
-		if value is Dictionary:
-			var material_view: Dictionary = value
-			lines.append("%s  %d/%d" % [
-				String(material_view.get("display_name", "材料")),
-				int(material_view.get("owned", 0)),
-				int(material_view.get("required", 0)),
-			])
-	_detail_label.text = "\n".join(lines)
+## 根据快照、操作等待和地点决定按钮状态；服务端仍完整校验。
+func _update_actions() -> void:
+	if start_button == null: return
+	var order := _snapshot.production.order if _snapshot != null else null
+	var recipe := _snapshot.recipe_by_id(_recipe_id) if _snapshot != null else null
+	start_button.disabled = _waiting or _snapshot == null or not _snapshot.available or _snapshot.inventory_revision < 0 or order != null or recipe == null or recipe.available_batches < int(speed.value)
+	pause_button.text = "继续生产" if order != null and order.paused else "暂停"
+	pause_button.disabled = _waiting or order == null or (order.paused and not _snapshot.available)
+	cancel_button.disabled = _waiting or order == null
 
 
-## 提交只含配方 ID、设施 ID 和背包 revision 的生产意图。
-## [param recipe] 被点击的权威配方快照。
-func _request_craft(recipe: Dictionary) -> void:
-	if _inventory_revision < 0:
-		return
-	command_requested.emit({
-		"type": "craft_recipe",
-		"station_id": _station_id,
-		"recipe_id": String(recipe.get("recipe_id", "")),
-		"inventory_revision": _inventory_revision,
-	})
+## 发送开始订单意图；已完成的查询不代替服务端版本、材料和地点检查。
+func _start() -> void:
+	cycles.apply()
+	speed.apply()
+	_show_recipe()
+	if start_button.disabled: return
+	_submit({"type": "start_production", "station_id": _station_id, "recipe_id": _recipe_id,
+		"cycles": int(cycles.value), "speed": int(speed.value), "inventory_revision": _snapshot.inventory_revision,
+		"production_revision": _snapshot.production.revision})
 
 
-## 创建生产窗口内的统一文本控件。
-## [param label_name] 节点名称。
-## [param label_position] 窗口局部坐标。
-## [param label_size] 固定显示尺寸。
-## [param font_size] 字号。
-## [param font] 使用的字体资源。
-## 返回加入 content_root 的 Label。
-func _label(
-	label_name: String,
-	label_position: Vector2,
-	label_size: Vector2,
-	font_size: int,
-	font: Font,
-) -> Label:
-	var label := Label.new()
-	label.name = label_name
-	label.position = label_position
-	label.size = label_size
-	label.add_theme_font_override("font", font)
-	label.add_theme_font_size_override("font_size", font_size)
-	label.add_theme_color_override("font_color", TEXT_COLOR)
-	label.add_theme_color_override("font_shadow_color", Color.BLACK)
-	label.add_theme_constant_override("shadow_offset_x", 1)
-	label.add_theme_constant_override("shadow_offset_y", 1)
-	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	content_root.add_child(label)
-	return label
+## 对当前订单发送暂停或继续，不改变材料与已完成次数。
+func _control() -> void:
+	if pause_button.disabled: return
+	_submit({"type": "resume_production" if _snapshot.production.order.paused else "pause_production",
+		"production_revision": _snapshot.production.revision})
 
 
-## 创建与现有免费版窗口一致的深蓝描边背景。
-## 返回窗口背景样式。
-func _panel_style() -> StyleBoxFlat:
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color("00182df4")
-	style.border_color = Color("45bee9")
-	style.set_border_width_all(2)
-	style.shadow_color = Color(0, 0, 0, 0.8)
-	style.shadow_size = 5
-	return style
+## 保存待取消订单的版本并明确未完成轮次的处理。
+func _ask_cancel() -> void:
+	if cancel_button.disabled: return
+	var order := _snapshot.production.order
+	_pending = {"type": "cancel_production", "production_revision": _snapshot.production.revision, "confirm_cancel": true}
+	confirmation.dialog_text = "已完成%d / %d轮。\n取消剩余%d轮？未完成轮次尚未扣料，已完成的产物和经验保留。" % [order.completed, order.cycles, order.cycles - order.completed]
+	confirmation.popup_centered(Vector2i(540, 170))
+
+
+## 只提交一次已审阅的订单版本，期间新订单不能被旧确认取消。
+func _confirm_cancel() -> void:
+	if _pending.is_empty(): return
+	var command := _pending.duplicate(true)
+	_pending.clear()
+	_submit(command)
+
+
+## 发送意图并在失败无快照时追加只读恢复；不预测库存或订单成功。
+## [param command] 已构造的语义命令。
+func _submit(command: Dictionary) -> void:
+	_waiting = true
+	_update_actions()
+	command_requested.emit(command)
+	if _waiting: _query()
+
+
+## 仅在可见时平滑显示服务器剩余时间，每三秒查询校正，不自行推进已完成次数。
+## [param delta] 展示帧经过时间。
+func _process(delta: float) -> void:
+	if not visible or _snapshot == null: return
+	_poll_elapsed += delta
+	var order := _snapshot.production.order
+	if order != null and not order.paused:
+		_remaining = maxf(0, _remaining - delta * 1000)
+		_update_progress()
+	if _poll_elapsed >= 3:
+		_poll_elapsed = 0
+		_query()
+
+
+## 更新当前一轮的进度条，归零等待权威消息，不显示预测产物。
+func _update_progress() -> void:
+	var order := _snapshot.production.order
+	progress.value = 100.0 * (1.0 - _remaining / order.cycle_milliseconds) if order != null else 0.0
+	progress.tooltip_text = "当前轮进度；完成情况以服务器入账为准"
+
+
+## 关闭窗口时撤销尚未确认的取消意图，订单仍由服务器执行。
+func _dismiss_confirmation() -> void:
+	if not visible:
+		_pending.clear()
+		if confirmation != null: confirmation.hide()
