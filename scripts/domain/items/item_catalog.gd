@@ -23,6 +23,7 @@ const PRESENTATION_PATHS := [
 
 var _definitions: Dictionary = {}
 var _definition_ids_by_display_name: Dictionary = {}
+var socket_rules: VehicleSocketRules
 
 
 ## 读取所有当前启用的物品定义和语义化表现目录。
@@ -55,6 +56,13 @@ func initialize() -> DomainResult:
 		if not _definitions.has(id):
 			return DomainResult.failure(&"items.unknown_consumable", "consumable definition is missing")
 		_definitions[id]["use_rule"] = use_rules.value.rules[id]
+	var socket_data := JsonConfigLoader.load_dictionary("res://data/gameplay/vehicle_socket_rules_v1.json")
+	if not socket_data.is_ok:
+		return socket_data
+	var socket_result := VehicleSocketRules.from_dictionary(socket_data.value)
+	if not socket_result.is_ok:
+		return socket_result
+	socket_rules = socket_result.value
 	_index_display_names()
 	return DomainResult.ok(self)
 
@@ -64,11 +72,40 @@ func initialize() -> DomainResult:
 ## [param state] 存档中的实例状态。
 ## 返回服装、战车底盘、引擎、武器、采掘臂、通用装备或普通物品的具体实例。
 func create(definition_id: String, state: Dictionary) -> DomainResult:
+	var sockets_result := VehicleSockets.restore(state.get("vehicle_sockets", {}))
+	if not sockets_result.is_ok:
+		return sockets_result
+	var cracks := VehicleCrystal.restore_cracks(state.get("crystal_cracks", 0))
+	if not cracks.is_ok:
+		return cracks
+	var result := _create_item(definition_id, state)
+	if not result.is_ok:
+		return result
+	var item: GameItem = result.value
+	if not item is VehicleCrystal and cracks.value != 0:
+		return DomainResult.failure(&"sockets.invalid_state", "非晶石物品不能带有裂纹")
+	var checked := (sockets_result.value as VehicleSockets).validate_for(
+		socket_rules.profile(item.definition_id) if item is VehicleEquipment else null, socket_rules)
+	if not checked.is_ok:
+		return checked
+	if item is VehicleEquipment:
+		item.sockets = sockets_result.value
+		item.socket_rules = socket_rules
+	return result
+
+
+## 创建具体物品；额外实例状态由公开工厂统一验证。
+## [param definition_id] 稳定定义。
+## [param state] 实例字段。
+## 返回物品或定义错误。
+func _create_item(definition_id: String, state: Dictionary) -> DomainResult:
 	definition_id = ItemDefinitionAliases.canonical(definition_id)
 	if not _definitions.has(definition_id):
 		return DomainResult.failure(&"items.definition_missing", "item definition does not exist")
 	var item_definition: Dictionary = _definitions[definition_id].duplicate(true)
 	var kind := String(item_definition.get("kind", ""))
+	if socket_rules.crystal(definition_id) != null:
+		return DomainResult.ok(VehicleCrystal.new(item_definition, state))
 	if item_definition.has("use_rule"):
 		return DomainResult.ok(ConsumableItem.new(item_definition, state))
 	match kind:

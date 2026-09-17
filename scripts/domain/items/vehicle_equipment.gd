@@ -7,6 +7,8 @@ var weight: int
 var _device_kind: String
 var attachment_family: String
 var allowed_locations: Array = []
+var sockets := VehicleSockets.new()
+var socket_rules: VehicleSocketRules
 
 
 ## 检查接合器逐级强化条件；不改变耐久、绑定和槽位。
@@ -90,4 +92,6 @@ func to_view_dictionary() -> Dictionary:
 	view["equip_kind"] = equip_kind
 	view["attachment_family"] = attachment_family
 	view["allowed_locations"] = allowed_locations.duplicate()
+	view["vehicle_sockets"] = sockets.to_dictionary()
+	view["socket_eligible"] = socket_rules != null and socket_rules.profile(definition_id) != null
 	return view

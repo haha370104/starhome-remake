@@ -10,6 +10,7 @@ var max_durability := 0
 var durability := 0
 var upgrade_level := 0
 var enhancement := ClothingEnhancement.new()
+var vehicle_sockets := VehicleSockets.new()
 var locked := false
 var bound := false
 var slot_location := -1
@@ -34,6 +35,10 @@ static func from_dictionary(raw: Variant) -> DomainResult:
 	if not enhanced.is_ok:
 		return enhanced
 	slot.enhancement = enhanced.value
+	var sockets := VehicleSockets.restore(raw.get("vehicle_sockets", {}))
+	if not sockets.is_ok:
+		return sockets
+	slot.vehicle_sockets = sockets.value
 	if not raw.get("locked", false) is bool or not raw.get("bound", false) is bool:
 		return DomainResult.failure(&"persistence.invalid_equipment_slot", "equipment flags must be booleans")
 	slot.locked = raw.get("locked", false)
@@ -62,6 +67,7 @@ func to_dictionary() -> Dictionary:
 		"durability": durability,
 		"upgrade_level": upgrade_level,
 		"enhancement": enhancement.to_dictionary(),
+		"vehicle_sockets": vehicle_sockets.to_dictionary(),
 		"locked": locked,
 		"bound": bound,
 		"slot_location": slot_location,

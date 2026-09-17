@@ -15,6 +15,8 @@ var max_durability := 0
 var durability := 0
 var upgrade_level := 0
 var enhancement := ClothingEnhancement.new()
+var vehicle_sockets := VehicleSockets.new()
+var crystal_cracks: int = 0
 
 
 ## 执行 `from_dictionary` 对应的模块操作。
@@ -48,6 +50,14 @@ static func from_dictionary(raw: Variant) -> DomainResult:
 	if not enhanced.is_ok:
 		return enhanced
 	stack.enhancement = enhanced.value
+	var sockets := VehicleSockets.restore(raw.get("vehicle_sockets", {}))
+	var cracks := VehicleCrystal.restore_cracks(raw.get("crystal_cracks", 0))
+	if not sockets.is_ok:
+		return sockets
+	if not cracks.is_ok:
+		return cracks
+	stack.vehicle_sockets = sockets.value
+	stack.crystal_cracks = cracks.value
 	if stack.stack_id.is_empty() or stack.item_definition_id.is_empty() \
 			or stack.quantity <= 0 or stack.slot_index < 0 or stack.container_id.is_empty() \
 			or stack.position_px.x < 0 or stack.position_px.y < 0 \
@@ -75,6 +85,8 @@ func to_dictionary() -> Dictionary:
 		"durability": durability,
 		"upgrade_level": upgrade_level,
 		"enhancement": enhancement.to_dictionary(),
+		"vehicle_sockets": vehicle_sockets.to_dictionary(),
+		"crystal_cracks": crystal_cracks,
 	}
 
 

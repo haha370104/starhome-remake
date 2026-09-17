@@ -199,8 +199,7 @@ func _add_reward_uncommitted(item: GameItem) -> DomainResult:
 	if find(item.instance_id) != null:
 		return DomainResult.failure(&"inventory.duplicate_item", "reward item identity already exists")
 	for current: GameItem in _items:
-		if current.definition_id != item.definition_id or current.bound != item.bound \
-			or current.locked or current.quantity + item.quantity > current.max_stack:
+		if not current.can_stack_with(item) or current.quantity + item.quantity > current.max_stack:
 			continue
 		current.quantity += item.quantity
 		return DomainResult.ok(current)
