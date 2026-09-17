@@ -54,6 +54,7 @@ TESTS = (
     "ui/runtime/inventory_drag_gesture_test.gd",
     "ui/runtime/item_tooltip_layout_test.gd",
     "ui/runtime/hud_runtime_smoke_test.gd",
+    "ui/central_system_message_feed_test.gd",
     "ui/runtime/navigation_windows_test.gd",
     "ui/runtime/weapon_merchant_runtime_test.gd",
     "ui/runtime/training_tasks_runtime_test.gd",

@@ -273,8 +273,7 @@ func _test_engineering_arm_empty_click(hall: Node2D) -> void:
 	var projectile_count: int = hall.world_view.combat_attack_controller.active_projectile_count()
 	var ability_sequence: int = hall.multiplayer_presenter.session._next_ability_sequence
 	var feed: CentralSystemMessageFeed = hall.hud.system_message_feed
-	var message_count := feed.queued_message_count()
-	var active_message := feed.message_label.text
+	var active_messages := feed.displayed_messages()
 	hall.hud.state.set_selected_action_slot("energy_cannon")
 	for device_kind: String in ["mining_arm", "repair_arm"]:
 		for definition_id: String in config.merchant.official_whitelist_ids[device_kind]:
@@ -294,8 +293,8 @@ func _test_engineering_arm_empty_click(hall: Node2D) -> void:
 					"维修臂空地点击归为客户端维修意图")
 			else:
 				_expect(hall.hud.status_text() == "原提示保持不变", "采掘臂空地点击保持静默")
-			_expect(feed.queued_message_count() == message_count and feed.message_label.text == active_message,
-				"空地点击不能向中央消息队列添加错误")
+			_expect(feed.displayed_messages() == active_messages,
+				"空地点击不能向中央消息层添加错误")
 			_expect(hall.multiplayer_presenter.session._next_ability_sequence == ability_sequence,
 				"空地点击不得提交开炮意图")
 			_expect(hall.world_view.combat_attack_controller.active_projectile_count() == projectile_count, "工程臂不产生炮弹")

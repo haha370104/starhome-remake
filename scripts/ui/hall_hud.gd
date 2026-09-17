@@ -108,13 +108,13 @@ func configure(world_map_size: Vector2, minimap_texture: Texture2D, map_name := 
 	add_overlay(map_navigation_panel)
 
 
-## 将系统提示加入顺序队列；每次技能升级都获得完整展示时间。
+## 立即叠加系统提示；每条消息拥有独立的完整展示时间。
 ## [param message] 待展示的非空本地化系统消息。
 func show_system_message(message: String) -> void:
 	system_message_feed.show_message(message)
 
 
-## 创建中央系统消息表现器；队列、停留、上浮和淡出均由组件独立负责。
+## 创建中央系统消息表现器；顺序排布、独立停留、上浮和淡出均由组件负责。
 func _build_system_message_feed() -> void:
 	system_message_feed = CentralSystemMessageFeedScript.new()
 	system_message_feed.configure()
