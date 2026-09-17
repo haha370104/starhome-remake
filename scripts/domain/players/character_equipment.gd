@@ -65,6 +65,8 @@ func items() -> Array[Clothing]:
 func skill_modifiers() -> Dictionary:
 	var result: Dictionary = {}
 	for clothing: Clothing in items():
+		if clothing.durability <= 0:
+			continue
 		for skill_id: Variant in clothing.clothing_effects:
 			result[String(skill_id)] = int(result.get(String(skill_id), 0)) \
 				+ int(clothing.clothing_effects[skill_id])

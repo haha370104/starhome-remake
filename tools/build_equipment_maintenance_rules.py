@@ -116,6 +116,7 @@ def build(check=False):
         tool_rules.append({"definition_id": id, "scope": scope, "kind": kind, "amount": amount})
     write("data/gameplay/equipment_maintenance_items_v1.json", {"schema_version": 1, "definitions": items}, check)
     write("data/gameplay/equipment_maintenance_rules_v1.json", {"schema_version": 1,
+          "wear_thresholds": {"shot": 20, "movement": 60, "mining": 20, "damage": 100},
           "maintenance_maps": sorted(set(read("data/world/manufacturing_facilities_v1.json")["maps"]) | {id for id, path in read("data/maps/map_directory.json")["definitions"].items() if (ROOT / path.removeprefix("res://")).is_file() and read(path.removeprefix("res://")).get("category") in ["city", "city_interior"]}),
           "policy": {"regular_location": "configured bases, city and manufacturing facility maps", "maximum_loss": "ordinary vehicle maintenance loses ceil(current maximum * 1%), remake setting; clothing and quick repair preserve maximum",
                      "wear": "remake: weapon per 20 accepted shots, engine per 60 moving seconds, mining arm per 20 successful cycles, clothing per 100 damaging hits; unsupported maintenance and no-durability equipment do not wear"},

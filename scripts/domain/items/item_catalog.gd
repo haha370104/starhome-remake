@@ -91,6 +91,9 @@ func initialize() -> DomainResult:
 ## [param state] 存档中的实例状态。
 ## 返回服装、战车底盘、引擎、武器、采掘臂、通用装备或普通物品的具体实例。
 func create(definition_id: String, state: Dictionary) -> DomainResult:
+	var used := EquipmentUsage.restore(state.get("usage", {}))
+	if not used.is_ok:
+		return used
 	var processed := EquipmentProcessing.restore(state.get("processing", {}))
 	if not processed.is_ok:
 		return processed

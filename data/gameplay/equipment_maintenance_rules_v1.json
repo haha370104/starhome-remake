@@ -1,5 +1,6 @@
 {
   "schema_version": 1,
+  "wear_thresholds": {"shot": 20, "movement": 60, "mining": 20, "damage": 100},
   "maintenance_maps": [
     "dragon_city_refinery_floor_2",
     "dragon_city_refinery_floor_3",

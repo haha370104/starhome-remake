@@ -11,6 +11,7 @@ var _stats: Dictionary
 var processing := EquipmentProcessing.new()
 var processing_rules: EquipmentProcessingRules
 var maintenance_profile: EquipmentMaintenanceRules.Profile
+var usage := EquipmentUsage.new()
 
 
 ## 初始化具有耐久和数值配置的装备实例。
@@ -21,7 +22,7 @@ func _init(definition: Dictionary = {}, state: Dictionary = {}) -> void:
 	var raw_stats: Variant = definition.get("stats", {})
 	_stats = (raw_stats as Dictionary).duplicate(true) if raw_stats is Dictionary else {}
 	max_durability = maxi(1, int(state.get(
-		"max_durability", _stats.get("max_durability", 1)
+		"max_durability", _stats.get("max_durability", _stats.get("wear_degree", 1))
 	)))
 	durability = clampi(int(state.get("durability", max_durability)), 0, max_durability)
 	upgrade_level = maxi(0, int(state.get("upgrade_level", 0)))
@@ -31,6 +32,28 @@ func _init(definition: Dictionary = {}, state: Dictionary = {}) -> void:
 	var restored := EquipmentProcessing.restore(state.get("processing", {}))
 	if restored.is_ok:
 		processing = restored.value
+	var used := EquipmentUsage.restore(state.get("usage", {}))
+	if used.is_ok:
+		usage = used.value
+	# 旧荣耀服装曾遗漏 wear_degree，完整的 1/1 旧记录迁移到原版上限。
+	if _stats.has("wear_degree") and max_durability == 1 and durability == 1:
+		max_durability = maxi(1, int(_stats.wear_degree))
+		durability = max_durability
+
+
+## 记录与自身类型匹配的实际使用，维护链不完整或免磨损装备保持原状。
+## [param event] shot、movement、mining 或 damage。
+## [param amount] 实际次数或移动秒数。
+## 返回是否刚刚损坏，用于一次性重算战斗属性。
+func record_use(event: String, amount: float = 1.0) -> bool:
+	if durability <= 0 or maintenance_profile == null or maintenance_profile.no_wear or not maintenance_profile.wear_enabled:
+		return false
+	var matches := (event == "shot" and self is VehicleWeapon) or (event == "movement" and self is VehicleEngine) \
+		or (event == "mining" and self is VehicleMiningArm) or (event == "damage" and self is Clothing)
+	if not matches:
+		return false
+	wear(usage.consume(event, amount, float(maintenance_profile.wear_thresholds.get(event, 0))))
+	return durability == 0
 
 
 ## 让装备承受磨损并保证耐久不小于零。
@@ -89,5 +112,6 @@ func to_view_dictionary() -> Dictionary:
 		if processing.bonus(attribute) > 0:
 			view.stats[attribute] = stat(attribute)
 	view["processing"] = processing.to_dictionary()
+	view["usage"] = usage.to_dictionary()
 	view["processing_eligible"] = processing_rules != null and processing_rules.profile(definition_id) != null
 	return view

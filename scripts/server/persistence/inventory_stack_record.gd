@@ -17,6 +17,7 @@ var upgrade_level := 0
 var enhancement := ClothingEnhancement.new()
 var vehicle_sockets := VehicleSockets.new()
 var processing := EquipmentProcessing.new()
+var usage := EquipmentUsage.new()
 var crystal_cracks: int = 0
 
 
@@ -55,6 +56,10 @@ static func from_dictionary(raw: Variant) -> DomainResult:
 	if not processed.is_ok:
 		return processed
 	stack.processing = processed.value
+	var used := EquipmentUsage.restore(raw.get("usage", {}))
+	if not used.is_ok:
+		return used
+	stack.usage = used.value
 	var sockets := VehicleSockets.restore(raw.get("vehicle_sockets", {}))
 	var cracks := VehicleCrystal.restore_cracks(raw.get("crystal_cracks", 0))
 	if not sockets.is_ok:
@@ -92,6 +97,7 @@ func to_dictionary() -> Dictionary:
 		"enhancement": enhancement.to_dictionary(),
 		"vehicle_sockets": vehicle_sockets.to_dictionary(),
 		"processing": processing.to_dictionary(),
+		"usage": usage.to_dictionary(),
 		"crystal_cracks": crystal_cracks,
 	}
 

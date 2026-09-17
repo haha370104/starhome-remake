@@ -15,6 +15,7 @@ class Profile extends RefCounted:
 	var maximum_loss_fraction: float = 0
 	var native_maximum: int = 1
 	var reason: String = ""
+	var wear_thresholds: Dictionary = {}
 
 class RepairTool extends RefCounted:
 	var definition_id: String = ""
@@ -59,6 +60,11 @@ static func from_dictionary(data: Dictionary) -> DomainResult:
 				return DomainResult.failure(&"maintenance.rules_invalid", "维护材料无效")
 			entry.materials.append(cost.duplicate(true))
 		rules._profiles[id] = entry
+		entry.wear_thresholds = data.get("wear_thresholds", {}).duplicate(true)
+		for event: String in entry.wear_thresholds:
+			var threshold := float(entry.wear_thresholds[event])
+			if event not in EquipmentUsage.EVENTS or not is_finite(threshold) or threshold <= 0:
+				return DomainResult.failure(&"maintenance.rules_invalid", "装备磨损节奏无效")
 	for raw: Dictionary in data.get("tools", []):
 		var entry := RepairTool.new()
 		entry.definition_id = String(raw.get("definition_id", ""))
