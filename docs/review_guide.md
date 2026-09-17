@@ -29,6 +29,8 @@
 P0/P1/P2及P3多个子项已交付；[记忆模块](equipment_memory.md)新增五类提取转移，审查
 `EquipmentMemoryTransfer`、`InventoryTransformation`、`EquipmentMemoryService` 与四个同名测试，
 重点是跨实例原子性、失败载荷销毁和目标上限校验。P3整体尚未完成。
+新增[普通品质](equipment_quality.md)与[拆解](equipment_dismantling.md)：重点审查独立品质加成、
+制造概率标注、所有随机分支容量预检和绑定保留；正式服务与UI测试使用隔离存档。
 如果只做第一轮 review，优先读第 3 节 A—D，再看第 5 节风险表。
 
 ## 2. 当前真实运行关系

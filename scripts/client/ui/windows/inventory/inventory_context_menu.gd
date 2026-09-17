@@ -10,6 +10,7 @@ signal equipment_strengthening_requested(instance_id: String, is_material: bool)
 signal armor_refinement_requested(instance_id: String, is_material: bool)
 signal clothing_improvement_requested(instance_id: String, is_material: bool)
 signal equipment_memory_requested(instance_id: String, is_material: bool)
+signal equipment_dismantle_requested(instance_id: String, is_material: bool)
 
 signal command_requested(command: Dictionary)
 
@@ -73,6 +74,8 @@ func open_for(item: GameItem, revision: int, point: Vector2) -> void:
 		_add_action("护甲精工", "armor_refinement", false)
 	if item is EquipmentStrengtheningMaterial or (item is Equipment and item.strengthening_profile != null):
 		_add_action("装备星级强化", "equipment_strengthening", false)
+	if item is Equipment and item.dismantle_eligible:
+		_add_action("拆解装备", "equipment_dismantle", item.locked)
 	if item is EquipmentMemoryModule or (item is Equipment and item.memory_profile != null):
 		_add_action("记忆模块 / 成长转移", "equipment_memory", false)
 	if item is ConsumableItem:
@@ -104,6 +107,9 @@ func _select_action(id: int) -> void:
 	if id < 0 or id >= _actions.size() or _item == null:
 		return
 	var action := _actions[id]
+	if action == "equipment_dismantle":
+		equipment_dismantle_requested.emit(_item.instance_id, false)
+		return
 	if action == "equipment_memory":
 		equipment_memory_requested.emit(_item.instance_id, _item is EquipmentMemoryModule)
 		return

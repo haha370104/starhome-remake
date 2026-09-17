@@ -9,6 +9,7 @@ const PROJECTS := {
 	"armor_refinement": "护甲精工",
 	"clothing_improvement": "季节时装改良",
 	"equipment_memory": "记忆模块 / 成长转移",
+	"equipment_dismantle": "拆解装备",
 }
 
 

@@ -40,6 +40,7 @@
 - [季节时装改良](clothing_improvement.md)：P3-C 七类纤维、百级单方向成长、获取链和旧帽子槽位兼容。
 - [记忆模块](equipment_memory.md)：P3-D 五类成长提取转移、风险确认和跨实例原子事务。
 - [普通装备品质](equipment_quality.md)：原版四档固定加成、制造品质分布与旧档兼容。
+- [普通装备拆解](equipment_dismantling.md)：15款绿色以上装备、四档返还、容量预检与销毁确认。
 - [装备十星强化](equipment_strengthening.md)：P3-B 独立星级、材料投入与失败降星。
 - [萤石与耀石加工](extra_attribute_processing.md)：P3-A 独立通道、失败退级、获取与实际属性。
 - [维护、磨损与弹药](equipment_maintenance.md)：P2 常规维护/速修、实际使用余量、补弹与验收。
