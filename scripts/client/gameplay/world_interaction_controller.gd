@@ -13,6 +13,7 @@ var combat: CombatInteractionController
 var game_window_manager: GameWindowManager
 var smart_assistant: SmartAssistantController
 var death_journal: PveDeathJournalController
+var hotkeys := ClientHotkeys.new()
 
 
 ## 在会话启动前绑定窗口与被动日志；未开启智脑也会记录权威击毁。
@@ -59,8 +60,9 @@ func configure(
 ## [param event] 视口中尚未被 GUI 消费的键鼠输入。
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey:
-		var key_event := event as InputEventKey
-		if key_event.pressed and not key_event.echo and key_event.keycode == KEY_Z:
+		var focus := get_viewport().gui_get_focus_owner()
+		if focus is LineEdit or focus is TextEdit: return
+		if hotkeys.matches("self_repair", event):
 			combat.request_self_repair()
 			get_viewport().set_input_as_handled()
 		return

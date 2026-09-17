@@ -13,8 +13,9 @@ P3-D [记忆模块](equipment_memory.md)六类、[普通品质](equipment_qualit
 [锻造上限](equipment_forging.md)的实例、交易、供给和UI已接通，对应原版7号锻造记忆模块也已接入；五行能量石范围仍待确认，P3尚未整体关闭。
 [P4装置](pve_devices.md)的基础发生器、权威触发与表现已接通，119项完整回归通过；
 隐身/雷达按已批准边界核查后延期，九种缺失命中特效仍无可靠索引，不填任意动画。
-P6 [个人仓库](personal_warehouse.md)、[批量生产](batch_production.md)与[智脑扩展](smart_assistant_extensions.md)已接通，133项完整回归通过；继续[设置与退出](client_settings_and_exit.md)，
-之后回到P5；五行能量石的待确认状态继续单列。
+P6 [个人仓库](personal_warehouse.md)、[批量生产](batch_production.md)与[智脑扩展](smart_assistant_extensions.md)已接通，133项完整回归通过；
+[设置与退出](client_settings_and_exit.md)的服务端50、客户端26、偏好30、设置界面60项专项通过，正在完整回归，
+完成后回到P5；五行能量石的待确认状态继续单列。
 
 ## 1. 范围
 

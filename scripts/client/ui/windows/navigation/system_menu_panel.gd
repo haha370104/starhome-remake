@@ -2,6 +2,7 @@ class_name SystemMenuPanel
 extends NavigationWindow
 
 signal exit_requested
+signal settings_requested(section: String)
 
 ## 还原免费版九行系统菜单图片，退出连接保存流程，其他入口由后续设置功能接管。
 func _ready() -> void:
@@ -12,6 +13,7 @@ func _ready() -> void:
 	for index in range(9):
 		var feature: String = ["字体设置", "颜色设置", "热键设置", "查看留言", "音乐音效", "帮助精灵", "网速测试", "查看信件", "退出"][index]
 		var callback := exit_requested.emit if index == 8 else unavailable.bind(feature)
+		if index in [0, 1, 2, 4]: callback = settings_requested.emit.bind({0: "display", 1: "colors", 2: "keys", 4: "audio"}[index])
 		var button := make_button("", Rect2(7, 4 + index * 18, 53, 18), callback)
 		button.tooltip_text = feature
 		button.add_theme_stylebox_override("normal", StyleBoxEmpty.new())

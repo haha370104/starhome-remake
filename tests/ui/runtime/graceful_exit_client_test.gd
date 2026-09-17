@@ -53,8 +53,13 @@ func _run() -> void:
 	var before := server.autosave_service.state_for(entity).to_dictionary()
 	var repository := server.autosave_service._repository
 	server.autosave_service._repository = RejectingRepository.new()
+	var prior_confirmation := ConfirmationDialog.new()
+	hall.add_child(prior_confirmation)
+	prior_confirmation.exclusive = true
+	prior_confirmation.popup_centered(Vector2i(400, 160))
 	root.close_requested.emit()
 	await _frames(4)
+	_check(not prior_confirmation.visible, "原有独占确认窗收起但不提交，退出窗口可正常显示")
 	_check(quit_count == 0, "存档失败不能退出")
 	_check(exit_flow.dialog.visible and not exit_flow.dialog.get_cancel_button().disabled, "明确失败允许返回游戏")
 	_check(exit_flow.dialog.dialog_text.contains("模拟保存失败"), "真实拒绝经过共享传输呈现")

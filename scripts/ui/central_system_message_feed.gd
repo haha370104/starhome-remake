@@ -13,6 +13,14 @@ class MessageEntry extends RefCounted:
 	var elapsed := 0.0
 
 var _entries: Array[MessageEntry] = []
+var _text_color := Color("fff36b")
+
+
+## 调整现有与后续消息的文字颜色，不改变每条消息的排序和停留时间。
+## [param value] 当前用户选择的通用提示颜色。
+func set_text_color(value: Color) -> void:
+	_text_color = value
+	for entry in _entries: entry.label.add_theme_color_override("font_color", value)
 
 
 ## 初始化中央消息层；每条消息独立计时，不占用鼠标事件。
@@ -35,7 +43,7 @@ func show_message(message: String) -> void:
 	entry.label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	entry.label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	entry.label.add_theme_font_size_override("font_size", 20)
-	entry.label.add_theme_color_override("font_color", Color("fff36b"))
+	entry.label.add_theme_color_override("font_color", _text_color)
 	entry.label.add_theme_color_override("font_outline_color", Color.BLACK)
 	entry.label.add_theme_constant_override("outline_size", 2)
 	entry.label.mouse_filter = Control.MOUSE_FILTER_IGNORE

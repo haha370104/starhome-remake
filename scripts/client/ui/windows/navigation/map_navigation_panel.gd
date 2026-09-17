@@ -10,6 +10,7 @@ var map_label: Label
 var status: Label
 var _points: Array[MapNavigationPoint] = []
 var _refresh_timer: Timer
+var hotkeys := ClientHotkeys.new()
 
 
 ## 创建独立的当前地图窗口；只发布导航意图，不持有玩家或寻路服务。
@@ -56,6 +57,7 @@ func set_map(world_size: Vector2, texture: Texture2D, display_name: String) -> v
 	map_label.text = display_name
 	set_points([])
 	status.text = "左键选择目的地 · Tab 关闭"
+	refresh_hotkey_hint()
 	canvas.queue_redraw()
 
 
@@ -75,20 +77,18 @@ func update_player_position(world_position: Vector2) -> void:
 	canvas.queue_redraw()
 
 
-## 拦截无修饰 Tab 切换窗口；编辑文字时保留输入控件的键盘行为。
+## 依用户的地图快捷键切换窗口；编辑文字或录入按键时保留输入控件行为。
 ## [param event] 视口输入，长按重复事件不切换面板。
 func _input(event: InputEvent) -> void:
-	if not event is InputEventKey or not event.pressed or event.echo \
-			or event.keycode != KEY_TAB or event.alt_pressed or event.ctrl_pressed \
-			or event.meta_pressed or event.shift_pressed:
-		return
+	if not hotkeys.matches("map", event): return
 	var focus := get_viewport().gui_get_focus_owner()
 	if focus is LineEdit or focus is TextEdit or not content_root.is_inside_tree():
 		return
 	if visible:
 		hide()
 	else:
-		position = (get_viewport_rect().size - size) / 2.0
+		clamp_to_viewport(get_viewport_rect().size)
+		position = (get_viewport_rect().size - size * scale) / 2.0
 		clamp_to_viewport(get_viewport_rect().size)
 		show()
 		move_to_front()
@@ -108,6 +108,7 @@ func _on_visibility_changed() -> void:
 ## [param world_position] 底图已经校验过的世界位置。
 func _on_map_destination(world_position: Vector2) -> void:
 	status.text = "已选择位置 (%d, %d) · Tab 关闭" % [world_position.x, world_position.y]
+	refresh_hotkey_hint()
 	navigation_requested.emit(world_position, &"")
 
 
@@ -120,4 +121,10 @@ func _on_point_clicked(index: int) -> void:
 	canvas.selected_position = point.position
 	canvas.queue_redraw()
 	status.text = "已选择：%s · Tab 关闭" % point.label
+	refresh_hotkey_hint()
 	navigation_requested.emit(point.destination, point.id)
+
+
+## 根据当前绑定刷新关闭提示，同时保留所选目的地说明。
+func refresh_hotkey_hint() -> void:
+	if status != null: status.text = status.text.split(" · ")[0] + " · " + hotkeys.label("map") + " 关闭"

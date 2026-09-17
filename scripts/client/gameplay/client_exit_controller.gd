@@ -45,6 +45,7 @@ func request_exit() -> void:
 	_elapsed = 0
 	_combat.application_exiting = true
 	_combat.map_travel.stop_moving("正在保存并退出")
+	_hide_transient_windows(get_tree().root)
 	dialog.waiting()
 	var sent := _presenter.request_player_panel_command({"type": "prepare_exit", "request_id": _request_id})
 	if sent.is_empty():
@@ -91,6 +92,15 @@ func _return_to_game() -> void:
 ## 延迟执行最终退出，避免在同步网络回调中销毁仍在发布信号的节点。
 func _finish() -> void:
 	if _quit.is_valid(): _quit.call()
+
+
+## 收起尚未确认的弹出窗口，保证系统关闭可在加工确认等模态界面上进入保存流程。
+## [param node] 当前场景子树；只隐藏弹窗，不确认或提交其业务动作。
+func _hide_transient_windows(node: Node) -> void:
+	for child in node.get_children():
+		if child == dialog: continue
+		if child is Window: child.hide()
+		_hide_transient_windows(child)
 
 
 ## 校验跨传输回执中的存档版本，兼容JSON整数而不接受布尔值、负值或小数。

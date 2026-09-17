@@ -21,6 +21,7 @@ const MAP_DIRECTORY_PATH := "res://data/maps/glory_map_directory_v1.json"
 var interactions := WorldInteractionController.new()
 var player_binding := PlayerPresentationBinding.new()
 var combat := CombatInteractionController.new()
+var settings_controller := ClientSettingsController.new()
 var map_travel := MapTravelController.new()
 var world_view: ClientWorldView
 var character_catalog: Dictionary
@@ -201,6 +202,8 @@ func _build_multiplayer_presentation() -> void:
 	interactions.bind_player_windows(game_window_manager)
 	add_child(exit_controller)
 	exit_controller.configure(multiplayer_presenter, panel_session, combat, game_window_manager.navigation_windows["system"])
+	add_child(settings_controller)
+	settings_controller.configure(game_window_manager, hud, interactions)
 	local_player_controller.set_multiplayer_presenter(multiplayer_presenter)
 	var start_error: Error = multiplayer_presenter.start({
 		"offline_debug_enabled": multiplayer_offline_debug_enabled,

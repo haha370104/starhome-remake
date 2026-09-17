@@ -9,6 +9,7 @@ const CLOSE_HOVER := preload("res://assets/ui/windows/common/close/hover.png")
 const CLOSE_PRESSED := preload("res://assets/ui/windows/common/close/pressed.png")
 
 var content_root: Control
+var requested_ui_scale := 1.0
 var _dragging := false
 var _drag_offset := Vector2.ZERO
 var _header_height := 38.0
@@ -68,8 +69,11 @@ func request_close() -> void:
 ## 将窗口中心限制在当前 HUD 可见区域内。
 ## [param viewport_size] 当前根视口像素尺寸。
 func clamp_to_viewport(viewport_size: Vector2) -> void:
-	position.x = clampf(position.x, 0.0, maxf(0.0, viewport_size.x - size.x))
-	position.y = clampf(position.y, 0.0, maxf(0.0, viewport_size.y - size.y))
+	if viewport_size.x <= 0 or viewport_size.y <= 0: return
+	var fitted_scale := minf(requested_ui_scale, minf(viewport_size.x / maxf(size.x, 1), viewport_size.y / maxf(size.y, 1)))
+	scale = Vector2.ONE * fitted_scale
+	position.x = clampf(position.x, 0.0, maxf(0.0, viewport_size.x - size.x * scale.x))
+	position.y = clampf(position.y, 0.0, maxf(0.0, viewport_size.y - size.y * scale.y))
 
 
 ## 处理标题区域拖动及点击置顶。
@@ -85,6 +89,6 @@ func _on_window_gui_input(event: InputEvent) -> void:
 			_dragging = false
 		accept_event()
 	elif event is InputEventMouseMotion and _dragging:
-		position += event.relative
+		position += event.relative * scale
 		clamp_to_viewport(get_viewport_rect().size)
 		accept_event()

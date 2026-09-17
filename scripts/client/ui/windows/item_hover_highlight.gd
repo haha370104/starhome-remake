@@ -95,6 +95,16 @@ static func _place_tooltip(target: Control) -> void:
 	var viewport_size := target.get_viewport_rect().size
 	var tooltip_size: Vector2 = _active_tooltip.get_combined_minimum_size()
 	_active_tooltip.size = tooltip_size
+	var ancestor: Node = target
+	var window_scale := 1.0
+	while ancestor != null:
+		if ancestor is DraggableGameWindow:
+			window_scale = ancestor.scale.x
+			break
+		ancestor = ancestor.get_parent()
+	window_scale = minf(window_scale, minf(viewport_size.x / maxf(tooltip_size.x, 1), viewport_size.y / maxf(tooltip_size.y, 1)))
+	_active_tooltip.scale = Vector2.ONE * window_scale
+	tooltip_size *= window_scale
 	var desired := viewport.get_mouse_position() + TOOLTIP_OFFSET
 	desired.x = clampf(desired.x, 0.0, maxf(0.0, viewport_size.x - tooltip_size.x))
 	desired.y = clampf(desired.y, 0.0, maxf(0.0, viewport_size.y - tooltip_size.y))
