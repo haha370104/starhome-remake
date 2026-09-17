@@ -219,14 +219,14 @@ func _apply_recent_events(combat_snapshot: Dictionary) -> void:
 		if event_type == &"monster_attack_started" and _attack_effects != null:
 			_attack_effects.present_attack(event)
 		if event_type in [&"monster_attack_resolved", &"monster_attack_expired"] and _attack_effects != null:
-			_attack_effects.settle_corrosion_attack(event)
+			_attack_effects.settle_attack(event)
 		if event_type in [
 			&"energy_cannon_hit", &"rocket_launcher_hit", &"missile_hit",
 			&"monster_attack_resolved",
 		]:
 			_present_damage(event, combat_snapshot)
 		if event_type == &"monster_attack_resolved":
-			_present_contact_impact(event, combat_snapshot)
+			_present_attack_impact(event, combat_snapshot)
 		if event_type in [&"energy_cannon_hit", &"rocket_launcher_hit", &"missile_hit"]:
 			_present_nested_death(event)
 
@@ -275,16 +275,16 @@ func _vector_from_pair(value: Variant) -> Vector2:
 	return result if is_finite(result.x) and is_finite(result.y) else Vector2.INF
 
 
-## 在贴身攻击权威结算点播放受击覆盖效果。
+## 在普通怪物攻击权威结算时，于当前可见战车脚点播放受击覆盖效果。
 ## [param event] 怪物攻击结算事件。
 ## [param combat_snapshot] 用于识别本地玩家的快照。
-func _present_contact_impact(event: Dictionary, combat_snapshot: Dictionary) -> void:
-	if _attack_effects == null or StringName(event.get("attack_archetype", "")) != &"contact_melee":
+func _present_attack_impact(event: Dictionary, combat_snapshot: Dictionary) -> void:
+	if _attack_effects == null:
 		return
 	var anchor := _target_anchor(event, combat_snapshot)
 	if anchor == null:
 		return
-	_attack_effects.present_contact_impact(
+	_attack_effects.present_impact(
 		event,
 		_world_parent.to_local(anchor.global_position),
 	)

@@ -2,6 +2,7 @@ class_name GloryMonsterPresentationCatalog
 extends RefCounted
 
 const DEFAULT_PATH := "res://data/gameplay/glory/glory_monsters_v1.json"
+const IMPACT_PATH := "res://data/gameplay/glory/monster_hit_effects_v1.json"
 
 var errors := PackedStringArray()
 var _by_actor_id: Dictionary = {}
@@ -25,7 +26,36 @@ func load_default() -> bool:
 		if actor_id.is_empty() or not presentation is Dictionary:
 			continue
 		_by_actor_id[actor_id] = (presentation as Dictionary).duplicate(true)
-	return not _by_actor_id.is_empty()
+	return not _by_actor_id.is_empty() and _load_impact_overrides()
+
+
+## 应用经过原客户端调用链审计的命中素材，修正旧表中不可用的历史字段。
+## 返回配置是否完整有效；未知怪物或重复覆盖会使加载失败。
+## 设计：只消费显式映射，不按近似文件名寻找替代图，也不读取网络给出的资源路径。
+func _load_impact_overrides() -> bool:
+	var loaded := JsonConfigLoader.load_dictionary(IMPACT_PATH)
+	if not loaded.is_ok or int(loaded.value.get("schema_version", 0)) != 1:
+		errors.append("怪物命中特效目录格式无效")
+		return false
+	var seen: Dictionary = {}
+	for raw: Variant in loaded.value.get("definitions", []):
+		if not raw is Dictionary or not raw.get("combat_actor_ids") is Array:
+			errors.append("命中特效必须声明怪物身份列表")
+			return false
+		for actor_value: Variant in raw.combat_actor_ids:
+			var actor_id := String(actor_value)
+			if not _by_actor_id.has(actor_id) or seen.has(actor_id):
+				errors.append("命中特效怪物未知或重复：%s" % actor_id)
+				return false
+			seen[actor_id] = true
+			if raw.has("hit_effect") and raw.hit_effect is String:
+				_by_actor_id[actor_id]["hit_effect"] = raw.hit_effect
+			elif raw.has("impact") and raw.impact is Dictionary:
+				_by_actor_id[actor_id]["impact"] = raw.impact.duplicate(true)
+			else:
+				errors.append("命中特效缺少资源：%s" % actor_id)
+				return false
+	return true
 
 
 ## 执行 `definition_for_actor` 对应的模块操作。

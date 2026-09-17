@@ -2,6 +2,7 @@ class_name MonsterAttackEffectController
 extends Node
 
 const RAW_ANIMATION := &"raw"
+const LEGACY_IMPACT_FPS := 1000.0 / 66.0
 
 var _world_parent: Node2D
 var _effect_definitions: Dictionary = {}
@@ -35,7 +36,7 @@ func configure(manifest: Dictionary, world_parent: Node2D) -> Error:
 	return OK
 
 
-## 注入全量荣耀 ALE 仓储，供生成目录中的弹体和贴身命中特效使用。
+## 注入全量荣耀 ALE 仓储，供生成目录中的弹体和命中特效使用。
 ## [param repository] 调用方传入的 `repository` 参数。
 ## [param presentations] 调用方传入的 `presentations` 参数。
 func configure_glory(repository: RefCounted, presentations: RefCounted) -> void:
@@ -90,6 +91,7 @@ func present_attack(event: Dictionary) -> bool:
 	wrapper.add_child(sprite)
 	_world_parent.add_child(wrapper)
 	_active_projectiles.append({
+		"attack_id": attack_id,
 		"node": wrapper,
 		"origin": origin,
 		"target": target,
@@ -135,6 +137,7 @@ func _present_ale_projectile(event: Dictionary, actor_id: String) -> bool:
 	wrapper.add_child(sprite)
 	_world_parent.add_child(wrapper)
 	_active_projectiles.append({
+		"attack_id": attack_id,
 		"node": wrapper, "origin": origin, "target": target, "elapsed": 0.0,
 		"duration": maxf(origin.distance_to(target) / speed, 0.001),
 		"frames": frames.size(), "fps": 10.0, "ale_frames": frames,
@@ -143,34 +146,32 @@ func _present_ale_projectile(event: Dictionary, actor_id: String) -> bool:
 	return true
 
 
-## 在权威贴身攻击结算时，于受击战车位置播放荣耀版命中特效。
+## 在权威远程或贴身攻击结算时，于受击战车位置播放对应命中特效。
 ## [param event] `monster_attack_resolved` 权威事件。
 ## [param target_position] 受击目标在世界父节点坐标系内的位置。
 ## 返回是否创建了新的命中特效。
-func present_contact_impact(event: Dictionary, target_position: Vector2) -> bool:
+func present_impact(event: Dictionary, target_position: Vector2) -> bool:
 	var attack_id := String(event.get("attack_id", ""))
 	if (
 		attack_id.is_empty()
 		or _presented_impact_ids.has(attack_id)
-		or StringName(event.get("attack_archetype", "")) != &"contact_melee"
+		or StringName(event.get("attack_archetype", "")) not in [&"contact_melee", &"ranged_projectile"]
 		or not target_position.is_finite()
 	):
 		return false
-	var actor_value: Variant = _effect_definitions.get(String(event.get("combat_actor_id", "")), {})
-	if (not actor_value is Dictionary or (actor_value as Dictionary).is_empty()) \
-		and _effect_definitions.has("photosensitive_orb_standard"):
-		actor_value = _effect_definitions["photosensitive_orb_standard"]
-	if not actor_value is Dictionary or (actor_value as Dictionary).is_empty():
-		return _present_ale_contact_impact(event, target_position)
-	var impact_value: Variant = (actor_value as Dictionary).get("contact_impact", {})
+	var actor_id := String(event.get("combat_actor_id", ""))
+	var actor_value: Dictionary = _effect_definitions.get(actor_id, {})
+	var presentation: Dictionary = _glory_presentations.definition_for_actor(actor_id) \
+		if _glory_presentations != null else {}
+	var impact_value: Variant = presentation.get("impact", actor_value.get("contact_impact", {}))
 	if not _valid_effect(impact_value):
-		return false
+		return _present_ale_impact(event, target_position)
 	var impact: Dictionary = impact_value
 	var frames := ResourceLoader.load(String(impact["resource"]), "SpriteFrames") as SpriteFrames
 	if frames == null or not frames.has_animation(RAW_ANIMATION):
 		return false
 	var wrapper := Node2D.new()
-	wrapper.name = "MonsterContactImpact_%s" % attack_id.replace(".", "_")
+	wrapper.name = "MonsterImpact_%s" % attack_id.replace(".", "_")
 	wrapper.position = target_position
 	wrapper.z_index = 1
 	var sprite := AnimatedSprite2D.new()
@@ -194,11 +195,11 @@ func present_contact_impact(event: Dictionary, target_position: Vector2) -> bool
 	return true
 
 
-## 执行 `present_ale_contact_impact` 对应的模块操作。
-## [param event] 调用方传入的 `event` 参数。
-## [param target_position] 调用方传入的 `target_position` 参数。
-## 返回该函数计算、查询或操作得到的结果。
-func _present_ale_contact_impact(event: Dictionary, target_position: Vector2) -> bool:
+## 从受审计的怪物目录加载一次性 ALE 命中动画。
+## [param event] 已确认的怪物攻击结算事件。
+## [param target_position] 当前可见受击目标的脚点。
+## 返回是否成功创建动画；资源缺失时不以其他怪物效果代替。
+func _present_ale_impact(event: Dictionary, target_position: Vector2) -> bool:
 	if _ale_repository == null or _glory_presentations == null:
 		return false
 	var presentation: Dictionary = _glory_presentations.definition_for_actor(
@@ -215,7 +216,7 @@ func _present_ale_contact_impact(event: Dictionary, target_position: Vector2) ->
 		return false
 	var attack_id := String(event["attack_id"])
 	var wrapper := Node2D.new()
-	wrapper.name = "MonsterContactImpact_%s" % attack_id.replace(".", "_")
+	wrapper.name = "MonsterImpact_%s" % attack_id.replace(".", "_")
 	wrapper.position = target_position
 	wrapper.z_index = 1
 	var sprite := Sprite2D.new()
@@ -226,7 +227,7 @@ func _present_ale_contact_impact(event: Dictionary, target_position: Vector2) ->
 	wrapper.add_child(sprite)
 	_world_parent.add_child(wrapper)
 	_active_impacts.append({
-		"node": wrapper, "elapsed": 0.0, "frames": frames.size(), "fps": 10.0,
+		"node": wrapper, "elapsed": 0.0, "frames": frames.size(), "fps": LEGACY_IMPACT_FPS,
 		"ale_frames": frames,
 	})
 	_presented_impact_ids[attack_id] = true
@@ -312,16 +313,25 @@ func apply_corrosion_snapshot(snapshot: Dictionary, local_player: Node2D) -> voi
 		_corrosion.apply_snapshot(snapshot, local_player)
 
 
-## 结束已命中或落空的腐蚀喷吐；持续扣血事件不重新生成表现。
+## 按攻击编号结束已命中或落空的弹体；腐蚀喷吐保留既有消散规则。
 ## [param event] 权威攻击结束事件。
-func settle_corrosion_attack(event: Dictionary) -> void:
+## 设计：终结先于开始到达时也记住编号，避免迟到快照重新创建已结束的弹体。
+func settle_attack(event: Dictionary) -> void:
+	var attack_id := String(event.get("attack_id", ""))
+	if attack_id.is_empty():
+		return
+	_presented_attack_ids[attack_id] = true
+	for index in range(_active_projectiles.size() - 1, -1, -1):
+		if String(_active_projectiles[index].get("attack_id", "")) == attack_id:
+			_free_projectile(_active_projectiles[index])
+			_active_projectiles.remove_at(index)
 	if _corrosion != null:
-		_corrosion.settle(String(event.get("attack_id", "")))
+		_corrosion.settle(attack_id)
 
 
-## 统计当前仍在播放的贴身攻击命中特效。
+## 统计当前仍在播放的怪物攻击命中特效。
 ## 返回活跃命中特效节点数量。
-func active_contact_impact_count() -> int:
+func active_impact_count() -> int:
 	return _active_impacts.size()
 
 

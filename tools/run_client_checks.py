@@ -38,6 +38,7 @@ TESTS = (
     "server/combat/monster_wander_timing_test.gd",
     "server/combat/corrosive_attack_test.gd",
     "client/presentation/combat/monster_attack_effect_controller_test.gd",
+    "client/presentation/combat/monster_hit_presentation_test.gd",
     "client/presentation/combat/monster_hover_name_test.gd",
     "server/manufacturing/industrial_supply_chain_test.gd",
     "server/authoritative_server_smoke_test.gd",

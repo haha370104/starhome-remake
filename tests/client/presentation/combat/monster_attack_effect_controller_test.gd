@@ -62,23 +62,23 @@ func _run() -> void:
 	_expect(not controller.present_attack(contact), "contact monster should use body attack without a projectile")
 	_expect(controller.active_projectile_count() == 0, "contact attack should leave no projectile")
 	_expect(
-		controller.present_contact_impact(contact, Vector2(25.0, 30.0)),
+		controller.present_impact(contact, Vector2(25.0, 30.0)),
 		"resolved contact attack should create its vehicle overlay",
 	)
 	_expect(
-		not controller.present_contact_impact(contact, Vector2(25.0, 30.0)),
+		not controller.present_impact(contact, Vector2(25.0, 30.0)),
 		"replayed contact impact should be deduplicated",
 	)
 	var impact := world.get_node_or_null(
-		"MonsterContactImpact_monster_orb_attack_2"
+		"MonsterImpact_monster_orb_attack_2"
 	) as Node2D
 	_expect(
 		impact != null and impact.position == Vector2(25.0, 30.0),
 		"contact impact should use the authoritative target position",
 	)
-	_expect(controller.active_contact_impact_count() == 1, "one contact impact should be active")
+	_expect(controller.active_impact_count() == 1, "one contact impact should be active")
 	controller.advance(0.34)
-	_expect(controller.active_contact_impact_count() == 0, "five 66 ms frames should finish after 0.33 seconds")
+	_expect(controller.active_impact_count() == 0, "five 66 ms frames should finish after 0.33 seconds")
 	await _test_corrosion(controller, world)
 	controller.queue_free()
 	world.queue_free()
@@ -135,7 +135,7 @@ func _test_corrosion(controller: MonsterAttackEffectController, world: Node2D) -
 	if "--capture" in OS.get_cmdline_user_args():
 		await RenderingServer.frame_post_draw
 		capture_viewport.get_texture().get_image().save_png("res://.godot/corrosion-slow-spray.png")
-	controller.settle_corrosion_attack({"attack_id": "gel.0"})
+	controller.settle_attack({"attack_id": "gel.0"})
 	_expect(controller.active_projectile_count() == 7, "实际撞击会结束在途状态")
 	var fading: CorrosiveEffectController.Flight = controller._corrosion._flights["gel.0"]
 	_expect(fading.settled and fading.node.modulate.a == 1.0, "命中不瞬间删除喷雾，开始独立消散")
@@ -144,7 +144,7 @@ func _test_corrosion(controller: MonsterAttackEffectController, world: Node2D) -
 	if capture_viewport != null:
 		await RenderingServer.frame_post_draw
 		capture_viewport.get_texture().get_image().save_png("res://.godot/corrosion-slow-fade.png")
-	controller.settle_corrosion_attack({"attack_id": "gel.0"})
+	controller.settle_attack({"attack_id": "gel.0"})
 	controller.advance(1.38)
 	_expect(controller._corrosion._flights.has("gel.0") and fading.fade_elapsed > 2.98, "重复结算不重置消散时钟，三秒前仍存在")
 	controller.advance(0.02)

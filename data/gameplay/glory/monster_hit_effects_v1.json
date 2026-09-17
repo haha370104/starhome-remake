@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "definitions": [
+    {
+      "id": "orb_and_larva_impact",
+      "combat_actor_ids": [
+        "photosensitive_orb_standard",
+        "om_larva_standard",
+        "glory_npc_006",
+        "glory_npc_007",
+        "glory_npc_010",
+        "glory_npc_011",
+        "glory_npc_068",
+        "glory_npc_071",
+        "glory_npc_072",
+        "glory_npc_075",
+        "glory_npc_076",
+        "glory_npc_079",
+        "glory_npc_080",
+        "glory_npc_097",
+        "glory_npc_098"
+      ],
+      "hit_effect": "pic3/npc/CHN_2005_06_28_18_45_00_878.ale",
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "legacy_effects": [
+          "pic/npc/CHN_2005_06_28_19_35_12_80/CHN_2005_06_28_18_47_58_908.ale",
+          "pic/npc/CHN_2005_06_28_19_34_22_72/CHN_2005_06_28_18_39_24_823.ale"
+        ],
+        "evidence": "Glory npcclt1.fcc effect-family declarations and global/golbalstring.fcc effect registry; live Glory ALE is byte-identical to both legacy references",
+        "md5": "5038ceae69659a9979fa38af07512bc4",
+        "frame_delay_ms": 66
+      }
+    }
+  ]
+}

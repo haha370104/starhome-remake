@@ -53,11 +53,11 @@ func _run() -> void:
 	controller.apply_snapshot(_snapshot(true, 60, [_contact_hit_event(3)]))
 	var attack_effects := controller.get_node_or_null("MonsterAttackEffects")
 	_expect(
-		attack_effects != null and attack_effects.active_contact_impact_count() == 1,
+		attack_effects != null and attack_effects.active_impact_count() == 1,
 		"contact damage event should create one vehicle overlay",
 	)
 	var contact_impact := world.get_node_or_null(
-		"MonsterContactImpact_monster_orb_attack_1"
+		"MonsterImpact_monster_orb_attack_1"
 	) as Node2D
 	_expect(
 		contact_impact != null and contact_impact.position == local_player.position,
