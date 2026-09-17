@@ -72,6 +72,7 @@ TESTS = (
     "integration/client_state_seam_characterization_test.gd",
     "integration/npc_action_window_handoff_test.gd",
     "integration/active_world_transition_view_smoke_test.gd",
+    "integration/field_transition_presentation_test.gd",
     "integration/d04_player_vehicle_presentation_test.gd",
     "integration/equipped_weapon_presentation_test.gd",
     "server/combat/equipped_vehicle_authority_test.gd",

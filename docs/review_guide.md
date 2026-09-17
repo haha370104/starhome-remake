@@ -118,6 +118,8 @@ main_hall.tscn / main_hall.gd                  dedicated_server.tscn
 2026-09-17 移动开炮重点核对[移速及炮口同步](combat_diagnostics.md#2026-09-17-移动途中开炮的坐标同步)：
 静止快照也必须提供装备移速，旧 tick 不回退速度，客户端跨拐点不丢距离；确认发射只校准
 可见炮口，不能平移权威终点、修改命中或回写玩家位置。
+野外出口另须核对[地图构建产物](map_resource_pipeline.md)：动画组件正确不代表静态图集已
+排除旧箭头，全野外审计必须同时覆盖独立目录及内容包，实际渲染验证位于战车下方。
 代码：[LocalPlayerController](../scripts/client/gameplay/local_player_controller.gd)、
 [LocalMovementPredictor](../scripts/client/network/local_movement_predictor.gd)、
 [ClientMultiplayerSession](../scripts/client/network/client_multiplayer_session.gd)、
