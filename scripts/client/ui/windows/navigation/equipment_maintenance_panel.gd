@@ -28,6 +28,7 @@ func _ready() -> void:
 	mode_selector.size = Vector2(338, 32)
 	mode_selector.add_item("常规维护 / 服装修补")
 	mode_selector.add_item("使用速修箱")
+	mode_selector.add_item("补充弹药")
 	mode_selector.item_selected.connect(_select_mode)
 	content_root.add_child(mode_selector)
 	execute_button.text = "执行维护"
@@ -77,9 +78,9 @@ func apply_maintenance_bundle(bundle: Dictionary) -> void:
 ## 切换维护方式只改变意图，恢复数值由服务器预览。
 ## [param index] 用户选择的模式。
 func _select_mode(index: int) -> void:
-	mode = "regular" if index == 0 else "quick"
-	execute_type = "maintain_equipment" if index == 0 else "quick_repair_equipment"
-	execute_button.text = "执行维护" if index == 0 else "使用速修箱"
+	mode = ["regular", "quick", "ammunition"][index]
+	execute_type = ["maintain_equipment", "quick_repair_equipment", "refill_equipment_ammunition"][index]
+	execute_button.text = ["执行维护", "使用速修箱", "补满弹药"][index]
 	open_board()
 
 

@@ -26,6 +26,7 @@ func _run() -> void:
 	var engine := player.inventory.find("inventory.spare_engine") as Equipment
 	engine.durability = 100
 	player.vehicle.loadout.at(1).durability = 100
+	player.inventory.add_reward(items.create("starter_rocket_launcher", {"instance_id": "rocket", "magazine": {"remaining": 3}}).value)
 	for id: String in ["maintenance_quickrepairbox1", "maintenance_ionrepairbox1"]:
 		player.inventory.add_reward(items.create(id, {"instance_id": id, "quantity": 2}).value)
 	_fixture._state = mapper.to_record(player).value
@@ -73,6 +74,17 @@ func _run() -> void:
 	panel.confirmation.hide()
 	panel._confirm()
 	_check(_fixture._state.currency < 100000, "purchase settled")
+	panel.mode_selector.select(2)
+	panel._select_mode(2)
+	for candidate: int in panel._equipment.size():
+		if panel._equipment[candidate].instance_id == "rocket": panel._select_equipment(candidate)
+	_check(not panel.execute_button.disabled and panel.details.text.contains("补充：97 发"), "ammo quote")
+	panel._ask()
+	_check(panel._pending.type == "refill_equipment_ammunition", "ammo intent")
+	panel.confirmation.hide()
+	panel._confirm()
+	_check(mapper.to_domain(_fixture._state).value.inventory.find("rocket").magazine.remaining == 100, "ammo refill through UI")
+	_check(panel.execute_button.disabled and panel.details.text.contains("弹仓已满"), "repeat refill disabled")
 	panel._ask_purchase()
 	panel.hide()
 	_check(panel._pending.is_empty(), "close clears pending")

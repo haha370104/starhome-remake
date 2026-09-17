@@ -55,6 +55,7 @@ const MESSAGES := {
 	"combat.weapon_cooldown": "武器尚未冷却，请稍候",
 	"combat.insufficient_working_energy": "工作能量不足，请等待恢复",
 	"equipment.broken": "武器已损坏，请维护或速修",
+	"ammunition.empty": "弹药不足，请到基地或生产区补弹",
 	"combat.insufficient_power_output": "战车输出功率不足，无法使用该武器",
 	"combat.target_too_close": "目标距离太近，无法攻击",
 	"combat.target_already_dead": "目标已被击败",

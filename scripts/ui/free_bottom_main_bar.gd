@@ -165,6 +165,9 @@ func _build_weapon_button(
 ## [param action_id] 当前战术装备对应的操作标识，空值表示卸下。
 ## [param count] 该战术物品的权威可用数量。
 func _update_tactical_action(action_id: String, count: int) -> void:
+	if tactical_button != null and String(tactical_button.name).to_snake_case() == action_id and tactical_count_label != null and count >= 0:
+		tactical_count_label.text = str(count)
+		return
 	if tactical_button != null:
 		weapon_buttons.erase(String(tactical_button.name).to_snake_case())
 		tactical_button.free()
@@ -186,8 +189,10 @@ func _update_tactical_action(action_id: String, count: int) -> void:
 		tactical_count_label.name = "TacticalCount"
 		tactical_count_label.text = str(count)
 		tactical_count_label.position = _vector_from_array(mode_definition["position"], Vector2.ZERO) + Vector2(2, 10)
-		tactical_count_label.add_theme_font_size_override("font_size", 10)
-		tactical_count_label.add_theme_color_override("font_color", Color.RED)
+		tactical_count_label.add_theme_font_size_override("font_size", 13)
+		tactical_count_label.add_theme_color_override("font_color", Color.WHITE)
+		tactical_count_label.add_theme_color_override("font_outline_color", Color.BLACK)
+		tactical_count_label.add_theme_constant_override("outline_size", 3)
 		tactical_count_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		design_surface.add_child(tactical_count_label)
 	_update_selected_weapon(hud_state.selected_action_slot)

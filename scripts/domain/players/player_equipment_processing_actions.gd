@@ -20,8 +20,6 @@ static func preview(player: Player, id: String, material_id: String) -> DomainRe
 	var checked := item.processing.preview(profile, special)
 	if not checked.is_ok:
 		return checked
-	if special.attribute == "ammunition_capacity":
-		return DomainResult.failure(&"processing.ammunition_pending", "载弹量需在弹药消费与补充流程启用后开放")
 	var rule := profile.attributes[special.attribute]
 	var requirements: Array[Dictionary] = rule.materials.duplicate(true)
 	requirements.append({"definition_id": material.definition_id, "quantity": 1})

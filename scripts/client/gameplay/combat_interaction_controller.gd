@@ -239,6 +239,7 @@ func on_combat_snapshot_received(snapshot: Dictionary) -> void:
 	for mode_id: String in world_view.combat_attack_controllers:
 		var mode: Dictionary = CombatActions.WEAPON_MODES[mode_id]
 		world_view.combat_attack_controllers[mode_id].apply_authoritative_snapshot(snapshot, String(mode["ability_id"]))
+	hud.set_weapon_ammunition(snapshot.get("local_weapon_flight", {}))
 	world_view.monster_world_controller.apply_snapshot(snapshot)
 	if world_view.ground_loot_world_controller != null:
 		world_view.ground_loot_world_controller.apply_snapshot(snapshot)

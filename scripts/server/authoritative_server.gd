@@ -982,7 +982,9 @@ func _refresh_achievement_combat(entity_id: String, state: PlayerStateRecord) ->
 	var target: AuthoritativeMapInstance = map_registry.instance_by_id(state.map_instance_id)
 	if target == null:
 		return
-	_capture_persistent_player_state(state)
+	if target.combat_module != null and target.combat_module.actors.has(entity_id):
+		var condition: EquipmentConditionLoadout = target.combat_module.actors[entity_id].equipment_condition
+		EquipmentConditionCapture.apply(state, condition.snapshot())
 	var loadout := _build_entity_combat_loadout(target, state)
 	if not loadout.is_ok:
 		if not target.is_vehicle_combat_active() and loadout.error_code in [

@@ -61,7 +61,7 @@ func on_current_player_changed(current_player: Player) -> void:
 		hud.set_primary_device("" if primary_device == null else primary_device.primary_device_kind())
 		var tactical_equipment := current_player.vehicle.loadout.at(13) as VehicleWeapon
 		var action_id := "" if tactical_equipment == null else tactical_equipment.combat_mode()
-		hud.set_tactical_action(action_id)
+		hud.set_tactical_action(action_id, tactical_equipment.magazine.remaining if tactical_equipment != null and tactical_equipment.ammunition_capacity() > 0 else -1)
 	refresh_local_movement_availability(current_player)
 
 

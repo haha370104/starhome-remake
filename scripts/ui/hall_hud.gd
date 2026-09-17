@@ -158,6 +158,14 @@ func set_tactical_action(action_id: String, count := -1) -> void:
 	state.set_tactical_action(action_id, count)
 
 
+## 仅更新当前战术装备弹量，过期或另一武器的快照不能切换图标。
+## [param flights] 权威能力到弹道及弹仓投影的映射。
+func set_weapon_ammunition(flights: Dictionary) -> void:
+	var ammunition: Dictionary = flights.get(state.tactical_action_id + ".primary", {}).get("ammunition", {})
+	if not ammunition.is_empty():
+		state.set_tactical_action(state.tactical_action_id, int(ammunition.remaining))
+
+
 ## 将权威玩家的主装置类型同步到底栏，不暴露内部按钮。
 ## [param device_kind] 主装置语义类型；空字符串清空主槽图标。
 func set_primary_device(device_kind: String) -> void:

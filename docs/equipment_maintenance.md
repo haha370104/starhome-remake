@@ -1,6 +1,6 @@
 # 装备耐久维护规则
 
-P2-B 实施中：资格、工具、领域模型、权威交易、维护窗口与运行期磨损已接入；副武器弹药继续开发。
+P2-B 已完成：资格、工具、领域模型、权威交易、维护窗口、运行期磨损与副武器弹药已接入。
 
 ## 原版依据与复刻参数
 
@@ -18,9 +18,15 @@ P2-B 实施中：资格、工具、领域模型、权威交易、维护窗口与
 
 ## 验证
 
+弹药使用独立 `WeaponMagazine` 保存当前弹量，容量从装备和加工派生。[弹药配置](../data/gameplay/equipment_ammunition_rules_v1.json)保留 59 个原版地面装备的容量及每发价格；非攻击装置只登记原字段，能力在 P4/P5 按其资格启用。缺口乘以 `m_nAddBulletWorth` 的费用来自 `cltobj/firegunclt.fcc:201`、`cltobj/appendequipclt.fcc:911`。新物品和缺少弹仓字段的旧档仅首次初始化满弹。能量炮不消耗副武器弹药。
+
+维护窗口新增「补充弹药」，支持背包和已装配装备，地点、锁定、满弹、费用与库存版本均由服务端验证。底部原副武器图标显示实时余量，仅数字变化时复用控件。[弹药测试](../tests/domain/equipment_ammunition_test.gd) 23 项通过；维护窗口追加补弹测试后共 19 项通过。
+
 [领域测试](../tests/domain/equipment_maintenance_model_test.gd) 2561 项通过，覆盖全部资格与材料身份，以及满耐久、锁定、损坏修复、普通维护降上限、速修保上限、服装隔离和地点名单。
 P2-A 全量回归 78/78 通过，报告 `.godot/client-checks-20260917-223645-35272/summary.json`。
 
 [维护交易测试](../tests/server/commerce/equipment_maintenance_authority_test.gd) 37 项通过，覆盖材料/金币原子结算、群体速修单次扣箱、绑定传播、原始加工保留、重发和裁缝经验倍率；[维护窗口测试](../tests/ui/runtime/equipment_maintenance_panel_test.gd) 15 项通过，已实际渲染检查。背包右键「耐久维护 / 速修」进入，窗口支持常规维护、速修和工具购买。加工窗口回归 15 项通过，GDScript 警告与错误均为 0。
 
 [使用余量模型](../tests/domain/equipment_usage_model_test.gd) 35 项、[实际磨损/修复/重启](../tests/server/combat/equipment_usage_authority_test.gd) 20 项通过。同档车炮连续输出回归 13985 项通过，八档仍均满足至少四五秒输出。
+
+P2 整体覆盖 84 项测试。首次运行 83/84（`.godot/client-checks-20260917-233329-38864/summary.json`）；能量包回归发现战斗刷新覆盖刚结算的能源，已将同步限定为装备耐久/弹仓，并补跑 `consumable_authority_test` 通过（`.godot/ammunition-consumable-regression.log`）。其余 83 项通过，包含地图切换、持久化、进程内权威传输、装备表现、采矿、制造、食品、称号和战斗能源。

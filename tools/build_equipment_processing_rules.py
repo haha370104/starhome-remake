@@ -48,7 +48,10 @@ def build(check=False):
     raw_fireguns = (SOURCE / "cltobj/fireguncltclass.fcc").read_text(encoding="utf-8-sig")
     profiles = []
     for row in definitions.values():
-        if row.get("kind") not in ["vehicle_chassis", "vehicle_engine", "energy_cannon", "missile_weapon", "rocket_weapon"]:
+        kind = row.get("kind")
+        if kind == "vehicle_weapon" and "EnergyGunBase" in row.get("source_audit", {}).get("inheritance", "").split(" > "):
+            kind = "energy_cannon"
+        if kind not in ["vehicle_chassis", "vehicle_engine", "energy_cannon", "missile_weapon", "rocket_weapon"]:
             continue
         original = by_class.get(STARTERS[row["id"]], row) if row["id"] in STARTERS else row
         legacy = dict(original.get("stats", {}).get("legacy_properties", {}))
@@ -64,7 +67,7 @@ def build(check=False):
         extrapolated = False
         if not matched:
             family = {"vehicle_chassis": "tank", "vehicle_engine": "engine", "energy_cannon": "gun",
-                      "missile_weapon": "Missile", "rocket_weapon": "FireGun"}[row["kind"]]
+                      "missile_weapon": "Missile", "rocket_weapon": "FireGun"}[kind]
             if not any(re.fullmatch(family + r"\d+(?:_\w+)?", name) for name in [source_class] + lineage):
                 continue
             matched = max((name for name in recipes if re.fullmatch(family + r"\d+", name)), key=lambda name: int(recipes[name]["NeedSkill"]))
@@ -116,7 +119,7 @@ def build(check=False):
           "policy": {"success_chance": 1.0, "status": "remake_server_unknown_probability", "skill_id": "processing",
                      "experience": 0, "recipe_source": "expanded/zyf/maceine/upgradelist/upgradelist.txt.cab",
                      "late_equipment": "last confirmed same-family recipe scaled by ceil(required skill / source skill)",
-                     "ammunition": "capacity definitions only; ammunition runtime belongs to P2-B before this attribute is exposed"},
+                     "ammunition": "capacity upgrades preserve current rounds; refill missing rounds at configured maintenance locations"},
           "materials": special, "equipment": profiles}, check)
     sprites = {row["logical_id"] for row in read("data/content/glory_sprite_runtime_index_v1.json")["sprites"]}
     promoted = []

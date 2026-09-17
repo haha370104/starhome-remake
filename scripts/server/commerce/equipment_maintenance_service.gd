@@ -1,7 +1,7 @@
 class_name EquipmentMaintenanceService
 extends RefCounted
 
-const COMMANDS := ["query_equipment_maintenance", "maintain_equipment", "quick_repair_equipment", "buy_maintenance_tool"]
+const COMMANDS := ["query_equipment_maintenance", "maintain_equipment", "quick_repair_equipment", "buy_maintenance_tool", "refill_equipment_ammunition"]
 var _items: ItemCatalog
 var _progression: Dictionary
 
@@ -35,6 +35,9 @@ func execute(player: Player, command: Dictionary) -> DomainResult:
 		"quick_repair_equipment":
 			mode = "quick"
 			result = PlayerEquipmentMaintenanceActions.quick_repair(player, id, tool_id, int(command.get("inventory_revision", -1)), _items.maintenance_rules)
+		"refill_equipment_ammunition":
+			mode = "ammunition"
+			result = PlayerAmmunitionActions.refill(player, id, int(command.get("inventory_revision", -1)), _items.maintenance_rules)
 		"buy_maintenance_tool":
 			var definition_id := String(command.get("definition_id", ""))
 			var quantity := int(command.get("quantity", 1))
@@ -70,12 +73,18 @@ func snapshot(player: Player, operation: Dictionary) -> Dictionary:
 		if item is Equipment:
 			row["installed"] = player.inventory.find(item.instance_id) == null
 			row["attribute_summary"] = "耐久：%d / %d" % [item.durability, item.max_durability]
+			if item.ammunition_capacity() > 0:
+				row.attribute_summary += "\n弹药：%d / %d" % [item.magazine.remaining, item.ammunition_capacity()]
 			equipment.append(row)
 		elif _items.maintenance_rules.repair_tool(item.definition_id) != null:
 			materials.append(row)
 	var id := String(operation.get("instance_id", ""))
 	var quick := String(operation.get("mode", "regular")) == "quick"
 	var quote := PlayerEquipmentMaintenanceActions.quick_preview(player, id, String(operation.get("material_id", "")), _items.maintenance_rules) if quick else PlayerEquipmentMaintenanceActions.regular_preview(player, id, _items.maintenance_rules)
+	if String(operation.get("mode", "regular")) == "ammunition":
+		quote = PlayerAmmunitionActions.preview(player, id, _items.maintenance_rules)
+		return {"equipment": equipment, "materials": [], "preview": quote.value if quote.is_ok else {"can_execute": false, "text": quote.error_message},
+			"offers": offers, "currency": player.inventory.currency, "operation": operation.duplicate(true)}
 	var preview := {"can_execute": false, "text": quote.error_message}
 	if quote.is_ok:
 		preview = quote.value.duplicate(true)
