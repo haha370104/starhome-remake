@@ -57,6 +57,7 @@
 | [地图解析管线](./map_resource_pipeline.md) | FCC/ALE/PKH、碰撞、静态合成、语义遮挡和缺失依赖 |
 | [地图驻留与性能](./map_residency_and_performance.md) | 按玩家启停、休眠状态、在途事务、寻路退化及测量范围 |
 | [怪物掉落覆盖](./monster_loot_coverage.md) | 无掉落怪物全量名单、D03 隐形材料掉落修复 |
+| [怪物命中特效覆盖](monster_hit_effect_audit.md) | 119种怪物审计、免费版22段补图、原版绑定证据与剩余9项 |
 | [野外怪物种群](./field_monster_populations.md) | 逐图刷怪、历史分布证据与复刻默认、小地图出口 |
 | [运行内容与资源包](./runtime_content.md) | 当前地图/动画/物品/配方/矿源数量和完整性边界 |
 | [已知内容注册表](./known_content_registry.md) | 身份和来源查询；旧 runtime 映射不能替代新运行目录 |

@@ -26,6 +26,8 @@ func load_default() -> bool:
 		if actor_id.is_empty() or not presentation is Dictionary:
 			continue
 		_by_actor_id[actor_id] = (presentation as Dictionary).duplicate(true)
+		# npcinfo 的旧字段混有身体动画；只允许下面显式审计的命中目录提供效果。
+		_by_actor_id[actor_id].erase("hit_effect")
 	return not _by_actor_id.is_empty() and _load_impact_overrides()
 
 
@@ -34,7 +36,9 @@ func load_default() -> bool:
 ## 设计：只消费显式映射，不按近似文件名寻找替代图，也不读取网络给出的资源路径。
 func _load_impact_overrides() -> bool:
 	var loaded := JsonConfigLoader.load_dictionary(IMPACT_PATH)
-	if not loaded.is_ok or int(loaded.value.get("schema_version", 0)) != 1:
+	if not loaded.is_ok or int(loaded.value.get("schema_version", 0)) != 1 \
+		or not loaded.value.get("definitions") is Array \
+		or not loaded.value.get("unresolved", []) is Array:
 		errors.append("怪物命中特效目录格式无效")
 		return false
 	var seen: Dictionary = {}
@@ -55,6 +59,15 @@ func _load_impact_overrides() -> bool:
 			else:
 				errors.append("命中特效缺少资源：%s" % actor_id)
 				return false
+	for raw: Variant in loaded.value.get("unresolved", []):
+		if not raw is Dictionary:
+			errors.append("待核实命中特效条目格式无效")
+			return false
+		var actor_id := String(raw.get("combat_actor_id", ""))
+		if not _by_actor_id.has(actor_id) or seen.has(actor_id):
+			errors.append("待核实命中特效怪物未知或重复：%s" % actor_id)
+			return false
+		seen[actor_id] = true
 	return true
 
 

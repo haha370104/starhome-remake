@@ -29,15 +29,20 @@ func _run() -> void:
 	var catalog := JsonConfigLoader.load_dictionary("res://data/gameplay/glory/monster_hit_effects_v1.json")
 	var source_rows: Array = JsonConfigLoader.load_dictionary(GloryMonsterPresentationCatalog.DEFAULT_PATH).value.definitions
 	var archetypes: Dictionary = {}
+	var projectiles: Dictionary = {}
+	var covered: Dictionary = {}
 	for row: Dictionary in source_rows:
 		archetypes[row.combat_actor_id] = row.combat.attack_archetype
+		projectiles[row.combat_actor_id] = row.presentation.projectile
 	for effect: Dictionary in catalog.value.definitions:
 		for actor: String in effect.combat_actor_ids:
+			_expect(not covered.has(actor), "命中配置中的怪物身份不得重复")
+			covered[actor] = true
 			var attack := _event("monster_attack_started", actor + ".hit", actor)
 			attack.attack_archetype = archetypes[actor]
 			# 接触型怪物仍沿同一结算入口；此处主要验证远程普通炮弹的完整路由。
 			_dispatch(controller, attack)
-			var expected_projectiles := 0 if archetypes[actor] == "contact_melee" else 1
+			var expected_projectiles := 0 if archetypes[actor] == "contact_melee" or projectiles[actor].is_empty() else 1
 			_expect(effects.active_projectile_count() == expected_projectiles, "%s 须按实际攻击类型创建弹体" % actor)
 			player.position += Vector2(10, 0)
 			var resolved := _event("monster_attack_resolved", actor + ".hit", actor)
@@ -70,6 +75,19 @@ func _run() -> void:
 			effects.advance(2.0)
 			_expect(effects.active_impact_count() == 0, "一次播放结束须清除节点")
 			player.position = Vector2(320, 200)
+	for pending: Dictionary in catalog.value.get("unresolved", []):
+		_expect(not covered.has(pending.combat_actor_id), "待核实怪物不得同时配置已确认效果")
+		covered[pending.combat_actor_id] = true
+		_dispatch(controller, _event("monster_attack_resolved", pending.combat_actor_id + ".pending", pending.combat_actor_id))
+		_expect(effects.active_impact_count() == 0, "%s 不得把旧表中的怪物身体动画放到战车上" % pending.display_name)
+	for row: Dictionary in source_rows:
+		if row.combat.attack_archetype == "corrosive_projectile":
+			var corrosion_event := _event("monster_attack_resolved", row.combat_actor_id + ".corrosion", row.combat_actor_id)
+			corrosion_event.attack_archetype = "corrosive_projectile"
+			_dispatch(controller, corrosion_event)
+			_expect(effects.active_impact_count() == 0, "%s 保持独立腐蚀效果" % row.display_name)
+		else:
+			_expect(covered.has(row.combat_actor_id), "%s 必须配置效果或记录待核实原因，不能静默漏项" % row.display_name)
 	var actor := "om_larva_standard"
 	_dispatch(controller, _event("monster_attack_started", "dodged", actor))
 	_dispatch(controller, _event("monster_attack_expired", "dodged", actor))

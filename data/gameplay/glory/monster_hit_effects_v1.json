@@ -29,8 +29,765 @@
         ],
         "evidence": "Glory npcclt1.fcc effect-family declarations and global/golbalstring.fcc effect registry; live Glory ALE is byte-identical to both legacy references",
         "md5": "5038ceae69659a9979fa38af07512bc4",
-        "frame_delay_ms": 66
+        "frame_delay_ms": 66,
+        "source_logical_path": "pic3/npc/CHN_2005_06_28_18_45_00_878.ale",
+        "source_sha256": "a04b799a148fe20c91149259c0c5ddedada39cf4dcc049341c622c1fdb7a50a8",
+        "mapping_confidence": "legacy_class_annotation",
+        "server_effect_index_verified": false
       }
+    },
+    {
+      "id": "om_adult_impact",
+      "combat_actor_ids": [
+        "om_adult_standard",
+        "glory_npc_008",
+        "glory_npc_012",
+        "glory_npc_069",
+        "glory_npc_073",
+        "glory_npc_077",
+        "glory_npc_036",
+        "glory_npc_089",
+        "glory_npc_103"
+      ],
+      "impact": {
+        "resource": "res://assets/monsters/om_adult/shared/effects/impact/animation_frames.tres",
+        "frames": 7,
+        "fps": 15.151515151515152,
+        "offset": [
+          -47,
+          -46
+        ]
+      },
+      "source_audit": {
+        "mapping_evidence": "npcclt1.fcc Npc成虫1/2/3:420/467/494; global NPC impact registry index 3; NpcFire:956 also explicitly names the same 920 impact (no projectile sprite)",
+        "mapping_confidence": "legacy_class_annotation",
+        "server_effect_index_verified": false,
+        "frame_delay_ms": 66,
+        "source_registry": "global/golbalstring.fcc:m_szNPCBulletAvi",
+        "source_registry_index": 3,
+        "source_legacy_path": "pic/npc/CHN_2005_06_28_19_35_18_81/CHN_2005_06_28_18_49_11_920.ale",
+        "source_release": "starhome_lz_fr",
+        "source_logical_path": "pic/npc/CHN_2005_06_28_19_35_18_81/CHN_2005_06_28_18_49_11_920.ale",
+        "source_sha256": "3e6cee417334bb217833c24182ab6ec0e898b31307c6ca443742cd76c27c887f",
+        "source_permission": "2026-09-17 user: 用免费版补吧，另外看看其他受击特效是不是也缺了"
+      }
+    },
+    {
+      "id": "gel_worm_impact",
+      "combat_actor_ids": [
+        "glory_npc_013",
+        "glory_npc_017",
+        "glory_npc_023",
+        "glory_npc_081",
+        "glory_npc_085",
+        "glory_npc_099"
+      ],
+      "impact": {
+        "resource": "res://assets/monsters/gel_worm/shared/effects/impact/animation_frames.tres",
+        "frames": 7,
+        "fps": 15.151515151515152,
+        "offset": [
+          -47,
+          -46
+        ]
+      },
+      "source_audit": {
+        "mapping_evidence": "npcclt1.fcc Npc蠕虫1/2/3:528/562/596; global NPC impact registry index 4",
+        "mapping_confidence": "legacy_class_annotation",
+        "server_effect_index_verified": false,
+        "frame_delay_ms": 66,
+        "source_registry": "global/golbalstring.fcc:m_szNPCBulletAvi",
+        "source_registry_index": 4,
+        "source_legacy_path": "pic/npc/CHN_2005_06_28_19_34_41_75/CHN_2005_06_28_18_43_41_865.ale",
+        "source_release": "starhome_lz_fr",
+        "source_logical_path": "pic/npc/CHN_2005_06_28_19_34_41_75/CHN_2005_06_28_18_43_41_865.ale",
+        "source_sha256": "3e6cee417334bb217833c24182ab6ec0e898b31307c6ca443742cd76c27c887f",
+        "source_permission": "2026-09-17 user: 用免费版补吧，另外看看其他受击特效是不是也缺了"
+      }
+    },
+    {
+      "id": "armored_om_impact",
+      "combat_actor_ids": [
+        "glory_npc_015",
+        "glory_npc_021",
+        "glory_npc_025",
+        "glory_npc_083",
+        "glory_npc_087",
+        "glory_npc_101"
+      ],
+      "impact": {
+        "resource": "res://assets/monsters/armored_om/shared/effects/impact/animation_frames.tres",
+        "frames": 7,
+        "fps": 15.151515151515152,
+        "offset": [
+          -47,
+          -46
+        ]
+      },
+      "source_audit": {
+        "mapping_evidence": "npcclt1.fcc Npc铁甲虫1/2/3:631/665/699; global NPC impact registry index 5",
+        "mapping_confidence": "legacy_class_annotation",
+        "server_effect_index_verified": false,
+        "frame_delay_ms": 66,
+        "source_registry": "global/golbalstring.fcc:m_szNPCBulletAvi",
+        "source_registry_index": 5,
+        "source_legacy_path": "pic/npc/CHN_2005_06_28_19_34_34_74/CHN_2005_06_28_18_41_51_848.ale",
+        "source_release": "starhome_lz_fr",
+        "source_logical_path": "pic/npc/CHN_2005_06_28_19_34_34_74/CHN_2005_06_28_18_41_51_848.ale",
+        "source_sha256": "3e6cee417334bb217833c24182ab6ec0e898b31307c6ca443742cd76c27c887f",
+        "source_permission": "2026-09-17 user: 用免费版补吧，另外看看其他受击特效是不是也缺了"
+      }
+    },
+    {
+      "id": "logdang_mild_impact",
+      "combat_actor_ids": [
+        "glory_npc_014",
+        "glory_npc_082"
+      ],
+      "impact": {
+        "resource": "res://assets/monsters/logdang_mild/shared/effects/impact/animation_frames.tres",
+        "frames": 5,
+        "fps": 15.151515151515152,
+        "offset": [
+          -83,
+          -83
+        ]
+      },
+      "source_audit": {
+        "mapping_evidence": "npcclt1.fcc ch-01PD projectile family; global registry ch-01BZ paired impact",
+        "mapping_confidence": "projectile_family_inferred",
+        "server_effect_index_verified": false,
+        "frame_delay_ms": 66,
+        "source_registry": "global/golbalstring.fcc:m_szNPCBulletAvi",
+        "source_registry_index": 11,
+        "source_legacy_path": "pic/npc/CHN_2005_06_28_19_34_34_74/ch-01BZ.ale",
+        "source_release": "starhome_lz_fr",
+        "source_logical_path": "pic/npc/CHN_2005_06_28_19_34_34_74/ch-01BZ.ale",
+        "source_sha256": "ff80d25dec5110a6eff0bedb5bd452c3866094b9f933ac8007573d488201a07f",
+        "source_permission": "2026-09-17 user: 用免费版补吧，另外看看其他受击特效是不是也缺了"
+      }
+    },
+    {
+      "id": "logdang_alert_impact",
+      "combat_actor_ids": [
+        "glory_npc_019",
+        "glory_npc_086"
+      ],
+      "impact": {
+        "resource": "res://assets/monsters/logdang_alert/shared/effects/impact/animation_frames.tres",
+        "frames": 5,
+        "fps": 15.151515151515152,
+        "offset": [
+          -82,
+          -65
+        ]
+      },
+      "source_audit": {
+        "mapping_evidence": "npcclt1.fcc ch-02PD projectile family; global registry ch-02BZ paired impact",
+        "mapping_confidence": "projectile_family_inferred",
+        "server_effect_index_verified": false,
+        "frame_delay_ms": 66,
+        "source_registry": "global/golbalstring.fcc:m_szNPCBulletAvi",
+        "source_registry_index": 12,
+        "source_legacy_path": "pic/npc/CHN_2005_06_28_19_34_34_74/ch-02BZ.ale",
+        "source_release": "starhome_lz_fr",
+        "source_logical_path": "pic/npc/CHN_2005_06_28_19_34_34_74/ch-02BZ.ale",
+        "source_sha256": "e14d8e79c6c7aca9a9d605ae35fb1fafe57e25d6e9bcff9aa6b3216903b637fb",
+        "source_permission": "2026-09-17 user: 用免费版补吧，另外看看其他受击特效是不是也缺了"
+      }
+    },
+    {
+      "id": "logdang_violent_impact",
+      "combat_actor_ids": [
+        "glory_npc_024",
+        "glory_npc_100"
+      ],
+      "impact": {
+        "resource": "res://assets/monsters/logdang_violent/shared/effects/impact/animation_frames.tres",
+        "frames": 5,
+        "fps": 15.151515151515152,
+        "offset": [
+          -72,
+          -62
+        ]
+      },
+      "source_audit": {
+        "mapping_evidence": "npcclt1.fcc ch-03PD projectile family; global registry ch-03BZ paired impact",
+        "mapping_confidence": "projectile_family_inferred",
+        "server_effect_index_verified": false,
+        "frame_delay_ms": 66,
+        "source_registry": "global/golbalstring.fcc:m_szNPCBulletAvi",
+        "source_registry_index": 13,
+        "source_legacy_path": "pic/npc/CHN_2005_06_28_19_34_34_74/ch-03BZ.ale",
+        "source_release": "starhome_lz_fr",
+        "source_logical_path": "pic/npc/CHN_2005_06_28_19_34_34_74/ch-03BZ.ale",
+        "source_sha256": "d1528dc35e880d634dadeedcc3c28dc9b927899aef757cf1440d4925383d58ca",
+        "source_permission": "2026-09-17 user: 用免费版补吧，另外看看其他受击特效是不是也缺了"
+      }
+    },
+    {
+      "id": "aiges_mild_impact",
+      "combat_actor_ids": [
+        "glory_npc_016",
+        "glory_npc_084"
+      ],
+      "impact": {
+        "resource": "res://assets/monsters/aiges_mild/shared/effects/impact/animation_frames.tres",
+        "frames": 5,
+        "fps": 15.151515151515152,
+        "offset": [
+          -58,
+          -60
+        ]
+      },
+      "source_audit": {
+        "mapping_evidence": "npcclt1.fcc ch-04PD projectile family; global registry ch-04BZ paired impact",
+        "mapping_confidence": "projectile_family_inferred",
+        "server_effect_index_verified": false,
+        "frame_delay_ms": 66,
+        "source_registry": "global/golbalstring.fcc:m_szNPCBulletAvi",
+        "source_registry_index": 14,
+        "source_legacy_path": "pic/npc/CHN_2005_06_28_19_34_34_74/ch-04BZ.ale",
+        "source_release": "starhome_lz_fr",
+        "source_logical_path": "pic/npc/CHN_2005_06_28_19_34_34_74/ch-04BZ.ale",
+        "source_sha256": "cd2fb7ce5a7d7269fd468057f523c77b4e287401c3a808436763a64549b12d98",
+        "source_permission": "2026-09-17 user: 用免费版补吧，另外看看其他受击特效是不是也缺了"
+      }
+    },
+    {
+      "id": "aiges_alert_impact",
+      "combat_actor_ids": [
+        "glory_npc_022",
+        "glory_npc_088"
+      ],
+      "impact": {
+        "resource": "res://assets/monsters/aiges_alert/shared/effects/impact/animation_frames.tres",
+        "frames": 5,
+        "fps": 15.151515151515152,
+        "offset": [
+          -134,
+          -102
+        ]
+      },
+      "source_audit": {
+        "mapping_evidence": "npcclt1.fcc ch-05PD projectile family; global registry ch-05BZ paired impact",
+        "mapping_confidence": "projectile_family_inferred",
+        "server_effect_index_verified": false,
+        "frame_delay_ms": 66,
+        "source_registry": "global/golbalstring.fcc:m_szNPCBulletAvi",
+        "source_registry_index": 15,
+        "source_legacy_path": "pic/npc/CHN_2005_06_28_19_34_34_74/ch-05BZ.ale",
+        "source_release": "starhome_lz_fr",
+        "source_logical_path": "pic/npc/CHN_2005_06_28_19_34_34_74/ch-05BZ.ale",
+        "source_sha256": "d5920438fc62b88623c5df1aaad5dd03c7fd8c3a56f60f9c8b29f55e0abd5099",
+        "source_permission": "2026-09-17 user: 用免费版补吧，另外看看其他受击特效是不是也缺了"
+      }
+    },
+    {
+      "id": "aiges_violent_impact",
+      "combat_actor_ids": [
+        "glory_npc_026",
+        "glory_npc_102"
+      ],
+      "impact": {
+        "resource": "res://assets/monsters/aiges_violent/shared/effects/impact/animation_frames.tres",
+        "frames": 7,
+        "fps": 15.151515151515152,
+        "offset": [
+          -47,
+          -46
+        ]
+      },
+      "source_audit": {
+        "mapping_evidence": "npcclt1.fcc ch-06PD projectile family; global registry ch-06BZ paired impact",
+        "mapping_confidence": "projectile_family_inferred",
+        "server_effect_index_verified": false,
+        "frame_delay_ms": 66,
+        "source_registry": "global/golbalstring.fcc:m_szNPCBulletAvi",
+        "source_registry_index": 16,
+        "source_legacy_path": "pic/npc/CHN_2005_06_28_19_34_34_74/ch-06BZ.ale",
+        "source_release": "starhome_lz_fr",
+        "source_logical_path": "pic/npc/CHN_2005_06_28_19_34_34_74/ch-06BZ.ale",
+        "source_sha256": "3e6cee417334bb217833c24182ab6ec0e898b31307c6ca443742cd76c27c887f",
+        "source_permission": "2026-09-17 user: 用免费版补吧，另外看看其他受击特效是不是也缺了"
+      }
+    },
+    {
+      "id": "skull_dragon_mild_impact",
+      "combat_actor_ids": [
+        "glory_npc_027",
+        "glory_npc_092"
+      ],
+      "impact": {
+        "resource": "res://assets/monsters/skull_dragon_mild/shared/effects/impact/animation_frames.tres",
+        "frames": 7,
+        "fps": 15.151515151515152,
+        "offset": [
+          -47,
+          -46
+        ]
+      },
+      "source_audit": {
+        "mapping_evidence": "npcclt1.fcc ch-07PD projectile family; global registry ch-07BZ paired impact",
+        "mapping_confidence": "projectile_family_inferred",
+        "server_effect_index_verified": false,
+        "frame_delay_ms": 66,
+        "source_registry": "global/golbalstring.fcc:m_szNPCBulletAvi",
+        "source_registry_index": 17,
+        "source_legacy_path": "pic/npc/CHN_2005_06_28_19_34_34_74/ch-07BZ.ale",
+        "source_release": "starhome_lz_fr",
+        "source_logical_path": "pic/npc/CHN_2005_06_28_19_34_34_74/ch-07BZ.ale",
+        "source_sha256": "f4cfcecc08b7f83d2d8cb3e004960dfb6b5d6de5f58fa8a9690f98aa6e801cc0",
+        "source_permission": "2026-09-17 user: 用免费版补吧，另外看看其他受击特效是不是也缺了"
+      }
+    },
+    {
+      "id": "skull_dragon_alert_impact",
+      "combat_actor_ids": [
+        "glory_npc_033"
+      ],
+      "impact": {
+        "resource": "res://assets/monsters/skull_dragon_alert/shared/effects/impact/animation_frames.tres",
+        "frames": 5,
+        "fps": 15.151515151515152,
+        "offset": [
+          -98,
+          -107
+        ]
+      },
+      "source_audit": {
+        "mapping_evidence": "npcclt1.fcc ch-08PD projectile family; global registry ch-08BZ paired impact",
+        "mapping_confidence": "projectile_family_inferred",
+        "server_effect_index_verified": false,
+        "frame_delay_ms": 66,
+        "source_registry": "global/golbalstring.fcc:m_szNPCBulletAvi",
+        "source_registry_index": 18,
+        "source_legacy_path": "pic/npc/CHN_2005_06_28_19_34_34_74/ch-08BZ.ale",
+        "source_release": "starhome_lz_fr",
+        "source_logical_path": "pic/npc/CHN_2005_06_28_19_34_34_74/ch-08BZ.ale",
+        "source_sha256": "adc37c4b35649d51218ede7d549066c8a4f0a04fd2e3290e4b8a2af9997b8391",
+        "source_permission": "2026-09-17 user: 用免费版补吧，另外看看其他受击特效是不是也缺了"
+      }
+    },
+    {
+      "id": "skull_dragon_violent_impact",
+      "combat_actor_ids": [
+        "glory_npc_037",
+        "glory_npc_106",
+        "glory_npc_107"
+      ],
+      "impact": {
+        "resource": "res://assets/monsters/skull_dragon_violent/shared/effects/impact/animation_frames.tres",
+        "frames": 7,
+        "fps": 15.151515151515152,
+        "offset": [
+          -47,
+          -46
+        ]
+      },
+      "source_audit": {
+        "mapping_evidence": "npcclt1.fcc ch-09PD projectile family; global registry ch-09BZ paired impact",
+        "mapping_confidence": "projectile_family_inferred",
+        "server_effect_index_verified": false,
+        "frame_delay_ms": 66,
+        "source_registry": "global/golbalstring.fcc:m_szNPCBulletAvi",
+        "source_registry_index": 19,
+        "source_legacy_path": "pic/npc/CHN_2005_06_28_19_34_34_74/ch-09BZ.ale",
+        "source_release": "starhome_lz_fr",
+        "source_logical_path": "pic/npc/CHN_2005_06_28_19_34_34_74/ch-09BZ.ale",
+        "source_sha256": "8a05e32fa9a5752e189471461baeb50b507e4e940e8184ff57cf3f43fbc69d0a",
+        "source_permission": "2026-09-17 user: 用免费版补吧，另外看看其他受击特效是不是也缺了"
+      }
+    },
+    {
+      "id": "sand_scorpion_impact",
+      "combat_actor_ids": [
+        "glory_npc_040",
+        "glory_npc_096",
+        "glory_npc_110"
+      ],
+      "impact": {
+        "resource": "res://assets/monsters/sand_scorpion/shared/effects/impact/animation_frames.tres",
+        "frames": 10,
+        "fps": 15.151515151515152,
+        "offset": [
+          -36,
+          -36
+        ]
+      },
+      "source_audit": {
+        "mapping_evidence": "npcclt1.fcc ch-10PD projectile family; global registry ch-10BZ paired impact",
+        "mapping_confidence": "projectile_family_inferred",
+        "server_effect_index_verified": false,
+        "frame_delay_ms": 66,
+        "source_registry": "global/golbalstring.fcc:m_szNPCBulletAvi",
+        "source_registry_index": 20,
+        "source_legacy_path": "pic/npc/CHN_2005_06_28_19_34_34_74/ch-10BZ.ale",
+        "source_release": "starhome_lz_fr",
+        "source_logical_path": "pic/npc/CHN_2005_06_28_19_34_34_74/ch-10BZ.ale",
+        "source_sha256": "330d4b236d566a1f2878892a496692696a1b531a130905190a42da643916ef86",
+        "source_permission": "2026-09-17 user: 用免费版补吧，另外看看其他受击特效是不是也缺了"
+      }
+    },
+    {
+      "id": "angler_spider_impact",
+      "combat_actor_ids": [
+        "glory_npc_047",
+        "glory_npc_115"
+      ],
+      "impact": {
+        "resource": "res://assets/monsters/angler_spider/shared/effects/impact/animation_frames.tres",
+        "frames": 5,
+        "fps": 15.151515151515152,
+        "offset": [
+          -96,
+          -88
+        ]
+      },
+      "source_audit": {
+        "mapping_evidence": "npcclt1.fcc projectile zhuPD.ale; paired impact in global NPC registry (same projectile family including reused boss/crystal forms)",
+        "mapping_confidence": "projectile_family_inferred",
+        "server_effect_index_verified": false,
+        "frame_delay_ms": 66,
+        "source_registry": "global/golbalstring.fcc:m_szNPCBulletAvi",
+        "source_registry_index": 10,
+        "source_legacy_path": "pic/npc/CHN_2005_06_28_19_34_54_77/zhuBZ.ale",
+        "source_release": "starhome_lz_fr",
+        "source_logical_path": "pic/npc/CHN_2005_06_28_19_34_54_77/zhuBZ.ale",
+        "source_sha256": "b96dd9f47290c59582e63e2a8d6ae391b08454be150509238c17f89435b27346",
+        "source_permission": "2026-09-17 user: 用免费版补吧，另外看看其他受击特效是不是也缺了"
+      }
+    },
+    {
+      "id": "floating_soldier_impact",
+      "combat_actor_ids": [
+        "glory_npc_048",
+        "glory_npc_113"
+      ],
+      "impact": {
+        "resource": "res://assets/monsters/floating_soldier/shared/effects/impact/animation_frames.tres",
+        "frames": 5,
+        "fps": 15.151515151515152,
+        "offset": [
+          -138,
+          -109
+        ]
+      },
+      "source_audit": {
+        "mapping_evidence": "npcclt1.fcc projectile KL_a_PD.ale; paired impact in global NPC registry (same projectile family including reused boss/crystal forms)",
+        "mapping_confidence": "projectile_family_inferred",
+        "server_effect_index_verified": false,
+        "frame_delay_ms": 66,
+        "source_registry": "global/golbalstring.fcc:m_szNPCBulletAvi",
+        "source_registry_index": 22,
+        "source_legacy_path": "pic/npc/KL/KL_a_BZ.ale",
+        "source_release": "starhome_lz_fr",
+        "source_logical_path": "pic/npc/KL/KL_a_BZ.ale",
+        "source_sha256": "7626f330e7d23ea8fe47978fb8c2e719577dea16f63ac3abcdaa69ce2ad0ffa4",
+        "source_permission": "2026-09-17 user: 用免费版补吧，另外看看其他受击特效是不是也缺了"
+      }
+    },
+    {
+      "id": "machinegun_soldier_impact",
+      "combat_actor_ids": [
+        "glory_npc_049"
+      ],
+      "impact": {
+        "resource": "res://assets/monsters/machinegun_soldier/shared/effects/impact/animation_frames.tres",
+        "frames": 5,
+        "fps": 15.151515151515152,
+        "offset": [
+          -138,
+          -109
+        ]
+      },
+      "source_audit": {
+        "mapping_evidence": "npcclt1.fcc projectile KL_b_PD.ale; paired impact in global NPC registry (same projectile family including reused boss/crystal forms)",
+        "mapping_confidence": "projectile_family_inferred",
+        "server_effect_index_verified": false,
+        "frame_delay_ms": 66,
+        "source_registry": "global/golbalstring.fcc:m_szNPCBulletAvi",
+        "source_registry_index": 23,
+        "source_legacy_path": "pic/npc/KL/KL_b_BZ.ale",
+        "source_release": "starhome_lz_fr",
+        "source_logical_path": "pic/npc/KL/KL_b_BZ.ale",
+        "source_sha256": "0cd36d9250e24d608da3ba8485e6b008a2b2f43750f5abaa548e705b7215d087",
+        "source_permission": "2026-09-17 user: 用免费版补吧，另外看看其他受击特效是不是也缺了"
+      }
+    },
+    {
+      "id": "mechanical_soldier_impact",
+      "combat_actor_ids": [
+        "glory_npc_050"
+      ],
+      "impact": {
+        "resource": "res://assets/monsters/mechanical_soldier/shared/effects/impact/animation_frames.tres",
+        "frames": 5,
+        "fps": 15.151515151515152,
+        "offset": [
+          -138,
+          -109
+        ]
+      },
+      "source_audit": {
+        "mapping_evidence": "npcclt1.fcc projectile KL_c_PD.ale; paired impact in global NPC registry (same projectile family including reused boss/crystal forms)",
+        "mapping_confidence": "projectile_family_inferred",
+        "server_effect_index_verified": false,
+        "frame_delay_ms": 66,
+        "source_registry": "global/golbalstring.fcc:m_szNPCBulletAvi",
+        "source_registry_index": 24,
+        "source_legacy_path": "pic/npc/KL/KL_c_BZ.ale",
+        "source_release": "starhome_lz_fr",
+        "source_logical_path": "pic/npc/KL/KL_c_BZ.ale",
+        "source_sha256": "0960820b9a6bf8f33ac7e7ca8d56339ad5c2d855b62b955f8700d83a1e370619",
+        "source_permission": "2026-09-17 user: 用免费版补吧，另外看看其他受击特效是不是也缺了"
+      }
+    },
+    {
+      "id": "heavy_mech_impact",
+      "combat_actor_ids": [
+        "glory_npc_051",
+        "glory_npc_112"
+      ],
+      "impact": {
+        "resource": "res://assets/monsters/heavy_mech/shared/effects/impact/animation_frames.tres",
+        "frames": 5,
+        "fps": 15.151515151515152,
+        "offset": [
+          -138,
+          -109
+        ]
+      },
+      "source_audit": {
+        "mapping_evidence": "npcclt1.fcc projectile KL_d_PD.ale; paired impact in global NPC registry (same projectile family including reused boss/crystal forms)",
+        "mapping_confidence": "projectile_family_inferred",
+        "server_effect_index_verified": false,
+        "frame_delay_ms": 66,
+        "source_registry": "global/golbalstring.fcc:m_szNPCBulletAvi",
+        "source_registry_index": 25,
+        "source_legacy_path": "pic/npc/KL/KL_d_BZ.ale",
+        "source_release": "starhome_lz_fr",
+        "source_logical_path": "pic/npc/KL/KL_d_BZ.ale",
+        "source_sha256": "d95b0efb83506ea417613d6cb2687027343a4acf4be3235f0cb95bc214803750",
+        "source_permission": "2026-09-17 user: 用免费版补吧，另外看看其他受击特效是不是也缺了"
+      }
+    },
+    {
+      "id": "blazing_armor_king_impact",
+      "combat_actor_ids": [
+        "glory_npc_127"
+      ],
+      "impact": {
+        "resource": "res://assets/monsters/blazing_armor_king/shared/effects/impact/animation_frames.tres",
+        "frames": 8,
+        "fps": 15.151515151515152,
+        "offset": [
+          -158,
+          -108
+        ]
+      },
+      "source_audit": {
+        "mapping_evidence": "npcclt1.fcc projectile KL_e_PD.ale; paired impact in global NPC registry (same projectile family including reused boss/crystal forms)",
+        "mapping_confidence": "projectile_family_inferred",
+        "server_effect_index_verified": false,
+        "frame_delay_ms": 66,
+        "source_registry": "global/golbalstring.fcc:m_szNPCBulletAvi",
+        "source_registry_index": 28,
+        "source_legacy_path": "pic/npc/KL/KL_e_BZ.ale",
+        "source_release": "starhome_lz_fr",
+        "source_logical_path": "pic/npc/KL/KL_e_BZ.ale",
+        "source_sha256": "1a36f6062c6fe9eae2787f794fbc08d8f889eacd08c285b0cda337f9ac8e3c92",
+        "source_permission": "2026-09-17 user: 用免费版补吧，另外看看其他受击特效是不是也缺了"
+      }
+    },
+    {
+      "id": "electric_king_impact",
+      "combat_actor_ids": [
+        "glory_npc_129"
+      ],
+      "impact": {
+        "resource": "res://assets/monsters/electric_king/shared/effects/impact/animation_frames.tres",
+        "frames": 8,
+        "fps": 15.151515151515152,
+        "offset": [
+          -158,
+          -108
+        ]
+      },
+      "source_audit": {
+        "mapping_evidence": "npcclt1.fcc projectile KL_g_PD.ale; paired impact in global NPC registry (same projectile family including reused boss/crystal forms)",
+        "mapping_confidence": "projectile_family_inferred",
+        "server_effect_index_verified": false,
+        "frame_delay_ms": 66,
+        "source_registry": "global/golbalstring.fcc:m_szNPCBulletAvi",
+        "source_registry_index": 30,
+        "source_legacy_path": "pic/npc/KL/KL_g_BZ.ale",
+        "source_release": "starhome_lz_fr",
+        "source_logical_path": "pic/npc/KL/KL_g_BZ.ale",
+        "source_sha256": "d5915934e29912deef372545ca5f59779300c24fee4d1157cccbbb160d7b176f",
+        "source_permission": "2026-09-17 user: 用免费版补吧，另外看看其他受击特效是不是也缺了"
+      }
+    },
+    {
+      "id": "many_legged_impact",
+      "combat_actor_ids": [
+        "glory_npc_052",
+        "glory_npc_111",
+        "glory_npc_130"
+      ],
+      "impact": {
+        "resource": "res://assets/monsters/many_legged/shared/effects/impact/animation_frames.tres",
+        "frames": 5,
+        "fps": 15.151515151515152,
+        "offset": [
+          -138,
+          -109
+        ]
+      },
+      "source_audit": {
+        "mapping_evidence": "npcclt1.fcc projectile YS_a_PD.ale; paired impact in global NPC registry (same projectile family including reused boss/crystal forms)",
+        "mapping_confidence": "projectile_family_inferred",
+        "server_effect_index_verified": false,
+        "frame_delay_ms": 66,
+        "source_registry": "global/golbalstring.fcc:m_szNPCBulletAvi",
+        "source_registry_index": 34,
+        "source_legacy_path": "pic/npc/YS/YS_a_BZ.ale",
+        "source_release": "starhome_lz_fr",
+        "source_logical_path": "pic/npc/YS/YS_a_BZ.ale",
+        "source_sha256": "d95b0efb83506ea417613d6cb2687027343a4acf4be3235f0cb95bc214803750",
+        "source_permission": "2026-09-17 user: 用免费版补吧，另外看看其他受击特效是不是也缺了"
+      }
+    },
+    {
+      "id": "berserk_beetle_impact",
+      "combat_actor_ids": [
+        "glory_npc_053",
+        "glory_npc_054",
+        "glory_npc_055",
+        "glory_npc_060",
+        "glory_npc_061",
+        "glory_npc_116"
+      ],
+      "impact": {
+        "resource": "res://assets/monsters/berserk_beetle/shared/effects/impact/animation_frames.tres",
+        "frames": 6,
+        "fps": 15.151515151515152,
+        "offset": [
+          -206,
+          -138
+        ]
+      },
+      "source_audit": {
+        "mapping_evidence": "npcclt1.fcc projectile YS_b_PD.ale; paired impact in global NPC registry (same projectile family including reused boss/crystal forms)",
+        "mapping_confidence": "projectile_family_inferred",
+        "server_effect_index_verified": false,
+        "frame_delay_ms": 66,
+        "source_registry": "global/golbalstring.fcc:m_szNPCBulletAvi",
+        "source_registry_index": 35,
+        "source_legacy_path": "pic/npc/YS/YS_b_BZ.ale",
+        "source_release": "starhome_lz_fr",
+        "source_logical_path": "pic/npc/YS/YS_b_BZ.ale",
+        "source_sha256": "8bde9e06f4328c3ae82e2614e32c8e7c1c928f5d7ab2eb12f783d451d66db605",
+        "source_permission": "2026-09-17 user: 用免费版补吧，另外看看其他受击特效是不是也缺了"
+      }
+    },
+    {
+      "id": "mechanical_flash_impact",
+      "combat_actor_ids": [
+        "glory_npc_018",
+        "glory_npc_020",
+        "glory_npc_028",
+        "glory_npc_029",
+        "glory_npc_030",
+        "glory_npc_031",
+        "glory_npc_032",
+        "glory_npc_034",
+        "glory_npc_035",
+        "glory_npc_038",
+        "glory_npc_039",
+        "glory_npc_041",
+        "glory_npc_042",
+        "glory_npc_043",
+        "glory_npc_044",
+        "glory_npc_045",
+        "glory_npc_046",
+        "glory_npc_090",
+        "glory_npc_091",
+        "glory_npc_093",
+        "glory_npc_094",
+        "glory_npc_095",
+        "glory_npc_104",
+        "glory_npc_105",
+        "glory_npc_108",
+        "glory_npc_109",
+        "glory_npc_114"
+      ],
+      "hit_effect": "pic3/npc/chn_2005_06_28_18_45_51_887.ale",
+      "source_audit": {
+        "mapping_evidence": "npcclt1.fcc mechanical classes declare 878/887 (byte-identical) in historical m_sblasteffectfile; server index 6/7 references different 904, so preserve declared shared flash as documented remake mapping, not asserted server parity",
+        "mapping_confidence": "legacy_class_annotation",
+        "server_effect_index_verified": false,
+        "frame_delay_ms": 66,
+        "source_release": "starhome_lz_ry",
+        "source_logical_path": "pic3/npc/chn_2005_06_28_18_45_51_887.ale",
+        "source_sha256": "a04b799a148fe20c91149259c0c5ddedada39cf4dcc049341c622c1fdb7a50a8"
+      }
+    }
+  ],
+  "unresolved": [
+    {
+      "combat_actor_id": "glory_npc_056",
+      "display_name": "嗜血的水晶变异者",
+      "source_projectile": "npc_attack_8.ale",
+      "reason": "原服按服务端索引选择爆炸；现有客户端未找到该复刻怪物的可靠绑定，旧字段为怪物身体动画，禁止播放为受击效果"
+    },
+    {
+      "combat_actor_id": "glory_npc_057",
+      "display_name": "残忍的水晶变异者",
+      "source_projectile": "npc_attack_8.ale",
+      "reason": "原服按服务端索引选择爆炸；现有客户端未找到该复刻怪物的可靠绑定，旧字段为怪物身体动画，禁止播放为受击效果"
+    },
+    {
+      "combat_actor_id": "glory_npc_058",
+      "display_name": "狂暴的水晶破坏者",
+      "source_projectile": "npc_attack_7.ale",
+      "reason": "原服按服务端索引选择爆炸；现有客户端未找到该复刻怪物的可靠绑定，旧字段为怪物身体动画，禁止播放为受击效果"
+    },
+    {
+      "combat_actor_id": "glory_npc_059",
+      "display_name": "冷酷的水晶破坏者",
+      "source_projectile": "npc_attack_7.ale",
+      "reason": "原服按服务端索引选择爆炸；现有客户端未找到该复刻怪物的可靠绑定，旧字段为怪物身体动画，禁止播放为受击效果"
+    },
+    {
+      "combat_actor_id": "glory_npc_062",
+      "display_name": "嗜血的水晶变异者(精英)",
+      "source_projectile": "npc_attack_8.ale",
+      "reason": "原服按服务端索引选择爆炸；现有客户端未找到该复刻怪物的可靠绑定，旧字段为怪物身体动画，禁止播放为受击效果"
+    },
+    {
+      "combat_actor_id": "glory_npc_063",
+      "display_name": "残忍的水晶变异者(精英)",
+      "source_projectile": "npc_attack_8.ale",
+      "reason": "原服按服务端索引选择爆炸；现有客户端未找到该复刻怪物的可靠绑定，旧字段为怪物身体动画，禁止播放为受击效果"
+    },
+    {
+      "combat_actor_id": "glory_npc_064",
+      "display_name": "狂暴的水晶破坏者(精英)",
+      "source_projectile": "npc_attack_7.ale",
+      "reason": "原服按服务端索引选择爆炸；现有客户端未找到该复刻怪物的可靠绑定，旧字段为怪物身体动画，禁止播放为受击效果"
+    },
+    {
+      "combat_actor_id": "glory_npc_065",
+      "display_name": "冷酷的水晶破坏者(精英)",
+      "source_projectile": "npc_attack_7.ale",
+      "reason": "原服按服务端索引选择爆炸；现有客户端未找到该复刻怪物的可靠绑定，旧字段为怪物身体动画，禁止播放为受击效果"
+    },
+    {
+      "combat_actor_id": "glory_npc_128",
+      "display_name": "炼狱天灾怒火（BOSS）",
+      "source_projectile": "NewYearBossBullet.ale",
+      "reason": "原服按服务端索引选择爆炸；现有客户端未找到该复刻怪物的可靠绑定，旧字段为怪物身体动画，禁止播放为受击效果"
     }
   ]
 }

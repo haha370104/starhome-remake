@@ -18,7 +18,7 @@
 建议先看“状态在哪、谁能改、失败怎么收尾”，最后再看面板像素和资源细节。
 2026-09-16 毒胶持续腐蚀的领域、权威快照及表现边界见[弹道与腐蚀第9.5节](projectile_hit_and_monster_state_reverse_engineering.md#95-毒胶喷吐与持续腐蚀2026-09-16)；
 普通怪物无掉落名单和隐形材料修复见[掉落覆盖审计](monster_loot_coverage.md)。
-2026-09-17 怪物远程受击动画漏接与甲壳奥姆虫待确认素材见[命中特效核对](projectile_hit_and_monster_state_reverse_engineering.md#2026-09-17-怪物远程命中特效漏接)。
+2026-09-17 怪物受击动画漏接、免费版补图与剩余9项未证实绑定见[命中特效全量审计](monster_hit_effect_audit.md)。
 如果只做第一轮 review，优先读第 3 节 A—D，再看第 5 节风险表。
 
 ## 2. 当前真实运行关系
