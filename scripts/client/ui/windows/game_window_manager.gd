@@ -54,6 +54,7 @@ func configure(session: PlayerPanelSession) -> bool:
 	inventory_panel.equipment_maintenance_requested.connect(_open_equipment_maintenance)
 	inventory_panel.extra_attributes_requested.connect(_open_extra_attributes)
 	inventory_panel.equipment_strengthening_requested.connect(_open_equipment_strengthening)
+	inventory_panel.armor_refinement_requested.connect(_open_armor_refinement)
 	_add_window(inventory_panel)
 	vehicle_panel = VehiclePanelScript.new()
 	vehicle_panel.name = "VehicleEquipmentPanel"
@@ -85,6 +86,7 @@ func configure(session: PlayerPanelSession) -> bool:
 		"equipment_maintenance": preload("res://scripts/client/ui/windows/navigation/equipment_maintenance_panel.gd"),
 		"extra_attributes": preload("res://scripts/client/ui/windows/navigation/extra_attribute_panel.gd"),
 		"equipment_strengthening": preload("res://scripts/client/ui/windows/navigation/equipment_strengthening_panel.gd"),
+		"armor_refinement": preload("res://scripts/client/ui/windows/navigation/armor_refinement_panel.gd"),
 		"attachment_upgrades": preload("res://scripts/client/ui/windows/navigation/attachment_upgrade_panel.gd"),
 		"mercenary": preload("res://scripts/client/ui/windows/navigation/daily_activities_panel.gd"),
 		"experience": preload("res://scripts/client/ui/windows/navigation/daily_activities_panel.gd"),
@@ -95,8 +97,10 @@ func configure(session: PlayerPanelSession) -> bool:
 		var window: NavigationWindow = navigation_scripts[action].new()
 		if action in ["mercenary", "experience"]:
 			window.mode = action
-		if action in ["premium_shop", "mercenary", "experience", "attachment_upgrades", "clothing_enhancement", "vehicle_sockets", "equipment_processing", "equipment_maintenance", "extra_attributes", "equipment_strengthening"]:
+		if action in ["premium_shop", "mercenary", "experience", "attachment_upgrades", "clothing_enhancement", "vehicle_sockets", "equipment_processing", "equipment_maintenance", "extra_attributes", "equipment_strengthening", "armor_refinement"]:
 			window.command_requested.connect(panel_session.dispatch)
+		if window is EquipmentProcessingPanel:
+			window.workshop_requested.connect(_open_workshop)
 		window.position = Vector2(120, 70)
 		window.notice_requested.connect(notice_requested.emit)
 		navigation_windows[action] = window
@@ -191,6 +195,7 @@ func _apply_auxiliary_bundle(bundle: Dictionary) -> void:
 	navigation_windows["equipment_processing"].apply_processing_bundle(bundle)
 	navigation_windows["extra_attributes"].apply_processing_bundle(bundle)
 	navigation_windows["equipment_strengthening"].apply_processing_bundle(bundle)
+	navigation_windows["armor_refinement"].apply_processing_bundle(bundle)
 	navigation_windows["vehicle_sockets"].apply_socket_bundle(bundle)
 	navigation_windows["clothing_enhancement"].apply_enhancement_bundle(bundle)
 	navigation_windows["attachment_upgrades"].apply_upgrade_bundle(bundle)
@@ -316,3 +321,17 @@ func _open_extra_attributes(id: String = "", is_material: bool = false) -> void:
 ## [param is_material] 是否为材料。
 func _open_equipment_strengthening(id: String = "", is_material: bool = false) -> void:
 	EquipmentWorkshopNavigation.focus(navigation_windows["equipment_strengthening"], size, id, is_material)
+
+
+## 从护甲或精工材料的背包右键定位窗口。
+## [param id] 实例标识。
+## [param is_material] 是否选择材料。
+func _open_armor_refinement(id: String = "", is_material: bool = false) -> void:
+	EquipmentWorkshopNavigation.focus(navigation_windows["armor_refinement"], size, id, is_material)
+
+
+## 从共享加工项目入口打开已注册的独立窗口。
+## [param action] 加工目录内的窗口动作。
+func _open_workshop(action: String) -> void:
+	if EquipmentWorkshopNavigation.PROJECTS.has(action):
+		EquipmentWorkshopNavigation.focus(navigation_windows[action], size, "", false)

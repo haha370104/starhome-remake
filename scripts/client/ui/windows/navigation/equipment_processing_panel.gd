@@ -2,6 +2,7 @@ class_name EquipmentProcessingPanel
 extends ModernNavigationWindow
 
 signal command_requested(command: Dictionary)
+signal workshop_requested(action: String)
 
 var window_title := "普通装备 · 基础属性加工"
 var window_dimensions := Vector2(940, 600)
@@ -38,6 +39,7 @@ var _offers: Array = []
 ## 构建与晶石窗口独立的基础加工界面，材料和结果始终限制在各自区域。
 func _ready() -> void:
 	build_modern_window(window_dimensions, window_title)
+	_build_workshop_menu()
 	_summary = make_label("读取装备…", Rect2(24, 57, 740, 28))
 	_style_button(make_button("刷新", Rect2(816, 54, 100, 32), open_board))
 	make_label("装备 · 已装配 / 背包", Rect2(24, 96, 260, 24))
@@ -64,6 +66,26 @@ func _ready() -> void:
 	visibility_changed.connect(_visibility_changed)
 	if not purchase_type.is_empty():
 		_build_purchase()
+
+
+## 提供各加工项目间的入口，使未持有目标装备或专用材料的玩家也能购买起步物品。
+func _build_workshop_menu() -> void:
+	var projects := MenuButton.new()
+	projects.text = "加工项目"
+	projects.position = Vector2(window_dimensions.x - 210, 14)
+	projects.size = Vector2(130, 30)
+	_style_button(projects)
+	content_root.add_child(projects)
+	for action: String in EquipmentWorkshopNavigation.PROJECTS:
+		projects.get_popup().add_item(EquipmentWorkshopNavigation.PROJECTS[action])
+	projects.get_popup().id_pressed.connect(_select_workshop)
+
+
+## 将所选加工项目交给窗口管理层定位，面板之间不互相持有引用。
+## [param index] 目录顺序索引。
+func _select_workshop(index: int) -> void:
+	if index >= 0 and index < EquipmentWorkshopNavigation.PROJECTS.size():
+		workshop_requested.emit(EquipmentWorkshopNavigation.PROJECTS.keys()[index])
 
 
 ## 在有商售目录的加工页复用材料购买栏，价格只展示服务端快照。

@@ -1,6 +1,14 @@
 class_name EquipmentWorkshopNavigation
 extends RefCounted
 
+const PROJECTS := {
+	"equipment_processing": "基础属性加工",
+	"equipment_maintenance": "耐久维护 / 补弹",
+	"extra_attributes": "萤石 / 耀石加工",
+	"equipment_strengthening": "装备十星强化",
+	"armor_refinement": "护甲精工",
+}
+
 
 ## 将独立装备加工窗口置前并定位物品，只复用窗口交互，不混合各系统的规则。
 ## [param window] 已注册且支持 focus_item 的加工窗口。

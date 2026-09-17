@@ -7,6 +7,7 @@ signal equipment_processing_requested(instance_id: String, is_material: bool)
 signal equipment_maintenance_requested(instance_id: String, is_material: bool)
 signal extra_attributes_requested(instance_id: String, is_material: bool)
 signal equipment_strengthening_requested(instance_id: String, is_material: bool)
+signal armor_refinement_requested(instance_id: String, is_material: bool)
 
 signal command_requested(command: Dictionary)
 
@@ -64,6 +65,8 @@ func open_for(item: GameItem, revision: int, point: Vector2) -> void:
 		_add_action("耐久维护 / 速修", "equipment_maintenance", false)
 	if item is ExtraAttributeMaterial or (item is Equipment and item.extra_attribute_rules != null and not item.extra_attribute_rules.allowed(item.definition_id).is_empty()):
 		_add_action("萤石 / 耀石加工", "extra_attributes", false)
+	if item is ArmorRefinementMaterial or (item is Equipment and item.armor_refinement_profile != null):
+		_add_action("护甲精工", "armor_refinement", false)
 	if item is EquipmentStrengtheningMaterial or (item is Equipment and item.strengthening_profile != null):
 		_add_action("装备星级强化", "equipment_strengthening", false)
 	if item is ConsumableItem:
@@ -95,6 +98,9 @@ func _select_action(id: int) -> void:
 	if id < 0 or id >= _actions.size() or _item == null:
 		return
 	var action := _actions[id]
+	if action == "armor_refinement":
+		armor_refinement_requested.emit(_item.instance_id, _item is ArmorRefinementMaterial)
+		return
 	if action == "equipment_strengthening":
 		equipment_strengthening_requested.emit(_item.instance_id, _item is EquipmentStrengtheningMaterial)
 		return

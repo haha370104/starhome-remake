@@ -36,6 +36,7 @@
 
 - [战车加工实施台账](vehicle_workshop.md)：P0/P1 资格、原版与复刻规则、材料用途、实例状态兼容。
 - [普通装备加工](equipment_processing.md)：P2 属性上限、原版材料、同源变体与加工实例。
+- [护甲精工](armor_refinement.md)：P3-B 八阶护甲、失败销毁及晶石保留。
 - [装备十星强化](equipment_strengthening.md)：P3-B 独立星级、材料投入与失败降星。
 - [萤石与耀石加工](extra_attribute_processing.md)：P3-A 独立通道、失败退级、获取与实际属性。
 - [维护、磨损与弹药](equipment_maintenance.md)：P2 常规维护/速修、实际使用余量、补弹与验收。
