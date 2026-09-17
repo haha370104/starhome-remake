@@ -59,6 +59,7 @@ TESTS = (
     "ui/runtime/vehicle_loadout_presets_panel_test.gd",
     "server/persistence/graceful_exit_test.gd",
     "ui/runtime/graceful_exit_client_test.gd",
+    "ui/runtime/client_preferences_test.gd",
     "server/commerce/equipment_dismantle_authority_test.gd",
     "ui/runtime/equipment_dismantle_panel_test.gd",
     "domain/equipment_memory_transfer_test.gd",
