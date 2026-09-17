@@ -12,6 +12,7 @@ var processing := EquipmentProcessing.new()
 var processing_rules: EquipmentProcessingRules
 var maintenance_profile: EquipmentMaintenanceRules.Profile
 var usage := EquipmentUsage.new()
+var magazine := WeaponMagazine.new()
 
 
 ## 初始化具有耐久和数值配置的装备实例。
@@ -35,6 +36,10 @@ func _init(definition: Dictionary = {}, state: Dictionary = {}) -> void:
 	var used := EquipmentUsage.restore(state.get("usage", {}))
 	if used.is_ok:
 		usage = used.value
+	var rounds := WeaponMagazine.restore(state.get("magazine", {}))
+	if rounds.is_ok:
+		magazine = rounds.value
+	magazine.bind_capacity(ammunition_capacity())
 	# 旧荣耀服装曾遗漏 wear_degree，完整的 1/1 旧记录迁移到原版上限。
 	if _stats.has("wear_degree") and max_durability == 1 and durability == 1:
 		max_durability = maxi(1, int(_stats.wear_degree))
@@ -54,6 +59,12 @@ func record_use(event: String, amount: float = 1.0) -> bool:
 		return false
 	wear(usage.consume(event, amount, float(maintenance_profile.wear_thresholds.get(event, 0))))
 	return durability == 0
+
+
+## 计算弹仓真实上限，与普通容量加工使用同一属性。
+## 返回无弹药装备的零容量或非负弹仓上限。
+func ammunition_capacity() -> int:
+	return maxi(0, int(stat("ammunition_capacity", 0)))
 
 
 ## 让装备承受磨损并保证耐久不小于零。
@@ -113,5 +124,7 @@ func to_view_dictionary() -> Dictionary:
 			view.stats[attribute] = stat(attribute)
 	view["processing"] = processing.to_dictionary()
 	view["usage"] = usage.to_dictionary()
+	view["magazine"] = magazine.to_dictionary()
+	view["ammunition_capacity"] = ammunition_capacity()
 	view["processing_eligible"] = processing_rules != null and processing_rules.profile(definition_id) != null
 	return view

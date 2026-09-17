@@ -82,6 +82,13 @@ func initialize() -> DomainResult:
 	if not maintenance_result.is_ok:
 		return maintenance_result
 	maintenance_rules = maintenance_result.value
+	var ammunition_data := JsonConfigLoader.load_dictionary("res://data/gameplay/equipment_ammunition_rules_v1.json")
+	if not ammunition_data.is_ok: return ammunition_data
+	for row: Dictionary in ammunition_data.value.get("equipment", []):
+		if not _definitions.has(row.definition_id) or int(row.capacity) <= 0 or int(row.unit_price) <= 0:
+			return DomainResult.failure(&"ammunition.rules_invalid", "弹药定义无效")
+		_definitions[row.definition_id].stats["ammunition_capacity"] = int(row.capacity)
+		_definitions[row.definition_id].stats["ammunition_unit_price"] = int(row.unit_price)
 	_index_display_names()
 	return DomainResult.ok(self)
 
@@ -91,6 +98,8 @@ func initialize() -> DomainResult:
 ## [param state] 存档中的实例状态。
 ## 返回服装、战车底盘、引擎、武器、采掘臂、通用装备或普通物品的具体实例。
 func create(definition_id: String, state: Dictionary) -> DomainResult:
+	var rounds := WeaponMagazine.restore(state.get("magazine", {}))
+	if not rounds.is_ok: return rounds
 	var used := EquipmentUsage.restore(state.get("usage", {}))
 	if not used.is_ok:
 		return used
@@ -111,6 +120,8 @@ func create(definition_id: String, state: Dictionary) -> DomainResult:
 		return result
 	var item: GameItem = result.value
 	if item is Equipment:
+		var ammunition_check := (rounds.value as WeaponMagazine).bind_capacity(item.ammunition_capacity())
+		if not ammunition_check.is_ok: return ammunition_check
 		item.processing_rules = processing_rules
 		item.maintenance_profile = maintenance_rules.profile(item.definition_id)
 	if not item is VehicleCrystal and cracks.value != 0:

@@ -320,7 +320,7 @@ func handle_weapon_attack(actor_id: String, raw_intent: Variant) -> DomainResult
 	var energy_result := vehicle_state.consume_working_energy(float(weapon["working_energy_cost"]))
 	if not energy_result.is_ok:
 		return energy_result
-	equipment_condition.record_use("shot", 1, String(weapon.get("instance_id", "")))
+	equipment_condition.accept_shot(String(weapon.get("instance_id", "")))
 	(actor["clothing_effects"] as ClothingCombatEffects).observe_weapon(String(weapon["weapon_id"]))
 	interrupt_self_repair(actor_id, &"attack")
 	actor["cooldown_ready_ticks"][ability_id] = current_tick + int(weapon["cooldown_ticks"])
@@ -971,6 +971,7 @@ func _weapon_flight_snapshot(actor: Dictionary) -> Dictionary:
 		var weapon: Dictionary = actor["weapons"][ability_id]
 		result[ability_id] = {
 			"weapon_id": weapon["weapon_id"], "range": weapon["range"],
+			"ammunition": (actor.equipment_condition as EquipmentConditionLoadout).ammunition_for(String(weapon.get("instance_id", ""))),
 			"minimum_range": weapon.get("minimum_range", 0.0),
 			"projectile_speed": weapon["projectile_speed"],
 			"cooldown_seconds": float(weapon["cooldown_ticks"]) / float(simulation_hz),

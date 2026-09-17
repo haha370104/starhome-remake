@@ -43,7 +43,26 @@ func validate_shot(instance_id: String) -> DomainResult:
 	var item: Equipment = _items.get(instance_id)
 	if item != null and item.durability <= 0:
 		return DomainResult.failure(&"equipment.broken", "武器已损坏，请维护或速修")
+	if item != null and item.ammunition_capacity() > 0 and item.magazine.remaining <= 0:
+		return DomainResult.failure(&"ammunition.empty", "弹药不足，请到基地或生产区补弹")
 	return DomainResult.ok()
+
+
+## 在射击已被接受后同时结算一发弹药和磨损，拒绝的攻击不会调用。
+## [param instance_id] 权威武器实例。
+func accept_shot(instance_id: String) -> void:
+	var item: Equipment = _items.get(instance_id)
+	if item == null: return
+	if item.ammunition_capacity() > 0: item.magazine.consume()
+	record_use("shot", 1, instance_id)
+
+
+## 投影某件已装配武器的即时弹量。
+## [param instance_id] 武器实例。
+## 返回剩余/容量；无弹仓装备返回空字典。
+func ammunition_for(instance_id: String) -> Dictionary:
+	var item: Equipment = _items.get(instance_id)
+	return {"remaining": item.magazine.remaining, "capacity": item.ammunition_capacity()} if item != null and item.ammunition_capacity() > 0 else {}
 
 
 ## 按实例导出实时耐久及使用余量，供持久化边界按身份合并。
@@ -52,5 +71,5 @@ func snapshot() -> Dictionary:
 	var result := {}
 	for item: Equipment in _items.values():
 		result[item.instance_id] = {"definition_id": item.definition_id, "durability": item.durability,
-			"max_durability": item.max_durability, "usage": item.usage.to_dictionary()}
+			"max_durability": item.max_durability, "usage": item.usage.to_dictionary(), "magazine": item.magazine.to_dictionary()}
 	return result

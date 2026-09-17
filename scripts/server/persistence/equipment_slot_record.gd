@@ -13,6 +13,7 @@ var enhancement := ClothingEnhancement.new()
 var vehicle_sockets := VehicleSockets.new()
 var processing := EquipmentProcessing.new()
 var usage := EquipmentUsage.new()
+var magazine := WeaponMagazine.new()
 var locked := false
 var bound := false
 var slot_location := -1
@@ -45,6 +46,9 @@ static func from_dictionary(raw: Variant) -> DomainResult:
 	if not used.is_ok:
 		return used
 	slot.usage = used.value
+	var rounds := WeaponMagazine.restore(raw.get("magazine", {}))
+	if not rounds.is_ok: return rounds
+	slot.magazine = rounds.value
 	var sockets := VehicleSockets.restore(raw.get("vehicle_sockets", {}))
 	if not sockets.is_ok:
 		return sockets
@@ -80,6 +84,7 @@ func to_dictionary() -> Dictionary:
 		"vehicle_sockets": vehicle_sockets.to_dictionary(),
 		"processing": processing.to_dictionary(),
 		"usage": usage.to_dictionary(),
+		"magazine": magazine.to_dictionary(),
 		"locked": locked,
 		"bound": bound,
 		"slot_location": slot_location,

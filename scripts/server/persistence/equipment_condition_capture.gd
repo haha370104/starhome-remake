@@ -12,3 +12,4 @@ static func apply(state: PlayerStateRecord, conditions: Dictionary) -> void:
 		slot.durability = int(current.durability)
 		slot.max_durability = int(current.max_durability)
 		slot.usage = EquipmentUsage.restore(current.usage).value
+		slot.magazine = WeaponMagazine.restore(current.magazine).value
