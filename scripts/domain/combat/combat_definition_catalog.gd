@@ -285,11 +285,13 @@ func vehicle_combat_loadout(
 		var effect := String({"energy_cannon": "energy_cannon_attack", "missile": "missile_attack",
 			"rocket_launcher": "rocket_attack"}.get(weapons[ability_id].get("skill_id", ""), ""))
 		var food_kind := int({"energy_cannon_attack": 13, "missile_attack": 14, "rocket_attack": 15}.get(effect, 0))
-		var bonus := player.vehicle.loadout.attachment_bonus(effect)
+		var bonus := player.vehicle.loadout.attachment_bonus(effect) + player.vehicle.loadout.socket_bonus(effect)
 		for field: String in ["minimum_damage", "maximum_damage"]:
 			weapons[ability_id][field] = maxi(1, roundi(clothing.apply_value(effect, float(weapons[ability_id][field]) + bonus)) + player.food_status.bonus(food_kind))
 		if effect == "energy_cannon_attack":
 			weapons[ability_id]["range"] = clothing.apply_value("energy_cannon_range", float(weapons[ability_id]["range"]))
+			weapons[ability_id]["critical_chance"] = player.vehicle.loadout.socket_bonus("critical_chance")
+			weapons[ability_id]["critical_multiplier"] = chassis.socket_rules.critical_multiplier if chassis.socket_rules != null else 1.5
 		weapons[ability_id]["working_energy_cost"] *= 1.0 - clothing.trait_value("economy")
 		weapons[ability_id]["pursuit_bonus"] = clothing.trait_value("pursuit")
 	return DomainResult.ok({"assembly": assembly, "weapons": weapons})

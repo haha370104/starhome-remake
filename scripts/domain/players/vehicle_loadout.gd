@@ -7,6 +7,33 @@ var revision: int
 var _equipped: Dictionary = {}
 
 
+## 汇总全身同类数值最高四颗普通晶石，瑕疵和明亮共用名额，损坏装备不提供效果。
+## [param attribute] 规范化战车属性。
+## 返回固定加值或暴击概率。
+func socket_bonus(attribute: String) -> float:
+	var effect := String({"energy_cannon_attack": "firepower", "max_health": "health",
+		"defense": "defense", "missile_attack": "guidance", "rocket_attack": "rocket",
+		"critical_chance": "critical"}.get(attribute, ""))
+	if effect.is_empty():
+		return 0.0
+	var values: Array[float] = []
+	var limit := 4
+	for item: VehicleEquipment in _equipped.values():
+		if item.durability <= 0 or item.socket_rules == null:
+			continue
+		limit = item.socket_rules.maximum_effective
+		for index: int in item.sockets.capacity():
+			var slot := item.sockets.slot_at(index)
+			var crystal := item.socket_rules.crystal(slot.crystal_id)
+			if crystal != null and crystal.effect == effect:
+				values.append(crystal.value)
+	values.sort()
+	var total := 0.0
+	for index: int in mini(limit, values.size()):
+		total += values[values.size() - index - 1]
+	return total
+
+
 ## 汇总已装配且有耐久的接合器，背包中的物品不参与计算。
 ## [param effect] 领域效果标识。
 ## 返回各独立槽位的加值总和。

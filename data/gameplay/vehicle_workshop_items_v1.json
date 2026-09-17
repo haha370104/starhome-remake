@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "price_policy": "remake coin prices, original material identities",
+  "definitions": [
+    {
+      "id": "vehicle_density_solvent_i",
+      "kind": "material",
+      "display_name": "I型密度柔解剂",
+      "description": "战车开槽：固定50%成功率，失败损毁整件装备及其中晶石。确认预览后使用。",
+      "max_stack": 99,
+      "source_class": "Activator",
+      "presentation": {
+        "ale_reference": "pic3/stuff/activator"
+      },
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_file": "cltobj/stuffclt2.fcc",
+        "source_line": 11718
+      },
+      "workshop_unit_price": 5000
+    },
+    {
+      "id": "vehicle_precise_hammer",
+      "kind": "material",
+      "display_name": "精密锤头",
+      "description": "复刻加工工具：摘取一颗战车晶石时免新增裂纹，不修复已有裂纹。",
+      "max_stack": 99,
+      "source_class": "PreciseHammer",
+      "presentation": {
+        "ale_reference": "pic3/stuff/precisehammer"
+      },
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_file": "cltobj/stuffclt2.fcc",
+        "source_line": 42454
+      },
+      "workshop_unit_price": 2000
+    },
+    {
+      "id": "vehicle_armed_chip",
+      "kind": "material",
+      "display_name": "武装芯片",
+      "description": "符合扩孔资格的战车装备，每8个解锁一个扩展孔；解锁后仍需柔解剂开槽。",
+      "max_stack": 99,
+      "source_class": "ArmedChip",
+      "presentation": {
+        "icon": "res://assets/items/materials/vehicle_armed_chip/icon.png",
+        "native_size": [
+          29,
+          27
+        ]
+      },
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_file": "cltobj/stuffclt2.fcc",
+        "source_line": 14651,
+        "asset_source_release": "starhome_lz_fr",
+        "source_asset": "pic2/stuff/ArmedChip.ale",
+        "source_sha256": "5933968a09cc3eb63acd35698026e8db3f84b59a2426ee2264a44ad5ce61f2a7",
+        "glory_status": 404,
+        "jz_status": 404,
+        "asset_source_url": "http://update.ftxjjy.com/gameser/fr_www/pic2/stuff/ArmedChip.ale"
+      },
+      "workshop_unit_price": 10000
+    }
+  ]
+}
