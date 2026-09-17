@@ -15,6 +15,9 @@ var usage := EquipmentUsage.new()
 var magazine := WeaponMagazine.new()
 var extra_attributes := ExtraAttributes.new()
 var extra_attribute_rules: ExtraAttributeRules
+var strengthening := EquipmentStrengthening.new()
+var strengthening_profile: EquipmentStrengtheningRules.Profile
+var strengthening_rules: EquipmentStrengtheningRules
 
 
 ## 初始化具有耐久和数值配置的装备实例。
@@ -38,6 +41,9 @@ func _init(definition: Dictionary = {}, state: Dictionary = {}) -> void:
 	var extra := ExtraAttributes.restore(state.get("extra_attributes", {}))
 	if extra.is_ok:
 		extra_attributes = extra.value
+	var stars := EquipmentStrengthening.restore(state.get("strengthening", {}))
+	if stars.is_ok:
+		strengthening = stars.value
 	var used := EquipmentUsage.restore(state.get("usage", {}))
 	if used.is_ok:
 		usage = used.value
@@ -108,7 +114,8 @@ func maintain(tool: EquipmentMaintenanceRules.RepairTool = null) -> DomainResult
 ## 返回配置基数与该实例的加工增量。
 func stat(stat_id: String, fallback: Variant = 0) -> Variant:
 	var base: Variant = _stats.get(stat_id, fallback)
-	return base + processing.bonus(stat_id) + extra_attributes.bonus(stat_id, extra_attribute_rules) if base is int or base is float else base
+	return base + processing.bonus(stat_id) + extra_attributes.bonus(stat_id, extra_attribute_rules) \
+		+ strengthening.bonus(stat_id, strengthening_profile) if base is int or base is float else base
 
 
 ## 在成功加工后同步子类缓存，供装配与战斗使用同一组数值。
@@ -132,6 +139,10 @@ func to_view_dictionary() -> Dictionary:
 		if extra_attributes.bonus(attribute, extra_attribute_rules) > 0:
 			view.stats[attribute] = stat(attribute)
 	view["extra_attributes"] = extra_attributes.to_dictionary()
+	view["strengthening"] = strengthening.to_dictionary()
+	if strengthening_profile != null:
+		view.stats[strengthening_profile.attribute] = stat(strengthening_profile.attribute)
+	view["strengthening_eligible"] = strengthening_profile != null
 	view["extra_attribute_eligible"] = extra_attribute_rules != null and not extra_attribute_rules.allowed(definition_id).is_empty()
 	view["usage"] = usage.to_dictionary()
 	view["magazine"] = magazine.to_dictionary()

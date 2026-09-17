@@ -13,6 +13,7 @@ var enhancement := ClothingEnhancement.new()
 var vehicle_sockets := VehicleSockets.new()
 var processing := EquipmentProcessing.new()
 var extra_attributes := ExtraAttributes.new()
+var strengthening := EquipmentStrengthening.new()
 var usage := EquipmentUsage.new()
 var magazine := WeaponMagazine.new()
 var locked := false
@@ -46,6 +47,9 @@ static func from_dictionary(raw: Variant) -> DomainResult:
 	var extra := ExtraAttributes.restore(raw.get("extra_attributes", {}))
 	if not extra.is_ok: return extra
 	slot.extra_attributes = extra.value
+	var stars := EquipmentStrengthening.restore(raw.get("strengthening", {}))
+	if not stars.is_ok: return stars
+	slot.strengthening = stars.value
 	var used := EquipmentUsage.restore(raw.get("usage", {}))
 	if not used.is_ok:
 		return used
@@ -88,6 +92,7 @@ func to_dictionary() -> Dictionary:
 		"vehicle_sockets": vehicle_sockets.to_dictionary(),
 		"processing": processing.to_dictionary(),
 		"extra_attributes": extra_attributes.to_dictionary(),
+		"strengthening": strengthening.to_dictionary(),
 		"usage": usage.to_dictionary(),
 		"magazine": magazine.to_dictionary(),
 		"locked": locked,

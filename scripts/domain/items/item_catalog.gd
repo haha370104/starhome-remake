@@ -18,6 +18,7 @@ const GAMEPLAY_PATHS := [
 	"res://data/gameplay/equipment_processing_items_v1.json",
 	"res://data/gameplay/equipment_maintenance_items_v1.json",
 	"res://data/gameplay/extra_attribute_items_v1.json",
+	"res://data/gameplay/equipment_strengthening_items_v1.json",
 ]
 const PRESENTATION_PATHS := [
 	"res://data/presentation/player_equipment_v1.json",
@@ -31,6 +32,7 @@ var socket_rules: VehicleSocketRules
 var processing_rules: EquipmentProcessingRules
 var maintenance_rules: EquipmentMaintenanceRules
 var extra_attribute_rules: ExtraAttributeRules
+var strengthening_rules: EquipmentStrengtheningRules
 
 
 ## 读取所有当前启用的物品定义和语义化表现目录。
@@ -89,6 +91,11 @@ func initialize() -> DomainResult:
 	var extra_result := ExtraAttributeRules.from_dictionary(extra_data.value)
 	if not extra_result.is_ok: return extra_result
 	extra_attribute_rules = extra_result.value
+	var strengthening_data := JsonConfigLoader.load_dictionary("res://data/gameplay/equipment_strengthening_rules_v1.json")
+	if not strengthening_data.is_ok: return strengthening_data
+	var strengthening_result := EquipmentStrengtheningRules.from_dictionary(strengthening_data.value)
+	if not strengthening_result.is_ok: return strengthening_result
+	strengthening_rules = strengthening_result.value
 	var ammunition_data := JsonConfigLoader.load_dictionary("res://data/gameplay/equipment_ammunition_rules_v1.json")
 	if not ammunition_data.is_ok: return ammunition_data
 	for row: Dictionary in ammunition_data.value.get("equipment", []):
@@ -105,6 +112,10 @@ func initialize() -> DomainResult:
 ## [param state] 存档中的实例状态。
 ## 返回服装、战车底盘、引擎、武器、采掘臂、通用装备或普通物品的具体实例。
 func create(definition_id: String, state: Dictionary) -> DomainResult:
+	var stars := EquipmentStrengthening.restore(state.get("strengthening", {}))
+	if not stars.is_ok: return stars
+	var stars_check := (stars.value as EquipmentStrengthening).validate_for(strengthening_rules.profiles.get(ItemDefinitionAliases.canonical(definition_id)))
+	if not stars_check.is_ok: return stars_check
 	var extra := ExtraAttributes.restore(state.get("extra_attributes", {}))
 	if not extra.is_ok: return extra
 	var extra_check := (extra.value as ExtraAttributes).validate_for(ItemDefinitionAliases.canonical(definition_id), extra_attribute_rules)
@@ -132,6 +143,8 @@ func create(definition_id: String, state: Dictionary) -> DomainResult:
 	var item: GameItem = result.value
 	if item is Equipment:
 		item.extra_attribute_rules = extra_attribute_rules
+		item.strengthening_rules = strengthening_rules
+		item.strengthening_profile = strengthening_rules.profiles.get(item.definition_id)
 		item.refresh_processed_stats()
 		var ammunition_check := (rounds.value as WeaponMagazine).bind_capacity(item.ammunition_capacity())
 		if not ammunition_check.is_ok: return ammunition_check
@@ -177,6 +190,8 @@ func _create_item(definition_id: String, state: Dictionary) -> DomainResult:
 	if item_definition.has("use_rule"):
 		return DomainResult.ok(ConsumableItem.new(item_definition, state))
 	match kind:
+		"equipment_strengthening_material":
+			return DomainResult.ok(EquipmentStrengtheningMaterial.new(item_definition, state))
 		"character_clothing":
 			var checked := ClothingEnhancement.restore(state.get("enhancement", {}))
 			if not checked.is_ok:

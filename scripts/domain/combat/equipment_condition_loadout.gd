@@ -24,6 +24,8 @@ func duplicate_loadout() -> EquipmentConditionLoadout:
 		copied.maintenance_profile = item.maintenance_profile
 		copied.processing_rules = item.processing_rules
 		copied.extra_attribute_rules = item.extra_attribute_rules
+		copied.strengthening_profile = item.strengthening_profile
+		copied.strengthening_rules = item.strengthening_rules
 		copied.refresh_processed_stats()
 		result._items[copied.instance_id] = copied
 	return result
