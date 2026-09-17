@@ -92,6 +92,8 @@ func _merge_file(path: String) -> bool:
 ## 返回该函数计算、查询或操作得到的结果。
 static func normalize_reference(asset_reference: String) -> String:
 	var normalized := asset_reference.strip_edges().replace("\\", "/").to_lower()
+	while normalized.contains("//"):
+		normalized = normalized.replace("//", "/")
 	while normalized.begins_with("../"):
 		normalized = normalized.trim_prefix("../")
 	while normalized.begins_with("./"):

@@ -52,6 +52,9 @@ def gather():
     weapons = ROOT / 'data/presentation/weapon_visual_bindings_v1.json'
     for row in read(weapons)['unavailable_source_assets']:
         add(row['source_reference'], 'projectile', row['definition_id'], weapons)
+    for item_id, row in read(weapons)['weapons'].items():
+        if row['projectile'].get('source_release', 'starhome_lz_ry') != 'starhome_lz_ry':
+            add(row['projectile']['ale_reference'], 'projectile', item_id, weapons)
     for relative, category in [('starhome_lz_ry_maps_parsed/maps_missing_addimg.json', 'historical_map'), ('starhome_lz_ry_maps_missing_review/missing_scene_review.json', 'map')]:
         source = OUTPUTS / relative
         for scene in read(source)['maps']:
@@ -204,10 +207,11 @@ def main():
             cards.append(f'<article><h2>{row["id"]} · {html.escape(key)}</h2><p>{html.escape("；".join(u["label"] for u in row["uses"][:6]))}</p><img src="{relative}"><p>免费：{html.escape(a[0])}<br>激战：{html.escape(b[0])}</p></article>')
     report = {'date':'2026-09-17','scope':'All explicit missing references in item/projectile catalogs, historical/current scene audits, failed exact-path recovery records and known missing map packages. Not-declared references are not invented.', 'comparison':'All RGBA frames, dimensions, frame order and origins. Filename matches without exact paths remain unconfirmed candidates.', 'summary':dict(summaries),'total':len(records),'glory_already_available':sum(r['glory_now_available'] for r in records.values()),'records':list(records.values())}
     (DEST/'audit.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
-    page='<!doctype html><meta charset="utf-8"><title>缺失素材版本对照</title><style>body{background:#0e1b27;color:#e9f1f8;font:16px "Microsoft YaHei",sans-serif;max-width:1080px;margin:32px auto}article{padding:18px;background:#172c3d;margin:22px 0;border-radius:12px}img{width:100%;max-width:960px}h2{font-size:20px;overflow-wrap:anywhere}</style><h1>免费版 / 新激战版 差异对照</h1><p>全部帧及原点参与比较。下图展示首帧与首次差异帧；同名异路径仅为候选，尚未接入游戏。</p>'+''.join(cards)
+    page='<!doctype html><meta charset="utf-8"><title>缺失素材版本对照</title><style>body{background:#0e1b27;color:#e9f1f8;font:16px "Microsoft YaHei",sans-serif;max-width:1080px;margin:32px auto}article{padding:18px;background:#172c3d;margin:22px 0;border-radius:12px}img{width:100%;max-width:960px}h2{font-size:20px;overflow-wrap:anywhere}</style><h1>免费版 / 新激战版 差异对照</h1><p>全部帧及原点参与比较。下图保留历史差异，纳米护甲、帝王炮及帝王战车已按用户选择使用免费版。接入状态见下表。</p>'+''.join(cards)
     statuses = {'free_only':'仅免费版有候选','jz_only':'仅激战版有候选','identical_bytes':'两版逐字节相同','identical_frames':'两版全部帧相同','different_frames':'两版图像不同','neither_found':'两版未找到','multiple_candidates':'多重同名候选','decode_unavailable':'解码未完成','different_binary':'二进制不同'}
     current = sorted((r for r in records.values() if not r['glory_now_available']),key=lambda r:r['id'])
-    table = '<h1>全部当前缺失引用的检索结果</h1><p>“候选”不等于已确认同一业务素材；换了目录的同名文件需结合原版逻辑核实。已接入15项，其余为检索成果。</p><input id="search" placeholder="按名称、路径或结果筛选" style="width:90%;padding:12px"><table><tr><th>编号/名称</th><th>原引用</th><th>免费版</th><th>激战版</th><th>结果</th></tr>'
+    restored = sum(bool(r['runtime_recovery']) for r in current)
+    table = f'<h1>全部历史缺失引用的检索结果</h1><p>已接入 {restored} 项；未恢复 {len(current)-restored} 项。明确映射来源，不使用同名自动回退。</p><input id="search" placeholder="按名称、路径或结果筛选" style="width:90%;padding:12px"><table><tr><th>编号/名称</th><th>原引用</th><th>免费版</th><th>激战版</th><th>结果</th></tr>'
     for row in current:
         names = '；'.join(dict.fromkeys(u['label'] for u in row['uses']))
         values = [row['id']+' / '+names, row['reference']]

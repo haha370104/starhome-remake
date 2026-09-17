@@ -9,6 +9,7 @@ var assertions := 0
 
 ## 执行本测试脚本的全部验证并汇总结果。
 func _initialize() -> void:
+	_expect(bool(RuntimeContentBootstrap.mount_default().get("ok", false)), "恢复内容包与默认内容包应能一起挂载")
 	var packs = PackCatalogScript.new()
 	_expect(
 		packs.load_file("res://data/content/glory_sprite_content_packs_v1.json"),
@@ -18,11 +19,11 @@ func _initialize() -> void:
 	_expect(packs.mount_all(false), "精灵包应可挂载：%s" % "; ".join(packs.errors))
 	var repository = RepositoryScript.new()
 	_expect(repository.load_default(), "ALE 索引应有效：%s" % "; ".join(repository.errors))
-	_expect(repository.size() == 14009, "基础 ALE、两类 ACT 变种与15项已确认恢复素材的数量不匹配")
+	_expect(repository.size() == 14182, "基础 ALE、两类 ACT 变种与188项已确认恢复素材的数量不匹配")
 	var recovered: Array = JsonConfigLoader.load_dictionary(RepositoryScript.DEFAULT_RECOVERED_INDEX_PATH).value.sprites
 	for row: Dictionary in recovered:
 		var restored: Dictionary = repository.load_animation(row.logical_id)
-		_expect(restored.get("source_release") == "starhome_lz_fr", "跨版本恢复不能冒充荣耀来源")
+		_expect(restored.get("source_release") == row.source_release, "跨版本恢复不能冒充荣耀来源")
 		_expect(restored.get("frames", []).size() == int(row.frame_count), "恢复的背包、面板、世界帧均可加载")
 	_expect(repository.resolve("pic3/equip/body/monarchtank").frames_path != repository.resolve("pic2/equip/body/monarchtank").frames_path, "已存在的荣耀帝王不能被千级帝王替换")
 	var adult := repository.resolve("../pic3/npc/CHN_2005_06_28_18_49_17_921.ale")

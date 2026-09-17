@@ -23,6 +23,7 @@ def main():
         item["stats"]["legacy_properties"]["m_sbulletfile"] = re.search(r'm_sbulletfile\s*=\s*("[^"]+")', body).group(1)
         item["source_class"] = "FireGun" + number
     sprites = json.loads((ROOT / "data/content/glory_sprite_runtime_index_v1.json").read_text(encoding="utf-8-sig"))["sprites"]
+    sprites += json.loads((ROOT / "data/content/recovered_sprite_runtime_index_v1.json").read_text(encoding="utf-8"))["sprites"]
     available = {row["logical_id"].lower(): row for row in sprites}
     rows, missing = {}, []
     for item in items + rockets:
@@ -40,6 +41,8 @@ def main():
         rows[item["id"]] = {"mode": mode, "projectile": {"ale_reference": reference, "frames": available[reference]["frame_count"], "fps": 10.0},
             "source_class": item["source_class"], "source_declared_projectile": declared[0] if declared else "",
             "source_style_override": variants[0] if variants else "", "source_file": item["source_audit"]["source_file"]}
+        if available[reference].get('source_release', 'starhome_lz_ry') != 'starhome_lz_ry':
+            rows[item['id']]['projectile']['source_release'] = available[reference]['source_release']
     document = {"schema_version": 1, "source_release": "starhome_lz_ry", "equipment_style_index": 0,
         "evidence": "cltobj/equipclt.fcc::ChangeEquipStyle overrides m_sbulletfile with m_szBulletFileChange[0]; bullet.fcc::laserbullet resolves pic3/bullet/",
         "weapons": rows, "unavailable_source_assets": missing}

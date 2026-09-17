@@ -98,8 +98,18 @@ def main():
     for folder, rows in manifests.items():
         write_json(folder/'source_manifest.json',{'schema_version':1,'source_release':'starhome_lz_fr',
             'authorization':'2026-09-17 user explicitly selected free-release nano armor, monarch cannon and monarch chassis previews over jz alternatives','assets':rows})
-    write_json(ROOT/'data/content/recovered_sprite_runtime_index_v1.json',index)
-    write_json(ROOT/'data/presentation/recovered_equipment_v1.json',overrides)
+    # Preserve subsequent explicitly approved recoveries when regenerating the initial choices.
+    from import_remaining_recovered_assets import write_rows
+    index_path = ROOT/'data/content/recovered_sprite_runtime_index_v1.json'
+    override_path = ROOT/'data/presentation/recovered_equipment_v1.json'
+    existing = json.loads(index_path.read_text(encoding='utf-8')) if index_path.is_file() else index
+    merged = {r['logical_id']:r for r in existing['sprites']}
+    merged.update({r['logical_id']:r for r in index['sprites']})
+    previous = json.loads(override_path.read_text(encoding='utf-8'))['definitions'] if override_path.is_file() else {}
+    for item_id, modes in overrides['definitions'].items():
+        previous.setdefault(item_id,{}).update(modes)
+    write_rows(index_path, {'schema_version':1,'content_version':existing['content_version']}, 'sprites', sorted(merged.values(),key=lambda r:r['logical_id']))
+    write_rows(override_path, {'schema_version':1}, 'definitions', dict(sorted(previous.items())))
     print('APPROVED_EQUIPMENT assets=%d definitions=%d' % (len(index['sprites']),len(overrides['definitions'])))
 
 

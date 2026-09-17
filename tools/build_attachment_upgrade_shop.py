@@ -39,6 +39,8 @@ def build():
         if row["id"] in ("low_grade_gel", "low_grade_energy_catalyst", "low_grade_biosilicon", "low_grade_quadruped_shell"):
             by_name[row["display_name"]] = row
     sprites = {row["logical_id"] for row in read("data/content/glory_sprite_runtime_index_v1.json")["sprites"]}
+    recovered = {row['logical_id']: row for row in read('data/content/recovered_sprite_runtime_index_v1.json')['sprites']}
+    sprites.update(recovered)
     definitions, ids, prices = [], {}, {}
     for source_class, (name, price, file) in MATERIALS.items():
         source = (SOURCE / file).read_text(encoding="utf-8-sig")
@@ -56,6 +58,9 @@ def build():
             row["replaces_name_only"] = True
         if reference in sprites:
             row["presentation"] = {"ale_reference": reference}
+            if reference in recovered:
+                row['presentation']['source_release'] = recovered[reference]['source_release']
+                row['source_audit']['replacement_source'] = recovered[reference]['source_release']
         else:
             assert source_class == "ProcessStone", reference
             row["source_audit"]["asset_status"] = "local_missing_and_official_exact_path_404"

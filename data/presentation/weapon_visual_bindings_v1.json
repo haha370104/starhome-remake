@@ -16,6 +16,45 @@
       "source_style_override": "",
       "source_file": "cltobj/appendequipcltclass.fcc"
     },
+    "glory_equipment_missile_thunder_c5ee4fe533": {
+      "mode": "missile",
+      "projectile": {
+        "ale_reference": "pic3/bullet/missile_thunder_pd",
+        "frames": 3,
+        "fps": 10.0,
+        "source_release": "starhome_lz_fr"
+      },
+      "source_class": "Missile_Thunder",
+      "source_declared_projectile": "Missile_Thunder_PD.ale",
+      "source_style_override": "",
+      "source_file": "cltobj/appendequipcltclass.fcc"
+    },
+    "glory_equipment_tmissile_thunder_8a43f3b5c7": {
+      "mode": "missile",
+      "projectile": {
+        "ale_reference": "pic3/bullet/missile_thunder_pd",
+        "frames": 3,
+        "fps": 10.0,
+        "source_release": "starhome_lz_fr"
+      },
+      "source_class": "TMissile_Thunder",
+      "source_declared_projectile": "Missile_Thunder_PD.ale",
+      "source_style_override": "",
+      "source_file": "cltobj/equipcltclass.fcc"
+    },
+    "glory_equipment_jmissile_thunder_e0b6883c21": {
+      "mode": "missile",
+      "projectile": {
+        "ale_reference": "pic3/bullet/missile_thunder_pd",
+        "frames": 3,
+        "fps": 10.0,
+        "source_release": "starhome_lz_fr"
+      },
+      "source_class": "JMissile_Thunder",
+      "source_declared_projectile": "Missile_Thunder_PD.ale",
+      "source_style_override": "",
+      "source_file": "cltobj/equipcltclass.fcc"
+    },
     "glory_equipment_missile1_e5d9c3dd47": {
       "mode": "missile",
       "projectile": {
@@ -220,6 +259,32 @@
       "source_style_override": "",
       "source_file": "cltobj/equipcltclass.fcc"
     },
+    "glory_equipment_xmasgun_9d72e95d33": {
+      "mode": "energy_cannon",
+      "projectile": {
+        "ale_reference": "pic3/bullet/gun14_bullet14",
+        "frames": 1,
+        "fps": 10.0,
+        "source_release": "starhome_lz_fr"
+      },
+      "source_class": "Xmasgun",
+      "source_declared_projectile": "gun14_bullet14.ale",
+      "source_style_override": "",
+      "source_file": "cltobj/equipcltclass.fcc"
+    },
+    "glory_equipment_gun_xmas_9475063eaa": {
+      "mode": "energy_cannon",
+      "projectile": {
+        "ale_reference": "pic3/bullet/gun_xmas_bullet",
+        "frames": 1,
+        "fps": 10.0,
+        "source_release": "starhome_lz_fr"
+      },
+      "source_class": "gun_Xmas",
+      "source_declared_projectile": "gun_Xmas_bullet.ale",
+      "source_style_override": "",
+      "source_file": "cltobj/equipcltclass.fcc"
+    },
     "glory_equipment_space_firegun1_49553e4065": {
       "mode": "rocket_launcher",
       "projectile": {
@@ -314,6 +379,19 @@
       "source_class": "gun1",
       "source_declared_projectile": "bullet1.ale",
       "source_style_override": "bullet1.ale",
+      "source_file": "cltobj/equipcltclass.fcc"
+    },
+    "glory_equipment_memory_gun1_4df55354ab": {
+      "mode": "energy_cannon",
+      "projectile": {
+        "ale_reference": "pic3/bullet/bullet01",
+        "frames": 1,
+        "fps": 10.0,
+        "source_release": "starhome_lz_fr"
+      },
+      "source_class": "Memory_gun1",
+      "source_declared_projectile": "bullet01.ale",
+      "source_style_override": "",
       "source_file": "cltobj/equipcltclass.fcc"
     },
     "glory_equipment_gunxxx_e5a0deb104": {
@@ -535,32 +613,8 @@
   },
   "unavailable_source_assets": [
     {
-      "definition_id": "glory_equipment_missile_thunder_c5ee4fe533",
-      "source_reference": "pic3/bullet/missile_thunder_pd"
-    },
-    {
-      "definition_id": "glory_equipment_tmissile_thunder_8a43f3b5c7",
-      "source_reference": "pic3/bullet/missile_thunder_pd"
-    },
-    {
-      "definition_id": "glory_equipment_jmissile_thunder_e0b6883c21",
-      "source_reference": "pic3/bullet/missile_thunder_pd"
-    },
-    {
-      "definition_id": "glory_equipment_xmasgun_9d72e95d33",
-      "source_reference": "pic3/bullet/gun14_bullet14"
-    },
-    {
-      "definition_id": "glory_equipment_gun_xmas_9475063eaa",
-      "source_reference": "pic3/bullet/gun_xmas_bullet"
-    },
-    {
       "definition_id": "glory_equipment_tnewfiregunjoint_7674ff256b",
       "source_reference": "pic3/bullet/"
-    },
-    {
-      "definition_id": "glory_equipment_memory_gun1_4df55354ab",
-      "source_reference": "pic3/bullet/bullet01"
     }
   ]
 }

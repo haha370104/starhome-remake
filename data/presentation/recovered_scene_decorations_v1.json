@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "maps": {
+    "glory_nft_bl_traderoom1": [
+      {
+        "id": "TradeScreen1",
+        "ale_reference": "../../map/mapimg/ani/CHN_2005_06_28_19_32_06_50/d..ale",
+        "anchor": [
+          1053,
+          206
+        ],
+        "frame_duration_ms": 100,
+        "source_release": "starhome_lz_ry",
+        "source_file": "NFT_BL/map/traderoom1.fcc",
+        "source_line": 361,
+        "source_asset_release": "starhome_lz_fr"
+      },
+      {
+        "id": "TradeScreen2",
+        "ale_reference": "../../map/mapimg/ani/CHN_2005_06_28_19_32_06_50/d..ale",
+        "anchor": [
+          1478,
+          415
+        ],
+        "frame_duration_ms": 100,
+        "source_release": "starhome_lz_ry",
+        "source_file": "NFT_BL/map/traderoom1.fcc",
+        "source_line": 374,
+        "source_asset_release": "starhome_lz_fr"
+      },
+      {
+        "id": "TradeScreen3",
+        "ale_reference": "../../map/mapimg/ani/CHN_2005_06_28_19_32_06_50/d..ale",
+        "anchor": [
+          2179,
+          766
+        ],
+        "frame_duration_ms": 100,
+        "source_release": "starhome_lz_ry",
+        "source_file": "NFT_BL/map/traderoom1.fcc",
+        "source_line": 404,
+        "source_asset_release": "starhome_lz_fr"
+      }
+    ]
+  }
+}

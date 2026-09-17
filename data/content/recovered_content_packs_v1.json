@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "content_version": "approved-recovered-sprites-v2",
+  "packs": [
+    {
+      "pack_id": "recovered_equipment_and_scenery",
+      "path": "res://assets/content_packs/recovered_equipment_and_scenery.zip",
+      "size_bytes": 3334309,
+      "sha256": "1c6c2c10c0292ae66dfc6c7360be91116b9ab305086173d193de99588f4e8c23",
+      "content_groups": [
+        "recovered_equipment",
+        "recovered_scenery"
+      ]
+    }
+  ],
+  "summary": {
+    "packed_references": 173,
+    "total_recovered_references": 188,
+    "item_definitions": 180
+  }
+}

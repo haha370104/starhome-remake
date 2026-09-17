@@ -54,8 +54,8 @@ func _run() -> void:
 		if offer.display_name != "加工石":
 			_expect(not ItemPresentationTextureResolver.resolve(definition.presentation).is_empty(), "六种材料加载各自荣耀原图")
 		else:
-			_expect(definition.source_audit.asset_status == "local_missing_and_official_exact_path_404", "加工石明确记录原图缺失")
-			_expect(not ItemPresentationTextureResolver.resolve(definition.presentation).is_empty(), "加工石采用用户授权补绘图标")
+			_expect(definition.source_audit.get("replacement_source") == "starhome_lz_fr", "加工石应记录用户选择的免费版来源")
+			_expect(ItemPresentationTextureResolver.resolve(definition.presentation).get("logical_id") == "pic2/stuff/processstone", "商城应展示找回的加工石原图")
 	var stages := 0
 	for offer: Dictionary in offers:
 		if offer.family == "upgrade_material":
