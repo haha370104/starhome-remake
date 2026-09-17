@@ -3,6 +3,17 @@ extends ModernNavigationWindow
 
 signal command_requested(command: Dictionary)
 
+var window_title := "普通装备 · 基础属性加工"
+var window_dimensions := Vector2(940, 600)
+var material_title := "加工道具"
+var details_title := "属性、消耗与结果"
+var hint_text := "先卸下待加工装备，再选择对应道具。\n硬质素和复合胶板可在提炼设施生产。"
+var summary_text := "各属性独立加工至原版上限"
+var snapshot_key := "equipment_processing"
+var query_type := "query_equipment_processing"
+var execute_type := "process_equipment_attribute"
+var mode := "regular"
+
 var equipment_list: ItemList
 var material_list: ItemList
 var details: RichTextLabel
@@ -20,12 +31,12 @@ var _pending: Dictionary = {}
 
 ## 构建与晶石窗口独立的基础加工界面，材料和结果始终限制在各自区域。
 func _ready() -> void:
-	build_modern_window(Vector2(940, 600), "普通装备 · 基础属性加工")
+	build_modern_window(window_dimensions, window_title)
 	_summary = make_label("读取装备…", Rect2(24, 57, 740, 28))
 	_style_button(make_button("刷新", Rect2(816, 54, 100, 32), open_board))
 	make_label("装备 · 已装配 / 背包", Rect2(24, 96, 260, 24))
-	make_label("加工道具", Rect2(298, 96, 260, 24))
-	make_label("属性、消耗与结果", Rect2(578, 96, 338, 24))
+	make_label(material_title, Rect2(298, 96, 260, 24))
+	make_label(details_title, Rect2(578, 96, 338, 24))
 	equipment_list = _make_list(Rect2(24, 128, 260, 374), _select_equipment)
 	material_list = _make_list(Rect2(298, 128, 260, 374), _select_material)
 	details = RichTextLabel.new()
@@ -33,7 +44,7 @@ func _ready() -> void:
 	details.size = Vector2(338, 374)
 	details.add_theme_constant_override("line_separation", 5)
 	content_root.add_child(details)
-	var hint := make_label("先卸下待加工装备，再选择对应道具。\n硬质素和复合胶板可在提炼设施生产。", Rect2(24, 528, 532, 44))
+	var hint := make_label(hint_text, Rect2(24, 528, 532, 44))
 	hint.add_theme_color_override("font_color", Color("87a9bb"))
 	execute_button = make_button("执行加工", Rect2(578, 528, 338, 40), _ask)
 	_style_button(execute_button)
@@ -78,22 +89,22 @@ func focus_item(id: String = "", is_material: bool = false) -> void:
 ## 查询当前选择的权威预览，不要求自动存档版本保持不变。
 func open_board() -> void:
 	execute_button.disabled = true
-	command_requested.emit({"type": "query_equipment_processing", "instance_id": _id, "material_id": _material_id})
+	command_requested.emit({"type": query_type, "instance_id": _id, "material_id": _material_id, "mode": mode})
 
 
 ## 用服务端快照更新材料数量、可执行性与操作说明。
 ## [param bundle] 同事务面板快照。
 func apply_processing_bundle(bundle: Dictionary) -> void:
-	if not bundle.get("equipment_processing") is Dictionary:
+	if not bundle.get(snapshot_key) is Dictionary:
 		if visible and bundle.get("inventory") is Dictionary and _revision != int(bundle.inventory.revision):
 			open_board()
 		return
 	_revision = int(bundle.inventory.revision)
-	var snapshot: Dictionary = bundle.equipment_processing
+	var snapshot: Dictionary = bundle[snapshot_key]
 	_equipment = snapshot.equipment
 	_materials = snapshot.materials
 	_preview = snapshot.preview
-	_summary.text = "星际币：%d    ·    各属性独立加工至原版上限" % int(snapshot.currency)
+	_summary.text = "星际币：%d    ·    %s" % [int(snapshot.currency), summary_text]
 	_fill_list(equipment_list, _equipment, _id, true)
 	_fill_list(material_list, _materials, _material_id, false)
 	var summary := ""
@@ -138,8 +149,8 @@ func _select_material(index: int) -> void:
 
 ## 固定本次预览与版本，确认期间的刷新不会替换用户选择。
 func _ask() -> void:
-	_pending = {"type": "process_equipment_attribute", "instance_id": _id,
-		"material_id": _material_id, "inventory_revision": _revision}
+	_pending = {"type": execute_type, "instance_id": _id,
+		"material_id": _material_id, "inventory_revision": _revision, "mode": mode}
 	confirmation.dialog_text = String(_preview.get("text", ""))
 	confirmation.popup_centered(Vector2i(580, 420))
 

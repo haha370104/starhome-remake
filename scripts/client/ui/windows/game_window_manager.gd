@@ -51,6 +51,7 @@ func configure(session: PlayerPanelSession) -> bool:
 	inventory_panel.enhancement_requested.connect(_open_clothing_enhancement)
 	inventory_panel.vehicle_workshop_requested.connect(_open_vehicle_sockets)
 	inventory_panel.equipment_processing_requested.connect(_open_equipment_processing)
+	inventory_panel.equipment_maintenance_requested.connect(_open_equipment_maintenance)
 	_add_window(inventory_panel)
 	vehicle_panel = VehiclePanelScript.new()
 	vehicle_panel.name = "VehicleEquipmentPanel"
@@ -79,6 +80,7 @@ func configure(session: PlayerPanelSession) -> bool:
 		"clothing_enhancement": preload("res://scripts/client/ui/windows/navigation/clothing_enhancement_panel.gd"),
 		"vehicle_sockets": preload("res://scripts/client/ui/windows/navigation/vehicle_socket_panel.gd"),
 		"equipment_processing": preload("res://scripts/client/ui/windows/navigation/equipment_processing_panel.gd"),
+		"equipment_maintenance": preload("res://scripts/client/ui/windows/navigation/equipment_maintenance_panel.gd"),
 		"attachment_upgrades": preload("res://scripts/client/ui/windows/navigation/attachment_upgrade_panel.gd"),
 		"mercenary": preload("res://scripts/client/ui/windows/navigation/daily_activities_panel.gd"),
 		"experience": preload("res://scripts/client/ui/windows/navigation/daily_activities_panel.gd"),
@@ -89,7 +91,7 @@ func configure(session: PlayerPanelSession) -> bool:
 		var window: NavigationWindow = navigation_scripts[action].new()
 		if action in ["mercenary", "experience"]:
 			window.mode = action
-		if action in ["premium_shop", "mercenary", "experience", "attachment_upgrades", "clothing_enhancement", "vehicle_sockets", "equipment_processing"]:
+		if action in ["premium_shop", "mercenary", "experience", "attachment_upgrades", "clothing_enhancement", "vehicle_sockets", "equipment_processing", "equipment_maintenance"]:
 			window.command_requested.connect(panel_session.dispatch)
 		window.position = Vector2(120, 70)
 		window.notice_requested.connect(notice_requested.emit)
@@ -181,6 +183,7 @@ func _refresh_navigation() -> void:
 ## 将会话消息中的名单、商店、制造和任务日志分发到对应窗口。
 ## [param bundle] 已由玩家会话接收的权威消息；可能只包含某个辅助窗口的数据。
 func _apply_auxiliary_bundle(bundle: Dictionary) -> void:
+	navigation_windows["equipment_maintenance"].apply_maintenance_bundle(bundle)
 	navigation_windows["equipment_processing"].apply_processing_bundle(bundle)
 	navigation_windows["vehicle_sockets"].apply_socket_bundle(bundle)
 	navigation_windows["clothing_enhancement"].apply_enhancement_bundle(bundle)
@@ -286,3 +289,10 @@ func _open_vehicle_sockets(id: String = "", is_material: bool = false) -> void:
 ## [param is_material] 是否为材料。
 func _open_equipment_processing(id: String = "", is_material: bool = false) -> void:
 	EquipmentWorkshopNavigation.focus(navigation_windows["equipment_processing"], size, id, is_material)
+
+
+## 从装备或速修工具进入独立维护页。
+## [param id] 目标实例。
+## [param is_material] 是否为速修工具。
+func _open_equipment_maintenance(id: String = "", is_material: bool = false) -> void:
+	EquipmentWorkshopNavigation.focus(navigation_windows["equipment_maintenance"], size, id, is_material)
