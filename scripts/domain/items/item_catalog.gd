@@ -103,6 +103,8 @@ func initialize() -> DomainResult:
 	var armor_result := ArmorRefinementRules.from_dictionary(armor_data.value)
 	if not armor_result.is_ok: return armor_result
 	armor_refinement_rules = armor_result.value
+	for profile: ArmorRefinementRules.Profile in armor_refinement_rules.profiles.values():
+		_definitions[profile.definition_id]["display_name"] = profile.display_name
 	var ammunition_data := JsonConfigLoader.load_dictionary("res://data/gameplay/equipment_ammunition_rules_v1.json")
 	if not ammunition_data.is_ok: return ammunition_data
 	for row: Dictionary in ammunition_data.value.get("equipment", []):

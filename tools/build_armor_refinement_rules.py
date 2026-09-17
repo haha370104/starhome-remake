@@ -32,7 +32,11 @@ def build(check=False):
         level, location = number("m_nArmorLevel"), number("m_nLocation")
         assert level in range(1, 9) and location in range(5, 9), name
         next_class = ["Front", "Back", "Left", "Right"][location - 5] + f"Armor0{level + 1}"
-        profiles.append({"definition_id": row["id"], "level": level, "location": location,
+        name_expression = re.search(r"\bm_sObjName\s*=\s*([^;]+)", body)[1]
+        name_parts = re.findall(r'"([^"\n]*)"|(\w+)', name_expression)
+        display_name = "".join(literal or constants.get(symbol, symbol) for literal, symbol in name_parts)
+        display_name = re.sub(r"\\#[0-9a-fA-F]{6}", "", display_name)
+        profiles.append({"definition_id": row["id"], "display_name": display_name, "level": level, "location": location,
                          "next_definition_id": by_class[next_class]["id"] if level < 8 else "",
                          "gift_bound": name.startswith("T"), "source_class": name})
     materials = []

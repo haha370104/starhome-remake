@@ -3,6 +3,7 @@ extends RefCounted
 
 class Profile extends RefCounted:
 	var definition_id: String
+	var display_name: String
 	var level: int
 	var location: int
 	var next_definition_id: String
@@ -36,6 +37,7 @@ static func from_dictionary(raw: Dictionary) -> DomainResult:
 	for row: Dictionary in raw.get("equipment", []):
 		var profile := Profile.new()
 		profile.definition_id = String(row.get("definition_id", ""))
+		profile.display_name = String(row.get("display_name", ""))
 		profile.level = int(row.get("level", 0))
 		profile.location = int(row.get("location", 0))
 		profile.next_definition_id = String(row.get("next_definition_id", ""))

@@ -165,6 +165,36 @@ func pay_upgrade_cost(requirements: Array[Dictionary], currency_cost: int) -> Do
 	return DomainResult.ok({"materials": consumed, "currency": currency_cost})
 
 
+## 预检后同时消费加工材料并替换或销毁指定单件装备，只推进一次版本。
+## [param id] 未锁定的背包实例。
+## [param replacement] 保持相同身份的新装备；null 表示业务确认的销毁结果。
+## [param requirements] 不包含目标定义的加工材料。
+## [param currency_cost] 非负金币费用。
+## 返回扣料与替换摘要；所有可能失败的检查均在修改库存前完成。
+func transform_item(id: String, replacement: GameItem, requirements: Array[Dictionary], currency_cost: int) -> DomainResult:
+	var original := find(id)
+	if original == null or original.locked or original.quantity != 1 or original.max_stack != 1:
+		return DomainResult.failure(&"inventory.transform_target", "请先卸下并解锁待加工的单件装备")
+	var checked := _validate_requirements(requirements)
+	if not checked.is_ok: return checked
+	if checked.value.has(original.definition_id) or currency_cost < 0 or currency < currency_cost:
+		return DomainResult.failure(&"inventory.transform_cost", "加工费用无效或星际币不足")
+	if replacement != null:
+		if replacement == original or replacement.instance_id != id or replacement.quantity != 1 or replacement.max_stack != 1:
+			return DomainResult.failure(&"inventory.transform_identity", "加工结果必须保持同一装备实例身份")
+		var layouts := layout_items()
+		layouts[_items.find(original)] = replacement.to_layout_dictionary()
+		var valid := InventoryLayoutScript.validate(layouts)
+		if not valid.is_ok: return valid
+	var consumed := _consume_requirements_uncommitted(requirements)
+	var index := _items.find(original)
+	if replacement != null: _items[index] = replacement
+	else: _items.remove_at(index)
+	currency -= currency_cost
+	revision += 1
+	return DomainResult.ok({"materials": consumed, "currency": currency_cost, "destroyed": replacement == null})
+
+
 ## 为一次材料/金币交易报价，使用与支付相同的锁定和重复定义校验。
 ## [param requirements] 规则生成的材料要求。
 ## [param currency_cost] 非负金币报价。
