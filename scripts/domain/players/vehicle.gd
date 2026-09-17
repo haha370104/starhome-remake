@@ -67,6 +67,8 @@ func calculate_stats(
 	var required_repair_skill_level := 0
 	for equipment: VehicleEquipment in loadout.items():
 		total_weight += equipment.weight
+		if equipment.durability <= 0:
+			continue
 		if equipment is VehicleChassis:
 			var chassis := equipment as VehicleChassis
 			chassis_base_health += chassis.base_max_health
@@ -142,7 +144,7 @@ func reconcile_loadout_state(preserve_resource_ratios := true) -> bool:
 	working_energy_capacity = chassis.working_energy_capacity
 	output_power = chassis.output_power
 	for equipment: VehicleEquipment in loadout.items():
-		if equipment != chassis:
+		if equipment != chassis and equipment.durability > 0:
 			reserve_energy_capacity += float(equipment.stat("reserve_energy_capacity", 0.0))
 			working_energy_capacity += float(equipment.stat("working_energy_capacity", 0.0))
 			output_power += float(equipment.stat("power_output", 0.0))
@@ -172,7 +174,7 @@ func _resource_ratio(current_value: float, capacity: float) -> float:
 ## 返回匹配副武器的基础攻击；空槽或不同类型返回零。
 func _secondary_attack(mode: String) -> int:
 	var weapon := loadout.at(13) as VehicleWeapon
-	return weapon.base_attack if weapon != null and weapon.combat_mode() == mode else 0
+	return weapon.base_attack if weapon != null and weapon.durability > 0 and weapon.combat_mode() == mode else 0
 
 
 ## 统一计算武器的强化伤害，未装配该武器时不凭空产生攻击。
@@ -197,7 +199,7 @@ func movement_speed(driving_level: int, multiplier: float = 1500.0, cap: float =
 	var effective := 0.0
 	for item: VehicleEquipment in loadout.items():
 		total_weight += item.weight
-		if item is VehicleEngine:
+		if item is VehicleEngine and item.durability > 0:
 			effective += (item as VehicleEngine).drive * (minf(1.0, float(driving_level) / item.required_skill_level) if item.required_skill_level > 0 else 1.0)
 	if effective <= 0.0 or total_weight <= 0:
 		return 0.0

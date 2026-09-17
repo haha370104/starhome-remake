@@ -240,6 +240,9 @@ func vehicle_combat_loadout(
 			"power_output": float(equipment.stat("power_output", 0.0)),
 			"continuous_power_draw": float(equipment.stat("continuous_power_draw", 0.0)),
 		}
+		if equipment.durability <= 0:
+			components.append({"weight": equipment.weight, "max_durability": equipment.max_durability})
+			continue
 		if equipment is VehicleEngine:
 			component["propulsion"] = (equipment as VehicleEngine).drive
 			component["required_driving_level"] = equipment.required_skill_level
@@ -270,8 +273,9 @@ func vehicle_combat_loadout(
 	assembly["self_repair_required_skill_level"] = chassis.required_repair_skill_level
 	assembly["equipment_hardiness"] = equipment_hardiness
 	assembly["unknown_fields"] = []
+	assembly["equipment_condition"] = EquipmentConditionLoadout.new(player)
 	var weapons: Dictionary = {}
-	if primary_weapon is VehicleWeapon:
+	if primary_weapon is VehicleWeapon and primary_weapon.durability > 0:
 		var weapon_result := _primary_weapon_definition(primary_weapon, simulation_hz)
 		if not weapon_result.is_ok:
 			return weapon_result
@@ -302,7 +306,7 @@ func vehicle_combat_loadout(
 ## [param simulation_hz] 权威模拟频率。
 ## 返回按能力标识索引的武器定义；非攻击装置返回空集合。
 func _equipped_secondary_weapon(equipment: VehicleEquipment, simulation_hz: int) -> DomainResult:
-	if not equipment is VehicleWeapon:
+	if not equipment is VehicleWeapon or equipment.durability <= 0:
 		return DomainResult.ok({})
 	var weapon := equipment as VehicleWeapon
 	var mode := weapon.combat_mode()
@@ -314,6 +318,7 @@ func _equipped_secondary_weapon(equipment: VehicleEquipment, simulation_hz: int)
 	var ability_id := mode + ".primary"
 	var definition: Dictionary = templates.value[ability_id].duplicate(true)
 	definition["weapon_id"] = weapon.definition_id
+	definition["instance_id"] = weapon.instance_id
 	definition["minimum_damage"] = weapon.base_attack
 	definition["maximum_damage"] = weapon.base_attack
 	definition["working_energy_cost"] = weapon.working_energy_per_shot
@@ -340,6 +345,7 @@ func _primary_weapon_definition(weapon: VehicleWeapon, simulation_hz: int) -> Do
 	return DomainResult.ok({
 		"ability_id": STARTER_ABILITY_ID,
 		"weapon_id": weapon.definition_id,
+		"instance_id": weapon.instance_id,
 		"skill_id": "energy_cannon",
 		"attack_mode": "line_projectile",
 		"minimum_damage": weapon.base_attack,

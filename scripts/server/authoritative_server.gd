@@ -260,6 +260,7 @@ func advance_simulation(elapsed_seconds: float, now_msec := -1) -> void:
 		for registered_instance: AuthoritativeMapInstance in map_registry.all_instances():
 			registered_instance.simulate(fixed_delta)
 			_settle_mining_cycles(registered_instance)
+			_settle_equipment_conditions(registered_instance)
 			for progression_event: Dictionary in registered_instance.drain_skill_progression_events():
 				_apply_skill_progression_event(progression_event)
 			for quest_kill: Dictionary in registered_instance.drain_quest_kills():
@@ -548,6 +549,12 @@ func handle_peer_map_transition(peer_id: int, raw_intent: Variant) -> Dictionary
 		var transition_state := autosave_service.state_for(session.entity_id) \
 			if autosave_service != null else null
 		if transition_state != null:
+			var captured_transition: DomainResult = _capture_persistent_player_state(transition_state)
+			if not captured_transition.is_ok:
+				return _failure(captured_transition.error_code, captured_transition.error_message)
+			var stored_transition := autosave_service.commit_player_state(session.entity_id, transition_state)
+			if not stored_transition.is_ok:
+				return _failure(stored_transition.error_code, stored_transition.error_message)
 			var prepared_loadout := _prepare_entity_combat_loadout(
 				destination_instance, session.entity_id, transition_state
 			)
@@ -690,6 +697,12 @@ func _recover_destroyed_vehicle_to_base(entity_id: String, pending: Dictionary) 
 		var recovery_state := autosave_service.state_for(entity_id) \
 			if autosave_service != null else null
 		if recovery_state != null:
+			var captured_recovery: DomainResult = _capture_persistent_player_state(recovery_state)
+			if not captured_recovery.is_ok:
+				return _failure(captured_recovery.error_code, captured_recovery.error_message)
+			var stored_recovery := autosave_service.commit_player_state(entity_id, recovery_state)
+			if not stored_recovery.is_ok:
+				return _failure(stored_recovery.error_code, stored_recovery.error_message)
 			var prepared_loadout := _prepare_entity_combat_loadout(
 				destination, entity_id, recovery_state
 			)
@@ -765,14 +778,10 @@ func handle_peer_player_panel_command(peer_id: int, command: Dictionary) -> Dict
 	var is_commerce: bool = commerce_service.handles(command_type)
 	var is_manufacturing: bool = manufacturing_service.handles(command_type)
 	var current_map := map_registry.instance_by_id(session.map_instance_id)
-	if command_type == "use_inventory_item" or command_type in ClothingEnhancementService.COMMANDS \
-		or command_type in EquipmentProcessingService.COMMANDS \
-		or command_type in EquipmentMaintenanceService.COMMANDS \
-		or command_type in VehicleSocketService.COMMANDS or command_type in ["equip_character_item", "unequip_character_item"]:
-		var captured: DomainResult = _capture_persistent_player_state(current)
-		if not captured.is_ok:
-			return _failure(captured.error_code, captured.error_message)
-		current = captured.value
+	var captured: DomainResult = _capture_persistent_player_state(current)
+	if not captured.is_ok:
+		return _failure(captured.error_code, captured.error_message)
+	current = captured.value
 	var trusted_command := command.duplicate(true)
 	trusted_command["_authoritative_vehicle_combat_active"] = current_map != null \
 		and current_map.is_vehicle_combat_active()
@@ -940,6 +949,8 @@ func _settle_mining_cycles(instance: AuthoritativeMapInstance) -> void:
 			push_error("Mining source commit failed after inventory commit: %s" % committed.error_message)
 			continue
 		var event: Dictionary = committed.value
+		if instance.combat_module != null and instance.combat_module.actors.has(entity_id):
+			(instance.combat_module.actors[entity_id].equipment_condition as EquipmentConditionLoadout).record_use("mining")
 		if bool(grant_value.get("title_changed", false)):
 			_refresh_achievement_combat(entity_id, stored.value)
 		_apply_skill_progression_event({
@@ -971,6 +982,7 @@ func _refresh_achievement_combat(entity_id: String, state: PlayerStateRecord) ->
 	var target: AuthoritativeMapInstance = map_registry.instance_by_id(state.map_instance_id)
 	if target == null:
 		return
+	_capture_persistent_player_state(state)
 	var loadout := _build_entity_combat_loadout(target, state)
 	if not loadout.is_ok:
 		if not target.is_vehicle_combat_active() and loadout.error_code in [
@@ -981,6 +993,31 @@ func _refresh_achievement_combat(entity_id: String, state: PlayerStateRecord) ->
 	var updated := target.refresh_achievement_loadout(entity_id, loadout.value)
 	if not updated.is_ok:
 		push_error("Achievement combat update failed: " + updated.error_message)
+
+
+## 仅在装备刚损坏时重算装配，普通使用余量留在模拟对象中，避免逐帧重建聚合。
+## [param instance] 已推进本刻战斗与采矿的地图。
+func _settle_equipment_conditions(instance: AuthoritativeMapInstance) -> void:
+	if autosave_service == null or player_panel_service == null or instance.combat_module == null:
+		return
+	for entity_id: String in instance.combat_module.actors:
+		var condition: EquipmentConditionLoadout = instance.combat_module.actors[entity_id].equipment_condition
+		if not condition.needs_recalculation: continue
+		var current := autosave_service.state_for(entity_id)
+		if current == null: continue
+		var captured: DomainResult = _capture_persistent_player_state(current)
+		if not captured.is_ok: continue
+		var loadout := _build_entity_combat_loadout(instance, current)
+		if not loadout.is_ok:
+			push_error("Equipment wear refresh failed: " + loadout.error_message)
+			continue
+		var stored := autosave_service.commit_player_state(entity_id, current)
+		if not stored.is_ok: continue
+		instance.refresh_achievement_loadout(entity_id, loadout.value)
+		if instance.mining_module != null: instance.mining_module.interrupt(entity_id, &"equipment_broken")
+		var session := sessions.session_for_entity(entity_id)
+		if session != null and session.has_active_peer():
+			_send_reliable(session.peer_id, {"type": "player_panels", "result": _wire_result(_success(player_panel_service.build_bundle(current)))})
 
 
 ## 复用完整玩家聚合校验采矿装配，不信任客户端声明的武器类型。
@@ -1444,6 +1481,9 @@ func _capture_persistent_player_state(state: PlayerStateRecord):
 	state.facing_direction = entity.facing_index
 	state.checkpoint_id = "%s.autosave" % instance.definition.map_id
 	var vehicle_state := instance.vehicle_combat_state_for(entity.entity_id)
+	if instance.combat_module != null and instance.combat_module.actors.has(entity.entity_id):
+		var condition: EquipmentConditionLoadout = instance.combat_module.actors[entity.entity_id].equipment_condition
+		EquipmentConditionCapture.apply(state, condition.snapshot())
 	if vehicle_state != null:
 		state.vehicle_max_health = vehicle_state.max_health
 		state.vehicle_health = vehicle_state.health

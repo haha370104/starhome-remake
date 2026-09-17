@@ -119,6 +119,7 @@ func register_vehicle(
 	var clothing_effects := ClothingCombatEffects.new()
 	clothing_effects.repair_wait_reduction = float(assembly.get("repair_wait_reduction", 0))
 	actors[actor_id] = {
+		"equipment_condition": (assembly.get("equipment_condition", EquipmentConditionLoadout.new()) as EquipmentConditionLoadout).duplicate_loadout(),
 		"clothing_effects": clothing_effects,
 		"map_instance_id": map_instance_id,
 		"position": position,
@@ -180,6 +181,7 @@ func refresh_achievement_loadout(actor_id: String, loadout: Dictionary) -> Domai
 	state.working_energy = minf(previous_working, state.working_energy_capacity)
 	(actor["clothing_effects"] as ClothingCombatEffects).repair_wait_reduction = float(assembly.get("repair_wait_reduction", 0))
 	actor["weapons"] = normalized
+	actor["equipment_condition"] = (assembly.get("equipment_condition", EquipmentConditionLoadout.new()) as EquipmentConditionLoadout).duplicate_loadout()
 	actor["self_repair_bonus_strength"] = int(assembly.get("self_repair_bonus_strength", 0))
 	var repair: Dictionary = actor["self_repair"]
 	if bool(repair["active"]):
@@ -283,6 +285,10 @@ func handle_weapon_attack(actor_id: String, raw_intent: Variant) -> DomainResult
 	if not actor["weapons"].has(ability_id):
 		return DomainResult.failure(&"combat.weapon_not_equipped", "energy-cannon ability is not equipped")
 	var weapon: Dictionary = actor["weapons"][ability_id]
+	var equipment_condition: EquipmentConditionLoadout = actor["equipment_condition"]
+	var condition_check := equipment_condition.validate_shot(String(weapon.get("instance_id", "")))
+	if not condition_check.is_ok:
+		return condition_check
 	var ready_tick := int(actor["cooldown_ready_ticks"].get(ability_id, 0))
 	if current_tick < ready_tick:
 		return DomainResult.failure(&"combat.weapon_cooldown", "energy cannon is cooling down")
@@ -314,6 +320,7 @@ func handle_weapon_attack(actor_id: String, raw_intent: Variant) -> DomainResult
 	var energy_result := vehicle_state.consume_working_energy(float(weapon["working_energy_cost"]))
 	if not energy_result.is_ok:
 		return energy_result
+	equipment_condition.record_use("shot", 1, String(weapon.get("instance_id", "")))
 	(actor["clothing_effects"] as ClothingCombatEffects).observe_weapon(String(weapon["weapon_id"]))
 	interrupt_self_repair(actor_id, &"attack")
 	actor["cooldown_ready_ticks"][ability_id] = current_tick + int(weapon["cooldown_ticks"])
@@ -868,6 +875,9 @@ func advance_ticks(tick_count: int, simulate_monster_ai := true) -> DomainResult
 		for actor_id: String in actors:
 			var vehicle_state: VehicleCombatState = actors[actor_id]["vehicle_state"]
 			vehicle_state.regenerate_working_energy(fixed_delta, working_energy_regen_factor)
+			var actor: Dictionary = actors[actor_id]
+			if vehicle_state.health > 0 and not (actor.position as Vector2).is_equal_approx(actor.previous_position):
+				(actor.equipment_condition as EquipmentConditionLoadout).record_use("movement", fixed_delta)
 		_settle_due_self_repairs()
 		_settle_due_projectiles()
 		_settle_due_monster_attacks()
@@ -1306,6 +1316,7 @@ func _is_valid_actor_target(monster: MonsterLifecycle, actor_id: String) -> bool
 func _record_combat_event(event: Dictionary) -> Dictionary:
 	var damaged_actor := String(event.get("target_entity_id", ""))
 	if int(event.get("damage", 0)) > 0 and actors.has(damaged_actor):
+		(actors[damaged_actor].equipment_condition as EquipmentConditionLoadout).record_use("damage")
 		var effects: ClothingCombatEffects = actors[damaged_actor]["clothing_effects"]
 		effects.damaged(current_tick, simulation_hz)
 		if bool(event.get("target_destroyed", false)):
@@ -1553,6 +1564,7 @@ func _normalize_energy_cannon(definition: Dictionary) -> DomainResult:
 		return DomainResult.failure(&"combat.invalid_weapon_definition", "secondary weapon targeting geometry is invalid")
 	return DomainResult.ok({
 		"weapon_id": weapon_id,
+		"instance_id": String(definition.get("instance_id", "")),
 		"skill_id": skill_id,
 		"attack_mode": attack_mode,
 		"pursuit_bonus": clampf(float(definition.get("pursuit_bonus", 0)), 0.0, 0.25),
