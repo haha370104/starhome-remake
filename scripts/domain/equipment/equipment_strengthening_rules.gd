@@ -38,10 +38,10 @@ static func from_dictionary(raw: Dictionary) -> DomainResult:
 		return DomainResult.failure(&"strengthening.rules_invalid", "装备强化消耗或失败配置无效")
 	for key: String in ["ordinary_chances", "ultimate_chances"]:
 		var chances: Array[float] = []
-		for chance: float in raw.get(key, []):
-			if not is_finite(chance) or chance <= 0 or chance > 1:
+		for probability: float in raw.get(key, []):
+			if not is_finite(probability) or probability <= 0 or probability > 1:
 				return DomainResult.failure(&"strengthening.rules_invalid", "装备强化概率无效")
-			chances.append(chance)
+			chances.append(probability)
 		if chances.is_empty() or chances[-1] != 1.0:
 			return DomainResult.failure(&"strengthening.rules_invalid", "装备强化缺少保成功档")
 		if key == "ordinary_chances": rules._ordinary_chances = chances

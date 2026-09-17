@@ -15,6 +15,7 @@ var execute_type := "process_equipment_attribute"
 var mode := "regular"
 var purchase_type := ""
 var purchase_title := "加工材料 · 星际币"
+var material_quantity := 1
 
 var equipment_list: ItemList
 var material_list: ItemList
@@ -113,7 +114,7 @@ func focus_item(id: String = "", is_material: bool = false) -> void:
 ## 查询当前选择的权威预览，不要求自动存档版本保持不变。
 func open_board() -> void:
 	execute_button.disabled = true
-	command_requested.emit({"type": query_type, "instance_id": _id, "material_id": _material_id, "mode": mode})
+	command_requested.emit({"type": query_type, "instance_id": _id, "material_id": _material_id, "mode": mode, "material_quantity": material_quantity})
 
 
 ## 用服务端快照更新材料数量、可执行性与操作说明。
@@ -181,7 +182,7 @@ func _select_material(index: int) -> void:
 ## 固定本次预览与版本，确认期间的刷新不会替换用户选择。
 func _ask() -> void:
 	_pending = {"type": execute_type, "instance_id": _id,
-		"material_id": _material_id, "inventory_revision": _revision, "mode": mode}
+		"material_id": _material_id, "inventory_revision": _revision, "mode": mode, "material_quantity": material_quantity}
 	confirmation.dialog_text = String(_preview.get("text", ""))
 	confirmation.popup_centered(Vector2i(580, 420))
 
@@ -191,7 +192,7 @@ func _ask_purchase() -> void:
 	if shop == null or shop.selected < 0 or shop.selected >= _offers.size(): return
 	var offer: Dictionary = _offers[shop.selected]
 	_pending = {"type": purchase_type, "definition_id": offer.definition_id, "quantity": int(quantity.value),
-		"inventory_revision": _revision, "instance_id": _id, "material_id": _material_id, "mode": mode}
+		"inventory_revision": _revision, "instance_id": _id, "material_id": _material_id, "mode": mode, "material_quantity": material_quantity}
 	confirmation.dialog_text = "购买 %s ×%d\n合计 %d 星际币" % [offer.display_name, int(quantity.value), int(offer.unit_price) * int(quantity.value)]
 	confirmation.popup_centered(Vector2i(520, 240))
 

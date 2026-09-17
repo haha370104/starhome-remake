@@ -53,6 +53,7 @@ func configure(session: PlayerPanelSession) -> bool:
 	inventory_panel.equipment_processing_requested.connect(_open_equipment_processing)
 	inventory_panel.equipment_maintenance_requested.connect(_open_equipment_maintenance)
 	inventory_panel.extra_attributes_requested.connect(_open_extra_attributes)
+	inventory_panel.equipment_strengthening_requested.connect(_open_equipment_strengthening)
 	_add_window(inventory_panel)
 	vehicle_panel = VehiclePanelScript.new()
 	vehicle_panel.name = "VehicleEquipmentPanel"
@@ -83,6 +84,7 @@ func configure(session: PlayerPanelSession) -> bool:
 		"equipment_processing": preload("res://scripts/client/ui/windows/navigation/equipment_processing_panel.gd"),
 		"equipment_maintenance": preload("res://scripts/client/ui/windows/navigation/equipment_maintenance_panel.gd"),
 		"extra_attributes": preload("res://scripts/client/ui/windows/navigation/extra_attribute_panel.gd"),
+		"equipment_strengthening": preload("res://scripts/client/ui/windows/navigation/equipment_strengthening_panel.gd"),
 		"attachment_upgrades": preload("res://scripts/client/ui/windows/navigation/attachment_upgrade_panel.gd"),
 		"mercenary": preload("res://scripts/client/ui/windows/navigation/daily_activities_panel.gd"),
 		"experience": preload("res://scripts/client/ui/windows/navigation/daily_activities_panel.gd"),
@@ -93,7 +95,7 @@ func configure(session: PlayerPanelSession) -> bool:
 		var window: NavigationWindow = navigation_scripts[action].new()
 		if action in ["mercenary", "experience"]:
 			window.mode = action
-		if action in ["premium_shop", "mercenary", "experience", "attachment_upgrades", "clothing_enhancement", "vehicle_sockets", "equipment_processing", "equipment_maintenance", "extra_attributes"]:
+		if action in ["premium_shop", "mercenary", "experience", "attachment_upgrades", "clothing_enhancement", "vehicle_sockets", "equipment_processing", "equipment_maintenance", "extra_attributes", "equipment_strengthening"]:
 			window.command_requested.connect(panel_session.dispatch)
 		window.position = Vector2(120, 70)
 		window.notice_requested.connect(notice_requested.emit)
@@ -188,6 +190,7 @@ func _apply_auxiliary_bundle(bundle: Dictionary) -> void:
 	navigation_windows["equipment_maintenance"].apply_maintenance_bundle(bundle)
 	navigation_windows["equipment_processing"].apply_processing_bundle(bundle)
 	navigation_windows["extra_attributes"].apply_processing_bundle(bundle)
+	navigation_windows["equipment_strengthening"].apply_processing_bundle(bundle)
 	navigation_windows["vehicle_sockets"].apply_socket_bundle(bundle)
 	navigation_windows["clothing_enhancement"].apply_enhancement_bundle(bundle)
 	navigation_windows["attachment_upgrades"].apply_upgrade_bundle(bundle)
@@ -306,3 +309,10 @@ func _open_equipment_maintenance(id: String = "", is_material: bool = false) -> 
 ## [param is_material] 是否为材料。
 func _open_extra_attributes(id: String = "", is_material: bool = false) -> void:
 	EquipmentWorkshopNavigation.focus(navigation_windows["extra_attributes"], size, id, is_material)
+
+
+## 从装备或强化石进入十星强化窗口。
+## [param id] 初始实例。
+## [param is_material] 是否为材料。
+func _open_equipment_strengthening(id: String = "", is_material: bool = false) -> void:
+	EquipmentWorkshopNavigation.focus(navigation_windows["equipment_strengthening"], size, id, is_material)
