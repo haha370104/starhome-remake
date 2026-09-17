@@ -527,6 +527,10 @@ func _on_server_message_received(message: Dictionary) -> void:
 	var result: Dictionary = message.get("result", {})
 	CombatTraceLogger.record(&"client", &"command_rejected_received", result)
 	var context: Dictionary = result.get("value", {}) if result.get("value") is Dictionary else {}
+	if context.get("operation") == "prepare_exit":
+		player_panel_bundle_received.emit({"exit_failure": {"request_id": String(context.get("request_id", "")),
+			"code": String(result.get("code", "")), "message": String(result.get("message", "保存失败"))}})
+		return
 	if StringName(context.get("command_type", "")) == Protocol.VEHICLE_RECOVERY_INTENT \
 			and not _pending_vehicle_recovery.is_empty() \
 			and int(context.get("input_sequence", -1)) \

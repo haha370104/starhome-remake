@@ -52,6 +52,7 @@ const MAX_TRANSITION_LANDING_CORRECTION_DISTANCE := 192.0
 
 var _food_runtime: AuthoritativeFoodRuntime
 var _production_runtime: AuthoritativeProductionRuntime
+var _exit_service: AuthoritativeExitService
 var config: DedicatedServerConfig
 var map_instance: AuthoritativeMapInstance
 var map_registry: AuthoritativeMapRegistry
@@ -193,6 +194,7 @@ func initialize(
 		_production_runtime = AuthoritativeProductionRuntime.new(autosave_service, sessions, manufacturing_service,
 			_capture_persistent_player_state, _publish_production)
 		_production_runtime.failed.connect(_publish_production_failure)
+	_exit_service = AuthoritativeExitService.new(autosave_service, _capture_persistent_player_state, _release_exited_player)
 	_ticks_per_snapshot = floori(float(config.simulation_hz) / float(config.snapshot_hz))
 	return _success(_default_map_id)
 
@@ -327,6 +329,7 @@ func open_session(peer_id: int, request: Dictionary, now_msec := -1) -> Dictiona
 		var reconnect_result := sessions.reconnect(peer_id, reconnect_token, current_time)
 		if not reconnect_result.ok:
 			return reconnect_result
+		if _exit_service != null: _exit_service.forget(peer_id)
 		return _session_response(reconnect_result.value, true)
 	var primary := ensure_runtime_map(_default_map_id)
 	if not primary.ok:
@@ -355,6 +358,7 @@ func open_session(peer_id: int, request: Dictionary, now_msec := -1) -> Dictiona
 	session_result.value.map_instance_id = map_instance.instance_id
 	if persistence_state_result.value is PlayerStateRecord:
 		_restore_persistent_player_state(session_result.value, persistence_state_result.value)
+	if _exit_service != null: _exit_service.forget(peer_id)
 	return _session_response(session_result.value, false)
 
 
@@ -777,6 +781,9 @@ func snapshot_for_peer(peer_id: int) -> Dictionary:
 ## 返回包含同一事务 revision 的三面板权威快照或拒绝原因。
 ## 设计：角色身份只取自会话；变更由领域服务校验后一次性提交完整玩家聚合。
 func handle_peer_player_panel_command(peer_id: int, command: Dictionary) -> Dictionary:
+	if command.get("type") == "prepare_exit" and _exit_service != null:
+		var result := _exit_service.execute(peer_id, sessions.session_for_peer(peer_id), command)
+		return _success(result.value) if result.is_ok else _failure(result.error_code, result.error_message)
 	var session: ServerSession = sessions.session_for_peer(peer_id)
 	if session == null:
 		return _failure(&"panels.session_missing", "peer has no active authoritative session")
@@ -1169,6 +1176,9 @@ func dispatch_transport_command(
 			_send_reliable(peer_id, {"type": "command_rejected", "result": wire_result})
 		TRANSPORT_PLAYER_PANEL_COMMAND:
 			var result := handle_peer_player_panel_command(peer_id, payload)
+			if not result.ok and payload.get("type") == "prepare_exit" \
+				and AuthoritativeExitService.valid_request_id(payload.get("request_id")):
+				result["value"] = {"operation": "prepare_exit", "request_id": String(payload.request_id)}
 			_send_reliable(peer_id, {
 				"type": "player_panels" if result.ok else "command_rejected",
 				"result": _wire_result(result),
@@ -1657,6 +1667,16 @@ func _save_all_persistent_players() -> void:
 		push_error("Authoritative persistence flush failed [%s]: %s" % [
 			result.error_code, result.error_message,
 		])
+
+
+## 保存退出事务成功后停止该角色运行，避免回执之后又产生未保存的战斗或生产变化。
+## [param session] 即将结束的权威会话。[param committed] 刚刚写盘的完整玩家记录。
+func _release_exited_player(session: ServerSession, committed: PlayerStateRecord) -> void:
+	if _production_runtime != null: _production_runtime.track(committed)
+	_pending_vehicle_recoveries.erase(session.entity_id)
+	_remove_entity_from_registered_map(session.entity_id)
+	sessions.close(session.peer_id)
+	autosave_service.unregister_player(session.entity_id)
 
 
 ## 在服务器节点退出场景树前执行最后一次权威存档。

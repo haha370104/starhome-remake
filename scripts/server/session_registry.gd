@@ -60,6 +60,16 @@ func mark_disconnected(peer_id: int, now_msec: int) -> Dictionary:
 	return _success(session)
 
 
+## 正常退出保存成功后立即结束会话，与意外断线的重连宽限区分。
+## [param peer_id] 已完成保存的真实连接身份。
+## 返回已清理的会话或不存在错误；不自行读写玩家存档。
+func close(peer_id: int) -> Dictionary:
+	var session := session_for_peer(peer_id)
+	if session == null: return _failure(&"unknown_peer", "peer has no active session")
+	_remove_session(session)
+	return _success(session)
+
+
 ## 执行 `reconnect` 对应的模块操作。
 ## [param peer_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## [param reconnect_token] 调用方传入的参数；具体约束由函数签名和所在模块定义。
