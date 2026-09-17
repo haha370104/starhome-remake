@@ -19,6 +19,7 @@ TESTS = (
     "domain/extra_attribute_model_test.gd",
     "domain/extra_attribute_integration_test.gd",
     "server/commerce/extra_attribute_authority_test.gd",
+    "ui/runtime/extra_attribute_panel_test.gd",
     "server/combat/equipment_usage_authority_test.gd",
     "server/commerce/equipment_maintenance_authority_test.gd",
     "ui/runtime/equipment_maintenance_panel_test.gd",

@@ -13,6 +13,8 @@ var snapshot_key := "equipment_processing"
 var query_type := "query_equipment_processing"
 var execute_type := "process_equipment_attribute"
 var mode := "regular"
+var purchase_type := ""
+var purchase_title := "加工材料 · 星际币"
 
 var equipment_list: ItemList
 var material_list: ItemList
@@ -27,6 +29,9 @@ var _material_id := ""
 var _revision := -1
 var _preview: Dictionary = {}
 var _pending: Dictionary = {}
+var shop: OptionButton
+var quantity: SpinBox
+var _offers: Array = []
 
 
 ## 构建与晶石窗口独立的基础加工界面，材料和结果始终限制在各自区域。
@@ -56,6 +61,25 @@ func _ready() -> void:
 	confirmation.confirmed.connect(_confirm)
 	add_child(confirmation)
 	visibility_changed.connect(_visibility_changed)
+	if not purchase_type.is_empty():
+		_build_purchase()
+
+
+## 在有商售目录的加工页复用材料购买栏，价格只展示服务端快照。
+func _build_purchase() -> void:
+	make_label(purchase_title, Rect2(24, 580, 650, 24))
+	shop = OptionButton.new()
+	shop.position = Vector2(24, 612)
+	shop.size = Vector2(390, 34)
+	shop.clip_text = true
+	content_root.add_child(shop)
+	quantity = SpinBox.new()
+	quantity.position = Vector2(426, 612)
+	quantity.size = Vector2(120, 34)
+	quantity.min_value = 1
+	quantity.max_value = 99
+	content_root.add_child(quantity)
+	_style_button(make_button("购买", Rect2(578, 612, 338, 34), _ask_purchase))
 
 
 ## 创建带原版物品图和统一字体的清单。
@@ -101,6 +125,13 @@ func apply_processing_bundle(bundle: Dictionary) -> void:
 		return
 	_revision = int(bundle.inventory.revision)
 	var snapshot: Dictionary = bundle[snapshot_key]
+	if shop != null:
+		_offers = snapshot.get("offers", [])
+		var selected := shop.selected
+		shop.clear()
+		for offer: Dictionary in _offers:
+			shop.add_item("%s · %d /个" % [offer.display_name, offer.unit_price])
+		if selected >= 0 and selected < shop.item_count: shop.select(selected)
 	_equipment = snapshot.equipment
 	_materials = snapshot.materials
 	_preview = snapshot.preview
@@ -153,6 +184,16 @@ func _ask() -> void:
 		"material_id": _material_id, "inventory_revision": _revision, "mode": mode}
 	confirmation.dialog_text = String(_preview.get("text", ""))
 	confirmation.popup_centered(Vector2i(580, 420))
+
+
+## 固定商品、数量及报价后确认，购买和加工共用一次性提交保护。
+func _ask_purchase() -> void:
+	if shop == null or shop.selected < 0 or shop.selected >= _offers.size(): return
+	var offer: Dictionary = _offers[shop.selected]
+	_pending = {"type": purchase_type, "definition_id": offer.definition_id, "quantity": int(quantity.value),
+		"inventory_revision": _revision, "instance_id": _id, "material_id": _material_id, "mode": mode}
+	confirmation.dialog_text = "购买 %s ×%d\n合计 %d 星际币" % [offer.display_name, int(quantity.value), int(offer.unit_price) * int(quantity.value)]
+	confirmation.popup_centered(Vector2i(520, 240))
 
 
 ## 确认时仅提交一次已捕获意图。

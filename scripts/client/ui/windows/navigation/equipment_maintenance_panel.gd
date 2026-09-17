@@ -2,9 +2,6 @@ class_name EquipmentMaintenancePanel
 extends EquipmentProcessingPanel
 
 var mode_selector: OptionButton
-var shop: OptionButton
-var quantity: SpinBox
-var _offers: Array = []
 
 
 ## 复用装备与材料选择界面，维护规则和命令仍由独立服务处理。
@@ -18,6 +15,8 @@ func _init() -> void:
 	snapshot_key = "equipment_maintenance"
 	query_type = "query_equipment_maintenance"
 	execute_type = "maintain_equipment"
+	purchase_type = "buy_maintenance_tool"
+	purchase_title = "速修工具 · 星际币"
 
 
 ## 在稳定的选择与确认组件上增加维护模式和工具购买。
@@ -33,19 +32,6 @@ func _ready() -> void:
 	content_root.add_child(mode_selector)
 	execute_button.text = "执行维护"
 	confirmation.title = "确认装备维护"
-	make_label("速修工具 · 星际币", Rect2(24, 580, 400, 24))
-	shop = OptionButton.new()
-	shop.position = Vector2(24, 612)
-	shop.size = Vector2(390, 34)
-	shop.clip_text = true
-	content_root.add_child(shop)
-	quantity = SpinBox.new()
-	quantity.position = Vector2(426, 612)
-	quantity.size = Vector2(120, 34)
-	quantity.min_value = 1
-	quantity.max_value = 99
-	content_root.add_child(quantity)
-	_style_button(make_button("购买工具", Rect2(578, 612, 338, 34), _ask_purchase))
 
 
 ## 从工具右键进入时直接选择速修模式，仍需用户明确选择目标。
@@ -64,15 +50,6 @@ func focus_item(id: String = "", is_material: bool = false) -> void:
 ## [param bundle] 同版本面板数据。
 func apply_maintenance_bundle(bundle: Dictionary) -> void:
 	apply_processing_bundle(bundle)
-	if not bundle.get(snapshot_key) is Dictionary:
-		return
-	_offers = bundle[snapshot_key].offers
-	var selected := shop.selected
-	shop.clear()
-	for offer: Dictionary in _offers:
-		shop.add_item("%s · %d /个" % [offer.display_name, offer.unit_price])
-	if selected >= 0 and selected < shop.item_count:
-		shop.select(selected)
 
 
 ## 切换维护方式只改变意图，恢复数值由服务器预览。
@@ -82,14 +59,3 @@ func _select_mode(index: int) -> void:
 	execute_type = ["maintain_equipment", "quick_repair_equipment", "refill_equipment_ammunition"][index]
 	execute_button.text = ["执行维护", "使用速修箱", "补满弹药"][index]
 	open_board()
-
-
-## 对购买数量和服务端单价进行明确确认，防止连点多次购买。
-func _ask_purchase() -> void:
-	if shop.selected < 0 or shop.selected >= _offers.size():
-		return
-	var offer: Dictionary = _offers[shop.selected]
-	_pending = {"type": "buy_maintenance_tool", "definition_id": offer.definition_id, "quantity": int(quantity.value),
-		"inventory_revision": _revision, "instance_id": _id, "material_id": _material_id, "mode": mode}
-	confirmation.dialog_text = "购买 %s ×%d\n合计 %d 星际币" % [offer.display_name, int(quantity.value), int(offer.unit_price) * int(quantity.value)]
-	confirmation.popup_centered(Vector2i(520, 240))

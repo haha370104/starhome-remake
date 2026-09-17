@@ -75,8 +75,9 @@ func snapshot(player: Player, operation: Dictionary) -> Dictionary:
 		preview = quote.value.duplicate(true)
 		var percent: bool = preview.attribute == "double_damage_chance"
 		var points := float(preview.points) * (100 if percent else 1)
-		var lines := PackedStringArray(["%s加成：%s%s → %s%s" % [LABELS[preview.attribute],
-			str(points * int(preview.before)), "%" if percent else "", str(points * int(preview.after)), "%" if percent else ""],
+		var before := "%.2f%%" % (points * int(preview.before)) if percent else str(roundi(points * int(preview.before)))
+		var after := "%.2f%%" % (points * int(preview.after)) if percent else str(roundi(points * int(preview.after)))
+		var lines := PackedStringArray(["%s加成：%s → %s" % [LABELS[preview.attribute], before, after],
 			"成功率：%d%%\n失败：%d → %d 颗；材料与费用均消耗。\n\n本次消耗：" % [roundi(float(preview.chance) * 100), preview.before, preview.failed_level]])
 		for cost: Dictionary in preview.costs:
 			lines.append("%s ×%d（持有 %d）" % [_items.display_name(cost.definition_id), cost.quantity, cost.available])

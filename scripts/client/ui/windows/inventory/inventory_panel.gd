@@ -5,6 +5,7 @@ signal enhancement_requested(instance_id: String, is_stone: bool)
 signal vehicle_workshop_requested(instance_id: String, is_material: bool)
 signal equipment_processing_requested(instance_id: String, is_material: bool)
 signal equipment_maintenance_requested(instance_id: String, is_material: bool)
+signal extra_attributes_requested(instance_id: String, is_material: bool)
 
 signal command_requested(command: Dictionary)
 
@@ -50,6 +51,7 @@ func _ready() -> void:
 	context_menu.vehicle_workshop_requested.connect(vehicle_workshop_requested.emit)
 	context_menu.equipment_processing_requested.connect(equipment_processing_requested.emit)
 	context_menu.equipment_maintenance_requested.connect(equipment_maintenance_requested.emit)
+	context_menu.extra_attributes_requested.connect(extra_attributes_requested.emit)
 	add_child(context_menu)
 	visibility_changed.connect(func() -> void:
 		if not visible:

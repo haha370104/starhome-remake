@@ -36,6 +36,7 @@
 
 - [战车加工实施台账](vehicle_workshop.md)：P0/P1 资格、原版与复刻规则、材料用途、实例状态兼容。
 - [普通装备加工](equipment_processing.md)：P2 属性上限、原版材料、同源变体与加工实例。
+- [萤石与耀石加工](extra_attribute_processing.md)：P3-A 独立通道、失败退级、获取与实际属性。
 - [维护、磨损与弹药](equipment_maintenance.md)：P2 常规维护/速修、实际使用余量、补弹与验收。
 
 - [缺失素材跨版本检索与恢复](cross_release_asset_recovery.md)：免费/激战候选、用户差异选择、15项正式恢复及完整结果表。

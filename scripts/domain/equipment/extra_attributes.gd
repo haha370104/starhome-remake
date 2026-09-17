@@ -12,11 +12,11 @@ static func restore(raw: Variant) -> DomainResult:
 		return DomainResult.failure(&"extra.invalid_state", "额外属性记录无效")
 	var result := ExtraAttributes.new()
 	for key: Variant in raw.get("levels", {}):
-		var level: Variant = raw.levels[key]
-		if not key is String or not (level is int or level is float) or not is_finite(float(level)) \
-			or float(level) != int(level) or level < 0 or level > 30:
+		var count: Variant = raw.levels[key]
+		if not key is String or not (count is int or count is float) or not is_finite(float(count)) \
+			or float(count) != int(count) or count < 0 or count > 30:
 			return DomainResult.failure(&"extra.invalid_state", "额外属性颗数无效")
-		if level > 0: result._levels[key] = int(level)
+		if count > 0: result._levels[key] = int(count)
 	return DomainResult.ok(result)
 
 
