@@ -67,7 +67,6 @@ func snapshot(player: Player, operation: Dictionary) -> Dictionary:
 			equipment.append(row)
 		elif item is EquipmentMemoryModule:
 			row["attribute_summary"] = EquipmentMemoryDescription.describe(item.memory, _items)
-			row.display_name = ("[已载入] " if item.memory.has_growth() else "[空白] ") + String(row.display_name)
 			materials.append(row)
 	var id := String(operation.get("instance_id", ""))
 	var material_id := String(operation.get("material_id", ""))

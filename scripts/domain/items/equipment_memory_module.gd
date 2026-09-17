@@ -19,6 +19,8 @@ func _init(definition: Dictionary = {}, state: Dictionary = {}) -> void:
 ## 返回安全物品快照。
 func to_view_dictionary() -> Dictionary:
 	var view := super()
+	view["display_name"] = ("[已载入] " if memory.has_growth() else "[空白] ") + display_name
+	if memory.has_growth(): view["description"] = description + "\n已保存装备成长；右键进入记忆模块窗口查看来源和具体数值。"
 	view["module_type"] = module_type
 	view["equipment_memory"] = memory.to_dictionary()
 	return view
