@@ -59,6 +59,7 @@ func configure(session: PlayerPanelSession) -> bool:
 	inventory_panel.equipment_memory_requested.connect(_open_equipment_memory)
 	inventory_panel.equipment_dismantle_requested.connect(_open_equipment_dismantle)
 	inventory_panel.equipment_forging_requested.connect(_open_equipment_forging)
+	inventory_panel.warehouse_requested.connect(_open_warehouse)
 	_add_window(inventory_panel)
 	vehicle_panel = VehiclePanelScript.new()
 	vehicle_panel.name = "VehicleEquipmentPanel"
@@ -80,6 +81,7 @@ func configure(session: PlayerPanelSession) -> bool:
 	manufacturing_window.command_requested.connect(panel_session.dispatch)
 	_add_window(manufacturing_window)
 	var navigation_scripts := {
+		"personal_warehouse": preload("res://scripts/client/ui/windows/navigation/personal_warehouse_panel.gd"),
 		"scene_players": preload("res://scripts/client/ui/windows/navigation/scene_players_panel.gd"),
 		"missions": preload("res://scripts/client/ui/windows/navigation/mission_journal_panel.gd"),
 		"system": preload("res://scripts/client/ui/windows/navigation/system_menu_panel.gd"),
@@ -109,6 +111,8 @@ func configure(session: PlayerPanelSession) -> bool:
 			window.command_requested.connect(panel_session.dispatch)
 		if window is EquipmentProcessingPanel:
 			window.workshop_requested.connect(_open_workshop)
+		if window is PersonalWarehousePanel:
+			window.command_requested.connect(panel_session.dispatch)
 		window.position = Vector2(120, 70)
 		window.notice_requested.connect(notice_requested.emit)
 		navigation_windows[action] = window
@@ -199,6 +203,11 @@ func _refresh_navigation() -> void:
 ## 将会话消息中的名单、商店、制造和任务日志分发到对应窗口。
 ## [param bundle] 已由玩家会话接收的权威消息；可能只包含某个辅助窗口的数据。
 func _apply_auxiliary_bundle(bundle: Dictionary) -> void:
+	var warehouse: PersonalWarehousePanel = navigation_windows["personal_warehouse"]
+	if bundle.get("personal_warehouse") is Dictionary:
+		warehouse.apply_snapshot(PersonalWarehouseSnapshot.from_payload(bundle.personal_warehouse, panel_session.current_player.inventory))
+	elif bundle.get("inventory") is Dictionary:
+		warehouse.inventory_changed(int(bundle.inventory.revision))
 	navigation_windows["equipment_maintenance"].apply_maintenance_bundle(bundle)
 	navigation_windows["equipment_processing"].apply_processing_bundle(bundle)
 	navigation_windows["extra_attributes"].apply_processing_bundle(bundle)
@@ -228,6 +237,15 @@ func _apply_auxiliary_bundle(bundle: Dictionary) -> void:
 ## 从商城进入强化窗口，使用共享会话查询权威材料及装备状态。
 func _open_attachment_upgrades() -> void:
 	var window: NavigationWindow = navigation_windows["attachment_upgrades"]
+	window.show()
+	window.move_to_front()
+	window.clamp_to_viewport(size)
+	window.open_board()
+
+
+## 从背包进入个人仓库，地点、柜号和库存都重新查询服务端。
+func _open_warehouse() -> void:
+	var window: PersonalWarehousePanel = navigation_windows["personal_warehouse"]
 	window.show()
 	window.move_to_front()
 	window.clamp_to_viewport(size)

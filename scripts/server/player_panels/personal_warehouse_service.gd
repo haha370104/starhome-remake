@@ -117,7 +117,7 @@ func _bundle(player: Player, cabinet: int, message: String) -> DomainResult:
 		if not loaded.is_ok: return loaded
 		for item: GameItem in player.warehouse.items(cabinet):
 			var view := item.to_view_dictionary()
-			view["presentation"] = item.presentation.duplicate(true)
+			view["presentation"] = item.presentation_for("inventory")
 			rows.append(view)
 	var bundle := _projector.build_bundle(player)
 	bundle["personal_warehouse"] = {"revision": player.warehouse.revision, "cabinet": cabinet,

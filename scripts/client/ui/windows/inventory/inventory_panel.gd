@@ -12,6 +12,7 @@ signal clothing_improvement_requested(instance_id: String, is_material: bool)
 signal equipment_memory_requested(instance_id: String, is_material: bool)
 signal equipment_dismantle_requested(instance_id: String, is_material: bool)
 signal equipment_forging_requested(instance_id: String, is_material: bool)
+signal warehouse_requested
 
 signal command_requested(command: Dictionary)
 
@@ -80,6 +81,14 @@ func _ready() -> void:
 	arrange_button.tooltip_text = "整理背包"
 	arrange_button.pressed.connect(_request_arrange)
 	content_root.add_child(arrange_button)
+	var warehouse_button := Button.new()
+	warehouse_button.name = "WarehouseButton"
+	warehouse_button.text = "个人仓库"
+	warehouse_button.position = Vector2(28, 372)
+	warehouse_button.size = Vector2(98, 28)
+	warehouse_button.tooltip_text = "在龙之城或基地大厅存取物品"
+	warehouse_button.pressed.connect(warehouse_requested.emit)
+	content_root.add_child(warehouse_button)
 
 
 ## 从当前玩家聚合的背包对象重建物品视图。
