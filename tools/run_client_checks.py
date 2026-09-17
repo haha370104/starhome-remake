@@ -13,6 +13,7 @@ ROOT = Path(__file__).resolve().parents[1]
 TESTS = (
     "domain/vehicle_socket_model_test.gd",
     "domain/equipment_processing_model_test.gd",
+    "domain/equipment_maintenance_model_test.gd",
     "server/commerce/equipment_processing_authority_test.gd",
     "ui/runtime/equipment_processing_panel_test.gd",
     "server/commerce/vehicle_socket_authority_test.gd",

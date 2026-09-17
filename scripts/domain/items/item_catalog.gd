@@ -16,6 +16,7 @@ const GAMEPLAY_PATHS := [
 	"res://data/gameplay/clothing_enhancement_items_v1.json",
 	"res://data/gameplay/vehicle_workshop_items_v1.json",
 	"res://data/gameplay/equipment_processing_items_v1.json",
+	"res://data/gameplay/equipment_maintenance_items_v1.json",
 ]
 const PRESENTATION_PATHS := [
 	"res://data/presentation/player_equipment_v1.json",
@@ -27,6 +28,7 @@ var _definitions: Dictionary = {}
 var _definition_ids_by_display_name: Dictionary = {}
 var socket_rules: VehicleSocketRules
 var processing_rules: EquipmentProcessingRules
+var maintenance_rules: EquipmentMaintenanceRules
 
 
 ## 读取所有当前启用的物品定义和语义化表现目录。
@@ -73,6 +75,13 @@ func initialize() -> DomainResult:
 	if not processing_result.is_ok:
 		return processing_result
 	processing_rules = processing_result.value
+	var maintenance_data := JsonConfigLoader.load_dictionary("res://data/gameplay/equipment_maintenance_rules_v1.json")
+	if not maintenance_data.is_ok:
+		return maintenance_data
+	var maintenance_result := EquipmentMaintenanceRules.from_dictionary(maintenance_data.value)
+	if not maintenance_result.is_ok:
+		return maintenance_result
+	maintenance_rules = maintenance_result.value
 	_index_display_names()
 	return DomainResult.ok(self)
 
@@ -100,6 +109,7 @@ func create(definition_id: String, state: Dictionary) -> DomainResult:
 	var item: GameItem = result.value
 	if item is Equipment:
 		item.processing_rules = processing_rules
+		item.maintenance_profile = maintenance_rules.profile(item.definition_id)
 	if not item is VehicleCrystal and cracks.value != 0:
 		return DomainResult.failure(&"sockets.invalid_state", "非晶石物品不能带有裂纹")
 	var checked := (sockets_result.value as VehicleSockets).validate_for(

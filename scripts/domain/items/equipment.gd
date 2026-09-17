@@ -10,6 +10,7 @@ var required_skill_level: int
 var _stats: Dictionary
 var processing := EquipmentProcessing.new()
 var processing_rules: EquipmentProcessingRules
+var maintenance_profile: EquipmentMaintenanceRules.Profile
 
 
 ## 初始化具有耐久和数值配置的装备实例。
@@ -43,6 +44,23 @@ func wear(amount: int) -> void:
 func repair(max_decrease: int) -> void:
 	max_durability = maxi(1, max_durability - maxi(0, max_decrease))
 	durability = max_durability
+
+
+## 按自身维护资格报价，常规维护与速修保持不同的上限规则。
+## [param tool] 速修规则；null 表示常规维护。
+## 返回耐久前后值或不能修复的理由。
+func maintenance_preview(tool: EquipmentMaintenanceRules.RepairTool = null) -> DomainResult:
+	return EquipmentMaintenance.regular_preview(self) if tool == null else EquipmentMaintenance.quick_preview(self, tool)
+
+
+## 对已经支付的同一实例完成维护，并再次保证自身资格有效。
+## [param tool] 与支付报价一致的速修规则；null 表示常规维护。
+## 返回实际耐久变化或资格错误。
+func maintain(tool: EquipmentMaintenanceRules.RepairTool = null) -> DomainResult:
+	var quote := maintenance_preview(tool)
+	if quote.is_ok:
+		EquipmentMaintenance.settle(self, quote.value)
+	return quote
 
 
 ## 查询配置表中的单项装备数值。
