@@ -22,6 +22,7 @@ var checkpoint_id: String
 var inventory: Inventory
 var warehouse := PersonalWarehouse.new()
 var production := ProductionQueue.new()
+var vehicle_presets := VehicleLoadoutPresets.new()
 var character_equipment: CharacterEquipment
 var vehicle: PlayerVehicle
 var skills: SkillBook

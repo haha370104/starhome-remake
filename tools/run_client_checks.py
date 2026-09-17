@@ -54,6 +54,8 @@ TESTS = (
     "ui/runtime/manufacturing_window_test.gd",
     "ui/runtime/assistant_supplies_test.gd",
     "ui/runtime/pve_death_journal_test.gd",
+    "domain/vehicle_loadout_presets_test.gd",
+    "server/persistence/vehicle_presets_authority_test.gd",
     "server/commerce/equipment_dismantle_authority_test.gd",
     "ui/runtime/equipment_dismantle_panel_test.gd",
     "domain/equipment_memory_transfer_test.gd",

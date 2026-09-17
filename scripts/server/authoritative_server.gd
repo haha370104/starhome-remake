@@ -836,14 +836,14 @@ func handle_peer_player_panel_command(peer_id: int, command: Dictionary) -> Dict
 	elif (command_type in ClothingEnhancementService.COMMANDS or command_type in VehicleSocketService.COMMANDS \
 		or command_type in EquipmentProcessingService.COMMANDS \
 		or command_type in EquipmentMaintenanceService.COMMANDS \
-		or command_type in ["equip_character_item", "unequip_character_item"]) \
+		or command_type in ["equip_character_item", "unequip_character_item", "apply_vehicle_preset"]) \
 		and current_map != null and current_map.is_vehicle_combat_active():
 		var enhanced_loadout := current_map.refresh_achievement_loadout(session.entity_id, prepared_loadout)
 		if not enhanced_loadout.is_ok:
 			return _failure(enhanced_loadout.error_code, enhanced_loadout.error_message)
 		if current_map.mining_module != null:
 			current_map.mining_module.interrupt(session.entity_id, &"clothing_changed")
-	elif command_type not in ["split_inventory_item", "merge_inventory_item"] \
+	elif command_type not in ["split_inventory_item", "merge_inventory_item", "capture_vehicle_preset"] \
 		and current_map != null and current_map.is_vehicle_combat_active():
 		var refreshed_loadout := current_map.set_vehicle_combat_loadout(
 			session.entity_id, prepared_loadout

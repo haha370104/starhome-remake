@@ -250,6 +250,8 @@ func _execute_domain_command(
 	command_type: StringName,
 	command: Dictionary,
 ) -> DomainResult:
+	if String(command_type) in VehiclePresetCommands.COMMANDS:
+		return VehiclePresetCommands.execute(player, command, int(Time.get_unix_time_from_system()))
 	match command_type:
 		&"query":
 			return DomainResult.ok()

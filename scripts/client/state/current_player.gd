@@ -46,6 +46,9 @@ func apply_bundle(bundle: Dictionary) -> bool:
 		return false
 	if not FoodStatus.valid_state(bundle.get("food_status", {})):
 		return false
+	var preset_result := VehicleLoadoutPresets.restore(bundle.get("vehicle_presets", {}))
+	if not preset_result.is_ok: return false
+	vehicle_presets = preset_result.value
 	food_status = FoodStatus.new(bundle.get("food_status", {}))
 	amethyst = AmethystWallet.new(int(bundle.get("wallet", {}).get("amethyst", 0)))
 	var character: Dictionary = bundle["character"]
