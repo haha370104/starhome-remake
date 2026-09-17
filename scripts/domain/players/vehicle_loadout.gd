@@ -1,10 +1,21 @@
 class_name VehicleLoadout
 extends RefCounted
 
+
 const EquipmentSlotRegistryScript := preload("res://scripts/domain/equipment/equipment_slot_registry.gd")
 
 var revision: int
 var _equipped: Dictionary = {}
+
+
+## 汇总当前穿戴的独立特殊装备加值，供战车与战斗共同使用。
+## [param attribute] 战车统一属性。
+## 返回所有有效装备的固定加值。
+func special_bonus(attribute: String) -> int:
+	var total := 0
+	for equipment: VehicleEquipment in _equipped.values(): total += equipment.special_bonus(attribute)
+	return total
+
 
 
 ## 按实际装配汇总发生器常驻属性，不受是否剩余触发弹药影响。

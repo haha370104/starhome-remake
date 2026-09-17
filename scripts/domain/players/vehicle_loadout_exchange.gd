@@ -26,6 +26,8 @@ static func apply(player: Player, slots: Array, inventory_revision: int, loadout
 		if not item is VehicleEquipment or item.definition_id != String(row.definition_id):
 			return DomainResult.failure(&"presets.missing", "方案装备不在背包或战车上：%s" % String(row.display_name))
 		var equipment := item as VehicleEquipment
+		var qualified := equipment.validate_owner_level(player.level)
+		if not qualified.is_ok: return qualified
 		if selected.has(item.instance_id) or desired.has(location) or not equipment.accepts_location(location):
 			return DomainResult.failure(&"equipment.location_rejected", "方案存在重复装备或不兼容槽位")
 		if loadout.at(location) != item:

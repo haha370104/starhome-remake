@@ -306,6 +306,8 @@ func equip_vehicle_item(
 	var item := inventory.find(instance_id)
 	if not item is VehicleEquipment:
 		return DomainResult.failure(&"equipment.location_rejected", "inventory item is not vehicle equipment")
+	var owner_level := (item as VehicleEquipment).validate_owner_level(level)
+	if not owner_level.is_ok: return owner_level
 	var target := vehicle.loadout.resolve_install_location(item as VehicleEquipment, location)
 	if not target.is_ok:
 		return target
@@ -345,7 +347,7 @@ func equip_vehicle_item(
 			return returned
 	inventory.commit_transfer()
 	vehicle.loadout.commit_transfer()
-	vehicle.reconcile_loadout_state()
+	vehicle.reconcile_loadout_state(location < 19 or location > 31)
 	return DomainResult.ok()
 
 
@@ -389,7 +391,7 @@ func unequip_vehicle_item(
 		return returned
 	inventory.commit_transfer()
 	vehicle.loadout.commit_transfer()
-	vehicle.reconcile_loadout_state()
+	vehicle.reconcile_loadout_state(location < 19 or location > 31)
 	return DomainResult.ok()
 
 

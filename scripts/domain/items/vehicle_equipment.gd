@@ -10,6 +10,25 @@ var allowed_locations: Array = []
 var sockets := VehicleSockets.new()
 var socket_rules: VehicleSocketRules
 var generator_profile: GeneratorRules.Profile
+var crystal_source := CrystalSourceGrowth.new()
+var crystal_source_profile: CrystalSourceRules.Profile
+var crystal_source_rules: CrystalSourceRules
+
+
+## 汇总特殊系列的常驻属性，损坏装备不参与计算。
+## [param attribute] 战车统一属性。
+## 返回固定加值，随后由战车统一应用人物、食品等倍率。
+func special_bonus(attribute: String) -> int:
+	return crystal_source.bonus(attribute, crystal_source_profile, crystal_source_rules) if durability > 0 and crystal_source_profile != null else 0
+
+
+## 同时服务手动装配与整套方案的特殊装备综合等级资格。
+## [param player_level] 玩家综合等级。
+## 返回可装配或具体等级不足原因。
+func validate_owner_level(player_level: int) -> DomainResult:
+	if crystal_source_profile != null and player_level < crystal_source_rules.required_level:
+		return DomainResult.failure(&"equipment.level", "晶源体需要综合等级 %d" % crystal_source_rules.required_level)
+	return DomainResult.ok()
 
 
 ## 汇总当前发生器的常驻属性，损坏时不提供能力。
@@ -60,6 +79,8 @@ func attachment_bonus(effect: String) -> int:
 ## [param state] 存档中的装备实例状态。
 func _init(definition: Dictionary = {}, state: Dictionary = {}) -> void:
 	super(definition, state)
+	var restored_source := CrystalSourceGrowth.restore(state.get("crystal_source", {}))
+	if restored_source.is_ok: crystal_source = restored_source.value
 	equipment_location = int(definition.get("equipment_location", -1))
 	allowed_locations = definition.get("allowed_locations", [equipment_location]).duplicate()
 	attachment_family = String(definition.get("attachment_family", ""))
@@ -95,6 +116,14 @@ func primary_device_kind() -> String:
 ## 返回通用装备 DTO 加战车槽位信息。
 func to_view_dictionary() -> Dictionary:
 	var view := super()
+	view["crystal_source"] = crystal_source.to_dictionary()
+	view["crystal_source_eligible"] = crystal_source_profile != null
+	if crystal_source_profile != null:
+		view["description"] = String(view.description) + "\n晶源体品质 %d / 15；成长 %d / 15；综合等级要求 %d\n独立三核槽，每种颜色限一枚。" % [crystal_source.quality, crystal_source.growth, crystal_source_rules.required_level]
+		for attribute: String in ["max_health", "energy_cannon_attack", "rocket_attack", "missile_attack"]:
+			var bonus := special_bonus(attribute)
+			if bonus > 0:
+				view.description += "\n%s +%d" % [{"max_health": "战车生命", "energy_cannon_attack": "能量炮攻击", "rocket_attack": "火箭攻击", "missile_attack": "导弹攻击"}[attribute], bonus]
 	if generator_profile != null:
 		view["description"] = String(view.get("description", "")) + "\n\n" + generator_profile.description()
 		view["generator_effects"] = generator_profile.description()

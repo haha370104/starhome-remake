@@ -18,6 +18,7 @@ var enhancement := ClothingEnhancement.new()
 var clothing_improvement := ClothingImprovement.new()
 var equipment_memory := EquipmentMemory.new()
 var vehicle_sockets := VehicleSockets.new()
+var crystal_source := CrystalSourceGrowth.new()
 var processing := EquipmentProcessing.new()
 var extra_attributes := ExtraAttributes.new()
 var strengthening := EquipmentStrengthening.new()
@@ -26,6 +27,7 @@ var forging := EquipmentForging.new()
 var usage := EquipmentUsage.new()
 var magazine := WeaponMagazine.new()
 var crystal_cracks: int = 0
+var crystal_source_cracks: int = 0
 
 
 ## 执行 `from_dictionary` 对应的模块操作。
@@ -88,6 +90,9 @@ static func from_dictionary(raw: Variant) -> DomainResult:
 	var rounds := WeaponMagazine.restore(raw.get("magazine", {}))
 	if not rounds.is_ok: return rounds
 	stack.magazine = rounds.value
+	var source := CrystalSourceGrowth.restore(raw.get("crystal_source", {}))
+	if not source.is_ok: return source
+	stack.crystal_source = source.value
 	var sockets := VehicleSockets.restore(raw.get("vehicle_sockets", {}))
 	var cracks := VehicleCrystal.restore_cracks(raw.get("crystal_cracks", 0))
 	if not sockets.is_ok:
@@ -96,6 +101,9 @@ static func from_dictionary(raw: Variant) -> DomainResult:
 		return cracks
 	stack.vehicle_sockets = sockets.value
 	stack.crystal_cracks = cracks.value
+	if not CrystalSourceRules.integer(raw.get("crystal_source_cracks", 0), 0, 3):
+		return DomainResult.failure(&"crystal_source.cracks", "晶源核裂纹无效")
+	stack.crystal_source_cracks = int(raw.get("crystal_source_cracks", 0))
 	if stack.stack_id.is_empty() or stack.item_definition_id.is_empty() \
 			or stack.quantity <= 0 or stack.slot_index < 0 or stack.container_id.is_empty() \
 			or stack.position_px.x < 0 or stack.position_px.y < 0 \
@@ -126,6 +134,7 @@ func to_dictionary() -> Dictionary:
 		"clothing_improvement": clothing_improvement.to_dictionary(),
 		"equipment_memory": equipment_memory.to_dictionary(),
 		"vehicle_sockets": vehicle_sockets.to_dictionary(),
+		"crystal_source": crystal_source.to_dictionary(),
 		"processing": processing.to_dictionary(),
 		"extra_attributes": extra_attributes.to_dictionary(),
 		"strengthening": strengthening.to_dictionary(),
@@ -134,6 +143,7 @@ func to_dictionary() -> Dictionary:
 		"usage": usage.to_dictionary(),
 		"magazine": magazine.to_dictionary(),
 		"crystal_cracks": crystal_cracks,
+		"crystal_source_cracks": crystal_source_cracks,
 	}
 
 
@@ -178,6 +188,8 @@ static func from_item(item: GameItem, stack_index: int) -> DomainResult:
 		"usage": (item as Equipment).usage.to_dictionary() if item is Equipment else {},
 		"magazine": (item as Equipment).magazine.to_dictionary() if item is Equipment else {},
 		"crystal_cracks": (item as VehicleCrystal).cracks if item is VehicleCrystal else 0,
+		"crystal_source": (item as VehicleEquipment).crystal_source.to_dictionary() if item is VehicleEquipment else {},
+		"crystal_source_cracks": (item as CrystalSourceCore).cracks if item is CrystalSourceCore else 0,
 	})
 
 

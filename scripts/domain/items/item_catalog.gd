@@ -4,6 +4,7 @@ extends RefCounted
 const EquipmentSlotRegistryScript := preload("res://scripts/domain/equipment/equipment_slot_registry.gd")
 
 const GAMEPLAY_PATHS := [
+	"res://data/gameplay/crystal_source_items_v1.json",
 	"res://data/gameplay/stage3/starter_loadout_v1.json",
 	"res://data/gameplay/character_items_v1.json",
 	"res://data/gameplay/material_items_v1.json",
@@ -26,6 +27,7 @@ const GAMEPLAY_PATHS := [
 	"res://data/gameplay/equipment_forging_items_v1.json",
 ]
 const PRESENTATION_PATHS := [
+	"res://data/presentation/crystal_source_materials_v1.json",
 	"res://data/presentation/player_equipment_v1.json",
 	"res://data/presentation/ground_loot_v1.json",
 	"res://data/presentation/recovered_equipment_v1.json",
@@ -45,6 +47,7 @@ var quality_rules: EquipmentQualityRules
 var dismantle_rules: EquipmentDismantleRules
 var forging_rules: EquipmentForgingRules
 var generator_rules: GeneratorRules
+var crystal_source_rules: CrystalSourceRules
 
 
 ## 读取所有当前启用的物品定义和语义化表现目录。
@@ -53,10 +56,21 @@ var generator_rules: GeneratorRules
 func initialize() -> DomainResult:
 	_definitions.clear()
 	_definition_ids_by_display_name.clear()
+	var crystal_data := JsonConfigLoader.load_dictionary("res://data/gameplay/crystal_source_rules_v1.json")
+	if not crystal_data.is_ok: return crystal_data
+	var crystal_rules := CrystalSourceRules.from_dictionary(crystal_data.value)
+	if not crystal_rules.is_ok: return crystal_rules
+	crystal_source_rules = crystal_rules.value
 	for path: String in GAMEPLAY_PATHS:
 		var loaded := _load_gameplay_file(path)
 		if not loaded.is_ok:
 			return loaded
+	for id: String in crystal_source_rules.profiles:
+		var profile := crystal_source_rules.profiles[id]
+		for referenced_id: String in [id, profile.crystal_id, profile.source_id, profile.advanced_source_id]:
+			if not _definitions.has(referenced_id): return DomainResult.failure(&"crystal_source.catalog", "晶源体引用了不存在的装备或材料")
+	for id: String in crystal_source_rules.offers:
+		if not _definitions.has(id): return DomainResult.failure(&"crystal_source.catalog", "晶源体商品不存在")
 	for path: String in PRESENTATION_PATHS:
 		var presentation_result := _load_presentation_file(path)
 		if not presentation_result.is_ok:
@@ -170,6 +184,15 @@ func initialize() -> DomainResult:
 ## [param state] 存档中的实例状态。
 ## 返回服装、战车底盘、引擎、武器、采掘臂、通用装备或普通物品的具体实例。
 func create(definition_id: String, state: Dictionary) -> DomainResult:
+	var crystal_source := CrystalSourceGrowth.restore(state.get("crystal_source", {}))
+	if not crystal_source.is_ok: return crystal_source
+	var crystal_profile: CrystalSourceRules.Profile = crystal_source_rules.profiles.get(ItemDefinitionAliases.canonical(definition_id))
+	var crystal_check := (crystal_source.value as CrystalSourceGrowth).validate_for(crystal_profile, crystal_source_rules)
+	if not crystal_check.is_ok: return crystal_check
+	var source_cracks: Variant = state.get("crystal_source_cracks", 0)
+	if not CrystalSourceRules.integer(source_cracks, 0, 3) \
+		or (source_cracks != 0 and not crystal_source_rules.cores.has(ItemDefinitionAliases.canonical(definition_id))):
+		return DomainResult.failure(&"crystal_source.cracks", "非晶源核物品或晶源核裂纹无效")
 	var quality := EquipmentQuality.restore(state.get("equipment_quality", {}))
 	if not quality.is_ok: return quality
 	var quality_check := (quality.value as EquipmentQuality).validate_for(quality_rules.profiles.get(ItemDefinitionAliases.canonical(definition_id)))
@@ -241,6 +264,13 @@ func create(definition_id: String, state: Dictionary) -> DomainResult:
 	if not checked.is_ok:
 		return checked
 	if item is VehicleEquipment:
+		item.crystal_source = crystal_source.value
+		item.crystal_source_profile = crystal_profile
+		item.crystal_source_rules = crystal_source_rules
+		if crystal_profile != null:
+			item.bound = item.bound or crystal_profile.bound
+			for slot: CrystalSourceGrowth.Slot in item.crystal_source.slots:
+				item.bound = item.bound or slot.bound
 		item.generator_profile = generator_rules.profiles.get(item.definition_id)
 		item.sockets = sockets_result.value
 		item.socket_rules = socket_rules
@@ -257,6 +287,10 @@ func _create_item(definition_id: String, state: Dictionary) -> DomainResult:
 		return DomainResult.failure(&"items.definition_missing", "item definition does not exist")
 	var item_definition: Dictionary = _definitions[definition_id].duplicate(true)
 	var kind := String(item_definition.get("kind", ""))
+	if crystal_source_rules.cores.has(definition_id):
+		var core := CrystalSourceCore.new(item_definition, state)
+		core.profile = crystal_source_rules.cores[definition_id]
+		return DomainResult.ok(core)
 	var extra_material := extra_attribute_rules.material(definition_id)
 	if extra_material != null:
 		item_definition["extra_attribute_channel"] = extra_material.id
@@ -425,6 +459,10 @@ func _apply_equipment_contract(item_definition: Dictionary) -> void:
 		kind = "repair_arm"
 		item_definition["kind"] = kind
 	var definition_id := String(item_definition.get("id", ""))
+	if crystal_source_rules.profiles.has(definition_id):
+		var profile := crystal_source_rules.profiles[definition_id]
+		item_definition["equipment_location"] = profile.location
+		item_definition["allowed_locations"] = [profile.location]
 	if kind == "character_clothing":
 		return
 	var location := EquipmentSlotRegistryScript.location_for_definition(definition_id)

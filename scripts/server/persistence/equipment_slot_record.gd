@@ -12,6 +12,7 @@ var upgrade_level := 0
 var enhancement := ClothingEnhancement.new()
 var clothing_improvement := ClothingImprovement.new()
 var vehicle_sockets := VehicleSockets.new()
+var crystal_source := CrystalSourceGrowth.new()
 var processing := EquipmentProcessing.new()
 var extra_attributes := ExtraAttributes.new()
 var strengthening := EquipmentStrengthening.new()
@@ -69,6 +70,9 @@ static func from_dictionary(raw: Variant) -> DomainResult:
 	var rounds := WeaponMagazine.restore(raw.get("magazine", {}))
 	if not rounds.is_ok: return rounds
 	slot.magazine = rounds.value
+	var source := CrystalSourceGrowth.restore(raw.get("crystal_source", {}))
+	if not source.is_ok: return source
+	slot.crystal_source = source.value
 	var sockets := VehicleSockets.restore(raw.get("vehicle_sockets", {}))
 	if not sockets.is_ok:
 		return sockets
@@ -103,6 +107,7 @@ func to_dictionary() -> Dictionary:
 		"enhancement": enhancement.to_dictionary(),
 		"clothing_improvement": clothing_improvement.to_dictionary(),
 		"vehicle_sockets": vehicle_sockets.to_dictionary(),
+		"crystal_source": crystal_source.to_dictionary(),
 		"processing": processing.to_dictionary(),
 		"extra_attributes": extra_attributes.to_dictionary(),
 		"strengthening": strengthening.to_dictionary(),

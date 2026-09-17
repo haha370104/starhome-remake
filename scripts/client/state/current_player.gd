@@ -148,6 +148,7 @@ func _restore_inventory(raw_items: Variant) -> bool:
 			"clothing_improvement": raw_item.get("clothing_improvement", {}),
 			"equipment_memory": raw_item.get("equipment_memory", {}),
 			"vehicle_sockets": raw_item.get("vehicle_sockets", {}),
+			"crystal_source": raw_item.get("crystal_source", {}),
 			"processing": raw_item.get("processing", {}),
 			"extra_attributes": raw_item.get("extra_attributes", {}),
 			"strengthening": raw_item.get("strengthening", {}),
@@ -156,6 +157,7 @@ func _restore_inventory(raw_items: Variant) -> bool:
 			"usage": raw_item.get("usage", {}),
 			"magazine": raw_item.get("magazine", {}),
 			"crystal_cracks": raw_item.get("crystal_cracks", 0),
+			"crystal_source_cracks": raw_item.get("crystal_source_cracks", 0),
 		})
 		if not created.is_ok:
 			return false
@@ -197,6 +199,7 @@ func _create_equipment(raw_equipment: Variant) -> Equipment:
 		"enhancement": raw_equipment.get("enhancement", {}),
 		"clothing_improvement": raw_equipment.get("clothing_improvement", {}),
 		"vehicle_sockets": raw_equipment.get("vehicle_sockets", {}),
+		"crystal_source": raw_equipment.get("crystal_source", {}),
 		"processing": raw_equipment.get("processing", {}),
 		"extra_attributes": raw_equipment.get("extra_attributes", {}),
 		"strengthening": raw_equipment.get("strengthening", {}),
