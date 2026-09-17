@@ -79,7 +79,7 @@ func resume_runtime(server_tick: int) -> Dictionary:
 	if combat_module != null:
 		combat_module.set_monster_position_resolver(_resolve_monster_position)
 		combat_module.set_monster_route_resolver(_resolve_monster_route)
-		combat_module.current_tick += elapsed_ticks
+		combat_module.advance_suspended_time(elapsed_ticks)
 		if _next_monster_replenishment_tick >= 0 \
 				and combat_module.current_tick >= _next_monster_replenishment_tick:
 			var interval := maxi(1, roundi(float(_monster_population_policy.get("replenish_interval_seconds", 60.0)) * combat_module.simulation_hz))

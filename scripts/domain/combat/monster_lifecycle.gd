@@ -43,14 +43,16 @@ var population_managed := false
 var population_kind: StringName = &"ordinary"
 var death_generation := 0
 var last_killer_id := ""
+var _wander_random := RandomNumberGenerator.new()
 
 
 ## 从地图生成配置组装完整怪物领域对象。
 ## [param definition] 物种数值、索敌、攻击、掉落及本次生成点配置。
 ## [param simulation_hz] 权威服务器逻辑频率。
+## [param current_tick] 本次实际生成时的权威时钟，运行中补怪不能从零起算。
 ## 返回配置完成的怪物或字段错误。
 ## 设计：怪物的生命、移动、索敌、攻击和掉落都由同一对象持有，服务端只推进模拟。
-func configure(definition: Dictionary, simulation_hz: int) -> DomainResult:
+func configure(definition: Dictionary, simulation_hz: int, current_tick := 0) -> DomainResult:
 	var requested_id := String(definition.get("monster_id", ""))
 	var requested_map_instance_id := String(definition.get("map_instance_id", ""))
 	var requested_position: Variant = definition.get("position", Vector2.INF)
@@ -65,7 +67,7 @@ func configure(definition: Dictionary, simulation_hz: int) -> DomainResult:
 		return DomainResult.failure(&"combat.invalid_monster_definition", "monster, map identity and position are required")
 	if not requested_position.is_finite() or requested_health <= 0:
 		return DomainResult.failure(&"combat.invalid_monster_definition", "monster position or health is invalid")
-	if simulation_hz <= 0 or requested_respawn_seconds < 0.0 \
+	if simulation_hz <= 0 or current_tick < 0 or requested_respawn_seconds < 0.0 \
 		or requested_wander_interval_seconds < 0.0:
 		return DomainResult.failure(&"combat.invalid_monster_definition", "monster respawn timing is invalid")
 	if not MonsterAggroPolicyScript.is_supported(requested_policy):
@@ -103,7 +105,8 @@ func configure(definition: Dictionary, simulation_hz: int) -> DomainResult:
 	death_generation = 0
 	last_killer_id = ""
 	target_actor_id = ""
-	next_wander_tick = wander_interval_ticks
+	_wander_random.seed = (map_instance_id + ":" + monster_id).hash()
+	schedule_next_wander(current_tick, true)
 	attack_ready_tick = 0
 	action = &"idle"
 	action_sequence = 0
@@ -186,7 +189,24 @@ func pause_wander(current_tick: int) -> void:
 	action = &"idle"
 	wander_target = position
 	clear_movement_route()
-	next_wander_tick = current_tick + wander_interval_ticks
+	schedule_next_wander(current_tick)
+
+
+## 按个体独立随机序列安排首次启动或后续停顿，不消耗战斗伤害和掉落随机数。
+## [param current_tick] 本次等待开始的权威时钟。
+## [param initial] 首次启动均匀分布在一个配置周期内，后续周期在基准值上下浮动25%。
+## 设计：稳定身份决定序列，出生批次和遍历顺序不会让整批怪物保持同一节拍。
+func schedule_next_wander(current_tick: int, initial := false) -> void:
+	var minimum_delay := 1 if initial else maxi(1, roundi(wander_interval_ticks * 0.75))
+	var maximum_delay := maxi(1, wander_interval_ticks) if initial \
+		else maxi(minimum_delay, roundi(wander_interval_ticks * 1.25))
+	next_wander_tick = current_tick + _wander_random.randi_range(minimum_delay, maximum_delay)
+
+
+## 地图时钟跨过休眠时间时，保留本怪物原先剩余的游荡等待。
+## [param elapsed_ticks] 地图无人期间跳过的逻辑 tick 数；非正数不产生变化。
+func defer_wander_for_suspension(elapsed_ticks: int) -> void:
+	next_wander_tick += maxi(0, elapsed_ticks)
 
 
 ## 判断怪物是否允许主动搜索目标。

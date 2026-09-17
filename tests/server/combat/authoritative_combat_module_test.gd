@@ -20,7 +20,7 @@ func _initialize() -> void:
 	_test_training_kill_queue()
 	_test_seeded_damage_is_reproducible()
 	_test_three_engagement_policies()
-	_test_five_second_wander_interval()
+	_test_individual_wander_interval()
 	_test_obstacle_aware_monster_wander()
 	_test_return_home_does_not_oscillate()
 	_test_authoritative_ground_loot_lifecycle()
@@ -265,8 +265,8 @@ func _test_three_engagement_policies() -> void:
 	_expect((snapshot.get("recent_events", []) as Array).size() == 2, "snapshot includes deduplicatable attack-start and damage events")
 
 
-## 验证空闲怪物完成一次游走后等待五秒才选择下一段路径。
-func _test_five_second_wander_interval() -> void:
+## 验证游荡遵循个体截止时刻，并在走完路线后重新选择有界的停顿间隔。
+func _test_individual_wander_interval() -> void:
 	var module := _new_module(106)
 	var definition := _monster_definition("monster.wander", 30, Vector2(200.0, 200.0))
 	definition.merge({
@@ -277,10 +277,12 @@ func _test_five_second_wander_interval() -> void:
 	_expect(module.register_monster(definition).is_ok, "wandering monster should register")
 	var monster: MonsterLifecycle = module.monster_for("monster.wander")
 	var initial_position := monster.position
-	module.advance_ticks(99)
-	_expect(monster.position.is_equal_approx(initial_position), "monster should remain idle before five seconds")
+	var first_start := monster.next_wander_tick
+	_expect(first_start >= 1 and first_start <= 100, "initial roam should be spread across the first five seconds")
+	module.advance_ticks(first_start - 1)
+	_expect(monster.position.is_equal_approx(initial_position), "monster should remain idle before its own deadline")
 	module.advance_ticks(1)
-	_expect(not monster.position.is_equal_approx(initial_position), "monster should begin roaming on the fifth second")
+	_expect(not monster.position.is_equal_approx(initial_position), "monster should begin roaming at its own deadline")
 	var first_roaming_position := monster.position
 	module.advance_ticks(1)
 	_expect(monster.action == &"move" and not monster.position.is_equal_approx(first_roaming_position),
@@ -290,8 +292,12 @@ func _test_five_second_wander_interval() -> void:
 		module.advance_ticks(1)
 		safety_ticks -= 1
 	var settled_position := monster.position
-	module.advance_ticks(99)
-	_expect(monster.position.is_equal_approx(settled_position), "completed roam should be followed by another five-second pause")
+	var pause_ticks := monster.next_wander_tick - module.current_tick
+	_expect(pause_ticks >= 75 and pause_ticks <= 125, "completed roam should choose a pause around five seconds")
+	module.advance_ticks(pause_ticks - 1)
+	_expect(monster.position.is_equal_approx(settled_position), "completed roam must wait until its new deadline")
+	module.advance_ticks(1)
+	_expect(not monster.position.is_equal_approx(settled_position), "next roam should start after the individual pause")
 
 
 ## 验证怪物沿地图路线绕开障碍，并在无法产生位移时取消本次游荡。
@@ -325,8 +331,9 @@ func _test_obstacle_aware_monster_wander() -> void:
 	_expect(blocked_monster.action == &"idle", "rejected motion should stop the movement animation")
 	_expect(
 		blocked_monster.wander_target.is_equal_approx(blocked_monster.position)
-		and blocked_monster.next_wander_tick == blocked.current_tick + blocked_monster.wander_interval_ticks,
-		"rejected wander should clear its target and wait for the next configured interval",
+		and blocked_monster.next_wander_tick - blocked.current_tick >= 75
+		and blocked_monster.next_wander_tick - blocked.current_tick <= 125,
+		"rejected wander should clear its target and wait for an individual bounded interval",
 	)
 
 
@@ -362,11 +369,15 @@ func _test_return_home_does_not_oscillate() -> void:
 	blocked.register_monster(definition)
 	var stranded: MonsterLifecycle = blocked.monster_for("monster.boundary")
 	stranded.position = Vector2(100, 0)
-	blocked.advance_ticks(100)
-	_expect(retries[0] == 1 and stranded.returning_home,
-		"failed home route should retain return state and back off for five seconds")
 	blocked.advance_ticks(1)
-	_expect(retries[0] == 2, "home route may retry after the configured pause")
+	_expect(retries[0] == 1 and stranded.returning_home,
+		"failed home route should retain return state and back off")
+	var retry_delay := stranded.next_wander_tick - blocked.current_tick
+	_expect(retry_delay >= 75 and retry_delay <= 125, "home retries should also use bounded individual delays")
+	blocked.advance_ticks(retry_delay - 1)
+	_expect(retries[0] == 1, "failed home route must not retry before its own deadline")
+	blocked.advance_ticks(1)
+	_expect(retries[0] == 2, "home route may retry after its individual pause")
 
 
 ## 构造一条先向下再转向目标的测试路线，模拟直线中间存在障碍。

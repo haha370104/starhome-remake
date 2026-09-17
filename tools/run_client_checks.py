@@ -35,6 +35,7 @@ TESTS = (
     "server/combat/clothing_traits_test.gd",
     "server/combat/glory_field_population_test.gd",
     "server/map_residency_test.gd",
+    "server/combat/monster_wander_timing_test.gd",
     "server/combat/corrosive_attack_test.gd",
     "client/presentation/combat/monster_attack_effect_controller_test.gd",
     "client/presentation/combat/monster_hover_name_test.gd",

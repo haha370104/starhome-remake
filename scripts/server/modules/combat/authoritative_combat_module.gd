@@ -192,7 +192,7 @@ func refresh_achievement_loadout(actor_id: String, loadout: Dictionary) -> Domai
 ## 返回该函数计算、查询或操作得到的结果。
 func register_monster(definition: Dictionary) -> DomainResult:
 	var lifecycle: MonsterLifecycle = MonsterLifecycleScript.new()
-	var result := lifecycle.configure(definition, simulation_hz)
+	var result := lifecycle.configure(definition, simulation_hz, current_tick)
 	if not result.is_ok:
 		return result
 	if monsters.has(lifecycle.monster_id):
@@ -875,7 +875,6 @@ func advance_ticks(tick_count: int, simulate_monster_ai := true) -> DomainResult
 			var monster: MonsterLifecycle = monsters[monster_id]
 			var lifecycle_result := monster.advance_to_tick(current_tick)
 			if bool(lifecycle_result.value["respawned"]):
-				monster.next_wander_tick = current_tick + monster.wander_interval_ticks
 				var respawn_event := {
 					"event_type": &"monster_respawned",
 					"server_tick": current_tick,
@@ -887,6 +886,16 @@ func advance_ticks(tick_count: int, simulate_monster_ai := true) -> DomainResult
 			if monster.is_alive() and simulate_monster_ai:
 				_simulate_monster_tick(monster_id, fixed_delta)
 	return DomainResult.ok(emitted_respawns)
+
+
+## 一次性跨过空图休眠时间，保留个体游荡等待，不在唤醒时重放积压的 AI。
+## [param elapsed_ticks] 地图注册表确认的休眠 tick 数；非正数不推进状态。
+func advance_suspended_time(elapsed_ticks: int) -> void:
+	if elapsed_ticks <= 0:
+		return
+	current_tick += elapsed_ticks
+	for monster: MonsterLifecycle in monsters.values():
+		monster.defer_wander_for_suspension(elapsed_ticks)
 
 
 ## 执行 `snapshot_for_actor` 对应的模块操作。
@@ -1344,7 +1353,7 @@ func _move_monster_towards_home(monster_id: String, fixed_delta: float) -> void:
 		return
 	if not _move_monster(monster_id, home_position, fixed_delta, &"home"):
 		# 无法返巢也必须退避重试，不能每 tick 重新搜索同一条失败路线。
-		monster.next_wander_tick = current_tick + maxi(1, monster.wander_interval_ticks)
+		monster.schedule_next_wander(current_tick)
 	elif monster.position.distance_to(home_position) <= 1.0:
 		monster.pause_wander(current_tick)
 

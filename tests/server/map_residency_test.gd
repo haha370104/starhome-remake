@@ -51,6 +51,7 @@ func _initialize() -> void:
 	_expect(navigation_reference.get_ref() == null, "采矿或回调不能偷偷保留旧导航引用")
 	_expect(server.map_registry.instance_by_map_id("d04_field_zone") == null, "休眠地图不能参与活跃地图遍历")
 	var paused_tick := field.combat_module.current_tick
+	var remaining_wander_ticks := monster.next_wander_tick - paused_tick
 	var paused_position := monster.position
 	# 模拟休眠期间有怪物空位；返回时应按正常补量收敛，不重置现有实体。
 	var missing: Array = field.combat_module.monsters.keys().slice(1, 21)
@@ -66,6 +67,14 @@ func _initialize() -> void:
 	_expect(resumed.combat_module.ground_loot["retained.loot"]["quantity"] == 2, "休眠不能吞掉掉落物")
 	_expect(resumed.combat_module.monsters.values().filter(func(monster: MonsterLifecycle) -> bool: return monster.population_kind == &"ordinary").size() == 200, "六分钟后应按补量规则补足种群")
 	_expect(resumed.combat_module.current_tick >= paused_tick + 7200, "唤醒应一次性补算经过的时钟")
+	_expect(monster.next_wander_tick - resumed.combat_module.current_tick == remaining_wander_ticks,
+		"唤醒须保留怪物剩余游荡等待，不能让全图计时一起过期")
+	var new_monster_deadlines: Dictionary = {}
+	for added: MonsterLifecycle in resumed.combat_module.monsters.values():
+		if added.monster_id == monster_id or added.next_wander_tick <= resumed.combat_module.current_tick:
+			continue
+		new_monster_deadlines[added.next_wander_tick] = true
+	_expect(new_monster_deadlines.size() > 10, "休眠补量后的种群须分散启动")
 	resumed.combat_module.pending_projectiles.append({"fixture": true})
 	_expect(not resumed.can_suspend_runtime(), "在途炮弹未结算前不能休眠")
 	resumed.combat_module.pending_projectiles.clear()
