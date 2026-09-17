@@ -1,0 +1,4 @@
+{
+  "schema_version": 1,
+  "definitions": {"item:material:f6487f0e04b8": {"icon": "res://assets/items/crystal_source/materials/five_color_crystal.png", "native_size": [36, 33]}, "item:material:920f37756918": {"icon": "res://assets/items/crystal_source/materials/seven_color_crystal.png", "native_size": [30, 37]}}
+}
