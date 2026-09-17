@@ -110,13 +110,13 @@ func to_domain(catalog: ItemCatalog) -> DomainResult:
 	return DomainResult.ok(StoredPersonalWarehouse.new(self, catalog))
 
 
-## 返回只读仓库版本。
+## 读取仓库版本，供延迟领域对象校验存取意图。
 ## 返回存档记录中的整数版本。
 func revision() -> int:
 	return _revision
 
 
-## 返回只读柜数，不提供可改写的库存记录数组。
+## 读取已开通柜数，不提供可改写的库存记录数组。
 ## 返回已开通柜数量。
 func cabinet_count() -> int:
 	return _cabinets.size()

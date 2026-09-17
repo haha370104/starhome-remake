@@ -70,6 +70,7 @@ var player_panel_service: AuthoritativePlayerPanelService
 var reward_service := AuthoritativeRewardService.new()
 var commerce_service
 var manufacturing_service
+var warehouse_service: PersonalWarehouseService
 var _pending_vehicle_recoveries: Dictionary = {}
 var _runtime_definition_paths_by_map_id: Dictionary = {}
 var _runtime_map_ids_by_legacy_world: Dictionary = {}
@@ -183,6 +184,10 @@ func initialize(
 	var manufacturing_result: DomainResult = manufacturing_service.initialize(reward_service.pipeline)
 	if not manufacturing_result.is_ok:
 		return _failure(manufacturing_result.error_code, manufacturing_result.error_message)
+	warehouse_service = PersonalWarehouseService.new()
+	var warehouse_result := warehouse_service.initialize(reward_service.pipeline)
+	if not warehouse_result.is_ok:
+		return _failure(warehouse_result.error_code, warehouse_result.error_message)
 	_ticks_per_snapshot = floori(float(config.simulation_hz) / float(config.snapshot_hz))
 	return _success(_default_map_id)
 
@@ -765,7 +770,7 @@ func handle_peer_player_panel_command(peer_id: int, command: Dictionary) -> Dict
 	if session == null:
 		return _failure(&"panels.session_missing", "peer has no active authoritative session")
 	if autosave_service == null or player_panel_service == null or commerce_service == null \
-			or manufacturing_service == null:
+			or manufacturing_service == null or warehouse_service == null:
 		return _failure(&"panels.persistence_required", "player panels require authoritative persistence")
 	var current := autosave_service.state_for(session.entity_id)
 	if current == null:
@@ -777,6 +782,7 @@ func handle_peer_player_panel_command(peer_id: int, command: Dictionary) -> Dict
 		)})
 	var is_commerce: bool = commerce_service.handles(command_type)
 	var is_manufacturing: bool = manufacturing_service.handles(command_type)
+	var is_warehouse := command_type in PersonalWarehouseService.COMMANDS
 	var current_map := map_registry.instance_by_id(session.map_instance_id)
 	var captured: DomainResult = _capture_persistent_player_state(current)
 	if not captured.is_ok:
@@ -790,6 +796,8 @@ func handle_peer_player_panel_command(peer_id: int, command: Dictionary) -> Dict
 		executed = commerce_service.execute(current, trusted_command)
 	elif is_manufacturing:
 		executed = manufacturing_service.execute(current, trusted_command)
+	elif is_warehouse:
+		executed = warehouse_service.execute(current, trusted_command)
 	else:
 		executed = player_panel_service.execute(current, trusted_command)
 	if not executed.is_ok:
@@ -838,6 +846,8 @@ func handle_peer_player_panel_command(peer_id: int, command: Dictionary) -> Dict
 		return _success(manufacturing_service.build_bundle(
 			committed.value, value.get("operation", {})
 		))
+	if is_warehouse:
+		return _success(warehouse_service.build_bundle(committed.value, value.get("operation", {})))
 	return _success(player_panel_service.build_bundle(committed.value))
 
 
