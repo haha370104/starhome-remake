@@ -33,7 +33,9 @@ def build():
         by_name[row["display_name"]] = row
     recipes, excluded = [], []
     extras = []
-    by_class["FireGun7"] = by_name["劲弩式火箭"]
+    for row in definitions:
+        if row["id"].startswith("official_rocket_firegun_"):
+            by_class["FireGun" + row["id"].rsplit("_", 1)[1]] = row
 
     def register_material(name, source_file):
         """登记原表明确声明的普通材料产物，复用已有定义，保留来源。"""

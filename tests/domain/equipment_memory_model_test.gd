@@ -9,7 +9,7 @@ func _initialize() -> void:
 	var catalog := ItemCatalog.new()
 	_check(catalog.initialize().is_ok, "目录初始化")
 	var rules := catalog.memory_rules
-	_check(rules.profiles.size() == 184, "原版装备范围")
+	_check(rules.profiles.size() == 186, "原版装备范围含战斧/烈火火箭")
 	var seen := {}
 	for profile: EquipmentMemoryRules.Profile in rules.profiles.values():
 		for kind: int in profile.extract_types:

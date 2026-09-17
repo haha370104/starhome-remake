@@ -116,6 +116,8 @@
     {"definition_id": "official_rocket_firegun_5", "display_name": "长弓式火箭", "source_class": "FireGun5", "channels": ["fluorite:6", "fluorite:7"]},
     {"definition_id": "official_rocket_firegun_6", "display_name": "飞矛式火箭", "source_class": "FireGun6", "channels": ["fluorite:6", "fluorite:7"]},
     {"definition_id": "official_rocket_firegun_7", "display_name": "劲弩式火箭", "source_class": "FireGun7", "channels": ["fluorite:6", "fluorite:7"]},
+    {"definition_id": "official_rocket_firegun_8", "display_name": "战斧式火箭", "source_class": "FireGun8", "channels": ["fluorite:6", "fluorite:7"]},
+    {"definition_id": "official_rocket_firegun_9", "display_name": "烈火式火箭", "source_class": "FireGun9", "channels": ["fluorite:6", "fluorite:7"]},
     {"definition_id": "recruit_tank", "display_name": "新兵战车", "source_class": "tank1", "channels": ["fluorite:3", "fluorite:4"]},
     {"definition_id": "starter_missile", "display_name": "初级导弹", "source_class": "Missile1", "channels": ["fluorite:6", "fluorite:7"]},
     {"definition_id": "starter_rocket_launcher", "display_name": "初级火箭", "source_class": "FireGun1", "channels": ["fluorite:6", "fluorite:7"]}

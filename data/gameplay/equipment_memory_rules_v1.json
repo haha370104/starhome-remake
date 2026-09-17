@@ -186,6 +186,8 @@
     {"definition_id": "official_rocket_firegun_5", "kind": 10, "level": 140, "extract_types": [1, 3], "transfer_types": [1, 3], "source_class": "FireGun5"},
     {"definition_id": "official_rocket_firegun_6", "kind": 10, "level": 190, "extract_types": [1, 3], "transfer_types": [1, 3], "source_class": "FireGun6"},
     {"definition_id": "official_rocket_firegun_7", "kind": 10, "level": 240, "extract_types": [1, 3], "transfer_types": [1, 3], "source_class": "FireGun7"},
+    {"definition_id": "official_rocket_firegun_8", "kind": 10, "level": 290, "extract_types": [1, 3], "transfer_types": [1, 3], "source_class": "FireGun8"},
+    {"definition_id": "official_rocket_firegun_9", "kind": 10, "level": 350, "extract_types": [1, 3], "transfer_types": [1, 3], "source_class": "FireGun9"},
     {"definition_id": "recruit_energy_cannon", "kind": 2, "level": 10, "extract_types": [1, 5], "transfer_types": [1, 5], "source_class": "gun1"},
     {"definition_id": "recruit_tank", "kind": 1, "level": 10, "extract_types": [1, 3, 5, 6], "transfer_types": [1, 3, 5, 6], "source_class": "tank1"},
     {"definition_id": "starter_missile", "kind": 9, "level": 20, "extract_types": [1, 3, 5, 6], "transfer_types": [1, 3, 5, 6], "source_class": "Missile1"},

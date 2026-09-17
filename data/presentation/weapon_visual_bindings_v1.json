@@ -609,6 +609,30 @@
       "source_declared_projectile": "daodan1.ale",
       "source_style_override": "",
       "source_file": "cltobj/fireguncltclass.fcc"
+    },
+    "official_rocket_firegun_8": {
+      "mode": "rocket_launcher",
+      "projectile": {
+        "ale_reference": "pic3/bullet/daodan1",
+        "frames": 4,
+        "fps": 10.0
+      },
+      "source_class": "FireGun8",
+      "source_declared_projectile": "daodan1.ale",
+      "source_style_override": "",
+      "source_file": "cltobj/fireguncltclass.fcc"
+    },
+    "official_rocket_firegun_9": {
+      "mode": "rocket_launcher",
+      "projectile": {
+        "ale_reference": "pic3/bullet/daodan1",
+        "frames": 4,
+        "fps": 10.0
+      },
+      "source_class": "FireGun9",
+      "source_declared_projectile": "daodan1.ale",
+      "source_style_override": "",
+      "source_file": "cltobj/fireguncltclass.fcc"
     }
   },
   "unavailable_source_assets": [
