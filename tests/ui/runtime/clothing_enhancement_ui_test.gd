@@ -51,32 +51,32 @@ func _run() -> void:
 	panel.confirmation.hide()
 	_expect(before == state.to_dictionary(), "取消确认不扣材料")
 	panel.enhance_button.pressed.emit()
-	panel.confirmation.confirmed.emit()
+	_confirm_after_background_save(panel)
 	panel.confirmation.hide()
 	_expect(PlayerEnhancementActions.clothing(manager.panel_session.current_player, "inventory.training_shirt").enhancement.prefix_quality == 4, "刻印同步穿着装备")
 	panel.focus_item("enhancement:gem:movement_speed:3", true)
 	_expect(panel.details.get_parsed_text().contains("多余等级不会保留"), "高级宝石打低段有明确提示")
 	for _index: int in range(2):
 		panel.enhance_button.pressed.emit()
-		panel.confirmation.confirmed.emit()
+		_confirm_after_background_save(panel)
 		panel.confirmation.hide()
 	_expect(PlayerEnhancementActions.clothing(manager.panel_session.current_player, "inventory.training_shirt").enhancement.gem_stage == 2, "每次仅增加一段")
 	panel.synthesize_button.pressed.emit()
 	_expect(panel.confirmation.dialog_text.contains("×2"), "宝石合成为二合一")
-	panel.confirmation.confirmed.emit()
+	_confirm_after_background_save(panel)
 	panel.confirmation.hide()
 	var decoded: Player = mapper.to_domain(state).value
 	_expect(decoded.inventory.count_definition("enhancement:gem:movement_speed:4") == 1, "实际产出下一级宝石")
 	panel.transfer_target.select(1)
 	panel._request_transfer()
-	panel.confirmation.confirmed.emit()
+	_confirm_after_background_save(panel)
 	panel.confirmation.hide()
 	decoded = mapper.to_domain(state).value
 	_expect(PlayerEnhancementActions.clothing(decoded, "target").enhancement.gem_stage == 2 and PlayerEnhancementActions.clothing(decoded, "inventory.training_shirt").enhancement.gem_stage == 0, "迁移一次且来源清空")
 	panel.focus_item("target", false)
 	panel.reset_button.pressed.emit()
 	_expect(panel.confirmation.dialog_text.contains("不返还"), "重置明确说明不返还")
-	panel.confirmation.confirmed.emit()
+	_confirm_after_background_save(panel)
 	panel.confirmation.hide()
 	decoded = mapper.to_domain(state).value
 	_expect(PlayerEnhancementActions.clothing(decoded, "target").enhancement.gem_stage == 0, "重置清空实际路线")
@@ -100,6 +100,14 @@ func _run() -> void:
 		push_error(failure)
 	print("CLOTHING_ENHANCEMENT_UI checks=%d failures=%d" % [checks, failures.size()])
 	quit(0 if failures.is_empty() else 1)
+
+
+## 确认期间后台保存推进仓储版本，但没有改变用户预览过的物品。
+## [param panel] 当前持有确认框和已捕获命令的窗口。
+func _confirm_after_background_save(panel: ClothingEnhancementPanel) -> void:
+	state.revision += 3
+	panel.confirmation.confirmed.emit()
+	_expect(not sent.back().has("state_revision"), "强化窗口不再把后台存档版本作为确认前提")
 
 
 ## 添加真实定义材料，不接触本地玩家存档。

@@ -21,10 +21,10 @@ static func clothing(player: Player, id: String) -> Clothing:
 ## [param clothing_id] 自有人物装备实例。
 ## [param stone_id] 背包中具体材料实例。
 ## [param inventory_revision] 预期背包版本。
-## [param state_revision] 预期玩家版本。
 ## 返回实际前后状态及消费结果。
-static func enhance(player: Player, clothing_id: String, stone_id: String, inventory_revision: int, state_revision: int) -> DomainResult:
-	var checked := _revision(player, inventory_revision, state_revision)
+## 设计：穿脱和强化均推进背包版本；自动保存的仓储版本不属于本次物品操作的前置条件。
+static func enhance(player: Player, clothing_id: String, stone_id: String, inventory_revision: int) -> DomainResult:
+	var checked := player.inventory.require_revision(inventory_revision)
 	if not checked.is_ok:
 		return checked
 	var item := clothing(player, clothing_id)
@@ -55,10 +55,9 @@ static func enhance(player: Player, clothing_id: String, stone_id: String, inven
 ## [param stone] 玩家背包中用于选择配方的材料。
 ## [param product] 权威目录创建的下一档材料。
 ## [param inventory_revision] 预期背包版本。
-## [param state_revision] 预期玩家版本。
 ## 返回产物信息及实际消耗。
-static func synthesize(player: Player, stone: EnhancementStone, product: EnhancementStone, inventory_revision: int, state_revision: int) -> DomainResult:
-	var checked := _revision(player, inventory_revision, state_revision)
+static func synthesize(player: Player, stone: EnhancementStone, product: EnhancementStone, inventory_revision: int) -> DomainResult:
+	var checked := player.inventory.require_revision(inventory_revision)
 	if not checked.is_ok:
 		return checked
 	if stone == null or stone.locked or player.inventory.find(stone.instance_id) != stone \
@@ -85,10 +84,9 @@ static func synthesize(player: Player, stone: EnhancementStone, product: Enhance
 ## [param source_id] 已有宝石的自有装备。
 ## [param target_id] 空路线的自有同部位装备。
 ## [param inventory_revision] 预期背包版本。
-## [param state_revision] 预期玩家版本。
 ## 返回迁移结果；失败不扣金币或清空宝石。
-static func transfer(player: Player, source_id: String, target_id: String, inventory_revision: int, state_revision: int) -> DomainResult:
-	var checked := _revision(player, inventory_revision, state_revision)
+static func transfer(player: Player, source_id: String, target_id: String, inventory_revision: int) -> DomainResult:
+	var checked := player.inventory.require_revision(inventory_revision)
 	if not checked.is_ok:
 		return checked
 	var source := clothing(player, source_id)
@@ -113,10 +111,9 @@ static func transfer(player: Player, source_id: String, target_id: String, inven
 ## [param player] 当前玩家聚合。
 ## [param id] 自有人物装备。
 ## [param inventory_revision] 预期背包版本。
-## [param state_revision] 预期玩家版本。
 ## 返回重置结果；空路线或资金不足不扣费。
-static func reset(player: Player, id: String, inventory_revision: int, state_revision: int) -> DomainResult:
-	var checked := _revision(player, inventory_revision, state_revision)
+static func reset(player: Player, id: String, inventory_revision: int) -> DomainResult:
+	var checked := player.inventory.require_revision(inventory_revision)
 	if not checked.is_ok:
 		return checked
 	var item := clothing(player, id)
@@ -154,14 +151,3 @@ static func _usable(item: Clothing) -> DomainResult:
 	if item == null or item.locked or item.durability <= 0:
 		return DomainResult.failure(&"enhancement.clothing_unavailable", "请选择未锁定且有耐久的人物装备")
 	return DomainResult.ok()
-
-
-## 防止强化、合成、重置及迁移命令重放。
-## [param player] 权威玩家聚合。
-## [param inventory_revision] 客户端背包版本。
-## [param state_revision] 客户端玩家版本。
-## 返回两个版本均匹配时成功。
-static func _revision(player: Player, inventory_revision: int, state_revision: int) -> DomainResult:
-	if player.revision != state_revision:
-		return DomainResult.failure(&"player.revision_conflict", "玩家状态已变化，请刷新后重试")
-	return player.inventory.require_revision(inventory_revision)

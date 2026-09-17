@@ -20,13 +20,12 @@ func execute(player: Player, command: Dictionary) -> DomainResult:
 	var id := String(command.get("instance_id", ""))
 	var stone_id := String(command.get("stone_id", ""))
 	var inventory_revision := int(command.get("inventory_revision", -1))
-	var state_revision := int(command.get("state_revision", -1))
 	var result: DomainResult
 	match action:
 		"query_clothing_enhancement":
 			result = DomainResult.ok({"action": action})
 		"enhance_clothing":
-			result = PlayerEnhancementActions.enhance(player, id, stone_id, inventory_revision, state_revision)
+			result = PlayerEnhancementActions.enhance(player, id, stone_id, inventory_revision)
 		"synthesize_enhancement":
 			var stone := player.inventory.find(stone_id) as EnhancementStone
 			if stone == null or stone.next_definition_id().is_empty():
@@ -36,11 +35,11 @@ func execute(player: Player, command: Dictionary) -> DomainResult:
 				"quantity": 1, "footprint_px": [36, 36]})
 			if not created.is_ok:
 				return created
-			result = PlayerEnhancementActions.synthesize(player, stone, created.value, inventory_revision, state_revision)
+			result = PlayerEnhancementActions.synthesize(player, stone, created.value, inventory_revision)
 		"transfer_clothing_gems":
-			result = PlayerEnhancementActions.transfer(player, String(command.get("source_id", "")), id, inventory_revision, state_revision)
+			result = PlayerEnhancementActions.transfer(player, String(command.get("source_id", "")), id, inventory_revision)
 		"reset_clothing_gems":
-			result = PlayerEnhancementActions.reset(player, id, inventory_revision, state_revision)
+			result = PlayerEnhancementActions.reset(player, id, inventory_revision)
 		_:
 			return DomainResult.failure(&"enhancement.command", "未知的人物装备强化操作")
 	if result.is_ok:

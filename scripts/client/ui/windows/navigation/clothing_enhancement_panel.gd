@@ -19,7 +19,6 @@ var _targets := PackedStringArray()
 var _selected_id := ""
 var _stone_id := ""
 var _inventory_revision := -1
-var _state_revision := -1
 var _preview: Dictionary = {}
 var _pending: Dictionary = {}
 
@@ -110,7 +109,6 @@ func apply_enhancement_bundle(bundle: Dictionary) -> void:
 	if not bundle.get("clothing_enhancement") is Dictionary:
 		return
 	_inventory_revision = int(bundle.inventory.revision)
-	_state_revision = int(bundle.transaction_revision)
 	var snapshot: Dictionary = bundle.clothing_enhancement
 	_summary.text = "星际币：%d   ·   词条六档品质   ·   宝石逐段镶嵌，上限15段" % int(snapshot.currency)
 	_clothes = snapshot.clothes
@@ -234,12 +232,12 @@ func _request_transfer() -> void:
 	_pending.instance_id = _targets[transfer_target.selected]
 
 
-## 捕获当前快照版本，等待一次明确确认。
+## 捕获预览对应的物品版本，等待一次明确确认；后台存档不应使预览失效。
 ## [param action] 领域操作身份。
 ## [param message] 精确的消耗说明。
 func _ask(action: String, message: String) -> void:
 	_pending = {"type": action, "instance_id": _selected_id, "stone_id": _stone_id,
-		"inventory_revision": _inventory_revision, "state_revision": _state_revision}
+		"inventory_revision": _inventory_revision}
 	confirmation.dialog_text = message
 	confirmation.popup_centered(Vector2i(550, 350))
 

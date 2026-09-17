@@ -48,6 +48,7 @@ func _run() -> void:
 	_test_failures()
 	_test_synthesis()
 	_test_transfer()
+	_test_equipment_changes()
 	_test_live_server()
 	for failure: String in failures:
 		push_error(failure)
@@ -74,7 +75,7 @@ func _test_failures() -> void:
 		if failure == "missing_clothing":
 			command.instance_id = "not-owned"
 		if failure == "revision":
-			command.state_revision = -1
+			command.inventory_revision = -1
 		var before := state.to_dictionary()
 		_expect(not service.execute(state, command).is_ok and state.to_dictionary() == before, "拒绝且不改动：" + failure)
 
@@ -97,7 +98,7 @@ func _test_synthesis() -> void:
 	stone.quantity = 3
 	var before: Dictionary = mapper.to_record(player).value.to_dictionary()
 	var product: EnhancementStone = items.create(stone.next_definition_id(), {"instance_id": "product"}).value
-	_expect(not PlayerEnhancementActions.synthesize(player, stone, product, player.inventory.revision, player.revision).is_ok, "背包满且原堆叠未清空时拒绝")
+	_expect(not PlayerEnhancementActions.synthesize(player, stone, product, player.inventory.revision).is_ok, "背包满且原堆叠未清空时拒绝")
 	_expect(mapper.to_record(player).value.to_dictionary() == before, "合成失败回滚原堆叠和金币")
 
 
@@ -110,9 +111,27 @@ func _test_transfer() -> void:
 	var target: Clothing = items.create("male_sleeveless_shirt", {"instance_id": "target"}).value
 	player.receive_loot(target)
 	var revision := player.inventory.revision
-	_expect(PlayerEnhancementActions.transfer(player, source.instance_id, target.instance_id, revision, player.revision).is_ok, "同部位路线迁移")
+	_expect(PlayerEnhancementActions.transfer(player, source.instance_id, target.instance_id, revision).is_ok, "同部位路线迁移")
 	_expect(source.enhancement.gem_stage == 0 and source.enhancement.prefix_quality == 4 and target.enhancement.gem_stage == 1, "迁移不复制且保留来源前缀")
-	_expect(not PlayerEnhancementActions.transfer(player, source.instance_id, target.instance_id, revision, player.revision).is_ok, "迁移重放被拒绝")
+	_expect(not PlayerEnhancementActions.transfer(player, source.instance_id, target.instance_id, revision).is_ok, "迁移重放被拒绝")
+
+
+## 穿脱目标服装仍会使旧预览失效，收窄版本范围不能取消装备变更保护。
+func _test_equipment_changes() -> void:
+	var player := _player()
+	_give(player, "enhancement:gem:movement_speed:3", "stone", 2)
+	var command := _command(mapper.to_record(player).value, "enhance_clothing")
+	player.equip_character_item("inventory.training_shirt", "upper_body", player.inventory.revision, player.revision)
+	var changed: PlayerStateRecord = mapper.to_record(player).value
+	var before := changed.to_dictionary()
+	var result := service.execute(changed, command)
+	_expect(not result.is_ok and result.error_code == &"inventory.revision_conflict"
+		and changed.to_dictionary() == before, "预览后换装仍拒绝旧命令且不扣材料和金币")
+	command = _command(changed, "enhance_clothing")
+	player.unequip_character_item("upper_body", player.inventory.revision, player.revision)
+	changed = mapper.to_record(player).value
+	result = service.execute(changed, command)
+	_expect(not result.is_ok and result.error_code == &"inventory.revision_conflict", "预览后脱装仍拒绝旧命令")
 
 
 ## 创建拥有可操作服装及足量测试金币的隔离玩家。
@@ -141,7 +160,7 @@ func _give(player: Player, definition: String, id: String, amount: int) -> Enhan
 ## 返回对应版本命令。
 func _command(state: PlayerStateRecord, action: String) -> Dictionary:
 	return {"type": action, "instance_id": "inventory.training_shirt", "stone_id": "stone",
-		"inventory_revision": state.inventory_revision, "state_revision": state.revision}
+		"inventory_revision": state.inventory_revision}
 
 
 ## 记录实际行为断言。
@@ -170,7 +189,8 @@ func _test_live_server() -> void:
 	var shirt: Clothing = items.create("male_sleeveless_shirt", {"instance_id": "live-shirt"}).value
 	player.receive_loot(shirt)
 	player.equip_character_item(shirt.instance_id, "upper_body", player.inventory.revision, player.revision)
-	_give(player, "enhancement:gem:movement_speed:1", "live-stone", 2)
+	player.receive_loot(items.create("male_sleeveless_shirt", {"instance_id": "live-target"}).value)
+	_give(player, "enhancement:gem:movement_speed:3", "live-stone", 8)
 	server.autosave_service.commit_player_state(session.entity_id, mapper.to_record(player).value)
 	var map := server.map_registry.instance_by_id(session.map_instance_id)
 	_expect(map.is_vehicle_combat_active(), "在真实战斗地图验证")
@@ -183,13 +203,49 @@ func _test_live_server() -> void:
 	record = server.autosave_service.state_for(session.entity_id)
 	var command := {"type": "enhance_clothing", "instance_id": "live-shirt", "stone_id": "live-stone",
 		"state_revision": record.revision, "inventory_revision": record.inventory_revision}
+	var autosaved := server.autosave_service.advance(config.autosave_interval_seconds,
+		Callable(server, "_capture_persistent_player_state"))
+	var after_autosave := server.autosave_service.state_for(session.entity_id)
+	_expect(autosaved.is_ok and after_autosave.revision > record.revision
+		and after_autosave.inventory_revision == record.inventory_revision,
+		"确认前自动保存只增加仓储版本，装备与材料版本不变")
 	var result := server.handle_peer_player_panel_command(91, command)
-	_expect(result.ok, "真实命令入口可完成强化")
+	_expect(result.ok, "确认前发生自动保存，真实命令仍应一次完成强化")
 	_expect(runtime == map.vehicle_combat_state_for(session.entity_id) and runtime.health == 23 and runtime.working_energy == 17, "强化保留实际战车对象及实时资源")
 	_expect(actor.cooldown_ready_ticks["energy_cannon.primary"] == 999, "野外强化不重置冷却")
 	_expect(is_equal_approx(map.entities[session.entity_id].movement_speed, minf(240, old_speed + 2)), "宝石立即影响实际地图速度")
 	var saved := server.autosave_service.state_for(session.entity_id)
 	_expect(PlayerEnhancementActions.clothing(mapper.to_domain(saved).value, "live-shirt").enhancement.gem_stage == 1, "强化写回真实仓储")
 	_expect(not server.handle_peer_player_panel_command(91, command).ok, "真实会话拒绝旧版本强化重放")
+	for action: String in ["enhance_clothing", "synthesize_enhancement", "transfer_clothing_gems", "reset_clothing_gems"]:
+		var clothing_id := "live-target" if action in ["transfer_clothing_gems", "reset_clothing_gems"] else "live-shirt"
+		var queried := server.handle_peer_player_panel_command(91, {"type": "query_clothing_enhancement",
+			"instance_id": clothing_id, "stone_id": "live-stone"})
+		_expect(queried.ok, "正式查询下一次预览：" + action)
+		command = {"type": action, "instance_id": clothing_id, "source_id": "live-shirt",
+			"stone_id": "live-stone", "inventory_revision": queried.value.inventory.revision}
+		var before_save := server.autosave_service.state_for(session.entity_id)
+		for _save: int in range(2):
+			var background := server.autosave_service.advance(config.autosave_interval_seconds,
+				Callable(server, "_capture_persistent_player_state"))
+			_expect(background.is_ok, "确认等待期间自动保存成功")
+		var before_action := server.autosave_service.state_for(session.entity_id)
+		_expect(before_action.revision == before_save.revision + 2
+			and before_action.inventory_revision == before_save.inventory_revision, "等待两轮自动保存未改变物品版本")
+		result = server.handle_peer_player_panel_command(91, command)
+		_expect(result.ok, "两轮自动保存后无需手工刷新即可执行：" + action)
+		saved = server.autosave_service.state_for(session.entity_id)
+		_expect(saved.inventory_revision == before_action.inventory_revision + 1
+			and saved.currency < before_action.currency, "一次操作只提交一次物品变化和费用：" + action)
+		var replay := server.handle_peer_player_panel_command(91, command)
+		_expect(not replay.ok and replay.code == &"inventory.revision_conflict"
+			and server.autosave_service.state_for(session.entity_id).to_dictionary() == saved.to_dictionary(),
+			"同一确认重放仍被拒绝且不重复扣费：" + action)
+	player = mapper.to_domain(saved).value
+	_expect(PlayerEnhancementActions.clothing(player, "live-shirt").enhancement.gem_stage == 0
+		and PlayerEnhancementActions.clothing(player, "live-target").enhancement.gem_stage == 0
+		and player.inventory.find("live-stone").quantity == 4
+		and player.inventory.count_definition("enhancement:gem:movement_speed:4") == 1,
+		"连续两次镶嵌、合成、迁移及重置的最终材料和装备状态一致")
 	server.free()
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(config.player_state_store_path))
