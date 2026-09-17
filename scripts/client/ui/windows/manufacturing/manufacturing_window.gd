@@ -129,6 +129,7 @@ func _show_recipe(recipe: Dictionary) -> void:
 		],
 		"成功率：%d%%" % roundi(float(recipe.get("success_probability", 0.0)) * 100.0),
 		"产量：%d" % int(recipe.get("output_quantity", 1)),
+		String(recipe.get("quality_description", "")),
 		"",
 		"所需材料：",
 	])

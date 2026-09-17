@@ -20,6 +20,8 @@ var strengthening_profile: EquipmentStrengtheningRules.Profile
 var strengthening_rules: EquipmentStrengtheningRules
 var armor_refinement_profile: ArmorRefinementRules.Profile
 var memory_profile: EquipmentMemoryRules.Profile
+var quality := EquipmentQuality.new()
+var quality_profile: EquipmentQualityRules.Profile
 
 
 ## 初始化具有耐久和数值配置的装备实例。
@@ -38,6 +40,8 @@ func _init(definition: Dictionary = {}, state: Dictionary = {}) -> void:
 	sell_value = maxi(0, int(_stats.get("sell_value", 0)))
 	required_skill_level = maxi(0, int(_stats.get("required_skill_level", 0)))
 	var restored := EquipmentProcessing.restore(state.get("processing", {}))
+	var quality_result := EquipmentQuality.restore(state.get("equipment_quality", {}))
+	if quality_result.is_ok: quality = quality_result.value
 	if restored.is_ok:
 		processing = restored.value
 	var extra := ExtraAttributes.restore(state.get("extra_attributes", {}))
@@ -117,7 +121,7 @@ func maintain(tool: EquipmentMaintenanceRules.RepairTool = null) -> DomainResult
 func stat(stat_id: String, fallback: Variant = 0) -> Variant:
 	var base: Variant = _stats.get(stat_id, fallback)
 	return base + processing.bonus(stat_id) + extra_attributes.bonus(stat_id, extra_attribute_rules) \
-		+ strengthening.bonus(stat_id, strengthening_profile) if base is int or base is float else base
+		+ strengthening.bonus(stat_id, strengthening_profile) + quality.bonus(stat_id, quality_profile) if base is int or base is float else base
 
 
 ## 在成功加工后同步子类缓存，供装配与战斗使用同一组数值。
@@ -136,6 +140,12 @@ func to_view_dictionary() -> Dictionary:
 	view["max_durability"] = max_durability
 	view["upgrade_level"] = upgrade_level
 	view["stats"] = _stats.duplicate(true)
+	view["equipment_quality"] = quality.to_dictionary()
+	if quality.grade > 0:
+		view["display_name"] = "[%s]%s" % [EquipmentQuality.LABELS[quality.grade], view.display_name]
+	if quality_profile != null:
+		for attribute: String in quality_profile.bonuses:
+			view.stats[attribute] = stat(attribute)
 	for attribute: String in EquipmentProcessing.ATTRIBUTES:
 		if processing.bonus(attribute) > 0:
 			view.stats[attribute] = stat(attribute)

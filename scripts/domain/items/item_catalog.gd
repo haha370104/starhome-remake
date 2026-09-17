@@ -39,6 +39,7 @@ var strengthening_rules: EquipmentStrengtheningRules
 var armor_refinement_rules: ArmorRefinementRules
 var clothing_improvement_rules: ClothingImprovementRules
 var memory_rules: EquipmentMemoryRules
+var quality_rules: EquipmentQualityRules
 
 
 ## 读取所有当前启用的物品定义和语义化表现目录。
@@ -117,6 +118,11 @@ func initialize() -> DomainResult:
 	var memory_result := EquipmentMemoryRules.from_dictionary(memory_data.value)
 	if not memory_result.is_ok: return memory_result
 	memory_rules = memory_result.value
+	var quality_data := JsonConfigLoader.load_dictionary("res://data/gameplay/equipment_quality_rules_v1.json")
+	if not quality_data.is_ok: return quality_data
+	var quality_result := EquipmentQualityRules.from_dictionary(quality_data.value)
+	if not quality_result.is_ok: return quality_result
+	quality_rules = quality_result.value
 	for id: String in clothing_improvement_rules.slots:
 		var slot: String = clothing_improvement_rules.slots[id]
 		if slot == "head" and _definitions[id].get("character_slot") == "upper_body":
@@ -140,6 +146,10 @@ func initialize() -> DomainResult:
 ## [param state] 存档中的实例状态。
 ## 返回服装、战车底盘、引擎、武器、采掘臂、通用装备或普通物品的具体实例。
 func create(definition_id: String, state: Dictionary) -> DomainResult:
+	var quality := EquipmentQuality.restore(state.get("equipment_quality", {}))
+	if not quality.is_ok: return quality
+	var quality_check := (quality.value as EquipmentQuality).validate_for(quality_rules.profiles.get(ItemDefinitionAliases.canonical(definition_id)))
+	if not quality_check.is_ok: return quality_check
 	var memory := EquipmentMemory.restore(state.get("equipment_memory", {}))
 	if not memory.is_ok: return memory
 	var improved := ClothingImprovement.restore(state.get("clothing_improvement", {}))
@@ -180,6 +190,7 @@ func create(definition_id: String, state: Dictionary) -> DomainResult:
 	if item is Clothing:
 		item.improvement_rules = clothing_improvement_rules
 	if item is Equipment:
+		item.quality_profile = quality_rules.profiles.get(item.definition_id)
 		item.memory_profile = memory_rules.profiles.get(item.definition_id)
 		item.armor_refinement_profile = armor_refinement_rules.profiles.get(item.definition_id)
 		item.extra_attribute_rules = extra_attribute_rules

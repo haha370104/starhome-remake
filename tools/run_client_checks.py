@@ -30,6 +30,7 @@ TESTS = (
     "server/commerce/clothing_improvement_authority_test.gd",
     "ui/runtime/clothing_improvement_panel_test.gd",
     "domain/equipment_memory_model_test.gd",
+    "domain/equipment_quality_test.gd",
     "domain/equipment_memory_transfer_test.gd",
     "server/commerce/equipment_memory_authority_test.gd",
     "ui/runtime/equipment_memory_panel_test.gd",

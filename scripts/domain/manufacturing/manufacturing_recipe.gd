@@ -56,6 +56,7 @@ func success_probability(effective_skill_level: int) -> float:
 ## [param product_instance_id] 服务端生成的唯一产物实例 ID。
 ## [param random_roll] 服务端随机数，范围为 0 到 1。
 ## [param progression_config] 技能升级与综合等级规则。
+## [param quality_roll] 独立的服务器品质随机数，旧调用默认白色。
 ## 返回成功/失败、消耗、产物和技能成长；预检拒绝时不修改玩家。
 func execute(
 	player: Player,
@@ -63,6 +64,7 @@ func execute(
 	product_instance_id: String,
 	random_roll: float,
 	progression_config: Dictionary,
+	quality_roll: float = 0.0,
 ) -> DomainResult:
 	if player == null or item_catalog == null or recipe_id.is_empty():
 		return DomainResult.failure(&"manufacturing.recipe_invalid", "recipe is unavailable")
@@ -86,6 +88,7 @@ func execute(
 		"quantity": output_quantity,
 		"container_id": "main",
 		"position_px": [0, 0],
+		"equipment_quality": item_catalog.quality_rules.manufactured_state(product_definition_id, quality_roll),
 	})
 	if not created.is_ok:
 		return created
@@ -105,6 +108,7 @@ func execute(
 		"success_probability": probability,
 		"product_definition_id": product_definition_id,
 		"output_quantity": output_quantity,
+		"quality_description": item_catalog.quality_rules.manufacturing_description(product_definition_id),
 		"progression": progression.value,
 	})
 
@@ -138,6 +142,7 @@ func to_view_dictionary(player: Player, item_catalog: ItemCatalog) -> Dictionary
 		"skill_id": skill_id,
 		"required_skill_level": _execution_skill_level(),
 		"source_required_skill_level": required_skill_level,
+		"quality_description": item_catalog.quality_rules.manufacturing_description(product_definition_id),
 		"effective_skill_level": effective_level,
 		"skill_experience": skill_experience,
 		"success_probability": probability,

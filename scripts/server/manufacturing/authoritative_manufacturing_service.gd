@@ -96,6 +96,7 @@ func execute(state: PlayerStateRecord, command: Dictionary) -> DomainResult:
 			_new_instance_id(recipe.product_definition_id),
 			_random.randf(),
 			_progression_config,
+			_random.randf(),
 		)
 		if not executed.is_ok:
 			return executed
