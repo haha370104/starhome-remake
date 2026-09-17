@@ -14,6 +14,8 @@ const HEALTH_BAR_WIDTH := 60.0
 const HEALTH_BAR_OFFSET := Vector2(0.0, 25.0)
 const NAME_TO_HEALTH_GAP := 1.0
 
+static var _name_font: SystemFont
+
 var entity_id := ""
 var combat_actor_id := ""
 var presenter: Node
@@ -68,9 +70,7 @@ func configure(
 	name_label.name = "HoverName"
 	name_label.size = NAME_LABEL_SIZE
 	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	var name_font := REGULAR_FONT.duplicate() as SystemFont
-	name_font.font_weight = 700
-	name_label.add_theme_font_override("font", name_font)
+	name_label.add_theme_font_override("font", _shared_name_font())
 	name_label.add_theme_font_size_override("font_size", NAME_FONT_SIZE)
 	name_label.add_theme_color_override("font_color", Color.RED)
 	name_label.add_theme_color_override("font_outline_color", Color.BLACK)
@@ -93,6 +93,15 @@ func configure(
 	add_child(health_bar)
 	apply_snapshot(snapshot)
 	return OK
+
+
+## 复用怪物名称的微软雅黑粗体，避免定时补怪逐只触发系统字体加载。
+## 返回仅初始化一次的字体；调用方只引用，不修改字重或字体族。
+static func _shared_name_font() -> SystemFont:
+	if _name_font == null:
+		_name_font = REGULAR_FONT.duplicate() as SystemFont
+		_name_font.font_weight = 700
+	return _name_font
 
 
 ## 执行 `apply_snapshot` 对应的模块操作。

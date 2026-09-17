@@ -33,6 +33,9 @@ func _run() -> void:
 	var second = world.get_node_or_null("Monster_monster_second")
 	_expect(first != null and second != null, "两个怪物视图都必须生成")
 	if first != null and second != null:
+		var shared_font: Font = first.name_label.get_theme_font("font")
+		_expect(shared_font == second.name_label.get_theme_font("font"),
+			"同屏怪物必须复用名称字体，避免每次补怪重新加载系统字体")
 		_expect(not first.name_label.visible and not second.name_label.visible, "怪物名称默认必须隐藏")
 		_expect(
 			first.name_label.get_theme_color("font_color") == Color.RED,
@@ -94,6 +97,12 @@ func _run() -> void:
 		_expect(not first.name_label.visible and second.name_label.visible, "切换时必须隐藏旧名称")
 		_expect(controller.update_hover_at(Vector2(-1000.0, -1000.0)).is_empty(), "离开怪物后应无目标")
 		_expect(not first.name_label.visible and not second.name_label.visible, "离开后名称必须隐藏")
+		controller.clear()
+		await process_frame
+		controller.apply_snapshot(_snapshot())
+		var respawned = world.get_node_or_null("Monster_monster_first")
+		_expect(respawned != null and respawned.name_label.get_theme_font("font") == shared_font,
+			"旧怪物释放后再次补怪仍应复用名称字体")
 	controller.clear()
 	controller.queue_free()
 	world.queue_free()

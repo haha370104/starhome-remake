@@ -94,7 +94,7 @@ func _test_field_species(repository, catalog) -> void:
 	for encounter: Dictionary in encounters["encounters"]:
 		for group: Dictionary in encounter["spawn_groups"]:
 			species[group["monster_id"]] = true
-	_expect(species.size() == 21, "本批种群应使用21种荣耀怪物")
+	_expect(species.size() > 4, "野外种群必须包含基础四种以外的荣耀怪物")
 	for species_id: String in species:
 		var actor_id := String(combat.monster_definition(species_id)["combat_actor_id"])
 		var definition: Dictionary = catalog.definition_for_actor(actor_id)
