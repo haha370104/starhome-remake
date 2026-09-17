@@ -19,6 +19,7 @@
 | 怎样系统对齐原版而不是反复补丁？ | [复刻对齐方案](remake_alignment_plan.md) |
 | 怎样从名称、截图找到原客户端代码？ | [原客户端阅读指南](original_client_reading_guide.md) |
 | 当前到底做到了哪里，先 review 什么？ | [代码评审导读](./review_guide.md) |
+| 原版有哪些功能还没接入？ | [原版功能缺口核查](original_feature_gap_audit.md)：战车开槽/镶嵌、装备成长、多人玩法及主动精简的边界 |
 | 游戏应当怎样玩？ | [玩法规格](../../游戏主要玩法.md)，在仓库外的 `outputs/` 中 |
 | 开发有哪些硬约束？ | [项目全局约定](../PROJECT_CONTEXT.md) |
 | 如何启动和手工验证？ | [仓库 README](../README.md)、[使用说明](../使用说明.md) |
