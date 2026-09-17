@@ -10,7 +10,7 @@ const PlayerPanelProjectorScript := preload(
 	"res://scripts/shared/player_panel_projector.gd"
 )
 
-const COMMAND_TYPES := ["query_manufacturing", "craft_recipe"]
+const COMMAND_TYPES := ["query_manufacturing", "query_production", "craft_recipe"]
 const STATION_NAMES := {
 	"tailoring": "裁缝机", "cooking": "烹饪台", "refining": "提炼机",
 	"alloy": "合金制造机", "maintenance": "维护包制造机",
@@ -18,7 +18,9 @@ const STATION_NAMES := {
 }
 
 var _item_catalog: ItemCatalog
-var _recipe_book: RefCounted
+var _recipe_book: ManufacturingRecipeBook
+var _production_rules: ProductionRules
+var _orders: ProductionOrderService
 var _mapper: PlayerStateMapper
 var _projector: PlayerPanelProjector
 var _progression_config: Dictionary = {}
@@ -51,6 +53,10 @@ func initialize(rewards: RewardPipeline = null) -> DomainResult:
 	if not facilities.is_ok:
 		return facilities
 	_facility_maps = facilities.value.get("maps", {})
+	var production_rules := ProductionRules.load_default()
+	if not production_rules.is_ok: return production_rules
+	_production_rules = production_rules.value
+	_orders = ProductionOrderService.new(_item_catalog, _recipe_book, _mapper, _production_rules, _progression_config)
 	_random.randomize()
 	return DomainResult.ok(self)
 
@@ -59,7 +65,7 @@ func initialize(rewards: RewardPipeline = null) -> DomainResult:
 ## [param command_type] 网络命令中的稳定类型标识。
 ## 返回是否由本服务处理。
 func handles(command_type: String) -> bool:
-	return command_type in COMMAND_TYPES
+	return command_type in COMMAND_TYPES or command_type in ProductionOrderService.COMMANDS
 
 
 ## 查询配方或执行一次由服务器随机判定的生产事务。
@@ -69,19 +75,29 @@ func handles(command_type: String) -> bool:
 func execute(state: PlayerStateRecord, command: Dictionary) -> DomainResult:
 	if state == null or _mapper == null or _recipe_book == null:
 		return DomainResult.failure(&"manufacturing.service_unavailable", "manufacturing service is unavailable")
+	var command_type := String(command.get("type", ""))
+	if not handles(command_type): return DomainResult.failure(&"manufacturing.command", "生产命令无效")
 	var station_id := String(command.get("station_id", ""))
+	if command_type in ["query_production", "pause_production", "resume_production", "cancel_production"] and state.production.order != null:
+		station_id = state.production.order.station_id
 	if not STATION_NAMES.has(station_id):
 		return DomainResult.failure(&"manufacturing.station_invalid", "manufacturing station is invalid")
-	if not _map_has_station(state.map_id, station_id):
+	if command_type not in ["query_production", "pause_production", "cancel_production"] and not _map_has_station(state.map_id, station_id):
 		return DomainResult.failure(&"manufacturing.station_unavailable", "当前地图没有该生产设施")
+	if command_type in ProductionOrderService.COMMANDS:
+		var ordered := _orders.execute(state, command)
+		if ordered.is_ok:
+			ordered.value["panel_bundle"] = build_bundle(ordered.value.candidate, ordered.value.operation)
+		return ordered
 	var mapped := _mapper.to_domain(state)
 	if not mapped.is_ok:
 		return mapped
 	var player: Player = mapped.value
-	var command_type := String(command.get("type", ""))
 	var operation := {"action": "query", "station_id": station_id}
 	var changed := command_type == "craft_recipe"
 	if changed:
+		if player.production.order != null:
+			return DomainResult.failure(&"production.busy", "已有生产订单，请先取消或完成")
 		var revision_result := player.inventory.require_revision(
 			int(command.get("inventory_revision", -1))
 		)
@@ -148,8 +164,27 @@ func _build_bundle(
 		"display_name": String(STATION_NAMES.get(station_id, "生产设施")),
 		"recipes": recipes,
 		"operation": operation.duplicate(true),
+		"production": player.production.to_dictionary(),
+		"available": _map_has_station(player.map_id, station_id),
+		"production_rules": {"maximum_cycles": _production_rules.maximum_cycles, "maximum_speed": _production_rules.maximum_speed,
+			"cycle_milliseconds": _production_rules.cycle_milliseconds},
 	}
 	return bundle
+
+
+## 为服务器时钟完成一轮生产；地图设施消失或车辆被击毁时只暂停，不结算物品。
+## [param state] 已由时钟捕获到期时间的权威副本。
+## 返回待提交的一轮结果或暂停候选。
+func complete_production_cycle(state: PlayerStateRecord) -> DomainResult:
+	if state == null or state.production.order == null:
+		return DomainResult.failure(&"production.no_order", "当前没有生产订单")
+	var order := state.production.order
+	if state.map_id != order.map_id or not _map_has_station(state.map_id, order.station_id) or state.vehicle_health <= 0:
+		var candidate := state.duplicate_record()
+		candidate.production.pause("地点改变或战车被击毁，请返回原设施继续")
+		return DomainResult.ok({"candidate": candidate, "changed": true,
+			"operation": {"station_id": order.station_id, "action": "pause_production", "message": candidate.production.order.pause_reason}})
+	return _orders.complete(state)
 
 
 ## 生成当前服务进程内唯一的制造产物实例 ID。
