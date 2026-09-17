@@ -8,6 +8,7 @@ signal equipment_maintenance_requested(instance_id: String, is_material: bool)
 signal extra_attributes_requested(instance_id: String, is_material: bool)
 signal equipment_strengthening_requested(instance_id: String, is_material: bool)
 signal armor_refinement_requested(instance_id: String, is_material: bool)
+signal clothing_improvement_requested(instance_id: String, is_material: bool)
 
 signal command_requested(command: Dictionary)
 
@@ -57,6 +58,8 @@ func open_for(item: GameItem, revision: int, point: Vector2) -> void:
 		_add_action("装备", "equip", item.locked)
 	if item is Clothing or item is EnhancementStone:
 		_add_action("人物强化 / 合成", "clothing_enhancement", false)
+	if item is ClothingImprovementMaterial or (item is Clothing and item.improvement_rules != null and item.improvement_rules.slots.has(item.definition_id)):
+		_add_action("季节时装改良", "clothing_improvement", false)
 	if item is VehicleEquipment or item is VehicleCrystal:
 		_add_action("战车开槽 / 晶石", "vehicle_sockets", false)
 	if item is Equipment or item is EquipmentProcessingMaterial:
@@ -98,6 +101,9 @@ func _select_action(id: int) -> void:
 	if id < 0 or id >= _actions.size() or _item == null:
 		return
 	var action := _actions[id]
+	if action == "clothing_improvement":
+		clothing_improvement_requested.emit(_item.instance_id, _item is ClothingImprovementMaterial)
+		return
 	if action == "armor_refinement":
 		armor_refinement_requested.emit(_item.instance_id, _item is ArmorRefinementMaterial)
 		return

@@ -7,6 +7,7 @@ const PROJECTS := {
 	"extra_attributes": "萤石 / 耀石加工",
 	"equipment_strengthening": "装备十星强化",
 	"armor_refinement": "护甲精工",
+	"clothing_improvement": "季节时装改良",
 }
 
 

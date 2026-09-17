@@ -53,4 +53,7 @@ func to_view_dictionary() -> Dictionary:
 	view["enhancement"] = enhancement.to_dictionary()
 	view["clothing_improvement"] = improvement.to_dictionary()
 	view["clothing_improvement_eligible"] = improvement_rules != null and improvement_rules.slots.has(definition_id)
+	if improvement_rules != null and improvement.level > 0:
+		var channel: ClothingImprovementRules.Channel = improvement_rules.channels.get(improvement.attribute)
+		if channel != null: view["clothing_improvement_summary"] = "时装改良 %d级：%s +%s" % [improvement.level, channel.label, str(channel.increment * improvement.level)]
 	return view

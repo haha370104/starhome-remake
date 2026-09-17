@@ -17,6 +17,7 @@ var mode := "regular"
 var purchase_type := ""
 var purchase_title := "加工材料 · 星际币"
 var material_quantity := 1
+var purchase_quantity_limit := 99
 
 var equipment_list: ItemList
 var material_list: ItemList
@@ -100,8 +101,9 @@ func _build_purchase() -> void:
 	quantity.position = Vector2(426, 612)
 	quantity.size = Vector2(120, 34)
 	quantity.min_value = 1
-	quantity.max_value = 99
+	quantity.max_value = purchase_quantity_limit
 	content_root.add_child(quantity)
+	shop.item_selected.connect(_select_offer)
 	_style_button(make_button("购买", Rect2(578, 612, 338, 34), _ask_purchase))
 
 
@@ -155,6 +157,7 @@ func apply_processing_bundle(bundle: Dictionary) -> void:
 		for offer: Dictionary in _offers:
 			shop.add_item("%s · %d /个" % [offer.display_name, offer.unit_price])
 		if selected >= 0 and selected < shop.item_count: shop.select(selected)
+		_select_offer(shop.selected)
 	_equipment = snapshot.equipment
 	_materials = snapshot.materials
 	_preview = snapshot.preview
@@ -199,6 +202,13 @@ func _select_equipment(index: int) -> void:
 func _select_material(index: int) -> void:
 	_material_id = String(_materials[index].instance_id)
 	open_board()
+
+
+## 按商品的实际堆叠上限约束购买数量，装备保持一次一件。
+## [param index] 商品清单索引。
+func _select_offer(index: int) -> void:
+	if quantity != null and index >= 0 and index < _offers.size():
+		quantity.max_value = mini(purchase_quantity_limit, int(_offers[index].get("max_quantity", purchase_quantity_limit)))
 
 
 ## 固定本次预览与版本，确认期间的刷新不会替换用户选择。

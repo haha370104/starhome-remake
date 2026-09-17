@@ -48,6 +48,8 @@ static func format(equipment: Dictionary, action_hint: String = "双击卸下") 
 		lines.append("耐久：%d / %d" % [durability, maximum])
 	if equipment.has("enhancement"):
 		lines.append(EnhancementText.describe(equipment.enhancement))
+	if equipment.has("clothing_improvement_summary"):
+		lines.append(String(equipment.clothing_improvement_summary))
 	if not action_hint.is_empty():
 		lines.append(action_hint)
 	return "\n".join(lines)

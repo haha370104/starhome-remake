@@ -7,7 +7,8 @@
 用户已批准开发；P0 首批准备、P1 与 P2 已完成，接续 P3，之后依次 P4 → P6 → P5。
 P1 实施与验收见[战车加工台账](vehicle_workshop.md)；不能将规则核查计作玩法交付。
 P2 见[普通属性加工](equipment_processing.md)和[耐久维护/磨损/弹药](equipment_maintenance.md)，包含实际运行、权威交易、保存与窗口验收。
-P3-A [萤石/耀石](extra_attribute_processing.md)已完成完整流程；P3-B [独立十星强化](equipment_strengthening.md)与[护甲精工](armor_refinement.md)已完成，接续能量石，之后 P3-C 服装、P3-D 分解转移。
+P3-A [萤石/耀石](extra_attribute_processing.md)、P3-B [独立十星强化](equipment_strengthening.md)与[护甲精工](armor_refinement.md)、P3-C [季节时装改良](clothing_improvement.md)已完成。
+五行能量石原版证据仅见装备之间克制，PVE范围待用户确认；此期间继续P3-D分解转移，不视为P3整体已完成。
 
 ## 1. 范围
 

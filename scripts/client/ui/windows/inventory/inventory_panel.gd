@@ -8,6 +8,7 @@ signal equipment_maintenance_requested(instance_id: String, is_material: bool)
 signal extra_attributes_requested(instance_id: String, is_material: bool)
 signal equipment_strengthening_requested(instance_id: String, is_material: bool)
 signal armor_refinement_requested(instance_id: String, is_material: bool)
+signal clothing_improvement_requested(instance_id: String, is_material: bool)
 
 signal command_requested(command: Dictionary)
 
@@ -56,6 +57,7 @@ func _ready() -> void:
 	context_menu.extra_attributes_requested.connect(extra_attributes_requested.emit)
 	context_menu.equipment_strengthening_requested.connect(equipment_strengthening_requested.emit)
 	context_menu.armor_refinement_requested.connect(armor_refinement_requested.emit)
+	context_menu.clothing_improvement_requested.connect(clothing_improvement_requested.emit)
 	add_child(context_menu)
 	visibility_changed.connect(func() -> void:
 		if not visible:
