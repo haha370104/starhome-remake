@@ -171,10 +171,10 @@ func refresh_achievement_loadout(actor_id: String, loadout: Dictionary) -> Domai
 	var configured := candidate.configure(assembly)
 	if not configured.is_ok:
 		return configured
-	candidate.health = mini(previous_health, candidate.max_health)
-	candidate.reserve_energy = minf(previous_reserve, candidate.reserve_energy_capacity)
-	candidate.working_energy = minf(previous_working, candidate.working_energy_capacity)
-	actor["vehicle_state"] = candidate
+	state.configure(assembly)
+	state.health = mini(previous_health, state.max_health)
+	state.reserve_energy = minf(previous_reserve, state.reserve_energy_capacity)
+	state.working_energy = minf(previous_working, state.working_energy_capacity)
 	(actor["clothing_effects"] as ClothingCombatEffects).repair_wait_reduction = float(assembly.get("repair_wait_reduction", 0))
 	actor["weapons"] = normalized
 	actor["self_repair_bonus_strength"] = int(assembly.get("self_repair_bonus_strength", 0))

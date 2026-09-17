@@ -111,7 +111,9 @@ func _run() -> void:
 	_expect(hall.hud.minimap_dock.marker_layer.marker_positions().size() == 12, "D04 小地图必须显示当前地图的十二个传送点")
 	_expect(hall.multiplayer_presenter.session.current_map_id == &"d04_field_zone", "离线调试会话也必须同步当前业务地图")
 	await _assert_current_map_monsters(hall)
-	_expect(hall.world_view.monster_world_controller._views.size() == 200, "D04 的200只怪物应通过权威快照进入客户端")
+	var catalog: CombatDefinitionCatalog = CombatDefinitionCatalog.load_default().value
+	var mutant_count := int(catalog.monster_population_policy_for_map("d04_field_zone", &"mutant").get("maximum_population", 0))
+	_expect(hall.world_view.monster_world_controller._views.size() == 200 + mutant_count, "D04 的普通和变异怪均通过权威快照进入客户端")
 
 	_place_authoritative_player(hall, Vector2(130, 2553))
 	hall.map_travel.call("try_begin_nearby_map_transition")

@@ -74,7 +74,7 @@ func _check_authoritative_spawn(catalog, definition_path: String) -> void:
 	_expect(configured.ok, "抽样地图应完成权威种群初始化：%s" % configured)
 	if not configured.ok:
 		return
-	_expect(instance.combat_module.monsters.size() == 200, "实际服务端应生成200只怪物")
+	_expect(_ordinary_count(instance) == 200, "实际服务端应生成200只怪物")
 	var buckets := {}
 	var removed_ids: Array[String] = []
 	for monster: MonsterLifecycle in instance.combat_module.monsters.values():
@@ -82,19 +82,19 @@ func _check_authoritative_spawn(catalog, definition_path: String) -> void:
 		_expect(instance.navigation.is_walkable(monster.position), "出生点必须可走")
 		var relative: Vector2 = monster.position / instance.definition.world_size
 		buckets[Vector2i(floori(relative.x * 4), floori(relative.y * 4))] = true
-		if removed_ids.size() < 120:
+		if monster.population_kind == &"ordinary" and removed_ids.size() < 120:
 			removed_ids.append(monster.monster_id)
 	_expect(buckets.size() >= 5, "出生点应跨越多个地图分区而不是集中在固定点")
 	for monster_id: String in removed_ids:
 		instance.combat_module.monsters.erase(monster_id)
 	instance.combat_module.current_tick = 1199
 	instance._replenish_monster_population_if_due()
-	_expect(instance.combat_module.monsters.size() == 80, "不足一分钟不能提前补怪")
+	_expect(_ordinary_count(instance) == 80, "不足一分钟不能提前补怪")
 	instance.combat_module.current_tick = 1200
 	instance._replenish_monster_population_if_due()
-	_expect(instance.combat_module.monsters.size() == 120, "一分钟时低于50%应补40只")
+	_expect(_ordinary_count(instance) == 120, "一分钟时低于50%应补40只")
 	instance._replenish_monster_population_if_due()
-	_expect(instance.combat_module.monsters.size() == 120, "同一时刻不能重复补怪")
+	_expect(_ordinary_count(instance) == 120, "同一时刻不能重复补怪")
 
 
 ## 记录测试断言。
@@ -115,3 +115,14 @@ func _finish() -> void:
 	for failure: String in failures:
 		push_error(failure)
 	quit(1)
+
+
+## 仅统计普通种群，新增独立配额不能污染一分钟补量断言。
+## [param instance] 被测地图实例。
+## 返回存活普通怪数量。
+func _ordinary_count(instance: AuthoritativeMapInstance) -> int:
+	var count := 0
+	for monster: MonsterLifecycle in instance.combat_module.monsters.values():
+		if monster.population_kind == &"ordinary" and monster.is_alive():
+			count += 1
+	return count

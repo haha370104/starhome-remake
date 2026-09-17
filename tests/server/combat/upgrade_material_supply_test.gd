@@ -162,7 +162,8 @@ func _test_original_candidates(items: ItemCatalog, catalog: CombatDefinitionCata
 			var created := items.create(drop.item_definition_id, {"quantity": drop.maximum_quantity})
 			_expect(created.is_ok and created.value.quantity == drop.maximum_quantity,
 				"原版最大数量不得被物品堆叠上限截断")
-			relationships += 1
+			if not String(drop.item_definition_id).begins_with("enhancement:"):
+				relationships += 1
 		for candidate: Dictionary in monster.source_drop_candidates:
 			var id := String(names[candidate.display_name])
 			if id == FRAGMENT and monster.id not in CRAWLERS:

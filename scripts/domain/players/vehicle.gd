@@ -171,7 +171,7 @@ func _secondary_attack(mode: String) -> int:
 func enhanced_attack(attribute: String, base: int, title_bonus: int, food_kind: int) -> int:
 	if base <= 0:
 		return 0
-	return maxi(0, roundi(clothing_bonuses.apply_value(attribute, base + title_bonus + loadout.attachment_bonus(attribute))) + food_status.bonus(food_kind))
+	return maxi(1, roundi(clothing_bonuses.apply_value(attribute, base + title_bonus + loadout.attachment_bonus(attribute))) + food_status.bonus(food_kind))
 
 
 ## 计算实际移动速度，宝石加在重量与驾驶技能折算后，最终受速度上限限制。

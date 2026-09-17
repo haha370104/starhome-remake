@@ -255,7 +255,8 @@ func vehicle_combat_loadout(
 	assembly["movement_speed"] = player.vehicle.movement_speed(driving_level,
 		float(movement_config.get("base_speed_multiplier", 1500)), float(movement_config.get("base_speed_cap", 240)))
 	assembly["max_health"] = stats.max_health
-	assembly["defense"] = stats.defense
+	assembly["defense"] = maxi(0, int(stats.defense) - player.food_status.bonus(17))
+	assembly["food_defense"] = player.food_status.bonus(17)
 	assembly["working_energy_capacity"] = clothing.apply_value("working_energy_capacity", float(assembly.working_energy_capacity))
 	assembly["power_output"] = clothing.apply_value("output_power", float(assembly.power_output))
 	assembly["available_power_output"] = maxf(0, float(assembly.power_output) - float(assembly.passive_power_load))
@@ -286,7 +287,7 @@ func vehicle_combat_loadout(
 		var food_kind := int({"energy_cannon_attack": 13, "missile_attack": 14, "rocket_attack": 15}.get(effect, 0))
 		var bonus := player.vehicle.loadout.attachment_bonus(effect)
 		for field: String in ["minimum_damage", "maximum_damage"]:
-			weapons[ability_id][field] = maxi(0, roundi(clothing.apply_value(effect, float(weapons[ability_id][field]) + bonus)) + player.food_status.bonus(food_kind))
+			weapons[ability_id][field] = maxi(1, roundi(clothing.apply_value(effect, float(weapons[ability_id][field]) + bonus)) + player.food_status.bonus(food_kind))
 		if effect == "energy_cannon_attack":
 			weapons[ability_id]["range"] = clothing.apply_value("energy_cannon_range", float(weapons[ability_id]["range"]))
 		weapons[ability_id]["working_energy_cost"] *= 1.0 - clothing.trait_value("economy")

@@ -64,7 +64,7 @@ func _initialize() -> void:
 	_expect(monster.health == remaining_health, "切图不能重置怪物生命")
 	_expect(resumed.mining_module.sources[source_id].remaining == remaining_minerals, "切图不能补满未采完矿点")
 	_expect(resumed.combat_module.ground_loot["retained.loot"]["quantity"] == 2, "休眠不能吞掉掉落物")
-	_expect(resumed.combat_module.monsters.size() == 200, "六分钟后应按补量规则补足种群")
+	_expect(resumed.combat_module.monsters.values().filter(func(monster: MonsterLifecycle) -> bool: return monster.population_kind == &"ordinary").size() == 200, "六分钟后应按补量规则补足种群")
 	_expect(resumed.combat_module.current_tick >= paused_tick + 7200, "唤醒应一次性补算经过的时钟")
 	resumed.combat_module.pending_projectiles.append({"fixture": true})
 	_expect(not resumed.can_suspend_runtime(), "在途炮弹未结算前不能休眠")

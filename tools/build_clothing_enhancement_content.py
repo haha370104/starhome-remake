@@ -48,7 +48,7 @@ def item_definitions():
                 result.append({'id': identity(family, effect, rank), 'kind': 'enhancement_stone',
                                'display_name': name, 'description': description, 'max_stack': 999,
                                'enhancement': {'family': family, 'effect': effect, 'rank': rank},
-                               'presentation': {'inventory': presentation, 'world': presentation},
+                               'presentation': {'inventory': presentation, 'world': {**presentation, 'texture': icon, 'origin': [-18, -18]}},
                                'source_audit': {'source_release': 'remake_generated', 'design_version': 1}})
     return result
 
