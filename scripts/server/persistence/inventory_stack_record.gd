@@ -14,6 +14,7 @@ var bound := false
 var max_durability := 0
 var durability := 0
 var upgrade_level := 0
+var enhancement := ClothingEnhancement.new()
 
 
 ## 执行 `from_dictionary` 对应的模块操作。
@@ -43,6 +44,10 @@ static func from_dictionary(raw: Variant) -> DomainResult:
 	stack.max_durability = int(raw.get("max_durability", 0))
 	stack.durability = int(raw.get("durability", stack.max_durability))
 	stack.upgrade_level = int(raw.get("upgrade_level", 0))
+	var enhanced := ClothingEnhancement.restore(raw.get("enhancement", {}))
+	if not enhanced.is_ok:
+		return enhanced
+	stack.enhancement = enhanced.value
 	if stack.stack_id.is_empty() or stack.item_definition_id.is_empty() \
 			or stack.quantity <= 0 or stack.slot_index < 0 or stack.container_id.is_empty() \
 			or stack.position_px.x < 0 or stack.position_px.y < 0 \
@@ -69,6 +74,7 @@ func to_dictionary() -> Dictionary:
 		"max_durability": max_durability,
 		"durability": durability,
 		"upgrade_level": upgrade_level,
+		"enhancement": enhancement.to_dictionary(),
 	}
 
 

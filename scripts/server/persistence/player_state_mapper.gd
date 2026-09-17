@@ -81,6 +81,7 @@ func to_domain(record: PlayerStateRecord) -> DomainResult:
 			"max_durability": stack.max_durability,
 			"durability": stack.durability,
 			"upgrade_level": stack.upgrade_level,
+			"enhancement": stack.enhancement.to_dictionary(),
 		})
 		if not created.is_ok:
 			return created
@@ -95,6 +96,7 @@ func to_domain(record: PlayerStateRecord) -> DomainResult:
 			"max_durability": slot.max_durability,
 			"durability": slot.durability,
 			"upgrade_level": slot.upgrade_level,
+			"enhancement": slot.enhancement.to_dictionary(),
 			"locked": slot.locked,
 			"bound": slot.bound,
 			"equipment_location": slot.slot_location,
@@ -149,6 +151,7 @@ func to_record(player: Player) -> DomainResult:
 			"max_durability": max_durability,
 			"durability": durability,
 			"upgrade_level": (item as Equipment).upgrade_level if item is Equipment else 0,
+			"enhancement": (item as Clothing).enhancement.to_dictionary() if item is Clothing else {},
 		})
 		stack_index += 1
 	var equipment_slots: Array[Dictionary] = []
@@ -230,6 +233,7 @@ func _equipment_record(
 		"max_durability": equipment.max_durability,
 		"durability": equipment.durability,
 		"upgrade_level": equipment.upgrade_level,
+		"enhancement": (equipment as Clothing).enhancement.to_dictionary() if equipment is Clothing else {},
 		"locked": equipment.locked,
 		"bound": equipment.bound,
 		"slot_location": location,

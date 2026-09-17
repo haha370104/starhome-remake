@@ -19,6 +19,7 @@ const COMMAND_TYPES := [
 var daily := DailyActivityService.new()
 var _premium := PremiumShopService.new()
 var _upgrades: AttachmentUpgradeService
+var _clothing_enhancements: ClothingEnhancementService
 var _catalog: ItemCatalog
 var _merchants: Dictionary = {}
 var quests = QuestServiceScript.new()
@@ -39,6 +40,7 @@ func initialize(rewards: RewardPipeline = null) -> DomainResult:
 	if not premium_loaded.is_ok:
 		return premium_loaded
 	_upgrades = AttachmentUpgradeService.new(_premium.upgrade_pricing(), _catalog)
+	_clothing_enhancements = ClothingEnhancementService.new(_catalog)
 	var daily_loaded := daily.initialize(_catalog)
 	if not daily_loaded.is_ok:
 		return daily_loaded
@@ -64,7 +66,7 @@ func initialize(rewards: RewardPipeline = null) -> DomainResult:
 ## [param command_type] 命令 type 字段。
 ## 返回本服务能否处理该命令。
 static func handles(command_type: String) -> bool:
-	return command_type in COMMAND_TYPES or command_type in DailyActivityService.COMMANDS
+	return command_type in COMMAND_TYPES or command_type in DailyActivityService.COMMANDS or command_type in ClothingEnhancementService.COMMANDS
 
 
 ## 执行一次由会话绑定玩家身份的权威交易或任务命令。
@@ -83,7 +85,7 @@ func execute(state: PlayerStateRecord, command: Dictionary) -> DomainResult:
 	var merchant = _merchants.get(merchant_id)
 	if merchant == null:
 		return DomainResult.failure(&"commerce.merchant_missing", "merchant is not registered")
-	var changed := command_type not in ["query_weapon_merchant", "query_premium_shop", "query_attachment_upgrades"]
+	var changed := command_type not in ["query_weapon_merchant", "query_premium_shop", "query_attachment_upgrades", "query_clothing_enhancement"]
 	var operation := _execute_command(player, command_type, command, merchant_id, merchant)
 	if not operation.is_ok:
 		return operation
@@ -159,6 +161,8 @@ func _execute_command(
 ) -> DomainResult:
 	if command_type in DailyActivityService.COMMANDS:
 		return daily.execute(player, command)
+	if command_type in ClothingEnhancementService.COMMANDS:
+		return _clothing_enhancements.execute(player, command)
 	match command_type:
 		"query_attachment_upgrades":
 			return DomainResult.ok({"action": "attachment_upgrade_query"})
@@ -250,6 +254,8 @@ func _build_bundle(
 	var bundle := _projector.build_bundle(player)
 	bundle["premium_shop"] = _premium.snapshot(player, operation)
 	bundle["attachment_upgrades"] = _upgrades.snapshot(player, operation)
+	if String(operation.get("action", "")) in ClothingEnhancementService.COMMANDS:
+		bundle["clothing_enhancement"] = _clothing_enhancements.snapshot(player, operation)
 	bundle["daily_activities"] = daily.snapshot(player)
 	var tasks: Array[Dictionary] = quests.snapshots(player, merchant_id)
 	var sell_items: Array[Dictionary] = []

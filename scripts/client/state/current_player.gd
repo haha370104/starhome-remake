@@ -140,6 +140,7 @@ func _restore_inventory(raw_items: Variant) -> bool:
 			"max_durability": raw_item.get("max_durability", 0),
 			"durability": raw_item.get("durability", 0),
 			"upgrade_level": raw_item.get("upgrade_level", 0),
+			"enhancement": raw_item.get("enhancement", {}),
 		})
 		if not created.is_ok:
 			return false
@@ -177,6 +178,7 @@ func _create_equipment(raw_equipment: Variant) -> Equipment:
 		"max_durability": raw_equipment.get("max_durability", 1),
 		"durability": raw_equipment.get("durability", 1),
 		"upgrade_level": raw_equipment.get("upgrade_level", 0),
+		"enhancement": raw_equipment.get("enhancement", {}),
 		"locked": raw_equipment.get("locked", false),
 		"bound": raw_equipment.get("bound", false),
 		"equipment_location": raw_equipment.get("location", -1),
