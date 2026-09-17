@@ -169,10 +169,13 @@ def main() -> int:
     for script in scripts:
         name = Path(script).stem
         log_path = output_dir / f"{name}.log"
+        profile_dir = output_dir / "profiles" / name
+        profile_dir.mkdir(parents=True)
+        test_environment = {**environment, "APPDATA": str(profile_dir), "XDG_DATA_HOME": str(profile_dir)}
         command = [str(args.godot.resolve()), "--headless", "--path", str(ROOT), "--log-file", str(log_path), "--script", script]
         started = time.monotonic()
         try:
-            process = subprocess.run(command, cwd=ROOT, env=environment, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=120)
+            process = subprocess.run(command, cwd=ROOT, env=test_environment, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=120)
             output = process.stdout + process.stderr
             fatal_lines = [line for line in output.splitlines() if re.search(r"SCRIPT ERROR:|Parse Error:|Failed to load script|^ERROR:", line)
                            and line != "ERROR: Failed to read the root certificate store."]
