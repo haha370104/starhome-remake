@@ -35,6 +35,7 @@ var _monster_population_policy: Dictionary = {}
 var _next_monster_replenishment_tick := -1
 var _monster_spawn_sequence := 0
 var _elite_population := TimedPopulationQuota.new()
+var _additional_populations: Dictionary[StringName, TimedPopulationQuota] = {}
 var suspended_at_server_tick := -1
 
 
@@ -89,6 +90,7 @@ func resume_runtime(server_tick: int) -> Dictionary:
 				_replenish_monster_population_if_due()
 			_next_monster_replenishment_tick += (missed - rounds) * interval
 		_replenish_elite_population_if_due()
+		_replenish_additional_populations_if_due()
 	if mining_module != null:
 		mining_module.resume_navigation(navigation, elapsed_ticks)
 	suspended_at_server_tick = -1
@@ -144,6 +146,13 @@ func configure_combat(catalog, simulation_hz: int) -> Dictionary:
 	)
 	if not elite_result.is_ok:
 		return _failure(elite_result.error_code, elite_result.error_message)
+	_additional_populations.clear()
+	for kind: StringName in [&"mutant", &"boss"]:
+		var quota := TimedPopulationQuota.new()
+		var quota_result := quota.configure(catalog.monster_population_policy_for_map(String(definition.map_id), kind), simulation_hz)
+		if not quota_result.is_ok:
+			return _failure(quota_result.error_code, quota_result.error_message)
+		_additional_populations[kind] = quota
 	_combat_assembly = assembly_result.value
 	_combat_weapons = {"energy_cannon.primary": weapon_result.value}
 	_combat_weapons.merge(secondary_result.value)
@@ -167,6 +176,7 @@ func configure_combat(catalog, simulation_hz: int) -> Dictionary:
 		float(_monster_population_policy.get("replenish_interval_seconds", 60.0)) * simulation_hz
 	)
 	_replenish_elite_population_if_due()
+	_replenish_additional_populations_if_due()
 	for entity_id: String in entities:
 		var registration := _register_vehicle_combat(entity_id)
 		if not registration.ok:
@@ -427,6 +437,7 @@ func simulate(delta: float) -> void:
 		combat_module.advance_ticks(1, not entities.is_empty())
 		_replenish_monster_population_if_due()
 		_replenish_elite_population_if_due()
+		_replenish_additional_populations_if_due()
 	if mining_module != null:
 		mining_module.advance_ticks(1)
 
@@ -495,22 +506,35 @@ func _replenish_monster_population_if_due() -> void:
 ## 使用独立精英配额补满种群；普通怪计时和人数不参与计算。
 ## 设计：唤醒与正常模拟共用同一领域时钟，切图不会重置十分钟周期。
 func _replenish_elite_population_if_due() -> void:
-	if combat_module == null or not _elite_population.is_due(combat_module.current_tick):
+	_replenish_timed_population(&"elite", _elite_population)
+
+
+## 分别推进变异和BOSS独立配额；休眠与正常模拟共用计时。
+func _replenish_additional_populations_if_due() -> void:
+	for kind: StringName in _additional_populations:
+		_replenish_timed_population(kind, _additional_populations[kind])
+
+
+## 使用所属种群的配额补充，保留其他种群及存活实体。
+## [param kind] 精英、变异或BOSS种群。
+## [param quota] 该地图中该种群独有的领域时钟。
+func _replenish_timed_population(kind: StringName, quota: TimedPopulationQuota) -> void:
+	if combat_module == null or not quota.is_due(combat_module.current_tick):
 		return
 	var alive_by_species: Dictionary = {}
 	var alive_count := 0
 	for monster: MonsterLifecycle in combat_module.monsters.values():
-		if monster.map_instance_id == instance_id and monster.is_alive() and monster.population_kind == &"elite":
+		if monster.map_instance_id == instance_id and monster.is_alive() and monster.population_kind == kind:
 			alive_count += 1
 			alive_by_species[monster.species_id] = int(alive_by_species.get(monster.species_id, 0)) + 1
-	var count := _elite_population.take_due_replenishment(combat_module.current_tick, alive_count)
+	var count := quota.take_due_replenishment(combat_module.current_tick, alive_count)
 	if count <= 0:
 		return
 	var generated = _combat_catalog.monster_replenishment_for_map(
-		String(definition.map_id), instance_id, alive_by_species, _monster_spawn_sequence, count, &"elite"
+		String(definition.map_id), instance_id, alive_by_species, _monster_spawn_sequence, count, kind
 	)
 	if not generated.is_ok:
-		push_error("Elite replenishment failed: %s" % generated.error_message)
+		push_error("Timed population replenishment failed: %s" % generated.error_message)
 		return
 	combat_module.remove_dead_monsters(instance_id)
 	for raw: Dictionary in generated.value:
@@ -518,7 +542,7 @@ func _replenish_elite_population_if_due() -> void:
 		if raw.position.is_finite():
 			var result := combat_module.register_monster(raw)
 			if not result.is_ok:
-				push_error("Elite registration failed: %s" % result.error_message)
+				push_error("Timed population registration failed: %s" % result.error_message)
 	_monster_spawn_sequence += generated.value.size()
 
 

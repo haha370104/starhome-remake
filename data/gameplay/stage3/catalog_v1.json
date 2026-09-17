@@ -12,13 +12,26 @@
     "d04_encounters": "res://data/gameplay/stage3/d04_encounters_v1.json",
     "glory_monsters": "res://data/gameplay/glory/glory_monsters_v1.json",
     "glory_encounters": "res://data/gameplay/glory/glory_monster_encounters_v1.json",
-    "material_drops": "res://data/gameplay/original_monster_drops_v1.json"
+    "material_drops": "res://data/gameplay/original_monster_drops_v1.json",
+    "enhancement_monsters": "res://data/gameplay/enhancement_monsters_v1.json"
   },
   "runtime_ids": {
-    "vehicle": ["recruit_tank"],
-    "equipment": ["beginner_engine", "recruit_energy_cannon"],
-    "monster": ["om_adult", "om_larva", "photosensitive_orb", "toxic_gel"],
-    "encounter": ["d04_intro_encounter"]
+    "vehicle": [
+      "recruit_tank"
+    ],
+    "equipment": [
+      "beginner_engine",
+      "recruit_energy_cannon"
+    ],
+    "monster": [
+      "om_adult",
+      "om_larva",
+      "photosensitive_orb",
+      "toxic_gel"
+    ],
+    "encounter": [
+      "d04_intro_encounter"
+    ]
   },
   "source_audit": {
     "source_release": "starhome_lz_ry",

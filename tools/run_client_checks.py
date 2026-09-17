@@ -29,6 +29,7 @@ TESTS = (
     "server/combat/upgrade_material_supply_test.gd",
     "server/combat/drop_expectations_and_upgrades_test.gd",
     "server/combat/elite_population_test.gd",
+    "server/combat/enhancement_population_test.gd",
     "server/combat/glory_field_population_test.gd",
     "server/map_residency_test.gd",
     "server/combat/corrosive_attack_test.gd",

@@ -41,9 +41,9 @@ static func load_file(catalog_path: String) -> DomainResult:
 		return DomainResult.failure(&"combat.invalid_catalog", "catalog definitions must be a dictionary")
 	var documents: Dictionary = {}
 	for key: String in [
-		"starter_loadout", "monsters", "d04_encounters", "glory_monsters", "glory_encounters", "material_drops"
+		"starter_loadout", "monsters", "d04_encounters", "glory_monsters", "glory_encounters", "material_drops", "enhancement_monsters"
 	]:
-		if key == "material_drops" and not references.has(key):
+		if key in ["material_drops", "enhancement_monsters"] and not references.has(key):
 			continue
 		var path := String(references.get(key, ""))
 		if not _is_controlled_json_path(path):
@@ -380,7 +380,7 @@ func monster_population_policy_for_map(map_id: String, population_kind: StringNa
 	var encounter := _encounter_for_map(map_id)
 	if encounter.is_empty() or not bool(encounter.get("enabled", false)):
 		return {}
-	var key := "elite_population_policy" if population_kind == &"elite" else "population_policy"
+	var key := "population_policy" if population_kind == &"ordinary" else String(population_kind) + "_population_policy"
 	return (encounter.get(key, {}) as Dictionary).duplicate(true)
 
 
@@ -420,14 +420,14 @@ func monster_replenishment_for_map(
 	requested_count: int,
 	population_kind: StringName = &"ordinary",
 ) -> DomainResult:
-	if population_kind not in [&"ordinary", &"elite"]:
+	if population_kind not in [&"ordinary", &"elite", &"mutant", &"boss"]:
 		return DomainResult.failure(&"combat.invalid_population_request", "unknown population kind")
 	if map_instance_id.is_empty() or first_sequence < 0 or requested_count < 0:
 		return DomainResult.failure(&"combat.invalid_population_request", "monster replenishment request is invalid")
 	var encounter := _encounter_for_map(map_id)
 	if encounter.is_empty() or not bool(encounter.get("enabled", false)):
 		return DomainResult.ok([])
-	var key := "elite_spawn_groups" if population_kind == &"elite" else "spawn_groups"
+	var key := "spawn_groups" if population_kind == &"ordinary" else String(population_kind) + "_spawn_groups"
 	var groups: Array = encounter.get(key, [])
 	if groups.is_empty():
 		return DomainResult.ok([])
@@ -486,6 +486,7 @@ func _monster_lifecycle_definition(
 				"spawn_index": sequence,
 				"max_health": int(stats["max_health"]),
 				"base_attack": int(stats["base_attack"]),
+				"defense": int(combat.get("runtime_defense", 0)),
 				"attack_archetype": String(combat["attack_archetype"]),
 				"behavior_profile": String(combat["behavior_profile"]),
 				"engagement_policy": String(combat["engagement_policy"]),
@@ -603,6 +604,13 @@ func _configure(catalog: Dictionary, documents: Dictionary) -> DomainResult:
 	if not encounter_result.is_ok:
 		return encounter_result
 	_encounters_by_map_id[String(_d04_encounter["map_id"])] = _d04_encounter.duplicate(true)
+	if documents.has("enhancement_monsters"):
+		var extra := EnhancementMonsterRules.from_dictionary(documents.enhancement_monsters)
+		if not extra.is_ok:
+			return extra
+		var applied: DomainResult = extra.value.apply(_monsters_by_id, _encounters_by_map_id)
+		if not applied.is_ok:
+			return applied
 	return _validate_runtime_links()
 
 
