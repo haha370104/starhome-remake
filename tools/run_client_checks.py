@@ -50,6 +50,7 @@ TESTS = (
     "domain/manufacturing_batch_test.gd",
     "domain/production_queue_test.gd",
     "server/manufacturing/production_order_service_test.gd",
+    "server/manufacturing/production_runtime_test.gd",
     "server/commerce/equipment_dismantle_authority_test.gd",
     "ui/runtime/equipment_dismantle_panel_test.gd",
     "domain/equipment_memory_transfer_test.gd",

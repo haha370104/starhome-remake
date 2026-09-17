@@ -51,6 +51,7 @@ const GLORY_RUNTIME_MAP_INDEX_PATH := "res://data/content/glory_map_runtime_inde
 const MAX_TRANSITION_LANDING_CORRECTION_DISTANCE := 192.0
 
 var _food_runtime: AuthoritativeFoodRuntime
+var _production_runtime: AuthoritativeProductionRuntime
 var config: DedicatedServerConfig
 var map_instance: AuthoritativeMapInstance
 var map_registry: AuthoritativeMapRegistry
@@ -188,6 +189,10 @@ func initialize(
 	var warehouse_result := warehouse_service.initialize(reward_service.pipeline)
 	if not warehouse_result.is_ok:
 		return _failure(warehouse_result.error_code, warehouse_result.error_message)
+	if autosave_service != null:
+		_production_runtime = AuthoritativeProductionRuntime.new(autosave_service, sessions, manufacturing_service,
+			_capture_persistent_player_state, _publish_production)
+		_production_runtime.failed.connect(_publish_production_failure)
 	_ticks_per_snapshot = floori(float(config.simulation_hz) / float(config.snapshot_hz))
 	return _success(_default_map_id)
 
@@ -256,6 +261,7 @@ func advance_simulation(elapsed_seconds: float, now_msec := -1) -> void:
 	if sessions == null or elapsed_seconds <= 0.0:
 		return
 	_advance_food_status()
+	if _production_runtime != null: _production_runtime.advance(elapsed_seconds)
 	_simulation_accumulator += elapsed_seconds
 	var fixed_delta := 1.0 / float(config.simulation_hz)
 	while _simulation_accumulator + 0.000001 >= fixed_delta:
@@ -359,6 +365,9 @@ func open_session(peer_id: int, request: Dictionary, now_msec := -1) -> Dictiona
 ## 设计：该函数位于权威服务器边界，客户端不得覆盖其计算结果。
 func disconnect_session(peer_id: int, now_msec := -1) -> Dictionary:
 	var current_time := now_msec if now_msec >= 0 else Time.get_ticks_msec()
+	var session := sessions.session_for_peer(peer_id)
+	if _production_runtime != null and session != null:
+		_production_runtime.interrupt(session.entity_id, "断线后生产已暂停")
 	return sessions.mark_disconnected(peer_id, current_time)
 
 
@@ -557,9 +566,11 @@ func handle_peer_map_transition(peer_id: int, raw_intent: Variant) -> Dictionary
 			var captured_transition: DomainResult = _capture_persistent_player_state(transition_state)
 			if not captured_transition.is_ok:
 				return _failure(captured_transition.error_code, captured_transition.error_message)
+			transition_state.production.pause("离开设施地图后生产已暂停")
 			var stored_transition := autosave_service.commit_player_state(session.entity_id, transition_state)
 			if not stored_transition.is_ok:
 				return _failure(stored_transition.error_code, stored_transition.error_message)
+			if _production_runtime != null: _production_runtime.track(stored_transition.value)
 			var prepared_loadout := _prepare_entity_combat_loadout(
 				destination_instance, session.entity_id, transition_state
 			)
@@ -816,6 +827,7 @@ func handle_peer_player_panel_command(peer_id: int, command: Dictionary) -> Dict
 	var committed = autosave_service.commit_player_state(session.entity_id, value["candidate"])
 	if not committed.is_ok:
 		return _failure(committed.error_code, committed.error_message)
+	if is_manufacturing and _production_runtime != null: _production_runtime.track(committed.value)
 	if current_map != null and current_map.mining_module != null \
 			and current.vehicle_loadout_revision != committed.value.vehicle_loadout_revision:
 		current_map.mining_module.interrupt(session.entity_id, &"equipment_changed")
@@ -1506,6 +1518,7 @@ func _capture_persistent_player_state(state: PlayerStateRecord):
 		state.working_energy_capacity = vehicle_state.working_energy_capacity
 		state.working_energy = vehicle_state.working_energy
 		state.output_power = vehicle_state.power_output
+	if _production_runtime != null: _production_runtime.capture(state)
 	var validation = state.validate()
 	return DomainResultScript.ok(state) if validation.is_ok else validation
 
@@ -1522,6 +1535,7 @@ func _restore_persistent_player_state(
 	var resumed_food := FoodStatus.new(state.food_status)
 	resumed_food.resume(int(Time.get_unix_time_from_system()))
 	state.food_status = resumed_food.to_dictionary()
+	state.production.pause("重新登录后生产已暂停，请返回原设施继续")
 	var source := map_registry.instance_by_id(session.map_instance_id)
 	var canonical_map_id := _canonical_persisted_map_id(state.map_id)
 	var target: AuthoritativeMapInstance
@@ -1933,6 +1947,23 @@ func _advance_food_status() -> void:
 func _publish_food_status(peer_id: int, state: PlayerStateRecord) -> void:
 	_send_reliable(peer_id, {"type": "player_panels",
 		"result": _wire_result(_success(player_panel_service.build_bundle(state)))})
+
+
+## 将实际提交后的生产进度和物品变化发布给当前连接。
+## [param peer_id] 在线连接身份。
+## [param state] 仓储已经接受的完整记录。
+## [param operation] 已完成轮次或暂停结果。
+func _publish_production(peer_id: int, state: PlayerStateRecord, operation: Dictionary) -> void:
+	_send_reliable(peer_id, {"type": "player_panels",
+		"result": _wire_result(_success(manufacturing_service.build_bundle(state, operation)))})
+
+
+## 报告生产写入或状态错误，不把候选产物发送成成功结果。
+## [param peer_id] 出错连接。
+## [param code] 领域或仓储错误码。
+## [param message] 已去重的人类可读提示。
+func _publish_production_failure(peer_id: int, code: StringName, message: String) -> void:
+	_send_reliable(peer_id, {"type": "player_panels", "result": _wire_result(_failure(code, message))})
 
 
 ## 将食品事务资源同步回当前地图，热更新武器时保留射击冷却和维修状态。
