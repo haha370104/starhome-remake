@@ -143,6 +143,7 @@ func _restore_inventory(raw_items: Variant) -> bool:
 			"upgrade_level": raw_item.get("upgrade_level", 0),
 			"enhancement": raw_item.get("enhancement", {}),
 			"clothing_improvement": raw_item.get("clothing_improvement", {}),
+			"equipment_memory": raw_item.get("equipment_memory", {}),
 			"vehicle_sockets": raw_item.get("vehicle_sockets", {}),
 			"processing": raw_item.get("processing", {}),
 			"extra_attributes": raw_item.get("extra_attributes", {}),

@@ -16,6 +16,7 @@ var durability := 0
 var upgrade_level := 0
 var enhancement := ClothingEnhancement.new()
 var clothing_improvement := ClothingImprovement.new()
+var equipment_memory := EquipmentMemory.new()
 var vehicle_sockets := VehicleSockets.new()
 var processing := EquipmentProcessing.new()
 var extra_attributes := ExtraAttributes.new()
@@ -59,6 +60,9 @@ static func from_dictionary(raw: Variant) -> DomainResult:
 	var improved := ClothingImprovement.restore(raw.get("clothing_improvement", {}))
 	if not improved.is_ok: return improved
 	stack.clothing_improvement = improved.value
+	var memory := EquipmentMemory.restore(raw.get("equipment_memory", {}))
+	if not memory.is_ok: return memory
+	stack.equipment_memory = memory.value
 	var processed := EquipmentProcessing.restore(raw.get("processing", {}))
 	if not processed.is_ok:
 		return processed
@@ -112,6 +116,7 @@ func to_dictionary() -> Dictionary:
 		"upgrade_level": upgrade_level,
 		"enhancement": enhancement.to_dictionary(),
 		"clothing_improvement": clothing_improvement.to_dictionary(),
+		"equipment_memory": equipment_memory.to_dictionary(),
 		"vehicle_sockets": vehicle_sockets.to_dictionary(),
 		"processing": processing.to_dictionary(),
 		"extra_attributes": extra_attributes.to_dictionary(),
