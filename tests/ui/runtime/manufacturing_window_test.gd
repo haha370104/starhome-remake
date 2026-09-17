@@ -76,21 +76,18 @@ func _run() -> void:
 	panel._confirm_cancel()
 	_check(_state().production.order != null, "放弃取消不删订单")
 	panel.cancel_button.pressed.emit()
+	var old_cancel := panel._pending.duplicate(true)
 	server.advance_simulation(2.0)
 	panel.confirmation.hide()
-	panel.confirmation.confirmed.emit()
-	_check(_state().production.order.completed == 2 and not panel.cancel_button.disabled, "确认期间进度变更拒绝旧意图并刷新")
-	var command_count := commands.size()
-	panel._confirm_cancel()
-	_check(commands.size() == command_count, "确认不重发")
 	await process_frame
 	if "--capture" in OS.get_cmdline_user_args():
 		await RenderingServer.frame_post_draw
 		root.get_texture().get_image().save_png("res://.godot/manufacturing_window.png")
-	panel.cancel_button.pressed.emit()
-	panel.confirmation.hide()
 	panel.confirmation.confirmed.emit()
-	_check(_state().production.order == null and _quantity() == 4 and not panel.start_button.disabled, "取消保留已完成产物")
+	_check(_state().production.order == null and _quantity() == 4 and not panel.start_button.disabled, "确认期间推进轮次仍可取消原订单，保留新完成产物")
+	var command_count := commands.size()
+	panel._confirm_cancel()
+	_check(commands.size() == command_count, "确认不重发")
 	panel.cycles.value = 1
 	panel.speed.value = 1
 	await process_frame
@@ -99,6 +96,7 @@ func _run() -> void:
 	_check(_state().production.order == null and not panel.start_button.disabled, "失败后查询恢复操作且没有预测成果")
 	panel.start_button.pressed.emit()
 	_check(_state().production.order != null and _state().production.order.cycles == 1 and _state().production.order.speed == 1, "恢复后可按新输入重新开始")
+	_check(not server.handle_peer_player_panel_command(71, old_cancel).ok and _state().production.order != null, "旧取消身份绝不能删除后来创建的订单")
 	panel.hide()
 	server.advance_simulation(2.0)
 	_check(_quantity() == 5 and _state().production.order == null, "关闭窗口后订单仍完成")

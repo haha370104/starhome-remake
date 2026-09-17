@@ -100,6 +100,15 @@ func cancel(expected_revision: int) -> DomainResult:
 	return DomainResult.ok(result)
 
 
+## 按已审阅的订单身份取消剩余轮次，期间完成的成果保留，不因每轮推进强制重新确认。
+## [param identity] 用户确认的原订单身份，不能用于后来创建的订单。
+## 返回确认时实际完成和取消的数量，或订单已结束/替换的拒绝。
+func cancel_order(identity: String) -> DomainResult:
+	if identity.is_empty() or order == null or order.id != identity:
+		return DomainResult.failure(&"production.order_changed", "这份订单已经结束或被替换，请查看当前生产状态")
+	return cancel(revision)
+
+
 ## 将权威时钟的剩余等待写入同订单快照，不因计时改变操作版本。
 ## [param id] 时钟所属的订单。
 ## [param expected_revision] 时钟建立时的订单版本。

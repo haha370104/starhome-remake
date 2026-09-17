@@ -37,6 +37,8 @@ func execute(state: PlayerStateRecord, command: Dictionary) -> DomainResult:
 	var expected := int(command.production_revision)
 	if kind == "start_production": return _start(state, command, expected)
 	var candidate := state.duplicate_record()
+	if kind == "cancel_production" and command.has("order_id"):
+		return _cancel_named_order(candidate, command)
 	var checked := candidate.production.require_revision(expected)
 	if not checked.is_ok: return checked
 	if candidate.production.order == null:
@@ -59,6 +61,18 @@ func execute(state: PlayerStateRecord, command: Dictionary) -> DomainResult:
 			if not checked.is_ok: return checked
 			message = "已取消%d轮，保留已完成%d轮的成果" % [checked.value.canceled, checked.value.completed]
 	return _result(candidate, station, String(kind), message)
+
+
+## 取消明确的一份订单，完成次数变化不使确认失效，另一份订单绝不接受旧身份。
+## [param candidate] 已隔离的角色副本。[param command] 含确认标志和原订单身份的意图。
+## 返回实际取消轮次的候选；不信任客户端声称的剩余次数。
+func _cancel_named_order(candidate: PlayerStateRecord, command: Dictionary) -> DomainResult:
+	if not command.get("order_id") is String or not command.get("confirm_cancel") is bool or not command.confirm_cancel:
+		return DomainResult.failure(&"production.confirm", "请确认取消指定生产订单的剩余轮次")
+	var station := candidate.production.order.station_id if candidate.production.order != null else ""
+	var canceled := candidate.production.cancel_order(command.order_id)
+	if not canceled.is_ok: return canceled
+	return _result(candidate, station, "cancel_production", "已取消%d轮，保留已完成%d轮的成果" % [canceled.value.canceled, canceled.value.completed])
 
 
 ## 核验开始意图的数量、库存版本和配方归属后创建订单，保持背包未扣料。

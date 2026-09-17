@@ -187,16 +187,16 @@ func _control() -> void:
 		"production_revision": _snapshot.production.revision})
 
 
-## 保存待取消订单的版本并明确未完成轮次的处理。
+## 保存待取消订单身份并明确只取消确认时仍未完成的轮次。
 func _ask_cancel() -> void:
 	if cancel_button.disabled: return
 	var order := _snapshot.production.order
-	_pending = {"type": "cancel_production", "production_revision": _snapshot.production.revision, "confirm_cancel": true}
-	confirmation.dialog_text = "已完成%d / %d轮。\n取消剩余%d轮？未完成轮次尚未扣料，已完成的产物和经验保留。" % [order.completed, order.cycles, order.cycles - order.completed]
+	_pending = {"type": "cancel_production", "production_revision": _snapshot.production.revision, "order_id": order.id, "confirm_cancel": true}
+	confirmation.dialog_text = "已完成%d / %d轮，当前剩余%d轮。\n确认时仅取消这份订单仍未完成的轮次。未完成轮次尚未扣料，已完成的产物和经验保留。" % [order.completed, order.cycles, order.cycles - order.completed]
 	confirmation.popup_centered(Vector2i(540, 170))
 
 
-## 只提交一次已审阅的订单版本，期间新订单不能被旧确认取消。
+## 只提交一次已审阅的订单身份，期间新订单不能被旧确认取消。
 func _confirm_cancel() -> void:
 	if _pending.is_empty(): return
 	var command := _pending.duplicate(true)
