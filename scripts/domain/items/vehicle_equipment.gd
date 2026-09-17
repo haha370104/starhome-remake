@@ -9,6 +9,14 @@ var attachment_family: String
 var allowed_locations: Array = []
 var sockets := VehicleSockets.new()
 var socket_rules: VehicleSocketRules
+var generator_profile: GeneratorRules.Profile
+
+
+## 汇总当前发生器的常驻属性，损坏时不提供能力。
+## [param attribute] 战车统一属性名。
+## 返回实际常驻加值。
+func generator_bonus(attribute: String) -> int:
+	return generator_profile.passive_bonus(attribute) if generator_profile != null and durability > 0 else 0
 
 
 ## 检查接合器逐级强化条件；不改变耐久、绑定和槽位。
@@ -87,6 +95,9 @@ func primary_device_kind() -> String:
 ## 返回通用装备 DTO 加战车槽位信息。
 func to_view_dictionary() -> Dictionary:
 	var view := super()
+	if generator_profile != null:
+		view["description"] = String(view.get("description", "")) + "\n\n" + generator_profile.description()
+		view["generator_effects"] = generator_profile.description()
 	view["equipment_location"] = equipment_location
 	view["location"] = equipment_location
 	view["equip_kind"] = equip_kind

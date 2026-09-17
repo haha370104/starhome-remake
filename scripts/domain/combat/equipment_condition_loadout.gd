@@ -29,6 +29,7 @@ func duplicate_loadout() -> EquipmentConditionLoadout:
 		copied.quality_profile = item.quality_profile
 		copied.forging_rules = item.forging_rules
 		copied.forging_profile = item.forging_profile
+		if copied is VehicleEquipment: copied.generator_profile = (item as VehicleEquipment).generator_profile
 		if copied is Clothing: copied.improvement_rules = (item as Clothing).improvement_rules
 		copied.refresh_processed_stats()
 		result._items[copied.instance_id] = copied
@@ -81,4 +82,14 @@ func snapshot() -> Dictionary:
 	for item: Equipment in _items.values():
 		result[item.instance_id] = {"definition_id": item.definition_id, "durability": item.durability,
 			"max_durability": item.max_durability, "usage": item.usage.to_dictionary(), "magazine": item.magazine.to_dictionary()}
+	return result
+
+
+## 按稳定装配顺序获取模拟中的发生器实例，弹药仍由同一装备对象持有。
+## 返回仅有有效规则且未损坏的发生器列表。
+func generators() -> Array[VehicleEquipment]:
+	var result: Array[VehicleEquipment] = []
+	for item: Equipment in _items.values():
+		if item is VehicleEquipment and item.generator_profile != null and item.durability > 0: result.append(item)
+	result.sort_custom(func(a: VehicleEquipment, b: VehicleEquipment) -> bool: return a.equipment_location < b.equipment_location)
 	return result

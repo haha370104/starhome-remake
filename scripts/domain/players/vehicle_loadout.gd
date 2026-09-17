@@ -7,6 +7,15 @@ var revision: int
 var _equipped: Dictionary = {}
 
 
+## 按实际装配汇总发生器常驻属性，不受是否剩余触发弹药影响。
+## [param attribute] 统一战车属性名。
+## 返回所有健全发生器的基础加值。
+func generator_bonus(attribute: String) -> int:
+	var total := 0
+	for equipment: VehicleEquipment in _equipped.values(): total += equipment.generator_bonus(attribute)
+	return total
+
+
 ## 汇总全身同类数值最高四颗普通晶石，瑕疵和明亮共用名额，损坏装备不提供效果。
 ## [param attribute] 规范化战车属性。
 ## 返回固定加值或暴击概率。

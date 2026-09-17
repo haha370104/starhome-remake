@@ -44,6 +44,7 @@ var memory_rules: EquipmentMemoryRules
 var quality_rules: EquipmentQualityRules
 var dismantle_rules: EquipmentDismantleRules
 var forging_rules: EquipmentForgingRules
+var generator_rules: GeneratorRules
 
 
 ## 读取所有当前启用的物品定义和语义化表现目录。
@@ -132,6 +133,14 @@ func initialize() -> DomainResult:
 	var forging_result := EquipmentForgingRules.from_dictionary(forging_data.value)
 	if not forging_result.is_ok: return forging_result
 	forging_rules = forging_result.value
+	var generator_data := JsonConfigLoader.load_dictionary("res://data/gameplay/generator_rules_v1.json")
+	if not generator_data.is_ok: return generator_data
+	var generator_result := GeneratorRules.from_dictionary(generator_data.value)
+	if not generator_result.is_ok: return generator_result
+	generator_rules = generator_result.value
+	for id: String in generator_rules.profiles:
+		if not _definitions.has(id) or _definitions[id].get("attachment_family", "") != "generator":
+			return DomainResult.failure(&"generator.rules", "发生器规则引用未装配的物品类型")
 	var dismantle_data := JsonConfigLoader.load_dictionary("res://data/gameplay/equipment_dismantle_rules_v1.json")
 	if not dismantle_data.is_ok: return dismantle_data
 	var dismantle_result := EquipmentDismantleRules.from_dictionary(dismantle_data.value, self)
@@ -231,6 +240,7 @@ func create(definition_id: String, state: Dictionary) -> DomainResult:
 	if not checked.is_ok:
 		return checked
 	if item is VehicleEquipment:
+		item.generator_profile = generator_rules.profiles.get(item.definition_id)
 		item.sockets = sockets_result.value
 		item.socket_rules = socket_rules
 	return result
