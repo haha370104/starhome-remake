@@ -5,12 +5,14 @@ var _failures := PackedStringArray()
 var catalog := ItemCatalog.new()
 var fixture := PlayerPanelServiceFixture.new()
 var mapper: PlayerStateMapper
+var combat_catalog: CombatDefinitionCatalog
 
 
 ## 验证真实装配、综合等级、战斗计算、背包仓库和客户端快照完整往返。
 func _initialize() -> void:
 	_check(catalog.initialize().is_ok and fixture.initialize().is_ok, "dependencies")
 	mapper = PlayerStateMapper.new(catalog)
+	combat_catalog = CombatDefinitionCatalog.load_default().value
 	for id: String in catalog.crystal_source_rules.profiles:
 		_test_equipment(id)
 	_test_cores()
@@ -48,6 +50,12 @@ func _test_equipment(id: String) -> void:
 	_check(player.equip_vehicle_item(item.instance_id, profile.location, player.inventory.revision, player.vehicle.loadout.revision).is_ok, "equip at exact level")
 	_check(player.vehicle.health == 35 and player.vehicle.working_energy == 13 and player.vehicle.reserve_energy == 2345, "special equipment never heals or restores energy")
 	var stats := player.vehicle.calculate_stats()
+	var combat: Dictionary = combat_catalog.vehicle_combat_loadout(player, 20, {"base_speed_multiplier": 1500, "base_speed_cap": 240}).value
+	_check(combat.assembly.max_health == stats.max_health, "actual combat health")
+	for ability: String in combat.weapons:
+		var weapon: Dictionary = combat.weapons[ability]
+		var attack_attribute := String({"energy_cannon": "energy_cannon_attack", "missile": "missile_attack", "rocket_launcher": "rocket_attack"}[weapon.skill_id])
+		_check(weapon.minimum_damage == stats[attack_attribute], "actual weapon damage " + ability)
 	for attribute: String in ["max_health", "energy_cannon_attack", "rocket_attack", "missile_attack"]:
 		_check(int(stats[attribute]) - int(base[attribute]) == item.special_bonus(attribute), "actual shared combat stat " + attribute)
 	var saved := mapper.to_record(player)

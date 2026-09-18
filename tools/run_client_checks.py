@@ -15,6 +15,7 @@ TESTS = (
     "domain/crystal_source_integration_test.gd",
     "domain/crystal_source_actions_test.gd",
     "server/commerce/crystal_source_authority_test.gd",
+    "server/persistence/crystal_source_runtime_test.gd",
     "domain/vehicle_socket_model_test.gd",
     "domain/equipment_processing_model_test.gd",
     "domain/equipment_maintenance_model_test.gd",

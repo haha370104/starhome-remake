@@ -289,7 +289,7 @@ func vehicle_combat_loadout(
 		var effect := String({"energy_cannon": "energy_cannon_attack", "missile": "missile_attack",
 			"rocket_launcher": "rocket_attack"}.get(weapons[ability_id].get("skill_id", ""), ""))
 		var food_kind := int({"energy_cannon_attack": 13, "missile_attack": 14, "rocket_attack": 15}.get(effect, 0))
-		var bonus := player.vehicle.loadout.attachment_bonus(effect) + player.vehicle.loadout.socket_bonus(effect) + player.vehicle.loadout.generator_bonus(effect)
+		var bonus := player.vehicle.loadout.attachment_bonus(effect) + player.vehicle.loadout.socket_bonus(effect) + player.vehicle.loadout.generator_bonus(effect) + player.vehicle.loadout.special_bonus(effect)
 		for field: String in ["minimum_damage", "maximum_damage"]:
 			weapons[ability_id][field] = maxi(1, roundi(clothing.apply_value(effect, float(weapons[ability_id][field]) + bonus)) + player.food_status.bonus(food_kind))
 		if effect == "energy_cannon_attack":

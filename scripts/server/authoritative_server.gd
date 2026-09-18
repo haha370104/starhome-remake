@@ -838,9 +838,16 @@ func handle_peer_player_panel_command(peer_id: int, command: Dictionary) -> Dict
 	if current_map != null and current_map.mining_module != null \
 			and current.vehicle_loadout_revision != committed.value.vehicle_loadout_revision:
 		current_map.mining_module.interrupt(session.entity_id, &"equipment_changed")
+	var special_location := int(command.get("location", -1))
+	if command_type == "equip_vehicle_item":
+		for slot: EquipmentSlotRecord in committed.value.equipment_slots:
+			if slot.item_instance_id == String(command.get("instance_id", "")): special_location = slot.slot_location
+	var special_equipment_changed := command_type in ["equip_vehicle_item", "unequip_vehicle_item"] \
+		and not EquipmentSlotRegistry.special_series(special_location).is_empty()
 	if command_type == "use_inventory_item":
 		_apply_food_runtime(session.entity_id, committed.value)
 	elif (command_type in ClothingEnhancementService.COMMANDS or command_type in VehicleSocketService.COMMANDS \
+		or command_type in CrystalSourceService.COMMANDS or special_equipment_changed \
 		or command_type in EquipmentProcessingService.COMMANDS \
 		or command_type in EquipmentMaintenanceService.COMMANDS \
 		or command_type in ["equip_character_item", "unequip_character_item", "apply_vehicle_preset"]) \
