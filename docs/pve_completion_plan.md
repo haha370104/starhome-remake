@@ -4,13 +4,14 @@
 依据：[原版功能缺口核查](original_feature_gap_audit.md)。
 用户要求：多人游戏交互相关先不处理，为其余功能制定开发计划。
 实施基线：`1.0.0` 标签（`c9dcdb83f7f663971e4087cf7c971f286e5af7d4`）。
-用户已批准开发；P0 首批准备、P1 与 P2 已完成，接续 P3，之后依次 P4 → P6 → P5。
+用户已批准顺序开发；P0准备随各阶段完善，P1～P4及P6的本轮PVE部分已完成，当前执行P5。
 P1 实施与验收见[战车加工台账](vehicle_workshop.md)；不能将规则核查计作玩法交付。
 P2 见[普通属性加工](equipment_processing.md)和[耐久维护/磨损/弹药](equipment_maintenance.md)，包含实际运行、权威交易、保存与窗口验收。
 P3-A [萤石/耀石](extra_attribute_processing.md)、P3-B [独立十星强化](equipment_strengthening.md)与[护甲精工](armor_refinement.md)、P3-C [季节时装改良](clothing_improvement.md)已完成。
-五行能量石原版证据仅见装备之间克制，PVE范围待用户确认；此期间继续P3-D分解转移，不视为P3整体已完成。
+五行能量石原版证据仅见装备之间克制；按本次排除PVP的范围延期，不创造怪物克制效果。
+此前范围问题未收到选择，现按问题的推荐方案与已批准PVE边界执行；P3的适用部分完成，延期项继续明确保留。
 P3-D [记忆模块](equipment_memory.md)六类、[普通品质](equipment_quality.md)与[15款装备拆解](equipment_dismantling.md)已接通。
-[锻造上限](equipment_forging.md)的实例、交易、供给和UI已接通，对应原版7号锻造记忆模块也已接入；五行能量石范围仍待确认，P3尚未整体关闭。
+[锻造上限](equipment_forging.md)的实例、交易、供给和UI已接通，对应原版7号锻造记忆模块也已接入；五行能量石按上述PVP边界延期。
 [P4装置](pve_devices.md)的基础发生器、权威触发与表现已接通，119项完整回归通过；
 隐身/雷达按已批准边界核查后延期，九种缺失命中特效仍无可靠索引，不填任意动画。
 P6 [个人仓库](personal_warehouse.md)、[批量生产](batch_production.md)与[智脑扩展](smart_assistant_extensions.md)已接通，133项完整回归通过；
@@ -19,7 +20,7 @@ P6完整回归137/137通过（`f22f82b`，`.godot/client-checks-20260918-071146-
 P5-A[晶源体](crystal_source_equipment.md)已接通，820e204完整143/143通过；961f4b3补矿后相关专项通过。
 P5-B[奥斯格兰](austin_glens_equipment.md)、P5-C[撒玛](sama_equipment.md)已接通；
 `0e3d4cd`完整156/156回归通过，覆盖前述阶段与修正后的旧UI断言。
-继续P5-D中枢；五行能量石的范围状态继续单列。
+继续P5-D[中枢](central_controller.md)，五行能量石延期继续单列。
 
 ## 1. 范围
 

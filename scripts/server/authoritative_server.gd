@@ -847,7 +847,7 @@ func handle_peer_player_panel_command(peer_id: int, command: Dictionary) -> Dict
 	if command_type == "use_inventory_item":
 		_apply_food_runtime(session.entity_id, committed.value)
 	elif (command_type in ClothingEnhancementService.COMMANDS or command_type in VehicleSocketService.COMMANDS \
-		or command_type in CrystalSourceService.COMMANDS or command_type in AustinGlensService.COMMANDS or command_type in SamaService.COMMANDS or special_equipment_changed \
+		or command_type in CrystalSourceService.COMMANDS or command_type in AustinGlensService.COMMANDS or command_type in SamaService.COMMANDS or command_type in CentralService.COMMANDS or special_equipment_changed \
 		or command_type in EquipmentProcessingService.COMMANDS \
 		or command_type in EquipmentMaintenanceService.COMMANDS \
 		or command_type in ["equip_character_item", "unequip_character_item", "apply_vehicle_preset"]) \
