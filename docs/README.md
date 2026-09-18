@@ -47,6 +47,7 @@
 - [批量生产](batch_production.md)：原版次数/速度核查、复刻计时与取消方案；实施状态在文中单列。
 - [智脑扩展](smart_assistant_extensions.md)：自动补给、四套装配、PVE击毁记录及原版/复刻边界。
 - [设置与退出](client_settings_and_exit.md)：本地显示/按键/音量偏好、正常退出的权威保存和失败重试。
+- [奥斯格兰装备](austin_glens_equipment.md)：P5-B成长、固定符文和PVE受击能力，状态及原版证据单列。
 - [晶源体与晶源核](crystal_source_equipment.md)：P5-A独立品质/成长、三核心槽、五合一及原文数量差异；当前状态见文首。
 - [装备十星强化](equipment_strengthening.md)：P3-B 独立星级、材料投入与失败降星。
 - [萤石与耀石加工](extra_attribute_processing.md)：P3-A 独立通道、失败退级、获取与实际属性。

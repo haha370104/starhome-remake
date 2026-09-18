@@ -16,7 +16,8 @@ P3-D [记忆模块](equipment_memory.md)六类、[普通品质](equipment_qualit
 P6 [个人仓库](personal_warehouse.md)、[批量生产](batch_production.md)与[智脑扩展](smart_assistant_extensions.md)已接通，133项完整回归通过；
 [设置与退出](client_settings_and_exit.md)的服务端50、客户端26、偏好30、设置界面60项专项通过；
 P6完整回归137/137通过（`f22f82b`，`.godot/client-checks-20260918-071146-12512/summary.json`）。
-现在按计划回到P5；五行能量石的待确认状态继续单列。
+P5-A[晶源体](crystal_source_equipment.md)已接通，820e204完整143/143通过；961f4b3补矿后相关专项通过。
+继续P5-B[奥斯格兰](austin_glens_equipment.md)、P5-C撒玛、P5-D中枢；五行能量石的待确认状态继续单列。
 
 ## 1. 范围
 

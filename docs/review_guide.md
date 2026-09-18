@@ -7,6 +7,9 @@
 
 ## 1. 先看结论
 
+P5按[晶源体](crystal_source_equipment.md)和[奥斯格兰](austin_glens_equipment.md)台账审查特殊装备。
+晶源体已覆盖权威成长、实际炮弹属性、仓库/方案/JSON往返；奥斯格兰当前在实施，不能视为完成。
+
 P6 [设置与退出](client_settings_and_exit.md)：正常退出经 `AuthoritativeExitService` 采集、原子保存和清理会话，
 客户端 `ClientExitController` 只凭匹配回执退出；服务端故障/重试入口见 `tests/server/persistence/graceful_exit_test.gd`。
 设置入口在 `ClientSettingsController` 与 `ClientSettingsPanel`；独立偏好、实际窗口/输入/存档验收
