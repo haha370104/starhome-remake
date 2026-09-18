@@ -27,6 +27,7 @@ var corrosion := AuthoritativeCorrosionModule.new()
 var generators := AuthoritativeGeneratorModule.new()
 var austin := AuthoritativeAustinModule.new()
 var sama := AuthoritativeSamaModule.new()
+var central := AuthoritativeCentralModule.new()
 var ground_loot: Dictionary = {}
 var rewards: AuthoritativeRewardService
 var _random := RandomNumberGenerator.new()
@@ -75,6 +76,7 @@ func configure(
 	generators.reset(random_seed ^ 724315)
 	austin.reset(random_seed ^ 591311)
 	sama.reset(random_seed ^ 119417)
+	central.reset(random_seed ^ 831119)
 	ground_loot.clear()
 	return DomainResult.ok(self)
 
@@ -122,9 +124,13 @@ func register_vehicle(
 	var state_result := vehicle_state.configure(assembly)
 	if not state_result.is_ok:
 		return state_result
+	var central_state := PlayerCentralController.restore(assembly.get("central_controller", {}))
+	if not central_state.is_ok: return central_state
 	var clothing_effects := ClothingCombatEffects.new()
 	clothing_effects.repair_wait_reduction = float(assembly.get("repair_wait_reduction", 0))
 	actors[actor_id] = {
+		"central_controller": central_state.value,
+		"central_rules": assembly.get("central_rules"),
 		"equipment_condition": (assembly.get("equipment_condition", EquipmentConditionLoadout.new()) as EquipmentConditionLoadout).duplicate_loadout(),
 		"clothing_effects": clothing_effects,
 		"map_instance_id": map_instance_id,
@@ -172,6 +178,8 @@ func refresh_achievement_loadout(actor_id: String, loadout: Dictionary) -> Domai
 	var assembly: Dictionary = loadout["assembly"]
 	if int(assembly.get("max_health", 0)) <= 0:
 		return DomainResult.failure(&"combat.invalid_assembly", "achievement health is invalid")
+	var central_state := PlayerCentralController.restore(assembly.get("central_controller", {}))
+	if not central_state.is_ok: return central_state
 	var actor: Dictionary = actors[actor_id]
 	var state: VehicleCombatState = actor["vehicle_state"]
 	var previous_health := state.health
@@ -187,6 +195,8 @@ func refresh_achievement_loadout(actor_id: String, loadout: Dictionary) -> Domai
 	state.working_energy = minf(previous_working, state.working_energy_capacity)
 	(actor["clothing_effects"] as ClothingCombatEffects).repair_wait_reduction = float(assembly.get("repair_wait_reduction", 0))
 	actor["weapons"] = normalized
+	actor["central_controller"] = central_state.value
+	actor["central_rules"] = assembly.get("central_rules")
 	actor["equipment_condition"] = (assembly.get("equipment_condition", EquipmentConditionLoadout.new()) as EquipmentConditionLoadout).duplicate_loadout()
 	generators.retain_sources(actor_id, AuthoritativeGeneratorModule.instances(actor.equipment_condition), monsters)
 	austin.retain_sources(actor_id, actor.equipment_condition)
@@ -365,6 +375,7 @@ func handle_weapon_attack(actor_id: String, raw_intent: Variant) -> DomainResult
 		"weapon": weapon.duplicate(true),
 		"generator_instances": AuthoritativeGeneratorModule.instances(equipment_condition),
 		"sama": sama_shot,
+		"central_shot": central.accepted_shot(actor.central_controller, actor.central_rules, weapon),
 		"hit_ids": PackedStringArray(),
 		"impact_position": impact_position,
 		"attack_mode": attack_mode,
@@ -706,6 +717,10 @@ func _settle_projectile(projectile: Dictionary) -> void:
 		var actor: Dictionary = actors[attacker_id]
 		generators.on_hit(attacker_id, projectile.get("generator_instances", PackedStringArray()), actor.equipment_condition,
 			actor.vehicle_state, monster, current_tick, simulation_hz)
+	if actors.has(attacker_id):
+		var actor: Dictionary = actors[attacker_id]
+		var fatal_damage := central.resolve(projectile.get("central_shot"), actor.equipment_condition, actor.vehicle_state.health > 0, monster.health, int(damage_result.value.applied_damage))
+		_apply_central_fatal(monster, attacker_id, String(projectile.shot_id), fatal_damage)
 	if monster.is_alive() and String(weapon.get("skill_id", "")) == "energy_cannon" and actors.has(attacker_id):
 		var shot: Dictionary = projectile.get("sama", {})
 		if sama.permits(attacker_id, actors[attacker_id].equipment_condition, shot, "fission", current_tick):
@@ -1694,3 +1709,15 @@ func _recent_combat_events() -> Array[Dictionary]:
 	while first > 0 and combat_events[first - 1].get("server_tick", -1) == combat_events[first].get("server_tick", -2):
 		first -= 1
 	return combat_events.slice(first).duplicate(true)
+
+
+## 将炮芯片额外伤害交给同一怪物生命、被动还击及死亡奖酬链。
+## [param monster] 命中怪物。[param actor_id] 玩家。[param shot_id] 本发身份。[param damage] 已判定的伤害。
+func _apply_central_fatal(monster: MonsterLifecycle, actor_id: String, shot_id: String, damage: int) -> void:
+	if damage <= 0 or not monster.is_alive(): return
+	var applied := monster.apply_damage(damage, actor_id, current_tick, true)
+	if not applied.is_ok: return
+	var event := _record_combat_event({"event_type": &"central_fatal_hit", "server_tick":current_tick,
+		"attacker_id":actor_id, "target_entity_id":monster.monster_id, "shot_id":shot_id,
+		"impact_position":[monster.position.x, monster.position.y], "damage":applied.value.applied_damage, "target_health":applied.value.health})
+	if bool(applied.value.died): event["death"] = _record_monster_death(monster, actor_id)

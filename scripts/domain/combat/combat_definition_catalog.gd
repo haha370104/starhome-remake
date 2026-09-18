@@ -299,6 +299,8 @@ func vehicle_combat_loadout(
 			weapons[ability_id]["critical_multiplier"] = chassis.socket_rules.critical_multiplier if chassis.socket_rules != null else 1.5
 		weapons[ability_id]["working_energy_cost"] *= 1.0 - clothing.trait_value("economy")
 		weapons[ability_id]["pursuit_bonus"] = clothing.trait_value("pursuit")
+	assembly["central_controller"] = player.central.to_dictionary()
+	assembly["central_rules"] = player.vehicle.central_rules
 	return DomainResult.ok({"assembly": assembly, "weapons": weapons})
 
 

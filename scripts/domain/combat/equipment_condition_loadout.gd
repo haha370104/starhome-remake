@@ -5,6 +5,14 @@ var _items: Dictionary[String, Equipment] = {}
 var needs_recalculation := false
 
 
+## 确认飞行中的芯片效果仍由当前完好的同一能量炮支持。
+## [param instance_id] 开火时原炮的稳定身份。
+## 返回仍装备健康能量炮时为真，维修/采掘臂和副武器不接受。
+func has_healthy_cannon(instance_id: String) -> bool:
+	var item: Equipment = _items.get(instance_id)
+	return item is VehicleWeapon and item.durability > 0 and item.equipment_location == 1 and item.combat_mode() == "energy_cannon"
+
+
 ## 持有权威聚合本次装配的独立实例，仅供模拟使用，不携带界面或仓储依赖。
 ## [param player] 由服务端存档映射恢复的聚合；测试无装配时可为空。
 func _init(player: Player = null) -> void:

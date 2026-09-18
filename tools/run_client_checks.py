@@ -16,6 +16,8 @@ TESTS = (
     "server/commerce/central_authority_test.gd",
     "server/persistence/central_runtime_test.gd",
     "ui/runtime/central_panel_test.gd",
+    "server/combat/central_combat_test.gd",
+    "client/presentation/combat/central_hit_presentation_test.gd",
     "domain/sama_growth_test.gd",
     "server/combat/sama_combat_test.gd",
     "client/presentation/combat/sama_effects_test.gd",

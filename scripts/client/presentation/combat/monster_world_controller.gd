@@ -228,14 +228,14 @@ func _apply_recent_events(combat_snapshot: Dictionary) -> void:
 		if event_type in [&"monster_attack_resolved", &"monster_attack_expired"] and _attack_effects != null:
 			_attack_effects.settle_attack(event)
 		if event_type in [
-			&"energy_cannon_hit", &"rocket_launcher_hit", &"missile_hit", &"generator_heat_hit", &"sama_pulse_hit", &"sama_fission_hit",
+			&"energy_cannon_hit", &"rocket_launcher_hit", &"missile_hit", &"generator_heat_hit", &"sama_pulse_hit", &"sama_fission_hit", &"central_fatal_hit",
 			&"monster_attack_resolved",
 		]:
 			_present_damage(event, combat_snapshot)
 		if event_type == &"monster_attack_resolved":
 			_present_attack_impact(event, combat_snapshot)
 			_present_austin_effects(event, combat_snapshot)
-		if event_type in [&"energy_cannon_hit", &"rocket_launcher_hit", &"missile_hit", &"generator_heat_hit", &"sama_pulse_hit", &"sama_fission_hit"]:
+		if event_type in [&"energy_cannon_hit", &"rocket_launcher_hit", &"missile_hit", &"generator_heat_hit", &"sama_pulse_hit", &"sama_fission_hit", &"central_fatal_hit"]:
 			_present_nested_death(event)
 
 
@@ -255,6 +255,9 @@ func _present_damage(event: Dictionary, combat_snapshot: Dictionary) -> void:
 	_world_parent.add_child(damage_float)
 	if String(event.get("event_type", "")) == "sama_fission_hit":
 		damage_float.present_status("核变爆炸 -%d" % damage, Color("ffa86c"))
+	elif String(event.get("event_type", "")) == "central_fatal_hit":
+		damage_float.position.y -= 22
+		damage_float.present_status("致命一击 -%d" % damage, Color.WHITE)
 	else:
 		damage_float.present(damage)
 

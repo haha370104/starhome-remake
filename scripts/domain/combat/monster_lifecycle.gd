@@ -121,7 +121,7 @@ func configure(definition: Dictionary, simulation_hz: int, current_tick := 0) ->
 ## [param attacker_id] 伤害来源玩家标识。
 ## [param current_tick] 当前权威逻辑 tick。
 ## 返回实际伤害、生命、死亡和重生信息。
-## [param bypass_defense] 已确认的持续高热直接扣生命，普通炮击仍经过实时防御。
+## [param bypass_defense] 已确认的持续高热及百分比固定伤害直接扣生命，普通炮击仍经过实时防御。
 func apply_damage(amount: int, attacker_id: String, current_tick: int, bypass_defense := false) -> DomainResult:
 	if health <= 0:
 		return DomainResult.failure(&"combat.target_already_dead", "monster is already dead")
