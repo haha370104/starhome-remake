@@ -16,9 +16,43 @@ func _initialize() -> void:
 	for id: String in catalog.crystal_source_rules.profiles:
 		_test_equipment(id)
 	_test_cores()
+	_test_supply()
 	print("Crystal source integration: %d checks, %d failures" % [_checks, _failures.size()])
 	for failure: String in _failures: push_error(failure)
 	quit(0 if _failures.is_empty() else 1)
+
+
+## 检查四色晶矿确实进入启用地图且成长晶源由已经投放的怪物掉落。
+func _test_supply() -> void:
+	var mining: MiningCatalog = MiningCatalog.load_default().value
+	var recipes := ManufacturingRecipeBook.new()
+	_check(recipes.initialize(catalog).is_ok, "refining catalog")
+	var drops: Array = JsonConfigLoader.load_dictionary("res://data/gameplay/original_monster_drops_v1.json").value.definitions
+	var encounters: Array = JsonConfigLoader.load_dictionary("res://data/gameplay/glory/glory_monster_encounters_v1.json").value.encounters
+	var placed := PackedStringArray()
+	for encounter: Dictionary in encounters:
+		if not encounter.enabled: continue
+		for group: Dictionary in encounter.spawn_groups:
+			if group.monster_id not in placed: placed.append(group.monster_id)
+	for id: String in ["glory_mineral_0f7843d5e272", "glory_mineral_f8b0d6ec51a5", "glory_mineral_4f96977fb953", "glory_mineral_9c533145ffbe"]:
+		var count := 0
+		for map_id: String in mining.map_ids():
+			for entry: Dictionary in mining.policy_for_map(map_id).mineral_pool:
+				if entry.mineral_id == id: count += 1
+		_check(count >= 2 and mining.mineral(id).required_mining_level == 300, "both worlds have real level 300 crystal mines")
+	for profile: CrystalSourceRules.Profile in catalog.crystal_source_rules.profiles.values():
+		var refined := false
+		for recipe: ManufacturingRecipe in recipes.recipes_for_station("refining"):
+			if recipe.product_definition_id == profile.crystal_id:
+				refined = recipe.required_skill_level == 300 and recipe.output_quantity == 1 and recipe.materials.size() == 1 and recipe.materials[0].quantity == 10
+		_check(refined, "crystals retain level 300 ten-to-one refining")
+		for material_id: String in [profile.source_id, profile.advanced_source_id]:
+			var found := false
+			for monster: Dictionary in drops:
+				if monster.monster_id not in placed: continue
+				for drop: Dictionary in monster.drops:
+					if drop.item_definition_id == material_id and float(drop.chance) > 0: found = true
+			_check(found, "growth material has an actually placed drop source")
 
 
 ## 对八款普通和赠品逐一装配、换方案、进仓库并经过真实JSON边界。

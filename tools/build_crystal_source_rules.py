@@ -2,6 +2,7 @@
 import argparse
 import hashlib
 import io
+import json
 from collections import defaultdict
 
 import audit_monster_asset_sources as indexed
@@ -9,6 +10,7 @@ from build_equipment_processing_rules import ROOT, SOURCE, read, write
 
 
 def build(check=False):
+    ensure_crystal_mines(check)
     equipment = read("data/gameplay/glory/glory_items_v1.json")["definitions"]
     profiles = []
     # Original GetNewEquip* formulas; tier break occurs after level ten.
@@ -97,6 +99,24 @@ def build(check=False):
         "remake_policy": "Body quality chances and guaranteed growth are explicit remake values; workshop sells four non-gift bodies, level-one cores, stabilizers and colored crystals at configured coin prices. Normal and advanced crystal sources retain existing monster drops; refined crystals retain mining/refining. Core synthesis consumes all five inputs and stabilizers on failure, retains maximum input cracks on success, and propagates binding. Compatible cores can stack to 999. Seven-color cost uses the original actual material-check branch, differing from its display branch.",
     }, check)
     print(f"Crystal source: {len(profiles)} profiles, {len(cores)} cores, 19 original icons")
+
+
+def ensure_crystal_mines(check):
+    """Keep 300-level crystal ore obtainable on the existing 300-level mining maps."""
+    document = read("data/gameplay/mining_v1.json")
+    placements = {"glory_mineral_0f7843d5e272": "d08", "glory_mineral_f8b0d6ec51a5": "d08",
+                  "glory_mineral_4f96977fb953": "c08", "glory_mineral_9c533145ffbe": "c08"}
+    for mineral_id, coordinate in placements.items():
+        for world in ["bl", "bt"]:
+            policy = document["maps"][f"glory_nft_{world}_{coordinate}"]
+            assert policy["enabled"]
+            exists = any(row["mineral_id"] == mineral_id for row in policy["mineral_pool"])
+            if check: assert exists, f"Missing crystal mine: {world}/{coordinate}/{mineral_id}"
+            elif not exists:
+                policy["mineral_pool"].append({"mineral_id": mineral_id, "weight": 1.0})
+                policy["crystal_source_supply"] = "复刻P5：300级四色水晶矿加入同级既有矿池；原版刷新地点未确认"
+    if not check:
+        (ROOT / "data/gameplay/mining_v1.json").write_text(json.dumps(document, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
 
 if __name__ == "__main__":

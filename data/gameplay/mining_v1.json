@@ -895,10 +895,19 @@
         {
           "mineral_id": "glory_mineral_f1f4bf68b431",
           "weight": 1.0
+        },
+        {
+          "mineral_id": "glory_mineral_4f96977fb953",
+          "weight": 1.0
+        },
+        {
+          "mineral_id": "glory_mineral_9c533145ffbe",
+          "weight": 1.0
         }
       ],
       "evidence": "Glory client map placement relation; remake uses random walkable spawns, not source coordinates.",
-      "remake_material_supply": "2026-09-15 按采掘等级补充接合器材料矿物；原矿池保留"
+      "remake_material_supply": "2026-09-15 按采掘等级补充接合器材料矿物；原矿池保留",
+      "crystal_source_supply": "复刻P5：300级四色水晶矿加入同级既有矿池；原版刷新地点未确认"
     },
     "glory_nft_bl_d06": {
       "enabled": true,
@@ -941,10 +950,19 @@
         {
           "mineral_id": "glory_mineral_4bc7df36d8ad",
           "weight": 1.0
+        },
+        {
+          "mineral_id": "glory_mineral_0f7843d5e272",
+          "weight": 1.0
+        },
+        {
+          "mineral_id": "glory_mineral_f8b0d6ec51a5",
+          "weight": 1.0
         }
       ],
       "evidence": "Glory client map placement relation; remake uses random walkable spawns, not source coordinates.",
-      "remake_material_supply": "2026-09-15 按采掘等级补充接合器材料矿物；原矿池保留"
+      "remake_material_supply": "2026-09-15 按采掘等级补充接合器材料矿物；原矿池保留",
+      "crystal_source_supply": "复刻P5：300级四色水晶矿加入同级既有矿池；原版刷新地点未确认"
     },
     "glory_nft_bl_e06": {
       "enabled": true,
@@ -1124,10 +1142,19 @@
         {
           "mineral_id": "glory_mineral_f1f4bf68b431",
           "weight": 1.0
+        },
+        {
+          "mineral_id": "glory_mineral_4f96977fb953",
+          "weight": 1.0
+        },
+        {
+          "mineral_id": "glory_mineral_9c533145ffbe",
+          "weight": 1.0
         }
       ],
       "evidence": "Glory client map placement relation; remake uses random walkable spawns, not source coordinates.",
-      "remake_material_supply": "2026-09-15 按采掘等级补充接合器材料矿物；原矿池保留"
+      "remake_material_supply": "2026-09-15 按采掘等级补充接合器材料矿物；原矿池保留",
+      "crystal_source_supply": "复刻P5：300级四色水晶矿加入同级既有矿池；原版刷新地点未确认"
     },
     "glory_nft_bt_d06": {
       "enabled": true,
@@ -1170,10 +1197,19 @@
         {
           "mineral_id": "glory_mineral_4bc7df36d8ad",
           "weight": 1.0
+        },
+        {
+          "mineral_id": "glory_mineral_0f7843d5e272",
+          "weight": 1.0
+        },
+        {
+          "mineral_id": "glory_mineral_f8b0d6ec51a5",
+          "weight": 1.0
         }
       ],
       "evidence": "Glory client map placement relation; remake uses random walkable spawns, not source coordinates.",
-      "remake_material_supply": "2026-09-15 按采掘等级补充接合器材料矿物；原矿池保留"
+      "remake_material_supply": "2026-09-15 按采掘等级补充接合器材料矿物；原矿池保留",
+      "crystal_source_supply": "复刻P5：300级四色水晶矿加入同级既有矿池；原版刷新地点未确认"
     },
     "glory_nft_bt_e06": {
       "enabled": true,
