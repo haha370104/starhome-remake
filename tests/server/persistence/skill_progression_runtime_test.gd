@@ -23,7 +23,7 @@ class CountingRecord extends PlayerStateRecord:
 		return super(include_warehouse)
 
 class RejectingRepository extends PlayerStateRepository:
-	## 拒绝升级写盘，保留仓储原版本。
+	## 拒绝升级仓储提交，保留原版本。
 	## [param _state] 候选。[param _expected_revision] 原版本。
 	## 返回预期的写盘失败。
 	func save_player(_state: PlayerStateRecord, _expected_revision: int) -> DomainResult:
@@ -85,11 +85,14 @@ func _run() -> void:
 	after.erase("character_skills")
 	before.erase("character_skills")
 	_check(after == before, "equipment growth, inventory, warehouse, wallet, position, food and revisions preserved")
-	_check(autosave.save_count == save_count+1, "ordinary fractions retain three-second persistence policy")
+	_check(autosave.save_count == save_count+1, "ordinary fractions wait for the configured checkpoint")
 	var persisted := server.player_state_repository.load_player(entity_id).value as PlayerStateRecord
 	_check(persisted.character_skills.driving.current_exp == 0, "fractions not prematurely written")
-	_check(autosave.advance(3.0, _identity).is_ok, "scheduled whole-state persistence")
-	persisted = server.player_state_repository.load_player(entity_id).value
+	_check(autosave.advance(autosave.interval_seconds, _identity).is_ok, "scheduled whole-state persistence")
+	_check((server.player_state_repository as FilePlayerStateRepository)._writer.flush().is_ok, "wait for queued checkpoint before reopening")
+	var reopened := FilePlayerStateRepository.new(config.player_state_store_path)
+	_check(reopened.initialize().is_ok, "reopen actual checkpoint file")
+	persisted = reopened.load_player(entity_id).value
 	_check(is_equal_approx(persisted.character_skills.driving.fractional_exp,0.5), "fractions survive reopening storage")
 	state = autosave.state_for(entity_id)
 	state.currency += 27
@@ -120,8 +123,8 @@ func _run() -> void:
 	state = autosave.state_for(entity_id)
 	_check(state.character_skills.driving.level == 11 and state.character_skills.driving.current_exp == 0 and state.character_skills.driving.fractional_exp == 0.0, "one event grants only one level and discards excess")
 	_check(state.character_level == SkillBook.new(state.character_skills).comprehensive_level(service._skill_progression_config), "comprehensive level stays consistent")
-	_check(server.player_state_repository.load_player(entity_id).value.character_skills.driving.level == 11, "upgraded level is immediately durable")
-	_check(mapper.calls == 1 and messages.size() == 2 and messages[0].type == "skill_level_up" and messages[1].type == "player_panels", "upgrade publishes one rebuilt panel after durable commit")
+	_check(server.player_state_repository.load_player(entity_id).value.character_skills.driving.level == 11, "upgraded level is immediately committed in memory")
+	_check(mapper.calls == 1 and messages.size() == 2 and messages[0].type == "skill_level_up" and messages[1].type == "player_panels", "upgrade publishes one rebuilt panel after memory commit")
 	messages.clear()
 	mapper.calls = 0
 	server._apply_skill_progression_event({"entity_id":entity_id,"source":"effective_damage","skill_id":"energy_cannon","damage":7})
