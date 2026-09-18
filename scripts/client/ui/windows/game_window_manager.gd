@@ -59,6 +59,7 @@ func configure(session: PlayerPanelSession) -> bool:
 	inventory_panel.equipment_memory_requested.connect(_open_equipment_memory)
 	inventory_panel.equipment_dismantle_requested.connect(_open_equipment_dismantle)
 	inventory_panel.equipment_forging_requested.connect(_open_equipment_forging)
+	inventory_panel.crystal_source_requested.connect(_open_crystal_source)
 	inventory_panel.warehouse_requested.connect(_open_warehouse)
 	_add_window(inventory_panel)
 	vehicle_panel = VehiclePanelScript.new()
@@ -81,6 +82,7 @@ func configure(session: PlayerPanelSession) -> bool:
 	manufacturing_window.command_requested.connect(panel_session.dispatch)
 	_add_window(manufacturing_window)
 	var navigation_scripts := {
+		"crystal_source": preload("res://scripts/client/ui/windows/navigation/crystal_source_panel.gd"),
 		"vehicle_presets": preload("res://scripts/client/ui/windows/navigation/vehicle_loadout_presets_panel.gd"),
 		"pve_death_journal": preload("res://scripts/client/ui/windows/navigation/pve_death_journal_panel.gd"),
 		"personal_warehouse": preload("res://scripts/client/ui/windows/navigation/personal_warehouse_panel.gd"),
@@ -113,6 +115,8 @@ func configure(session: PlayerPanelSession) -> bool:
 			window.command_requested.connect(panel_session.dispatch)
 		if window is EquipmentProcessingPanel:
 			window.workshop_requested.connect(_open_workshop)
+		if window is CrystalSourcePanel:
+			window.command_requested.connect(panel_session.dispatch)
 		if window is PersonalWarehousePanel or window is VehicleLoadoutPresetsPanel:
 			window.command_requested.connect(panel_session.dispatch)
 		window.position = Vector2(120, 70)
@@ -222,6 +226,7 @@ func _apply_auxiliary_bundle(bundle: Dictionary) -> void:
 	navigation_windows["equipment_memory"].apply_processing_bundle(bundle)
 	navigation_windows["equipment_dismantle"].apply_processing_bundle(bundle)
 	navigation_windows["equipment_forging"].apply_processing_bundle(bundle)
+	navigation_windows["crystal_source"].apply_processing_bundle(bundle)
 	navigation_windows["vehicle_sockets"].apply_socket_bundle(bundle)
 	navigation_windows["clothing_enhancement"].apply_enhancement_bundle(bundle)
 	navigation_windows["attachment_upgrades"].apply_upgrade_bundle(bundle)
@@ -406,3 +411,9 @@ func _open_equipment_dismantle(id: String = "", is_material: bool = false) -> vo
 ## [param is_material] 是否选择芯片。
 func _open_equipment_forging(id: String = "", is_material: bool = false) -> void:
 	EquipmentWorkshopNavigation.focus(navigation_windows["equipment_forging"], size, id, is_material)
+
+
+## 从背包定位晶源体或专属核心，窗口之间只传操作意图。
+## [param id] 物品身份。[param is_material] 是否为核心材料。
+func _open_crystal_source(id: String = "", is_material: bool = false) -> void:
+	EquipmentWorkshopNavigation.focus(navigation_windows["crystal_source"], size, id, is_material)

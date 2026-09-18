@@ -2,6 +2,7 @@ class_name EquipmentWorkshopNavigation
 extends RefCounted
 
 const PROJECTS := {
+	"crystal_source": "晶源体 / 晶源核",
 	"equipment_processing": "基础属性加工",
 	"equipment_maintenance": "耐久维护 / 补弹",
 	"extra_attributes": "萤石 / 耀石加工",
