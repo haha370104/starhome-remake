@@ -32,7 +32,7 @@ def build(check=False):
                 target.parent.mkdir(parents=True, exist_ok=True)
                 target.write_bytes(buffer.getvalue())
             frames.append({"file": target.name, "source_release": release, "source_path": logical,
-                           "source_frame": index, "native_size": list(bitmap.size), "sha256": hashlib.sha256(source.read_bytes()).hexdigest()})
+                           "source_frame": index, "native_size": list(bitmap.size), "offset": [frame.origin_x, frame.origin_y], "sha256": hashlib.sha256(source.read_bytes()).hexdigest()})
             paths.append("res://" + target.relative_to(ROOT).as_posix())
         return paths
 
@@ -52,6 +52,9 @@ def build(check=False):
                                      ("pulse_start", "MSAni/JNCT-1", True), ("pulse_end", "MSAni/JNCT-2", True)]:
         visuals[name] = icon("starhome_lz_ry", "pic3/stageskill/" + logical + ".ale", name, animated)
     write("assets/items/sama/manifest.json", {"frames": frames}, check)
+    write("data/presentation/sama_effects_v1.json", {"schema_version": 1,
+          "effects": {kind: [{"texture": path, "offset": next(f["offset"] for f in frames if f["file"] == path.rsplit("/", 1)[1])} for path in paths] for kind, paths in visuals.items()},
+          "pulse": {"fps": 25, "second_delay": 0.25, "lifetime": 0.7, "scale": 0.42}}, check)
     write("data/gameplay/sama_items_v1.json", {"schema_version": 1, "definitions": items}, check)
     write("data/gameplay/sama_rules_v1.json", {
         "schema_version": 1, "profiles": profiles, "offers": offers, "visuals": visuals,

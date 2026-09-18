@@ -22,6 +22,7 @@ var _local_player: Node2D
 var _last_event_id := 0
 var _death_effects: MonsterDeathEffectController
 var _attack_effects: MonsterAttackEffectController
+var _sama_effects: SamaEffectController
 var _hovered_entity_id := ""
 var _ale_repository: RefCounted
 var _glory_presentations: RefCounted
@@ -64,6 +65,9 @@ func configure(world_parent: Node2D, manifest: Dictionary, local_player: Node2D)
 		_attack_effects = null
 		return attack_effect_error
 	_attack_effects.configure_glory(_ale_repository, _glory_presentations)
+	_sama_effects = SamaEffectController.new()
+	add_child(_sama_effects)
+	_sama_effects.configure(_world_parent, _local_player)
 	return OK
 
 
@@ -111,6 +115,7 @@ func apply_snapshot(combat_snapshot: Dictionary) -> void:
 		stale.queue_free()
 		_views.erase(entity_id)
 	_apply_recent_events(combat_snapshot)
+	if _sama_effects != null: _sama_effects.apply_snapshot(combat_snapshot)
 	if _attack_effects != null:
 		_attack_effects.apply_corrosion_snapshot(combat_snapshot, _local_player)
 
@@ -216,19 +221,21 @@ func _apply_recent_events(combat_snapshot: Dictionary) -> void:
 		var event_type := StringName(event.get("event_type", ""))
 		if event.has("shot_id"):
 			CombatTraceLogger.record(&"client", &"authoritative_projectile_event_observed", event)
+		if event_type == &"sama_activated" and _sama_effects != null:
+			_sama_effects.present_activation(event)
 		if event_type == &"monster_attack_started" and _attack_effects != null:
 			_attack_effects.present_attack(event)
 		if event_type in [&"monster_attack_resolved", &"monster_attack_expired"] and _attack_effects != null:
 			_attack_effects.settle_attack(event)
 		if event_type in [
-			&"energy_cannon_hit", &"rocket_launcher_hit", &"missile_hit", &"generator_heat_hit",
+			&"energy_cannon_hit", &"rocket_launcher_hit", &"missile_hit", &"generator_heat_hit", &"sama_pulse_hit", &"sama_fission_hit",
 			&"monster_attack_resolved",
 		]:
 			_present_damage(event, combat_snapshot)
 		if event_type == &"monster_attack_resolved":
 			_present_attack_impact(event, combat_snapshot)
 			_present_austin_effects(event, combat_snapshot)
-		if event_type in [&"energy_cannon_hit", &"rocket_launcher_hit", &"missile_hit", &"generator_heat_hit"]:
+		if event_type in [&"energy_cannon_hit", &"rocket_launcher_hit", &"missile_hit", &"generator_heat_hit", &"sama_pulse_hit", &"sama_fission_hit"]:
 			_present_nested_death(event)
 
 
@@ -246,7 +253,10 @@ func _present_damage(event: Dictionary, combat_snapshot: Dictionary) -> void:
 	damage_float.name = "DamageFloat_%d" % int(event.get("event_id", 0))
 	damage_float.position = world_position
 	_world_parent.add_child(damage_float)
-	damage_float.present(damage)
+	if String(event.get("event_type", "")) == "sama_fission_hit":
+		damage_float.present_status("核变爆炸 -%d" % damage, Color("ffa86c"))
+	else:
+		damage_float.present(damage)
 
 
 ## 只根据已去重的权威回执显示减伤和治疗，客户端不再判定概率。

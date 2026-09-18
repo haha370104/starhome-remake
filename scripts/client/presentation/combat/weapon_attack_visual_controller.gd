@@ -221,6 +221,8 @@ func present_confirmed_shot(
 	if _confirmed_shots.size() > 128:
 		_confirmed_shots.erase(_confirmed_shots.keys()[0])
 	bind_input_sequence(visual_shot_id, int(event.get("input_sequence", -1)))
+	for state: Dictionary in _projectiles:
+		if String(state.visual_shot_id) == visual_shot_id: state["piercing"] = bool(event.get("piercing", false))
 	CombatTraceLogger.record(&"client", &"visual_projectile_spawned", {
 		"visual_shot_id": visual_shot_id, "shot_id": shot_id, "weapon_id": String(_weapon_id),
 		"actor_view_position": visible_actor, "actor_authoritative_position": actor_position,
@@ -323,6 +325,9 @@ func _finish_authoritative_projectile(event: Dictionary) -> void:
 			"correction_distance": wrapper.position.distance_to(impact),
 			"elapsed_seconds": state["elapsed"], "event_type": event["event_type"],
 		})
+		if bool(event.get("projectile_continues", false)):
+			_spawn_impact(impact, state)
+			return
 		_free_state_node(state)
 		_projectiles.remove_at(index)
 		_spawn_impact(impact, state)
@@ -545,7 +550,7 @@ func _advance_projectiles(delta_seconds: float) -> void:
 		state["elapsed"] = float(state["elapsed"]) + delta_seconds
 		var progress := minf(float(state["elapsed"]) / float(state["duration"]), 1.0)
 		var next_position := Vector2(state["origin"]).lerp(Vector2(state["target"]), progress)
-		var collision := _resolve_visual_collision(previous_position, next_position)
+		var collision := {"hit": false} if bool(state.get("piercing", false)) else _resolve_visual_collision(previous_position, next_position)
 		if bool(collision.get("hit", false)):
 			CombatTraceLogger.record(&"client", &"visual_projectile_collision", {
 				"visual_shot_id": String(state.get("visual_shot_id", "")),
