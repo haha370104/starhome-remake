@@ -12,6 +12,7 @@ var _catalog: ItemCatalog
 var _mapper: PlayerStateMapper
 var _projector: PlayerPanelProjector
 var _skill_progression_config: Dictionary = {}
+var _rewards: RewardPipeline
 
 
 ## 初始化物品目录、持久化映射器和网络 DTO 投影器。
@@ -29,7 +30,10 @@ func initialize(rewards: RewardPipeline = null) -> DomainResult:
 	if not skill_config_result.is_ok:
 		return skill_config_result
 	_skill_progression_config = skill_config_result.value
-	_mapper = PlayerStateMapperScript.new(_catalog, rewards)
+	var policy: DomainResult = DomainResult.ok(rewards) if rewards != null else RewardPolicyLoader.load_default()
+	if not policy.is_ok: return policy
+	_rewards = policy.value
+	_mapper = PlayerStateMapperScript.new(_catalog, _rewards)
 	_projector = PlayerPanelProjectorScript.new(_catalog, _skill_progression_config)
 	return DomainResult.ok(self)
 
@@ -163,41 +167,54 @@ func grant_skill_progression(
 	if not mapped.is_ok:
 		return mapped
 	var player: Player = mapped.value
-	var converted := _experience_from_event(progression_event, player)
+	var candidate := PlayerSkillProgression.new(player.skills, player.level, player.account_id, player.food_status)
+	var granted := grant_progression(candidate, progression_event)
+	if not granted.is_ok: return granted
+	player.level = candidate.level
+	var persisted := _mapper.to_record(player)
+	if not persisted.is_ok: return persisted
+	return DomainResult.ok({
+		"candidate": persisted.value,
+		"progression": granted.value,
+		"panel_bundle": _projector.build_bundle(player),
+	})
+
+
+## 在隔离的技能成长边界结算高频事件，按可见百分比决定是否需要完整面板。
+## [param candidate] 由权威所有者提供的技能、综合等级、账号及食品候选。
+## [param progression_event] 实际位移/伤害等内部事实，不接受客户端倍率。
+## 返回成长与可见性变化；不读取装备目录、不创建面板、不持久化其他玩家字段。
+func grant_progression(candidate: PlayerSkillProgression, progression_event: Dictionary) -> DomainResult:
+	if candidate == null or _rewards == null or _skill_progression_config.is_empty():
+		return DomainResult.failure(&"progression.service_unavailable", "skill progression service is unavailable")
+	var converted := _experience_from_event(progression_event, candidate.skills)
 	if not converted.is_ok:
 		return converted
 	var value: Dictionary = converted.value
 	var skill_id := String(value["skill_id"])
-	var before_percent := player.skills.displayed_progress_percent(
+	var before_percent := candidate.skills.displayed_progress_percent(
 		skill_id, _skill_progression_config
 	)
-	var granted := player.grant_skill_experience(
-		skill_id, float(value["amount"]), _skill_progression_config, String(progression_event.get("source", ""))
+	var granted := candidate.grant_experience(
+		skill_id, float(value["amount"]), _skill_progression_config, _rewards, String(progression_event.get("source", ""))
 	)
 	if not granted.is_ok:
 		return granted
-	var persisted := _mapper.to_record(player)
-	if not persisted.is_ok:
-		return persisted
 	var progression: Dictionary = granted.value
 	progression["source"] = String(progression_event.get("source", ""))
-	var after_percent := player.skills.displayed_progress_percent(skill_id, _skill_progression_config)
+	var after_percent := candidate.skills.displayed_progress_percent(skill_id, _skill_progression_config)
 	progression["visible_progress_changed"] = before_percent != after_percent \
 		or bool(progression.get("upgraded", false))
 	progression["progress_percent"] = after_percent
-	return DomainResult.ok({
-		"candidate": persisted.value,
-		"progression": progression,
-		"panel_bundle": _projector.build_bundle(player),
-	})
+	return DomainResult.ok(progression)
 
 
 ## 把权威玩法事件换算为单次技能经验发放量。
 ## [param progression_event] 移动、有效伤害或未来系统显式发放事件。
 ## 返回 skill_id 与非负经验量；格式非法或不产生经验时返回错误。
 ## 设计：所有倍率和驾驶计重参数均来自服务端配置，事件只携带已确认的客观结果。
-## [param player] 调用方传入的 `player` 参数。
-func _experience_from_event(progression_event: Dictionary, player: Player = null) -> DomainResult:
+## [param skills] 本次结算的技能事实，矿物经验需要查询实际等级。
+func _experience_from_event(progression_event: Dictionary, skills: SkillBook) -> DomainResult:
 	var source := String(progression_event.get("source", ""))
 	var skill_id := String(progression_event.get("skill_id", ""))
 	var sources: Dictionary = _skill_progression_config.get("experience_sources", {})
@@ -218,13 +235,13 @@ func _experience_from_event(progression_event: Dictionary, player: Player = null
 				return DomainResult.failure(&"progression.invalid_event", "driving event or configuration is invalid")
 			amount = distance * minf(weight, weight_cap) / experience_unit
 		"mined_material":
-			if skill_id != "mining" or player == null:
+			if skill_id != "mining" or skills == null:
 				return DomainResult.failure(&"progression.invalid_event", "mining event targets another skill")
 			var quantity := int(progression_event.get("quantity", 0))
 			var mineral_coefficient := float(progression_event.get("experience_coefficient", 0.0))
 			var equivalents_per_level := float(sources.get("mining_iron_equivalent_per_level", 0.0))
 			var threshold := SkillProgressionScript.get_need_points(
-				&"mining", player.skills.base_level("mining"), _skill_progression_config
+				&"mining", skills.base_level("mining"), _skill_progression_config
 			)
 			if quantity <= 0 or mineral_coefficient <= 0.0 or equivalents_per_level <= 0.0 \
 					or not threshold.is_ok:

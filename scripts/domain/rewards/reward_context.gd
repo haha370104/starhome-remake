@@ -17,9 +17,16 @@ var food_status: FoodStatus
 ## [param timestamp] 本次结算的服务器 Unix 秒数。
 ## 返回携带账号与当前食品状态的临时上下文。
 static func for_player(player: Player, timestamp: int) -> RewardContext:
+	return for_account(player.account_id, player.food_status, timestamp)
+
+
+## 用权威奖励事实建立上下文，允许技能成长无需还原玩家装备和仓库。
+## [param account] 账号身份。[param food] 当前只读食品状态。[param timestamp] 服务端Unix秒数。
+## 返回与完整Player入口相同的奖励上下文。
+static func for_account(account: String, food: FoodStatus, timestamp: int) -> RewardContext:
 	var context := RewardContext.new()
-	context.account_id = player.account_id
-	context.food_status = player.food_status
+	context.account_id = account
+	context.food_status = food
 	context.now = timestamp
 	return context
 

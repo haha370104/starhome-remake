@@ -200,27 +200,10 @@ func grant_skill_experience(
 	source: String = "direct",
 	now: int = -1,
 ) -> DomainResult:
-	var context := RewardContext.for_player(self, int(Time.get_unix_time_from_system()) if now < 0 else now)
-	context.skill_id = skill_id
-	context.source = source
-	var settled := reward_pipeline.settle(context, amount)
-	if not settled.is_ok:
-		return settled
-	var settlement: RewardSettlement = settled.value
-	var previous_comprehensive_level := level
-	var granted := skills.grant_experience(skill_id, settlement.final_amount, progression_config)
-	if not granted.is_ok:
-		return granted
-	var value: Dictionary = granted.value
-	if bool(value.get("upgraded", false)):
-		level = skills.comprehensive_level(progression_config)
-	value["reward_settlement"] = settlement.to_dictionary()
-	value["base_experience"] = amount
-	value["granted_experience"] = settlement.final_amount
-	value["previous_comprehensive_level"] = previous_comprehensive_level
-	value["comprehensive_level"] = level
-	value["comprehensive_level_changed"] = level != previous_comprehensive_level
-	return DomainResult.ok(value)
+	var progression := PlayerSkillProgression.new(skills, level, account_id, food_status)
+	var granted := progression.grant_experience(skill_id, amount, progression_config, reward_pipeline, source, now)
+	if granted.is_ok: level = progression.level
+	return granted
 
 
 ## 汇总当前人物穿着对战车维修属性的加成，并委托战车聚合计算最终面板数值。

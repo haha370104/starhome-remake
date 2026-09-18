@@ -912,26 +912,15 @@ func _apply_skill_progression_event(progression_event: Dictionary) -> void:
 	var entity_id := String(progression_event.get("entity_id", ""))
 	if entity_id.is_empty():
 		return
-	var current := autosave_service.state_for(entity_id)
-	if current == null:
-		return
-	var granted := player_panel_service.grant_skill_progression(current, progression_event)
+	var granted := autosave_service.apply_skill_progression(entity_id,
+		player_panel_service.grant_progression.bind(progression_event))
 	if not granted.is_ok:
 		if granted.error_code != &"progression.no_experience":
 			push_warning("Skill progression rejected [%s]: %s" % [
 				granted.error_code, granted.error_message,
 			])
 		return
-	var value: Dictionary = granted.value
-	var progression: Dictionary = value["progression"]
-	var stored := autosave_service.commit_player_state(entity_id, value["candidate"]) \
-		if bool(progression.get("upgraded", false)) \
-		else autosave_service.update_runtime_state(entity_id, value["candidate"])
-	if not stored.is_ok:
-		push_error("Skill progression persistence failed [%s]: %s" % [
-			stored.error_code, stored.error_message,
-		])
-		return
+	var progression: Dictionary = granted.value
 	var session: ServerSession = sessions.session_for_entity(entity_id)
 	if bool(progression.get("upgraded", false)) and session != null and session.has_active_peer():
 		_send_reliable(session.peer_id, {
@@ -943,9 +932,10 @@ func _apply_skill_progression_event(progression_event: Dictionary) -> void:
 		})
 	if bool(progression.get("visible_progress_changed", false)):
 		if session != null and session.has_active_peer():
+			var stored := autosave_service.state_for(entity_id)
 			_send_reliable(session.peer_id, {
 				"type": "player_panels",
-				"result": _wire_result(_success(player_panel_service.build_bundle(stored.value))),
+				"result": _wire_result(_success(player_panel_service.build_bundle(stored))),
 			})
 
 

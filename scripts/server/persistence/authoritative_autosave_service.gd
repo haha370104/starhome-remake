@@ -151,6 +151,38 @@ func unregister_player(character_id: String) -> void:
 	last_errors.erase(character_id)
 
 
+## 用隔离的技能候选执行同步成长事务，不为每个移动tick复制装备与仓库。
+## [param character_id] 当前会话角色。[param operation] 接收PlayerSkillProgression并返回DomainResult的内部领域用例。
+## 返回成长结果；升级必须先写盘成功，普通进度保留原三秒自动存档语义。
+## 设计：只由本所有者合入技能及综合等级；失败、重入或写盘错误不覆盖已存状态。
+func apply_skill_progression(character_id: String, operation: Callable) -> DomainResult:
+	var current := _states.get(character_id) as PlayerStateRecord
+	if current == null or not operation.is_valid():
+		return DomainResult.failure(&"persistence.autosave_character_unknown", "autosave character is not registered")
+	var before_skills := current.character_skills
+	var before_level := current.character_level
+	var candidate := PlayerSkillProgression.new(SkillBook.new(before_skills), before_level,
+		current.account_id, FoodStatus.new(current.food_status))
+	var result: Variant = operation.call(candidate)
+	if not result is DomainResult or (result.is_ok and not result.value is Dictionary):
+		return DomainResult.failure(&"progression.invalid_result", "skill progression must return a domain result")
+	if not result.is_ok: return result
+	if _states.get(character_id) != current or current.character_skills != before_skills or current.character_level != before_level:
+		return DomainResult.failure(&"progression.stale", "skill progression changed during settlement")
+	var next_skills := candidate.skills.to_dictionary()
+	if next_skills != before_skills or candidate.level != before_level:
+		if bool(result.value.get("upgraded", false)):
+			var persistent := current.duplicate_record()
+			persistent.character_skills = next_skills
+			persistent.character_level = candidate.level
+			var saved := commit_player_state(character_id, persistent)
+			if not saved.is_ok: return saved
+		else:
+			current.character_skills = next_skills
+			current.character_level = candidate.level
+	return DomainResult.ok(result.value.duplicate(true))
+
+
 ## 查询自动存档服务持有的隔离聚合副本。
 ## [param character_id] 待查询的已登记角色标识。
 ## 返回该函数计算、查询或操作得到的结果。

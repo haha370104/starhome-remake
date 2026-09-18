@@ -108,6 +108,7 @@ TESTS = (
     "integration/recovered_assets_runtime_test.gd",
     "domain/reward_pipeline_test.gd",
     "server/reward_authority_test.gd",
+    "server/persistence/skill_progression_runtime_test.gd",
     "server/combat/loot_pickup_authority_test.gd",
     "domain/consumable_and_stack_test.gd",
     "server/consumable_authority_test.gd",
