@@ -14,6 +14,7 @@ signal equipment_dismantle_requested(instance_id: String, is_material: bool)
 signal equipment_forging_requested(instance_id: String, is_material: bool)
 signal crystal_source_requested(instance_id: String, is_material: bool)
 signal austin_glens_requested(instance_id: String, is_material: bool)
+signal central_requested(instance_id: String, is_material: bool)
 signal sama_requested(instance_id: String, is_material: bool)
 
 signal command_requested(command: Dictionary)
@@ -62,6 +63,8 @@ func open_for(item: GameItem, revision: int, point: Vector2) -> void:
 	menu.add_separator(item.display_name)
 	if item is CrystalSourceCore or (item is VehicleEquipment and item.crystal_source_profile != null):
 		_add_action("晶源体 / 晶源核", "crystal_source", false)
+	if item is CentralMaterial or (item is VehicleEquipment and item.central_profile != null):
+		_add_action("中枢 / 使用模块与圣焱成长", "central_controller", false)
 	if item is VehicleEquipment and item.sama_profile != null:
 		_add_action("撒玛 / 成长与品质转移", "sama", false)
 	if item is VehicleEquipment and item.austin_profile != null:
@@ -119,6 +122,9 @@ func _select_action(id: int) -> void:
 	if id < 0 or id >= _actions.size() or _item == null:
 		return
 	var action := _actions[id]
+	if action == "central_controller":
+		central_requested.emit(_item.instance_id, false)
+		return
 	if action == "sama":
 		sama_requested.emit(_item.instance_id, false)
 		return

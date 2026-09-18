@@ -15,6 +15,7 @@ TESTS = (
     "domain/central_integration_test.gd",
     "server/commerce/central_authority_test.gd",
     "server/persistence/central_runtime_test.gd",
+    "ui/runtime/central_panel_test.gd",
     "domain/sama_growth_test.gd",
     "server/combat/sama_combat_test.gd",
     "client/presentation/combat/sama_effects_test.gd",

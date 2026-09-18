@@ -350,6 +350,8 @@ func _create_item(definition_id: String, state: Dictionary) -> DomainResult:
 		return DomainResult.failure(&"items.definition_missing", "item definition does not exist")
 	var item_definition: Dictionary = _definitions[definition_id].duplicate(true)
 	var kind := String(item_definition.get("kind", ""))
+	if central_rules.modules.has(definition_id) or definition_id == central_rules.evolution_material or definition_id in central_rules.growth_materials:
+		return DomainResult.ok(CentralMaterial.new(item_definition, state))
 	if crystal_source_rules.cores.has(definition_id):
 		var core := CrystalSourceCore.new(item_definition, state)
 		core.profile = crystal_source_rules.cores[definition_id]

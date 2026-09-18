@@ -61,6 +61,7 @@ func configure(session: PlayerPanelSession) -> bool:
 	inventory_panel.equipment_forging_requested.connect(_open_equipment_forging)
 	inventory_panel.crystal_source_requested.connect(_open_crystal_source)
 	inventory_panel.austin_glens_requested.connect(_open_austin_glens)
+	inventory_panel.central_requested.connect(_open_central)
 	inventory_panel.sama_requested.connect(_open_sama)
 	inventory_panel.warehouse_requested.connect(_open_warehouse)
 	_add_window(inventory_panel)
@@ -85,6 +86,7 @@ func configure(session: PlayerPanelSession) -> bool:
 	_add_window(manufacturing_window)
 	var navigation_scripts := {
 		"crystal_source": preload("res://scripts/client/ui/windows/navigation/crystal_source_panel.gd"),
+		"central_controller": preload("res://scripts/client/ui/windows/navigation/central_panel.gd"),
 		"sama": preload("res://scripts/client/ui/windows/navigation/sama_panel.gd"),
 		"austin_glens": preload("res://scripts/client/ui/windows/navigation/austin_glens_panel.gd"),
 		"vehicle_presets": preload("res://scripts/client/ui/windows/navigation/vehicle_loadout_presets_panel.gd"),
@@ -119,7 +121,7 @@ func configure(session: PlayerPanelSession) -> bool:
 			window.command_requested.connect(panel_session.dispatch)
 		if window is EquipmentProcessingPanel:
 			window.workshop_requested.connect(_open_workshop)
-		if window is CrystalSourcePanel or window is AustinGlensPanel or window is SamaPanel:
+		if window is CrystalSourcePanel or window is AustinGlensPanel or window is SamaPanel or window is CentralPanel:
 			window.command_requested.connect(panel_session.dispatch)
 		if window is PersonalWarehousePanel or window is VehicleLoadoutPresetsPanel:
 			window.command_requested.connect(panel_session.dispatch)
@@ -189,13 +191,13 @@ func toggle(action_id: String) -> bool:
 			window.position = Vector2(size.x / 2.0 + 235, size.y - 29 - window.size.y)
 		if action_id == "premium_shop":
 			window.open_shop()
-		if action_id in ["mercenary", "experience"]:
+		if action_id in ["mercenary", "experience", "central_controller"]:
 			window.open_board()
 		window.move_to_front()
 		window.call("clamp_to_viewport", size)
 		if action_id == "scene_players":
 			panel_session.dispatch({"type": "query_scene_players"})
-		elif action_id not in ["system", "premium_shop", "mercenary", "experience", "smart_assistant", "pve_death_journal"]:
+		elif action_id not in ["system", "premium_shop", "mercenary", "experience", "smart_assistant", "pve_death_journal", "central_controller"]:
 			panel_session.dispatch({"type": "query"})
 	return true
 
@@ -233,6 +235,7 @@ func _apply_auxiliary_bundle(bundle: Dictionary) -> void:
 	navigation_windows["crystal_source"].apply_processing_bundle(bundle)
 	navigation_windows["austin_glens"].apply_processing_bundle(bundle)
 	navigation_windows["sama"].apply_processing_bundle(bundle)
+	navigation_windows["central_controller"].apply_processing_bundle(bundle)
 	navigation_windows["vehicle_sockets"].apply_socket_bundle(bundle)
 	navigation_windows["clothing_enhancement"].apply_enhancement_bundle(bundle)
 	navigation_windows["attachment_upgrades"].apply_upgrade_bundle(bundle)
@@ -435,3 +438,9 @@ func _open_austin_glens(id: String = "", is_material: bool = false) -> void:
 ## [param id] 背包目标身份。[param is_material] 是否将其作为转出来源。
 func _open_sama(id: String = "", is_material: bool = false) -> void:
 	EquipmentWorkshopNavigation.focus(navigation_windows["sama"], size, id, is_material)
+
+
+## 从背包或工坊定位中枢模块及圣焱装备。
+## [param id] 物品身份。[param is_material] 通用导航标记。
+func _open_central(id: String = "", is_material: bool = false) -> void:
+	EquipmentWorkshopNavigation.focus(navigation_windows["central_controller"], size, id, is_material)

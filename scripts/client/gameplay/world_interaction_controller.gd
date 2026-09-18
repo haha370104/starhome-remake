@@ -249,8 +249,8 @@ func on_hud_action_requested(action_id: String) -> void:
 		smart_assistant = SmartAssistantController.new()
 		add_child(smart_assistant)
 		smart_assistant.configure(combat, game_window_manager.navigation_windows["smart_assistant"])
-	if action_id in ["party", "summon_guard", "central_controller"]:
-		hud.show_system_message({"party": "队伍功能暂未开放", "summon_guard": "召唤守卫暂未开放", "central_controller": "中枢控制器暂未开放"}[action_id])
+	if action_id in ["party", "summon_guard"]:
+		hud.show_system_message({"party": "队伍功能暂未开放", "summon_guard": "召唤守卫暂未开放"}[action_id])
 		return
 	if game_window_manager != null and game_window_manager.toggle(action_id):
 		return
