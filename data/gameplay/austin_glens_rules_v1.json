@@ -1,0 +1,180 @@
+{
+  "schema_version": 1,
+  "profiles": [
+    {"definition_id": "glory_equipment_austinglens_gh_4c25a84000", "location": 24, "effect": "mitigation"},
+    {"definition_id": "glory_equipment_austinglens_ry_a5bd31d824", "location": 25, "effect": "pvp_cannon"},
+    {"definition_id": "glory_equipment_austinglens_jh_066a2a6890", "location": 26, "effect": "healing"},
+    {"definition_id": "glory_equipment_austinglens_cc_df561b5c37", "location": 27, "effect": "pvp_missile"}
+  ],
+  "runes": [
+    {"definition_id": "austin_totem_rune", "location": 24, "slot": 0, "bonuses": {"max_health": 60, "defense": 5}},
+    {"definition_id": "austin_fury_rune", "location": 24, "slot": 1, "bonuses": {"max_health": 20, "missile_attack": 4}},
+    {"definition_id": "austin_guardian_rune", "location": 25, "slot": 0, "bonuses": {"max_health": 30, "energy_cannon_attack": 4}},
+    {"definition_id": "austin_star_rune", "location": 25, "slot": 1, "bonuses": {"max_health": 30, "self_repair_bonus": 3}},
+    {"definition_id": "austin_halo_rune", "location": 26, "slot": 0, "bonuses": {"defense": 4, "self_repair_bonus": 5}},
+    {"definition_id": "austin_holy_rune", "location": 26, "slot": 1, "bonuses": {"defense": 4, "energy_cannon_attack": 6}},
+    {"definition_id": "austin_blessing_rune", "location": 27, "slot": 0, "bonuses": {"max_health": 50, "energy_cannon_attack": 8}},
+    {"definition_id": "austin_heaven_rune", "location": 27, "slot": 1, "bonuses": {"max_health": 50, "missile_attack": 8}}
+  ],
+  "materials": {"light_essence": "austin_light_essence", "primal_spirit": "austin_primal_spirit", "eternal_energy": "austin_eternal_energy", "magic_core": "austin_magic_core", "dispel_stone": "austin_dispel_stone", "heritage_blessing": "austin_heritage_blessing", "space_crystal": "austin_space_crystal"},
+  "offers": [
+    {"definition_id": "glory_equipment_austinglens_gh_4c25a84000", "unit_price": 10000},
+    {"definition_id": "glory_equipment_austinglens_ry_a5bd31d824", "unit_price": 10000},
+    {"definition_id": "glory_equipment_austinglens_jh_066a2a6890", "unit_price": 10000},
+    {"definition_id": "glory_equipment_austinglens_cc_df561b5c37", "unit_price": 10000},
+    {"definition_id": "austin_light_essence", "unit_price": 300},
+    {"definition_id": "austin_primal_spirit", "unit_price": 100},
+    {"definition_id": "austin_eternal_energy", "unit_price": 100},
+    {"definition_id": "austin_magic_core", "unit_price": 150},
+    {"definition_id": "austin_dispel_stone", "unit_price": 500},
+    {"definition_id": "austin_heritage_blessing", "unit_price": 500},
+    {"definition_id": "austin_space_crystal", "unit_price": 200},
+    {"definition_id": "austin_totem_rune", "unit_price": 2000},
+    {"definition_id": "austin_fury_rune", "unit_price": 2000},
+    {"definition_id": "austin_guardian_rune", "unit_price": 2000},
+    {"definition_id": "austin_star_rune", "unit_price": 2000},
+    {"definition_id": "austin_halo_rune", "unit_price": 2000},
+    {"definition_id": "austin_holy_rune", "unit_price": 2000},
+    {"definition_id": "austin_blessing_rune", "unit_price": 2000},
+    {"definition_id": "austin_heaven_rune", "unit_price": 2000}
+  ],
+  "color_health": [
+    30,
+    50,
+    70,
+    90
+  ],
+  "color_defense": [
+    1,
+    2,
+    3,
+    4
+  ],
+  "color_penetration": [
+    1,
+    1,
+    2,
+    2
+  ],
+  "stage_cannon": [
+    1,
+    2,
+    2,
+    3,
+    3,
+    4,
+    4,
+    5,
+    5,
+    6,
+    6
+  ],
+  "stage_missile": [
+    1,
+    1,
+    2,
+    2,
+    3,
+    3,
+    4,
+    4,
+    5,
+    5,
+    6
+  ],
+  "stage_penetration": [
+    0,
+    1,
+    1,
+    1,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2
+  ],
+  "base_repair": [
+    0,
+    1,
+    1,
+    1,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2
+  ],
+  "blessing_bonuses": {"max_health": 60, "self_repair_bonus": 2, "energy_cannon_attack": 5, "missile_attack": 5},
+  "level_costs": [
+    2,
+    4,
+    8,
+    12,
+    16,
+    20,
+    24,
+    28,
+    32,
+    36
+  ],
+  "space_costs": [
+    1,
+    2,
+    2,
+    2,
+    3,
+    3,
+    3,
+    4,
+    4,
+    5
+  ],
+  "color_costs": [
+    10,
+    20,
+    40
+  ],
+  "color_space_costs": [
+    5,
+    10,
+    20
+  ],
+  "blessing_cost": 5,
+  "blessing_space_cost": 10,
+  "unlock_cost": 4,
+  "inlay_cost": 1,
+  "mitigation": [
+    20,
+    30,
+    40,
+    50,
+    60,
+    70,
+    80,
+    100,
+    120,
+    140,
+    160
+  ],
+  "healing": [
+    20,
+    30,
+    40,
+    50,
+    60,
+    70,
+    80,
+    100,
+    120,
+    140,
+    180
+  ],
+  "trigger_chance": 0.1,
+  "cooldown_seconds": 60,
+  "source": "Glory equipclt 7371-7758; equipcltclass 13369-13474; globalfunclt 8976-9730; FormClass_ven 46294-47390; stuffclt2 37593-38190",
+  "remake_policy": "Workshop supplies bodies at original worth and fifteen materials/runes at remake coin prices; all original upgrades are certain. PVP-only attacks/set effect are deferred and their add-level upgrades disabled. Penetration retains source values without an unproven PVE formula. On a damaging direct monster hit, mitigation follows defense and healing requires survival; ongoing corrosion does not retrigger. No rune extraction."
+}
