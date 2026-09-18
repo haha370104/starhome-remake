@@ -158,6 +158,7 @@ func _test_attachment_upgrade(transport: InProcessAuthoritativeTransport, entity
 	await process_frame
 	var upgraded: Dictionary = _last_message(&"player_panels").result.value
 	_expect(upgraded.get("attachment_upgrades", {}).get("operation", {}).get("target_level", -1) == 1, "正式服务器提交强化并下发统一回包")
+	_expect(transport.authoritative_server.player_state_repository.flush().is_ok, "显式等待后台检查点，内存成功回包不等于磁盘已经完成")
 	var reopened := FilePlayerStateRepository.new(ProjectSettings.globalize_path(database_path))
 	_expect(reopened.initialize().is_ok, "重开强化后的磁盘存档")
 	var restored: Player = mapper.to_domain(reopened.load_player(entity_id).value).value
