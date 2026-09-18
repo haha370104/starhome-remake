@@ -77,7 +77,7 @@ func record_use(event: String, amount: float = 1.0) -> bool:
 	if durability <= 0 or maintenance_profile == null or maintenance_profile.no_wear or not maintenance_profile.wear_enabled:
 		return false
 	var matches := (event == "shot" and self is VehicleWeapon) or (event == "movement" and self is VehicleEngine) \
-		or (event == "mining" and self is VehicleMiningArm) or (event == "damage" and self is Clothing)
+		or (event == "mining" and self is VehicleMiningArm) or (event == "damage" and (self is Clothing or (self is VehicleEquipment and (self as VehicleEquipment).sama_profile != null)))
 	if not matches:
 		return false
 	wear(usage.consume(event, amount, float(maintenance_profile.wear_thresholds.get(event, 0))))

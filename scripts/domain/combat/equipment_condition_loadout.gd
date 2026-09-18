@@ -35,6 +35,8 @@ func duplicate_loadout() -> EquipmentConditionLoadout:
 			copied.crystal_source_rules = (item as VehicleEquipment).crystal_source_rules
 			copied.austin_profile = (item as VehicleEquipment).austin_profile
 			copied.austin_rules = (item as VehicleEquipment).austin_rules
+			copied.sama_profile = (item as VehicleEquipment).sama_profile
+			copied.sama_rules = (item as VehicleEquipment).sama_rules
 		if copied is Clothing: copied.improvement_rules = (item as Clothing).improvement_rules
 		copied.refresh_processed_stats()
 		result._items[copied.instance_id] = copied
@@ -106,5 +108,15 @@ func austin_equipment() -> Array[VehicleEquipment]:
 	var result: Array[VehicleEquipment] = []
 	for item: Equipment in _items.values():
 		if item is VehicleEquipment and item.austin_profile != null and item.durability > 0: result.append(item)
+	result.sort_custom(func(a: VehicleEquipment, b: VehicleEquipment) -> bool: return a.equipment_location < b.equipment_location)
+	return result
+
+
+## 按固定槽位获取健康的撒玛装备，临时能力只能引用当前装配实例。
+## 返回当前权威模拟的有效部件。
+func sama_equipment() -> Array[VehicleEquipment]:
+	var result: Array[VehicleEquipment] = []
+	for item: Equipment in _items.values():
+		if item is VehicleEquipment and item.sama_profile != null and item.durability > 0: result.append(item)
 	result.sort_custom(func(a: VehicleEquipment, b: VehicleEquipment) -> bool: return a.equipment_location < b.equipment_location)
 	return result

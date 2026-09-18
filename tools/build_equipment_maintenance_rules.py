@@ -26,7 +26,8 @@ def build(check=False):
     for row in definitions.values():
         clothing = row.get("kind") == "character_clothing"
         ground = row.get("kind") in ["vehicle_chassis", "vehicle_engine", "energy_cannon", "missile_weapon", "rocket_weapon", "mining_arm"] or 0 <= row.get("equipment_location", -1) <= 18
-        if not clothing and not ground:
+        sama = row.get("source_class") in ["SaMaJNQ", "SaMaMCQ", "SaMaHBQ", "SaMaRLQ"]
+        if not clothing and not ground and not sama:
             continue
         original = original_class.get(STARTERS[row["id"]], row) if row["id"] in STARTERS else row
         if "source_class" not in original and row["id"] not in STARTERS:

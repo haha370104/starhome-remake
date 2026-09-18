@@ -4,6 +4,7 @@ extends RefCounted
 const EquipmentSlotRegistryScript := preload("res://scripts/domain/equipment/equipment_slot_registry.gd")
 
 const GAMEPLAY_PATHS := [
+	"res://data/gameplay/sama_items_v1.json",
 	"res://data/gameplay/austin_glens_items_v1.json",
 	"res://data/gameplay/crystal_source_items_v1.json",
 	"res://data/gameplay/stage3/starter_loadout_v1.json",
@@ -50,6 +51,7 @@ var forging_rules: EquipmentForgingRules
 var generator_rules: GeneratorRules
 var crystal_source_rules: CrystalSourceRules
 var austin_rules: AustinGlensRules
+var sama_rules: SamaRules
 
 
 ## 读取所有当前启用的物品定义和语义化表现目录。
@@ -58,6 +60,11 @@ var austin_rules: AustinGlensRules
 func initialize() -> DomainResult:
 	_definitions.clear()
 	_definition_ids_by_display_name.clear()
+	var sama_data := JsonConfigLoader.load_dictionary("res://data/gameplay/sama_rules_v1.json")
+	if not sama_data.is_ok: return sama_data
+	var sama_result := SamaRules.from_dictionary(sama_data.value)
+	if not sama_result.is_ok: return sama_result
+	sama_rules = sama_result.value
 	var austin_data := JsonConfigLoader.load_dictionary("res://data/gameplay/austin_glens_rules_v1.json")
 	if not austin_data.is_ok: return austin_data
 	var austin_result := AustinGlensRules.from_dictionary(austin_data.value)
@@ -184,6 +191,10 @@ func initialize() -> DomainResult:
 			return DomainResult.failure(&"ammunition.rules_invalid", "弹药定义无效")
 		_definitions[row.definition_id].stats["ammunition_capacity"] = int(row.capacity)
 		_definitions[row.definition_id].stats["ammunition_unit_price"] = int(row.unit_price)
+	for offer: SamaRules.Offer in sama_rules.offers.values():
+		if not _definitions.has(offer.definition_id): return DomainResult.failure(&"sama.catalog", "撒玛供给引用不存在的物品")
+	for id: String in sama_rules.profiles.keys() + sama_rules.materials.values():
+		if not _definitions.has(id): return DomainResult.failure(&"sama.catalog", "撒玛引用不存在的部件或材料")
 	_index_display_names()
 	return DomainResult.ok(self)
 
@@ -194,6 +205,11 @@ func initialize() -> DomainResult:
 ## 返回服装、战车底盘、引擎、武器、采掘臂、通用装备或普通物品的具体实例。
 func create(definition_id: String, state: Dictionary) -> DomainResult:
 	var crystal_source := CrystalSourceGrowth.restore(state.get("crystal_source", {}))
+	var sama := SamaGrowth.restore(state.get("sama", {}))
+	if not sama.is_ok: return sama
+	var sama_profile: SamaRules.Profile = sama_rules.profiles.get(ItemDefinitionAliases.canonical(definition_id))
+	var sama_check := (sama.value as SamaGrowth).validate_for(sama_profile)
+	if not sama_check.is_ok: return sama_check
 	var austin := AustinGlensGrowth.restore(state.get("austin_glens", {}))
 	if not austin.is_ok: return austin
 	var austin_profile: AustinGlensRules.Profile = austin_rules.profiles.get(ItemDefinitionAliases.canonical(definition_id))
@@ -277,7 +293,12 @@ func create(definition_id: String, state: Dictionary) -> DomainResult:
 		socket_rules.profile(item.definition_id) if item is VehicleEquipment else null, socket_rules)
 	if not checked.is_ok:
 		return checked
+	if item.definition_id == sama_rules.materials.quality: item.bound = true
 	if item is VehicleEquipment:
+		item.sama = sama.value
+		item.sama_profile = sama_profile
+		item.sama_rules = sama_rules
+		if sama_profile != null and item.sama.quality > 0: item.bound = true
 		item.austin_glens = austin.value
 		item.austin_profile = austin_profile
 		item.austin_rules = austin_rules
@@ -478,6 +499,10 @@ func _apply_equipment_contract(item_definition: Dictionary) -> void:
 		kind = "repair_arm"
 		item_definition["kind"] = kind
 	var definition_id := String(item_definition.get("id", ""))
+	if sama_rules.profiles.has(definition_id):
+		var profile := sama_rules.profiles[definition_id]
+		item_definition["equipment_location"] = profile.location
+		item_definition["allowed_locations"] = [profile.location]
 	if austin_rules.profiles.has(definition_id):
 		var profile := austin_rules.profiles[definition_id]
 		item_definition["equipment_location"] = profile.location

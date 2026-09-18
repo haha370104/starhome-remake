@@ -16,6 +16,9 @@ var crystal_source_rules: CrystalSourceRules
 var austin_glens := AustinGlensGrowth.new()
 var austin_profile: AustinGlensRules.Profile
 var austin_rules: AustinGlensRules
+var sama := SamaGrowth.new()
+var sama_profile: SamaRules.Profile
+var sama_rules: SamaRules
 
 
 ## 汇总特殊系列的常驻属性，损坏装备不参与计算。
@@ -25,6 +28,7 @@ func special_bonus(attribute: String) -> int:
 	if durability <= 0: return 0
 	var bonus := crystal_source.bonus(attribute, crystal_source_profile, crystal_source_rules) if crystal_source_profile != null else 0
 	if austin_profile != null: bonus += austin_glens.bonus(attribute, austin_rules)
+	if sama_profile != null: bonus += sama.bonus(attribute, sama_rules)
 	return bonus
 
 
@@ -85,6 +89,8 @@ func attachment_bonus(effect: String) -> int:
 ## [param state] 存档中的装备实例状态。
 func _init(definition: Dictionary = {}, state: Dictionary = {}) -> void:
 	super(definition, state)
+	var restored_sama := SamaGrowth.restore(state.get("sama", {}))
+	if restored_sama.is_ok: sama = restored_sama.value
 	var restored_source := CrystalSourceGrowth.restore(state.get("crystal_source", {}))
 	if restored_source.is_ok: crystal_source = restored_source.value
 	var restored_austin := AustinGlensGrowth.restore(state.get("austin_glens", {}))
@@ -124,6 +130,11 @@ func primary_device_kind() -> String:
 ## 返回通用装备 DTO 加战车槽位信息。
 func to_view_dictionary() -> Dictionary:
 	var view := super()
+	view["sama"] = sama.to_dictionary()
+	view["sama_eligible"] = sama_profile != null
+	if sama_profile != null:
+		view.display_name = "[%s] %s" % [["白色", "绿色", "蓝色", "紫色"][sama.color], display_name]
+		view.description += "\n" + sama.description(sama_profile, sama_rules)
 	view["austin_glens"] = austin_glens.to_dictionary()
 	view["austin_eligible"] = austin_profile != null
 	if austin_profile != null:

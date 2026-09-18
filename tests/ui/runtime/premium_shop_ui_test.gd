@@ -134,7 +134,7 @@ func _run() -> void:
 	for child in manager.vehicle_panel._special_panel._items_root.get_children():
 		if String(child.name).begins_with("SpecialLocation_"):
 			special_count += 1
-	_expect(special_count == 2, "已接通的晶源体与奥斯格兰在独立装备区显示；撒玛尚未开放")
+	_expect(special_count == 3, "晶源体、奥斯格兰和撒玛在独立装备区显示真实物品")
 	if "--capture" in OS.get_cmdline_user_args():
 		await RenderingServer.frame_post_draw
 		root.get_texture().get_image().save_png("res://.godot/premium-and-attachments.png")
