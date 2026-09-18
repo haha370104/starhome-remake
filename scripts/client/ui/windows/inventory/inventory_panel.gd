@@ -14,6 +14,7 @@ signal equipment_dismantle_requested(instance_id: String, is_material: bool)
 signal equipment_forging_requested(instance_id: String, is_material: bool)
 signal crystal_source_requested(instance_id: String, is_material: bool)
 signal austin_glens_requested(instance_id: String, is_material: bool)
+signal sama_requested(instance_id: String, is_material: bool)
 signal warehouse_requested
 
 signal command_requested(command: Dictionary)
@@ -69,6 +70,7 @@ func _ready() -> void:
 	context_menu.equipment_forging_requested.connect(equipment_forging_requested.emit)
 	context_menu.crystal_source_requested.connect(crystal_source_requested.emit)
 	context_menu.austin_glens_requested.connect(austin_glens_requested.emit)
+	context_menu.sama_requested.connect(sama_requested.emit)
 	add_child(context_menu)
 	visibility_changed.connect(func() -> void:
 		if not visible:

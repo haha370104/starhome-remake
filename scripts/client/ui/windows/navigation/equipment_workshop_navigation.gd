@@ -2,6 +2,7 @@ class_name EquipmentWorkshopNavigation
 extends RefCounted
 
 const PROJECTS := {
+	"sama": "撒玛 / 成长与品质转移",
 	"austin_glens": "奥斯格兰 / 专属符文",
 	"crystal_source": "晶源体 / 晶源核",
 	"equipment_processing": "基础属性加工",
