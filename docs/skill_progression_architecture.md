@@ -82,8 +82,9 @@ L = min(当前技能等级, 700)
 文件存档 schema 2 把旧版整数技能等级迁移为 `{level, current_exp, fractional_exp}`。SQLite 生产
 结构对应 `002_skill_progression.sql`，增加综合等级和小数经验列。
 
-- 普通经验变化先更新 `AuthoritativeAutosaveService` 的权威内存副本，并随三秒自动存档提交；
-- 技能升级及其综合等级变化立即调用 `commit_player_state` 落盘；
+- 普通经验变化先更新 `AuthoritativeAutosaveService` 的权威内存副本，随默认60秒检查点后台写盘；
+- 技能升级及其综合等级变化立即调用 `commit_player_state` 提交内存事务，磁盘也按检查点保存；
+- 正常退出等待包含最新技能、小数经验与综合等级的完整存档落盘；异常强杀接受检查点后的进度丢失；
 - 面板装备事务会从包含最新技能进度的内存聚合开始，避免换装覆盖尚未自动保存的经验；
 - 客户端只在服务器发布的新面板快照中看到确认结果。
 

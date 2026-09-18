@@ -1,0 +1,1282 @@
+{
+  "baseline_commit": "f697e188e5bf4b7da7dda33c14477eabe8a082a2",
+  "fix_commit": "16bdb713395c010e750830334fdc64a1b6b6d9db",
+  "map": "glory_nft_bl_c07",
+  "engine": "Godot 4.7.2 stable",
+  "renderer": "OpenGL 3.3 compatibility",
+  "gpu": "NVIDIA GeForce RTX 4060",
+  "viewport": [
+    1280,
+    720
+  ],
+  "measurement_fps_cap": 60,
+  "phase_duration_seconds": 4,
+  "request_interval_ms": 450,
+  "scenario": "stationary cannon fire to range end; current-save isolated copy",
+  "original_save_modified": false,
+  "autosave_interval_seconds": {
+    "before": 3,
+    "after": 60
+  },
+  "frames": {
+    "before": {
+      "idle": {
+        "fps": 58.7356518963437,
+        "frame_p50_ms": 16.675,
+        "frame_p95_ms": 26.589,
+        "slowest_frame_ms": 61.273,
+        "request_ms": []
+      },
+      "fire_trace": {
+        "fps": 57.6912078101959,
+        "frame_p50_ms": 16.679,
+        "frame_p95_ms": 27.144,
+        "slowest_frame_ms": 107.972,
+        "request_ms": [
+          0.615,
+          0.665,
+          0.672,
+          0.727,
+          0.73,
+          0.767,
+          0.778,
+          0.809,
+          49.223
+        ]
+      },
+      "fire_no_trace": {
+        "fps": 59.338643393951,
+        "frame_p50_ms": 16.681,
+        "frame_p95_ms": 27.397,
+        "slowest_frame_ms": 69.083,
+        "request_ms": [
+          0.304,
+          0.328,
+          0.338,
+          0.377,
+          0.377,
+          0.381,
+          0.394,
+          0.396,
+          0.42
+        ]
+      },
+      "fire_trace_again": {
+        "fps": 58.7962093737957,
+        "frame_p50_ms": 16.673,
+        "frame_p95_ms": 27.864,
+        "slowest_frame_ms": 73.547,
+        "request_ms": [
+          0.7,
+          0.739,
+          0.763,
+          0.829,
+          0.846,
+          0.87,
+          0.872,
+          1.018,
+          11.997
+        ]
+      },
+      "fire_no_trace_again": {
+        "fps": 59.2182738098064,
+        "frame_p50_ms": 16.676,
+        "frame_p95_ms": 27.289,
+        "slowest_frame_ms": 76.151,
+        "request_ms": [
+          0.299,
+          0.324,
+          0.361,
+          0.363,
+          0.383,
+          0.383,
+          0.403,
+          0.405,
+          0.413
+        ]
+      }
+    },
+    "after": {
+      "idle": {
+        "fps": 59.9171750717701,
+        "frame_p50_ms": 16.668,
+        "frame_p95_ms": 27.028,
+        "slowest_frame_ms": 29.295,
+        "request_ms": []
+      },
+      "fire_trace": {
+        "fps": 60.2971603525739,
+        "frame_p50_ms": 16.671,
+        "frame_p95_ms": 27.404,
+        "slowest_frame_ms": 31.558,
+        "request_ms": [
+          0.347,
+          0.379,
+          0.384,
+          0.46,
+          0.461,
+          0.466,
+          0.527,
+          0.546,
+          0.686
+        ]
+      },
+      "fire_no_trace": {
+        "fps": 60.2038387066717,
+        "frame_p50_ms": 16.674,
+        "frame_p95_ms": 27.42,
+        "slowest_frame_ms": 31.009,
+        "request_ms": [
+          0.313,
+          0.325,
+          0.327,
+          0.337,
+          0.369,
+          0.379,
+          0.392,
+          0.402,
+          0.419
+        ]
+      },
+      "fire_trace_again": {
+        "fps": 60.215092290826,
+        "frame_p50_ms": 16.672,
+        "frame_p95_ms": 27.636,
+        "slowest_frame_ms": 29.252,
+        "request_ms": [
+          0.394,
+          0.421,
+          0.422,
+          0.43,
+          0.43,
+          0.442,
+          0.461,
+          0.535,
+          0.583
+        ]
+      },
+      "fire_no_trace_again": {
+        "fps": 60.0194203917101,
+        "frame_p50_ms": 16.667,
+        "frame_p95_ms": 27.065,
+        "slowest_frame_ms": 28.697,
+        "request_ms": [
+          0.368,
+          0.379,
+          0.383,
+          0.384,
+          0.399,
+          0.403,
+          0.406,
+          0.406,
+          0.407
+        ]
+      }
+    }
+  },
+  "trace_counts": {
+    "before": [
+      {
+        "records": 108,
+        "stages": {
+          "ability_intent_submitted": 9,
+          "weapon_intent_received": 9,
+          "authoritative_projectile_event_recorded": 18,
+          "authoritative_projectile_scheduled": 9,
+          "ability_command_result": 9,
+          "authoritative_combat_event_received": 9,
+          "visual_projectile_spawned": 9,
+          "authoritative_projectile_event_observed": 18,
+          "visual_projectile_range_end": 9,
+          "authoritative_projectile_sweep_finished": 9
+        }
+      },
+      {
+        "records": 108,
+        "stages": {
+          "ability_intent_submitted": 9,
+          "weapon_intent_received": 9,
+          "authoritative_projectile_event_recorded": 18,
+          "authoritative_projectile_scheduled": 9,
+          "ability_command_result": 9,
+          "authoritative_combat_event_received": 9,
+          "visual_projectile_spawned": 9,
+          "authoritative_projectile_event_observed": 18,
+          "visual_projectile_range_end": 9,
+          "authoritative_projectile_sweep_finished": 9
+        }
+      }
+    ],
+    "after": [
+      {
+        "records": 108,
+        "stages": {
+          "ability_intent_submitted": 9,
+          "weapon_intent_received": 9,
+          "authoritative_projectile_event_recorded": 18,
+          "authoritative_projectile_scheduled": 9,
+          "ability_command_result": 9,
+          "authoritative_combat_event_received": 9,
+          "visual_projectile_spawned": 9,
+          "authoritative_projectile_event_observed": 18,
+          "visual_projectile_range_end": 9,
+          "authoritative_projectile_sweep_finished": 9
+        }
+      },
+      {
+        "records": 108,
+        "stages": {
+          "ability_intent_submitted": 9,
+          "weapon_intent_received": 9,
+          "authoritative_projectile_event_recorded": 18,
+          "authoritative_projectile_scheduled": 9,
+          "ability_command_result": 9,
+          "authoritative_combat_event_received": 9,
+          "visual_projectile_spawned": 9,
+          "authoritative_projectile_event_observed": 18,
+          "visual_projectile_range_end": 9,
+          "authoritative_projectile_sweep_finished": 9
+        }
+      }
+    ]
+  },
+  "full_regression": {
+    "passed_after_fixture_updates": 168,
+    "total": 168,
+    "initial_run_passed": 166,
+    "initial_run_log_directory": ".godot/client-checks-20260918-120217-22264",
+    "initial_results": [
+      {
+        "script": "res://tools/check_gdscript_warnings.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 3.59
+      },
+      {
+        "script": "res://tests/core/combat_trace_logger_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 0.52
+      },
+      {
+        "script": "res://tests/core/background_file_writer_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 0.71
+      },
+      {
+        "script": "res://tests/server/persistence/background_persistence_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 6.76
+      },
+      {
+        "script": "res://tests/server/persistence/authoritative_autosave_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 10.92
+      },
+      {
+        "script": "res://tests/domain/central_growth_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 0.61
+      },
+      {
+        "script": "res://tests/domain/central_integration_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 2.65
+      },
+      {
+        "script": "res://tests/server/commerce/central_authority_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 10.25
+      },
+      {
+        "script": "res://tests/server/persistence/central_runtime_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 9.62
+      },
+      {
+        "script": "res://tests/ui/runtime/central_panel_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 4.05
+      },
+      {
+        "script": "res://tests/server/combat/central_combat_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 1.44
+      },
+      {
+        "script": "res://tests/client/presentation/combat/central_hit_presentation_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 2.67
+      },
+      {
+        "script": "res://tests/domain/sama_growth_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 0.43
+      },
+      {
+        "script": "res://tests/server/combat/sama_combat_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 1.45
+      },
+      {
+        "script": "res://tests/client/presentation/combat/sama_effects_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 2.77
+      },
+      {
+        "script": "res://tests/ui/runtime/sama_panel_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 5.73
+      },
+      {
+        "script": "res://tests/server/commerce/sama_authority_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 6.07
+      },
+      {
+        "script": "res://tests/server/persistence/sama_runtime_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 8.97
+      },
+      {
+        "script": "res://tests/domain/sama_integration_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 2.02
+      },
+      {
+        "script": "res://tests/domain/austin_glens_model_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 0.47
+      },
+      {
+        "script": "res://tests/domain/austin_glens_integration_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 2.01
+      },
+      {
+        "script": "res://tests/server/commerce/austin_glens_authority_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 5.05
+      },
+      {
+        "script": "res://tests/server/combat/austin_glens_combat_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 1.91
+      },
+      {
+        "script": "res://tests/server/persistence/austin_glens_runtime_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 8.97
+      },
+      {
+        "script": "res://tests/ui/runtime/austin_glens_panel_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 6.74
+      },
+      {
+        "script": "res://tests/domain/crystal_source_model_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 0.43
+      },
+      {
+        "script": "res://tests/domain/crystal_source_integration_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 2.57
+      },
+      {
+        "script": "res://tests/domain/crystal_source_actions_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 1.82
+      },
+      {
+        "script": "res://tests/server/commerce/crystal_source_authority_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 3.02
+      },
+      {
+        "script": "res://tests/server/persistence/crystal_source_runtime_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 9.06
+      },
+      {
+        "script": "res://tests/ui/runtime/crystal_source_panel_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 6.2
+      },
+      {
+        "script": "res://tests/domain/vehicle_socket_model_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 1.91
+      },
+      {
+        "script": "res://tests/domain/equipment_processing_model_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 2.0
+      },
+      {
+        "script": "res://tests/domain/equipment_maintenance_model_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 1.35
+      },
+      {
+        "script": "res://tests/domain/equipment_usage_model_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 0.9
+      },
+      {
+        "script": "res://tests/domain/equipment_ammunition_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 1.82
+      },
+      {
+        "script": "res://tests/domain/extra_attribute_model_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 0.43
+      },
+      {
+        "script": "res://tests/domain/equipment_strengthening_model_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 0.43
+      },
+      {
+        "script": "res://tests/domain/equipment_strengthening_integration_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 1.82
+      },
+      {
+        "script": "res://tests/server/commerce/equipment_strengthening_authority_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 3.13
+      },
+      {
+        "script": "res://tests/ui/runtime/equipment_strengthening_panel_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 4.14
+      },
+      {
+        "script": "res://tests/domain/armor_refinement_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 0.98
+      },
+      {
+        "script": "res://tests/server/commerce/armor_refinement_authority_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 3.01
+      },
+      {
+        "script": "res://tests/ui/runtime/armor_refinement_panel_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 6.19
+      },
+      {
+        "script": "res://tests/domain/clothing_improvement_model_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 1.08
+      },
+      {
+        "script": "res://tests/domain/clothing_improvement_integration_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 2.18
+      },
+      {
+        "script": "res://tests/domain/fashion_hat_compatibility_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 1.92
+      },
+      {
+        "script": "res://tests/server/commerce/clothing_improvement_authority_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 3.03
+      },
+      {
+        "script": "res://tests/ui/runtime/clothing_improvement_panel_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 6.2
+      },
+      {
+        "script": "res://tests/domain/equipment_memory_model_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 1.82
+      },
+      {
+        "script": "res://tests/domain/equipment_quality_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 1.91
+      },
+      {
+        "script": "res://tests/client/presentation/combat/generator_status_view_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 2.76
+      },
+      {
+        "script": "res://tests/server/combat/generator_rules_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 0.42
+      },
+      {
+        "script": "res://tests/domain/generator_loadout_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 2.1
+      },
+      {
+        "script": "res://tests/server/combat/generator_combat_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 1.82
+      },
+      {
+        "script": "res://tests/server/combat/generator_persistence_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 9.08
+      },
+      {
+        "script": "res://tests/domain/equipment_forging_model_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 0.43
+      },
+      {
+        "script": "res://tests/domain/equipment_forging_integration_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 2.1
+      },
+      {
+        "script": "res://tests/domain/equipment_forging_actions_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 2.37
+      },
+      {
+        "script": "res://tests/domain/equipment_memory_forging_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 1.63
+      },
+      {
+        "script": "res://tests/server/commerce/equipment_forging_authority_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 2.75
+      },
+      {
+        "script": "res://tests/ui/runtime/equipment_forging_panel_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 5.73
+      },
+      {
+        "script": "res://tests/domain/equipment_dismantle_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 2.64
+      },
+      {
+        "script": "res://tests/domain/personal_warehouse_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 1.9
+      },
+      {
+        "script": "res://tests/server/persistence/warehouse_snapshot_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 2.56
+      },
+      {
+        "script": "res://tests/server/persistence/warehouse_authority_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 7.96
+      },
+      {
+        "script": "res://tests/ui/runtime/personal_warehouse_panel_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 3.02
+      },
+      {
+        "script": "res://tests/domain/manufacturing_batch_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 1.26
+      },
+      {
+        "script": "res://tests/domain/production_queue_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 2.09
+      },
+      {
+        "script": "res://tests/server/manufacturing/production_order_service_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 2.0
+      },
+      {
+        "script": "res://tests/server/manufacturing/production_runtime_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 8.42
+      },
+      {
+        "script": "res://tests/ui/runtime/manufacturing_window_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 6.85
+      },
+      {
+        "script": "res://tests/ui/runtime/assistant_supplies_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 1.74
+      },
+      {
+        "script": "res://tests/ui/runtime/pve_death_journal_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 6.59
+      },
+      {
+        "script": "res://tests/domain/vehicle_loadout_presets_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 2.21
+      },
+      {
+        "script": "res://tests/server/persistence/vehicle_presets_authority_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 9.46
+      },
+      {
+        "script": "res://tests/ui/runtime/vehicle_loadout_presets_panel_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 2.7
+      },
+      {
+        "script": "res://tests/server/persistence/graceful_exit_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 14.0
+      },
+      {
+        "script": "res://tests/ui/runtime/graceful_exit_client_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 9.45
+      },
+      {
+        "script": "res://tests/ui/runtime/client_preferences_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 0.43
+      },
+      {
+        "script": "res://tests/ui/runtime/client_settings_panel_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 6.85
+      },
+      {
+        "script": "res://tests/server/commerce/equipment_dismantle_authority_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 2.65
+      },
+      {
+        "script": "res://tests/ui/runtime/equipment_dismantle_panel_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 6.03
+      },
+      {
+        "script": "res://tests/domain/equipment_memory_transfer_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 2.29
+      },
+      {
+        "script": "res://tests/server/commerce/equipment_memory_authority_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 3.03
+      },
+      {
+        "script": "res://tests/ui/runtime/equipment_memory_panel_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 4.7
+      },
+      {
+        "script": "res://tests/domain/extra_attribute_integration_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 2.11
+      },
+      {
+        "script": "res://tests/server/commerce/extra_attribute_authority_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 3.15
+      },
+      {
+        "script": "res://tests/ui/runtime/extra_attribute_panel_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 4.04
+      },
+      {
+        "script": "res://tests/server/combat/equipment_usage_authority_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 9.54
+      },
+      {
+        "script": "res://tests/server/commerce/equipment_maintenance_authority_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 2.84
+      },
+      {
+        "script": "res://tests/ui/runtime/equipment_maintenance_panel_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 4.34
+      },
+      {
+        "script": "res://tests/server/commerce/equipment_processing_authority_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 3.13
+      },
+      {
+        "script": "res://tests/ui/runtime/equipment_processing_panel_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 5.92
+      },
+      {
+        "script": "res://tests/server/commerce/vehicle_socket_authority_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 3.5
+      },
+      {
+        "script": "res://tests/ui/runtime/vehicle_socket_panel_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 6.11
+      },
+      {
+        "script": "res://tests/domain/clothing_enhancement_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 0.71
+      },
+      {
+        "script": "res://tests/server/commerce/clothing_enhancement_authority_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 8.83
+      },
+      {
+        "script": "res://tests/content/glory_ale_sprite_repository_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 3.15
+      },
+      {
+        "script": "res://tests/integration/recovered_assets_runtime_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 9.09
+      },
+      {
+        "script": "res://tests/domain/reward_pipeline_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 1.27
+      },
+      {
+        "script": "res://tests/server/reward_authority_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 7.95
+      },
+      {
+        "script": "res://tests/server/persistence/skill_progression_runtime_test.gd",
+        "passed": false,
+        "reason": "ERROR: fractions survive reopening storage",
+        "seconds": 6.12
+      },
+      {
+        "script": "res://tests/server/combat/loot_pickup_authority_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 13.16
+      },
+      {
+        "script": "res://tests/domain/consumable_and_stack_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 1.28
+      },
+      {
+        "script": "res://tests/server/consumable_authority_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 6.85
+      },
+      {
+        "script": "res://tests/ui/runtime/inventory_context_menu_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 2.68
+      },
+      {
+        "script": "res://tests/server/mining/authoritative_mining_module_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 0.43
+      },
+      {
+        "script": "res://tests/domain/player_rich_model_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 1.83
+      },
+      {
+        "script": "res://tests/server/commerce/premium_shop_and_attachments_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 3.15
+      },
+      {
+        "script": "res://tests/server/commerce/premium_upgrade_materials_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 6.03
+      },
+      {
+        "script": "res://tests/server/commerce/attachment_upgrade_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 6.93
+      },
+      {
+        "script": "res://tests/server/commerce/daily_activity_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 3.13
+      },
+      {
+        "script": "res://tests/server/combat/upgrade_material_supply_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 6.11
+      },
+      {
+        "script": "res://tests/server/combat/drop_expectations_and_upgrades_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 2.75
+      },
+      {
+        "script": "res://tests/server/combat/elite_population_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 26.95
+      },
+      {
+        "script": "res://tests/server/combat/enhancement_population_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 7.77
+      },
+      {
+        "script": "res://tests/server/combat/clothing_stats_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 2.29
+      },
+      {
+        "script": "res://tests/server/combat/clothing_traits_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 2.11
+      },
+      {
+        "script": "res://tests/server/combat/glory_field_population_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 11.48
+      },
+      {
+        "script": "res://tests/server/map_residency_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 8.33
+      },
+      {
+        "script": "res://tests/server/combat/monster_wander_timing_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 2.96
+      },
+      {
+        "script": "res://tests/server/combat/corrosive_attack_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 1.57
+      },
+      {
+        "script": "res://tests/client/presentation/combat/monster_attack_effect_controller_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 0.43
+      },
+      {
+        "script": "res://tests/client/presentation/combat/monster_hit_presentation_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 3.37
+      },
+      {
+        "script": "res://tests/client/presentation/combat/monster_hover_name_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 2.87
+      },
+      {
+        "script": "res://tests/server/manufacturing/industrial_supply_chain_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 5.29
+      },
+      {
+        "script": "res://tests/server/authoritative_server_smoke_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 19.7
+      },
+      {
+        "script": "res://tests/ui/runtime/daily_hud_and_assistant_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 4.31
+      },
+      {
+        "script": "res://tests/ui/runtime/premium_shop_ui_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 6.09
+      },
+      {
+        "script": "res://tests/ui/runtime/attachment_upgrade_ui_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 6.2
+      },
+      {
+        "script": "res://tests/ui/runtime/clothing_enhancement_ui_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 4.48
+      },
+      {
+        "script": "res://tests/integration/combat_click_routing_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 7.8
+      },
+      {
+        "script": "res://tests/ui/runtime/map_navigation_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 0.66
+      },
+      {
+        "script": "res://tests/integration/map_navigation_scene_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 7.02
+      },
+      {
+        "script": "res://tests/integration/local_movement_speed_sync_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 3.24
+      },
+      {
+        "script": "res://tests/domain/achievements_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 2.1
+      },
+      {
+        "script": "res://tests/server/achievements_authority_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 2.93
+      },
+      {
+        "script": "res://tests/ui/runtime/achievements_panel_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 2.65
+      },
+      {
+        "script": "res://tests/ui/runtime/reusable_player_ui_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 2.97
+      },
+      {
+        "script": "res://tests/ui/runtime/player_panels_runtime_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 5.62
+      },
+      {
+        "script": "res://tests/ui/runtime/inventory_drag_gesture_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 1.12
+      },
+      {
+        "script": "res://tests/ui/runtime/item_tooltip_layout_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 0.43
+      },
+      {
+        "script": "res://tests/ui/runtime/hud_runtime_smoke_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 0.62
+      },
+      {
+        "script": "res://tests/ui/central_system_message_feed_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 0.44
+      },
+      {
+        "script": "res://tests/ui/runtime/navigation_windows_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 3.3
+      },
+      {
+        "script": "res://tests/ui/runtime/weapon_merchant_runtime_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 6.28
+      },
+      {
+        "script": "res://tests/ui/runtime/training_tasks_runtime_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 5.39
+      },
+      {
+        "script": "res://tests/client/network/client_network_smoke_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 7.33
+      },
+      {
+        "script": "res://tests/client/presentation/hall_multiplayer_presenter_smoke_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 2.33
+      },
+      {
+        "script": "res://tests/client/presentation/player_error_messages_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 2.19
+      },
+      {
+        "script": "res://tests/client/presentation/client_map_preloader_smoke_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 0.62
+      },
+      {
+        "script": "res://tests/client/presentation/combat/weapon_attack_visual_controller_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 2.76
+      },
+      {
+        "script": "res://tests/client/presentation/combat/ground_loot_world_controller_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 1.03
+      },
+      {
+        "script": "res://tests/client/presentation/mining/mineral_world_controller_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 2.72
+      },
+      {
+        "script": "res://tests/client/world/world_facility_interaction_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 0.51
+      },
+      {
+        "script": "res://tests/integration/client_state_seam_characterization_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 9.72
+      },
+      {
+        "script": "res://tests/integration/npc_action_window_handoff_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 6.44
+      },
+      {
+        "script": "res://tests/integration/active_world_transition_view_smoke_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 8.46
+      },
+      {
+        "script": "res://tests/integration/field_transition_presentation_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 16.04
+      },
+      {
+        "script": "res://tests/integration/d04_player_vehicle_presentation_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 10.69
+      },
+      {
+        "script": "res://tests/integration/equipped_weapon_presentation_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 9.39
+      },
+      {
+        "script": "res://tests/server/combat/equipped_vehicle_authority_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 2.0
+      },
+      {
+        "script": "res://tests/server/combat/vehicle_energy_endurance_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 2.65
+      },
+      {
+        "script": "res://tests/domain/weapon_merchant_domain_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 1.46
+      },
+      {
+        "script": "res://tests/integration/map_transition_scene_smoke_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 15.24
+      },
+      {
+        "script": "res://tests/integration/persisted_map_startup_scene_test.gd",
+        "passed": true,
+        "reason": "exit=0",
+        "seconds": 10.47
+      },
+      {
+        "script": "res://tests/integration/in_process_authoritative_transport_test.gd",
+        "passed": false,
+        "reason": "SCRIPT ERROR: Invalid call. Nonexistent function 'attachment_item' in base 'Nil'.",
+        "seconds": 9.13
+      }
+    ],
+    "rechecks": [
+      {
+        "script": "res://tests/server/persistence/skill_progression_runtime_test.gd",
+        "passed": true,
+        "assertions": 32,
+        "local_log": ".godot/firing-perf/skill-recheck.log",
+        "reason": "Fixture now waits for the configured background checkpoint before reopening persisted data; runtime implementation unchanged."
+      },
+      {
+        "script": "res://tests/integration/in_process_authoritative_transport_test.gd",
+        "passed": true,
+        "assertions": 35,
+        "local_log": ".godot/firing-perf/transport-recheck.log",
+        "reason": "Fixture now waits for the configured background checkpoint before reopening persisted data; runtime implementation unchanged."
+      }
+    ],
+    "additional_compatibility_test": {
+      "script": "res://tests/server/persistence/player_state_persistence_test.gd",
+      "passed": true,
+      "assertions": 49,
+      "local_log": ".godot/firing-perf/persistence-compatibility.log"
+    }
+  },
+  "verified_commit": "8aa4b6e6c77da9bd6a2d70b06dd01a874faba47e"
+}

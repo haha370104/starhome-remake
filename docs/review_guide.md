@@ -127,7 +127,8 @@ main_hall.tscn / main_hall.gd                  dedicated_server.tscn
 配置：[ServerConfig](../scripts/server/server_config.gd)、[SQL migration](../data/server/persistence/migrations/)。
 
 - [ ] 新会话仍分配 `player.N`，连接顺序不能作为多人账号归属；没有认证前不能开放公网。
-- [ ] 每 3 秒保存的是服务器聚合；换装/拾取提交失败不得先成功回包或消除地面物品。
+- [ ] 每60秒由服务器采集完整快照并交给低优先级线程；换装/拾取内存事务失败不得先回成功或消除掉落。
+- [ ] 正常退出等待最新快照实际写盘才回保存成功；后台失败不撤销已确认游戏事务，后续检查点重试。
 - [ ] 自动保存与经济命令是否覆盖彼此的新状态；乐观 revision、隔离副本与回滚是否贯穿调用链。
 - [ ] 拾取/采矿同时修改玩家聚合和地图实体，审查提交顺序、崩溃窗口、重复消息和断线重试。
 - [ ] 文件仓储不是 SQLite；真实 SQLite 驱动、适配器、幂等回执和备份恢复仍需完成。

@@ -46,7 +46,7 @@ $godotExe = 'C:/Users/tomato/Downloads/Godot_v4.7.2-stable_win64_console.exe'
 
 当前 `ServerConfig` 未指定监听地址时默认 `*`。没有正式认证与生产数据库，
 不要直接开放公网，也不要把开发用 `player.N` 当成稳定账号身份。
-开发文件仓储默认 `user://server/player_states.json`，由服务器每 3 秒保存，
+开发文件仓储默认 `user://server/player_states.json`，服务器默认每60秒后台保存、正常退出等待写完，
 不是 SQLite 数据库。详情见[持久化](./docs/persistence_architecture.md)。
 
 ## 检查入口
