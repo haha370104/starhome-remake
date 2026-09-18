@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "definitions": [
+    {"id": "sama_dynamic_core", "kind": "material", "display_name": "远征军动力核心", "description": "提升撒玛装备成长阶段。", "max_stack": 999, "bound": false, "source_class": "DynamicCore", "presentation": {"icon": "res://assets/items/sama/dynamic_core.png", "native_size": [33, 39]}},
+    {"id": "sama_capacity_core", "kind": "material", "display_name": "远征军智能核心", "description": "提升撒玛装备品质；使用后装备绑定。", "max_stack": 999, "bound": true, "source_class": "CapacityCore", "presentation": {"icon": "res://assets/items/sama/capacity_core.png", "native_size": [38, 32]}},
+    {"id": "sama_maintenance_pack", "kind": "material", "display_name": "远征军装备维护包", "description": "维护撒玛装备耐久；每次需要20个。", "max_stack": 999, "bound": false, "source_class": "MaintainWrap", "presentation": {"icon": "res://assets/items/sama/maintenance_pack.png", "native_size": [32, 23]}}
+  ]
+}

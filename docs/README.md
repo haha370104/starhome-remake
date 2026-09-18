@@ -158,3 +158,5 @@
 
 - [装配规则、紫晶商城和领域边界](attachments_and_premium_shop.md)
 - [升级材料的实际获取缺口](attachment_upgrade_material_audit.md)
+
+- [撒玛装备](sama_equipment.md)：P5-C阶段、品质、转移和PVE技能台账。

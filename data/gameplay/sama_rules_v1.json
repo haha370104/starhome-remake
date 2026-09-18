@@ -1,0 +1,128 @@
+{
+  "schema_version": 1,
+  "profiles": [
+    {"definition_id": "glory_equipment_samajnq_1011d2a44c", "location": 19, "effect": "piercing"},
+    {"definition_id": "glory_equipment_samamcq_cdd4a0d041", "location": 20, "effect": "pulse"},
+    {"definition_id": "glory_equipment_samahbq_5a2ea60d71", "location": 21, "effect": "fission"},
+    {"definition_id": "glory_equipment_samarlq_6f145c0190", "location": 22, "effect": "pvp_absorption"}
+  ],
+  "offers": [
+    {"id": "glory_equipment_samajnq_1011d2a44c_0", "definition_id": "glory_equipment_samajnq_1011d2a44c", "color": 0, "unit_price": 20000},
+    {"id": "glory_equipment_samajnq_1011d2a44c_1", "definition_id": "glory_equipment_samajnq_1011d2a44c", "color": 1, "unit_price": 50000},
+    {"id": "glory_equipment_samajnq_1011d2a44c_2", "definition_id": "glory_equipment_samajnq_1011d2a44c", "color": 2, "unit_price": 100000},
+    {"id": "glory_equipment_samajnq_1011d2a44c_3", "definition_id": "glory_equipment_samajnq_1011d2a44c", "color": 3, "unit_price": 200000},
+    {"id": "glory_equipment_samamcq_cdd4a0d041_0", "definition_id": "glory_equipment_samamcq_cdd4a0d041", "color": 0, "unit_price": 20000},
+    {"id": "glory_equipment_samamcq_cdd4a0d041_1", "definition_id": "glory_equipment_samamcq_cdd4a0d041", "color": 1, "unit_price": 50000},
+    {"id": "glory_equipment_samamcq_cdd4a0d041_2", "definition_id": "glory_equipment_samamcq_cdd4a0d041", "color": 2, "unit_price": 100000},
+    {"id": "glory_equipment_samamcq_cdd4a0d041_3", "definition_id": "glory_equipment_samamcq_cdd4a0d041", "color": 3, "unit_price": 200000},
+    {"id": "glory_equipment_samahbq_5a2ea60d71_0", "definition_id": "glory_equipment_samahbq_5a2ea60d71", "color": 0, "unit_price": 20000},
+    {"id": "glory_equipment_samahbq_5a2ea60d71_1", "definition_id": "glory_equipment_samahbq_5a2ea60d71", "color": 1, "unit_price": 50000},
+    {"id": "glory_equipment_samahbq_5a2ea60d71_2", "definition_id": "glory_equipment_samahbq_5a2ea60d71", "color": 2, "unit_price": 100000},
+    {"id": "glory_equipment_samahbq_5a2ea60d71_3", "definition_id": "glory_equipment_samahbq_5a2ea60d71", "color": 3, "unit_price": 200000},
+    {"id": "glory_equipment_samarlq_6f145c0190_0", "definition_id": "glory_equipment_samarlq_6f145c0190", "color": 0, "unit_price": 20000},
+    {"id": "glory_equipment_samarlq_6f145c0190_1", "definition_id": "glory_equipment_samarlq_6f145c0190", "color": 1, "unit_price": 50000},
+    {"id": "glory_equipment_samarlq_6f145c0190_2", "definition_id": "glory_equipment_samarlq_6f145c0190", "color": 2, "unit_price": 100000},
+    {"id": "glory_equipment_samarlq_6f145c0190_3", "definition_id": "glory_equipment_samarlq_6f145c0190", "color": 3, "unit_price": 200000},
+    {"id": "sama_dynamic_core", "definition_id": "sama_dynamic_core", "color": 0, "unit_price": 100},
+    {"id": "sama_capacity_core", "definition_id": "sama_capacity_core", "color": 0, "unit_price": 1000},
+    {"id": "sama_maintenance_pack", "definition_id": "sama_maintenance_pack", "color": 0, "unit_price": 500}
+  ],
+  "visuals": {"piercing": ["res://assets/items/sama/piercing.png"], "fission": ["res://assets/items/sama/fission.png"], "pulse_start": ["res://assets/items/sama/pulse_start_00.png", "res://assets/items/sama/pulse_start_01.png", "res://assets/items/sama/pulse_start_02.png", "res://assets/items/sama/pulse_start_03.png", "res://assets/items/sama/pulse_start_04.png", "res://assets/items/sama/pulse_start_05.png", "res://assets/items/sama/pulse_start_06.png", "res://assets/items/sama/pulse_start_07.png", "res://assets/items/sama/pulse_start_08.png", "res://assets/items/sama/pulse_start_09.png", "res://assets/items/sama/pulse_start_10.png", "res://assets/items/sama/pulse_start_11.png", "res://assets/items/sama/pulse_start_12.png", "res://assets/items/sama/pulse_start_13.png", "res://assets/items/sama/pulse_start_14.png", "res://assets/items/sama/pulse_start_15.png", "res://assets/items/sama/pulse_start_16.png"], "pulse_end": ["res://assets/items/sama/pulse_end_00.png", "res://assets/items/sama/pulse_end_01.png", "res://assets/items/sama/pulse_end_02.png", "res://assets/items/sama/pulse_end_03.png", "res://assets/items/sama/pulse_end_04.png", "res://assets/items/sama/pulse_end_05.png", "res://assets/items/sama/pulse_end_06.png", "res://assets/items/sama/pulse_end_07.png", "res://assets/items/sama/pulse_end_08.png", "res://assets/items/sama/pulse_end_09.png", "res://assets/items/sama/pulse_end_10.png", "res://assets/items/sama/pulse_end_11.png", "res://assets/items/sama/pulse_end_12.png", "res://assets/items/sama/pulse_end_13.png", "res://assets/items/sama/pulse_end_14.png", "res://assets/items/sama/pulse_end_15.png", "res://assets/items/sama/pulse_end_16.png"]},
+  "color_caps": [
+    1,
+    3,
+    6,
+    10
+  ],
+  "color_health": [
+    25,
+    50,
+    75,
+    100
+  ],
+  "color_attack": [
+    3,
+    5,
+    8,
+    10
+  ],
+  "growth_health": 10,
+  "quality_health": 30,
+  "growth_attack": 1,
+  "quality_attack": 3,
+  "growth_costs": [
+    5,
+    10,
+    20,
+    40,
+    60,
+    80,
+    110,
+    140,
+    170,
+    200
+  ],
+  "quality_cost": 6,
+  "transfer_amethyst": 1000,
+  "materials": {"growth": "sama_dynamic_core", "quality": "sama_capacity_core"},
+  "chance_percent": [
+    1,
+    3,
+    5,
+    8
+  ],
+  "duration_seconds": [
+    1,
+    3,
+    5,
+    8
+  ],
+  "duration_additions": [
+    0,
+    0,
+    1,
+    2,
+    4,
+    6,
+    8,
+    11,
+    14,
+    17,
+    20
+  ],
+  "damage_base": [
+    10,
+    30,
+    50,
+    80
+  ],
+  "pulse_additions": [
+    0,
+    0,
+    30,
+    40,
+    60,
+    80,
+    100,
+    130,
+    160,
+    190,
+    220
+  ],
+  "fission_additions": [
+    0,
+    0,
+    8,
+    10,
+    15,
+    20,
+    25,
+    33,
+    40,
+    48,
+    55
+  ],
+  "pulse_range": 400,
+  "source": "Glory appendequipcltclass 3248-4121; FormClass_ven 24138-25003; stuffclt2 24545-24582; bullet 2371-2437; Mainclient_Char_gwb 2614-2680; npcbasecltmain 138",
+  "remake_policy": "Original permanent stats /100 (rounded), skill damage /1000 (rounded), original chances/durations/caps/costs. Workshop sells four original colors and cores for coins until P7 activity supplies. Transfer destroys donor, overwrites recipient growth/quality, requires same or higher recipient color, costs 1000 amethyst. PVP-only absorption deferred. No invented color upgrade."
+}
