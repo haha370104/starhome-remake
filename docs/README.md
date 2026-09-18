@@ -160,3 +160,5 @@
 - [升级材料的实际获取缺口](attachment_upgrade_material_audit.md)
 
 - [撒玛装备](sama_equipment.md)：P5-C阶段、品质、转移和PVE技能台账。
+
+- [中枢控制器](central_controller.md)：P5-D桥接芯片、圣焱核心与六件附属装备成长。
