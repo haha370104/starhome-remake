@@ -7,8 +7,11 @@
 
 ## 1. 先看结论
 
-P5按[晶源体](crystal_source_equipment.md)和[奥斯格兰](austin_glens_equipment.md)台账审查特殊装备。
-晶源体已覆盖权威成长、实际炮弹属性、仓库/方案/JSON往返；奥斯格兰已覆盖七类成长、固定符文、权威受击能力与实际窗口，验收及PVP延期边界见台账。
+P5按[晶源体](crystal_source_equipment.md)、[奥斯格兰](austin_glens_equipment.md)、
+[撒玛](sama_equipment.md)和[中枢](central_controller.md)台账审查特殊装备。
+四套均已接通领域成长、权威交易、供给、真实战斗、实例保存和操作窗口；具体本轮验收以[阶段计划](pve_completion_plan.md)为准。
+重点审查穿透/核变/致命一击的单发资格与死亡奖励去重、装卸时资源和冷却保持、永久芯片与装备阶数各自的状态所有权。
+原版玩家专属技能仍延期，不能按装备目录存在就认定全部技能可用。
 
 P6 [设置与退出](client_settings_and_exit.md)：正常退出经 `AuthoritativeExitService` 采集、原子保存和清理会话，
 客户端 `ClientExitController` 只凭匹配回执退出；服务端故障/重试入口见 `tests/server/persistence/graceful_exit_test.gd`。
@@ -34,9 +37,9 @@ P6 [设置与退出](client_settings_and_exit.md)：正常退出经 `Authoritati
 该核查的历史基线尚未实现战车开槽；后续P1已交付，人物原创强化仍另行统计。
 该核查同时记录源码入口及当前只读目录实测：佣兵208条、历练2/10、七类生产配方198条，不是全流程验收。
 用户随后将多人交互延期；顺序、边界与当前进展见[非多人玩法补齐计划](pve_completion_plan.md)。
-P0/P1/P2及P3多个子项已交付；[记忆模块](equipment_memory.md)新增五类提取转移，审查
+P0/P1/P2及P3适用PVE部分已交付；[记忆模块](equipment_memory.md)包含六类提取转移（含锻造模块），审查
 `EquipmentMemoryTransfer`、`InventoryTransformation`、`EquipmentMemoryService` 与四个同名测试，
-重点是跨实例原子性、失败载荷销毁和目标上限校验。P3整体尚未完成。
+重点是跨实例原子性、失败载荷销毁和目标上限校验。五行能量石按本次排除PVP的边界延期，未创造对怪物的新克制规则。
 新增[普通品质](equipment_quality.md)与[拆解](equipment_dismantling.md)：重点审查独立品质加成、
 制造概率标注、所有随机分支容量预检和绑定保留；正式服务与UI测试使用隔离存档。
 如果只做第一轮 review，优先读第 3 节 A—D，再看第 5 节风险表。

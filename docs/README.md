@@ -1,6 +1,6 @@
 # 文档导航
 
-更新：2026-09-15。本页是完整文档目录；新对话先读交接，整体 review 再读评审导读。
+更新：2026-09-18。本页是完整文档目录；新对话先读交接，整体 review 再读评审导读。
 导航覆盖由 `python -X utf8 tools/check_documentation_links.py` 检查，不靠文件名或提交时间猜顺序。
 
 ## 新对话最短阅读路径
@@ -38,7 +38,7 @@
 - [普通装备加工](equipment_processing.md)：P2 属性上限、原版材料、同源变体与加工实例。
 - [护甲精工](armor_refinement.md)：P3-B 八阶护甲、失败销毁及晶石保留。
 - [季节时装改良](clothing_improvement.md)：P3-C 七类纤维、百级单方向成长、获取链和旧帽子槽位兼容。
-- [记忆模块](equipment_memory.md)：P3-D 五类成长提取转移、风险确认和跨实例原子事务。
+- [记忆模块](equipment_memory.md)：P3-D 六类成长提取转移（含锻造）、风险确认和跨实例原子事务。
 - [普通装备品质](equipment_quality.md)：原版四档固定加成、制造品质分布与旧档兼容。
 - [普通装备拆解](equipment_dismantling.md)：15款绿色以上装备、四档返还、容量预检与销毁确认。
 - [装备锻造](equipment_forging.md)：原版扩展上限、失败与加工清除、锻造模块转移。
@@ -49,6 +49,8 @@
 - [设置与退出](client_settings_and_exit.md)：本地显示/按键/音量偏好、正常退出的权威保存和失败重试。
 - [奥斯格兰装备](austin_glens_equipment.md)：P5-B成长、固定符文和PVE受击能力，状态及原版证据单列。
 - [晶源体与晶源核](crystal_source_equipment.md)：P5-A独立品质/成长、三核心槽、五合一及原文数量差异；当前状态见文首。
+- [撒玛装备](sama_equipment.md)：P5-C阶段、品质、转移和穿透/脉冲/核变技能台账。
+- [中枢控制器](central_controller.md)：P5-D桥接芯片、圣焱核心、六件附属装备成长及致命一击。
 - [装备十星强化](equipment_strengthening.md)：P3-B 独立星级、材料投入与失败降星。
 - [萤石与耀石加工](extra_attribute_processing.md)：P3-A 独立通道、失败退级、获取与实际属性。
 - [维护、磨损与弹药](equipment_maintenance.md)：P2 常规维护/速修、实际使用余量、补弹与验收。
@@ -158,7 +160,3 @@
 
 - [装配规则、紫晶商城和领域边界](attachments_and_premium_shop.md)
 - [升级材料的实际获取缺口](attachment_upgrade_material_audit.md)
-
-- [撒玛装备](sama_equipment.md)：P5-C阶段、品质、转移和PVE技能台账。
-
-- [中枢控制器](central_controller.md)：P5-D桥接芯片、圣焱核心与六件附属装备成长。
