@@ -40,6 +40,9 @@ func _initialize() -> void:
 	for raw: Variant in [null, [], 1, {"version":1,"color":0,"growth":2,"quality":0}, {"version":1,"color":3,"growth":1,"quality":2}, {"version":1,"color":1.5,"growth":0,"quality":0}, {"version":1,"color":true,"growth":0,"quality":0}]:
 		_check(not SamaGrowth.restore(raw).is_ok, "malformed facts rejected")
 	_check(not SamaGrowth.new().receive(SamaGrowth.new()).is_ok, "empty donor rejected")
+	var recipient: SamaGrowth = SamaGrowth.restore({"version":1,"color":3,"growth":10,"quality":10}).value
+	var donor: SamaGrowth = SamaGrowth.restore({"version":1,"color":0,"growth":1,"quality":1}).value
+	_check(recipient.receive(donor).is_ok and recipient.growth == 1 and recipient.quality == 1 and recipient.color == 3, "transfer overwrites even stronger target; color retained")
 	print("Sama growth: %d checks, %d failures" % [checks, failures.size()])
 	for failure: String in failures: push_error(failure)
 	quit(0 if failures.is_empty() else 1)

@@ -78,9 +78,9 @@ static func from_dictionary(raw: Variant) -> DomainResult:
 	var austin := AustinGlensGrowth.restore(raw.get("austin_glens", {}))
 	if not austin.is_ok: return austin
 	slot.austin_glens = austin.value
-	var sama := SamaGrowth.restore(raw.get("sama", {}))
-	if not sama.is_ok: return sama
-	slot.sama = sama.value
+	var sama_result := SamaGrowth.restore(raw.get("sama", {}))
+	if not sama_result.is_ok: return sama_result
+	slot.sama = sama_result.value
 	var sockets := VehicleSockets.restore(raw.get("vehicle_sockets", {}))
 	if not sockets.is_ok:
 		return sockets

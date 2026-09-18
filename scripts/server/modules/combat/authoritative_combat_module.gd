@@ -26,6 +26,7 @@ var pending_monster_attacks: Array[Dictionary] = []
 var corrosion := AuthoritativeCorrosionModule.new()
 var generators := AuthoritativeGeneratorModule.new()
 var austin := AuthoritativeAustinModule.new()
+var sama := AuthoritativeSamaModule.new()
 var ground_loot: Dictionary = {}
 var rewards: AuthoritativeRewardService
 var _random := RandomNumberGenerator.new()
@@ -73,6 +74,7 @@ func configure(
 	corrosion.clear()
 	generators.reset(random_seed ^ 724315)
 	austin.reset(random_seed ^ 591311)
+	sama.reset(random_seed ^ 119417)
 	ground_loot.clear()
 	return DomainResult.ok(self)
 
@@ -188,6 +190,7 @@ func refresh_achievement_loadout(actor_id: String, loadout: Dictionary) -> Domai
 	actor["equipment_condition"] = (assembly.get("equipment_condition", EquipmentConditionLoadout.new()) as EquipmentConditionLoadout).duplicate_loadout()
 	generators.retain_sources(actor_id, AuthoritativeGeneratorModule.instances(actor.equipment_condition), monsters)
 	austin.retain_sources(actor_id, actor.equipment_condition)
+	sama.retain_sources(actor_id, actor.equipment_condition)
 	actor["self_repair_bonus_strength"] = int(assembly.get("self_repair_bonus_strength", 0))
 	var repair: Dictionary = actor["self_repair"]
 	if bool(repair["active"]):
@@ -231,6 +234,7 @@ func unregister_vehicle(actor_id: String) -> bool:
 	corrosion.detach(actor_id)
 	generators.retain_sources(actor_id, PackedStringArray(), monsters)
 	austin.retain_sources(actor_id)
+	sama.retain_sources(actor_id)
 	return actors.erase(actor_id)
 
 
@@ -332,6 +336,12 @@ func handle_weapon_attack(actor_id: String, raw_intent: Variant) -> DomainResult
 	(actor["clothing_effects"] as ClothingCombatEffects).observe_weapon(String(weapon["weapon_id"]))
 	interrupt_self_repair(actor_id, &"attack")
 	actor["cooldown_ready_ticks"][ability_id] = current_tick + int(weapon["cooldown_ticks"])
+	var sama_shot := sama.accepted_shot(actor_id, equipment_condition, current_tick, simulation_hz) if String(weapon.get("skill_id", "")) == "energy_cannon" else {}
+	if sama_shot.has("piercing"):
+		resolved_distance = float(weapon["range"])
+		endpoint = actor_position + direction * resolved_distance
+		origin = _projectile_origin(actor_position, direction, resolved_distance, weapon)
+		collision = {"hit": false, "position": endpoint, "target_entity_id": ""}
 	var impact_position := Vector2(collision.get("position", endpoint))
 	var travel_distance := origin.distance_to(impact_position)
 	var travel_ticks := maxi(
@@ -354,6 +364,8 @@ func handle_weapon_attack(actor_id: String, raw_intent: Variant) -> DomainResult
 		"target_entity_id": target_id,
 		"weapon": weapon.duplicate(true),
 		"generator_instances": AuthoritativeGeneratorModule.instances(equipment_condition),
+		"sama": sama_shot,
+		"hit_ids": PackedStringArray(),
 		"impact_position": impact_position,
 		"attack_mode": attack_mode,
 	})
@@ -372,6 +384,7 @@ func handle_weapon_attack(actor_id: String, raw_intent: Variant) -> DomainResult
 		"origin": [origin.x, origin.y],
 		"direction": [direction.x, direction.y],
 		"maximum_distance": resolved_distance,
+		"piercing": sama_shot.has("piercing"),
 		"actor_position": [actor_position.x, actor_position.y],
 		"endpoint": [endpoint.x, endpoint.y],
 		"weapon_flight": _weapon_flight_snapshot(actor)[ability_id],
@@ -380,6 +393,7 @@ func handle_weapon_attack(actor_id: String, raw_intent: Variant) -> DomainResult
 		"working_energy": vehicle_state.working_energy,
 		"cooldown_ready_tick": actor["cooldown_ready_ticks"][ability_id],
 	})
+	_resolve_sama_activations(actor_id, shot_id, actor_position, direction, sama_shot)
 	CombatTraceLogger.record(&"server", &"authoritative_projectile_scheduled", {
 		"weapon_id": weapon["weapon_id"],
 		"projectile_speed": weapon["projectile_speed"],
@@ -529,19 +543,21 @@ func _projectile_origin(
 ## [param map_instance_id] 发射者当前权威地图实例。
 ## [param origin] 权威弹体起点。
 ## [param endpoint] 由瞄准方向和当前射程确定的弹道终点。
+## [param excluded] 本发穿透弹已经命中的身份；普通弹为空。
 ## 返回首个交点及目标；整段无目标时返回 `hit=false`。
 ## 设计：按实体标识稳定排序以确定同时相交的优先级；发射预估和固定 tick 扫掠共用该查询。
 func _first_projectile_collision(
 	map_instance_id: String,
 	origin: Vector2,
 	endpoint: Vector2,
+	excluded := PackedStringArray(),
 ) -> Dictionary:
 	var best := {"hit": false, "t": INF}
 	var ordered_monster_ids := monsters.keys()
 	ordered_monster_ids.sort()
 	for monster_id: String in ordered_monster_ids:
 		var monster: MonsterLifecycle = monsters[monster_id]
-		if monster.map_instance_id != map_instance_id or not monster.is_alive():
+		if monster_id in excluded or monster.map_instance_id != map_instance_id or not monster.is_alive():
 			continue
 		var candidate := ProjectileSweep.segment_circle_intersection(
 			origin,
@@ -621,7 +637,10 @@ func _advance_line_projectile(projectile: Dictionary) -> bool:
 	var previous: Vector2 = projectile["position"]
 	var age := float(current_tick - int(projectile["spawn_tick"])) / float(simulation_hz)
 	var next := origin.move_toward(endpoint, age * float(weapon["projectile_speed"]))
-	var collision := _first_projectile_collision(String(projectile["map_instance_id"]), previous, next)
+	var attacker := String(projectile.attacker_id)
+	if actors.has(attacker) and sama.permits(attacker, actors[attacker].equipment_condition, projectile.get("sama", {}), "piercing", current_tick):
+		return PiercingProjectileSweep.advance(projectile, previous, next, _first_projectile_collision, _settle_projectile)
+	var collision := _first_projectile_collision(String(projectile["map_instance_id"]), previous, next, projectile.get("hit_ids", PackedStringArray()))
 	projectile["position"] = next
 	if not bool(collision.get("hit", false)) and not next.is_equal_approx(endpoint):
 		return false
@@ -679,6 +698,7 @@ func _settle_projectile(projectile: Dictionary) -> void:
 		"impact_position": [impact_position.x, impact_position.y],
 		"damage": damage_result.value["applied_damage"],
 		"target_health": damage_result.value["health"],
+		"projectile_continues": bool(projectile.get("projectile_continues", false)),
 	})
 	if bool(damage_result.value["died"]):
 		event["death"] = _record_monster_death(monster, attacker_id)
@@ -686,6 +706,10 @@ func _settle_projectile(projectile: Dictionary) -> void:
 		var actor: Dictionary = actors[attacker_id]
 		generators.on_hit(attacker_id, projectile.get("generator_instances", PackedStringArray()), actor.equipment_condition,
 			actor.vehicle_state, monster, current_tick, simulation_hz)
+	if monster.is_alive() and String(weapon.get("skill_id", "")) == "energy_cannon" and actors.has(attacker_id):
+		var shot: Dictionary = projectile.get("sama", {})
+		if sama.permits(attacker_id, actors[attacker_id].equipment_condition, shot, "fission", current_tick):
+			_apply_sama_damage(monster, attacker_id, String(projectile.shot_id), "fission", int(shot.get("fission_damage", 0)))
 
 
 ## 在火箭抵达落点时一次结算范围内的全部存活怪物。
@@ -973,11 +997,12 @@ func snapshot_for_actor(actor_id: String) -> Dictionary:
 		"server_tick": current_tick,
 		"local_entity_id": actor_id,
 		"local_weapon_flight": _weapon_flight_snapshot(actor),
+		"local_sama_effects": sama.snapshot(actor_id, actor.equipment_condition, current_tick, simulation_hz),
 		"local_vehicle": local_vehicle,
 		"monsters": monster_snapshots,
 		"ground_loot": _ground_loot_for_map(map_instance_id),
 		"corrosive_clouds": corrosion.snapshots(map_instance_id, actors),
-		"recent_events": combat_events.slice(maxi(0, combat_events.size() - 32)).duplicate(true),
+		"recent_events": _recent_combat_events(),
 	}
 
 
@@ -1344,6 +1369,7 @@ func _record_combat_event(event: Dictionary) -> Dictionary:
 			effects.reset_chain()
 			generators.retain_sources(damaged_actor, PackedStringArray(), monsters)
 			austin.retain_sources(damaged_actor)
+			sama.retain_sources(damaged_actor)
 			if String(event.get("event_type", "")) == "monster_attack_resolved":
 				event["death_id"] = Crypto.new().generate_random_bytes(16).hex_encode()
 				event["death_time"] = int(Time.get_unix_time_from_system())
@@ -1354,7 +1380,7 @@ func _record_combat_event(event: Dictionary) -> Dictionary:
 	var recorded := event.duplicate(true)
 	recorded["event_id"] = event_sequence
 	combat_events.append(recorded)
-	if combat_events.size() > 64:
+	if combat_events.size() > 128:
 		combat_events.pop_front()
 	if recorded.has("shot_id"):
 		CombatTraceLogger.record(&"server", &"authoritative_projectile_event_recorded", recorded)
@@ -1630,3 +1656,41 @@ func _pursuit_bonus(actor_id: String, target_id: String, weapon: Dictionary) -> 
 		effects.reset_chain()
 		return 0.0
 	return effects.hit(String(weapon["weapon_id"]), target_id, current_tick, simulation_hz, float(weapon.get("pursuit_bonus", 0)))
+
+
+## 记录本次已触发的撒玛能力，脉冲范围仅从权威发射位置和方向确定。
+## [param actor_id] 已接受射击的玩家。[param shot_id] 本次弹体身份。
+## [param origin] 玩家脚点。[param direction] 瞄准方向。[param shot] 独立模块输出。
+func _resolve_sama_activations(actor_id: String, shot_id: String, origin: Vector2, direction: Vector2, shot: Dictionary) -> void:
+	for effect: Dictionary in shot.get("activations", []):
+		_record_combat_event({"event_type": &"sama_activated", "server_tick": current_tick, "attacker_id": actor_id,
+			"kind": effect.kind, "origin": [origin.x, origin.y], "direction": [direction.x, direction.y], "shot_id": shot_id})
+		if effect.kind != "pulse": continue
+		var ids := monsters.keys()
+		ids.sort()
+		for id: String in ids:
+			var monster: MonsterLifecycle = monsters[id]
+			if monster.is_alive() and monster.map_instance_id == String(actors[actor_id].map_instance_id) \
+				and SamaCombatState.inside_pulse(monster.position, origin, direction, float(effect.pulse_range)):
+				_apply_sama_damage(monster, actor_id, shot_id, "pulse", int(effect.damage))
+
+
+## 让撒玛追加伤害进入同一怪物生命与死亡奖酬链，不触发新的能力或二次发奖。
+## [param monster] 当前活目标。[param actor_id] 玩家。[param shot_id] 源射击。[param kind] 追加能力。[param damage] 权威数值。
+func _apply_sama_damage(monster: MonsterLifecycle, actor_id: String, shot_id: String, kind: String, damage: int) -> void:
+	if not monster.is_alive() or damage <= 0: return
+	var applied := monster.apply_damage(damage, actor_id, current_tick)
+	if not applied.is_ok: return
+	var event := _record_combat_event({"event_type": StringName("sama_%s_hit" % kind), "server_tick": current_tick,
+		"attacker_id": actor_id, "target_entity_id": monster.monster_id, "shot_id": shot_id,
+		"impact_position": [monster.position.x, monster.position.y], "damage": applied.value.applied_damage, "target_health": applied.value.health})
+	if bool(applied.value.died): event["death"] = _record_monster_death(monster, actor_id)
+
+
+## 平时保持32条窗口，遇到范围攻击时保留窗口首刻的整批事件，避免开火或死亡表现被半批截断。
+## 返回受128条总缓冲约束的最近事件独立副本。
+func _recent_combat_events() -> Array[Dictionary]:
+	var first := maxi(0, combat_events.size() - 32)
+	while first > 0 and combat_events[first - 1].get("server_tick", -1) == combat_events[first].get("server_tick", -2):
+		first -= 1
+	return combat_events.slice(first).duplicate(true)
