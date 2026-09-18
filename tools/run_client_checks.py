@@ -15,6 +15,8 @@ TESTS = (
     "domain/austin_glens_integration_test.gd",
     "server/commerce/austin_glens_authority_test.gd",
     "server/combat/austin_glens_combat_test.gd",
+    "server/persistence/austin_glens_runtime_test.gd",
+    "ui/runtime/austin_glens_panel_test.gd",
     "domain/crystal_source_model_test.gd",
     "domain/crystal_source_integration_test.gd",
     "domain/crystal_source_actions_test.gd",

@@ -13,6 +13,7 @@ signal equipment_memory_requested(instance_id: String, is_material: bool)
 signal equipment_dismantle_requested(instance_id: String, is_material: bool)
 signal equipment_forging_requested(instance_id: String, is_material: bool)
 signal crystal_source_requested(instance_id: String, is_material: bool)
+signal austin_glens_requested(instance_id: String, is_material: bool)
 
 signal command_requested(command: Dictionary)
 
@@ -60,6 +61,8 @@ func open_for(item: GameItem, revision: int, point: Vector2) -> void:
 	menu.add_separator(item.display_name)
 	if item is CrystalSourceCore or (item is VehicleEquipment and item.crystal_source_profile != null):
 		_add_action("晶源体 / 晶源核", "crystal_source", false)
+	if item is VehicleEquipment and item.austin_profile != null:
+		_add_action("奥斯格兰 / 专属符文", "austin_glens", false)
 	if item is VehicleEquipment or item is Clothing:
 		_add_action("装备", "equip", item.locked)
 	if item is Clothing or item is EnhancementStone:
@@ -113,6 +116,9 @@ func _select_action(id: int) -> void:
 	if id < 0 or id >= _actions.size() or _item == null:
 		return
 	var action := _actions[id]
+	if action == "austin_glens":
+		austin_glens_requested.emit(_item.instance_id, false)
+		return
 	if action == "crystal_source":
 		crystal_source_requested.emit(_item.instance_id, _item is CrystalSourceCore)
 		return

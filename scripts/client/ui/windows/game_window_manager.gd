@@ -60,6 +60,7 @@ func configure(session: PlayerPanelSession) -> bool:
 	inventory_panel.equipment_dismantle_requested.connect(_open_equipment_dismantle)
 	inventory_panel.equipment_forging_requested.connect(_open_equipment_forging)
 	inventory_panel.crystal_source_requested.connect(_open_crystal_source)
+	inventory_panel.austin_glens_requested.connect(_open_austin_glens)
 	inventory_panel.warehouse_requested.connect(_open_warehouse)
 	_add_window(inventory_panel)
 	vehicle_panel = VehiclePanelScript.new()
@@ -83,6 +84,7 @@ func configure(session: PlayerPanelSession) -> bool:
 	_add_window(manufacturing_window)
 	var navigation_scripts := {
 		"crystal_source": preload("res://scripts/client/ui/windows/navigation/crystal_source_panel.gd"),
+		"austin_glens": preload("res://scripts/client/ui/windows/navigation/austin_glens_panel.gd"),
 		"vehicle_presets": preload("res://scripts/client/ui/windows/navigation/vehicle_loadout_presets_panel.gd"),
 		"pve_death_journal": preload("res://scripts/client/ui/windows/navigation/pve_death_journal_panel.gd"),
 		"personal_warehouse": preload("res://scripts/client/ui/windows/navigation/personal_warehouse_panel.gd"),
@@ -115,7 +117,7 @@ func configure(session: PlayerPanelSession) -> bool:
 			window.command_requested.connect(panel_session.dispatch)
 		if window is EquipmentProcessingPanel:
 			window.workshop_requested.connect(_open_workshop)
-		if window is CrystalSourcePanel:
+		if window is CrystalSourcePanel or window is AustinGlensPanel:
 			window.command_requested.connect(panel_session.dispatch)
 		if window is PersonalWarehousePanel or window is VehicleLoadoutPresetsPanel:
 			window.command_requested.connect(panel_session.dispatch)
@@ -227,6 +229,7 @@ func _apply_auxiliary_bundle(bundle: Dictionary) -> void:
 	navigation_windows["equipment_dismantle"].apply_processing_bundle(bundle)
 	navigation_windows["equipment_forging"].apply_processing_bundle(bundle)
 	navigation_windows["crystal_source"].apply_processing_bundle(bundle)
+	navigation_windows["austin_glens"].apply_processing_bundle(bundle)
 	navigation_windows["vehicle_sockets"].apply_socket_bundle(bundle)
 	navigation_windows["clothing_enhancement"].apply_enhancement_bundle(bundle)
 	navigation_windows["attachment_upgrades"].apply_upgrade_bundle(bundle)
@@ -417,3 +420,9 @@ func _open_equipment_forging(id: String = "", is_material: bool = false) -> void
 ## [param id] 物品身份。[param is_material] 是否为核心材料。
 func _open_crystal_source(id: String = "", is_material: bool = false) -> void:
 	EquipmentWorkshopNavigation.focus(navigation_windows["crystal_source"], size, id, is_material)
+
+
+## 从背包打开奥斯格兰成长，复用工坊导航而不在大厅复制规则。
+## [param id] 装备身份。[param is_material] 材料选择标识。
+func _open_austin_glens(id: String = "", is_material: bool = false) -> void:
+	EquipmentWorkshopNavigation.focus(navigation_windows["austin_glens"], size, id, is_material)

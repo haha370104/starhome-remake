@@ -2,6 +2,7 @@ class_name EquipmentWorkshopNavigation
 extends RefCounted
 
 const PROJECTS := {
+	"austin_glens": "奥斯格兰 / 专属符文",
 	"crystal_source": "晶源体 / 晶源核",
 	"equipment_processing": "基础属性加工",
 	"equipment_maintenance": "耐久维护 / 补弹",
