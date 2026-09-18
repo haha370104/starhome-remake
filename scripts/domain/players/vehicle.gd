@@ -13,6 +13,8 @@ var working_energy: float
 var output_power: float
 var achievement_bonuses := AchievementBonuses.new()
 var food_status := FoodStatus.new()
+var central := PlayerCentralController.new()
+var central_rules: CentralRules
 var clothing_bonuses := ClothingBonuses.new()
 
 
@@ -90,7 +92,7 @@ func calculate_stats(
 			armor_by_location[equipment.equipment_location] += armor_value
 	self_repair_bonus += roundi(clothing_bonuses.apply_value("self_repair", 0))
 	self_repair_bonus += loadout.special_bonus("self_repair_bonus")
-	var final_defense := maxi(0, roundi(clothing_bonuses.apply_value("defense", defense + loadout.socket_bonus("defense") + loadout.generator_bonus("defense") + loadout.special_bonus("defense"))) + food_status.bonus(17))
+	var final_defense := maxi(0, roundi(clothing_bonuses.apply_value("defense", defense + loadout.socket_bonus("defense") + loadout.generator_bonus("defense") + loadout.special_bonus("defense") + central.bonus("defense", loadout, central_rules))) + food_status.bonus(17))
 	var cannon_attack := enhanced_attack("energy_cannon_attack", primary_attack, achievement_bonuses.energy_cannon_attack, 13)
 	return {
 		"health": health,
@@ -141,7 +143,7 @@ func reconcile_loadout_state(preserve_resource_ratios := true) -> bool:
 	var reserve_ratio := _resource_ratio(reserve_energy, reserve_energy_capacity)
 	var working_ratio := _resource_ratio(working_energy, working_energy_capacity)
 	definition_id = chassis.definition_id
-	max_health = maxi(1, roundi(clothing_bonuses.apply_value("max_health", chassis.base_max_health + achievement_bonuses.max_health + loadout.attachment_bonus("max_health") + loadout.socket_bonus("max_health") + loadout.generator_bonus("max_health") + loadout.special_bonus("max_health"))) + food_status.bonus(16))
+	max_health = maxi(1, roundi(clothing_bonuses.apply_value("max_health", chassis.base_max_health + achievement_bonuses.max_health + loadout.attachment_bonus("max_health") + loadout.socket_bonus("max_health") + loadout.generator_bonus("max_health") + loadout.special_bonus("max_health") + central.bonus("max_health", loadout, central_rules))) + food_status.bonus(16))
 	reserve_energy_capacity = chassis.reserve_energy_capacity
 	working_energy_capacity = chassis.working_energy_capacity
 	output_power = chassis.output_power
@@ -195,7 +197,7 @@ func _cannon_double_damage_chance() -> float:
 func enhanced_attack(attribute: String, base: int, title_bonus: int, food_kind: int) -> int:
 	if base <= 0:
 		return 0
-	return maxi(1, roundi(clothing_bonuses.apply_value(attribute, base + title_bonus + loadout.attachment_bonus(attribute) + loadout.socket_bonus(attribute) + loadout.generator_bonus(attribute) + loadout.special_bonus(attribute))) + food_status.bonus(food_kind))
+	return maxi(1, roundi(clothing_bonuses.apply_value(attribute, base + title_bonus + loadout.attachment_bonus(attribute) + loadout.socket_bonus(attribute) + loadout.generator_bonus(attribute) + loadout.special_bonus(attribute) + central.bonus(attribute, loadout, central_rules))) + food_status.bonus(food_kind))
 
 
 ## 计算实际移动速度，宝石加在重量与驾驶技能折算后，最终受速度上限限制。

@@ -2,6 +2,12 @@ class_name EquipmentSlotRegistry
 extends RefCounted
 
 const LOCATION_DEFINITIONS := {
+	40: {"slot_id": "central_light", "name": "圣焱之光", "display_slot_id": -1, "series": "central", "special_row": 0},
+	41: {"slot_id": "central_power", "name": "圣焱之力", "display_slot_id": -1, "series": "central", "special_row": 1},
+	42: {"slot_id": "central_woods", "name": "圣焱之林", "display_slot_id": -1, "series": "central", "special_row": 2},
+	43: {"slot_id": "central_wind", "name": "圣焱之风", "display_slot_id": -1, "series": "central", "special_row": 3},
+	44: {"slot_id": "central_mountain", "name": "圣焱之山", "display_slot_id": -1, "series": "central", "special_row": 4},
+	45: {"slot_id": "central_fire", "name": "圣焱之火", "display_slot_id": -1, "series": "central", "special_row": 5},
 	0: {"slot_id": "chassis", "name": "车体", "display_slot_id": -1},
 	1: {"slot_id": "primary_weapon", "name": "主武器", "display_slot_id": -1},
 	2: {"slot_id": "defense", "name": "防护装置", "display_slot_id": -1},
@@ -97,7 +103,7 @@ static func display_slot_id(location: int) -> int:
 
 ## 查询右侧特殊装备系列。
 ## [param location] 荣耀客户端 Location 编号。
-## 返回 sama、austin_glens、crystal；普通装备返回空字符串。
+## 返回 sama、austin_glens、crystal、central；普通装备返回空字符串。
 static func special_series(location: int) -> String:
 	var definition: Dictionary = LOCATION_DEFINITIONS.get(location, {})
 	return String(definition.get("series", ""))
@@ -105,7 +111,7 @@ static func special_series(location: int) -> String:
 
 ## 查询右侧特殊装备视觉行。
 ## [param location] 荣耀客户端 Location 编号。
-## 返回 0..3；普通装备返回 -1。
+## 返回 0..5；普通装备返回 -1。
 static func special_row(location: int) -> int:
 	var definition: Dictionary = LOCATION_DEFINITIONS.get(location, {})
 	return int(definition.get("special_row", -1))

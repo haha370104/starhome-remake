@@ -19,6 +19,9 @@ var austin_rules: AustinGlensRules
 var sama := SamaGrowth.new()
 var sama_profile: SamaRules.Profile
 var sama_rules: SamaRules
+var central_growth := CentralGrowth.new()
+var central_profile: CentralRules.Profile
+var central_rules: CentralRules
 
 
 ## 汇总特殊系列的常驻属性，损坏装备不参与计算。
@@ -29,13 +32,16 @@ func special_bonus(attribute: String) -> int:
 	var bonus := crystal_source.bonus(attribute, crystal_source_profile, crystal_source_rules) if crystal_source_profile != null else 0
 	if austin_profile != null: bonus += austin_glens.bonus(attribute, austin_rules)
 	if sama_profile != null: bonus += sama.bonus(attribute, sama_rules)
+	if central_profile != null: bonus += central_growth.bonus(attribute, central_profile, central_rules)
 	return bonus
 
 
 ## 同时服务手动装配与整套方案的特殊装备综合等级资格。
-## [param player_level] 玩家综合等级。
+## [param player_level] 玩家综合等级。[param central_evolved] 角色中枢是否已进化。
 ## 返回可装配或具体等级不足原因。
-func validate_owner_level(player_level: int) -> DomainResult:
+func validate_owner_level(player_level: int, central_evolved: bool = false) -> DomainResult:
+	if central_profile != null and not central_evolved:
+		return DomainResult.failure(&"central.equipment_locked", "须先将中枢核心进化为圣焱型，才能装配附属装备")
 	if crystal_source_profile != null and player_level < crystal_source_rules.required_level:
 		return DomainResult.failure(&"equipment.level", "晶源体需要综合等级 %d" % crystal_source_rules.required_level)
 	return DomainResult.ok()
@@ -89,6 +95,8 @@ func attachment_bonus(effect: String) -> int:
 ## [param state] 存档中的装备实例状态。
 func _init(definition: Dictionary = {}, state: Dictionary = {}) -> void:
 	super(definition, state)
+	var restored_central := CentralGrowth.restore(state.get("central_growth", {}))
+	if restored_central.is_ok: central_growth = restored_central.value
 	var restored_sama := SamaGrowth.restore(state.get("sama", {}))
 	if restored_sama.is_ok: sama = restored_sama.value
 	var restored_source := CrystalSourceGrowth.restore(state.get("crystal_source", {}))
@@ -130,6 +138,12 @@ func primary_device_kind() -> String:
 ## 返回通用装备 DTO 加战车槽位信息。
 func to_view_dictionary() -> Dictionary:
 	var view := super()
+	view["central_growth"] = central_growth.to_dictionary()
+	view["central_eligible"] = central_profile != null
+	if central_profile != null:
+		view.description += "\n圣焱附属装备：%d / 18阶" % central_growth.grade
+		for attribute: String in ["max_health", "energy_cannon_attack", "missile_attack"]:
+			view.description += "\n%s +%d" % [{"max_health":"战车生命", "energy_cannon_attack":"能量炮攻击", "missile_attack":"导弹攻击"}[attribute], special_bonus(attribute)]
 	view["sama"] = sama.to_dictionary()
 	view["sama_eligible"] = sama_profile != null
 	if sama_profile != null:

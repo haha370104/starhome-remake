@@ -31,6 +31,7 @@ func build_bundle(player: Player) -> Dictionary:
 		"mission_journal": _journal_snapshot(player),
 		"achievements": player.achievements.network_snapshot(),
 		"food_status": player.food_status.to_dictionary(),
+		"central": player.central.to_dictionary(),
 		"vehicle_presets": player.vehicle_presets.to_dictionary(),
 		"preset_server_time": int(Time.get_unix_time_from_system()),
 	}

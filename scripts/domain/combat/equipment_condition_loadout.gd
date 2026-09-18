@@ -35,6 +35,8 @@ func duplicate_loadout() -> EquipmentConditionLoadout:
 			copied.crystal_source_rules = (item as VehicleEquipment).crystal_source_rules
 			copied.austin_profile = (item as VehicleEquipment).austin_profile
 			copied.austin_rules = (item as VehicleEquipment).austin_rules
+			copied.central_profile = (item as VehicleEquipment).central_profile
+			copied.central_rules = (item as VehicleEquipment).central_rules
 			copied.sama_profile = (item as VehicleEquipment).sama_profile
 			copied.sama_rules = (item as VehicleEquipment).sama_rules
 		if copied is Clothing: copied.improvement_rules = (item as Clothing).improvement_rules

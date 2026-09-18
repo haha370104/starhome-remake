@@ -14,6 +14,7 @@ var clothing_improvement := ClothingImprovement.new()
 var vehicle_sockets := VehicleSockets.new()
 var crystal_source := CrystalSourceGrowth.new()
 var austin_glens := AustinGlensGrowth.new()
+var central_growth := CentralGrowth.new()
 var sama := SamaGrowth.new()
 var processing := EquipmentProcessing.new()
 var extra_attributes := ExtraAttributes.new()
@@ -78,6 +79,9 @@ static func from_dictionary(raw: Variant) -> DomainResult:
 	var austin := AustinGlensGrowth.restore(raw.get("austin_glens", {}))
 	if not austin.is_ok: return austin
 	slot.austin_glens = austin.value
+	var central_result := CentralGrowth.restore(raw.get("central_growth", {}))
+	if not central_result.is_ok: return central_result
+	slot.central_growth = central_result.value
 	var sama_result := SamaGrowth.restore(raw.get("sama", {}))
 	if not sama_result.is_ok: return sama_result
 	slot.sama = sama_result.value
@@ -117,6 +121,7 @@ func to_dictionary() -> Dictionary:
 		"vehicle_sockets": vehicle_sockets.to_dictionary(),
 		"crystal_source": crystal_source.to_dictionary(),
 		"austin_glens": austin_glens.to_dictionary(),
+		"central_growth": central_growth.to_dictionary(),
 		"sama": sama.to_dictionary(),
 		"processing": processing.to_dictionary(),
 		"extra_attributes": extra_attributes.to_dictionary(),

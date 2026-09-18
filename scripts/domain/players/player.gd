@@ -22,6 +22,7 @@ var checkpoint_id: String
 var inventory: Inventory
 var warehouse := PersonalWarehouse.new()
 var production := ProductionQueue.new()
+var central := PlayerCentralController.new()
 var vehicle_presets := VehicleLoadoutPresets.new()
 var character_equipment: CharacterEquipment
 var vehicle: PlayerVehicle
@@ -148,6 +149,9 @@ func _init(state: Dictionary = {}) -> void:
 	daily_activities = DailyActivityJournal.new(state.get("daily_activities", {}))
 	character_equipment = CharacterEquipment.new()
 	vehicle = PlayerVehicle.new(state.get("vehicle", {}))
+	var central_result := PlayerCentralController.restore(state.get("central", {}))
+	if central_result.is_ok: central = central_result.value
+	vehicle.central = central
 	skills = SkillBook.new(state.get("skills", {}))
 	food_status = FoodStatus.new(state.get("food_status", {}))
 	vehicle.food_status = food_status
@@ -306,7 +310,7 @@ func equip_vehicle_item(
 	var item := inventory.find(instance_id)
 	if not item is VehicleEquipment:
 		return DomainResult.failure(&"equipment.location_rejected", "inventory item is not vehicle equipment")
-	var owner_level := (item as VehicleEquipment).validate_owner_level(level)
+	var owner_level := (item as VehicleEquipment).validate_owner_level(level, central.evolved)
 	if not owner_level.is_ok: return owner_level
 	var target := vehicle.loadout.resolve_install_location(item as VehicleEquipment, location)
 	if not target.is_ok:
@@ -347,7 +351,7 @@ func equip_vehicle_item(
 			return returned
 	inventory.commit_transfer()
 	vehicle.loadout.commit_transfer()
-	vehicle.reconcile_loadout_state(location < 19 or location > 31)
+	vehicle.reconcile_loadout_state((location < 19 or location > 31) and EquipmentSlotRegistry.special_series(location) != "central")
 	return DomainResult.ok()
 
 
@@ -391,7 +395,7 @@ func unequip_vehicle_item(
 		return returned
 	inventory.commit_transfer()
 	vehicle.loadout.commit_transfer()
-	vehicle.reconcile_loadout_state(location < 19 or location > 31)
+	vehicle.reconcile_loadout_state((location < 19 or location > 31) and EquipmentSlotRegistry.special_series(location) != "central")
 	return DomainResult.ok()
 
 

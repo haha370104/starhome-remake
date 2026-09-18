@@ -54,6 +54,7 @@ func to_domain(record: PlayerStateRecord) -> DomainResult:
 		"achievements": record.achievements,
 		"daily_activities": record.daily_activities,
 		"food_status": record.food_status,
+		"central": record.central.to_dictionary(),
 		"vehicle": {
 			"vehicle_id": record.vehicle_id,
 			"definition_id": record.vehicle_definition_id,
@@ -67,6 +68,7 @@ func to_domain(record: PlayerStateRecord) -> DomainResult:
 			"output_power": record.output_power,
 		},
 	})
+	player.vehicle.central_rules = _catalog.central_rules
 	player.reward_pipeline = _reward_policy.value
 	var inventory_items: Array[GameItem] = []
 	for stack in record.inventory_stacks:
@@ -95,6 +97,7 @@ func to_domain(record: PlayerStateRecord) -> DomainResult:
 			"vehicle_sockets": slot.vehicle_sockets.to_dictionary(),
 			"crystal_source": slot.crystal_source.to_dictionary(),
 			"austin_glens": slot.austin_glens.to_dictionary(),
+			"central_growth": slot.central_growth.to_dictionary(),
 			"sama": slot.sama.to_dictionary(),
 			"processing": slot.processing.to_dictionary(),
 			"extra_attributes": slot.extra_attributes.to_dictionary(),
@@ -123,6 +126,8 @@ func to_domain(record: PlayerStateRecord) -> DomainResult:
 			elif not created.value is VehicleEquipment \
 				or not (created.value as VehicleEquipment).accepts_location(slot.slot_location):
 				return DomainResult.failure(&"player.invalid_vehicle_equipment", "persisted vehicle location does not match definition")
+			if created.value.central_profile != null and not player.central.evolved:
+				return DomainResult.failure(&"central.equipment_locked", "未进化的存档不能装配圣焱装备")
 			var restored_vehicle := player.vehicle.loadout.restore(created.value)
 			if not restored_vehicle.is_ok:
 				return restored_vehicle
@@ -187,6 +192,7 @@ func to_record(player: Player) -> DomainResult:
 		"daily_activities": player.daily_activities.to_dictionary(),
 		"food_status": player.food_status.to_dictionary(),
 		"production": player.production.to_dictionary(),
+		"central": player.central.to_dictionary(),
 		"vehicle_presets": player.vehicle_presets.to_dictionary(),
 		"vehicle_id": player.vehicle.vehicle_id,
 		"vehicle_definition_id": player.vehicle.definition_id,
@@ -236,6 +242,7 @@ func _equipment_record(
 		"vehicle_sockets": (equipment as VehicleEquipment).sockets.to_dictionary() if equipment is VehicleEquipment else {},
 		"crystal_source": (equipment as VehicleEquipment).crystal_source.to_dictionary() if equipment is VehicleEquipment else {},
 		"austin_glens": (equipment as VehicleEquipment).austin_glens.to_dictionary() if equipment is VehicleEquipment else {},
+		"central_growth": (equipment as VehicleEquipment).central_growth.to_dictionary() if equipment is VehicleEquipment else {},
 		"sama": (equipment as VehicleEquipment).sama.to_dictionary() if equipment is VehicleEquipment else {},
 		"processing": equipment.processing.to_dictionary(),
 		"extra_attributes": equipment.extra_attributes.to_dictionary(),

@@ -11,6 +11,8 @@ import time
 
 ROOT = Path(__file__).resolve().parents[1]
 TESTS = (
+    "domain/central_growth_test.gd",
+    "domain/central_integration_test.gd",
     "domain/sama_growth_test.gd",
     "server/combat/sama_combat_test.gd",
     "client/presentation/combat/sama_effects_test.gd",

@@ -46,6 +46,9 @@ func apply_bundle(bundle: Dictionary) -> bool:
 		return false
 	if not FoodStatus.valid_state(bundle.get("food_status", {})):
 		return false
+	var central_result := PlayerCentralController.restore(bundle.get("central", {}))
+	if not central_result.is_ok: return false
+	central = central_result.value
 	var preset_result := VehicleLoadoutPresets.restore(bundle.get("vehicle_presets", {}))
 	if not preset_result.is_ok: return false
 	vehicle_presets = preset_result.value
@@ -102,6 +105,8 @@ func apply_bundle(bundle: Dictionary) -> bool:
 	})
 	if not _restore_equipment(character.get("worn_items", []), vehicle_snapshot.get("equipped", [])):
 		return false
+	vehicle.central = central
+	vehicle.central_rules = _catalog.central_rules
 	vehicle.achievement_bonuses = achievements.bonuses()
 	vehicle.food_status = food_status
 	refresh_clothing_bonuses()
@@ -150,6 +155,7 @@ func _restore_inventory(raw_items: Variant) -> bool:
 			"vehicle_sockets": raw_item.get("vehicle_sockets", {}),
 			"crystal_source": raw_item.get("crystal_source", {}),
 			"austin_glens": raw_item.get("austin_glens", {}),
+			"central_growth": raw_item.get("central_growth", {}),
 			"sama": raw_item.get("sama", {}),
 			"processing": raw_item.get("processing", {}),
 			"extra_attributes": raw_item.get("extra_attributes", {}),
@@ -203,6 +209,7 @@ func _create_equipment(raw_equipment: Variant) -> Equipment:
 		"vehicle_sockets": raw_equipment.get("vehicle_sockets", {}),
 		"crystal_source": raw_equipment.get("crystal_source", {}),
 		"austin_glens": raw_equipment.get("austin_glens", {}),
+		"central_growth": raw_equipment.get("central_growth", {}),
 		"sama": raw_equipment.get("sama", {}),
 		"processing": raw_equipment.get("processing", {}),
 		"extra_attributes": raw_equipment.get("extra_attributes", {}),

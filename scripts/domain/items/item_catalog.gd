@@ -4,6 +4,7 @@ extends RefCounted
 const EquipmentSlotRegistryScript := preload("res://scripts/domain/equipment/equipment_slot_registry.gd")
 
 const GAMEPLAY_PATHS := [
+	"res://data/gameplay/central_items_v1.json",
 	"res://data/gameplay/sama_items_v1.json",
 	"res://data/gameplay/austin_glens_items_v1.json",
 	"res://data/gameplay/crystal_source_items_v1.json",
@@ -52,6 +53,7 @@ var generator_rules: GeneratorRules
 var crystal_source_rules: CrystalSourceRules
 var austin_rules: AustinGlensRules
 var sama_rules: SamaRules
+var central_rules: CentralRules
 
 
 ## 读取所有当前启用的物品定义和语义化表现目录。
@@ -60,6 +62,11 @@ var sama_rules: SamaRules
 func initialize() -> DomainResult:
 	_definitions.clear()
 	_definition_ids_by_display_name.clear()
+	var central_data := JsonConfigLoader.load_dictionary("res://data/gameplay/central_rules_v1.json")
+	if not central_data.is_ok: return central_data
+	var central_result := CentralRules.from_dictionary(central_data.value)
+	if not central_result.is_ok: return central_result
+	central_rules = central_result.value
 	var sama_data := JsonConfigLoader.load_dictionary("res://data/gameplay/sama_rules_v1.json")
 	if not sama_data.is_ok: return sama_data
 	var sama_result := SamaRules.from_dictionary(sama_data.value)
@@ -191,6 +198,10 @@ func initialize() -> DomainResult:
 			return DomainResult.failure(&"ammunition.rules_invalid", "弹药定义无效")
 		_definitions[row.definition_id].stats["ammunition_capacity"] = int(row.capacity)
 		_definitions[row.definition_id].stats["ammunition_unit_price"] = int(row.unit_price)
+	for id: String in central_rules.offers:
+		if not _definitions.has(id): return DomainResult.failure(&"central.catalog", "中枢供给引用不存在的物品")
+	for id: String in central_rules.profiles.keys() + central_rules.modules.keys() + central_rules.growth_materials + [central_rules.evolution_material]:
+		if not central_rules.offers.has(id): return DomainResult.failure(&"central.catalog", "中枢装备或材料缺少供给")
 	for offer: SamaRules.Offer in sama_rules.offers.values():
 		if not _definitions.has(offer.definition_id): return DomainResult.failure(&"sama.catalog", "撒玛供给引用不存在的物品")
 	for id: String in sama_rules.profiles.keys() + sama_rules.materials.values():
@@ -204,6 +215,11 @@ func initialize() -> DomainResult:
 ## [param state] 存档中的实例状态。
 ## 返回服装、战车底盘、引擎、武器、采掘臂、通用装备或普通物品的具体实例。
 func create(definition_id: String, state: Dictionary) -> DomainResult:
+	var central := CentralGrowth.restore(state.get("central_growth", {}))
+	if not central.is_ok: return central
+	var central_profile: CentralRules.Profile = central_rules.profiles.get(ItemDefinitionAliases.canonical(definition_id))
+	var central_check := (central.value as CentralGrowth).validate_for(central_profile)
+	if not central_check.is_ok: return central_check
 	var crystal_source := CrystalSourceGrowth.restore(state.get("crystal_source", {}))
 	var sama := SamaGrowth.restore(state.get("sama", {}))
 	if not sama.is_ok: return sama
@@ -293,8 +309,15 @@ func create(definition_id: String, state: Dictionary) -> DomainResult:
 		socket_rules.profile(item.definition_id) if item is VehicleEquipment else null, socket_rules)
 	if not checked.is_ok:
 		return checked
+	if central_rules.modules.has(item.definition_id): item.bound = true
 	if item.definition_id == sama_rules.materials.quality: item.bound = true
 	if item is VehicleEquipment:
+		item.central_growth = central.value
+		item.central_profile = central_profile
+		item.central_rules = central_rules
+		if central_profile != null:
+			item.presentation = item.central_growth.presentation(central_profile)
+			item.icon_path = String(item.presentation.icon)
 		item.sama = sama.value
 		item.sama_profile = sama_profile
 		item.sama_rules = sama_rules
