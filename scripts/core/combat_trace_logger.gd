@@ -8,7 +8,8 @@ const ENVIRONMENT_FLAG := "STARHOME_COMBAT_TRACE"
 static var _initialized := false
 static var _enabled := false
 static var _trace_path := ""
-static var _limit_warning_emitted := false
+static var _writer: BackgroundFileWriter
+static var _stopped := false
 static var _write_warning_emitted := false
 static var _path_announced := false
 
@@ -17,10 +18,11 @@ static var _path_announced := false
 ## [param enabled] 是否允许写入诊断记录。
 ## [param path_override] 可选输出路径；为空时按进程和启动时间生成 `user://diagnostics` 文件。
 static func configure(enabled: bool, path_override: String = "") -> void:
+	shutdown()
+	_stopped = false
 	_initialized = true
 	_enabled = enabled
 	_trace_path = path_override
-	_limit_warning_emitted = false
 	_write_warning_emitted = false
 	_path_announced = false
 	if _enabled:
@@ -44,45 +46,44 @@ static func trace_path() -> String:
 	return _trace_path
 
 
-## 追加一条结构化战斗诊断记录并立即落盘。
-## [param side] 事件发生边界，例如 `client`、`server` 或 `transport`。
-## [param stage] 射击链路阶段，例如客户端预测碰撞或服务端权威结算。
-## [param fields] 与本阶段有关的业务字段；向量和 StringName 会被转换为 JSON 安全值。
+## 冻结一条战斗诊断并交给后台线程，不在游戏帧中打开或刷新文件。
+## [param side] 客户端、服务端或传输边界。[param stage] 链路阶段。[param fields] 当时的业务字段。
 static func record(side: StringName, stage: StringName, fields: Dictionary = {}) -> void:
-	if not is_enabled():
-		return
+	if not is_enabled() or _stopped: return
 	_ensure_trace_path()
-	if _trace_path.is_empty():
-		return
-	var mode := FileAccess.READ_WRITE if FileAccess.file_exists(_trace_path) else FileAccess.WRITE
-	var file := FileAccess.open(_trace_path, mode)
-	if file == null:
-		if not _write_warning_emitted:
-			_write_warning_emitted = true
-			push_warning("无法写入战斗诊断日志：%s" % ProjectSettings.globalize_path(_trace_path))
-		return
-	if not _path_announced:
-		_path_announced = true
-		print("战斗诊断日志：%s" % ProjectSettings.globalize_path(_trace_path))
-	if file.get_length() >= MAX_TRACE_BYTES:
-		file.close()
-		if not _limit_warning_emitted:
-			_limit_warning_emitted = true
-			push_warning("战斗诊断日志已达到 64 MiB 上限：%s" % ProjectSettings.globalize_path(_trace_path))
-		return
-	file.seek_end()
+	if _writer == null: return
 	var entry := {
 		"schema_version": SCHEMA_VERSION,
 		"unix_time_ms": roundi(Time.get_unix_time_from_system() * 1000.0),
 		"monotonic_time_ms": Time.get_ticks_msec(),
 		"process_id": OS.get_process_id(),
-		"side": String(side),
-		"stage": String(stage),
-		"fields": _json_safe(fields),
+		"side": String(side), "stage": String(stage), "fields": _json_safe(fields),
 	}
-	file.store_line(JSON.stringify(entry))
-	file.flush()
-	file.close()
+	var accepted := _writer.enqueue_trace(ProjectSettings.globalize_path(_trace_path), entry, MAX_TRACE_BYTES)
+	var result := _writer.last_result()
+	if (accepted != OK or not result.is_ok) and not _write_warning_emitted:
+		_write_warning_emitted = true
+		push_warning("战斗日志后台写入异常或队列已满：%s" % _trace_path)
+
+
+## 在加载场景前启动诊断线程，保留调试构建的默认开启规则。
+static func start() -> void:
+	if is_enabled() and not _stopped: _ensure_trace_path()
+
+
+## 显式等待当前日志完成，供验收与人工读取使用；战斗逻辑不得调用。
+## 返回后台落盘结果。
+static func flush() -> DomainResult:
+	return _writer.flush() if _writer != null else DomainResult.ok()
+
+
+## 正常退出时排空日志并回收线程，之后到来的记录不再启动新线程。
+## 返回最终写盘状态。
+static func shutdown() -> DomainResult:
+	_stopped = true
+	var result: DomainResult = _writer.close() if _writer != null else DomainResult.ok()
+	_writer = null
+	return result
 
 
 ## 从构建类型和环境变量计算默认启用状态。
@@ -96,18 +97,21 @@ static func _ensure_initialized() -> void:
 		_enabled = flag not in ["", "0", "false", "off", "no"]
 
 
-## 创建本次进程唯一的输出路径，并把绝对位置打印到启动终端。
+## 生成本进程输出路径并启动后台所有者；目录创建和文件打开都由工作线程执行。
 static func _ensure_trace_path() -> void:
-	if not _trace_path.is_empty():
-		return
-	var directory := "user://diagnostics"
-	var absolute_directory := ProjectSettings.globalize_path(directory)
-	if DirAccess.make_dir_recursive_absolute(absolute_directory) != OK:
+	if _stopped: return
+	if _trace_path.is_empty():
+		_trace_path = "user://diagnostics/combat_trace_%d_%d.jsonl" % [floori(Time.get_unix_time_from_system()), OS.get_process_id()]
+	if _writer != null: return
+	_writer = BackgroundFileWriter.new()
+	if _writer.start() != OK:
+		_writer = null
 		_enabled = false
+		push_warning("无法启动战斗日志后台线程")
 		return
-	_trace_path = directory.path_join(
-		"combat_trace_%d_%d.jsonl" % [floori(Time.get_unix_time_from_system()), OS.get_process_id()]
-	)
+	if not _path_announced:
+		_path_announced = true
+		print("战斗诊断日志：%s" % ProjectSettings.globalize_path(_trace_path))
 
 
 ## 递归转换诊断字段，确保任意合法领域值都能写入 JSONL。

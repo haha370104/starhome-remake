@@ -17,6 +17,7 @@ func _initialize() -> void:
 		"position": Vector2(12.5, 34.0),
 		"event_type": &"energy_cannon_hit",
 	})
+	_expect(CombatTraceLogger.flush().is_ok, "显式读取前等待后台落盘")
 	_expect(FileAccess.file_exists(trace_path), "诊断日志应写入显式测试路径")
 	var line := FileAccess.get_file_as_string(trace_path).strip_edges()
 	var parsed: Variant = JSON.parse_string(line)

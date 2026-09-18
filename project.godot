@@ -14,6 +14,10 @@ config/name="starhome_remake"
 run/main_scene="res://scenes/main_hall.tscn"
 config/features=PackedStringArray("4.7")
 
+[autoload]
+
+CombatDiagnostics="*res://scripts/core/combat_diagnostics_lifecycle.gd"
+
 [display]
 
 window/size/viewport_width=1280
