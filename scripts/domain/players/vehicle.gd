@@ -89,6 +89,7 @@ func calculate_stats(
 		if armor_by_location.has(equipment.equipment_location):
 			armor_by_location[equipment.equipment_location] += armor_value
 	self_repair_bonus += roundi(clothing_bonuses.apply_value("self_repair", 0))
+	self_repair_bonus += loadout.special_bonus("self_repair_bonus")
 	var final_defense := maxi(0, roundi(clothing_bonuses.apply_value("defense", defense + loadout.socket_bonus("defense") + loadout.generator_bonus("defense") + loadout.special_bonus("defense"))) + food_status.bonus(17))
 	var cannon_attack := enhanced_attack("energy_cannon_attack", primary_attack, achievement_bonuses.energy_cannon_attack, 13)
 	return {

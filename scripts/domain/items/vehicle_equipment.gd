@@ -13,13 +13,19 @@ var generator_profile: GeneratorRules.Profile
 var crystal_source := CrystalSourceGrowth.new()
 var crystal_source_profile: CrystalSourceRules.Profile
 var crystal_source_rules: CrystalSourceRules
+var austin_glens := AustinGlensGrowth.new()
+var austin_profile: AustinGlensRules.Profile
+var austin_rules: AustinGlensRules
 
 
 ## 汇总特殊系列的常驻属性，损坏装备不参与计算。
 ## [param attribute] 战车统一属性。
 ## 返回固定加值，随后由战车统一应用人物、食品等倍率。
 func special_bonus(attribute: String) -> int:
-	return crystal_source.bonus(attribute, crystal_source_profile, crystal_source_rules) if durability > 0 and crystal_source_profile != null else 0
+	if durability <= 0: return 0
+	var bonus := crystal_source.bonus(attribute, crystal_source_profile, crystal_source_rules) if crystal_source_profile != null else 0
+	if austin_profile != null: bonus += austin_glens.bonus(attribute, austin_rules)
+	return bonus
 
 
 ## 同时服务手动装配与整套方案的特殊装备综合等级资格。
@@ -81,6 +87,8 @@ func _init(definition: Dictionary = {}, state: Dictionary = {}) -> void:
 	super(definition, state)
 	var restored_source := CrystalSourceGrowth.restore(state.get("crystal_source", {}))
 	if restored_source.is_ok: crystal_source = restored_source.value
+	var restored_austin := AustinGlensGrowth.restore(state.get("austin_glens", {}))
+	if restored_austin.is_ok: austin_glens = restored_austin.value
 	equipment_location = int(definition.get("equipment_location", -1))
 	allowed_locations = definition.get("allowed_locations", [equipment_location]).duplicate()
 	attachment_family = String(definition.get("attachment_family", ""))
@@ -116,6 +124,19 @@ func primary_device_kind() -> String:
 ## 返回通用装备 DTO 加战车槽位信息。
 func to_view_dictionary() -> Dictionary:
 	var view := super()
+	view["austin_glens"] = austin_glens.to_dictionary()
+	view["austin_eligible"] = austin_profile != null
+	if austin_profile != null:
+		view.description += "\n奥斯格兰：%s；阶段%d；基础%d；附加%d；%s" % [["白色", "绿色", "蓝色", "紫色"][austin_glens.color], austin_glens.stage, austin_glens.base, austin_glens.additional, "已祝福" if austin_glens.blessed else "未祝福"]
+		for attribute: String in AustinGlensRules.ATTRIBUTES:
+			var bonus := special_bonus(attribute)
+			if bonus > 0: view.description += "\n%s +%d" % [{"max_health": "战车生命", "defense": "防御", "energy_cannon_attack": "能量炮攻击", "missile_attack": "导弹攻击", "self_repair_bonus": "额外自维修"}[attribute], bonus]
+		view.description += "\n固定左右符文，镶入后不能摘取。\n穿透值%d：原版对怪物结算未确认，暂不提供PVE减防。" % austin_glens.bonus("penetration", austin_rules)
+		if austin_profile.effect in ["mitigation", "healing"]:
+			view.description += "\n受直接攻击有%.0f%%概率%s%d点，每%d秒最多一次。" % [austin_rules.trigger_chance * 100, "减伤" if austin_profile.effect == "mitigation" else "存活时回血", austin_rules.mitigation[austin_glens.additional] if austin_profile.effect == "mitigation" else austin_rules.healing[austin_glens.additional], austin_rules.cooldown_seconds]
+		else:
+			view.description += "\n附加追伤只对其他玩家生效，本轮未开放；常驻属性正常生效。"
+		view.description += "\n四件套额外触发只对其他玩家生效，暂未开放。"
 	view["crystal_source"] = crystal_source.to_dictionary()
 	view["crystal_source_eligible"] = crystal_source_profile != null
 	if crystal_source_profile != null:

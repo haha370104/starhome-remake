@@ -19,6 +19,7 @@ var clothing_improvement := ClothingImprovement.new()
 var equipment_memory := EquipmentMemory.new()
 var vehicle_sockets := VehicleSockets.new()
 var crystal_source := CrystalSourceGrowth.new()
+var austin_glens := AustinGlensGrowth.new()
 var processing := EquipmentProcessing.new()
 var extra_attributes := ExtraAttributes.new()
 var strengthening := EquipmentStrengthening.new()
@@ -93,6 +94,9 @@ static func from_dictionary(raw: Variant) -> DomainResult:
 	var source := CrystalSourceGrowth.restore(raw.get("crystal_source", {}))
 	if not source.is_ok: return source
 	stack.crystal_source = source.value
+	var austin := AustinGlensGrowth.restore(raw.get("austin_glens", {}))
+	if not austin.is_ok: return austin
+	stack.austin_glens = austin.value
 	var sockets := VehicleSockets.restore(raw.get("vehicle_sockets", {}))
 	var cracks := VehicleCrystal.restore_cracks(raw.get("crystal_cracks", 0))
 	if not sockets.is_ok:
@@ -135,6 +139,7 @@ func to_dictionary() -> Dictionary:
 		"equipment_memory": equipment_memory.to_dictionary(),
 		"vehicle_sockets": vehicle_sockets.to_dictionary(),
 		"crystal_source": crystal_source.to_dictionary(),
+		"austin_glens": austin_glens.to_dictionary(),
 		"processing": processing.to_dictionary(),
 		"extra_attributes": extra_attributes.to_dictionary(),
 		"strengthening": strengthening.to_dictionary(),
@@ -189,6 +194,7 @@ static func from_item(item: GameItem, stack_index: int) -> DomainResult:
 		"magazine": (item as Equipment).magazine.to_dictionary() if item is Equipment else {},
 		"crystal_cracks": (item as VehicleCrystal).cracks if item is VehicleCrystal else 0,
 		"crystal_source": (item as VehicleEquipment).crystal_source.to_dictionary() if item is VehicleEquipment else {},
+		"austin_glens": (item as VehicleEquipment).austin_glens.to_dictionary() if item is VehicleEquipment else {},
 		"crystal_source_cracks": (item as CrystalSourceCore).cracks if item is CrystalSourceCore else 0,
 	})
 

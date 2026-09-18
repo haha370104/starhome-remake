@@ -4,6 +4,7 @@ extends RefCounted
 const EquipmentSlotRegistryScript := preload("res://scripts/domain/equipment/equipment_slot_registry.gd")
 
 const GAMEPLAY_PATHS := [
+	"res://data/gameplay/austin_glens_items_v1.json",
 	"res://data/gameplay/crystal_source_items_v1.json",
 	"res://data/gameplay/stage3/starter_loadout_v1.json",
 	"res://data/gameplay/character_items_v1.json",
@@ -48,6 +49,7 @@ var dismantle_rules: EquipmentDismantleRules
 var forging_rules: EquipmentForgingRules
 var generator_rules: GeneratorRules
 var crystal_source_rules: CrystalSourceRules
+var austin_rules: AustinGlensRules
 
 
 ## 读取所有当前启用的物品定义和语义化表现目录。
@@ -56,6 +58,11 @@ var crystal_source_rules: CrystalSourceRules
 func initialize() -> DomainResult:
 	_definitions.clear()
 	_definition_ids_by_display_name.clear()
+	var austin_data := JsonConfigLoader.load_dictionary("res://data/gameplay/austin_glens_rules_v1.json")
+	if not austin_data.is_ok: return austin_data
+	var austin_result := AustinGlensRules.from_dictionary(austin_data.value)
+	if not austin_result.is_ok: return austin_result
+	austin_rules = austin_result.value
 	var crystal_data := JsonConfigLoader.load_dictionary("res://data/gameplay/crystal_source_rules_v1.json")
 	if not crystal_data.is_ok: return crystal_data
 	var crystal_rules := CrystalSourceRules.from_dictionary(crystal_data.value)
@@ -71,6 +78,8 @@ func initialize() -> DomainResult:
 			if not _definitions.has(referenced_id): return DomainResult.failure(&"crystal_source.catalog", "晶源体引用了不存在的装备或材料")
 	for id: String in crystal_source_rules.offers:
 		if not _definitions.has(id): return DomainResult.failure(&"crystal_source.catalog", "晶源体商品不存在")
+	for referenced_id: String in austin_rules.profiles.keys() + austin_rules.runes.keys() + austin_rules.materials.values() + austin_rules.offers.keys():
+		if not _definitions.has(referenced_id): return DomainResult.failure(&"austin.catalog", "奥斯格兰引用了不存在的物品")
 	for path: String in PRESENTATION_PATHS:
 		var presentation_result := _load_presentation_file(path)
 		if not presentation_result.is_ok:
@@ -185,6 +194,11 @@ func initialize() -> DomainResult:
 ## 返回服装、战车底盘、引擎、武器、采掘臂、通用装备或普通物品的具体实例。
 func create(definition_id: String, state: Dictionary) -> DomainResult:
 	var crystal_source := CrystalSourceGrowth.restore(state.get("crystal_source", {}))
+	var austin := AustinGlensGrowth.restore(state.get("austin_glens", {}))
+	if not austin.is_ok: return austin
+	var austin_profile: AustinGlensRules.Profile = austin_rules.profiles.get(ItemDefinitionAliases.canonical(definition_id))
+	var austin_check := (austin.value as AustinGlensGrowth).validate_for(austin_profile, austin_rules)
+	if not austin_check.is_ok: return austin_check
 	if not crystal_source.is_ok: return crystal_source
 	var crystal_profile: CrystalSourceRules.Profile = crystal_source_rules.profiles.get(ItemDefinitionAliases.canonical(definition_id))
 	var crystal_check := (crystal_source.value as CrystalSourceGrowth).validate_for(crystal_profile, crystal_source_rules)
@@ -264,6 +278,11 @@ func create(definition_id: String, state: Dictionary) -> DomainResult:
 	if not checked.is_ok:
 		return checked
 	if item is VehicleEquipment:
+		item.austin_glens = austin.value
+		item.austin_profile = austin_profile
+		item.austin_rules = austin_rules
+		for slot: AustinGlensGrowth.Slot in item.austin_glens.slots:
+			item.bound = item.bound or slot.bound
 		item.crystal_source = crystal_source.value
 		item.crystal_source_profile = crystal_profile
 		item.crystal_source_rules = crystal_source_rules
@@ -459,6 +478,10 @@ func _apply_equipment_contract(item_definition: Dictionary) -> void:
 		kind = "repair_arm"
 		item_definition["kind"] = kind
 	var definition_id := String(item_definition.get("id", ""))
+	if austin_rules.profiles.has(definition_id):
+		var profile := austin_rules.profiles[definition_id]
+		item_definition["equipment_location"] = profile.location
+		item_definition["allowed_locations"] = [profile.location]
 	if crystal_source_rules.profiles.has(definition_id):
 		var profile := crystal_source_rules.profiles[definition_id]
 		item_definition["equipment_location"] = profile.location
