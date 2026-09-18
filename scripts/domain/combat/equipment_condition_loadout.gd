@@ -98,3 +98,13 @@ func generators() -> Array[VehicleEquipment]:
 		if item is VehicleEquipment and item.generator_profile != null and item.durability > 0: result.append(item)
 	result.sort_custom(func(a: VehicleEquipment, b: VehicleEquipment) -> bool: return a.equipment_location < b.equipment_location)
 	return result
+
+
+## 按固定槽位选取有效奥斯格兰部件，不包括其他特殊装备系列。
+## 返回共享本次权威模拟状态的装备列表。
+func austin_equipment() -> Array[VehicleEquipment]:
+	var result: Array[VehicleEquipment] = []
+	for item: Equipment in _items.values():
+		if item is VehicleEquipment and item.austin_profile != null and item.durability > 0: result.append(item)
+	result.sort_custom(func(a: VehicleEquipment, b: VehicleEquipment) -> bool: return a.equipment_location < b.equipment_location)
+	return result

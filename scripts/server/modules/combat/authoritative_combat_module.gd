@@ -25,6 +25,7 @@ var pending_projectiles: Array[Dictionary] = []
 var pending_monster_attacks: Array[Dictionary] = []
 var corrosion := AuthoritativeCorrosionModule.new()
 var generators := AuthoritativeGeneratorModule.new()
+var austin := AuthoritativeAustinModule.new()
 var ground_loot: Dictionary = {}
 var rewards: AuthoritativeRewardService
 var _random := RandomNumberGenerator.new()
@@ -71,6 +72,7 @@ func configure(
 	pending_monster_attacks.clear()
 	corrosion.clear()
 	generators.reset(random_seed ^ 724315)
+	austin.reset(random_seed ^ 591311)
 	ground_loot.clear()
 	return DomainResult.ok(self)
 
@@ -185,6 +187,7 @@ func refresh_achievement_loadout(actor_id: String, loadout: Dictionary) -> Domai
 	actor["weapons"] = normalized
 	actor["equipment_condition"] = (assembly.get("equipment_condition", EquipmentConditionLoadout.new()) as EquipmentConditionLoadout).duplicate_loadout()
 	generators.retain_sources(actor_id, AuthoritativeGeneratorModule.instances(actor.equipment_condition), monsters)
+	austin.retain_sources(actor_id, actor.equipment_condition)
 	actor["self_repair_bonus_strength"] = int(assembly.get("self_repair_bonus_strength", 0))
 	var repair: Dictionary = actor["self_repair"]
 	if bool(repair["active"]):
@@ -227,6 +230,7 @@ func remove_dead_monsters(map_instance_id: String) -> Array[String]:
 func unregister_vehicle(actor_id: String) -> bool:
 	corrosion.detach(actor_id)
 	generators.retain_sources(actor_id, PackedStringArray(), monsters)
+	austin.retain_sources(actor_id)
 	return actors.erase(actor_id)
 
 
@@ -1251,7 +1255,7 @@ func _resolve_monster_attack(attack: Dictionary) -> void:
 		corrosion.add(CorrosiveCloud.new(attack, actor.position + ACTOR_PROJECTILE_HITBOX_OFFSET,
 			target_id, current_tick, simulation_hz), current_tick)
 		damage = 0
-	var damage_result := vehicle_state.apply_damage(damage)
+	var damage_result := austin.resolve_hit(target_id, actor.equipment_condition, vehicle_state, damage, current_tick, simulation_hz)
 	if not damage_result.is_ok:
 		return
 	var impact_position := Vector2(
@@ -1268,6 +1272,7 @@ func _resolve_monster_attack(attack: Dictionary) -> void:
 		"combat_actor_id": attack["combat_actor_id"],
 		"impact_position": [impact_position.x, impact_position.y],
 		"damage": int(damage_result.value["applied_damage"]),
+		"austin_effects": damage_result.value.get("austin_effects", []),
 		"target_health": int(damage_result.value["health"]),
 		"target_destroyed": bool(damage_result.value["destroyed"]),
 	})
@@ -1338,6 +1343,7 @@ func _record_combat_event(event: Dictionary) -> Dictionary:
 		if bool(event.get("target_destroyed", false)):
 			effects.reset_chain()
 			generators.retain_sources(damaged_actor, PackedStringArray(), monsters)
+			austin.retain_sources(damaged_actor)
 			if String(event.get("event_type", "")) == "monster_attack_resolved":
 				event["death_id"] = Crypto.new().generate_random_bytes(16).hex_encode()
 				event["death_time"] = int(Time.get_unix_time_from_system())

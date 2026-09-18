@@ -83,13 +83,12 @@ func regenerate_working_energy(elapsed_seconds: float, regen_factor: float = 1.0
 ## [param amount] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## 返回该函数计算、查询或操作得到的结果。
 ## [param corrosion_damage] 是否为地面或附着腐蚀的持续伤害。
-func apply_damage(amount: int, corrosion_damage := false) -> DomainResult:
-	if amount < 0:
+## [param fixed_reduction] 防御结算后的额外固定减伤，由权威装备触发提供。
+func apply_damage(amount: int, corrosion_damage := false, fixed_reduction := 0) -> DomainResult:
+	if amount < 0 or fixed_reduction < 0:
 		return DomainResult.failure(&"combat.invalid_damage", "damage cannot be negative")
 	var was_alive := health > 0
-	var mitigated := CombatDefense.mitigate(maxi(0, amount - food_defense), defense)
-	if corrosion_damage:
-		mitigated = maxi(1, roundi(mitigated * (1.0 - corrosion_reduction))) if mitigated > 0 else 0
+	var mitigated := maxi(0, preview_damage(amount, corrosion_damage) - fixed_reduction)
 	var applied := mini(mitigated, health)
 	health -= applied
 	return DomainResult.ok({
@@ -97,6 +96,16 @@ func apply_damage(amount: int, corrosion_damage := false) -> DomainResult:
 		"health": health,
 		"destroyed": was_alive and health == 0,
 	})
+
+
+## 计算固定装备减伤之前的实际伤害，供同一次受击预检与结算共用。
+## [param amount] 防御前伤害。[param corrosion_damage] 是否为腐蚀持续伤害。
+## 返回尚未扣血的非负伤害。
+func preview_damage(amount: int, corrosion_damage := false) -> int:
+	var mitigated := CombatDefense.mitigate(maxi(0, amount - food_defense), defense)
+	if corrosion_damage:
+		mitigated = maxi(1, roundi(mitigated * (1.0 - corrosion_reduction))) if mitigated > 0 else 0
+	return mitigated
 
 
 ## 在不超过最大生命的前提下恢复战车生命。

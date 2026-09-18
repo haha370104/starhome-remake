@@ -227,6 +227,7 @@ func _apply_recent_events(combat_snapshot: Dictionary) -> void:
 			_present_damage(event, combat_snapshot)
 		if event_type == &"monster_attack_resolved":
 			_present_attack_impact(event, combat_snapshot)
+			_present_austin_effects(event, combat_snapshot)
 		if event_type in [&"energy_cannon_hit", &"rocket_launcher_hit", &"missile_hit", &"generator_heat_hit"]:
 			_present_nested_death(event)
 
@@ -246,6 +247,24 @@ func _present_damage(event: Dictionary, combat_snapshot: Dictionary) -> void:
 	damage_float.position = world_position
 	_world_parent.add_child(damage_float)
 	damage_float.present(damage)
+
+
+## 只根据已去重的权威回执显示减伤和治疗，客户端不再判定概率。
+## [param event] 怪物实际命中回执。[param snapshot] 当前战斗快照。
+func _present_austin_effects(event: Dictionary, snapshot: Dictionary) -> void:
+	var effects: Variant = event.get("austin_effects", [])
+	if not effects is Array or effects.is_empty(): return
+	var world_position := _damage_world_position(event, snapshot)
+	if not world_position.is_finite(): return
+	var index := 1
+	for effect: Variant in effects:
+		if not effect is Dictionary or effect.get("kind") not in ["mitigation", "healing"] or int(effect.get("amount", 0)) <= 0: continue
+		var healing: bool = effect.kind == "healing"
+		var view := CombatDamageFloat.new()
+		view.position = world_position + Vector2(0, -24 * index)
+		_world_parent.add_child(view)
+		view.present_status("进化 +%d" % int(effect.amount) if healing else "光辉 减伤%d" % int(effect.amount), Color(0.4, 1, 0.6) if healing else Color(0.5, 0.9, 1))
+		index += 1
 
 
 ## 解析权威伤害事件的世界表现位置，并允许目标节点已因死亡快照被移除。
