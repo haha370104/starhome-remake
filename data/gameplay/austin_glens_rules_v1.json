@@ -175,6 +175,7 @@
   ],
   "trigger_chance": 0.1,
   "cooldown_seconds": 60,
+  "suspended_set_effect": {"enabled": false, "scope": "other_players", "required_locations": [24, 25, 26, 27], "required_runes": ["austin_totem_rune", "austin_fury_rune", "austin_guardian_rune", "austin_star_rune", "austin_halo_rune", "austin_holy_rune", "austin_blessing_rune", "austin_heaven_rune"], "all_equipment_healthy": true, "trigger_chance": 0.05, "cannon_attack": 40, "duration_seconds": 8, "cooldown_seconds": 120},
   "source": "Glory equipclt 7371-7758; equipcltclass 13369-13474; globalfunclt 8976-9730; FormClass_ven 46294-47390; stuffclt2 37593-38190",
   "remake_policy": "Workshop supplies bodies at original worth and fifteen materials/runes at remake coin prices; all original upgrades are certain. PVP-only attacks/set effect are deferred and their add-level upgrades disabled. Penetration retains source values without an unproven PVE formula. On a damaging direct monster hit, mitigation follows defense and healing requires survival; ongoing corrosion does not retrigger. No rune extraction."
 }

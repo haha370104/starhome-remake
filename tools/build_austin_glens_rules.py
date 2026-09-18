@@ -81,6 +81,9 @@ def build(check=False):
         "color_costs": [10,20,40], "color_space_costs": [5,10,20], "blessing_cost": 5, "blessing_space_cost": 10,
         "unlock_cost": 4, "inlay_cost": 1, "mitigation": [20,30,40,50,60,70,80,100,120,140,160],
         "healing": [20,30,40,50,60,70,80,100,120,140,180], "trigger_chance": 0.1, "cooldown_seconds": 60,
+        "suspended_set_effect": {"enabled": False, "scope": "other_players", "required_locations": [24,25,26,27],
+                                 "required_runes": [r["definition_id"] for r in runes], "all_equipment_healthy": True,
+                                 "trigger_chance": 0.05, "cannon_attack": 40, "duration_seconds": 8, "cooldown_seconds": 120},
         "source": "Glory equipclt 7371-7758; equipcltclass 13369-13474; globalfunclt 8976-9730; FormClass_ven 46294-47390; stuffclt2 37593-38190",
         "remake_policy": "Workshop supplies bodies at original worth and fifteen materials/runes at remake coin prices; all original upgrades are certain. PVP-only attacks/set effect are deferred and their add-level upgrades disabled. Penetration retains source values without an unproven PVE formula. On a damaging direct monster hit, mitigation follows defense and healing requires survival; ongoing corrosion does not retrigger. No rune extraction.",
     }, check)
