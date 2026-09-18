@@ -88,6 +88,7 @@ func _test_three_second_authoritative_autosave() -> void:
 		_expect(panel_committed.value.inventory_stacks[0].position_px == Vector2i(92, 61), "面板事务应持久化原始自由像素坐标")
 
 	var second_server = ServerScript.new()
+	_expect(first_server.player_state_repository.flush().is_ok, "新实例读取前显式等待后台检查点完成")
 	var reopened: Dictionary = second_server.initialize(_server_config())
 	_expect(reopened.ok, "新服务器实例应重新打开同一存档")
 	if not reopened.ok:
@@ -128,6 +129,7 @@ func _test_three_second_authoritative_autosave() -> void:
 		)
 		_expect(staged_legacy.is_ok, "测试必须能写入业务化前的宇航中心地图 ID")
 		if staged_legacy.is_ok:
+			_expect(second_server.player_state_repository.flush().is_ok, "迁移重开前等待后台快照完成")
 			var migrated_server = ServerScript.new()
 			var migrated_initialized: Dictionary = migrated_server.initialize(
 				_full_server_config()

@@ -1356,6 +1356,9 @@ func _initialize_persistence(injected_repository: PlayerStateRepository) -> Dict
 	var repository_result = player_state_repository.initialize()
 	if not repository_result.is_ok:
 		return _failure(repository_result.error_code, repository_result.error_message)
+	if injected_repository == null:
+		var background := (player_state_repository as FilePlayerStateRepository).enable_background_writes()
+		if not background.is_ok: return _failure(background.error_code, background.error_message)
 	autosave_service = AutosaveServiceScript.new()
 	var autosave_result = autosave_service.configure(
 		player_state_repository,
@@ -1660,6 +1663,7 @@ func _save_all_persistent_players() -> void:
 	if autosave_service == null:
 		return
 	var result := autosave_service.save_all(Callable(self, "_capture_persistent_player_state"))
+	if result.is_ok: result = player_state_repository.flush()
 	if not result.is_ok:
 		push_error("Authoritative persistence flush failed [%s]: %s" % [
 			result.error_code, result.error_message,
@@ -1679,6 +1683,14 @@ func _release_exited_player(session: ServerSession, committed: PlayerStateRecord
 ## 在服务器节点退出场景树前执行最后一次权威存档。
 func _exit_tree() -> void:
 	_save_all_persistent_players()
+
+
+## 回收独立及进程内服务的低优先级文件线程，未进场景树的测试实例也必须完成收尾。
+## [param what] 引擎生命周期通知。
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_PREDELETE and player_state_repository != null:
+		var closed := player_state_repository.close()
+		if not closed.is_ok: push_error("Authoritative persistence close failed: " + closed.error_message)
 
 
 ## 读取全量荣耀地图索引，但不构建导航图；地图实例在首次进入时创建。

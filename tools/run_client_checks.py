@@ -11,6 +11,10 @@ import time
 
 ROOT = Path(__file__).resolve().parents[1]
 TESTS = (
+    "core/combat_trace_logger_test.gd",
+    "core/background_file_writer_test.gd",
+    "server/persistence/background_persistence_test.gd",
+    "server/persistence/authoritative_autosave_test.gd",
     "domain/central_growth_test.gd",
     "domain/central_integration_test.gd",
     "server/commerce/central_authority_test.gd",

@@ -44,3 +44,28 @@ func transact_player(_character_id: String, _operation: Callable) -> DomainResul
 ## 返回该函数计算、查询或操作得到的结果。
 func current_schema_version() -> int:
 	return 0
+
+
+## 正常退出要求持久化完成；同步仓储直接沿用其事务实现。
+## [param state] 完整角色候选。[param expected_revision] 当前事务版本。
+## 返回已持久化的结果或失败。
+func save_player_durable(state: PlayerStateRecord, expected_revision: int) -> DomainResult:
+	return save_player(state, expected_revision)
+
+
+## 提交后台检查点；同步仓储没有待写队列。
+## 返回提交状态。
+func queue_checkpoint() -> DomainResult:
+	return DomainResult.ok()
+
+
+## 等待最新已提交状态落盘；同步仓储已经完成写入。
+## 返回持久化状态。
+func flush() -> DomainResult:
+	return DomainResult.ok()
+
+
+## 释放文件工作线程；同步仓储无需额外收尾。
+## 返回收尾状态。
+func close() -> DomainResult:
+	return DomainResult.ok()

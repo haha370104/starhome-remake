@@ -38,7 +38,7 @@ func execute(peer_id: int, session: ServerSession, command: Dictionary) -> Domai
 	if not captured.is_ok: return captured
 	var candidate: PlayerStateRecord = captured.value
 	candidate.production.pause("退出游戏后生产已暂停")
-	var committed := _autosave.commit_player_state(session.entity_id, candidate)
+	var committed := _autosave.commit_player_state(session.entity_id, candidate, true)
 	if not committed.is_ok: return committed
 	_release.call(session, committed.value)
 	var receipt := {"request_id": String(identity), "saved_revision": int(committed.value.revision)}

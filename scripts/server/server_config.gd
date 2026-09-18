@@ -25,7 +25,7 @@ var network_enabled := true
 var smoke_test := false
 var persistence_enabled := true
 var player_state_store_path := DEFAULT_PLAYER_STATE_STORE
-var autosave_interval_seconds := 3.0
+var autosave_interval_seconds := 60.0
 
 
 ## 加载并校验 `from_command_line` 对应的模块状态。

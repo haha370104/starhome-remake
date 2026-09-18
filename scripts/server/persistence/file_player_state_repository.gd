@@ -8,6 +8,8 @@ var database_path := ""
 var _schema_version := 0
 var _players: Dictionary = {}
 var _initialized := false
+var _writer: BackgroundFileWriter
+var _durable_commit := false
 
 
 ## 使用调用方参数初始化当前实例。
@@ -135,10 +137,10 @@ func current_schema_version() -> int:
 ## [param committed_character_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## 返回该函数计算、查询或操作得到的结果。
 func _commit_candidate(candidate: Dictionary, committed_character_id: String) -> DomainResult:
-	var document := _encode_document(candidate)
-	var persisted := _persist_document(document)
-	if not persisted.is_ok:
-		return persisted
+	if _writer == null or _durable_commit:
+		var document := _encode_document(candidate)
+		var persisted := _persist_document(document)
+		if not persisted.is_ok: return persisted
 	_players = candidate
 	return DomainResult.ok((_players[committed_character_id] as PlayerStateRecord).duplicate_record())
 
@@ -148,37 +150,57 @@ func _commit_candidate(candidate: Dictionary, committed_character_id: String) ->
 ## 返回该函数计算、查询或操作得到的结果。
 ## 设计：该函数位于权威服务器边界，客户端不得覆盖其计算结果。
 func _persist_document(document: Dictionary) -> DomainResult:
-	var storage_path := _native_storage_path()
-	var absolute_directory := storage_path.get_base_dir()
-	var make_error := DirAccess.make_dir_recursive_absolute(absolute_directory)
-	if make_error != OK and make_error != ERR_ALREADY_EXISTS:
-		return DomainResult.failure(&"persistence.storage_error", "cannot create database directory")
-	var temporary_path := storage_path + ".tmp"
-	var backup_path := storage_path + ".bak"
-	var file := FileAccess.open(temporary_path, FileAccess.WRITE)
-	if file == null:
-		return DomainResult.failure(&"persistence.storage_error", "cannot open temporary database file")
-	file.store_string(JSON.stringify(document, "  "))
-	file.flush()
-	file.close()
-	var directory := DirAccess.open(absolute_directory)
-	if directory == null:
-		return DomainResult.failure(&"persistence.storage_error", "cannot open database directory")
-	var database_name := storage_path.get_file()
-	var temporary_name := temporary_path.get_file()
-	var backup_name := backup_path.get_file()
-	if directory.file_exists(backup_name):
-		directory.remove(backup_name)
-	var had_original := directory.file_exists(database_name)
-	if had_original and directory.rename(database_name, backup_name) != OK:
-		return DomainResult.failure(&"persistence.storage_error", "cannot stage previous database snapshot")
-	if directory.rename(temporary_name, database_name) != OK:
-		if had_original:
-			directory.rename(backup_name, database_name)
-		return DomainResult.failure(&"persistence.storage_error", "cannot install database snapshot")
-	if had_original:
-		directory.remove(backup_name)
+	if _writer == null: return AtomicJsonFile.write_document(_native_storage_path(), document)
+	if _writer.enqueue_snapshot(_native_storage_path(), document) != OK:
+		return DomainResult.failure(&"persistence.storage_error", "background snapshot queue is closed")
+	return _writer.flush()
+
+
+## 为实际游戏启用延迟持久化，事务仍在内存中原子校验并递增版本。
+## 返回后台线程启动结果；直接使用文件仓储的工具仍可保留同步模式。
+func enable_background_writes() -> DomainResult:
+	if _writer != null: return DomainResult.ok()
+	_writer = BackgroundFileWriter.new()
+	if _writer.start() != OK:
+		_writer = null
+		return DomainResult.failure(&"persistence.storage_error", "cannot start persistence worker")
 	return DomainResult.ok()
+
+
+## 正常退出专用：后台写盘完成后才采用候选，失败保持当前内存事务不变。
+## [param state] 已采集的退出候选。[param expected_revision] 当前内存版本。
+## 返回已写盘的角色或失败；普通装备、掉落事务不等待此接口。
+func save_player_durable(state: PlayerStateRecord, expected_revision: int) -> DomainResult:
+	_durable_commit = true
+	var result := save_player(state, expected_revision)
+	_durable_commit = false
+	return result
+
+
+## 在检查点时将最新内存索引交给后台，覆盖队列中尚未执行的旧快照。
+## 返回入队状态，并报告上次后台失败；下一次检查点仍会重试最新状态。
+func queue_checkpoint() -> DomainResult:
+	if _writer == null: return DomainResult.ok()
+	var previous := _writer.last_result()
+	if _writer.enqueue_snapshot(_native_storage_path(), _encode_document(_players)) != OK:
+		return DomainResult.failure(&"persistence.storage_error", "background snapshot queue is closed")
+	return previous
+
+
+## 等待最新内存快照落盘；只用于退出或显式保存，不在普通游戏事务中调用。
+## 返回实际写盘结果。
+func flush() -> DomainResult:
+	return _persist_document(_encode_document(_players)) if _writer != null else DomainResult.ok()
+
+
+## 正常释放仓储时保存内存中最后版本并回收文件线程。
+## 返回最终写盘结果，重复关闭安全。
+func close() -> DomainResult:
+	if _writer == null: return DomainResult.ok()
+	var result := flush()
+	_writer.close()
+	_writer = null
+	return result
 
 
 ## 执行 `recover_interrupted_commit` 对应的模块操作。

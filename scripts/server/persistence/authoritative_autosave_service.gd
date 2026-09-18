@@ -61,7 +61,9 @@ func advance(elapsed_seconds: float, state_collector: Callable) -> DomainResult:
 		return DomainResult.ok(false)
 	_elapsed_seconds = fmod(_elapsed_seconds, interval_seconds)
 	var saved := save_all(state_collector)
-	return DomainResult.ok(true) if saved.is_ok else saved
+	if not saved.is_ok: return saved
+	var queued := _repository.queue_checkpoint()
+	return DomainResult.ok(true) if queued.is_ok else queued
 
 
 ## 立即保存全部已登记角色，任一失败时返回首个错误。
@@ -109,14 +111,16 @@ func save_player(character_id: String, state_collector: Callable) -> DomainResul
 ## 原子提交面板事务生成的完整玩家聚合，并刷新自动存档内存副本。
 ## [param character_id] 已登记角色标识。
 ## [param candidate] 已由权威领域服务校验的候选聚合。
+## [param durable] 正常退出时等待磁盘成功；普通事务仅保证内存原子提交。
 ## 返回仓储提交后的新 revision 聚合或冲突错误。
 ## 设计：装备事务同时修改背包和装配，必须通过一次仓储提交保持两份快照一致。
-func commit_player_state(character_id: String, candidate: PlayerStateRecord) -> DomainResult:
+func commit_player_state(character_id: String, candidate: PlayerStateRecord, durable: bool = false) -> DomainResult:
 	if _repository == null or not _states.has(character_id) or candidate == null \
 			or candidate.character_id != character_id:
 		return DomainResult.failure(&"persistence.autosave_character_unknown", "autosave character is not registered")
 	var current: PlayerStateRecord = _states[character_id]
-	var committed := _repository.save_player(candidate, current.revision)
+	var committed := _repository.save_player_durable(candidate, current.revision) if durable \
+		else _repository.save_player(candidate, current.revision)
 	if not committed.is_ok:
 		last_errors[character_id] = committed.error_code
 		return committed
@@ -153,8 +157,8 @@ func unregister_player(character_id: String) -> void:
 
 ## 用隔离的技能候选执行同步成长事务，不为每个移动tick复制装备与仓库。
 ## [param character_id] 当前会话角色。[param operation] 接收PlayerSkillProgression并返回DomainResult的内部领域用例。
-## 返回成长结果；升级必须先写盘成功，普通进度保留原三秒自动存档语义。
-## 设计：只由本所有者合入技能及综合等级；失败、重入或写盘错误不覆盖已存状态。
+## 返回成长结果；升级立即提交内存事务，磁盘耐久性由仓储检查点策略负责。
+## 设计：只由本所有者合入技能及综合等级；失败、重入或仓储拒绝不覆盖已存状态。
 func apply_skill_progression(character_id: String, operation: Callable) -> DomainResult:
 	var current := _states.get(character_id) as PlayerStateRecord
 	if current == null or not operation.is_valid():
