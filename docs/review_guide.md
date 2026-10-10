@@ -57,7 +57,7 @@ main_hall.tscn / main_hall.gd                  dedicated_server.tscn
        └─ ClientTransportEndpoint                       │
             ├─ InProcessAuthoritativeTransport ─┐       │
             └─ NetworkTransportEndpoint / ENet ─┴─ AuthoritativeServer
-                                                    ├─ SessionRegistry
+														├─ SessionService
                                                     ├─ AuthoritativeMapRegistry
                                                     │    └─ 活跃 MapInstance
                                                     │         ├─ 移动/导航
@@ -113,13 +113,13 @@ main_hall.tscn / main_hall.gd                  dedicated_server.tscn
 
 测试：[充血模型](../tests/domain/player_rich_model_test.gd)、
 [面板服务事务](../tests/server/player_panels/player_panel_service_test.gd)、
-[面板运行](../tests/ui/runtime/player_panels_runtime_test.gd)。
+[可复用 UI](../tests/ui/runtime/reusable_player_ui_test.gd)。
 
 ### B. 存档、事务与身份（最高优先级）
 
 先读[持久化说明](./persistence_architecture.md)。
 代码：[AuthoritativeServer.open_session](../scripts/server/authoritative_server.gd)、
-[SessionRegistry](../scripts/server/session_registry.gd)、
+[SessionService](../scripts/server/session_service.gd)、
 [AutosaveService](../scripts/server/persistence/authoritative_autosave_service.gd)、
 [PlayerStateRepository](../scripts/server/persistence/player_state_repository.gd)、
 [FilePlayerStateRepository](../scripts/server/persistence/file_player_state_repository.gd)、
@@ -218,8 +218,7 @@ main_hall.tscn / main_hall.gd                  dedicated_server.tscn
 - [ ] ZIP 挂载、帧索引缓存、纹理加载与地图模拟驻留是不同层，分别测量内存/CPU/GPU。
 - [ ] 新全量资源包仍存在原始命名泄漏，见第 5 节；不能因为打包进 ZIP 就豁免工程规范。
 
-测试：[语义遮挡](../tests/world/semantic_scene_depth_smoke_test.gd)、
-[导航](../tests/navigation/diamond_navigation_smoke_test.gd)、
+测试：[导航](../tests/navigation/diamond_navigation_smoke_test.gd)、
 [地图驻留](../tests/server/map_residency_test.gd)、
 [全量地图包](../tests/maps/glory_full_map_pack_test.gd)、
 [内容完整性](../tests/domain/content/runtime_content_completeness_test.gd)。

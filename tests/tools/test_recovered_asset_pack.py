@@ -9,6 +9,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'tools'))
 from import_remaining_recovered_assets import source_files, SELECTIONS, PACK
+from recovery.cross_release_paths import REPORTS
 
 
 class RecoveryPackTest(unittest.TestCase):
@@ -29,7 +30,7 @@ class RecoveryPackTest(unittest.TestCase):
                     self.assertEqual((parsed/before).read_bytes(), archive.read(root+'/'+after))
 
     def test_no_candidate_was_left_out_or_existing_glory_replaced(self):
-        report = json.loads((ROOT.parent/'cross_release_asset_review/audit.json').read_text('utf-8'))
+        report = json.loads((REPORTS/'audit.json').read_text('utf-8'))
         for row in report['records']:
             if not row['glory_now_available'] and row['comparison'] != 'neither_found':
                 self.assertIsNotNone(row['runtime_recovery'], row['reference'])

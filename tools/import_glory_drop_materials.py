@@ -5,7 +5,7 @@ import json
 from audit_monster_asset_sources import load_decoder, decode_index_alpha, apply_palette, file_hash
 
 ROOT = Path(__file__).resolve().parents[1]
-RAW = ROOT.parent / "starhome_lz_ry_full/raw"
+RAW = ROOT / "../starhome_lz_ry_full/raw"
 ROWS = [
     ("gel", "类胶", "gluey", "rubber"),
     ("energy_catalyst", "能量催化剂", "CHN_2005_06_28_18_34_48_776", "activator"),
@@ -23,8 +23,8 @@ def act_colors(path):
 
 def main():
     decoder = load_decoder()
-    runtime = json.loads((ROOT / ".godot/content-audit-runtime.json").read_text("utf-8"))
-    ids = {item["display_name"]: item_id for item_id, item in runtime["items"].items()}
+    source_items = json.loads((ROOT / "data/gameplay/glory/glory_items_v1.json").read_text("utf-8"))
+    ids = {item["display_name"]: item["id"] for item in source_items["definitions"]}
     path = ROOT / "data/presentation/ground_loot_v1.json"
     presentation = json.loads(path.read_text("utf-8"))
     evidence = []
@@ -37,7 +37,7 @@ def main():
         assert len(ale.frames) == 1, source
         frame = ale.frames[0]
         image = (apply_palette(decode_index_alpha(ale, frame), act_colors(RAW / palette))
-                 if palette else ale.decode_frame(frame))
+                 if palette else frame.image)
         target = ROOT / f"assets/items/materials/{key}/icon.png"
         target.parent.mkdir(parents=True, exist_ok=True)
         image.save(target)

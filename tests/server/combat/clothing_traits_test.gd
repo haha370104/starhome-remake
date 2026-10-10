@@ -55,7 +55,7 @@ func _test_combat() -> void:
 	var catalog: CombatDefinitionCatalog = CombatDefinitionCatalog.load_default().value
 	var loadout: Dictionary = catalog.vehicle_combat_loadout(player, 20, {"base_speed_multiplier": 1500, "base_speed_cap": 240}).value
 	var base_cost := (player.vehicle.loadout.at(1) as VehicleWeapon).working_energy_per_shot
-	_expect(is_equal_approx(float(loadout.weapons["energy_cannon.primary"].working_energy_cost), base_cost * 0.88), "实际武器节能12%")
+	_expect(is_equal_approx(float(loadout.weapons["energy_cannon.primary"].working_energy_per_shot), base_cost * 0.88), "实际武器节能12%")
 	shirt.enhancement.trait_id = "pursuit"
 	loadout = catalog.vehicle_combat_loadout(player, 20, {"base_speed_multiplier": 1500, "base_speed_cap": 240}).value
 	var combat := AuthoritativeCombatModule.new()
@@ -97,7 +97,7 @@ func _test_mining() -> void:
 	for index: int in range(100):
 		navigation.graph.add_point(index, Vector2(index % 10, floori(index / 10.0)) * 200 + Vector2(100, 100))
 	var module := AuthoritativeMiningModule.new()
-	module.configure(MiningCatalog.load_default().value, "d04_field_zone", "mining", 20, navigation)
+	module.configure(MiningCatalog.load_default().value, "glory_nft_bl_d04", "mining", 20, navigation)
 	var source: MineSource = module.sources.values()[0]
 	var started := module.begin_collection("a", source.position + Vector2(40, 0), source.position, 1000, 1, 0, 30, 0.12)
 	_expect(started.is_ok and is_equal_approx(float(started.value.interval_seconds), 3.0 / 1.3), "挖掘力加速真实周期")

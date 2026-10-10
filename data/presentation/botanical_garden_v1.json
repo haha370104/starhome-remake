@@ -1,0 +1,139 @@
+{
+  "schema_version": 1,
+  "definitions": {
+    "young_coconut": {
+      "display_name": "小椰子",
+      "inventory": {
+        "icon": "res://assets/items/botanical/coconut/icon.png",
+        "native_size": [
+          19,
+          19
+        ]
+      },
+      "world": {
+        "texture": "res://assets/items/botanical/coconut/icon.png",
+        "native_size": [
+          19,
+          19
+        ],
+        "origin": [
+          -8,
+          -11
+        ],
+        "variants": {}
+      }
+    },
+    "green_beans": {
+      "display_name": "生豆",
+      "inventory": {
+        "icon": "res://assets/items/botanical/bean/icon.png",
+        "native_size": [
+          18,
+          19
+        ]
+      },
+      "world": {
+        "texture": "res://assets/items/botanical/bean/icon.png",
+        "native_size": [
+          18,
+          19
+        ],
+        "origin": [
+          -8,
+          -10
+        ],
+        "variants": {}
+      }
+    },
+    "plant_cotton": {
+      "display_name": "植物棉",
+      "inventory": {
+        "icon": "res://assets/items/botanical/cotton/icon.png",
+        "native_size": [
+          35,
+          30
+        ]
+      },
+      "world": {
+        "texture": "res://assets/items/botanical/cotton/icon.png",
+        "native_size": [
+          35,
+          30
+        ],
+        "origin": [
+          -22,
+          -16
+        ],
+        "variants": {
+          "alternate": {
+            "texture": "res://assets/items/botanical/cotton/fruit_variant.png",
+            "native_size": [
+              35,
+              30
+            ],
+            "origin": [
+              -11,
+              -18
+            ]
+          }
+        }
+      }
+    },
+    "melon": {
+      "display_name": "面瓜",
+      "inventory": {
+        "icon": "res://assets/items/botanical/melon/icon.png",
+        "native_size": [
+          28,
+          17
+        ]
+      },
+      "world": {
+        "texture": "res://assets/items/botanical/melon/icon.png",
+        "native_size": [
+          28,
+          17
+        ],
+        "origin": [
+          -9,
+          -10
+        ],
+        "variants": {
+          "alternate": {
+            "texture": "res://assets/items/botanical/melon/fruit_variant.png",
+            "native_size": [
+              28,
+              17
+            ],
+            "origin": [
+              -19,
+              -7
+            ]
+          }
+        }
+      }
+    },
+    "sugar_melon": {
+      "display_name": "糖瓜",
+      "inventory": {
+        "icon": "res://assets/items/botanical/sugar_melon/icon.png",
+        "native_size": [
+          25,
+          25
+        ]
+      },
+      "world": {
+        "texture": "res://assets/items/botanical/sugar_melon/fruit.png",
+        "native_size": [
+          25,
+          25
+        ],
+        "origin": [
+          -12,
+          -10
+        ],
+        "variants": {}
+      }
+    }
+  }
+}

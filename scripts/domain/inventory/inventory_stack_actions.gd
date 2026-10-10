@@ -25,20 +25,32 @@ static func split(inventory: Inventory, id: String, amount: int, expected_revisi
 	return DomainResult.ok(new_id)
 
 
-## 将同类兼容堆叠尽量合入选中物品，保留剩余数量和所有不兼容实例。
+## 将兼容堆叠合入目标；指定 target_id 时只移动选定源堆叠，否则自动归并同类堆叠。
 ## [param inventory] 背包所有者。
-## [param id] 接收合并数量的目标实例。
+## [param id] 指定 target_id 时为源实例，否则为接收数量的目标实例。
 ## [param expected_revision] 客户端背包版本。
+## [param target_id] 可选的定向合并目标。
 ## 返回实际合并数量；无可合并内容时不推进版本。
-static func merge(inventory: Inventory, id: String, expected_revision: int) -> DomainResult:
+static func merge(
+	inventory: Inventory,
+	id: String,
+	expected_revision: int,
+	target_id: String = "",
+) -> DomainResult:
 	var checked := inventory.require_revision(expected_revision)
 	if not checked.is_ok:
 		return checked
-	var target := inventory.find(id)
+	var target := inventory.find(id if target_id.is_empty() else target_id)
 	if target == null or target.locked or target.max_stack <= 1:
 		return DomainResult.failure(&"inventory.invalid_merge", "该物品不能合并")
+	var sources: Array[GameItem] = inventory.items()
+	if not target_id.is_empty():
+		var source := inventory.find(id)
+		if source == null or not target.can_stack_with(source):
+			return DomainResult.failure(&"inventory.invalid_merge", "源物品和目标物品不能合并")
+		sources = [source]
 	var moved := 0
-	for other: GameItem in inventory.items():
+	for other: GameItem in sources:
 		if not target.can_stack_with(other):
 			continue
 		var amount := mini(other.quantity, target.max_stack - target.quantity)

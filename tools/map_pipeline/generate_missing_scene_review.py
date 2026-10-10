@@ -12,6 +12,7 @@ import argparse
 import csv
 import html
 import json
+import os
 import shutil
 from collections import Counter, defaultdict
 from pathlib import Path
@@ -21,6 +22,7 @@ from PIL import Image, ImageDraw
 
 
 Image.MAX_IMAGE_PIXELS = None
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 
 def read_json(path: Path) -> Any:
@@ -42,6 +44,12 @@ def rel_url(path: Path, base: Path) -> str:
     """Return a POSIX relative URL for ``path`` rooted below ``base``."""
 
     return path.resolve().relative_to(base.resolve()).as_posix()
+
+
+def provenance_path(path: Path) -> str:
+    """Return a repository-relative path for generated audit metadata."""
+
+    return Path(os.path.relpath(path.resolve(), PROJECT_ROOT)).as_posix()
 
 
 def marker_color(kinds: set[str]) -> tuple[int, int, int, int]:
@@ -155,8 +163,8 @@ def render_map(
             "missing_marked": rel_url(marked_path, review_root),
             "thumbnail": rel_url(thumbnail_path, review_root),
             "details": rel_url(detail_path, review_root),
-            "source_composite": str(composite_path.resolve()),
-            "source_scene_objects": str(scene_path.resolve()),
+            "source_composite": provenance_path(composite_path),
+            "source_scene_objects": provenance_path(scene_path),
         },
         "missing_resources": grouped_resources,
     }

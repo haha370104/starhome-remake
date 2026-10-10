@@ -30,7 +30,7 @@ var assertions := 0
 
 ## 在出现过百毫秒尖峰的真实 D03 障碍上验证完整、安全且有界的怪物路线。
 func _initialize() -> void:
-	var definition := Loader.new().load_file("res://data/maps/buli_d03_field_zone.json")
+	var definition := Loader.new().load_file("res://assets/glory/map_definitions/glory_nft_bl_d03.json")
 	var navigation := CountingNavigation.new()
 	_expect(navigation.load_from(definition.navigation_data_path,
 		definition.navigation_grid_size, definition.navigation_cell_size), "D03 navigation should load")

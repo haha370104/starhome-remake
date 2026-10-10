@@ -25,16 +25,16 @@ func _initialize() -> void:
 		"路由解析器必须覆盖受控目录中的全部可运行地图",
 	)
 	var loader = LoaderScript.new()
-	var d04: MapDefinition = loader.load_file("res://data/maps/d04_field_zone.json")
+	var d04: MapDefinition = loader.load_file("res://data/maps/glory_nft_bl_d04.json")
 	_expect(d04 != null, "D04 定义必须可读取")
 	if d04 == null:
 		_finish()
 		return
 	var expected_targets := {
-		&"exit_to_c04_field": &"buli_c04_field_zone",
-		&"exit_to_c05_field": &"buli_c05_field_zone",
-		&"exit_to_d03_field": &"buli_d03_field_zone",
-		&"exit_to_d05_field": &"buli_d05_field_zone",
+		&"exit_to_c04_field": &"glory_nft_bl_c04",
+		&"exit_to_c05_field": &"glory_nft_bl_c05",
+		&"exit_to_d03_field": &"glory_nft_bl_d03",
+		&"exit_to_d05_field": &"glory_nft_bl_d05",
 		&"exit_to_e03_field": &"glory_nft_bl_e03",
 		&"exit_to_e04_field": &"glory_nft_bl_e04",
 		&"exit_to_e05_field": &"glory_nft_bl_e05",

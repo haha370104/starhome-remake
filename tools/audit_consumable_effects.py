@@ -4,14 +4,16 @@ import hashlib
 import json
 from pathlib import Path
 import re
+from recovery.fcc_workspace import RawFccWorkspace
 
 ROOT = Path(__file__).resolve().parents[1]
-SOURCE = ROOT.parent / "starhome_lz_ry_fcc_source/cltobj/stuffclt2.fcc"
 
 
 def main():
     """Audit each rule including inherited fields against its original class."""
-    source = SOURCE.read_text(encoding="utf-8-sig")
+    with RawFccWorkspace() as fcc:
+        source = fcc.text("cltobj/stuffclt2.fcc")
+    source_sha256 = hashlib.sha256(source.encode("utf-8")).hexdigest()
     matches = list(re.finditer(r"^class\s+(\w+)\s*:\s*(\w+)", source, re.M))
     classes = {m[1]: (m[2], source[m.end():matches[i + 1].start() if i + 1 < len(matches) else len(source)])
                for i, m in enumerate(matches)}
@@ -39,7 +41,7 @@ def main():
             expected = [dict(kind=k, amount=v[0], duration=v[1], cooldown=v[2])
                         for k, v in zip(kinds, values) if k]
             assert rule["effects"] == expected, (name, rule["effects"], expected)
-    print(f"CONSUMABLE_SOURCE_AUDIT_OK rules={len(rules)} sha256={hashlib.sha256(SOURCE.read_bytes()).hexdigest()}")
+    print(f"CONSUMABLE_SOURCE_AUDIT_OK rules={len(rules)} sha256={source_sha256}")
 
 
 if __name__ == "__main__":

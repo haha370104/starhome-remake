@@ -1,5 +1,7 @@
 extends SceneTree
 
+const CommerceRecordAdapter := preload("res://tests/fixtures/commerce_record_adapter.gd")
+
 var _items := ItemCatalog.new()
 var _fixture := PlayerPanelServiceFixture.new()
 var _service := AuthoritativeCommerceService.new()
@@ -23,7 +25,7 @@ func _initialize() -> void:
 		"inventory_revision": player.inventory.revision, "confirm_destruction": true}
 	var state: PlayerStateRecord = _mapper.to_record(player).value
 	var before := state.to_dictionary()
-	var result := _service.execute(state, command)
+	var result := CommerceRecordAdapter.execute(_service, state, command)
 	_check(result.is_ok and state.to_dictionary() == before, "isolated transaction")
 	if not result.is_ok: push_error(result.error_message); quit(1); return
 	player = _mapper.to_domain(result.value.candidate).value
@@ -32,14 +34,14 @@ func _initialize() -> void:
 	_check(armor.sockets.slot_at(0).to_dictionary() == socket and armor.sockets.capacity() == 4, "crystal preservation")
 	_check(armor.bound and player.inventory.find("stone").quantity == 16 and player.inventory.currency == 1000000, "cost and binding")
 	_check(player.inventory.revision == state.inventory_revision + 1, "single inventory transaction")
-	_check(not _service.execute(result.value.candidate, command).is_ok, "replay rejected")
+	_check(not CommerceRecordAdapter.execute(_service, result.value.candidate, command).is_ok, "replay rejected")
 	_check(not result.value.panel_bundle.armor_refinement.preview.has("candidate"), "no domain objects over network")
 	var current := CurrentPlayer.new()
 	_check(current.apply_bundle(result.value.panel_bundle) and current.inventory.find("armor").armor_refinement_profile.level == 5, "client factory replacement")
-	var query := _service.execute(result.value.candidate, {"type": "query_armor_refinement", "instance_id": "armor", "material_id": "stone", "material_quantity": 4})
+	var query := CommerceRecordAdapter.execute(_service, result.value.candidate, {"type": "query_armor_refinement", "instance_id": "armor", "material_id": "stone", "material_quantity": 4})
 	_check(query.is_ok and not query.value.changed and query.value.panel_bundle.armor_refinement.offers.size() == 9, "query and acquisition chain")
 	_check(JSON.parse_string(JSON.stringify(query.value.panel_bundle)).armor_refinement.preview.has("chance"), "serializable preview")
-	var buy := _service.execute(result.value.candidate, {"type": "buy_armor_refinement_item", "definition_id": "armor_refinement_chip", "quantity": 2, "inventory_revision": player.inventory.revision, "price": 1})
+	var buy := CommerceRecordAdapter.execute(_service, result.value.candidate, {"type": "buy_armor_refinement_item", "definition_id": "armor_refinement_chip", "quantity": 2, "inventory_revision": player.inventory.revision, "price": 1})
 	_check(buy.is_ok and buy.value.candidate.currency == 980000, "server purchase pricing")
 	for level: int in [1, 4, 7]:
 		player = _player(level)

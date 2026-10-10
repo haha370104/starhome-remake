@@ -2,18 +2,26 @@
 
 from __future__ import annotations
 
+import argparse
 import hashlib
 import json
 import shutil
 from pathlib import Path
 
 from PIL import Image
+from recovery.source_workspace import RawSpriteWorkspace
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-SOURCE_ROOT = PROJECT_ROOT.parent / "starhome_lz_ry_full_parsed" / "ale_sprites"
-RAW_ROOT = PROJECT_ROOT.parent / "starhome_lz_ry_full" / "raw"
+SOURCE_ROOT = PROJECT_ROOT / "assets" / "glory" / "sprites"
+RAW_ROOT = PROJECT_ROOT / "../starhome_lz_ry_full" / "raw"
 OUTPUT_ROOT = PROJECT_ROOT / "assets" / "ui" / "windows"
+FONT_ROOT = PROJECT_ROOT / "assets" / "ui" / "fonts"
+FONT_FILES = {
+    "NotoSansCJKsc-Regular.otf": 400,
+    "NotoSansCJKsc-Bold.otf": 700,
+}
+NAVIGATION_VARIANTS_ROOT = OUTPUT_ROOT / "navigation" / "glory_variants"
 
 SINGLE_FRAME_ASSETS = {
     "character/background.png": "pic3/interface/HumanEquipBk",
@@ -53,7 +61,7 @@ def load_metadata(source_dir: Path) -> dict:
 
 def copy_single(relative_output: str, source_relative: str) -> dict:
     """导入单帧素材；两个参数分别为业务输出名和荣耀解析路径，返回来源审计项。"""
-    source_dir = SOURCE_ROOT / source_relative
+    source_dir = SOURCE_ROOT / source_relative.lower()
     metadata = load_metadata(source_dir)
     if int(metadata.get("frame_count", 0)) != 1:
         raise ValueError(f"Expected a single frame: {source_relative}")
@@ -72,7 +80,7 @@ def copy_single(relative_output: str, source_relative: str) -> dict:
 
 def extract_states(output_prefix: str, source_relative: str) -> dict:
     """将多帧控件拆成业务状态图；参数为输出前缀和荣耀解析路径，返回来源审计项。"""
-    source_dir = SOURCE_ROOT / source_relative
+    source_dir = SOURCE_ROOT / source_relative.lower()
     metadata = load_metadata(source_dir)
     sheet = Image.open(source_dir / "sheet.png").convert("RGBA")
     state_names = ("normal", "hover", "pressed")
@@ -137,6 +145,51 @@ def compose_autofind_dialog(source_path: Path, output_path: Path, size: tuple[in
     output.save(output_path)
 
 
+def write_panel_fonts() -> None:
+    """记录项目内字体来源；字体由 Godot 以 MSDF 方式导入。"""
+    FONT_ROOT.mkdir(parents=True, exist_ok=True)
+    missing = [filename for filename in FONT_FILES if not (FONT_ROOT / filename).is_file()]
+    if missing:
+        raise FileNotFoundError(f"Missing project fonts: {', '.join(missing)}")
+    (FONT_ROOT / "source_manifest.json").write_text(
+        json.dumps({"schema_version": 2, "source": "Noto Sans CJK SC",
+                    "files": FONT_FILES, "msdf": True, "allow_system_fallback": False},
+                   ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+    )
+
+
+def import_navigation_variants() -> None:
+    """按需从荣耀原档生成导航窗口参考图，不改动当前窗口绑定。"""
+    form_path = RAW_ROOT / "pic3/interface/form/minform九分格.png"
+    sources = {"premium_shop": "pic3/interface/adornshopping/adorn_bg.ale",
+               "system_menu": "pic3/ctrlpad/system_btn/back.ale"}
+    with RawSpriteWorkspace(RAW_ROOT) as workspace:
+        workspace.require(list(sources.values()) + ["pic3/interface/form/minform九分格.png"])
+        NAVIGATION_VARIANTS_ROOT.mkdir(parents=True, exist_ok=True)
+        assets = {}
+
+        for name, size in (("scene_players", (320, 450)), ("shop_confirmation", (300, 150))):
+            compose_autofind_dialog(form_path, NAVIGATION_VARIANTS_ROOT / f"{name}.png", size)
+            assets[name] = {"texture": f"res://assets/ui/windows/navigation/glory_variants/{name}.png",
+                            "sources": [{"source_logical_path": "pic3/interface/form/minform九分格.png",
+                                         "source_sha256": sha256(form_path)}]}
+
+        for name, logical in sources.items():
+            directory, metadata = workspace.decode(logical)
+            frame = metadata["frames"][0]
+            with Image.open(directory / metadata["pages"][frame["page"]]) as sheet:
+                image = sheet.convert("RGBA").crop((frame["x"], frame["y"],
+                                                     frame["x"] + frame["width"], frame["y"] + frame["height"]))
+            image.save(NAVIGATION_VARIANTS_ROOT / f"{name}.png")
+            assets[name] = {"texture": f"res://assets/ui/windows/navigation/glory_variants/{name}.png",
+                            "sources": [{"source_logical_path": logical, "source_frame": 0,
+                                         "source_sha256": sha256(workspace.source(logical))}]}
+        (NAVIGATION_VARIANTS_ROOT / "source_manifest.json").write_text(
+            json.dumps({"schema_version": 1, "source_release": "starhome_lz_ry", "assets": assets},
+                       ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+
 def main() -> None:
     """执行幂等导入并写入业务清单；无入参，完成时不返回业务值。"""
     manifest: dict[str, object] = {
@@ -174,8 +227,15 @@ def main() -> None:
         json.dumps(manifest, ensure_ascii=False, indent=2) + "\n",
         encoding="utf-8",
     )
+    write_panel_fonts()
     print(f"Imported {len(manifest['assets'])} panel asset groups")
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--navigation-variants", action="store_true", help="export optional Glory navigation window textures")
+    args = parser.parse_args()
+    if args.navigation_variants:
+        import_navigation_variants()
+    else:
+        main()

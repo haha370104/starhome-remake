@@ -1,6 +1,8 @@
 class_name NetworkTransportEndpoint
 extends "res://scripts/network/transport/client_transport_endpoint.gd"
 
+const PerformanceTelemetryScript := preload("res://scripts/core/performance_telemetry.gd")
+
 signal peer_disconnected(peer_id: int)
 signal session_request_received(peer_id: int, request: Dictionary)
 signal move_intent_received(peer_id: int, intent: Dictionary)
@@ -9,6 +11,7 @@ signal use_ability_intent_received(peer_id: int, intent: Dictionary)
 signal vehicle_recovery_intent_received(peer_id: int, intent: Dictionary)
 signal pickup_loot_intent_received(peer_id: int, intent: Dictionary)
 signal player_panel_command_received(peer_id: int, command: Dictionary)
+signal social_command_received(peer_id: int, command: Dictionary)
 
 const ROOT_NODE_NAME := "StarhomeNetworkTransport"
 const SERVER_PEER_ID := 1
@@ -111,6 +114,11 @@ func send_player_panel_command(command: Dictionary) -> void:
 	rpc_submit_player_panel_command.rpc_id(SERVER_PEER_ID, command)
 
 
+## 向权威服务器提交组队、聊天或玩家交易命令。
+func send_social_command(command: Dictionary) -> void:
+	rpc_submit_social_command.rpc_id(SERVER_PEER_ID, command)
+
+
 ## 执行 `send_server_message` 对应的模块操作。
 ## [param peer_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## [param message] 调用方传入的参数；具体约束由函数签名和所在模块定义。
@@ -122,7 +130,15 @@ func send_server_message(peer_id: int, message: Dictionary) -> void:
 ## [param peer_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## [param snapshot] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func send_world_snapshot(peer_id: int, snapshot: Dictionary) -> void:
+	var dispatch_started_at := PerformanceTelemetryScript.begin(
+		&"network_snapshot_dispatch"
+	)
 	rpc_receive_world_snapshot.rpc_id(peer_id, snapshot)
+	PerformanceTelemetryScript.end(&"network_snapshot_dispatch", dispatch_started_at)
+
+
+func send_local_snapshot(peer_id: int, snapshot: Dictionary) -> void:
+	rpc_receive_local_snapshot.rpc_id(peer_id, snapshot)
 
 
 @rpc("any_peer", "call_remote", "reliable", 0)
@@ -189,6 +205,14 @@ func rpc_submit_player_panel_command(command: Dictionary) -> void:
 	)
 
 
+@rpc("any_peer", "call_remote", "reliable", 1)
+## 接收组队、聊天或玩家交易命令并附加不可伪造的远端 peer 身份。
+func rpc_submit_social_command(command: Dictionary) -> void:
+	social_command_received.emit(
+		multiplayer.get_remote_sender_id(), command.duplicate(true)
+	)
+
+
 @rpc("authority", "call_remote", "reliable", 0)
 ## 执行 `rpc_receive_server_message` 对应的模块操作。
 ## [param message] 调用方传入的参数；具体约束由函数签名和所在模块定义。
@@ -201,3 +225,8 @@ func rpc_receive_server_message(message: Dictionary) -> void:
 ## [param snapshot] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func rpc_receive_world_snapshot(snapshot: Dictionary) -> void:
 	world_snapshot_received.emit(snapshot.duplicate(true))
+
+
+@rpc("authority", "call_remote", "unreliable_ordered", 2)
+func rpc_receive_local_snapshot(snapshot: Dictionary) -> void:
+	local_snapshot_received.emit(snapshot.duplicate(true))

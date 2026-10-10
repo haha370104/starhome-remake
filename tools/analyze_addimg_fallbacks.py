@@ -2,6 +2,7 @@ import csv
 import json
 from collections import Counter, defaultdict
 from pathlib import Path
+from recovery.source_workspace import RawSpriteWorkspace
 
 
 def normalize_ale_reference(value: str) -> str:
@@ -22,16 +23,21 @@ def normalize_ale_reference(value: str) -> str:
 def index_library(root: Path) -> tuple[dict[str, Path], dict[str, list[Path]]]:
     exact: dict[str, Path] = {}
     basenames: dict[str, list[Path]] = defaultdict(list)
-    for manifest in root.rglob("frames.json"):
-        folder = manifest.parent
-        logical = folder.relative_to(root).as_posix().lower()
-        exact[logical] = folder
-        basenames[folder.name.lower()].append(folder)
+    sources = root.rglob("*.ale") if root.name == "raw" else root.rglob("frames.json")
+    for source in sources:
+        item = source if root.name == "raw" else source.parent
+        logical = item.relative_to(root).with_suffix("").as_posix().lower() if item.is_file() else item.relative_to(root).as_posix().lower()
+        exact[logical] = item
+        basenames[Path(logical).name].append(item)
     return exact, basenames
 
 
 def candidate_json(folder: Path, root: Path, match: str) -> dict:
-    manifest = json.loads((folder / "frames.json").read_text(encoding="utf-8"))
+    if folder.is_file():
+        with RawSpriteWorkspace(root) as workspace:
+            _, manifest = workspace.decode(folder.relative_to(root).as_posix())
+    else:
+        manifest = json.loads((folder / "frames.json").read_text(encoding="utf-8"))
     return {
         "match": match,
         "logical_path": folder.relative_to(root).as_posix(),
@@ -43,7 +49,7 @@ def candidate_json(folder: Path, root: Path, match: str) -> dict:
 
 def main() -> None:
     outputs = Path(__file__).resolve().parents[2]
-    missing_report_path = outputs / "starhome_lz_ry_maps_parsed" / "maps_missing_addimg.json"
+    missing_report_path = Path(__file__).resolve().parents[1] / "data/source_evidence/glory/map_recovery/maps_missing_addimg.json"
     missing_report = json.loads(missing_report_path.read_text(encoding="utf-8"))
     map_output_root = missing_report_path.parent
     unique_maps = json.loads((map_output_root / "unique_maps.json").read_text(encoding="utf-8"))
@@ -52,8 +58,8 @@ def main() -> None:
         for row in unique_maps
     }
     libraries = [
-        ("glory", outputs / "starhome_lz_ry_full_parsed" / "ale_sprites"),
-        ("free", outputs / "starhome_lz_fr_full_parsed" / "ale_sprites"),
+        ("glory", Path(__file__).resolve().parents[1] / "assets" / "glory" / "sprites"),
+        ("free", Path(__file__).resolve().parents[1] / "../starhome_lz_fr_full" / "raw"),
         ("jz", outputs / "starhome_jznp_full_parsed" / "ale_sprites"),
     ]
     indexes = {

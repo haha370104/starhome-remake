@@ -16,10 +16,10 @@ import audit_monster_asset_sources as monster_decoder
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 OUTPUTS_ROOT = PROJECT_ROOT.parent
-RAW_ROOT = OUTPUTS_ROOT / "starhome_lz_ry_full" / "raw"
+RAW_ROOT = PROJECT_ROOT / "../starhome_lz_ry_full" / "raw"
 MONSTER_CATALOG = PROJECT_ROOT / "data" / "gameplay" / "glory" / "glory_monsters_v1.json"
 SPRITE_INDEX = PROJECT_ROOT / "data" / "content" / "glory_sprite_runtime_index_v1.json"
-PACK_PATH = PROJECT_ROOT / "assets" / "content_packs" / "glory_monster_palettes_v1.zip"
+PACK_PATH = PROJECT_ROOT / "build" / "content_packs" / "glory_monster_palettes_v1.zip"
 PACK_CATALOG = PROJECT_ROOT / "data" / "content" / "glory_monster_palette_content_pack_v1.json"
 RUNTIME_INDEX = PROJECT_ROOT / "data" / "content" / "glory_monster_palette_runtime_index_v1.json"
 CONTENT_VERSION = "glory-monster-palettes-v1"
@@ -46,7 +46,9 @@ def fixed_info(path: str) -> zipfile.ZipInfo:
 
 def act_index() -> dict[str, list[Path]]:
     result: dict[str, list[Path]] = {}
-    for path in RAW_ROOT.rglob("*.act"):
+    for path in RAW_ROOT.rglob("*"):
+        if not path.is_file() or path.suffix.lower() != ".act":
+            continue
         result.setdefault(path.name.lower(), []).append(path)
     for paths in result.values():
         paths.sort(key=lambda path: ("/pic3/npc/act/" not in path.as_posix().lower(), path.as_posix().lower()))
@@ -88,14 +90,31 @@ def render_variant(
 ) -> tuple[bytes, bytes, dict[str, Any]]:
     logical_id = source_row["logical_id"]
     ale_path = RAW_ROOT / (logical_id + ".ale")
+    if not ale_path.is_file():
+        # The parser canonicalizes sprite directories to lowercase, while the
+        # downloaded Glory archive preserves mixed-case filenames.
+        parent = ale_path.parent
+        wanted = ale_path.name.lower()
+        matches = [path for path in parent.glob("*.ale") if path.name.lower() == wanted]
+        if len(matches) != 1:
+            raise FileNotFoundError(f"cannot resolve raw ALE for {logical_id}: {matches}")
+        ale_path = matches[0]
     ale = decoder.AleFile(ale_path)
     if ale.version != 1:
         raise RuntimeError(f"external ACT used by non-indexed ALE: {ale_path}")
-    metadata = read_json(OUTPUTS_ROOT / "starhome_lz_ry_full_parsed" / "ale_sprites" / logical_id / "frames.json")
+    parsed_dir = PROJECT_ROOT / "assets" / "glory" / "sprites" / logical_id.lower()
+    if not parsed_dir.is_dir():
+        parent = parsed_dir.parent
+        wanted = parsed_dir.name.lower()
+        matches = [path for path in parent.iterdir() if path.is_dir() and path.name.lower() == wanted]
+        if len(matches) != 1:
+            raise FileNotFoundError(f"cannot resolve parsed ALE for {logical_id}: {matches}")
+        parsed_dir = matches[0]
+    metadata = read_json(parsed_dir / "frames.json")
     pages = metadata.get("pages", [])
     if len(pages) != 1:
         raise RuntimeError(f"palette variant expects one decoded page: {logical_id}")
-    source_page = OUTPUTS_ROOT / "starhome_lz_ry_full_parsed" / "ale_sprites" / logical_id / pages[0]
+    source_page = parsed_dir / pages[0]
     with Image.open(source_page) as opened:
         atlas = Image.new("RGBA", opened.size)
     colors = monster_decoder.act_colors(palette_path)
@@ -124,8 +143,8 @@ def render_variant(
     runtime_id = f"monster_palettes/{actor_id}/{action}"
     row = {
         "logical_id": runtime_id,
-        "frames_path": f"res://content/glory/{runtime_id}/frames.json",
-        "page_paths": [f"res://content/glory/{runtime_id}/sheet.png"],
+        "frames_path": f"res://assets/glory/{runtime_id}/frames.json",
+        "page_paths": [f"res://assets/glory/{runtime_id}/sheet.png"],
         "frame_count": len(metadata["frames"]),
         "cell_size": [int(metadata.get("cell_width", 0)), int(metadata.get("cell_height", 0))],
         "classification": ["monster_palettes", actor_id],
@@ -157,7 +176,7 @@ def main() -> int:
                 frames_bytes, page_bytes, row = render_variant(
                     actor_id, action, source_row, palette_candidates[0], decoder
                 )
-                root = f"content/glory/{row['logical_id']}"
+                root = f"assets/glory/{row['logical_id']}"
                 archive.writestr(fixed_info(root + "/frames.json"), frames_bytes)
                 archive.writestr(fixed_info(root + "/sheet.png"), page_bytes)
                 rows.append(row)
@@ -174,7 +193,7 @@ def main() -> int:
         "content_version": CONTENT_VERSION,
         "packs": [{
             "pack_id": PACK_PATH.stem,
-            "path": "res://assets/content_packs/" + PACK_PATH.name,
+            "path": "res://assets/" + PACK_PATH.name,
             "size_bytes": PACK_PATH.stat().st_size,
             "sha256": sha256(PACK_PATH),
             "content_groups": ["monster_palette_variants"],

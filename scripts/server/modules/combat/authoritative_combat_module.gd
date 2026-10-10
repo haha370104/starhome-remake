@@ -4,13 +4,20 @@ extends RefCounted
 const MonsterLifecycleScript := preload("res://scripts/domain/combat/monster_lifecycle.gd")
 const VehicleCombatStateScript := preload("res://scripts/domain/combat/vehicle_combat_state.gd")
 const UseAbilityIntentContract := preload("res://scripts/network/contracts/use_ability_intent.gd")
+const DeterministicSpatialGridScript := preload("res://scripts/core/deterministic_spatial_grid.gd")
+const PerformanceTelemetryScript := preload("res://scripts/core/performance_telemetry.gd")
 const ACTOR_PROJECTILE_HITBOX_OFFSET := Vector2(0.0, -16.0)
 const ACTOR_PROJECTILE_HITBOX_RADIUS := 18.0
+const ACTOR_PROJECTILE_QUERY_PADDING := 128.0
 const LOOT_PICKUP_RADIUS := 125.0
+const PARTY_LOOT_RESTRICTION_MSEC := 120000
+const SPATIAL_GRID_CELL_SIZE := 256.0
+const SPATIAL_QUERY_LINEAR_THRESHOLD := 8
 const SELF_REPAIR_ABILITY_ID := "self_repair"
 const SELF_REPAIR_INTERVAL_SECONDS := 3.0
 const MONSTER_ROUTE_REPLAN_DISTANCE := 24.0
 const MONSTER_MINIMUM_ACCEPTED_MOTION := 0.05
+const MAX_MONSTER_ROUTE_PLANS_PER_TICK := 2
 
 var simulation_hz := 20
 var current_tick := 0
@@ -29,16 +36,31 @@ var austin := AuthoritativeAustinModule.new()
 var sama := AuthoritativeSamaModule.new()
 var central := AuthoritativeCentralModule.new()
 var ground_loot: Dictionary = {}
+var dropped_items: Dictionary[String, GameItem] = {}
 var rewards: AuthoritativeRewardService
 var _random := RandomNumberGenerator.new()
+var _wear_random := RandomNumberGenerator.new()
 var _monster_position_resolver := Callable()
 var _monster_route_resolver := Callable()
+var _loot_recipient_resolver := Callable()
 var _shot_sequence := 0
 var _monster_attack_sequence := 0
 var _loot_sequence := 0
 var _loot_namespace := ""
 var _quest_kills: Array[Dictionary] = []
 var _quest_event_namespace := ""
+var _shared_snapshot_tick := -1
+var _shared_monster_snapshots_by_map: Dictionary = {}
+var _ground_loot_snapshots_by_map: Dictionary = {}
+var _recent_event_snapshot_tick := -1
+var _recent_event_snapshot: Array[Dictionary] = []
+var _sorted_actor_ids: Array[String] = []
+var _sorted_monster_ids: Array[String] = []
+var _actor_spatial_grid := DeterministicSpatialGridScript.new(SPATIAL_GRID_CELL_SIZE)
+var _monster_spatial_grid := DeterministicSpatialGridScript.new(SPATIAL_GRID_CELL_SIZE)
+var _loot_spatial_grid := DeterministicSpatialGridScript.new(SPATIAL_GRID_CELL_SIZE)
+var _monster_collision_query_padding := 0.0
+var _route_plans_this_tick := 0
 
 
 ## 配置并初始化 `configure` 对应的模块状态。
@@ -65,8 +87,16 @@ func configure(
 	_quest_event_namespace = Crypto.new().generate_random_bytes(16).hex_encode()
 	working_energy_regen_factor = regen_factor
 	_random.seed = random_seed
+	_wear_random.seed = random_seed ^ 0x6D2B79F5
 	actors.clear()
+	_sorted_actor_ids.clear()
+	_sorted_monster_ids.clear()
 	monsters.clear()
+	_actor_spatial_grid.clear()
+	_monster_spatial_grid.clear()
+	_loot_spatial_grid.clear()
+	_monster_collision_query_padding = 0.0
+	_route_plans_this_tick = 0
 	combat_events.clear()
 	death_events.clear()
 	respawn_events.clear()
@@ -78,6 +108,12 @@ func configure(
 	sama.reset(random_seed ^ 119417)
 	central.reset(random_seed ^ 831119)
 	ground_loot.clear()
+	dropped_items.clear()
+	_shared_snapshot_tick = -1
+	_shared_monster_snapshots_by_map.clear()
+	_ground_loot_snapshots_by_map.clear()
+	_recent_event_snapshot_tick = -1
+	_recent_event_snapshot.clear()
 	return DomainResult.ok(self)
 
 
@@ -93,6 +129,11 @@ func set_monster_position_resolver(resolver: Callable) -> void:
 ## 设计：战斗模块推进怪物状态，静态障碍和 AStar 图仍由地图实例统一维护。
 func set_monster_route_resolver(resolver: Callable) -> void:
 	_monster_route_resolver = resolver
+
+
+## 注入队伍掉落资格解析器；无队伍时解析器返回 null，维持自由拾取。
+func set_loot_recipient_resolver(resolver: Callable) -> void:
+	_loot_recipient_resolver = resolver
 
 
 ## 执行 `register_vehicle` 对应的模块操作。
@@ -154,10 +195,13 @@ func register_vehicle(
 			"active": false,
 			"next_cycle_tick": 0,
 			"health_per_cycle": 0,
-			"working_energy_cost": float(assembly.get("self_repair_energy_cost", 0.0)),
+			"working_energy_per_repair": float(assembly.get("working_energy_per_repair", 0.0)),
 			"skill_level": 0,
 		},
 	}
+	_sorted_actor_ids.append(actor_id)
+	_sorted_actor_ids.sort()
+	_actor_spatial_grid.register(actor_id, position)
 	return DomainResult.ok(vehicle_state)
 
 
@@ -219,6 +263,16 @@ func register_monster(definition: Dictionary) -> DomainResult:
 	if monsters.has(lifecycle.monster_id):
 		return DomainResult.failure(&"combat.duplicate_monster", "monster identity is already registered")
 	monsters[lifecycle.monster_id] = lifecycle
+	_sorted_monster_ids.append(lifecycle.monster_id)
+	_sorted_monster_ids.sort()
+	_monster_spatial_grid.register(lifecycle.monster_id, lifecycle.position)
+	_monster_collision_query_padding = maxf(
+		_monster_collision_query_padding,
+		lifecycle.attack_mode.projectile_hitbox_radius \
+			+ lifecycle.attack_mode.projectile_hitbox_offset.length(),
+	)
+	_shared_snapshot_tick = -1
+	_shared_monster_snapshots_by_map.clear()
 	return DomainResult.ok(lifecycle)
 
 
@@ -227,13 +281,24 @@ func register_monster(definition: Dictionary) -> DomainResult:
 ## 返回被移除的稳定实例 ID，存活怪物绝不会被此入口删除。
 func remove_dead_monsters(map_instance_id: String) -> Array[String]:
 	var removed: Array[String] = []
-	var ordered_monster_ids := monsters.keys()
-	ordered_monster_ids.sort()
+	var cache_invalidated := false
+	var ordered_monster_ids: Array[String] = _sorted_monster_ids.duplicate()
 	for monster_id: String in ordered_monster_ids:
-		var monster: MonsterLifecycle = monsters[monster_id]
+		var monster_value: Variant = monsters.get(monster_id)
+		if not monster_value is MonsterLifecycle:
+			_sorted_monster_ids.erase(monster_id)
+			cache_invalidated = true
+			continue
+		var monster: MonsterLifecycle = monster_value
 		if monster.map_instance_id == map_instance_id and not monster.is_alive():
 			monsters.erase(monster_id)
+			_monster_spatial_grid.remove(monster_id)
 			removed.append(monster_id)
+	if not removed.is_empty() or cache_invalidated:
+		for monster_id: String in removed:
+			_sorted_monster_ids.erase(monster_id)
+		_shared_snapshot_tick = -1
+		_shared_monster_snapshots_by_map.clear()
 	return removed
 
 
@@ -245,6 +310,8 @@ func unregister_vehicle(actor_id: String) -> bool:
 	generators.retain_sources(actor_id, PackedStringArray(), monsters)
 	austin.retain_sources(actor_id)
 	sama.retain_sources(actor_id)
+	_actor_spatial_grid.remove(actor_id)
+	_sorted_actor_ids.erase(actor_id)
 	return actors.erase(actor_id)
 
 
@@ -262,6 +329,7 @@ func update_actor_position(actor_id: String, position: Vector2) -> DomainResult:
 		actor["previous_position"] = actor["position"]
 		actor["position_sample_tick"] = current_tick
 	actor["position"] = position
+	_actor_spatial_grid.update(actor_id, position)
 	return DomainResult.ok(position)
 
 
@@ -339,7 +407,7 @@ func handle_weapon_attack(actor_id: String, raw_intent: Variant) -> DomainResult
 		if not bool(collision.get("hit", false)):
 			return DomainResult.failure(&"combat.target_required", "missile requires a living locked target")
 		endpoint = Vector2(collision["position"])
-	var energy_result := vehicle_state.consume_working_energy(float(weapon["working_energy_cost"]))
+	var energy_result := vehicle_state.consume_working_energy(float(weapon["working_energy_per_shot"]))
 	if not energy_result.is_ok:
 		return energy_result
 	equipment_condition.accept_shot(String(weapon.get("instance_id", "")))
@@ -441,9 +509,10 @@ func _nearest_target_to_point(
 	selection_radius: float,
 ) -> Dictionary:
 	var best := {"hit": false, "distance_squared": INF}
-	var ordered_monster_ids := monsters.keys()
-	ordered_monster_ids.sort()
-	for monster_id: String in ordered_monster_ids:
+	for monster_id: String in _monster_spatial_grid.query_aabb_candidates(
+		point - Vector2(selection_radius, selection_radius),
+		point + Vector2(selection_radius, selection_radius),
+	):
 		var monster: MonsterLifecycle = monsters[monster_id]
 		if monster.map_instance_id != map_instance_id or not monster.is_alive():
 			continue
@@ -526,7 +595,7 @@ func handle_self_repair(
 		"health_per_cycle": int(repair_state["health_per_cycle"]),
 		"base_self_repair_power": base_strength,
 		"bonus_self_repair_power": bonus_strength,
-		"working_energy_cost": float(repair_state["working_energy_cost"]),
+		"working_energy_per_repair": float(repair_state["working_energy_per_repair"]),
 		"repair_skill_level": repair_skill_level,
 		"required_repair_skill_level": required_skill_level,
 	}))
@@ -564,9 +633,15 @@ func _first_projectile_collision(
 	excluded := PackedStringArray(),
 ) -> Dictionary:
 	var best := {"hit": false, "t": INF}
-	var ordered_monster_ids := monsters.keys()
-	ordered_monster_ids.sort()
-	for monster_id: String in ordered_monster_ids:
+	var lower := Vector2(minf(origin.x, endpoint.x), minf(origin.y, endpoint.y))
+	var upper := Vector2(maxf(origin.x, endpoint.x), maxf(origin.y, endpoint.y))
+	var padding := _monster_collision_query_padding
+	for monster_id: String in _monster_spatial_grid.query_aabb_candidates(
+		lower - Vector2(padding, padding),
+		upper + Vector2(padding, padding),
+	):
+		if not monsters.has(monster_id):
+			continue
 		var monster: MonsterLifecycle = monsters[monster_id]
 		if monster_id in excluded or monster.map_instance_id != map_instance_id or not monster.is_alive():
 			continue
@@ -734,9 +809,10 @@ func _settle_rocket_projectile(projectile: Dictionary) -> void:
 	var impact_position: Vector2 = projectile["impact_position"]
 	var radius := float(weapon.get("area_radius", ACTOR_PROJECTILE_HITBOX_RADIUS * 2.0))
 	var hit_any := false
-	var ordered_monster_ids := monsters.keys()
-	ordered_monster_ids.sort()
-	for monster_id: String in ordered_monster_ids:
+	for monster_id: String in _monster_spatial_grid.query_aabb_candidates(
+		impact_position - Vector2(radius, radius),
+		impact_position + Vector2(radius, radius),
+	):
 		var monster: MonsterLifecycle = monsters[monster_id]
 		if not monster.is_alive() or monster.map_instance_id != String(actors[projectile["attacker_id"]]["map_instance_id"]):
 			continue
@@ -775,6 +851,7 @@ func _settle_rocket_projectile(projectile: Dictionary) -> void:
 ## [param killer_id] 已验证的伤害来源。
 ## 返回独立死亡事件，供实际伤害事件携带。
 func _record_monster_death(monster: MonsterLifecycle, killer_id: String) -> Dictionary:
+	_monster_spatial_grid.remove(monster.monster_id)
 	var death := {"event_type": &"monster_died", "server_tick": current_tick,
 		"monster_id": monster.monster_id, "killer_id": killer_id,
 		"death_generation": monster.death_generation, "respawn_at_tick": monster.respawn_at_tick,
@@ -844,15 +921,13 @@ func _record_projectile_expired(
 
 
 ## 结算本 tick 到期的全部自维修周期，并在满血、摧毁或能量不足时自动结束。
-## 设计：每个周期先扣工作能量再回血；受击会把下一周期推迟到受击后三秒。
+## 设计：每个周期先扣工作能量再回血；受击不影响维修计时。
 func _settle_due_self_repairs() -> void:
-	var actor_ids := actors.keys()
-	actor_ids.sort()
+	var actor_ids: Array[String] = _sorted_actor_ids
 	for actor_id: String in actor_ids:
 		var actor: Dictionary = actors[actor_id]
 		var repair_state: Dictionary = actor["self_repair"]
-		if not bool(repair_state["active"]) or current_tick < int(repair_state["next_cycle_tick"]) \
-			or current_tick < (actor["clothing_effects"] as ClothingCombatEffects).repair_ready_tick:
+		if not bool(repair_state["active"]) or current_tick < int(repair_state["next_cycle_tick"]):
 			continue
 		var vehicle_state: VehicleCombatState = actor["vehicle_state"]
 		if vehicle_state.health <= 0:
@@ -863,7 +938,7 @@ func _settle_due_self_repairs() -> void:
 			continue
 		var interval_ticks := maxi(1, roundi(SELF_REPAIR_INTERVAL_SECONDS * float(simulation_hz)))
 		var energy_result := vehicle_state.consume_working_energy(
-			float(repair_state["working_energy_cost"])
+			float(repair_state["working_energy_per_repair"])
 		)
 		if not energy_result.is_ok:
 			_stop_self_repair(actor_id, &"insufficient_working_energy")
@@ -928,12 +1003,18 @@ func advance_ticks(tick_count: int, simulate_monster_ai := true) -> DomainResult
 	var fixed_delta := 1.0 / float(simulation_hz)
 	for unused_tick: int in range(tick_count):
 		current_tick += 1
+		_route_plans_this_tick = 0
+		var actor_effects_started_at := PerformanceTelemetryScript.begin(
+			&"server_combat_actor_effects"
+		)
 		for actor_id: String in actors:
 			var vehicle_state: VehicleCombatState = actors[actor_id]["vehicle_state"]
 			vehicle_state.regenerate_working_energy(fixed_delta, working_energy_regen_factor)
 			var actor: Dictionary = actors[actor_id]
 			if vehicle_state.health > 0 and not (actor.position as Vector2).is_equal_approx(actor.previous_position):
-				(actor.equipment_condition as EquipmentConditionLoadout).record_use("movement", fixed_delta)
+				var condition: EquipmentConditionLoadout = actor.equipment_condition
+				condition.record_use("movement", fixed_delta)
+				condition.record_vehicle_movement(fixed_delta)
 		_settle_due_self_repairs()
 		_advance_generator_effects()
 		_settle_due_projectiles()
@@ -941,10 +1022,18 @@ func advance_ticks(tick_count: int, simulate_monster_ai := true) -> DomainResult
 		for event: Dictionary in corrosion.advance(current_tick, actors):
 			_record_combat_event(event)
 		_commit_actor_position_samples()
+		PerformanceTelemetryScript.end(
+			&"server_combat_actor_effects",
+			actor_effects_started_at,
+		)
+		var monster_simulation_started_at := PerformanceTelemetryScript.begin(
+			&"server_combat_monster_simulation"
+		)
 		for monster_id: String in monsters:
 			var monster: MonsterLifecycle = monsters[monster_id]
-			var lifecycle_result := monster.advance_to_tick(current_tick)
-			if bool(lifecycle_result.value["respawned"]):
+			var previous_position := monster.position
+			if monster.advance_lifecycle_if_due(current_tick):
+				_sync_monster_spatial_index(monster_id, monster.position)
 				var respawn_event := {
 					"event_type": &"monster_respawned",
 					"server_tick": current_tick,
@@ -955,7 +1044,20 @@ func advance_ticks(tick_count: int, simulate_monster_ai := true) -> DomainResult
 				emitted_respawns.append(respawn_event)
 			if monster.is_alive() and simulate_monster_ai:
 				_simulate_monster_tick(monster_id, fixed_delta)
+			if monster.is_alive() and not monster.position.is_equal_approx(previous_position):
+				_sync_monster_spatial_index(monster_id, monster.position)
+		PerformanceTelemetryScript.end(
+			&"server_combat_monster_simulation",
+			monster_simulation_started_at,
+		)
 	return DomainResult.ok(emitted_respawns)
+
+
+func _sync_monster_spatial_index(monster_id: String, position: Vector2) -> void:
+	if _monster_spatial_grid.contains(monster_id):
+		_monster_spatial_grid.refresh_cell(monster_id, position)
+	else:
+		_monster_spatial_grid.register(monster_id, position)
 
 
 ## 一次性跨过空图休眠时间，保留个体游荡等待，不在唤醒时重放积压的 AI。
@@ -968,23 +1070,53 @@ func advance_suspended_time(elapsed_ticks: int) -> void:
 		monster.defer_wander_for_suspension(elapsed_ticks)
 
 
-## 执行 `snapshot_for_actor` 对应的模块操作。
-## [param actor_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
-## 返回该函数计算、查询或操作得到的结果。
-## 设计：该函数位于权威服务器边界，客户端不得覆盖其计算结果。
-func snapshot_for_actor(actor_id: String) -> Dictionary:
+## 构建当前地图所有玩家共享的战斗世界部分。
+func world_snapshot_for_map(map_instance_id: String) -> Dictionary:
+	return {
+		"monsters": _shared_monster_snapshots_for_map(map_instance_id),
+		"ground_loot": _ground_loot_for_map(map_instance_id),
+		"corrosive_clouds": corrosion.snapshots(map_instance_id, actors),
+		"recent_events": _recent_combat_events(),
+	}
+
+
+## 构建指定玩家独有的战斗状态。
+func local_snapshot_for_actor(actor_id: String) -> Dictionary:
 	if not actors.has(actor_id):
 		return {}
 	var actor: Dictionary = actors[actor_id]
-	var map_instance_id := String(actor["map_instance_id"])
-	var monster_snapshots: Array[Dictionary] = []
-	var ordered_monster_ids := monsters.keys()
-	ordered_monster_ids.sort()
+	var local_vehicle: Dictionary = (actor["vehicle_state"] as VehicleCombatState).to_dictionary()
+	var repair_state: Dictionary = actor["self_repair"]
+	local_vehicle["self_repair_active"] = bool(repair_state["active"])
+	local_vehicle["self_repair_next_cycle_tick"] = int(repair_state["next_cycle_tick"])
+	local_vehicle["self_repair_health_per_cycle"] = int(repair_state["health_per_cycle"])
+	local_vehicle["self_repair_base_power"] = int(actor["self_repair_base_strength"])
+	local_vehicle["self_repair_bonus_power"] = int(actor["self_repair_bonus_strength"])
+	local_vehicle["self_repair_required_skill_level"] = int(
+		actor["self_repair_required_skill_level"]
+	)
+	var result := {
+		"local_entity_id": actor_id,
+		"local_weapon_flight": _weapon_flight_snapshot(actor),
+		"local_sama_effects": sama.snapshot(
+			actor_id, actor.equipment_condition, current_tick, simulation_hz
+		),
+		"local_vehicle": local_vehicle,
+	}
+	return result
+
+
+func _shared_monster_snapshots_for_map(map_instance_id: String) -> Array[Dictionary]:
+	var cached: Variant = _shared_monster_snapshots_by_map.get(map_instance_id)
+	if _shared_snapshot_tick == current_tick and cached is Array:
+		return cached
+	var snapshots: Array[Dictionary] = []
+	var ordered_monster_ids: Array[String] = _sorted_monster_ids
 	for monster_id: String in ordered_monster_ids:
 		var monster: MonsterLifecycle = monsters[monster_id]
 		if monster.map_instance_id != map_instance_id:
 			continue
-		monster_snapshots.append({
+		snapshots.append({
 			"entity_id": monster_id,
 			"species_id": monster.species_id,
 			"display_name": monster.display_name,
@@ -998,27 +1130,9 @@ func snapshot_for_actor(actor_id: String) -> Dictionary:
 			"action_sequence": monster.action_sequence,
 			"facing_index": monster.facing_direction,
 		})
-	var local_vehicle: Dictionary = (actor["vehicle_state"] as VehicleCombatState).to_dictionary()
-	var repair_state: Dictionary = actor["self_repair"]
-	local_vehicle["self_repair_active"] = bool(repair_state["active"])
-	local_vehicle["self_repair_next_cycle_tick"] = int(repair_state["next_cycle_tick"])
-	local_vehicle["self_repair_health_per_cycle"] = int(repair_state["health_per_cycle"])
-	local_vehicle["self_repair_base_power"] = int(actor["self_repair_base_strength"])
-	local_vehicle["self_repair_bonus_power"] = int(actor["self_repair_bonus_strength"])
-	local_vehicle["self_repair_required_skill_level"] = int(
-		actor["self_repair_required_skill_level"]
-	)
-	return {
-		"server_tick": current_tick,
-		"local_entity_id": actor_id,
-		"local_weapon_flight": _weapon_flight_snapshot(actor),
-		"local_sama_effects": sama.snapshot(actor_id, actor.equipment_condition, current_tick, simulation_hz),
-		"local_vehicle": local_vehicle,
-		"monsters": monster_snapshots,
-		"ground_loot": _ground_loot_for_map(map_instance_id),
-		"corrosive_clouds": corrosion.snapshots(map_instance_id, actors),
-		"recent_events": _recent_combat_events(),
-	}
+	_shared_snapshot_tick = current_tick
+	_shared_monster_snapshots_by_map[map_instance_id] = snapshots
+	return snapshots
 
 
 ## 导出本玩家各武器的表现弹道参数，不传递服务端伤害公式或资源路径。
@@ -1055,10 +1169,18 @@ func prepare_loot_pickup(actor_id: String, loot_id: String) -> DomainResult:
 	var loot: Dictionary = loot_value
 	if String(loot["map_instance_id"]) != String(actor["map_instance_id"]):
 		return DomainResult.failure(&"loot.map_mismatch", "ground loot belongs to another map instance")
-	var loot_position := Vector2(float(loot["position"][0]), float(loot["position"][1]))
-	if (actor["position"] as Vector2).distance_to(loot_position) > LOOT_PICKUP_RADIUS:
+	var eligible_entity_ids: Variant = loot.get("eligible_entity_ids", null)
+	if eligible_entity_ids is Array \
+			and Time.get_ticks_msec() < int(loot.get("eligible_until_msec", 0)):
+		var eligible_ids: Array = eligible_entity_ids
+		if actor_id not in eligible_ids:
+			return DomainResult.failure(&"loot.not_eligible", "actor is not eligible to pick up this party loot")
+	var nearby_loot_ids := _loot_spatial_grid.query_circle(actor["position"], LOOT_PICKUP_RADIUS)
+	if loot_id not in nearby_loot_ids:
 		return DomainResult.failure(&"loot.out_of_range", "ground loot is outside pickup range")
-	return DomainResult.ok(loot.duplicate(true))
+	var result := loot.duplicate(true)
+	if dropped_items.has(loot_id): result["item"] = dropped_items[loot_id]
+	return DomainResult.ok(result)
 
 
 ## 在背包事务成功后提交一次地面掉落移除。
@@ -1071,6 +1193,9 @@ func commit_loot_pickup(actor_id: String, loot_id: String) -> DomainResult:
 		return prepared
 	var loot: Dictionary = prepared.value
 	ground_loot.erase(loot_id)
+	dropped_items.erase(loot_id)
+	_ground_loot_snapshots_by_map.erase(String(loot.map_instance_id))
+	_loot_spatial_grid.remove(loot_id)
 	return DomainResult.ok(_record_combat_event({
 		"event_type": &"loot_picked_up",
 		"server_tick": current_tick,
@@ -1079,6 +1204,23 @@ func commit_loot_pickup(actor_id: String, loot_id: String) -> DomainResult:
 		"item_definition_id": loot["item_definition_id"],
 		"quantity": loot["quantity"],
 	}))
+
+
+func drop_item(loot_id: String, map_instance_id: String, item: GameItem, position: Vector2) -> void:
+	ground_loot[loot_id] = {"loot_id": loot_id, "map_instance_id": map_instance_id,
+		"player_dropped": true,
+		"source_monster_id": "", "killer_id": "", "item_definition_id": item.definition_id,
+		"quantity": item.quantity, "position": [position.x, position.y], "spawn_tick": current_tick}
+	dropped_items[loot_id] = item
+	_ground_loot_snapshots_by_map.erase(map_instance_id)
+	_loot_spatial_grid.register(loot_id, position)
+
+
+func clear_ground_items() -> void:
+	ground_loot.clear()
+	dropped_items.clear()
+	_ground_loot_snapshots_by_map.clear()
+	_loot_spatial_grid.clear()
 
 
 ## 将怪物领域掉落结果生成为当前地图的权威地面实体。
@@ -1092,6 +1234,9 @@ func _spawn_monster_loot(monster: MonsterLifecycle, killer_id: String) -> Array[
 	if not drops.is_ok:
 		push_error("Reward settlement failed: %s" % drops.error_message)
 		return spawned
+	var eligible_entity_ids: Variant = null
+	if _loot_recipient_resolver.is_valid():
+		eligible_entity_ids = _loot_recipient_resolver.call(killer_id, monster.map_instance_id)
 	for rolled: Dictionary in drops.value:
 		_loot_sequence += 1
 		var loot_id := "%s.loot.%s.%d" % [monster.map_instance_id, _loot_namespace, _loot_sequence]
@@ -1107,22 +1252,39 @@ func _spawn_monster_loot(monster: MonsterLifecycle, killer_id: String) -> Array[
 		}
 		if rolled.has("reward_settlement"):
 			loot["reward_settlement"] = rolled.reward_settlement
+		if eligible_entity_ids is Array:
+			var eligible_ids: Array = eligible_entity_ids
+			loot["eligible_entity_ids"] = eligible_ids.duplicate()
+			loot["eligible_until_msec"] = Time.get_ticks_msec() + PARTY_LOOT_RESTRICTION_MSEC
 		ground_loot[loot_id] = loot
-		spawned.append(loot.duplicate(true))
+		_ground_loot_snapshots_by_map.erase(monster.map_instance_id)
+		_loot_spatial_grid.register(loot_id, monster.position)
+		spawned.append(_public_loot_snapshot(loot))
 	return spawned
+
+
+func _public_loot_snapshot(loot: Dictionary) -> Dictionary:
+	var snapshot := loot.duplicate(true)
+	snapshot.erase("eligible_entity_ids")
+	snapshot.erase("eligible_until_msec")
+	return snapshot
 
 
 ## 查询指定地图当前可见的全部地面掉落物。
 ## [param map_instance_id] 快照接收玩家所在的地图实例标识。
 ## 返回按稳定 loot_id 排序的 DTO 数组。
 func _ground_loot_for_map(map_instance_id: String) -> Array[Dictionary]:
+	var cached: Variant = _ground_loot_snapshots_by_map.get(map_instance_id)
+	if cached is Array:
+		return cached
 	var result: Array[Dictionary] = []
 	var loot_ids := ground_loot.keys()
 	loot_ids.sort()
 	for loot_id: String in loot_ids:
 		var loot: Dictionary = ground_loot[loot_id]
 		if String(loot["map_instance_id"]) == map_instance_id:
-			result.append(loot.duplicate(true))
+			result.append(_public_loot_snapshot(loot))
+	_ground_loot_snapshots_by_map[map_instance_id] = result
 	return result
 
 
@@ -1187,6 +1349,7 @@ func _begin_monster_attack(monster_id: String, target_id: String, target_positio
 		"attacker_id": monster_id,
 		"target_entity_id": target_id,
 		"map_instance_id": monster.map_instance_id,
+		"species_id": monster.species_id,
 		"damage": monster.generator_afflictions.attack_after(monster.attack_mode.base_attack),
 		"attack_archetype": attack_archetype,
 		"combat_actor_id": monster.combat_actor_id,
@@ -1249,8 +1412,15 @@ func _first_actor_projectile_collision(
 	segment_end: Vector2,
 ) -> Dictionary:
 	var best := {"hit": false, "t": INF}
-	var actor_ids := actors.keys()
-	actor_ids.sort()
+	var actor_ids: Array[String]
+	if actors.size() <= SPATIAL_QUERY_LINEAR_THRESHOLD:
+		actor_ids = _sorted_actor_ids
+	else:
+		var padding := Vector2.ONE * (ACTOR_PROJECTILE_HITBOX_RADIUS + ACTOR_PROJECTILE_QUERY_PADDING)
+		actor_ids = _actor_spatial_grid.query_aabb_candidates(
+			Vector2(minf(segment_start.x, segment_end.x), minf(segment_start.y, segment_end.y)) - padding,
+			Vector2(maxf(segment_start.x, segment_end.x), maxf(segment_start.y, segment_end.y)) + padding,
+		)
 	for actor_id: String in actor_ids:
 		var actor: Dictionary = actors[actor_id]
 		var vehicle_state: VehicleCombatState = actor["vehicle_state"]
@@ -1307,6 +1477,7 @@ func _resolve_monster_attack(attack: Dictionary) -> void:
 		"impact_tick": current_tick,
 		"attack_id": attack["attack_id"],
 		"attacker_id": attack["attacker_id"],
+		"species_id": attack["species_id"],
 		"target_entity_id": target_id,
 		"attack_archetype": attack["attack_archetype"],
 		"combat_actor_id": attack["combat_actor_id"],
@@ -1375,11 +1546,18 @@ func _is_valid_actor_target(monster: MonsterLifecycle, actor_id: String) -> bool
 ## 返回该函数计算、查询或操作得到的结果。
 ## 设计：快照携带短事件窗口以容忍 UDP/快照丢包，客户端按事件号去重。
 func _record_combat_event(event: Dictionary) -> Dictionary:
+	_recent_event_snapshot_tick = -1
 	var damaged_actor := String(event.get("target_entity_id", ""))
 	if int(event.get("damage", 0)) > 0 and actors.has(damaged_actor):
-		(actors[damaged_actor].equipment_condition as EquipmentConditionLoadout).record_use("damage")
+		var condition: EquipmentConditionLoadout = actors[damaged_actor].equipment_condition
+		condition.record_use("damage")
+		var wear_weights: Array[float] = []
+		for index in condition.vehicle_armor_count():
+			wear_weights.append(_wear_random.randf())
+		condition.record_vehicle_damage(int(event.damage), wear_weights)
+		if bool(event.get("target_destroyed", false)):
+			condition.record_vehicle_destroyed()
 		var effects: ClothingCombatEffects = actors[damaged_actor]["clothing_effects"]
-		effects.damaged(current_tick, simulation_hz)
 		if bool(event.get("target_destroyed", false)):
 			effects.reset_chain()
 			generators.retain_sources(damaged_actor, PackedStringArray(), monsters)
@@ -1408,7 +1586,14 @@ func _record_combat_event(event: Dictionary) -> Dictionary:
 func _nearest_alive_actor(monster: MonsterLifecycle) -> String:
 	var best_id := ""
 	var best_distance := INF
-	for actor_id: String in actors:
+	var candidate_ids: Array[String]
+	if actors.size() <= SPATIAL_QUERY_LINEAR_THRESHOLD:
+		candidate_ids = _sorted_actor_ids
+	else:
+		candidate_ids = _actor_spatial_grid.query_circle(
+			monster.position, monster.aggro_radius
+		)
+	for actor_id: String in candidate_ids:
 		var actor: Dictionary = actors[actor_id]
 		var state: VehicleCombatState = actor["vehicle_state"]
 		if state.health <= 0 or String(actor["map_instance_id"]) != monster.map_instance_id:
@@ -1502,11 +1687,18 @@ func _begin_monster_route(
 		monster.movement_route_goal = requested_target
 		monster.movement_route_kind = route_kind
 		return requested_target.is_finite()
+	if _route_plans_this_tick >= MAX_MONSTER_ROUTE_PLANS_PER_TICK:
+		return false
+	_route_plans_this_tick += 1
+	var route_planning_started_at := PerformanceTelemetryScript.begin(
+		&"server_monster_route_planning"
+	)
 	var resolved: Variant = _monster_route_resolver.call(
 		monster.monster_id,
 		monster.position,
 		requested_target,
 	)
+	PerformanceTelemetryScript.end(&"server_monster_route_planning", route_planning_started_at)
 	if not resolved is Dictionary:
 		return false
 	var route_value: Variant = resolved.get("path", PackedVector2Array())
@@ -1604,7 +1796,7 @@ func _normalize_energy_cannon(definition: Dictionary) -> DomainResult:
 	var attack_mode := StringName(definition.get("attack_mode", "line_projectile"))
 	var minimum_damage := int(definition.get("minimum_damage", -1))
 	var maximum_damage := int(definition.get("maximum_damage", -1))
-	var working_energy_cost := float(definition.get("working_energy_cost", -1.0))
+	var working_energy_per_shot := float(definition.get("working_energy_per_shot", -1.0))
 	var raw_activation_power: Variant = definition.get("activation_power", null)
 	var activation_power: Variant = null
 	if raw_activation_power != null:
@@ -1623,7 +1815,7 @@ func _normalize_energy_cannon(definition: Dictionary) -> DomainResult:
 	if weapon_id.is_empty() or skill_id.is_empty() or minimum_damage < 0 or maximum_damage < minimum_damage \
 			or attack_mode not in [&"line_projectile", &"rocket_aoe", &"homing_missile"]:
 		return DomainResult.failure(&"combat.invalid_weapon_definition", "energy-cannon damage definition is invalid")
-	if working_energy_cost < 0.0 or (activation_power != null and float(activation_power) < 0.0) \
+	if working_energy_per_shot < 0.0 or (activation_power != null and float(activation_power) < 0.0) \
 		or attack_range <= 0.0 or upgrade_range_limit < attack_range or cooldown_ticks <= 0 \
 		or projectile_speed <= 0.0 or muzzle_forward_offset < 0.0 or minimum_range < 0.0 \
 		or minimum_range >= attack_range \
@@ -1643,7 +1835,7 @@ func _normalize_energy_cannon(definition: Dictionary) -> DomainResult:
 		"critical_multiplier": clampf(float(definition.get("critical_multiplier", 1.5)), 1.0, 3.0),
 		"minimum_damage": minimum_damage,
 		"maximum_damage": maximum_damage,
-		"working_energy_cost": working_energy_cost,
+		"working_energy_per_shot": working_energy_per_shot,
 		"activation_power": activation_power,
 		"range": attack_range,
 		"upgrade_range_limit": upgrade_range_limit,
@@ -1681,8 +1873,7 @@ func _resolve_sama_activations(actor_id: String, shot_id: String, origin: Vector
 		_record_combat_event({"event_type": &"sama_activated", "server_tick": current_tick, "attacker_id": actor_id,
 			"kind": effect.kind, "origin": [origin.x, origin.y], "direction": [direction.x, direction.y], "shot_id": shot_id})
 		if effect.kind != "pulse": continue
-		var ids := monsters.keys()
-		ids.sort()
+		var ids: Array[String] = _sorted_monster_ids
 		for id: String in ids:
 			var monster: MonsterLifecycle = monsters[id]
 			if monster.is_alive() and monster.map_instance_id == String(actors[actor_id].map_instance_id) \
@@ -1705,10 +1896,14 @@ func _apply_sama_damage(monster: MonsterLifecycle, actor_id: String, shot_id: St
 ## 平时保持32条窗口，遇到范围攻击时保留窗口首刻的整批事件，避免开火或死亡表现被半批截断。
 ## 返回受128条总缓冲约束的最近事件独立副本。
 func _recent_combat_events() -> Array[Dictionary]:
+	if _recent_event_snapshot_tick == current_tick:
+		return _recent_event_snapshot
 	var first := maxi(0, combat_events.size() - 32)
 	while first > 0 and combat_events[first - 1].get("server_tick", -1) == combat_events[first].get("server_tick", -2):
 		first -= 1
-	return combat_events.slice(first).duplicate(true)
+	_recent_event_snapshot = combat_events.slice(first).duplicate(true)
+	_recent_event_snapshot_tick = current_tick
+	return _recent_event_snapshot
 
 
 ## 将炮芯片额外伤害交给同一怪物生命、被动还击及死亡奖酬链。

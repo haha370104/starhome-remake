@@ -34,7 +34,7 @@ func _test_catalog_and_initial_population() -> void:
 	_expect(catalog_result.is_ok, "default mining catalog should load")
 	if not catalog_result.is_ok:
 		return
-	var module = _module(catalog_result.value, "d04_field_zone", "d04.instance.test")
+	var module = _module(catalog_result.value, "glory_nft_bl_d04", "d04.instance.test")
 	_expect(module.sources.size() == 20, "each enabled map should start with twenty mine sources")
 	var variants := {}
 	for source in module.sources.values():
@@ -50,7 +50,7 @@ func _test_catalog_and_initial_population() -> void:
 ## 验证 `test_three_second_collection_and_capacity` 对应的业务约束。
 func _test_three_second_collection_and_capacity() -> void:
 	var catalog = MiningCatalogScript.load_default().value
-	var module = _module(catalog, "d04_field_zone", "d04.collection.test")
+	var module = _module(catalog, "glory_nft_bl_d04", "d04.collection.test")
 	var source = module.sources.values()[0]
 	var actor_position: Vector2 = source.position + Vector2(40.0, 0.0)
 	var started: Variant = module.begin_collection("player.1", actor_position, source.position, 10, 1)
@@ -70,7 +70,7 @@ func _test_three_second_collection_and_capacity() -> void:
 ## 验证 `test_five_minute_replenishment` 对应的业务约束。
 func _test_five_minute_replenishment() -> void:
 	var catalog = MiningCatalogScript.load_default().value
-	var module = _module(catalog, "d04_field_zone", "d04.replenish.test")
+	var module = _module(catalog, "glory_nft_bl_d04", "d04.replenish.test")
 	var source = module.sources.values()[0]
 	source.remaining = 1
 	var started: Variant = module.begin_collection("player.1", source.position + Vector2(40, 0), source.position, 10, 1)
@@ -115,7 +115,7 @@ func _expect(condition: bool, message: String) -> void:
 
 ## 验证挖掘接合器缩短连续周期，极大加成不会产生零周期。
 func _test_attachment_interval() -> void:
-	var module = _module(MiningCatalogScript.load_default().value, "d04_field_zone", "joint.interval.test")
+	var module = _module(MiningCatalogScript.load_default().value, "glory_nft_bl_d04", "joint.interval.test")
 	var source = module.sources.values()[0]
 	var started: DomainResult = module.begin_collection("joint.user", source.position + Vector2(40, 0), source.position, 10, 1, 500)
 	_expect(started.is_ok and started.value.interval_seconds == 2.5, "两件基础挖掘接合器将三秒缩短到两点五秒")

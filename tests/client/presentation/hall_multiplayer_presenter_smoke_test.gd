@@ -27,7 +27,12 @@ func _run() -> void:
 	world.name = "PresentationWorld"
 	world.y_sort_enabled = true
 	root.add_child(world)
-	var local_character := Node2D.new()
+	var items := ItemCatalog.new()
+	_expect_true(items.initialize().is_ok, "shared item catalog loads")
+	var local_character := PlayerWorldAvatar.new()
+	var manifest: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(ClientWorldView.COMBAT_VISUAL_MANIFEST_PATH))
+	_expect_equal(local_character.configure(CharacterFactory.build_character_set(character_catalog, "player"),
+		manifest, "本地玩家", Color.WHITE, PlayerWorldAvatar.HUMAN_NAME_LABEL_POSITION), OK, "shared player avatar loads")
 	local_character.name = "LocalCharacter"
 	local_character.position = Vector2(10.0, 20.0)
 	world.add_child(local_character)
@@ -36,7 +41,7 @@ func _run() -> void:
 	root.add_child(status_label)
 
 	var presenter = PresenterScript.new()
-	presenter.configure(local_character, world, character_catalog)
+	presenter.configure(local_character, world, character_catalog, items)
 	presenter.network_notice_requested.connect(func(message: String, _duration: float) -> void: status_label.text = message)
 	var local_states: Array[Dictionary] = []
 	var system_messages: Array[String] = []
@@ -78,7 +83,7 @@ func _run() -> void:
 	_expect_vector(Vector2(local_states[-1]["position"]), Vector2(20.0, 20.0), "prediction state is published")
 	_expect_vector(local_character.position, Vector2(10.0, 20.0), "presenter does not write local character")
 
-	presenter.session.inject_offline_snapshot(_snapshot(1, [
+	presenter.session.inject_offline_snapshot(_snapshot_bundle(1, [
 		_entity("player.me", Vector2(12.0, 20.0), 2, "walking", 1, 1),
 		_entity("player.other", Vector2(100.0, 80.0), 5, "walking", 0, 1),
 	]))
@@ -91,11 +96,37 @@ func _run() -> void:
 	_expect_true(remote_character != null, "remote character is indexed by entity ID")
 	if remote_character != null:
 		_expect_vector(remote_character.position, Vector2(100.0, 80.0), "remote interpolation applies position")
-		_expect_equal(remote_character.current_action, "move", "network walking maps to character move")
-		_expect_equal(remote_character.current_direction, 5, "network direction maps to character direction")
+		_expect_equal(remote_character.human_character.current_action, "move", "network walking maps to character move")
+		_expect_equal(remote_character.human_character.current_direction, 5, "network direction maps to character direction")
+	var outdoor := _snapshot_bundle(2, [
+		_entity("player.me", Vector2(12, 20), 2, "idle", 1, 2),
+		_entity("player.other", Vector2(100, 80), 5, "walking", 0, 2),
+		_entity("llm.riko", Vector2(250, 80), 5, "walking", 0, 2),
+	])
+	outdoor.world_snapshot.player_presentation = JSON.parse_string(FileAccess.get_file_as_string(
+		"res://data/maps/glory_nft_bl_d04.json")).player_presentation
+	outdoor.world_snapshot.combat_world.vehicle_combat_active = true
+	presenter.session.inject_offline_snapshot(outdoor)
+	presenter.session.remote_interpolator.advance(0.2)
+	for actor_id: StringName in [&"player.other", &"llm.riko"]:
+		var avatar := presenter.remote_character(actor_id) as PlayerWorldAvatar
+		_expect_true(avatar != null and avatar.is_combat_actor_active(), "all remote players use vehicle mode " + String(actor_id))
+		_expect_true(not avatar.human_character.visible and avatar.combat_presenter.visible, "vehicle replaces human " + String(actor_id))
+		_expect_equal(avatar.combat_actor_id, &"equipped_combat_vehicle", "actual remote equipment selects vehicle " + String(actor_id))
+		_expect_equal(avatar.combat_presenter.current_action_id, &"move", "vehicle animates remote movement " + String(actor_id))
+		_expect_equal(presenter.remote_character_at(avatar.position).get("display_name", ""), "远端玩家", "vehicle remains clickable " + String(actor_id))
+	_expect_equal(remote_character, presenter.remote_character(&"player.other"), "map mode switch reuses avatar")
+	presenter.session.inject_offline_snapshot(_snapshot_bundle(3, [
+		_entity("player.me", Vector2(12, 20), 2, "idle", 1, 3),
+		_entity("player.other", Vector2(100, 80), 5, "idle", 0, 3),
+	]))
+	presenter.session.remote_interpolator.advance(0.2)
+	_expect_true(remote_character.human_character.visible and not remote_character.combat_presenter.visible,
+		"returning indoors restores human on same avatar")
+	_expect_true(remote_character.human_character.equipment.visible, "actual clothing appears indoors")
 
-	presenter.session.inject_offline_snapshot(_snapshot(2, [
-		_entity("player.me", Vector2(12.0, 20.0), 2, "idle", 1, 2),
+	presenter.session.inject_offline_snapshot(_snapshot_bundle(4, [
+		_entity("player.me", Vector2(12.0, 20.0), 2, "idle", 1, 4),
 	]))
 	_expect_equal(presenter.remote_character_count(), 0, "absent remote entity is removed")
 	presenter.show_rejection(&"unreachable_target", "目标不可到达")
@@ -155,6 +186,7 @@ func _run() -> void:
 	presenter.queue_free()
 	world.queue_free()
 	status_label.queue_free()
+	await process_frame
 	_finish()
 
 
@@ -162,12 +194,22 @@ func _run() -> void:
 ## [param server_tick] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## [param entities] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## 返回该函数计算、查询或操作得到的结果。
-func _snapshot(server_tick: int, entities: Array) -> Dictionary:
+func _snapshot(server_tick: int, entities: Array, instance_id := "yian_harbor_hall_floor_1.instance.1") -> Dictionary:
 	return {
+		"map_instance_id": instance_id,
 		"server_tick": server_tick,
 		"server_time_seconds": float(server_tick) * 0.1,
 		"entities": entities,
+		"combat_world": {"monsters": [], "ground_loot": [], "mine_sources": [],
+			"corrosive_clouds": [], "recent_events": [], "vehicle_combat_active": false},
 	}
+
+
+func _snapshot_bundle(server_tick: int, entities: Array, instance_id := "yian_harbor_hall_floor_1.instance.1") -> Dictionary:
+	return {"world_snapshot": _snapshot(server_tick, entities, instance_id),
+		"local_snapshot": {"map_instance_id": instance_id, "server_tick": server_tick,
+			"local_entity_id": "player.me", "local_vehicle": {}, "local_weapon_flight": {},
+			"local_sama_effects": [], "local_mining": {"active": false}}}
 
 
 ## 执行 `map_joined_message` 对应的模块操作。
@@ -188,9 +230,12 @@ func _map_joined_message(transition_sequence: int) -> Dictionary:
 					"definition_version": 1,
 					"server_tick": 10,
 				},
-				"snapshot": _snapshot(10, [
+				"world_snapshot": _snapshot(10, [
 					_entity("player.me", Vector2(420.0, 520.0), 2, "idle", 0, 10),
-				]),
+					], "g08.instance.1"),
+				"local_snapshot": {"map_instance_id": "g08.instance.1", "server_tick": 10,
+					"local_entity_id": "player.me", "local_vehicle": {}, "local_weapon_flight": {},
+					"local_sama_effects": [], "local_mining": {"active": false}},
 			},
 		},
 	}
@@ -221,6 +266,8 @@ func _entity(
 		"speed": 100.0 if action_id == "walking" else 0.0,
 		"state_revision": server_tick,
 		"acknowledged_input_sequence": acknowledged_sequence,
+		"appearance": {"display_name": "远端玩家", "upper_body": "male_sleeveless_shirt",
+			"chassis": "glory_equipment_tank1000_27ae5e8059", "primary_weapon": "glory_equipment_gun1000_c4c24e2500"},
 	}
 
 

@@ -69,7 +69,8 @@ func _ready() -> void:
 func open_board() -> void:
 	show()
 	_query_elapsed = 0
-	command_requested.emit({"type": "query"})
+	_awaiting = true
+	command_requested.emit({"type": "query_vehicle_presets"})
 
 
 ## 同步实际方案和玩家投影；频繁资源刷新不会覆盖用户正在输入的新名称。
@@ -89,15 +90,22 @@ func apply_bundle(bundle: Dictionary, player: Player) -> void:
 	_show_selection(first)
 
 
-## 用本地经过时间平滑显示服务端冷却，只读轮询恢复失败请求后的操作状态。
+## 用本地时间显示冷却；只在请求超时后查询恢复操作状态。
 ## [param delta] 当前渲染帧时长。
 func _process(delta: float) -> void:
 	if not visible: return
 	_query_elapsed += delta
-	if _query_elapsed >= 2.0:
+	if _awaiting and _query_elapsed >= 5.0:
 		_query_elapsed = 0
-		command_requested.emit({"type": "query"})
+		command_requested.emit({"type": "query_vehicle_presets"})
 	_refresh_actions()
+
+
+## 背包或装配变化后更新可用性，不重置请求状态和编辑中的名称。
+## [param player] 已提交的唯一玩家投影。
+func refresh_player(player: Player) -> void:
+	_player = player
+	if visible: _show_selection(false)
 
 
 ## 选择用户明确点击的方案，不自动寻找其他可用装备或替换缺失物品。

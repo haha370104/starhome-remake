@@ -30,6 +30,4 @@ func combat_mode() -> String:
 		"energy_cannon": return "energy_cannon"
 		"missile_weapon": return "missile"
 		"rocket_weapon": return "rocket_launcher"
-	if equipment_location == 1:
-		return "energy_cannon"
 	return String({"starter_missile": "missile", "starter_rocket_launcher": "rocket_launcher"}.get(definition_id, ""))

@@ -20,15 +20,18 @@ from typing import Any
 
 import numpy as np
 from PIL import Image, ImageChops
+if __package__:
+    from tools.glory_map_workspace import RawMapWorkspace
+    from tools.glory_paths import resolve_casefold_path
+else:
+    from glory_map_workspace import RawMapWorkspace
+    from glory_paths import resolve_casefold_path
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-OUTPUTS_ROOT = PROJECT_ROOT.parent
-PARSED_MAP_ROOT = OUTPUTS_ROOT / "starhome_lz_ry_maps_parsed" / "maps"
-ALE_ROOT = OUTPUTS_ROOT / "starhome_lz_ry_full_parsed" / "ale_sprites"
-OFFICIAL_CACHE_ROOT = OUTPUTS_ROOT / "starhome_lz_ry_full_parsed" / "official_lazy_cache"
-UNINDEXED_ALE_ROOT = OFFICIAL_CACHE_ROOT / "ale_sprites"
-UNINDEXED_RAW_ROOT = OFFICIAL_CACHE_ROOT / "raw"
+ALE_ROOT = PROJECT_ROOT / "assets" / "glory" / "sprites"
+UNINDEXED_ALE_ROOT = ALE_ROOT
+UNINDEXED_RAW_ROOT = PROJECT_ROOT / "../starhome_lz_ry_full" / "unindexed_raw"
 CHUNK_SIZE = 256
 ATLAS_WIDTH = 2048
 ATLAS_PADDING = 1
@@ -39,10 +42,10 @@ MAPS: dict[str, dict[str, str]] = {
         "destination": "assets/maps/yian_harbor/city",
         "asset_prefix": "maps/yian_harbor/city/scenery",
     },
-    "d04_field_zone": {
+    "glory_nft_bl_d04": {
         "source": "d04/variant_01_nft_bl",
-        "destination": "assets/maps/exploration/d04_field_zone",
-        "asset_prefix": "maps/exploration/d04_field_zone/scenery",
+        "destination": "assets/maps/exploration/glory_nft_bl_d04",
+        "asset_prefix": "maps/exploration/glory_nft_bl_d04/scenery",
     },
 }
 
@@ -128,9 +131,9 @@ def scene_placement_key(item: dict[str, Any]) -> tuple[str, int, int] | None:
 def resolve_frame_source(item: dict[str, Any]) -> dict[str, Any] | None:
     """Resolve an indexed Glory frame or a verified same-release unindexed overlay."""
     direct_logical = normalize_source_reference(str(item.get("source_ale", "")))
-    direct_dir = UNINDEXED_ALE_ROOT / Path(direct_logical)
-    direct_raw = UNINDEXED_RAW_ROOT / Path(direct_logical + ".ale")
-    if (direct_dir / "frames.json").is_file() and direct_raw.is_file():
+    direct_dir = resolve_casefold_path(UNINDEXED_ALE_ROOT, direct_logical)
+    direct_raw = resolve_casefold_path(UNINDEXED_RAW_ROOT, direct_logical + ".ale")
+    if direct_dir is not None and direct_raw is not None and (direct_dir / "frames.json").is_file():
         return {
             "logical_path": direct_logical,
             "source_dir": direct_dir,
@@ -142,8 +145,8 @@ def resolve_frame_source(item: dict[str, Any]) -> dict[str, Any] | None:
     logical_path = str(item.get("resolved_ale", ""))
     if logical_path.startswith("@"):
         return None
-    source_dir = ALE_ROOT / Path(logical_path)
-    if not (source_dir / "frames.json").is_file():
+    source_dir = resolve_casefold_path(ALE_ROOT, logical_path)
+    if source_dir is None or not (source_dir / "frames.json").is_file():
         return None
     return {
         "logical_path": logical_path,
@@ -402,9 +405,8 @@ def validate_reconstruction(
     return hashlib.sha256(reconstructed.tobytes()).hexdigest(), source_matches
 
 
-def import_map(map_id: str, config: dict[str, str]) -> dict[str, Any]:
+def import_map(map_id: str, config: dict[str, str], source: Path) -> dict[str, Any]:
     """Import one configured map and return a concise result summary."""
-    source = PARSED_MAP_ROOT / config["source"]
     destination = PROJECT_ROOT / config["destination"]
     if not source.is_dir():
         raise FileNotFoundError(source)
@@ -514,7 +516,7 @@ def import_map(map_id: str, config: dict[str, str]) -> dict[str, Any]:
         "source_audit": {
             "source_release": "starhome_lz_ry",
             "source_map_code": source.parent.name,
-            "source_output": str(source.relative_to(OUTPUTS_ROOT)).replace("\\", "/"),
+            "source_output": "starhome_lz_ry_maps_parsed/maps/" + config["source"],
             "source_scene_objects_sha256": sha256(source / "scene_objects.json"),
             "source_transitions_sha256": sha256(source / "transitions.json"),
             "resolved_placements": len(owners),
@@ -567,11 +569,18 @@ def main() -> int:
             "destination": arguments.destination,
             "asset_prefix": arguments.asset_prefix,
         }
-        results = [import_map(arguments.runtime_map_id, config)]
+        with RawMapWorkspace() as workspace:
+            with workspace.render(config["source"]) as (source, _):
+                results = [import_map(arguments.runtime_map_id, config, source)]
         print(json.dumps(results, ensure_ascii=False, indent=2))
         return 0
     selected = arguments.maps or list(MAPS)
-    results = [import_map(map_id, MAPS[map_id]) for map_id in selected]
+    results = []
+    with RawMapWorkspace() as workspace:
+        for map_id in selected:
+            config = MAPS[map_id]
+            with workspace.render(config["source"]) as (source, _):
+                results.append(import_map(map_id, config, source))
     print(json.dumps(results, ensure_ascii=False, indent=2))
     return 0
 

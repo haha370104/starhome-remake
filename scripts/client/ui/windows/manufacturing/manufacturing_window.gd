@@ -61,7 +61,7 @@ func _ready() -> void:
 	pause_button = make_button("暂停", Rect2(202, 594, 164, 34), _control)
 	cancel_button = make_button("取消订单", Rect2(380, 594, 164, 34), _ask_cancel)
 	for button: Button in [start_button, pause_button, cancel_button,
-		make_button("刷新", Rect2(700, 594, 116, 34), _query)]: _style_button(button)
+		make_button("刷新", Rect2(700, 594, 116, 34), request_refresh)]: _style_button(button)
 	confirmation = ConfirmationDialog.new()
 	confirmation.title = "取消生产订单"
 	confirmation.ok_button_text = "取消剩余轮次"
@@ -96,12 +96,13 @@ func open_station(requested_station_id: String) -> void:
 	_recipe_id = ""
 	visible = true
 	move_to_front()
-	_query()
+	request_refresh()
 
 
-## 提交只读查询，运行时推送之外低频校正剩余时间和地点限制。
-func _query() -> void:
+## 打开、手动刷新或请求超时后查询当前设施组件。
+func request_refresh() -> void:
 	_waiting = true
+	_poll_elapsed = 0
 	_update_actions()
 	command_requested.emit({"type": "query_production", "station_id": _station_id})
 
@@ -204,27 +205,26 @@ func _confirm_cancel() -> void:
 	_submit(command)
 
 
-## 发送意图并在失败无快照时追加只读恢复；不预测库存或订单成功。
+## 发送意图等待权威结果；不预测库存或订单成功。
 ## [param command] 已构造的语义命令。
 func _submit(command: Dictionary) -> void:
 	_waiting = true
+	_poll_elapsed = 0
 	_update_actions()
 	command_requested.emit(command)
-	if _waiting: _query()
 
 
-## 仅在可见时平滑显示服务器剩余时间，每三秒查询校正，不自行推进已完成次数。
+## 可见时显示本地倒计时，仅请求超时后查询，不自行结算产物。
 ## [param delta] 展示帧经过时间。
 func _process(delta: float) -> void:
-	if not visible or _snapshot == null: return
+	if not visible: return
 	_poll_elapsed += delta
-	var order := _snapshot.production.order
+	var order := _snapshot.production.order if _snapshot != null else null
 	if order != null and not order.paused:
 		_remaining = maxf(0, _remaining - delta * 1000)
 		_update_progress()
-	if _poll_elapsed >= 3:
-		_poll_elapsed = 0
-		_query()
+	if _waiting and _poll_elapsed >= 5:
+		request_refresh()
 
 
 ## 更新当前一轮的进度条，归零等待权威消息，不显示预测产物。
@@ -239,3 +239,4 @@ func _dismiss_confirmation() -> void:
 	if not visible:
 		_pending.clear()
 		if confirmation != null: confirmation.hide()
+		command_requested.emit({"type": "close_manufacturing"})

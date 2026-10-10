@@ -57,6 +57,4 @@ AuthoritativeManufacturingService → ManufacturingRecipe → Player.inventory /
 
 ## 验证入口
 
-`tests/server/manufacturing/industrial_manufacturing_test.gd` 验证原始配方、提炼、炎帝产物、
-材料扣除、技能成长、旧版本拒绝、跨设施／跨地图拒绝、重启实例身份及存档映射往返，
-已加入 `tools/run_project_checks.ps1`。实际本轮执行结果以交付说明为准，不代表整套门禁全绿。
+工业生产的现行验证由生产运行时和面板服务测试覆盖；旧的记录式工业夹具已随 Player 领域 API 迁移清理。

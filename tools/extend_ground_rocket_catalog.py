@@ -22,9 +22,10 @@ def main():
             "required_skill_level": "m_nSkillLevel", "purchase_value": "m_nWorth", "sell_value": "m_nSell",
             "weight": "m_nweight", "base_attack": "m_nattack", "attack_limit": "m_nattackUL",
             "working_energy_per_shot": "m_nenergy", "minimum_range": "m_nMinDistance", "range": "m_nMaxDistance",
-            "max_durability": "m_nMax_Hardiness"}.items()}
+            "max_durability": "m_nMax_Hardiness", "runtime_area_radius": "m_nHitR"}.items()}
+        stats["working_energy_per_shot"] = {8: 60, 9: 70}[number]
         stats["attack_interval_seconds"] = int(inherited(classes, name, r"m_nacttime\s*=\s*(\d+)")[1]) / 1000
-        stats["legacy_properties"] = {k: v.strip() for k, v in properties.items() if not k.startswith("m_sz") or k in ["m_szRepairHardinessBagClassname", "m_szRepairHardinessBagAmount"]}
+        stats["legacy_properties"] = {k: v.strip() for k, v in properties.items() if k not in ["m_nHitR", "m_nenergy", "m_nacttime"] and (not k.startswith("m_sz") or k in ["m_szRepairHardinessBagClassname", "m_szRepairHardinessBagAmount"])}
         presentation = {}
         for usage, suffix in [("inventory", 1), ("dialog", 2), ("world", 1)]:
             logical = f"pic3/equip/body/firegun{number}-{suffix}"

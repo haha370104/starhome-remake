@@ -18,14 +18,14 @@ const WORLD_GRAPH_PATH := "res://data/maps/world_graph_seed.json"
 const EXPECTED_DEFINITIONS := {
 	"yian_harbor_hall_floor_1": "res://data/maps/yian_harbor_hall_floor_1.json",
 	"yian_harbor_city": "res://data/maps/yian_harbor_city.json",
-	"d04_field_zone": "res://data/maps/d04_field_zone.json",
-	"g08_field_zone": "res://data/maps/g08_field_zone.json",
+	"glory_nft_bl_d04": "res://data/maps/glory_nft_bl_d04.json",
+	"glory_nft_bl_g08": "res://data/maps/glory_nft_bl_g08.json",
 }
 const EXPECTED_NAVIGATION_HASHES := {
 	"yian_harbor_hall_floor_1": "d68ad7bc872fb1d907ca6ecb2410cc782e631f846d03a9b4b3b0dacc5b45a327",
 	"yian_harbor_city": "46bfb65fc3a6c5faef835ec35602139bec96d3a29469bfe313136ca25a5a3fde",
-	"d04_field_zone": "6596d9afc3b99553649f5d980de0365dc51a36eacb50a2e07fc0075fa612f65b",
-	"g08_field_zone": "df15d24a1bb74f63385d10d51e2419e3ffa5669810b52dc6b1d1913dc21537dc",
+	"glory_nft_bl_d04": "6596d9afc3b99553649f5d980de0365dc51a36eacb50a2e07fc0075fa612f65b",
+	"glory_nft_bl_g08": "df15d24a1bb74f63385d10d51e2419e3ffa5669810b52dc6b1d1913dc21537dc",
 }
 
 var failures: PackedStringArray = []
@@ -71,7 +71,7 @@ func _test_world_graph(graph: Dictionary) -> void:
 	var slice: Dictionary = graph.get("vertical_slice", {})
 	_expect(
 		Array(slice.get("route_map_ids", [])) == [
-			"yian_harbor_hall_floor_1", "yian_harbor_city", "d04_field_zone",
+			"yian_harbor_hall_floor_1", "yian_harbor_city", "glory_nft_bl_d04",
 		],
 		"阶段 2 纵切必须保留 RoomSvr1→City1Svr→D04，不得伪造大厅直达野外",
 	)
@@ -120,7 +120,7 @@ func _test_definitions(directory: Dictionary) -> void:
 		"大厅出口必须忠实采用源 as4 的屏幕左上方向",
 	)
 	var city = definitions_by_id["yian_harbor_city"]
-	_expect(city.transitions.size() == 20, "City1Svr 应提升有效地图边、服务设施入口和提炼厂楼层选项")
+	_expect(city.transitions.size() == 31, "City1Svr 应保留原版有效地图边、服务设施和城区建筑入口")
 	for entry_number in range(5):
 		_expect(city.spawn_for_entry(entry_number) != null, "City1Svr 缺少入口 %d 出生点" % entry_number)
 	var city_hall_transition: MapTransition = city.transition_by_id(&"enter_base_hall_floor_1")
@@ -130,7 +130,7 @@ func _test_definitions(directory: Dictionary) -> void:
 	)
 	_expect(int(city_hall_transition.source_audit.get("source_marker_style", 0)) == 2, "城区基地入口必须保留源 as2 审计")
 	_test_city_service_transitions(city, catalog)
-	var d04 = definitions_by_id["d04_field_zone"]
+	var d04 = definitions_by_id["glory_nft_bl_d04"]
 	_expect(d04.transitions.size() == 12, "D04 的 12 条荣耀版有效出口必须全部保留")
 	for transition: MapTransition in d04.transitions:
 		_expect(
@@ -139,7 +139,7 @@ func _test_definitions(directory: Dictionary) -> void:
 		)
 	for entry_number in range(1, 5):
 		_expect(d04.spawn_for_entry(entry_number) != null, "D04 缺少城市入口 %d 出生点" % entry_number)
-	_test_g08_transitions(definitions_by_id["g08_field_zone"])
+	_test_g08_transitions(definitions_by_id["glory_nft_bl_g08"])
 
 
 ## 验证城区服务设施入口、室内地图资源和双向返程拓扑。

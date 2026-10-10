@@ -59,7 +59,7 @@ func _initialize() -> void:
 	_expect(field_count == 460, "运行定义应包含460张野外图")
 	_expect(configured_field_count == 460, "全部460张野外图应启用设计种群")
 	_expect(catalog.monster_encounter_map_ids().size() == configured_field_count, "刷怪目录应覆盖全部野外图")
-	for map_id: String in ["d04_field_zone", "glory_nft_bl_c08", "glory_nft_bl_e07", "glory_nft_bt_c06", "glory_nft_bt_e06", "glory_nft_bt_j08", "g08_field_zone"]:
+	for map_id: String in ["glory_nft_bl_d04", "glory_nft_bl_c08", "glory_nft_bl_e07", "glory_nft_bt_c06", "glory_nft_bt_e06", "glory_nft_bt_j08", "glory_nft_bl_g08"]:
 		_check_authoritative_spawn(catalog, directory["definitions"][map_id])
 	_finish()
 

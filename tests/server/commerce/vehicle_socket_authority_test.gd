@@ -53,7 +53,7 @@ func _test_transactions() -> void:
 	var command := {"type": "inlay_vehicle_crystal", "instance_id": target.instance_id,
 		"material_id": crystal.instance_id, "socket_index": 0, "inventory_revision": player.inventory.revision,
 		"price": 0, "cracks": 0, "account_id": "other"}
-	var result := _service.execute(state, command)
+	var result := _execute(state, command)
 	_check(result.is_ok and state.to_dictionary() == before, "isolated authoritative settlement")
 	if not result.is_ok:
 		return
@@ -62,12 +62,12 @@ func _test_transactions() -> void:
 	var updated: VehicleEquipment = restored.inventory.find(target.instance_id)
 	_check(updated.sockets.slot_at(0).cracks == 2 and updated.bound, "ignore client cracks, propagate binding")
 	_check(restored.inventory.find("crystal").quantity == 1, "consume exactly one")
-	_check(not _service.execute(candidate, command).is_ok, "reject replay")
+	_check(not _execute(candidate, command).is_ok, "reject replay")
 	var current := CurrentPlayer.new()
-	_check(current.apply_bundle(result.value.panel_bundle), "valid client snapshot")
+	_check(current.apply_bundle(_service.build_bundle(restored, result.value.operation)), "valid client snapshot")
 	_check((current.inventory.find(target.instance_id) as VehicleEquipment).sockets.slot_at(0).cracks == 2, "client state agrees")
 	command.type = "query_vehicle_sockets"
-	var query := _service.execute(candidate, command)
+	var query := _execute(candidate, command)
 	_check(query.is_ok and not query.value.changed, "queries do not commit")
 	_check(query.value.panel_bundle.vehicle_sockets.preview.can_extract, "query previews extraction")
 	var extracted := PlayerVehicleSocketActions.extract(restored, target.instance_id, 0, false, false, restored.inventory.revision, _items, "returned")
@@ -90,11 +90,11 @@ func _test_transactions() -> void:
 	_check(advanced.sockets.capacity() == 10 and restored.inventory.find("chips") == null, "exact chip payment")
 	var buy := {"type": "buy_vehicle_workshop_material", "definition_id": "vehicle_precise_hammer",
 		"quantity": 3, "inventory_revision": restored.inventory.revision, "price": 0}
-	var purchased := _service.execute(_mapper.to_record(restored).value, buy)
+	var purchased := _execute(_mapper.to_record(restored).value, buy)
 	_check(purchased.is_ok and purchased.value.candidate.currency == restored.inventory.currency - 6000, "server shop price")
-	_check(not _service.execute(purchased.value.candidate, buy).is_ok, "purchase replay")
+	_check(not _execute(purchased.value.candidate, buy).is_ok, "purchase replay")
 	buy.definition_id = "recruit_tank"
-	_check(not _service.execute(_mapper.to_record(restored).value, buy).is_ok, "purchase whitelist")
+	_check(not _execute(_mapper.to_record(restored).value, buy).is_ok, "purchase whitelist")
 
 
 ## 验证满包、锁定、错误材料、越界和安装中加工不发生部分扣费。
@@ -118,7 +118,7 @@ func _test_failures() -> void:
 			"material_id": "inventory.training_shirt" if problem == "wrong" else "stone",
 			"socket_index": 99 if problem == "out_of_range" else 0,
 			"inventory_revision": -1 if problem == "stale" else player.inventory.revision}
-		_check(not _service.execute(state, command).is_ok and state.to_dictionary() == before, "atomic rejection " + problem)
+		_check(not _execute(state, command).is_ok and state.to_dictionary() == before, "atomic rejection " + problem)
 
 
 ## 用固定随机样本覆盖成功、丢孔和销毁，不靠概率碰运气。
@@ -127,7 +127,7 @@ func _test_opening() -> void:
 	var item: VehicleEquipment = player.inventory.find("inventory.spare_engine")
 	_give(player, "vehicle_density_solvent_i", "risky", 2)
 	_give(player, "high_grade_density_solvent", "safe", 2)
-	_give(player, "item:material:78f2a523a761", "low")
+	_give(player, "density_solvent", "low")
 	var result := PlayerVehicleSocketActions.open_socket(player, item.instance_id, "safe", 0, player.inventory.revision, 0.0, false)
 	_check(result.is_ok and item.sockets.opened_count() == 1, "opening success")
 	result = PlayerVehicleSocketActions.open_socket(player, item.instance_id, "safe", 1, player.inventory.revision, 0.99, false)
@@ -148,7 +148,7 @@ func _test_stats() -> void:
 	var engine := player.vehicle.loadout.at(3)
 	for index: int in 4:
 		chassis.sockets.settle_open(index, true, "none")
-		chassis.sockets.inlay(index, _items.create("item:material:a7bccd7c1408", {}).value)
+		chassis.sockets.inlay(index, _items.create("flawed_firepower_crystal", {}).value)
 	engine.sockets.settle_open(0, true, "none")
 	engine.sockets.inlay(0, _items.create("bright_firepower_crystal", {}).value)
 	_check(player.vehicle.loadout.socket_bonus("energy_cannon_attack") == 14, "top four across equipment: 5+3+3+3")
@@ -188,3 +188,19 @@ func _check(condition: bool, message: String) -> void:
 	if not condition:
 		_failures += 1
 		push_error(message)
+
+
+## 将存档 DTO 转换为当前权威 Player API，保持测试的隔离存档断言。
+func _execute(state: PlayerStateRecord, command: Dictionary) -> DomainResult:
+	var player_result := _mapper.to_domain(state)
+	if not player_result.is_ok:
+		return player_result
+	var result := _service.execute(player_result.value, command)
+	if not result.is_ok or not result.value is Dictionary or not result.value.has("candidate"):
+		return result
+	var value: Dictionary = result.value.duplicate(true)
+	var candidate := _mapper.to_record(result.value.candidate)
+	if not candidate.is_ok:
+		return candidate
+	value["candidate"] = candidate.value
+	return DomainResult.ok(value)

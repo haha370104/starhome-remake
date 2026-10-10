@@ -5,14 +5,14 @@
   "definition_paths": [
     "res://data/maps/yian_harbor_hall_floor_1.json",
     "res://data/maps/yian_harbor_city.json",
-    "res://data/maps/d04_field_zone.json",
-    "res://data/maps/g08_field_zone.json"
+    "res://data/maps/glory_nft_bl_d04.json",
+    "res://data/maps/glory_nft_bl_g08.json"
   ],
   "vertical_slice": {
     "route_map_ids": [
       "yian_harbor_hall_floor_1",
       "yian_harbor_city",
-      "d04_field_zone"
+      "glory_nft_bl_d04"
     ],
     "route_transition_ids": [
       "exit_to_city",
@@ -24,7 +24,7 @@
   },
   "graph_samples": [
     {
-      "map_id": "g08_field_zone",
+      "map_id": "glory_nft_bl_g08",
       "purpose": "five_exit_reference_fixture",
       "expected_enabled_transitions": 5,
       "expected_destination_legacy_codes": ["f07", "f08", "g07", "h07", "h08"]
@@ -33,7 +33,7 @@
   "known_gaps": [
     {
       "gap_id": "ordinary_transport_server_landing_points",
-      "scope": ["yian_harbor_hall_floor_1", "yian_harbor_city", "d04_field_zone", "g08_field_zone"],
+      "scope": ["yian_harbor_hall_floor_1", "yian_harbor_city", "glory_nft_bl_d04", "glory_nft_bl_g08"],
       "state": "reconstructed_default",
       "detail": "Ordinary Transport metadata provides only destination entry numbers. Configured landings are walkable reciprocal-exit or map-center derivations and retain their evidence_level."
     },
@@ -45,13 +45,13 @@
     },
     {
       "gap_id": "d04_presentation_assets",
-      "scope": ["d04_field_zone"],
+      "scope": ["glory_nft_bl_d04"],
       "state": "glory_semantic_import_complete_with_missing_dependencies",
       "detail": "Glory-only semantic presentation imports 45 of 61 scene objects, including 10 official lazy-resource recoveries, and leaves 16 confirmed-missing placements blank; navigation and all 12 transitions are ready."
     },
     {
       "gap_id": "g08_presentation_assets",
-      "scope": ["g08_field_zone"],
+      "scope": ["glory_nft_bl_g08"],
       "state": "accepted_partial_reference",
       "detail": "Glory NFT_BL/BT extraction resolves 658 of 753 scene objects and misses 95; the user accepted visible omissions for later in-game review."
     },

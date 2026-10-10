@@ -1,5 +1,7 @@
 extends SceneTree
 
+const CommerceRecordAdapter := preload("res://tests/fixtures/commerce_record_adapter.gd")
+
 const Fixture := preload("res://tests/fixtures/player_panel_service_fixture.gd")
 var service := AuthoritativeCommerceService.new()
 var state: PlayerStateRecord
@@ -144,7 +146,7 @@ func _run() -> void:
 ## 使用真实权威事务响应窗口意图；只有成功候选覆盖夹具存档。
 ## [param command] 面板提交的意图。
 func _dispatch(command: Dictionary) -> void:
-	var result := service.execute(state, command)
+	var result := CommerceRecordAdapter.execute(service, state, command)
 	if not result.is_ok:
 		failures.append(result.error_message)
 		return

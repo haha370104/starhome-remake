@@ -3,6 +3,11 @@ extends SceneTree
 const ControllerScript := preload(
 	"res://scripts/client/presentation/combat/monster_attack_effect_controller.gd"
 )
+const PackCatalogScript := preload("res://scripts/content/runtime_content_pack_catalog.gd")
+const RepositoryScript := preload("res://scripts/content/ale_sprite_repository.gd")
+const PresentationCatalogScript := preload(
+	"res://scripts/content/glory_monster_presentation_catalog.gd"
+)
 const MANIFEST_PATH := "res://assets/equipment_world/combat_visual_manifest.json"
 
 var assertions := 0
@@ -21,11 +26,25 @@ func _run() -> void:
 	if not manifest_value is Dictionary:
 		_finish()
 		return
+	var packs = PackCatalogScript.new()
+	_expect(packs.load_file("res://data/content/glory_sprite_content_packs_v1.json"), "sprite packs should load")
+	_expect(packs.mount_all(), "sprite packs should mount")
+	var palette_packs = PackCatalogScript.new()
+	_expect(
+		palette_packs.load_file("res://data/content/glory_monster_palette_content_pack_v1.json"),
+		"monster palette packs should load",
+	)
+	_expect(palette_packs.mount_all(), "monster palette packs should mount")
+	var repository = RepositoryScript.new()
+	_expect(repository.load_default(), "ALE repository should load")
+	var catalog = PresentationCatalogScript.new()
+	_expect(catalog.load_default(), "monster presentation catalog should load")
 	var world := Node2D.new()
 	root.add_child(world)
 	var controller = ControllerScript.new()
 	root.add_child(controller)
 	_expect(controller.configure(manifest_value, world) == OK, "attack controller should configure")
+	controller.configure_glory(repository, catalog)
 	var ranged := {
 		"attack_id": "monster.om.attack.1",
 		"attack_archetype": "ranged_projectile",
@@ -115,7 +134,6 @@ func _test_corrosion(controller: MonsterAttackEffectController, world: Node2D) -
 			var label := Label.new()
 			label.text = ["东", "东北", "北", "西北", "西", "西南", "南", "东南"][direction]
 			label.position = origin + Vector2(-10, 30)
-			label.add_theme_font_override("font", preload("res://assets/ui/fonts/legacy_panel_font.tres"))
 			world.add_child(label)
 	controller.advance(0.81)
 	var snapshot := {"local_entity_id": "p", "corrosive_clouds": [

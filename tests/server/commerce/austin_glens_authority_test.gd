@@ -1,5 +1,7 @@
 extends SceneTree
 
+const CommerceRecordAdapter := preload("res://tests/fixtures/commerce_record_adapter.gd")
+
 var checks := 0
 var failures := PackedStringArray()
 var items := ItemCatalog.new()
@@ -18,7 +20,7 @@ func _initialize() -> void:
 	for id: String in items.austin_rules.offers:
 		var amount := 1 if items.austin_rules.profiles.has(id) else 99
 		var before := state.to_dictionary()
-		var result := service.execute(state, {"type": "buy_austin_glens", "definition_id": id, "quantity": amount, "inventory_revision": state.inventory_revision, "price": 0})
+		var result := CommerceRecordAdapter.execute(service, state, {"type": "buy_austin_glens", "definition_id": id, "quantity": amount, "inventory_revision": state.inventory_revision, "price": 0})
 		_check(result.is_ok and state.to_dictionary() == before, "isolated supply purchase")
 		if not result.is_ok:
 			push_error(result.error_message)
@@ -26,7 +28,7 @@ func _initialize() -> void:
 			return
 		_check(result.value.candidate.currency == state.currency - items.austin_rules.offers[id] * amount, "server price")
 		state = result.value.candidate
-	var queried := service.execute(state, {"type": "query_austin_glens"})
+	var queried := CommerceRecordAdapter.execute(service, state, {"type": "query_austin_glens"})
 	_check(queried.is_ok and not queried.value.changed and queried.value.panel_bundle.austin_glens.offers.size() == 19, "read-only all supplies")
 	for id: String in items.austin_rules.profiles:
 		player = mapper.to_domain(state).value
@@ -40,22 +42,22 @@ func _initialize() -> void:
 				for item: GameItem in mapper.to_domain(state).value.inventory.items():
 					if item.definition_id == rune.definition_id: command.material_id = item.instance_id
 			var before := state.to_dictionary()
-			queried = service.execute(state, command)
+			queried = CommerceRecordAdapter.execute(service, state, command)
 			var preview: Dictionary = queried.value.panel_bundle.austin_glens.preview
 			_check(state.to_dictionary() == before and not queried.value.changed and not preview.has("candidate"), "query cannot mutate or leak domain objects")
 			_check(JSON.parse_string(JSON.stringify(queried.value.panel_bundle)) is Dictionary, "safe snapshot")
 			command.type = "change_austin_glens"
 			if mode == "additional" and equipment.austin_profile.effect.begins_with("pvp"):
-				_check(not preview.can_execute and not service.execute(state, command).is_ok and state.to_dictionary() == before, "PvP growth unavailable without charge")
+				_check(not preview.can_execute and not CommerceRecordAdapter.execute(service, state, command).is_ok and state.to_dictionary() == before, "PvP growth unavailable without charge")
 				continue
 			_check(preview.can_execute, "valid growth preview " + mode)
 			command.confirmed = false
-			_check(not service.execute(state, command).is_ok, "confirmation required")
+			_check(not CommerceRecordAdapter.execute(service, state, command).is_ok, "confirmation required")
 			command.confirmed = true
-			var changed := service.execute(state, command)
+			var changed := CommerceRecordAdapter.execute(service, state, command)
 			_check(changed.is_ok and state.to_dictionary() == before, "candidate-only mutation " + mode)
 			if not changed.is_ok: continue
-			_check(not service.execute(changed.value.candidate, command).is_ok, "stale replay rejected")
+			_check(not CommerceRecordAdapter.execute(service, changed.value.candidate, command).is_ok, "stale replay rejected")
 			var next_player: Player = mapper.to_domain(changed.value.candidate).value
 			var previous_player: Player = mapper.to_domain(state).value
 			for cost: Dictionary in preview.costs:
@@ -72,10 +74,10 @@ func _initialize() -> void:
 	for bad: Variant in [1.5, "2", true, -1]:
 		var request := command.duplicate(true)
 		request.index = bad
-		_check(not service.execute(state, request).is_ok, "invalid index")
+		_check(not CommerceRecordAdapter.execute(service, state, request).is_ok, "invalid index")
 		request = {"type": "buy_austin_glens", "definition_id": "austin_space_crystal", "quantity": bad, "inventory_revision": state.inventory_revision}
-		_check(not service.execute(state, request).is_ok, "invalid quantity")
-	_check(not service.execute(state, {"type": "buy_austin_glens", "definition_id": "recruit_tank", "inventory_revision": state.inventory_revision}).is_ok, "whitelist")
+		_check(not CommerceRecordAdapter.execute(service, state, request).is_ok, "invalid quantity")
+	_check(not CommerceRecordAdapter.execute(service, state, {"type": "buy_austin_glens", "definition_id": "recruit_tank", "inventory_revision": state.inventory_revision}).is_ok, "whitelist")
 	target.locked = true
 	var before := mapper.to_record(player).value.to_dictionary() as Dictionary
 	_check(not PlayerAustinActions.execute(player, items, target.instance_id, "stage", 0, "", player.inventory.revision, true).is_ok and mapper.to_record(player).value.to_dictionary() == before, "locked direct aggregate unchanged")

@@ -8,10 +8,11 @@ var _levels: Dictionary[String, int] = {}
 ## [param raw] 原始存档事实。
 ## 返回成长对象或格式错误。
 static func restore(raw: Variant) -> DomainResult:
-	if not raw is Dictionary or raw.get("version", 1) != 1 or not raw.get("levels", {}) is Dictionary:
+	if not raw is Dictionary or raw.size() != 2 or not raw.has("version") \
+		or not raw.has("levels") or raw.version != 1 or not raw.levels is Dictionary:
 		return DomainResult.failure(&"extra.invalid_state", "额外属性记录无效")
 	var result := ExtraAttributes.new()
-	for key: Variant in raw.get("levels", {}):
+	for key: Variant in raw.levels:
 		var count: Variant = raw.levels[key]
 		if not key is String or not (count is int or count is float) or not is_finite(float(count)) \
 			or float(count) != int(count) or count < 0 or count > 30:

@@ -19,7 +19,6 @@ const GAMEPLAY_PATHS := [
 	"res://data/gameplay/material_upgrade_items_v1.json",
 	"res://data/gameplay/clothing_enhancement_items_v1.json",
 	"res://data/gameplay/vehicle_workshop_items_v1.json",
-	"res://data/gameplay/equipment_processing_items_v1.json",
 	"res://data/gameplay/equipment_maintenance_items_v1.json",
 	"res://data/gameplay/extra_attribute_items_v1.json",
 	"res://data/gameplay/equipment_strengthening_items_v1.json",
@@ -30,8 +29,10 @@ const GAMEPLAY_PATHS := [
 	"res://data/gameplay/equipment_forging_items_v1.json",
 ]
 const PRESENTATION_PATHS := [
+	"res://data/presentation/botanical_garden_v1.json",
 	"res://data/presentation/crystal_source_materials_v1.json",
 	"res://data/presentation/player_equipment_v1.json",
+	"res://data/presentation/mining_materials_v1.json",
 	"res://data/presentation/ground_loot_v1.json",
 	"res://data/presentation/recovered_equipment_v1.json",
 ]
@@ -186,8 +187,6 @@ func initialize() -> DomainResult:
 	dismantle_rules = dismantle_result.value
 	for id: String in clothing_improvement_rules.slots:
 		var slot: String = clothing_improvement_rules.slots[id]
-		if slot == "head" and _definitions[id].get("character_slot") == "upper_body":
-			_definitions[id]["legacy_character_slot"] = "upper_body"
 		_definitions[id]["character_slot"] = slot
 	for profile: ArmorRefinementRules.Profile in armor_refinement_rules.profiles.values():
 		_definitions[profile.definition_id]["display_name"] = profile.display_name
@@ -215,47 +214,59 @@ func initialize() -> DomainResult:
 ## [param state] 存档中的实例状态。
 ## 返回服装、战车底盘、引擎、武器、采掘臂、通用装备或普通物品的具体实例。
 func create(definition_id: String, state: Dictionary) -> DomainResult:
-	var central := CentralGrowth.restore(state.get("central_growth", {}))
+	var complete_state := {
+		"enhancement": ClothingEnhancement.new().to_dictionary(),
+		"clothing_improvement": ClothingImprovement.new().to_dictionary(),
+		"processing": EquipmentProcessing.new().to_dictionary(),
+		"extra_attributes": ExtraAttributes.new().to_dictionary(),
+		"strengthening": EquipmentStrengthening.new().to_dictionary(),
+		"usage": EquipmentUsage.new().to_dictionary(),
+		"magazine": WeaponMagazine.new().to_dictionary(),
+		"central_growth": CentralGrowth.new().to_dictionary(),
+	}
+	complete_state.merge(state, true)
+	state = complete_state
+	var central := CentralGrowth.restore(state.central_growth)
 	if not central.is_ok: return central
-	var central_profile: CentralRules.Profile = central_rules.profiles.get(ItemDefinitionAliases.canonical(definition_id))
+	var central_profile: CentralRules.Profile = central_rules.profiles.get(definition_id)
 	var central_check := (central.value as CentralGrowth).validate_for(central_profile)
 	if not central_check.is_ok: return central_check
 	var crystal_source := CrystalSourceGrowth.restore(state.get("crystal_source", {}))
 	var sama := SamaGrowth.restore(state.get("sama", {}))
 	if not sama.is_ok: return sama
-	var sama_profile: SamaRules.Profile = sama_rules.profiles.get(ItemDefinitionAliases.canonical(definition_id))
+	var sama_profile: SamaRules.Profile = sama_rules.profiles.get(definition_id)
 	var sama_check := (sama.value as SamaGrowth).validate_for(sama_profile)
 	if not sama_check.is_ok: return sama_check
 	var austin := AustinGlensGrowth.restore(state.get("austin_glens", {}))
 	if not austin.is_ok: return austin
-	var austin_profile: AustinGlensRules.Profile = austin_rules.profiles.get(ItemDefinitionAliases.canonical(definition_id))
+	var austin_profile: AustinGlensRules.Profile = austin_rules.profiles.get(definition_id)
 	var austin_check := (austin.value as AustinGlensGrowth).validate_for(austin_profile, austin_rules)
 	if not austin_check.is_ok: return austin_check
 	if not crystal_source.is_ok: return crystal_source
-	var crystal_profile: CrystalSourceRules.Profile = crystal_source_rules.profiles.get(ItemDefinitionAliases.canonical(definition_id))
+	var crystal_profile: CrystalSourceRules.Profile = crystal_source_rules.profiles.get(definition_id)
 	var crystal_check := (crystal_source.value as CrystalSourceGrowth).validate_for(crystal_profile, crystal_source_rules)
 	if not crystal_check.is_ok: return crystal_check
 	var source_cracks: Variant = state.get("crystal_source_cracks", 0)
 	if not CrystalSourceRules.integer(source_cracks, 0, 3) \
-		or (source_cracks != 0 and not crystal_source_rules.cores.has(ItemDefinitionAliases.canonical(definition_id))):
+		or (source_cracks != 0 and not crystal_source_rules.cores.has(definition_id)):
 		return DomainResult.failure(&"crystal_source.cracks", "非晶源核物品或晶源核裂纹无效")
 	var quality := EquipmentQuality.restore(state.get("equipment_quality", {}))
 	if not quality.is_ok: return quality
-	var quality_check := (quality.value as EquipmentQuality).validate_for(quality_rules.profiles.get(ItemDefinitionAliases.canonical(definition_id)))
+	var quality_check := (quality.value as EquipmentQuality).validate_for(quality_rules.profiles.get(definition_id))
 	if not quality_check.is_ok: return quality_check
 	var memory := EquipmentMemory.restore(state.get("equipment_memory", {}))
 	if not memory.is_ok: return memory
 	var improved := ClothingImprovement.restore(state.get("clothing_improvement", {}))
 	if not improved.is_ok: return improved
-	var improved_check := (improved.value as ClothingImprovement).validate_for(ItemDefinitionAliases.canonical(definition_id), clothing_improvement_rules)
+	var improved_check := (improved.value as ClothingImprovement).validate_for(definition_id, clothing_improvement_rules)
 	if not improved_check.is_ok: return improved_check
 	var stars := EquipmentStrengthening.restore(state.get("strengthening", {}))
 	if not stars.is_ok: return stars
-	var stars_check := (stars.value as EquipmentStrengthening).validate_for(strengthening_rules.profiles.get(ItemDefinitionAliases.canonical(definition_id)))
+	var stars_check := (stars.value as EquipmentStrengthening).validate_for(strengthening_rules.profiles.get(definition_id))
 	if not stars_check.is_ok: return stars_check
 	var extra := ExtraAttributes.restore(state.get("extra_attributes", {}))
 	if not extra.is_ok: return extra
-	var extra_check := (extra.value as ExtraAttributes).validate_for(ItemDefinitionAliases.canonical(definition_id), extra_attribute_rules)
+	var extra_check := (extra.value as ExtraAttributes).validate_for(definition_id, extra_attribute_rules)
 	if not extra_check.is_ok: return extra_check
 	var rounds := WeaponMagazine.restore(state.get("magazine", {}))
 	if not rounds.is_ok: return rounds
@@ -265,12 +276,12 @@ func create(definition_id: String, state: Dictionary) -> DomainResult:
 	var forged := EquipmentForging.restore(state.get("forging", {}))
 	if not forged.is_ok: return forged
 	var forging: EquipmentForging = forged.value
-	var forging_check := forging.validate_for(forging_rules.profiles.get(ItemDefinitionAliases.canonical(definition_id)))
+	var forging_check := forging.validate_for(forging_rules.profiles.get(definition_id))
 	if not forging_check.is_ok: return forging_check
 	var processed := EquipmentProcessing.restore(state.get("processing", {}))
 	if not processed.is_ok:
 		return processed
-	var processing_check := (processed.value as EquipmentProcessing).validate_for(forging.expanded_processing(processing_rules.profile(ItemDefinitionAliases.canonical(definition_id)), forging_rules))
+	var processing_check := (processed.value as EquipmentProcessing).validate_for(forging.expanded_processing(processing_rules.profile(definition_id), forging_rules))
 	if not processing_check.is_ok:
 		return processing_check
 	var sockets_result := VehicleSockets.restore(state.get("vehicle_sockets", {}))
@@ -316,8 +327,9 @@ func create(definition_id: String, state: Dictionary) -> DomainResult:
 		item.central_profile = central_profile
 		item.central_rules = central_rules
 		if central_profile != null:
-			item.presentation = item.central_growth.presentation(central_profile)
-			item.icon_path = String(item.presentation.icon)
+			var central_presentation: Dictionary = item.central_growth.presentation(central_profile)
+			item.presentation = {"inventory": central_presentation, "world": central_presentation.duplicate(true)}
+			item.icon_path = String(central_presentation.icon)
 		item.sama = sama.value
 		item.sama_profile = sama_profile
 		item.sama_rules = sama_rules
@@ -345,7 +357,6 @@ func create(definition_id: String, state: Dictionary) -> DomainResult:
 ## [param state] 实例字段。
 ## 返回物品或定义错误。
 func _create_item(definition_id: String, state: Dictionary) -> DomainResult:
-	definition_id = ItemDefinitionAliases.canonical(definition_id)
 	if not _definitions.has(definition_id):
 		return DomainResult.failure(&"items.definition_missing", "item definition does not exist")
 	var item_definition: Dictionary = _definitions[definition_id].duplicate(true)
@@ -412,7 +423,6 @@ func _create_item(definition_id: String, state: Dictionary) -> DomainResult:
 ## [param definition_id] 配置表定义标识。
 ## 返回定义显示名；未知定义返回原标识。
 func display_name(definition_id: String) -> String:
-	definition_id = ItemDefinitionAliases.canonical(definition_id)
 	var item_definition: Dictionary = _definitions.get(definition_id, {})
 	return String(item_definition.get("display_name", definition_id))
 
@@ -431,7 +441,6 @@ func definition_ids() -> PackedStringArray:
 ## 执行 `definition` 对应的模块操作。
 ## [param definition_id] 调用方传入的 `definition_id` 参数。
 func definition(definition_id: String) -> Dictionary:
-	definition_id = ItemDefinitionAliases.canonical(definition_id)
 	var value: Variant = _definitions.get(definition_id)
 	return value.duplicate(true) if value is Dictionary else {}
 
@@ -449,7 +458,7 @@ func definition_id_by_display_name(
 	for definition_id: String in _definition_ids_by_display_name.get(normalized, PackedStringArray()):
 		var kind := String((_definitions[definition_id] as Dictionary).get("kind", ""))
 		if accepted_kinds.is_empty() or kind in accepted_kinds:
-			return ItemDefinitionAliases.canonical(definition_id)
+			return definition_id
 	return ""
 
 
@@ -512,7 +521,8 @@ func _load_presentation_file(path: String) -> DomainResult:
 func _apply_equipment_contract(item_definition: Dictionary) -> void:
 	var kind := String(item_definition.get("kind", ""))
 	# 荣耀 CollecTor 基类声明 Location=1、EquipKind2=4；子类导出未展开继承字段。
-	var legacy: Dictionary = item_definition.get("stats", {}).get("legacy_properties", {})
+	var stats: Variant = item_definition.get("stats", {})
+	var legacy: Dictionary = stats.get("legacy_properties", {}) if stats is Dictionary else {}
 	if kind == "mining_arm" or (kind == "vehicle_equipment" and int(legacy.get("m_nEquipKind2", -1)) == 4):
 		kind = "mining_arm"
 		item_definition["kind"] = kind
@@ -570,21 +580,9 @@ func _normalize_legacy_vehicle_stats(item_definition: Dictionary) -> void:
 	_set_missing_numeric_stat(stats, "armor", legacy.get("m_narmor", 0))
 	match String(item_definition.get("kind", "")):
 		"vehicle_chassis":
-			_set_missing_numeric_stat(
-				stats, "working_energy_capacity", legacy.get("m_nenergy", stats.get("energy_cost", 0))
-			)
 			_set_missing_numeric_stat(stats, "reserve_energy_capacity", legacy.get("m_nmaxenergy", 0))
 			_set_missing_numeric_stat(stats, "repair_strength", legacy.get("m_nOneRepairAttack", 0))
-			_set_missing_numeric_stat(stats, "repair_energy_cost", legacy.get("m_nOneRepairEnergy", 0))
 			_set_missing_numeric_stat(stats, "repair_skill_level", legacy.get("m_nRepairLevel", 0))
-		"energy_cannon", "missile_weapon", "rocket_weapon", "vehicle_weapon":
-			_set_missing_numeric_stat(stats, "working_energy_per_shot", legacy.get("m_nenergy", stats.get("energy_cost", 0)))
-			if not stats.has("attack_interval_seconds"):
-				stats["attack_interval_seconds"] = maxf(
-					0.0, _numeric_value(legacy.get("m_nacttime", 800)) / 1000.0
-				)
-
-
 ## 仅在标准字段缺失时写入旧客户端数值，避免覆盖人工确认过的配置。
 ## [param stats] 待补齐的统一装备属性字典。
 ## [param key] 统一属性名。

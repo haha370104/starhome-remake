@@ -26,19 +26,48 @@ func _initialize() -> void:
 	restored.record_use("movement", 0.05)
 	_check(restored.durability == maximum - 1, "fractional seconds survive save")
 	var chassis: Equipment = catalog.create("recruit_tank", {"instance_id": "tank"}).value
-	chassis.record_use("movement", 100000)
-	_check(chassis.durability == chassis.max_durability, "no wear chassis")
+	chassis.record_use("vehicle_movement", 119.95)
+	var saved_chassis: Equipment = catalog.create(chassis.definition_id, chassis.to_view_dictionary()).value
+	saved_chassis.record_use("vehicle_movement", 0.05)
+	_check(saved_chassis.durability == chassis.max_durability - 1, "vehicle body wears after 120 moving seconds across restore")
+	var front_armor: Equipment = catalog.create("glory_equipment_frontarmor1_bedd1471a6", {"instance_id": "front"}).value
+	var rear_armor: Equipment = catalog.create("glory_equipment_backarmor1_62474fcdc0", {"instance_id": "rear"}).value
+	var condition := EquipmentConditionLoadout.new()
+	condition._items["tank"] = chassis
+	condition._items["front"] = front_armor
+	condition._items["rear"] = rear_armor
+	condition.record_vehicle_damage(10, [0.25, 0.75])
+	_check(chassis.durability == chassis.max_durability - 1 and is_equal_approx(float(chassis.usage.progress.get("vehicle_damage", 0)), 0.05), "two armor pieces assign 60 percent of 1.75 wear to vehicle body")
+	_check(is_equal_approx(float(rear_armor.usage.progress.get("vehicle_damage", 0)), 0.525), "random weights assign 0.525 wear to rear armor")
+	_check(is_equal_approx(float(front_armor.usage.progress.get("vehicle_damage", 0)), 0.175), "random weights assign 0.175 wear to front armor")
+	var durability_before_zero_damage := chassis.durability
+	condition.record_vehicle_damage(0, [])
+	_check(condition.snapshot()["tank"].durability == durability_before_zero_damage, "zero actual damage adds no wear")
+	var one_point_hits: Equipment = catalog.create("recruit_tank", {"instance_id": "two_hits"}).value
+	var repeated_hits := EquipmentConditionLoadout.new()
+	repeated_hits._items["two_hits"] = one_point_hits
+	repeated_hits.record_vehicle_damage(1, [])
+	repeated_hits.record_vehicle_damage(1, [])
+	_check(one_point_hits.durability == one_point_hits.max_durability - 1, "two one-point hits wear one plus accumulated damage over eight")
+	_check(is_equal_approx(float(one_point_hits.usage.progress.get("vehicle_damage", 0)), 0.25), "two one-point hits retain 0.25 fractional wear")
+	var destroyed_chassis: Equipment = catalog.create("recruit_tank", {"instance_id": "destroyed", "durability": 100}).value
+	var destroyed_condition := EquipmentConditionLoadout.new()
+	destroyed_condition._items["destroyed"] = destroyed_chassis
+	destroyed_condition.record_vehicle_destroyed()
+	_check(destroyed_chassis.durability == 54, "destroyed vehicle loses 20 plus rounded-up 2.5 percent body durability")
+	_check(destroyed_condition.needs_durability_sync, "destruction wear requests persistence and panel synchronization")
 	for raw: Variant in [{"progress": {"shot": -1}}, {"progress": {"shot": NAN}}, {"progress": {"unknown": 1}}, []]:
 		_check(not EquipmentUsage.restore(raw).is_ok, "bad usage rejected")
-	var raw_slot := {"owner_kind": "vehicle", "slot_id": "propulsion", "item_instance_id": "engine", "item_definition_id": engine.definition_id,
-		"max_durability": engine.max_durability, "durability": engine.durability, "usage": engine.usage.to_dictionary()}
+	var raw_slot: Dictionary = EquipmentSlotRecord.new().to_dictionary()
+	raw_slot.merge({"owner_kind": "vehicle", "slot_id": "propulsion", "item_instance_id": "engine",
+		"item_definition_id": engine.definition_id, "max_durability": engine.max_durability,
+		"durability": engine.durability, "slot_location": 3, "usage": engine.usage.to_dictionary()}, true)
 	var slot: EquipmentSlotRecord = EquipmentSlotRecord.from_dictionary(raw_slot).value
 	_check(slot.duplicate_record().usage.progress == engine.usage.progress, "equipped record round trip")
-	var stack := {"stack_id": "engine", "item_definition_id": engine.definition_id, "slot_index": 0, "quantity": 1,
-		"max_durability": engine.max_durability, "durability": engine.durability, "usage": engine.usage.to_dictionary()}
-	_check(InventoryStackRecord.from_dictionary(stack).value.duplicate_record().usage.progress == engine.usage.progress, "backpack round trip")
+	var stack := InventoryStackRecord.from_item(engine, 0)
+	_check(stack.is_ok and stack.value.duplicate_record().usage.progress == engine.usage.progress, "backpack round trip")
 	var clothing := Clothing.new({"id": "shirt", "stats": {"wear_degree": 64}}, {"max_durability": 1, "durability": 1})
-	_check(clothing.max_durability == 64 and clothing.durability == 64, "old 1/1 clothing migrated")
+	_check(clothing.max_durability == 1 and clothing.durability == 1, "explicit clothing durability is preserved")
 	var broken := Clothing.new({"id": "shirt", "stats": {"wear_degree": 64}}, {"max_durability": 1, "durability": 0})
 	_check(broken.durability == 0, "broken clothing not healed by migration")
 	print("Equipment usage model: %d checks, %d failures" % [checks, failures.size()])

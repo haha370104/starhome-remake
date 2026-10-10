@@ -129,6 +129,7 @@ func nearest(rows: Array, origin: Vector2, radius: float, require_alive: bool) -
 	var best: Dictionary = {}
 	var distance := radius
 	for row: Dictionary in rows:
+		if not require_alive and bool(row.get("player_dropped", false)): continue
 		if require_alive and int(row.get("health", 0)) <= 0:
 			continue
 		var point: Array = row.get("position", [])

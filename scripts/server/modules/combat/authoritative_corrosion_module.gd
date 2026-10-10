@@ -38,6 +38,7 @@ func advance(tick: int, actors: Dictionary) -> Array[Dictionary]:
 				events.append({"event_type": &"monster_attack_resolved", "server_tick": tick,
 					"impact_tick": tick, "attack_id": "%s.pulse.%d.%s" % [cloud.effect_id, tick, actor_id],
 					"attacker_id": cloud.attacker_id, "target_entity_id": actor_id,
+					"species_id": cloud.species_id,
 					"attack_archetype": &"corrosive_projectile", "combat_actor_id": cloud.combat_actor_id,
 					"corrosion_pulse": true, "impact_position": [center.x, center.y],
 					"damage": int(result.value.applied_damage), "target_health": int(result.value.health),

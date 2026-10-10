@@ -13,13 +13,8 @@ from PIL import Image
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 OUTPUTS_ROOT = PROJECT_ROOT.parent
 SOURCE_LOGICAL_PATH = Path("pic3/other/goeffect.ale")
-SOURCE_PATH = OUTPUTS_ROOT / "starhome_lz_ry_full" / "raw" / SOURCE_LOGICAL_PATH
-PARSED_ROOT = (
-    OUTPUTS_ROOT
-    / "starhome_lz_ry_full_parsed"
-    / "ale_sprites"
-    / SOURCE_LOGICAL_PATH.with_suffix("")
-)
+SOURCE_PATH = PROJECT_ROOT / "../starhome_lz_ry_full" / "raw" / SOURCE_LOGICAL_PATH
+PARSED_ROOT = PROJECT_ROOT / "assets" / "glory" / "sprites" / SOURCE_LOGICAL_PATH.with_suffix("")
 TARGET_ROOT = PROJECT_ROOT / "assets" / "ui" / "world_feedback" / "movement_destination"
 
 

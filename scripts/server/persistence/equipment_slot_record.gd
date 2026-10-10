@@ -1,6 +1,12 @@
 class_name EquipmentSlotRecord
 extends RefCounted
 
+const CURRENT_FIELDS := [
+	"owner_kind", "slot_id", "item_instance_id", "item_definition_id", "max_durability", "durability",
+	"upgrade_level", "enhancement", "clothing_improvement", "vehicle_sockets", "crystal_source", "austin_glens",
+	"central_growth", "sama", "processing", "extra_attributes", "strengthening", "equipment_quality", "forging",
+	"usage", "magazine", "locked", "bound", "slot_location", "equip_kind",
+]
 
 var owner_kind := ""
 var slot_id := ""
@@ -35,6 +41,11 @@ var equip_kind := -1
 static func from_dictionary(raw: Variant) -> DomainResult:
 	if not raw is Dictionary:
 		return DomainResult.failure(&"persistence.invalid_equipment_slot", "equipment slot must be a dictionary")
+	if raw.size() != CURRENT_FIELDS.size():
+		return DomainResult.failure(&"persistence.invalid_equipment_slot", "equipment fields do not match the current schema")
+	for field: String in CURRENT_FIELDS:
+		if not raw.has(field):
+			return DomainResult.failure(&"persistence.invalid_equipment_slot", "equipment slot is missing a current-schema field")
 	var slot := EquipmentSlotRecord.new()
 	slot.owner_kind = String(raw.get("owner_kind", ""))
 	slot.slot_id = String(raw.get("slot_id", ""))
@@ -93,7 +104,7 @@ static func from_dictionary(raw: Variant) -> DomainResult:
 		return DomainResult.failure(&"persistence.invalid_equipment_slot", "equipment flags must be booleans")
 	slot.locked = raw.get("locked", false)
 	slot.bound = raw.get("bound", false)
-	slot.slot_location = int(raw.get("slot_location", _legacy_location(slot.slot_id)))
+	slot.slot_location = int(raw.get("slot_location", -1))
 	slot.equip_kind = int(raw.get("equip_kind", -1))
 	if slot.owner_kind not in ["character", "vehicle"] or slot.slot_id.is_empty() \
 		or slot.item_instance_id.is_empty() or slot.item_definition_id.is_empty():
@@ -135,27 +146,6 @@ func to_dictionary() -> Dictionary:
 		"slot_location": slot_location,
 		"equip_kind": equip_kind,
 	}
-
-
-## 将旧存档中的字符串槽位映射为稳定的客户端 Location 编号。
-## [param slot_name] 旧存档槽位名称。
-## 返回荣耀客户端使用的 Location 编号；未知槽位保留在扩展区 100。
-static func _legacy_location(slot_name: String) -> int:
-	return {
-		"chassis": 0,
-		"primary_weapon": 1,
-		"defense": 2,
-		"propulsion": 3,
-		"front_armor": 5,
-		"rear_armor": 6,
-		"left_armor": 7,
-		"right_armor": 8,
-		"tactical": 13,
-		"secondary_power": 14,
-		"control": 16,
-		"amplifier": 17,
-		"energy_core": 18,
-	}.get(slot_name, 100)
 
 
 ## 执行 `duplicate_record` 对应的模块操作。

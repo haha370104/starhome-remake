@@ -19,7 +19,7 @@
         25,
         26
       ],
-      "item_definition_id": "item:material:78f2a523a761",
+      "item_definition_id": "density_solvent",
       "display_name": "初级密度柔解剂",
       "atlas_region": [
         2,
@@ -46,7 +46,7 @@
         35,
         33
       ],
-      "item_definition_id": "item:material:f6487f0e04b8",
+      "item_definition_id": "five_color_crystal",
       "display_name": "五彩水晶",
       "atlas_region": [
         50,
@@ -73,7 +73,7 @@
         35,
         35
       ],
-      "item_definition_id": "item:material:d247fd43ad3c",
+      "item_definition_id": "electromagnetic_protector",
       "display_name": "电磁护具",
       "atlas_region": [
         98,
@@ -100,7 +100,7 @@
         37,
         38
       ],
-      "item_definition_id": "item:material:71548d3aa10f",
+      "item_definition_id": "electric_wave_crystal",
       "display_name": "电激波结晶",
       "atlas_region": [
         146,
@@ -127,7 +127,7 @@
         31,
         29
       ],
-      "item_definition_id": "item:material:760ebf2df00d",
+      "item_definition_id": "electric_wave_chip",
       "display_name": "电激波芯片",
       "atlas_region": [
         194,
@@ -154,7 +154,7 @@
         35,
         35
       ],
-      "item_definition_id": "item:material:d2a1d9d06fbc",
+      "item_definition_id": "frozen_steel_plate",
       "display_name": "冻结钢片",
       "atlas_region": [
         242,
@@ -181,7 +181,7 @@
         35,
         34
       ],
-      "item_definition_id": "item:material:95aa2445915e",
+      "item_definition_id": "electronic_control_chip",
       "display_name": "电子制芯",
       "atlas_region": [
         290,
@@ -208,7 +208,7 @@
         35,
         35
       ],
-      "item_definition_id": "item:material:82b550887686",
+      "item_definition_id": "blackstone_rifling",
       "display_name": "黑石膛线",
       "atlas_region": [
         2,
@@ -235,7 +235,7 @@
         29,
         36
       ],
-      "item_definition_id": "item:material:390575d3e7c8",
+      "item_definition_id": "red_crystal_source",
       "display_name": "红晶源",
       "atlas_region": [
         50,
@@ -262,7 +262,7 @@
         44,
         24
       ],
-      "item_definition_id": "item:material:f3fe549c15c1",
+      "item_definition_id": "g91_precision_trigger",
       "display_name": "G91精密触发器",
       "atlas_region": [
         98,
@@ -289,7 +289,7 @@
         39,
         39
       ],
-      "item_definition_id": "item:material:abb79c50c89f",
+      "item_definition_id": "mech_auxiliary_crystal_1",
       "display_name": "机甲附属晶体I",
       "atlas_region": [
         146,
@@ -316,7 +316,7 @@
         38,
         39
       ],
-      "item_definition_id": "item:material:33d330a61be3",
+      "item_definition_id": "mech_auxiliary_crystal_2",
       "display_name": "机甲附属晶体II",
       "atlas_region": [
         194,
@@ -343,7 +343,7 @@
         39,
         37
       ],
-      "item_definition_id": "item:material:e283667ae437",
+      "item_definition_id": "mech_auxiliary_crystal_3",
       "display_name": "机甲附属晶体III",
       "atlas_region": [
         242,
@@ -370,7 +370,7 @@
         36,
         33
       ],
-      "item_definition_id": "item:material:062a265c9544",
+      "item_definition_id": "mech_moonlight_crystal_1",
       "display_name": "机甲月辉晶体I",
       "atlas_region": [
         290,
@@ -397,7 +397,7 @@
         36,
         33
       ],
-      "item_definition_id": "item:material:3ed7f1287e45",
+      "item_definition_id": "mech_moonlight_crystal_2",
       "display_name": "机甲月辉晶体II",
       "atlas_region": [
         2,
@@ -424,7 +424,7 @@
         36,
         33
       ],
-      "item_definition_id": "item:material:743ceffa7af7",
+      "item_definition_id": "mech_moonlight_crystal_3",
       "display_name": "机甲月辉晶体III",
       "atlas_region": [
         42,
@@ -451,7 +451,7 @@
         30,
         36
       ],
-      "item_definition_id": "item:material:a55a9a5d270a",
+      "item_definition_id": "blue_crystal_source",
       "display_name": "蓝晶源",
       "atlas_region": [
         82,
@@ -478,7 +478,7 @@
         30,
         36
       ],
-      "item_definition_id": "item:material:7df65e194766",
+      "item_definition_id": "green_crystal_source",
       "display_name": "绿晶源",
       "atlas_region": [
         122,
@@ -505,7 +505,7 @@
         30,
         36
       ],
-      "item_definition_id": "item:material:920f37756918",
+      "item_definition_id": "seven_color_crystal",
       "display_name": "七彩水晶",
       "atlas_region": [
         162,
@@ -532,7 +532,7 @@
         34,
         33
       ],
-      "item_definition_id": "item:material:f65184d5f9b2",
+      "item_definition_id": "impact_crystal",
       "display_name": "冲击晶体",
       "atlas_region": [
         202,
@@ -559,7 +559,7 @@
         29,
         35
       ],
-      "item_definition_id": "item:material:5dbe93b102a3",
+      "item_definition_id": "quantum_element",
       "display_name": "量子元素",
       "atlas_region": [
         242,
@@ -586,7 +586,7 @@
         27,
         28
       ],
-      "item_definition_id": "item:material:a7bccd7c1408",
+      "item_definition_id": "flawed_firepower_crystal",
       "display_name": "有瑕疵的火力晶石",
       "atlas_region": [
         2,
@@ -613,7 +613,7 @@
         27,
         28
       ],
-      "item_definition_id": "item:material:794588abb6cf",
+      "item_definition_id": "flawed_health_crystal",
       "display_name": "有瑕疵的生命晶石",
       "atlas_region": [
         42,
@@ -640,7 +640,7 @@
         24,
         30
       ],
-      "item_definition_id": "item:material:d690c44b6030",
+      "item_definition_id": "flawed_defense_crystal",
       "display_name": "有瑕疵的防御晶石",
       "atlas_region": [
         82,
@@ -667,7 +667,7 @@
         26,
         28
       ],
-      "item_definition_id": "item:material:a095c982b884",
+      "item_definition_id": "flawed_guidance_crystal",
       "display_name": "有瑕疵的制导晶石",
       "atlas_region": [
         122,
@@ -694,7 +694,7 @@
         33,
         28
       ],
-      "item_definition_id": "item:material:c0cad9b715fb",
+      "item_definition_id": "flawed_critical_crystal",
       "display_name": "有瑕疵的暴击晶石",
       "atlas_region": [
         162,
@@ -721,7 +721,7 @@
         33,
         28
       ],
-      "item_definition_id": "item:material:7dd51398ea4c",
+      "item_definition_id": "flawed_rocket_crystal",
       "display_name": "有瑕疵的火箭晶石",
       "atlas_region": [
         202,
@@ -748,7 +748,7 @@
         31,
         27
       ],
-      "item_definition_id": "item:material:1d49c09bf017",
+      "item_definition_id": "socket_crystal_fragment",
       "display_name": "晶石碎片",
       "atlas_region": [
         242,
@@ -775,7 +775,7 @@
         35,
         35
       ],
-      "item_definition_id": "item:material:558e8a4df8ad",
+      "item_definition_id": "iron_hook_steel_plate",
       "display_name": "铁钩钢片",
       "atlas_region": [
         2,
@@ -802,7 +802,7 @@
         35,
         34
       ],
-      "item_definition_id": "item:material:093a64c39287",
+      "item_definition_id": "gyroscopic_suspension",
       "display_name": "陀螺平衡悬挂",
       "atlas_region": [
         41,
@@ -829,7 +829,7 @@
         34,
         31
       ],
-      "item_definition_id": "item:material:bc5a18415358",
+      "item_definition_id": "g91_energy_source",
       "display_name": "G91特制能量源",
       "atlas_region": [
         80,
@@ -856,7 +856,7 @@
         35,
         35
       ],
-      "item_definition_id": "item:material:b517321630b8",
+      "item_definition_id": "g92_energy_source",
       "display_name": "G92特制能量源",
       "atlas_region": [
         119,
@@ -883,7 +883,7 @@
         26,
         32
       ],
-      "item_definition_id": "item:material:f5ec2ce95368",
+      "item_definition_id": "high_grade_red_crystal_source",
       "display_name": "高级红晶源",
       "atlas_region": [
         158,
@@ -910,7 +910,7 @@
         25,
         31
       ],
-      "item_definition_id": "item:material:d6e5deb49f86",
+      "item_definition_id": "high_grade_blue_crystal_source",
       "display_name": "高级蓝晶源",
       "atlas_region": [
         197,
@@ -937,7 +937,7 @@
         25,
         32
       ],
-      "item_definition_id": "item:material:0465103df5d2",
+      "item_definition_id": "high_grade_green_crystal_source",
       "display_name": "高级绿晶源",
       "atlas_region": [
         236,
@@ -964,7 +964,7 @@
         24,
         31
       ],
-      "item_definition_id": "item:material:6ac284bb6c59",
+      "item_definition_id": "high_grade_purple_crystal_source",
       "display_name": "高级紫晶源",
       "atlas_region": [
         2,
@@ -991,7 +991,7 @@
         35,
         34
       ],
-      "item_definition_id": "item:material:f7c412f12300",
+      "item_definition_id": "turbine_stabilizer",
       "display_name": "涡轮稳定器",
       "atlas_region": [
         41,
@@ -1018,7 +1018,7 @@
         35,
         35
       ],
-      "item_definition_id": "item:material:073e4b22d062",
+      "item_definition_id": "five_element_steel_plate",
       "display_name": "五行钢片",
       "atlas_region": [
         80,
@@ -1045,7 +1045,7 @@
         31,
         29
       ],
-      "item_definition_id": "item:material:583a985508e9",
+      "item_definition_id": "stellar_magnetic_crystal",
       "display_name": "星磁晶体",
       "atlas_region": [
         119,
@@ -1072,7 +1072,7 @@
         32,
         29
       ],
-      "item_definition_id": "item:material:f1a46cb86792",
+      "item_definition_id": "starlight_crystal",
       "display_name": "星光晶体",
       "atlas_region": [
         158,
@@ -1099,7 +1099,7 @@
         32,
         29
       ],
-      "item_definition_id": "item:material:77157411f2c7",
+      "item_definition_id": "stellar_radiance_crystal",
       "display_name": "星辉晶体",
       "atlas_region": [
         197,
@@ -1126,7 +1126,7 @@
         31,
         29
       ],
-      "item_definition_id": "item:material:6bce58752c7d",
+      "item_definition_id": "stellar_brilliance_crystal",
       "display_name": "星耀晶体",
       "atlas_region": [
         236,
@@ -1153,7 +1153,7 @@
         32,
         29
       ],
-      "item_definition_id": "item:material:beb673694521",
+      "item_definition_id": "stellar_source_crystal",
       "display_name": "星源晶体",
       "atlas_region": [
         2,
@@ -1180,7 +1180,7 @@
         31,
         39
       ],
-      "item_definition_id": "item:material:bba50542ed38",
+      "item_definition_id": "crystal_moon_mark",
       "display_name": "水晶月痕",
       "atlas_region": [
         68,
@@ -1207,7 +1207,7 @@
         40,
         25
       ],
-      "item_definition_id": "item:material:049296cd8264",
+      "item_definition_id": "crystal_moon_fragment",
       "display_name": "水晶月痕碎片",
       "atlas_region": [
         134,
@@ -1234,7 +1234,7 @@
         63,
         34
       ],
-      "item_definition_id": "item:material:34fd6a87af72",
+      "item_definition_id": "assistant_time_card_15min",
       "display_name": "挂机辅助时间卡（15分钟）",
       "atlas_region": [
         200,
@@ -1261,7 +1261,7 @@
         35,
         34
       ],
-      "item_definition_id": "item:material:1916f1df829a",
+      "item_definition_id": "megawatt_fiber",
       "display_name": "兆瓦纤维",
       "atlas_region": [
         266,
@@ -1288,7 +1288,7 @@
         30,
         36
       ],
-      "item_definition_id": "item:material:5773d6d74168",
+      "item_definition_id": "purple_crystal_source",
       "display_name": "紫晶源",
       "atlas_region": [
         332,
@@ -1315,7 +1315,7 @@
         32,
         22
       ],
-      "item_definition_id": "item:material:9a81c6572eee",
+      "item_definition_id": "thermal_crystal",
       "display_name": "高热结晶体",
       "atlas_region": [
         398,
@@ -1342,7 +1342,7 @@
         32,
         22
       ],
-      "item_definition_id": "item:material:17500b513d35",
+      "item_definition_id": "corrosive_crystal",
       "display_name": "腐蚀结晶体",
       "atlas_region": [
         2,
@@ -1369,7 +1369,7 @@
         32,
         22
       ],
-      "item_definition_id": "item:material:d407556cd129",
+      "item_definition_id": "magnetic_crystal",
       "display_name": "磁化结晶体",
       "atlas_region": [
         68,
@@ -1396,7 +1396,7 @@
         34,
         21
       ],
-      "item_definition_id": "item:material:43ed7eecc949",
+      "item_definition_id": "thermal_chip",
       "display_name": "高热芯片",
       "atlas_region": [
         134,
@@ -1423,7 +1423,7 @@
         34,
         21
       ],
-      "item_definition_id": "item:material:ee509dbc2244",
+      "item_definition_id": "corrosive_chip",
       "display_name": "腐蚀芯片",
       "atlas_region": [
         200,
@@ -1450,7 +1450,7 @@
         34,
         21
       ],
-      "item_definition_id": "item:material:f5fe4a61399b",
+      "item_definition_id": "magnetic_chip",
       "display_name": "磁化芯片",
       "atlas_region": [
         266,
@@ -1469,7 +1469,7 @@
       "source_palette": "pic3/act/shellblue.act",
       "source_palette_sha256": "cca6dda44fafea0b3f754ae87aa48614e109fe843de3c59c943bdf1d06c58911",
       "resource": "res://assets/items/materials/middle_grade_quadruped_shell/icon.png",
-      "item_definition_id": "item:material:b76edad9fa8e",
+      "item_definition_id": "middle_grade_quadruped_shell",
       "display_name": "中级四足甲的壳"
     },
     {
@@ -1482,7 +1482,7 @@
       "source_palette": "pic3/act/siliconblue.act",
       "source_palette_sha256": "cfe32864313cf5da458d378c0ace1aa6a0898f1e31ce0010a531b945706d9dce",
       "resource": "res://assets/items/materials/middle_grade_biosilicon/icon.png",
-      "item_definition_id": "item:material:deb4b85e31bd",
+      "item_definition_id": "middle_grade_biosilicon",
       "display_name": "中级生物硅"
     },
     {
@@ -1495,7 +1495,7 @@
       "source_palette": "pic3/act/rubberblue.act",
       "source_palette_sha256": "cca6dda44fafea0b3f754ae87aa48614e109fe843de3c59c943bdf1d06c58911",
       "resource": "res://assets/items/materials/middle_grade_gel/icon.png",
-      "item_definition_id": "item:material:472d2fb951cb",
+      "item_definition_id": "middle_grade_gel",
       "display_name": "中级类胶"
     },
     {
@@ -1508,7 +1508,7 @@
       "source_palette": "pic3/act/activatorblue.act",
       "source_palette_sha256": "cca6dda44fafea0b3f754ae87aa48614e109fe843de3c59c943bdf1d06c58911",
       "resource": "res://assets/items/materials/middle_grade_energy_catalyst/icon.png",
-      "item_definition_id": "item:material:fa905bea2130",
+      "item_definition_id": "middle_grade_energy_catalyst",
       "display_name": "中级能量催化剂"
     },
     {
@@ -1529,7 +1529,7 @@
         47,
         35
       ],
-      "item_definition_id": "item:material:cfa52e059e34",
+      "item_definition_id": "middle_grade_energy_pack",
       "display_name": "中级能量包",
       "atlas_region": [
         332,
@@ -1556,7 +1556,7 @@
         79,
         322
       ],
-      "item_definition_id": "item:material:a4f7cbe44e92",
+      "item_definition_id": "sensor",
       "display_name": "传感器",
       "atlas_region": [
         398,
@@ -1648,7 +1648,7 @@
         146,
         324
       ],
-      "item_definition_id": "item:material:7e5440c2f103",
+      "item_definition_id": "power_board",
       "display_name": "动力板",
       "atlas_region": [
         2,
@@ -1675,7 +1675,7 @@
         32,
         39
       ],
-      "item_definition_id": "item:material:3e5df1aed65c",
+      "item_definition_id": "adapter",
       "display_name": "变接器",
       "atlas_region": [
         58,
@@ -1702,7 +1702,7 @@
         46,
         24
       ],
-      "item_definition_id": "item:material:f046399c4dff",
+      "item_definition_id": "capacity_expander",
       "display_name": "扩充器+10",
       "atlas_region": [
         114,
@@ -1729,7 +1729,7 @@
         33,
         18
       ],
-      "item_definition_id": "item:material:47b24f797e14",
+      "item_definition_id": "flow_expander",
       "display_name": "扩流器+2",
       "atlas_region": [
         170,
@@ -1748,7 +1748,7 @@
       "source_palette": "",
       "source_palette_sha256": "",
       "resource": "res://assets/items/materials/attachment_upgrade_fragment/icon.png",
-      "item_definition_id": "item:material:9713f13ede8d",
+      "item_definition_id": "joint_upgrade_fragment",
       "display_name": "接合器升级碎片"
     },
     {
@@ -1769,7 +1769,7 @@
         34,
         19
       ],
-      "item_definition_id": "item:material:3481b7371d1e",
+      "item_definition_id": "sama_upgrade_alloy",
       "display_name": "撒玛合金+10",
       "atlas_region": [
         226,
@@ -1796,7 +1796,7 @@
         55,
         44
       ],
-      "item_definition_id": "item:material:198e40429499",
+      "item_definition_id": "firepower_component",
       "display_name": "火力元件+1",
       "atlas_region": [
         282,
@@ -1823,7 +1823,7 @@
         262,
         322
       ],
-      "item_definition_id": "item:material:dc8a42c2781e",
+      "item_definition_id": "thermistor",
       "display_name": "热敏电阻",
       "atlas_region": [
         338,
@@ -1850,7 +1850,7 @@
         33,
         18
       ],
-      "item_definition_id": "item:material:e24d172fada7",
+      "item_definition_id": "energy_focusing_chip",
       "display_name": "聚能晶片+10",
       "atlas_region": [
         2,
@@ -1877,7 +1877,7 @@
         33,
         18
       ],
-      "item_definition_id": "item:material:02212ea88168",
+      "item_definition_id": "super_magnet",
       "display_name": "超磁体+2",
       "atlas_region": [
         58,
@@ -1896,7 +1896,7 @@
       "source_palette": "pic3/act/shellred.act",
       "source_palette_sha256": "c11c70a4ee6277a6135b223ebe7309f401cd16e899e3f42e0ffe6525e1099b9e",
       "resource": "res://assets/items/materials/high_grade_quadruped_shell/icon.png",
-      "item_definition_id": "item:material:485f08ad24d4",
+      "item_definition_id": "high_grade_quadruped_shell",
       "display_name": "高级四足甲的壳"
     },
     {
@@ -1909,7 +1909,7 @@
       "source_palette": "pic3/act/siliconred.act",
       "source_palette_sha256": "9d35a91769078179a6f35ed0b3d916094af01132f92296ac48a8071b37b5984a",
       "resource": "res://assets/items/materials/high_grade_biosilicon/icon.png",
-      "item_definition_id": "item:material:99d2d25d7142",
+      "item_definition_id": "high_grade_biosilicon",
       "display_name": "高级生物硅"
     },
     {
@@ -1922,7 +1922,7 @@
       "source_palette": "pic3/act/rubberred.act",
       "source_palette_sha256": "c11c70a4ee6277a6135b223ebe7309f401cd16e899e3f42e0ffe6525e1099b9e",
       "resource": "res://assets/items/materials/high_grade_gel/icon.png",
-      "item_definition_id": "item:material:fa5a837875bb",
+      "item_definition_id": "high_grade_gel",
       "display_name": "高级类胶"
     },
     {
@@ -1935,7 +1935,7 @@
       "source_palette": "pic3/act/activatorred.act",
       "source_palette_sha256": "c11c70a4ee6277a6135b223ebe7309f401cd16e899e3f42e0ffe6525e1099b9e",
       "resource": "res://assets/items/materials/high_grade_energy_catalyst/icon.png",
-      "item_definition_id": "item:material:fdae75215694",
+      "item_definition_id": "high_grade_energy_catalyst",
       "display_name": "高级能量催化剂"
     }
   ]

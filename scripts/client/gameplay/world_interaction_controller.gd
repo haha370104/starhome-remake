@@ -2,7 +2,12 @@ class_name WorldInteractionController
 extends Node
 
 const CombatActions := preload("res://scripts/client/gameplay/client_combat_actions.gd")
+const GARDEN_HARVEST_DEBOUNCE_MS := 1000
 var active_npc: Node2D
+var active_player_entity_id := ""
+var active_player_display_name := ""
+var _hovered_garden_plant: WorldGardenPlant
+var _garden_harvest_until: Dictionary[String, int] = {}
 var transition_choice_ids: Dictionary[String, StringName] = {}
 var world_view: ClientWorldView
 var active_world_controller: ActiveWorldController
@@ -20,10 +25,51 @@ var hotkeys := ClientHotkeys.new()
 ## [param manager] 已配置共享玩家会话的窗口管理器。
 func bind_player_windows(manager: GameWindowManager) -> void:
 	game_window_manager = manager
+	manager.set_drag_forwarding(Callable(), _can_drop_inventory, _drop_inventory)
+	active_world_controller.active_world_will_replace.connect(manager.close_slot_machine)
+	combat.multiplayer_presenter.command_rejected.connect(manager.on_command_rejected)
+	manager.panel_session.bundle_received.connect(_on_garden_bundle)
 	death_journal = PveDeathJournalController.new()
 	add_child(death_journal)
 	death_journal.configure(combat.multiplayer_presenter, manager.panel_session,
 		active_world_controller, manager.navigation_windows["pve_death_journal"])
+	manager.panel_session.player_changed.connect(_initialize_smart_assistant)
+
+
+func _inventory_drop_position(at: Vector2, data: Dictionary) -> Vector2:
+	return world_view.get_global_transform_with_canvas().affine_inverse() * (
+		game_window_manager.get_global_transform_with_canvas() * at + data.offset)
+
+
+func _can_drop_inventory(at: Vector2, data: Variant) -> bool:
+	return data is Dictionary and data.get("source") == game_window_manager.inventory_panel._item_canvas \
+		and not combat.is_input_locked() and world_view.player != null \
+		and world_view.player.position.distance_to(_inventory_drop_position(at, data)) <= Inventory.WORLD_DROP_RADIUS \
+		and active_world_controller.navigation.is_walkable(_inventory_drop_position(at, data))
+
+
+func _drop_inventory(at: Vector2, data: Variant) -> void:
+	if not _can_drop_inventory(at, data): return
+	var point := _inventory_drop_position(at, data)
+	game_window_manager.panel_session.dispatch({"type": "drop_inventory_item", "instance_id": data.instance_id,
+		"inventory_revision": game_window_manager.panel_session.current_player.inventory.revision,
+		"map_instance_id": map_travel.multiplayer_map_instance_id, "position": [point.x, point.y]})
+
+
+## 角色就绪时初始化智脑，由控制器读取已保存的设置。
+## [param player] 已加载的当前角色。
+func _initialize_smart_assistant(player: Player) -> void:
+	if smart_assistant == null and player is CurrentPlayer and (player as CurrentPlayer).is_ready():
+		_ensure_smart_assistant()
+
+
+## 需要自动恢复或打开窗口时，共用一次控制器初始化。
+func _ensure_smart_assistant() -> void:
+	if smart_assistant != null:
+		return
+	smart_assistant = SmartAssistantController.new()
+	add_child(smart_assistant)
+	smart_assistant.configure(combat, game_window_manager.navigation_windows["smart_assistant"])
 
 
 ## 初始化时暂停输入，直到启动依赖全部配置完毕。
@@ -53,7 +99,22 @@ func configure(
 	map_travel = travel
 	combat = battle
 	hud.map_navigation_requested.connect(navigate_from_map)
+	set_process(true)
 	set_process_unhandled_input(true)
+
+
+## 每帧只给当前鼠标下的成熟果实开启绿色悬停反馈。
+func _process(_delta: float) -> void:
+	if world_view == null or active_world_controller == null:
+		return
+	var next_plant := garden_plant_at(world_view.get_global_mouse_position(), true)
+	if next_plant == _hovered_garden_plant:
+		return
+	if _hovered_garden_plant != null and is_instance_valid(_hovered_garden_plant):
+		_hovered_garden_plant.set_hovered(false)
+	_hovered_garden_plant = next_plant
+	if _hovered_garden_plant != null:
+		_hovered_garden_plant.set_hovered(true)
 
 
 ## 接收并分发当前节点负责的输入事件。
@@ -74,12 +135,25 @@ func _unhandled_input(event: InputEvent) -> void:
 	var mouse_event := event as InputEventMouseButton
 	var world_position := world_view.get_global_mouse_position()
 	if mouse_event.button_index == MOUSE_BUTTON_RIGHT:
-		handle_world_right_click(world_position)
+		var remote_player := remote_player_at(world_position)
+		if remote_player.is_empty():
+			handle_world_right_click(world_position)
+		else:
+			show_player_popup(remote_player)
 		get_viewport().set_input_as_handled()
 	elif mouse_event.button_index == MOUSE_BUTTON_LEFT:
+		var loot_id := world_view.ground_loot_world_controller.loot_at(world_position) if world_view.ground_loot_world_controller != null else ""
+		var plant := garden_plant_at(world_position)
 		var npc := nearest_npc(world_position, 55.0)
-		if npc:
+		if plant != null:
+			if plant.is_harvestable():
+				_request_garden_harvest(plant)
+			else:
+				hud.show_status("果实尚未成熟")
+		elif npc:
 			show_npc_popup(npc)
+		elif not loot_id.is_empty():
+			combat.request_ground_loot_pickup(loot_id)
 		elif world_view.player != null and world_view.player.is_combat_actor_active():
 			combat.handle_world_combat_left_click(world_position)
 		else:
@@ -157,6 +231,47 @@ func nearest_npc(world_position: Vector2, maximum_distance: float) -> Node2D:
 	return result
 
 
+## 查询当前场景可见的远端玩家。
+func remote_player_at(world_position: Vector2) -> Dictionary:
+	if combat == null or combat.multiplayer_presenter == null:
+		return {}
+	return combat.multiplayer_presenter.remote_character_at(world_position)
+
+
+## 查找鼠标点命中的果实；悬停时可只返回已成熟果实。
+## [param world_position] 鼠标对应的地图世界坐标。
+## [param harvestable_only] 是否排除尚未成熟的果实。
+## 返回最前方的果实节点；没有命中时返回 null。
+func garden_plant_at(world_position: Vector2, harvestable_only := false) -> WorldGardenPlant:
+	var result: WorldGardenPlant
+	var selected_y := -INF
+	for facility: Node2D in active_world_controller.facility_instances:
+		if not facility is WorldGardenPlant:
+			continue
+		var plant := facility as WorldGardenPlant
+		if harvestable_only and not plant.is_harvestable():
+			continue
+		if plant.hit_test(world_position) and plant.global_position.y >= selected_y:
+			result = plant
+			selected_y = plant.global_position.y
+	return result
+
+
+## 直接提交植物园采摘，不打开交互弹窗；同一果实一秒内只发一次命令。
+## [param plant] 鼠标命中的成熟果实节点。
+func _request_garden_harvest(plant: WorldGardenPlant) -> void:
+	if game_window_manager == null or game_window_manager.panel_session == null:
+		return
+	var now := Time.get_ticks_msec()
+	if now < int(_garden_harvest_until.get(plant.plant_id, 0)):
+		return
+	_garden_harvest_until[plant.plant_id] = now + GARDEN_HARVEST_DEBOUNCE_MS
+	if active_npc != null:
+		on_npc_popup_closed()
+	hud.hide_popup()
+	game_window_manager.panel_session.dispatch({"type": "harvest_garden", "plant_id": plant.plant_id})
+
+
 ## 暂停移动，选中交互实体并将菜单定位到屏幕坐标。
 ## [param npc] 当前鼠标选择的 NPC 或生产设施视图。
 func show_npc_popup(npc: Node2D) -> void:
@@ -169,11 +284,39 @@ func show_npc_popup(npc: Node2D) -> void:
 	hud.show_npc_popup(active_npc.get_interaction_data(), screen_position)
 
 
+## 暂停移动并打开远端玩家的社交动作菜单。
+func show_player_popup(player: Dictionary) -> void:
+	var character := player.get("character") as Node2D
+	if character == null or not is_instance_valid(character):
+		return
+	if active_npc and is_instance_valid(active_npc):
+		active_npc.set_interaction_active(false)
+	active_npc = null
+	active_player_entity_id = String(player.get("entity_id", ""))
+	active_player_display_name = String(player.get("display_name", active_player_entity_id))
+	map_travel.stop_moving("正在与%s交互" % active_player_display_name)
+	var screen_position := get_viewport().get_canvas_transform() * character.global_position
+	hud.show_player_popup(active_player_display_name, active_player_entity_id, screen_position)
+
+
 ## 解除当前实体的交互表现并清空选择。
 func on_npc_popup_closed() -> void:
 	if active_npc:
 		active_npc.set_interaction_active(false)
 		active_npc = null
+	active_player_entity_id = ""
+	active_player_display_name = ""
+
+
+## 将玩家菜单动作交给已存在的社交窗口与服务端请求链。
+func on_player_action_requested(action_id: String, target_entity_id: String) -> void:
+	if target_entity_id != active_player_entity_id or target_entity_id.is_empty():
+		return
+	if game_window_manager != null:
+		game_window_manager.request_player_social_action(
+			action_id, target_entity_id, active_player_display_name
+		)
+	hud.hide_popup()
 
 
 ## 将交互菜单动作分派到传送、制造、商店或 NPC 业务处理器。
@@ -190,6 +333,16 @@ func on_npc_action_requested(action_id: String) -> void:
 		return
 	if is_instance_valid(active_npc):
 		var interaction_title := String(active_npc.get_interaction_data()["title"])
+		if action_id == "play_slot_machine" and active_npc is WorldSlotMachine:
+			var machine_id := (active_npc as WorldSlotMachine).machine_id
+			hud.hide_popup()
+			game_window_manager.open_slot_machine(machine_id)
+			return
+		if action_id == "harvest_garden" and active_npc is WorldGardenPlant:
+			var plant_id := (active_npc as WorldGardenPlant).plant_id
+			hud.hide_popup()
+			game_window_manager.panel_session.dispatch({"type": "harvest_garden", "plant_id": plant_id})
+			return
 		if action_id == "manufacture" and active_npc is WorldFacilityInteraction:
 			var station_id := (active_npc as WorldFacilityInteraction).station_id
 			if station_id.is_empty():
@@ -209,6 +362,33 @@ func on_npc_action_requested(action_id: String) -> void:
 			hud.show_status("正在与%s交互" % interaction_title)
 			return
 		hud.show_status(active_npc.handle_action(action_id))
+
+
+## 地图提交后查询植物园成熟状态，其他地图不发送无用命令。
+func refresh_garden() -> void:
+	if game_window_manager == null: return
+	for facility: Node2D in active_world_controller.facility_instances:
+		if facility is WorldGardenPlant:
+			game_window_manager.panel_session.dispatch({"type": "query_garden"})
+			return
+
+
+## 将权威查询或采摘结果应用到当前地图的果实节点。
+## [param bundle] 已通过同步版本检查的面板辅助回包。
+func _on_garden_bundle(bundle: Dictionary) -> void:
+	var garden: Variant = bundle.get("garden")
+	if not garden is Dictionary or active_world_controller.definition == null \
+			or String(garden.get("map_id", "")) != String(active_world_controller.definition.map_id):
+		return
+	var plants: Array = garden.get("plants", []) if garden.get("plants") is Array else [garden]
+	for state: Variant in plants:
+		if not state is Dictionary: continue
+		for facility: Node2D in active_world_controller.facility_instances:
+			if facility is WorldGardenPlant and facility.plant_id == String(state.get("plant_id", "")):
+				facility.apply_regrowth(int(state.get("remaining_seconds", 0)))
+				break
+	if garden.has("item_name"):
+		hud.show_system_message("采得%s × 1" % String(garden.item_name))
 
 
 ## 显示同一原版 transport2 锚点的目标选择菜单。
@@ -233,12 +413,15 @@ func show_transition_choices(selected: MapTransition, world_position: Vector2) -
 	}, screen_position)
 
 
-## 将底栏导航交给窗口管理器；好友功能未开放时显示屏幕中央提示。
+## 将底栏导航交给窗口管理器。
 ## [param action_id] 免费版底栏发出的业务动作标识。
 func on_hud_action_requested(action_id: String) -> void:
-	if action_id == "friends":
-		hud.show_system_message("好友列表暂未实现")
+	if action_id == "star_map":
+		hud.show_system_message("星图功能暂未开放")
 		return
+	if action_id == "friends":
+		if game_window_manager != null and game_window_manager.toggle(action_id):
+			return
 	if action_id == "return_base":
 		combat.request_vehicle_recovery()
 		return
@@ -246,11 +429,9 @@ func on_hud_action_requested(action_id: String) -> void:
 		combat.request_self_repair()
 		return
 	if action_id == "smart_assistant" and smart_assistant == null:
-		smart_assistant = SmartAssistantController.new()
-		add_child(smart_assistant)
-		smart_assistant.configure(combat, game_window_manager.navigation_windows["smart_assistant"])
-	if action_id in ["party", "summon_guard"]:
-		hud.show_system_message({"party": "队伍功能暂未开放", "summon_guard": "召唤守卫暂未开放"}[action_id])
+		_ensure_smart_assistant()
+	if action_id == "summon_guard":
+		hud.show_system_message("召唤守卫暂未开放")
 		return
 	if game_window_manager != null and game_window_manager.toggle(action_id):
 		return
@@ -261,6 +442,12 @@ func clear_interaction() -> void:
 	if active_npc and is_instance_valid(active_npc):
 		active_npc.set_interaction_active(false)
 	active_npc = null
+	active_player_entity_id = ""
+	active_player_display_name = ""
+	if _hovered_garden_plant != null and is_instance_valid(_hovered_garden_plant):
+		_hovered_garden_plant.set_hovered(false)
+	_hovered_garden_plant = null
+	_garden_harvest_until.clear()
 	map_travel.selected_transition_id = &""
 	transition_choice_ids.clear()
 

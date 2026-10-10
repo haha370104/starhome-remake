@@ -147,13 +147,7 @@ func _expect_all_resources_load(manifest: Dictionary) -> void:
 			var actions: Dictionary = layer.get("actions", {})
 			for action_value: Variant in actions.values():
 				_expect_action_resource_load(action_value)
-	var monster_effects: Dictionary = manifest.get("monster_effects", {})
-	_expect_equal(monster_effects.size(), 6, "all imported first-wave monster variants map a death effect")
-	for effect_set_value: Variant in monster_effects.values():
-		var effect_set: Dictionary = effect_set_value
-		_expect_action_resource_load(effect_set.get("death", {}))
-		if effect_set.has("projectile"):
-			_expect_action_resource_load(effect_set.get("projectile", {}))
+	_expect_equal(actors.size(), 8, "runtime declares all current vehicle and monster actors")
 
 
 ## 执行 `expect_action_resource_load` 对应的模块操作。

@@ -1,5 +1,7 @@
 extends SceneTree
 
+const CommerceRecordAdapter := preload("res://tests/fixtures/commerce_record_adapter.gd")
+
 var _fixture := PlayerPanelServiceFixture.new()
 var _commerce := AuthoritativeCommerceService.new()
 var _manager: GameWindowManager
@@ -90,14 +92,14 @@ func _run() -> void:
 ## 返回权威快照。
 func _dispatch(command: Dictionary) -> DomainResult:
 	if _commerce.handles(String(command.get("type", ""))):
-		var result := _commerce.execute(_fixture._state, command)
+		var result := CommerceRecordAdapter.execute(_commerce, _fixture._state, command)
 		if not result.is_ok:
 			push_error(result.error_message)
 			return result
 		if result.value.changed:
 			_fixture._state = result.value.candidate
 			_fixture._state.revision += 1
-		var bundle := _commerce.build_bundle(_fixture._state, result.value.operation)
+		var bundle := CommerceRecordAdapter.build_bundle(_commerce, _fixture._state, result.value.operation)
 		_manager.panel_session.apply_bundle(bundle)
 		return DomainResult.ok(bundle)
 	var result := _fixture.execute(command)

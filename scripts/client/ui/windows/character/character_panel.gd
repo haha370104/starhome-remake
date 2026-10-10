@@ -10,15 +10,18 @@ const BACKGROUND := preload("res://assets/ui/windows/character/background.png")
 const PORTRAIT_BACKGROUND := preload("res://assets/ui/windows/character/portrait_background.jpg")
 const BODY_MALE := preload("res://assets/ui/windows/character/body_male.png")
 const BODY_FEMALE := preload("res://assets/ui/windows/character/body_female.png")
-const LEGACY_PANEL_FONT := preload("res://assets/ui/fonts/legacy_panel_font.tres")
+const LEGACY_PANEL_FONT := preload("res://assets/ui/fonts/NotoSansCJKsc-Regular.otf")
 const TEXT_COLOR := Color("faf0c8")
 const TEXT_FONT_SIZE := 12
+const PORTRAIT_SCALE := 0.955
 
+var read_only := false
+var _portrait_root: Node2D
 var _portrait_body: TextureRect
 var _field_labels: Dictionary = {}
 var _description_label: Label
 var _buff_root: GridContainer
-var _equipment_layers: Control
+var _equipment_layers: Node2D
 var _skill_button: Button
 var _inventory_revision := -1
 var _state_revision := -1
@@ -27,7 +30,7 @@ var _state_revision := -1
 ## 创建荣耀版人物面板的固定像素布局与查看技能入口。
 ## 设计：人物立绘按 ALE 锚点组合，资料字段独立定位，避免多行 Label 的字体度量造成错位。
 func _ready() -> void:
-	configure(Vector2(355, 450), BACKGROUND, Vector2(327, 39))
+	configure(Vector2(355, 450), BACKGROUND, Vector2(328, 39))
 	_build_portrait()
 	_build_identity_fields()
 	_description_label = _create_label(Vector2(30, 310), Vector2(295, 58), 12)
@@ -72,14 +75,19 @@ func set_inventory_revision(inventory_revision: int) -> void:
 ## 创建人物背景、裸体底模与服装叠层容器。
 ## 设计：裸体底模坐标来自 humanequipwnd 的局部锚点再叠加窗口偏移；服装坐标来自 WearInDlg 的窗口坐标。
 func _build_portrait() -> void:
+	_portrait_root = Node2D.new()
+	_portrait_root.name = "PortraitRoot"
+	_portrait_root.position = Vector2(21, 12)
+	_portrait_root.scale = Vector2.ONE * PORTRAIT_SCALE
+	content_root.add_child(_portrait_root)
 	var portrait_background := TextureRect.new()
 	portrait_background.texture = PORTRAIT_BACKGROUND
-	portrait_background.position = Vector2(13, 48)
+	portrait_background.position = Vector2(0, 46)
 	portrait_background.size = PORTRAIT_BACKGROUND.get_size()
 	portrait_background.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	portrait_background.stretch_mode = TextureRect.STRETCH_KEEP
 	portrait_background.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	content_root.add_child(portrait_background)
+	_portrait_root.add_child(portrait_background)
 	_portrait_body = TextureRect.new()
 	_portrait_body.name = "Body"
 	_portrait_body.texture = BODY_MALE
@@ -88,12 +96,10 @@ func _build_portrait() -> void:
 	_portrait_body.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	_portrait_body.stretch_mode = TextureRect.STRETCH_KEEP
 	_portrait_body.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	content_root.add_child(_portrait_body)
-	_equipment_layers = Control.new()
+	_portrait_root.add_child(_portrait_body)
+	_equipment_layers = Node2D.new()
 	_equipment_layers.name = "EquipmentLayers"
-	_equipment_layers.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	_equipment_layers.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	content_root.add_child(_equipment_layers)
+	_portrait_root.add_child(_equipment_layers)
 
 
 ## 创建右侧每个独立定位的资料字段和查看技能按钮。
@@ -101,12 +107,12 @@ func _build_identity_fields() -> void:
 	var field_ids := ["display_name", "level", "profession", "faction", "residence", "health", "experience"]
 	for index in field_ids.size():
 		_field_labels[field_ids[index]] = _create_label(
-			Vector2(195, 60 + index * 18), Vector2(140, 18), TEXT_FONT_SIZE
+			Vector2(199, 61 + index * 20), Vector2(140, 18), TEXT_FONT_SIZE
 		)
 	_skill_button = Button.new()
 	_skill_button.name = "ShowSkillsButton"
 	_skill_button.text = "查看技能"
-	_skill_button.position = Vector2(195, 280)
+	_skill_button.position = Vector2(199, 280)
 	_skill_button.size = Vector2(56, 18)
 	_skill_button.flat = true
 	_skill_button.alignment = HORIZONTAL_ALIGNMENT_LEFT
@@ -116,15 +122,21 @@ func _build_identity_fields() -> void:
 	_skill_button.add_theme_color_override("font_hover_color", Color("ffd6df"))
 	_skill_button.pressed.connect(func() -> void: skill_panel_requested.emit())
 	content_root.add_child(_skill_button)
+	_skill_button.visible = not read_only
 	var enhance := Button.new()
 	enhance.name = "ClothingEnhancementButton"
 	enhance.text = "人物强化"
-	enhance.position = Vector2(266, 274)
-	enhance.size = Vector2(70, 28)
+	enhance.position = Vector2(266, 280)
+	enhance.size = Vector2(56, 18)
+	enhance.flat = true
+	enhance.alignment = HORIZONTAL_ALIGNMENT_LEFT
 	enhance.add_theme_font_override("font", LEGACY_PANEL_FONT)
-	enhance.add_theme_font_size_override("font_size", 14)
+	enhance.add_theme_font_size_override("font_size", TEXT_FONT_SIZE)
+	enhance.add_theme_color_override("font_color", TEXT_COLOR)
+	enhance.add_theme_color_override("font_hover_color", Color("ffd6df"))
 	enhance.pressed.connect(enhancement_requested.emit)
 	content_root.add_child(enhance)
+	enhance.visible = not read_only
 
 
 ## 按权威穿着快照重建服装叠层。
@@ -147,7 +159,7 @@ func _replace_equipment_layers(worn_items_value: Variant) -> void:
 ## [param equipment] 带表现锚点、属性和持久化实例信息的穿着快照。
 func _add_equipment_layer(equipment: Dictionary) -> void:
 	var layer := EquipmentLayer.new()
-	if not layer.configure(equipment, Vector2(91, 274)):
+	if not layer.configure(equipment, Vector2(91, 274), Rect2(), "" if read_only else "双击卸下"):
 		layer.free()
 		return
 	layer.name = "Clothing_%s" % String(equipment.get("definition_id", "unknown"))
@@ -159,6 +171,8 @@ func _add_equipment_layer(equipment: Dictionary) -> void:
 ## [param event] Godot GUI 输入事件。
 ## [param slot_id] 人物业务槽位名。
 func _on_worn_gui_input(event: InputEvent, slot_id: String) -> void:
+	if read_only:
+		return
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT \
 			and event.pressed and event.double_click:
 		command_requested.emit({
@@ -218,3 +232,16 @@ func _create_label(label_position: Vector2, label_size: Vector2, font_size: int)
 	label.add_theme_constant_override("shadow_offset_y", 1)
 	content_root.add_child(label)
 	return label
+
+
+## 成长通知只更新等级和命令版本，不重建穿着叠层。
+## [param level] 综合等级。[param revision] 当前事务版本。
+func apply_progression(level: int, revision: int) -> void:
+	_state_revision = revision
+	_set_field("level", "综合等级：%d" % level)
+
+
+## 食品回血只更新生命文字，不重建人物穿着。
+## [param health] 当前人物生命。[param maximum] 人物生命上限。
+func apply_health(health: int, maximum: int) -> void:
+	_set_field("health", "生命：%d / %d" % [health, maximum])

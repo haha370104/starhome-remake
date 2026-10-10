@@ -21,6 +21,8 @@ func _initialize() -> void:
 		return
 	var offers: Array[Dictionary] = merchant.offers()
 	_expect(not offers.is_empty(), "武器商人应有荣耀装备可售")
+	_expect(merchant.purchase_price("low_grade_gel") == 3,
+		"材料定义未内嵌价格时仍应使用已确认的独立材料售价表")
 	_expect(not merchant.offer("glory_equipment_gun1_216568dc50").is_empty(), "新兵能量炮应在售")
 	_expect(not merchant.offer("glory_equipment_gun9_d2426d05e9").is_empty(), "官网280级虎式突袭能量炮应在售")
 	_expect(_all_offers_valid(offers), "在售项必须属于五类官网清单且不超过280级")
@@ -63,7 +65,7 @@ func _initialize() -> void:
 	_finish()
 
 
-## 校验用户确认的翻倍定价及跨商人一致的回收价，并确保原始数据仍可溯源。
+## 校验用户确认的翻倍定价及跨商人一致的出售价，并确保原始数据仍可溯源。
 ## [param merchant] 出售地面装备的普通武器商人。
 ## [param special] 同样可以回收物品的特殊武器商人。
 ## [param items] 保留原始源码字段的统一物品目录。
@@ -81,9 +83,9 @@ func _test_equipment_prices(merchant: WeaponMerchantCatalog, special: WeaponMerc
 		var offer := merchant.offer(definition_id)
 		_expect(int(offer.get("price", 0)) == price, "高档装备应按前档翻倍定价：%s" % definition_id)
 		var sell_price := price >> 1
-		_expect(int(offer.get("sell_price", 0)) == sell_price, "商品投影应给出对应回收价")
-		_expect(merchant.purchase_price(definition_id) == sell_price, "普通商人回收价应为售价一半")
-		_expect(special.purchase_price(definition_id) == sell_price, "特殊商人必须共用同一回收价")
+		_expect(int(offer.get("sell_price", 0)) == sell_price, "商品投影应给出对应出售价")
+		_expect(merchant.purchase_price(definition_id) == sell_price, "普通商人出售价应为售价一半")
+		_expect(special.purchase_price(definition_id) == sell_price, "特殊商人必须共用同一出售价")
 		_expect(int(items.definition(definition_id)["stats"]["legacy_properties"]["m_nWorth"]) == 2000,
 			"复刻经济调整不得篡改原始源码价格证据")
 	_expect(int(merchant.offer("glory_equipment_tank6_bb6cdb6f5c")["price"]) == 50000,

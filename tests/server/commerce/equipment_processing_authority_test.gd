@@ -1,5 +1,7 @@
 extends SceneTree
 
+const CommerceRecordAdapter := preload("res://tests/fixtures/commerce_record_adapter.gd")
+
 var _items := ItemCatalog.new()
 var _fixture := PlayerPanelServiceFixture.new()
 var _service := AuthoritativeCommerceService.new()
@@ -27,7 +29,7 @@ func _player() -> Player:
 	var profile := _items.processing_rules.profile(engine.definition_id)
 	for cost: Dictionary in profile.attributes.drive.materials:
 		_give(player, cost.definition_id, cost.quantity * 2)
-	_give(player, "item:material:02212ea88168", 2)
+	_give(player, "super_magnet", 2)
 	return player
 
 
@@ -46,13 +48,13 @@ func _test_transaction() -> void:
 	target.sockets.settle_open(0, true, "none")
 	var crystal: VehicleCrystal = _items.create("bright_health_crystal", {"crystal_cracks": 2}).value
 	target.sockets.inlay(0, crystal)
-	player.inventory.find("item:material:02212ea88168").bound = true
+	player.inventory.find("super_magnet").bound = true
 	var command := {"type": "process_equipment_attribute", "instance_id": target.instance_id,
-		"material_id": "item:material:02212ea88168", "inventory_revision": player.inventory.revision,
+		"material_id": "super_magnet", "inventory_revision": player.inventory.revision,
 		"points": 1000000, "price": 0, "success_chance": 1, "state_revision": -999}
 	var state: PlayerStateRecord = _mapper.to_record(player).value
 	var before := state.to_dictionary()
-	var result := _service.execute(state, command)
+	var result := CommerceRecordAdapter.execute(_service, state, command)
 	_check(result.is_ok and state.to_dictionary() == before, "isolated settlement")
 	if not result.is_ok:
 		push_error(result.error_message)
@@ -64,16 +66,16 @@ func _test_transaction() -> void:
 	_check(restored.inventory.find(command.material_id).quantity == 1, "special consumed once")
 	for cost: Dictionary in _items.processing_rules.profile(engine.definition_id).attributes.drive.materials:
 		_check(restored.inventory.find(cost.definition_id).quantity == int(cost.quantity), "ordinary costs exact")
-	_check(not _service.execute(result.value.candidate, command).is_ok, "replay rejected")
+	_check(not CommerceRecordAdapter.execute(_service, result.value.candidate, command).is_ok, "replay rejected")
 	command.type = "query_equipment_processing"
-	var query := _service.execute(result.value.candidate, command)
+	var query := CommerceRecordAdapter.execute(_service, result.value.candidate, command)
 	_check(query.is_ok and not query.value.changed, "query independent of autosave version")
 	_check(query.value.panel_bundle.equipment_processing.preview.before == 22, "preview reflects persisted value")
 	var current := CurrentPlayer.new()
 	_check(current.apply_bundle(result.value.panel_bundle), "client applies")
 	_check((current.inventory.find(target.instance_id) as VehicleEngine).drive == 22, "client stats agree")
-	_check(_items.create("item:material:02212ea88168", {}).value is EquipmentProcessingMaterial, "material semantic type")
-	_check(_items.create("item:material:02212ea88168", {}).value.copy_stack("copy", 1) is EquipmentProcessingMaterial, "split keeps type")
+	_check(_items.create("super_magnet", {}).value is EquipmentProcessingMaterial, "material semantic type")
+	_check(_items.create("super_magnet", {}).value.copy_stack("copy", 1) is EquipmentProcessingMaterial, "split keeps type")
 	var failed := _player()
 	var failed_target: Equipment = failed.inventory.find(target.instance_id)
 	failed_target.processing_rules.success_chance = 0.0
@@ -88,7 +90,7 @@ func _test_rejections() -> void:
 	for problem: String in ["locked", "damaged", "skill", "missing", "wrong", "stale", "installed", "maximum"]:
 		var player := _player()
 		var target := player.inventory.find("inventory.spare_engine") as VehicleEngine
-		var material_id := "item:material:02212ea88168"
+		var material_id := "super_magnet"
 		var revision := player.inventory.revision
 		if problem == "locked": target.locked = true
 		if problem == "damaged": target.durability = 0

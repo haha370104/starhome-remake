@@ -99,7 +99,7 @@ func _test_equipment(id: String) -> void:
 	_check(restored_item.crystal_source.to_dictionary() == item.crystal_source.to_dictionary(), "equipped JSON facts")
 	_check(restored.vehicle.calculate_stats() == player.vehicle.calculate_stats(), "saved derived combat parity")
 	var client := CurrentPlayer.new(catalog)
-	_check(client.apply_bundle(fixture._service.build_bundle(mapper.to_record(restored).value)), "client projection accepts")
+	_check(client.apply_bundle(fixture._service.build_bundle(restored)), "client projection accepts")
 	_check(client.vehicle.loadout.at(profile.location).crystal_source.to_dictionary() == item.crystal_source.to_dictionary(), "client growth facts")
 	var condition := EquipmentConditionLoadout.new(player).duplicate_loadout()
 	var copied := condition._items[item.instance_id] as VehicleEquipment
@@ -108,10 +108,10 @@ func _test_equipment(id: String) -> void:
 	_check(item.crystal_source.quality == 15, "simulation no shared mutable growth")
 	_check(player.unequip_vehicle_item(profile.location, player.inventory.revision, player.vehicle.loadout.revision).is_ok, "unequip")
 	_check(player.vehicle.health == 35 and player.vehicle.working_energy == 13, "unequip preserves absolute resources")
-	_check(player.warehouse.transfer(player.inventory, 1, true, item.instance_id, 1, player.inventory.revision, player.warehouse.revision, "unused").is_ok, "deposit")
+	_check(player.warehouse.transfer(player.inventory, 1, true, item.instance_id, Vector2i(80, 80), player.inventory.revision, player.warehouse.revision).is_ok, "deposit")
 	var warehoused: Player = mapper.to_domain(PlayerStateRecord.from_dictionary(JSON.parse_string(_state(player))).value).value
 	_check(warehoused.warehouse.find(item.instance_id).crystal_source.to_dictionary() == item.crystal_source.to_dictionary(), "warehouse full facts")
-	_check(warehoused.warehouse.transfer(warehoused.inventory, 1, false, item.instance_id, 1, warehoused.inventory.revision, warehoused.warehouse.revision, "unused").is_ok, "withdraw")
+	_check(warehoused.warehouse.transfer(warehoused.inventory, 1, false, item.instance_id, Vector2i(80, 80), warehoused.inventory.revision, warehoused.warehouse.revision).is_ok, "withdraw")
 	var bag: Player = mapper.to_domain(PlayerStateRecord.from_dictionary(JSON.parse_string(_state(warehoused))).value).value
 	_check(bag.inventory.find(item.instance_id).crystal_source.to_dictionary() == item.crystal_source.to_dictionary(), "inventory JSON facts")
 	item.durability = 0
@@ -126,12 +126,15 @@ func _test_cores() -> void:
 	var player: Player = mapper.to_domain(fixture._state).value
 	var core: CrystalSourceCore = catalog.create("crystal_source_core_black_4", {"instance_id": "source.core", "quantity": 8, "bound": true, "crystal_source_cracks": 3}).value
 	_check(player.inventory.add_reward(core).is_ok, "core added")
-	_check(player.warehouse.transfer(player.inventory, 1, true, core.instance_id, 3, player.inventory.revision, 0, "source.part").is_ok, "core partial transfer")
+	var split := InventoryStackActions.split(player.inventory, core.instance_id, 3, player.inventory.revision)
+	_check(split.is_ok, "core split")
+	var split_id: String = split.value
+	_check(player.warehouse.transfer(player.inventory, 1, true, split_id, Vector2i(80, 80), player.inventory.revision, 0).is_ok, "core transfer after split")
 	var restored: Player = mapper.to_domain(PlayerStateRecord.from_dictionary(JSON.parse_string(_state(player))).value).value
 	_check(restored.inventory.find(core.instance_id).quantity == 5 and restored.inventory.find(core.instance_id).cracks == 3, "backpack core saved")
-	_check(restored.warehouse.find("source.part").quantity == 3 and restored.warehouse.find("source.part").cracks == 3, "warehouse core saved")
+	_check(restored.warehouse.find(split_id).quantity == 3 and restored.warehouse.find(split_id).cracks == 3, "warehouse core saved")
 	var client := CurrentPlayer.new(catalog)
-	_check(client.apply_bundle(fixture._service.build_bundle(mapper.to_record(restored).value)) and client.inventory.find(core.instance_id).cracks == 3, "core client facts")
+	_check(client.apply_bundle(fixture._service.build_bundle(restored)) and client.inventory.find(core.instance_id).cracks == 3, "core client facts")
 	for invalid: Variant in [-1, 4, 0.5, INF, "2", true]:
 		_check(not catalog.create(core.definition_id, {"crystal_source_cracks": invalid}).is_ok, "invalid core cracks")
 	_check(not catalog.create("iron_piece", {"crystal_source_cracks": 1}).is_ok, "no foreign core cracks")

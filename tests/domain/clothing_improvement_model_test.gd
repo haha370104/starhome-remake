@@ -34,7 +34,7 @@ func _initialize() -> void:
 	for invalid: Variant in [{"level": -1}, {"level": 101, "attribute": "defense"}, {"level": 1.1, "attribute": "defense"}, {"level": 1}, {"attribute": "defense"}, {"version": 2}, []]:
 		_check(not ClothingImprovement.restore(invalid).is_ok, "拒绝非法存档")
 	_check(not catalog.create("recruit_tank", {"instance_id": "bad", "clothing_improvement": {"level": 1, "attribute": "defense"}}).is_ok, "不能给战车伪造成长")
-	var high: ClothingImprovement = ClothingImprovement.restore({"level": 99, "attribute": "defense"}).value
+	var high: ClothingImprovement = ClothingImprovement.restore({"version": 1, "level": 99, "attribute": "defense"}).value
 	_check(not high.preview(id, rules, "defense", 9999).is_ok, "原版整数百分比拒绝0%")
 	_check(high.preview(id, rules, "defense", 10486).value.chance == 0.01, "跨堆叠1%可尝试")
 	print("Clothing improvement model: %d checks, %d failures" % [checks, failures])

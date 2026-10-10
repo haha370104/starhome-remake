@@ -3,9 +3,13 @@ extends RefCounted
 
 signal changed
 const SCALES := [1.0, 1.15, 1.3, 1.5]
+const GAME_SCALES := [1.0, 1.05, 1.1, 1.15, 1.2, 1.25, 1.3, 1.35, 1.4, 1.45, 1.5,
+	1.55, 1.6, 1.65, 1.7, 1.75, 1.8, 1.85, 1.9, 1.95, 2.0]
 const PALETTES := ["default", "high_contrast", "warm"]
 const AUDIO_CHANNELS := ["master", "music", "effects"]
 var window_scale := 1.0
+var game_scale := 1.0
+var shortcut_visible := true
 var palette := "default"
 var muted := false
 var volumes := {"master": 0.8, "music": 0.65, "effects": 0.8}
@@ -20,6 +24,24 @@ func set_window_scale(value: float) -> bool:
 	window_scale = value
 	changed.emit()
 	return true
+
+
+## 设置地图和界面共用的全局缩放比例。
+## [param value] 支持的比例。
+## 返回是否接受改变。
+func set_game_scale(value: float) -> bool:
+	if not value in GAME_SCALES: return false
+	game_scale = value
+	changed.emit()
+	return true
+
+
+## 设置快捷栏展开状态。
+## [param value] 是否显示快捷栏。
+func set_shortcut_visible(value: bool) -> void:
+	if shortcut_visible == value: return
+	shortcut_visible = value
+	changed.emit()
 
 
 ## 应用通用文字配色，不处理物品品质等语义颜色。
@@ -61,6 +83,8 @@ func bind_key(action: String, chord: int) -> DomainResult:
 ## 恢复本地体验默认值，不接触玩家存档或智脑方案。
 func reset() -> void:
 	window_scale = 1.0
+	game_scale = 1.0
+	shortcut_visible = true
 	palette = "default"
 	muted = false
 	volumes = {"master": 0.8, "music": 0.65, "effects": 0.8}
@@ -75,6 +99,8 @@ func reset() -> void:
 func save_file(path := "user://client-settings.cfg") -> Error:
 	var config := ConfigFile.new()
 	config.set_value("display", "scale", window_scale)
+	config.set_value("display", "game_scale", game_scale)
+	config.set_value("display", "shortcut_visible", shortcut_visible)
 	config.set_value("display", "palette", palette)
 	config.set_value("audio", "muted", muted)
 	for channel: String in AUDIO_CHANNELS: config.set_value("audio", channel, volumes[channel])
@@ -92,6 +118,10 @@ func load_file(path := "user://client-settings.cfg") -> Error:
 	if error != OK: return error
 	var scale_value: Variant = config.get_value("display", "scale", 1.0)
 	if (scale_value is float or scale_value is int) and scale_value in SCALES: window_scale = float(scale_value)
+	var game_scale_value: Variant = config.get_value("display", "game_scale", 1.0)
+	if (game_scale_value is float or game_scale_value is int) and game_scale_value in GAME_SCALES: game_scale = float(game_scale_value)
+	var shortcut_value: Variant = config.get_value("display", "shortcut_visible", true)
+	if shortcut_value is bool: shortcut_visible = shortcut_value
 	var palette_value: Variant = config.get_value("display", "palette", "default")
 	if palette_value is String and palette_value in PALETTES: palette = palette_value
 	var mute_value: Variant = config.get_value("audio", "muted", false)

@@ -96,11 +96,11 @@
 
 | 功能族 | 原客户端证据 | 复刻现状 |
 | --- | --- | --- |
-| 组队 | 邀请、申请、队员操作、队伍信息和服务端请求（E7） | 队伍按钮占位；没有队伍聚合和分配规则 |
-| 好友、聊天、私聊 | 好友/仇人页、聊天输入与 `r_OnChat`（E8） | 有当前场景玩家名单；好友、玩家社交操作未开放，缺少聊天通讯链 |
-| 玩家间交易 | 双方邀请、放入/移除物品、金币、就绪/确认/取消（E9） | 商人买卖已经有，玩家对玩家交易没有 |
+| 组队 | 邀请、申请、队员操作、队伍信息和服务端请求（E7） | 已接入服务端权威队伍状态、邀请、申请和成员操作；掉落仅冻结死亡瞬间同图在线队员的拾取资格，不分配掉落归属。现有本地原版材料未证实归属规则 |
+| 好友、聊天、私聊 | 好友/仇人页、昵称输入申请、区域/队伍/私聊输入与 `r_OnChat`（E8） | 已接入好友/仇人持久化关系、区域/队伍/私聊和服务端精确昵称匹配的在线好友申请；旧服更完整的检索范围与规则仍待核实 |
+| 玩家间交易 | 双方邀请、放入/移除物品、金币、就绪/确认/取消（E9） | 已接入双边报价、锁定失效和原子库存/金币交换；独立 ENet 双客户端进程已验证物品、金币与重载持久化，未做渲染窗口手工验收 |
 | 银行/仓库 | 存取物品、位置、密码、扩容等请求（E10） | 只有背包，没有独立仓库和存取事务 |
-| 信件/留言 | 信件、留言窗口和客户端发送/读取逻辑（E11） | 系统菜单对应入口均为未实现提示 |
+| 信件/留言 | 信件、留言窗口和客户端发送/读取逻辑（E11） | 已接入服务端权威邮箱、持久化、发送、已读、删除和系统菜单入口；收件人在线或离线均可投递，同一收件箱按 `mail`/`leaveword` 分区 |
 | 组织/公会 | 创建、解散、申请、成员权限、职位、敌对关系等请求（E12） | 没有组织状态和权威服务 |
 | 城市经营/建设相关 | 城市权限、能源转换、设施/凭证和城市传送管理（E13） | 城区地图可走，不等于城市经营系统已实现；这套管理链未接 |
 | PVP、竞技房间 | 原端竞技房间模式、报名/站队、开始/退出、观战状态（E14） | 当前玩家攻击结算针对怪物，没有玩家互伤、PVP模式和竞技赛程。已有 ENet 联机不能等同多人玩法齐全 |
@@ -120,7 +120,7 @@
 | 智脑 | 自动攻击、近距离拾取、低血自维修、炮导模式 | 自动补给、死亡记录、快捷换装及炮隐/炮雷等原版高级设置未接；需要先有隐身/雷达等基础能力 |
 | 生产 | 本轮加载198条可执行目录规则：裁缝65、烹饪31、提炼43、主装备12、附属10、合金22、维护包15 | 单次即时生产，没有原版批量/投入倍率/加工等待。除烹饪外采用门槛达标后100%产出，不能说还原了原服概率；目录可执行不代表每种原料都有可玩获取链 |
 | 装备/物品覆盖 | 已接大量原物品、恢复图像、掉落与生产材料 | 柔解剂/晶石、维护包及一些特殊材料没有最终使用流程；注册、能掉落和能消费要分别验收 |
-| 系统菜单 | 原版九项菜单图片和点击区域 | 字体/颜色/热键设置、留言、音乐音效设置、帮助、网速测试、信件，甚至该菜单的“退出”目前都调用 `unavailable`。游戏统一字体已做，不等于自定义设置已做 |
+| 系统菜单 | 原版九项菜单图片和点击区域 | 信件/留言已打开当前权威收件箱；字体/颜色/热键、音乐音效、帮助、网速测试和“退出”仍未恢复 |
 | 战斗表现 | 普通弹体、死亡、腐蚀与大部分命中特效已接 | 上轮119怪审计仍有9种命中特效缺可靠对应：4类水晶怪及对应精英、炼狱天灾怒火BOSS；见[专门清单](monster_hit_effect_audit.md) |
 
 生产数字来自当前配方书，不能继续将早期工业说明中的“83条”当成今天的总量。
@@ -180,7 +180,7 @@
 | C3 | [CombatInteractionController](../scripts/client/gameplay/combat_interaction_controller.gd)：181行起维修臂占位；[权威战斗](../scripts/server/modules/combat/authoritative_combat_module.gd)已有自维修 |
 | C4 | [装配规则与未实现效果](attachments_and_premium_shop.md)、[Vehicle](../scripts/domain/players/vehicle.gd)、[权威战斗](../scripts/server/modules/combat/authoritative_combat_module.gd) |
 | C5 | [Vehicle](../scripts/domain/players/vehicle.gd)、[VehicleEquipment](../scripts/domain/items/vehicle_equipment.gd)、[EquipmentSlotRecord](../scripts/server/persistence/equipment_slot_record.gd)：无三组特殊成长/符文实例模型和对应技能事务 |
-| C6 | [WorldInteractionController](../scripts/client/gameplay/world_interaction_controller.gd)：227行起好友、240行起队伍/守卫/中枢占位；[SystemMenuPanel](../scripts/client/ui/windows/navigation/system_menu_panel.gd)九项均未实现；[场景玩家面板](../scripts/client/ui/windows/navigation/scene_players_panel.gd)社交占位 |
+| C6 | [WorldInteractionController](../scripts/client/gameplay/world_interaction_controller.gd)：守卫/中枢仍为占位；[GameWindowManager](../scripts/client/ui/windows/game_window_manager.gd)已接队伍、交易、聊天、好友和信件窗口；[SystemMenuPanel](../scripts/client/ui/windows/navigation/system_menu_panel.gd)信件/留言入口已接入 |
 | C7 | [DailyActivityCatalog](../scripts/domain/quests/daily_activity_catalog.gd)、[日常配置](../data/gameplay/quests/daily_activities_v1.json)、[ManufacturingRecipeBook](../scripts/domain/manufacturing/manufacturing_recipe_book.gd)、[ManufacturingRecipe](../scripts/domain/manufacturing/manufacturing_recipe.gd) |
 
 本轮验证：Godot 4.7.2 无头只读加载 ItemCatalog、DailyActivityCatalog、ManufacturingRecipeBook

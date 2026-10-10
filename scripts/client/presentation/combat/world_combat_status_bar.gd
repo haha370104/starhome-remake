@@ -26,7 +26,10 @@ func configure(width: float, show_energy: bool, offset: Vector2) -> void:
 ## [param current] 当前生命值。
 ## [param maximum] 最大生命值。
 func set_health(current: float, maximum: float) -> void:
-	_health_ratio = clampf(current / maxf(maximum, 1.0), 0.0, 1.0)
+	var ratio := clampf(current / maxf(maximum, 1.0), 0.0, 1.0)
+	if _health_ratio == ratio:
+		return
+	_health_ratio = ratio
 	queue_redraw()
 
 
@@ -34,7 +37,10 @@ func set_health(current: float, maximum: float) -> void:
 ## [param current] 当前工作能量。
 ## [param maximum] 工作能量上限。
 func set_energy(current: float, maximum: float) -> void:
-	_energy_ratio = clampf(current / maxf(maximum, 1.0), 0.0, 1.0)
+	var ratio := clampf(current / maxf(maximum, 1.0), 0.0, 1.0)
+	if _energy_ratio == ratio:
+		return
+	_energy_ratio = ratio
 	queue_redraw()
 
 

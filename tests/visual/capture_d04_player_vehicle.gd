@@ -1,7 +1,7 @@
 extends SceneTree
 
 const MAIN_SCENE := preload("res://scenes/main_hall.tscn")
-const D04_DEFINITION := "res://data/maps/d04_field_zone.json"
+const D04_DEFINITION := "res://data/maps/glory_nft_bl_d04.json"
 const CAPTURE_PATH := "res://.godot/d04_player_vehicle.png"
 
 

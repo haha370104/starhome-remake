@@ -26,7 +26,7 @@ def build(check=False):
         legacy = row["stats"]["legacy_properties"]
         profile = {"definition_id": row["id"], "source_class": name,
                    "label": re.sub(r"\\#[0-9a-fA-F]{6}", "", row["display_name"]),
-                   "working_energy_cost": int(legacy.get("m_nenergy", 0)),
+                   "working_energy_per_trigger": int(row["stats"].get("working_energy_per_trigger", 0)),
                    "cooldown_seconds": int(legacy.get("m_nacttime", 0)) / 1000,
                    "chance": 0, "duration_seconds": 0, "heat_damage": 0,
                    "defense_flat_reduction": 0, "defense_percent_reduction": 0,

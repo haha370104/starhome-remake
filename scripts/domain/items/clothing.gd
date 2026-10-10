@@ -15,9 +15,6 @@ var improvement_rules: ClothingImprovementRules
 func _init(definition: Dictionary = {}, state: Dictionary = {}) -> void:
 	super(definition, state)
 	character_slot = String(definition.get("character_slot", ""))
-	var prior_slot := String(state.get("equipped_character_slot", ""))
-	if not prior_slot.is_empty() and prior_slot == String(definition.get("legacy_character_slot", "")):
-		character_slot = prior_slot
 	required_sex = String(definition.get("required_sex", "any"))
 	var raw_effects: Variant = stat("skill_modifiers", {})
 	clothing_effects = (raw_effects as Dictionary).duplicate(true) \

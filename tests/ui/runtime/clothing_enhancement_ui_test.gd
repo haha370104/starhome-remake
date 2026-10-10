@@ -1,5 +1,7 @@
 extends SceneTree
 
+const CommerceRecordAdapter := preload("res://tests/fixtures/commerce_record_adapter.gd")
+
 var failures: Array[String] = []
 var checks := 0
 var service := AuthoritativeCommerceService.new()
@@ -37,7 +39,7 @@ func _run() -> void:
 	manager = GameWindowManager.new()
 	root.add_child(manager)
 	manager.configure(PlayerPanelSession.new(_dispatch, items))
-	manager.panel_session.apply_bundle(service.build_bundle(state))
+	manager.panel_session.apply_bundle(CommerceRecordAdapter.build_bundle(service, state))
 	_expect(manager.character_panel.get_node_or_null("Content/ClothingEnhancementButton") != null, "人物面板存在强化按钮")
 	manager.character_panel.enhancement_requested.emit()
 	var panel: ClothingEnhancementPanel = manager.navigation_windows.clothing_enhancement
@@ -122,7 +124,7 @@ func _give(player: Player, definition: String, count: int) -> void:
 ## [param command] 当前面板纯意图。
 func _dispatch(command: Dictionary) -> void:
 	sent.append(command.duplicate(true))
-	var result := service.execute(state, command)
+	var result := CommerceRecordAdapter.execute(service, state, command)
 	if not result.is_ok:
 		failures.append(result.error_message)
 		return

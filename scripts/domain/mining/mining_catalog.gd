@@ -112,7 +112,7 @@ func _configure(document: Dictionary) -> DomainResult:
 		"maximum_sources", "source_capacity", "replenish_interval_seconds",
 		"collection_interval_seconds", "minimum_collection_distance",
 		"maximum_collection_distance", "selection_radius", "minimum_spawn_separation",
-		"yield_per_cycle", "iron_equivalent_per_level",
+		"yield_per_cycle",
 	]:
 		if float(defaults.get(key, 0.0)) <= 0.0:
 			return DomainResult.failure(&"mining.invalid_catalog", "mining default is not positive: %s" % key)

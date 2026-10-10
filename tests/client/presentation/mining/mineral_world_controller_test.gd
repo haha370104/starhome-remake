@@ -45,6 +45,10 @@ func _run() -> void:
 			"a click on the source footpoint should select it",
 		)
 		_expect(
+			controller.source_at(Vector2(42.0, 121.0)).is_empty(),
+			"transparent pixels inside the iron ALE frame should not trigger hover",
+		)
+		_expect(
 			controller.source_position("field.mine.1") == Vector2(100.0, 200.0),
 			"selection should resolve the authoritative source position",
 		)

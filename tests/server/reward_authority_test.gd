@@ -1,5 +1,7 @@
 extends SceneTree
 
+const AutosaveRecordAdapter := preload("res://tests/fixtures/autosave_record_adapter.gd")
+
 var failures: Array[String] = []
 var checks := 0
 
@@ -20,8 +22,9 @@ func _run() -> void:
 		_expect(server.open_session(peer, {"protocol_version": config.protocol_version, "content_version": config.content_version}, 0).ok, "两个独立账号加入")
 	var first: ServerSession = server.sessions.session_for_peer(71)
 	var second: ServerSession = server.sessions.session_for_peer(72)
-	var state := server.autosave_service.state_for(first.entity_id)
-	var other := server.autosave_service.state_for(second.entity_id)
+	var state: PlayerStateRecord = AutosaveRecordAdapter.current(server.autosave_service, first.entity_id)
+	var other: PlayerStateRecord = AutosaveRecordAdapter.current(server.autosave_service, second.entity_id)
+	var state_mapper: PlayerStateMapper = PlayerStateMapper.new(server.player_panel_service.catalog)
 	var rows: Array[RewardModifier] = []
 	for raw: Dictionary in [
 		{"id": "test.vip.xp", "channel": "experience", "multiplier": 2.5, "account_ids": [state.account_id], "skill_ids": ["mining", "refining"]},
@@ -35,20 +38,20 @@ func _run() -> void:
 	var event := {"source": "authoritative_action", "skill_id": "mining", "amount": 0.1,
 		"account_id": other.account_id, "multiplier": 999, "now": 0}
 	for _index in range(5):
-		var previous := state.to_dictionary()
-		var granted := server.player_panel_service.grant_skill_progression(state, event)
+		var previous: Dictionary = state.to_dictionary()
+		var granted: DomainResult = server.player_panel_service.grant_skill_progression(state_mapper.to_domain(state).value, event)
 		_expect(granted.is_ok and state.to_dictionary() == previous, "经验事务不修改输入状态且忽略伪造倍率")
 		_expect(is_equal_approx(granted.value.progression.granted_experience, 0.3), "VIP与食品统一相乘且只应用一次")
-		state = granted.value.candidate
+		state = state_mapper.to_record(granted.value.candidate).value
 	_expect(int(state.character_skills.mining.current_exp) == 1 and is_equal_approx(state.character_skills.mining.fractional_exp, 0.5), "小数经验累积无丢失")
-	var ordinary := server.player_panel_service.grant_skill_progression(other, event)
+	var ordinary: DomainResult = server.player_panel_service.grant_skill_progression(state_mapper.to_domain(other).value, event)
 	_expect(is_equal_approx(ordinary.value.progression.granted_experience, 0.1), "相同事件不能借用其他账号VIP")
 	event.skill_id = "repair"
-	_expect(is_equal_approx(server.player_panel_service.grant_skill_progression(state, event).value.progression.granted_experience, 0.1), "非指定技能保持基础经验")
-	var restored := PlayerStateRecord.from_dictionary(JSON.parse_string(JSON.stringify(state.to_dictionary())))
+	_expect(is_equal_approx(server.player_panel_service.grant_skill_progression(state_mapper.to_domain(state).value, event).value.progression.granted_experience, 0.1), "非指定技能保持基础经验")
+	var restored: DomainResult = PlayerStateRecord.from_dictionary(JSON.parse_string(JSON.stringify(state.to_dictionary())))
 	_expect(restored.is_ok, "倍率后的经验与食品状态可存档往返")
 	_test_manufacturing(server, state)
-	var instance: AuthoritativeMapInstance = server.ensure_runtime_map("d04_field_zone").value
+	var instance: AuthoritativeMapInstance = server.ensure_runtime_map("glory_nft_bl_d04").value
 	_expect(instance.combat_module.rewards == server.reward_service, "惰性地图使用同一权威奖励服务")
 	var monster: MonsterLifecycle = instance.combat_module.monsters.values()[0]
 	monster.drop_table.configure([
@@ -62,9 +65,8 @@ func _run() -> void:
 	receiver.inventory.restore_items([])
 	for loot: Dictionary in spawned:
 		_expect(int(loot.quantity) <= int(item_catalog.definition(loot.item_definition_id).max_stack), "超堆叠奖励拆成可拾取数量")
-		var granted := server.player_panel_service.grant_loot(PlayerStateMapper.new(item_catalog).to_record(receiver).value, loot)
+		var granted: DomainResult = server.player_panel_service.receive_loot(receiver, loot)
 		_expect(granted.is_ok, "每一份拆包奖励可通过真实入包事务")
-		receiver = PlayerStateMapper.new(item_catalog).to_domain(granted.value.candidate).value
 		if loot.item_definition_id == "low_grade_gel":
 			total += int(loot.quantity)
 	_expect(total == 160 or total == 240, "250%掉率为保证两份并50%追加一份")
@@ -102,14 +104,14 @@ func _test_manufacturing(server: AuthoritativeServer, source: PlayerStateRecord)
 	state.map_id = "glory_nft_bl_factory1"
 	state.character_skills.refining = {"level": 150, "current_exp": 0, "fractional_exp": 0.0}
 	var command := {"type": "start_production", "recipe_id": recipe.recipe_id, "station_id": "refining", "inventory_revision": state.inventory_revision, "multiplier": 999}
-	var crafted: DomainResult = ProductionTestDriver.execute(server.manufacturing_service, state, command)
+	var crafted: DomainResult = ProductionTestDriver.execute(server.manufacturing_service, items, state, command, server.reward_service.pipeline)
 	_expect(crafted.is_ok, "生产事务成功")
 	if not crafted.is_ok:
 		return
 	_expect(int(crafted.value.candidate.character_skills.refining.current_exp) == 100, "提炼40基础经验经VIP变为100")
 	var next: Player = mapper.to_domain(crafted.value.candidate).value
 	_expect(next.inventory.count_definition(recipe.product_definition_id) == 1, "经验倍率不增加生产物品")
-	_expect(not ProductionTestDriver.execute(server.manufacturing_service, crafted.value.candidate, command).is_ok, "重复生产请求不重复发经验")
+	_expect(not ProductionTestDriver.execute(server.manufacturing_service, items, crafted.value.candidate, command, server.reward_service.pipeline).is_ok, "重复生产请求不重复发经验")
 
 
 ## 抽样验证任意非整数倍率的概率溢出和稀有物概率，不只放大已命中数量。

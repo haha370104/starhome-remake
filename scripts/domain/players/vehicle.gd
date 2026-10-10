@@ -65,7 +65,7 @@ func calculate_stats(
 	var self_repair_base := 0
 	var self_repair_bonus := maxi(0, character_self_repair_bonus) + achievement_bonuses.self_repair
 	var extra_repair := maxi(0, character_external_repair_bonus)
-	var self_repair_energy_cost := 0.0
+	var working_energy_per_repair := 0.0
 	var required_repair_skill_level := 0
 	for equipment: VehicleEquipment in loadout.items():
 		total_weight += equipment.weight
@@ -75,7 +75,7 @@ func calculate_stats(
 			var chassis := equipment as VehicleChassis
 			chassis_base_health += chassis.base_max_health
 			self_repair_base += chassis.self_repair_power()
-			self_repair_energy_cost += chassis.self_repair_energy_cost
+			working_energy_per_repair += chassis.working_energy_per_repair
 			required_repair_skill_level = maxi(
 				required_repair_skill_level, chassis.required_repair_skill_level
 			)
@@ -121,7 +121,7 @@ func calculate_stats(
 		"self_repair_base": self_repair_base,
 		"self_repair_bonus": self_repair_bonus,
 		"self_repair_total": self_repair_base + self_repair_bonus,
-		"self_repair_energy_cost": self_repair_energy_cost,
+		"working_energy_per_repair": working_energy_per_repair,
 		"required_repair_skill_level": required_repair_skill_level,
 		"extra_repair": extra_repair,
 		"reserve_energy": reserve_energy,

@@ -35,17 +35,24 @@ func configure_server(
 func initialize() -> Error:
 	if authoritative_server != null:
 		return OK if _initialization_error.is_empty() else ERR_CANT_CREATE
+	_initialization_error = ""
+	last_connection_error_message = ""
 	var config := _server_config if _server_config != null else ServerConfigScript.new()
 	config.network_enabled = false
 	authoritative_server = AuthoritativeServerScript.new()
 	var initialized := authoritative_server.initialize(config, [], _repository)
 	if not bool(initialized.get("ok", false)):
-		_initialization_error = String(initialized.get("message", "unknown server initialization error"))
+		_initialization_error = "[%s] %s" % [
+			String(initialized.get("code", "server_initialization_failed")),
+			String(initialized.get("message", "unknown server initialization error")),
+		]
+		last_connection_error_message = "进程内权威服务器初始化失败：%s" % _initialization_error
 		authoritative_server.free()
 		authoritative_server = null
 		return ERR_CANT_CREATE
 	authoritative_server.server_message_generated.connect(_on_server_message_generated)
-	authoritative_server.peer_snapshot_generated.connect(_on_peer_snapshot_generated)
+	authoritative_server.peer_world_snapshot_generated.connect(_on_peer_world_snapshot_generated)
+	authoritative_server.peer_local_snapshot_generated.connect(_on_peer_local_snapshot_generated)
 	add_child(authoritative_server)
 	return OK
 
@@ -57,7 +64,6 @@ func initialize() -> Error:
 func connect_client(_host: String, _port: int) -> Error:
 	var error := initialize()
 	if error != OK:
-		call_deferred("_emit_connection_failure")
 		return error
 	call_deferred("_complete_connection")
 	return OK
@@ -121,6 +127,11 @@ func send_player_panel_command(command: Dictionary) -> void:
 	_enqueue(AuthoritativeServer.TRANSPORT_PLAYER_PANEL_COMMAND, command)
 
 
+## 发送组队、聊天或玩家交易命令，保持进程内与 ENet 的同一可靠命令边界。
+func send_social_command(command: Dictionary) -> void:
+	_enqueue(Protocol.SOCIAL_COMMAND, command)
+
+
 ## 显式推进进程内权威服务器，供暂停自动时钟的确定性测试调用。
 ## [param elapsed_seconds] 本次累计模拟时间，单位为秒。
 ## 设计：运行时只由服务端物理帧驱动；手动推进时调用方必须暂停服务端物理处理，不能叠加两套时钟。
@@ -176,6 +187,11 @@ func _on_server_message_generated(peer_id: int, message: Dictionary) -> void:
 ## 接收服务器按 peer 生成的快照并转发给本地客户端。
 ## [param peer_id] 服务器会话绑定的 peer 标识。
 ## [param snapshot] 与 ENet 快照通道完全相同的权威快照。
-func _on_peer_snapshot_generated(peer_id: int, snapshot: Dictionary) -> void:
+func _on_peer_world_snapshot_generated(peer_id: int, snapshot: Dictionary) -> void:
 	if peer_id == LOCAL_PEER_ID and _connected:
-		world_snapshot_received.emit(snapshot.duplicate(true))
+		world_snapshot_received.emit(NetworkProtocol.share_snapshot(snapshot))
+
+
+func _on_peer_local_snapshot_generated(peer_id: int, snapshot: Dictionary) -> void:
+	if peer_id == LOCAL_PEER_ID and _connected:
+		local_snapshot_received.emit(NetworkProtocol.share_snapshot(snapshot))

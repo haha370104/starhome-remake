@@ -7,7 +7,7 @@
 ## 本次补齐的材料来源
 
 原版确实包含中高级生物材料来源。之前“没有实际投放”指复刻运行表未接入，不能解释成原客户端没有这些记录。
-已复核荣耀版 [npc_catalog.csv](../../starhome_lz_ry_full_parsed/catalogs_utf8/npc_catalog.csv) 的 `produce_obj`：
+以下 `produce_obj` 结论来自此前完整 NPC 表的审计；临时 CSV 已清理，原始字节保存在 [npcinfo_xc.tab](../../starhome_lz_ry_full/raw/loadfile/npcinfo_xc.tab)，需要时按 FTC 流程重新解码：
 
 | 原版怪物 | 原表包含的中高级材料 |
 | --- | --- |

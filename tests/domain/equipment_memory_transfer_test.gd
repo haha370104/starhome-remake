@@ -30,7 +30,7 @@ func _initialize() -> void:
 		player = mapper.to_domain(PlayerStateRecord.from_dictionary(saved.value.to_dictionary()).value).value
 		_check(player.inventory.find("module").memory.to_dictionary() == module.memory.to_dictionary(), "保存载荷")
 		var current := CurrentPlayer.new(items)
-		_check(current.apply_bundle(fixture._service.build_bundle(saved.value)) and current.inventory.find("module").memory.has_growth(), "客户端载荷")
+		_check(current.apply_bundle(fixture._service.build_bundle(mapper.to_domain(saved.value).value)) and current.inventory.find("module").memory.has_growth(), "客户端载荷")
 		var transfer := _execute(player, "target", "transfer", true, 0.99999)
 		_check(transfer.is_ok and player.inventory.find("module") == null, "转移消费指定模块")
 		if not transfer.is_ok: push_error(transfer.error_message); continue

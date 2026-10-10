@@ -1,5 +1,7 @@
 extends SceneTree
 
+const CommerceRecordAdapter := preload("res://tests/fixtures/commerce_record_adapter.gd")
+
 var _items := ItemCatalog.new()
 var _fixture := PlayerPanelServiceFixture.new()
 var _service := AuthoritativeCommerceService.new()
@@ -17,27 +19,27 @@ func _initialize() -> void:
 		"inventory_revision": player.inventory.revision, "points": 99999, "price": 0, "success_chance": 1}
 	var state: PlayerStateRecord = _mapper.to_record(player).value
 	var before := state.to_dictionary()
-	var processed := _service.execute(state, command)
+	var processed := CommerceRecordAdapter.execute(_service, state, command)
 	_check(processed.is_ok and state.to_dictionary() == before, "isolated candidate")
 	if not processed.is_ok: quit(1); return
 	player = _mapper.to_domain(processed.value.candidate).value
 	var engine: Equipment = player.inventory.find(command.instance_id)
 	_check(engine.extra_attributes.level("fluorite:5") == 1 and engine.drive == 20 and engine.bound, "authority increment and binding")
 	_check(player.inventory.currency == 900000 and player.inventory.find(command.material_id).quantity == 2, "exact cost")
-	_check(not _service.execute(processed.value.candidate, command).is_ok, "replay rejected")
+	_check(not CommerceRecordAdapter.execute(_service, processed.value.candidate, command).is_ok, "replay rejected")
 	var current := CurrentPlayer.new()
 	_check(current.apply_bundle(processed.value.panel_bundle), "client bundle")
 	_check(current.inventory.find(command.instance_id).stat("movement_speed") == 1, "client derived stat agrees")
 	command.type = "query_extra_attributes"
 	command.state_revision = -999
-	var query := _service.execute(processed.value.candidate, command)
+	var query := CommerceRecordAdapter.execute(_service, processed.value.candidate, command)
 	_check(query.is_ok and not query.value.changed and query.value.panel_bundle.extra_attributes.preview.before == 1, "query ignores unrelated save revision")
 	_check(query.value.panel_bundle.extra_attributes.offers.size() == 12, "twelve material offers")
 	var purchase := {"type": "buy_extra_attribute_material", "definition_id": "extra_ratefluorite", "quantity": 2,
 		"inventory_revision": player.inventory.revision, "price": 1}
-	var bought := _service.execute(processed.value.candidate, purchase)
+	var bought := CommerceRecordAdapter.execute(_service, processed.value.candidate, purchase)
 	_check(bought.is_ok and bought.value.candidate.currency == 860000, "server purchase price")
-	_check(not _service.execute(bought.value.candidate, purchase).is_ok, "purchase replay")
+	_check(not CommerceRecordAdapter.execute(_service, bought.value.candidate, purchase).is_ok, "purchase replay")
 	for level: int in [10, 20]:
 		player = _player()
 		engine = player.inventory.find(command.instance_id)

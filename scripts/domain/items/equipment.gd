@@ -63,25 +63,29 @@ func _init(definition: Dictionary = {}, state: Dictionary = {}) -> void:
 	if rounds.is_ok:
 		magazine = rounds.value
 	magazine.bind_capacity(ammunition_capacity())
-	# 旧荣耀服装曾遗漏 wear_degree，完整的 1/1 旧记录迁移到原版上限。
-	if _stats.has("wear_degree") and max_durability == 1 and durability == 1:
-		max_durability = maxi(1, int(_stats.wear_degree))
-		durability = max_durability
 
 
-## 记录与自身类型匹配的实际使用，维护链不完整或免磨损装备保持原状。
-## [param event] shot、movement、mining 或 damage。
-## [param amount] 实际次数或移动秒数。
+## 按维护规则声明的事件或自身类型记录实际使用，免磨损装备保持原状。
+## [param event] 实际使用或战车受损事件。
+## [param amount] 实际次数、移动秒数或分摊的耐久量。
 ## 返回是否刚刚损坏，用于一次性重算战斗属性。
 func record_use(event: String, amount: float = 1.0) -> bool:
 	if durability <= 0 or maintenance_profile == null or maintenance_profile.no_wear or not maintenance_profile.wear_enabled:
 		return false
 	var matches := (event == "shot" and self is VehicleWeapon) or (event == "movement" and self is VehicleEngine) \
-		or (event == "mining" and self is VehicleMiningArm) or (event == "damage" and (self is Clothing or (self is VehicleEquipment and (self as VehicleEquipment).sama_profile != null)))
+		or (event == "mining" and self is VehicleMiningArm) or (event == "damage" and (self is Clothing or (self is VehicleEquipment and (self as VehicleEquipment).sama_profile != null))) \
+		or (event == "vehicle_damage" and (self is VehicleChassis or _is_vehicle_armor())) \
+		or (event == "vehicle_movement" and self is VehicleChassis)
+	if not maintenance_profile.wear_event.is_empty():
+		matches = event == maintenance_profile.wear_event
 	if not matches:
 		return false
 	wear(usage.consume(event, amount, float(maintenance_profile.wear_thresholds.get(event, 0))))
 	return durability == 0
+
+
+func _is_vehicle_armor() -> bool:
+	return self is VehicleEquipment and (self as VehicleEquipment).equipment_location in [5, 6, 7, 8]
 
 
 ## 计算弹仓真实上限，与普通容量加工使用同一属性。

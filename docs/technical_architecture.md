@@ -4,8 +4,8 @@
 >
 > 2026-09-14 当前状态：[项目交接](project_handoff.md)；代码入口与缺口：[评审导读](./review_guide.md)。
 >
-> 玩法依据：[游戏主要玩法与复刻规格](../../游戏主要玩法.md)  
-> 素材约束：[项目全局约定](../PROJECT_CONTEXT.md)、[Asset layout](../assets/README.md)  
+> 玩法依据：[游戏主要玩法与复刻规格](../../游戏主要玩法.md)
+> 素材约束：[项目全局约定](../PROJECT_CONTEXT.md)、[运行内容](./runtime_content.md)
 > 地图解析依据：[地图资源解析管线](./map_resource_pipeline.md)
 
 ## 1. 目标与非目标
@@ -182,7 +182,7 @@ tests/
 服务端 RPC / Tick / SQLite ─> 服务端 application ─> server modules
                                                   └─> shared contracts/domain/maps
 
-离线解析 tools ─> 生成 data/assets/manifest
+离线解析 tools ─> 生成 data/content/manifest
 运行时代码  -X-> 离线解析目录、FCC/ALE、未获白名单许可的免费版或激战版素材
 ```
 
@@ -456,7 +456,7 @@ D04 首条战斗纵切采用“每地图一个战斗世界”：`AuthoritativeMa
 上述作业状态机是目标设计。当前已有裁缝/烹饪/工业单次即时生产和权威材料事务，
 尚未完整实现批量/等待/跨重启作业；玩家交易的下述状态机也不代表已接线。
 
-商店价格和回收价属于服务端经济配置。玩家交易使用 `proposed -> both_locked -> committed`
+商店价格和出售价属于服务端经济配置。玩家交易使用 `proposed -> both_locked -> committed`
 状态机；双方锁定后任何内容变化都解除确认，最终在单一事务中交换。
 
 ### 7.6 NPC 与任务

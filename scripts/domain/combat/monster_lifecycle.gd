@@ -154,18 +154,24 @@ func apply_damage(amount: int, attacker_id: String, current_tick: int, bypass_de
 func advance_to_tick(current_tick: int) -> DomainResult:
 	if current_tick < 0:
 		return DomainResult.failure(&"combat.invalid_tick", "tick cannot be negative")
-	var respawned := false
-	if not population_managed and health == 0 and respawn_at_tick >= 0 and current_tick >= respawn_at_tick:
-		health = max_health
-		respawn_at_tick = -1
-		last_killer_id = ""
-		reset_to_home(current_tick)
-		respawned = true
+	var respawned := advance_lifecycle_if_due(current_tick)
 	return DomainResult.ok({
 		"respawned": respawned,
 		"death_generation": death_generation,
 		"health": health,
 	})
+
+
+## 到期时恢复非种群管理怪物；普通 tick 直接返回 false，不分配领域结果对象。
+func advance_lifecycle_if_due(current_tick: int) -> bool:
+	if current_tick < 0 or population_managed or health > 0 \
+		or respawn_at_tick < 0 or current_tick < respawn_at_tick:
+		return false
+	health = max_health
+	respawn_at_tick = -1
+	last_killer_id = ""
+	reset_to_home(current_tick)
+	return true
 
 
 ## 将怪物恢复到出生点及空闲 AI 状态。

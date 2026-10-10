@@ -19,7 +19,7 @@
 ```text
 yian_harbor_hall_floor_1 (RoomSvr1)
   -> yian_harbor_city (City1Svr)
-  -> d04_field_zone (D04)
+  -> glory_nft_bl_d04 (D04)
 ```
 
 `City1Svr` 有四个通往 D04 的门，分别指定目标入口 1–4。D04 的 12 条有效出口全部进入
@@ -88,20 +88,20 @@ G08 不在大厅的相邻链路上，但它的五条出口证据完整，适合�
 | --- | ---: | --- | ---: |
 | `yian_harbor_hall_floor_1` | 41×320 | `d68ad7bc872fb1d907ca6ecb2410cc782e631f846d03a9b4b3b0dacc5b45a327` | 10160/2960 |
 | `yian_harbor_city` | 71×560 | `46bfb65fc3a6c5faef835ec35602139bec96d3a29469bfe313136ca25a5a3fde` | 32958/6802 |
-| `d04_field_zone` | 101×800 | `6596d9afc3b99553649f5d980de0365dc51a36eacb50a2e07fc0075fa612f65b` | 77814/2986 |
-| `g08_field_zone` | 101×800 | `df15d24a1bb74f63385d10d51e2419e3ffa5669810b52dc6b1d1913dc21537dc` | 72738/8062 |
+| `glory_nft_bl_d04` | 101×800 | `6596d9afc3b99553649f5d980de0365dc51a36eacb50a2e07fc0075fa612f65b` | 77814/2986 |
+| `glory_nft_bl_g08` | 101×800 | `df15d24a1bb74f63385d10d51e2419e3ffa5669810b52dc6b1d1913dc21537dc` | 72738/8062 |
 
 City 与 D04 已完成荣耀版语义场景导入，不再使用空 resource 路径：
 
 | map_id | 已解析摆放 | 缺失摆放 | 语义层 | atlas | Glory-only 校验 |
 | --- | ---: | ---: | ---: | ---: | --- |
 | `yian_harbor_city` | 818 | 0 | 919 | 2048×4770 | 精确重合；官网惰性恢复 31 个摆放 |
-| `d04_field_zone` | 45 | 16 | 117 | 2048×845 | 精确重合；官网惰性恢复 10 个摆放 |
+| `glory_nft_bl_d04` | 45 | 0 | 116 | 2048×845 | 精确重合；官网惰性恢复 10 个摆放与 6 个房屋源 |
 
 两张地图都已生成业务化 `floor.png`、`minimap.jpg`、`map_manifest.json` 和共享语义 atlas；
 MapDefinition 的 `assets.resources` 指向这些受控 `res://assets/maps/...` 路径。manifest 的
 `semantic_reconstruction_exact` 与 `parsed_composite_matches_glory_only` 均为 true。City 已无
-场景缺口；D04 剩余 16 个摆放仍保留在 `missing_dependencies` 中，不以免费版或激战版素材补洞。
+场景缺口；D04 源记录中的 16 个动态传送标记由运行时传送注册表接管，不计入静态前景 `missing_dependencies`。
 
 G08 当前仍只有图谱、五出口定义、入口配置与导航字节。它尚未导入 floor、minimap 或语义
 场景 manifest，因此 `assets.resources` 保持为空，`presentation_state` 继续标记为素材导入

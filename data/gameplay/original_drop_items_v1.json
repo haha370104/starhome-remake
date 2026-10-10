@@ -2,7 +2,7 @@
   "schema_version": 1,
   "definitions": [
     {
-      "id": "item:material:78f2a523a761",
+      "id": "density_solvent",
       "kind": "material",
       "display_name": "初级密度柔解剂",
       "description": "利用撒玛科技从微量元素中提取到的神秘物质,可以装备开启1个凹槽,失败后装备损失一个已开启凹槽(如果凹槽有晶石，则晶石也一起消失),成功几率较低。",
@@ -22,7 +22,7 @@
       }
     },
     {
-      "id": "item:material:f6487f0e04b8",
+      "id": "five_color_crystal",
       "kind": "material",
       "display_name": "五彩水晶",
       "description": "泛着五色光芒的水晶，可以提升晶源体系列装备的品质。",
@@ -42,7 +42,7 @@
       }
     },
     {
-      "id": "item:material:d247fd43ad3c",
+      "id": "electromagnetic_protector",
       "kind": "material",
       "display_name": "电磁护具",
       "description": "自发热，冷磁场，几乎所有最先进科技融为一体。是强化蓝色品质机体的必要材料。",
@@ -62,7 +62,7 @@
       }
     },
     {
-      "id": "item:material:71548d3aa10f",
+      "id": "electric_wave_crystal",
       "kind": "material",
       "display_name": "电激波结晶",
       "description": "特殊的结晶体，放入电激波护甲的插槽中可以极大的提升其属性。",
@@ -82,7 +82,7 @@
       }
     },
     {
-      "id": "item:material:760ebf2df00d",
+      "id": "electric_wave_chip",
       "kind": "material",
       "display_name": "电激波芯片",
       "description": "可以使电激波结晶发挥最大功效的控制芯片。",
@@ -102,7 +102,7 @@
       }
     },
     {
-      "id": "item:material:d2a1d9d06fbc",
+      "id": "frozen_steel_plate",
       "kind": "material",
       "display_name": "冻结钢片",
       "description": "科考队在希尔纳山脉积雪下发现的，是强化绿色品质磁悬浮炮的必要材料。",
@@ -122,7 +122,7 @@
       }
     },
     {
-      "id": "item:material:95aa2445915e",
+      "id": "electronic_control_chip",
       "kind": "material",
       "display_name": "电子制芯",
       "description": "磁悬浮精密定位芯片，耗费无限人力财力的胜果。是强化绿色品质动力核心的必要材料。",
@@ -142,7 +142,7 @@
       }
     },
     {
-      "id": "item:material:82b550887686",
+      "id": "blackstone_rifling",
       "kind": "material",
       "display_name": "黑石膛线",
       "description": "黑石山举世闻名的宝藏，只出售给人类联盟。是强化绿色品质机体的必要材料。",
@@ -162,7 +162,7 @@
       }
     },
     {
-      "id": "item:material:390575d3e7c8",
+      "id": "red_crystal_source",
       "kind": "material",
       "display_name": "红晶源",
       "description": "一枚蕴含神秘能量的红色晶源，可以提升晶源体系列装备的阶数。",
@@ -182,7 +182,7 @@
       }
     },
     {
-      "id": "item:material:f3fe549c15c1",
+      "id": "g91_precision_trigger",
       "kind": "material",
       "display_name": "G91精密触发器",
       "description": "被工程师用来制作G91装备的重要材料。",
@@ -202,7 +202,7 @@
       }
     },
     {
-      "id": "item:material:abb79c50c89f",
+      "id": "mech_auxiliary_crystal_1",
       "kind": "material",
       "display_name": "机甲附属晶体I",
       "description": "机甲辅助装备的晶体材料，是强化白色品质星辰级总控装置、星辰级传控装置、星辰级能源核心的必要材料。",
@@ -222,7 +222,7 @@
       }
     },
     {
-      "id": "item:material:33d330a61be3",
+      "id": "mech_auxiliary_crystal_2",
       "kind": "material",
       "display_name": "机甲附属晶体II",
       "description": "机甲辅助装备的晶体材料，是强化绿色品质星辰级总控装置、星辰级传控装置、星辰级能源核心的必要材料。",
@@ -242,7 +242,7 @@
       }
     },
     {
-      "id": "item:material:e283667ae437",
+      "id": "mech_auxiliary_crystal_3",
       "kind": "material",
       "display_name": "机甲附属晶体III",
       "description": "机甲辅助装备的晶体材料，是强化蓝色品质星辰级总控装置、星辰级传控装置、星辰级能源核心的必要材料。",
@@ -262,7 +262,7 @@
       }
     },
     {
-      "id": "item:material:062a265c9544",
+      "id": "mech_moonlight_crystal_1",
       "kind": "material",
       "display_name": "机甲月辉晶体I",
       "description": "机甲辅助装备的晶体材料，是强化白色品质月辉级悬浮炮、月辉级机体、月辉级动力核心的必要材料。",
@@ -282,7 +282,7 @@
       }
     },
     {
-      "id": "item:material:3ed7f1287e45",
+      "id": "mech_moonlight_crystal_2",
       "kind": "material",
       "display_name": "机甲月辉晶体II",
       "description": "机甲辅助装备的晶体材料，是强化绿色品质月辉级悬浮炮、月辉级机体、月辉级动力核心的必要材料。",
@@ -302,7 +302,7 @@
       }
     },
     {
-      "id": "item:material:743ceffa7af7",
+      "id": "mech_moonlight_crystal_3",
       "kind": "material",
       "display_name": "机甲月辉晶体III",
       "description": "机甲辅助装备的晶体材料，是强化蓝色品质月辉级悬浮炮、月辉级机体、月辉级动力核心的必要材料。",
@@ -322,7 +322,7 @@
       }
     },
     {
-      "id": "item:material:a55a9a5d270a",
+      "id": "blue_crystal_source",
       "kind": "material",
       "display_name": "蓝晶源",
       "description": "一枚蕴含神秘能量的蓝色晶源，可以提升晶源体系列装备的阶数。",
@@ -342,7 +342,7 @@
       }
     },
     {
-      "id": "item:material:7df65e194766",
+      "id": "green_crystal_source",
       "kind": "material",
       "display_name": "绿晶源",
       "description": "一枚蕴含神秘能量的绿色晶源，可以提升晶源体系列装备的阶数。",
@@ -362,7 +362,7 @@
       }
     },
     {
-      "id": "item:material:920f37756918",
+      "id": "seven_color_crystal",
       "kind": "material",
       "display_name": "七彩水晶",
       "description": "水晶中蕴含着七种颜色，时而绚丽，时而优雅。可以将晶源体系列装备的品质提升至15阶。",
@@ -382,7 +382,7 @@
       }
     },
     {
-      "id": "item:material:5dbe93b102a3",
+      "id": "quantum_element",
       "kind": "material",
       "display_name": "量子元素",
       "description": "拥有高效能量的特殊物质，是制作早期初级装备的必须材料。",
@@ -402,7 +402,7 @@
       }
     },
     {
-      "id": "item:material:a7bccd7c1408",
+      "id": "flawed_firepower_crystal",
       "kind": "material",
       "display_name": "有瑕疵的火力晶石",
       "description": "原版战车晶石，可镶嵌到已开启的装备孔。背包右键进入加工；同类全身最多四颗生效。",
@@ -422,7 +422,7 @@
       }
     },
     {
-      "id": "item:material:794588abb6cf",
+      "id": "flawed_health_crystal",
       "kind": "material",
       "display_name": "有瑕疵的生命晶石",
       "description": "原版战车晶石，可镶嵌到已开启的装备孔。背包右键进入加工；同类全身最多四颗生效。",
@@ -442,7 +442,7 @@
       }
     },
     {
-      "id": "item:material:d690c44b6030",
+      "id": "flawed_defense_crystal",
       "kind": "material",
       "display_name": "有瑕疵的防御晶石",
       "description": "原版战车晶石，可镶嵌到已开启的装备孔。背包右键进入加工；同类全身最多四颗生效。",
@@ -462,7 +462,7 @@
       }
     },
     {
-      "id": "item:material:a095c982b884",
+      "id": "flawed_guidance_crystal",
       "kind": "material",
       "display_name": "有瑕疵的制导晶石",
       "description": "原版战车晶石，可镶嵌到已开启的装备孔。背包右键进入加工；同类全身最多四颗生效。",
@@ -482,7 +482,7 @@
       }
     },
     {
-      "id": "item:material:c0cad9b715fb",
+      "id": "flawed_critical_crystal",
       "kind": "material",
       "display_name": "有瑕疵的暴击晶石",
       "description": "原版战车晶石，可镶嵌到已开启的装备孔。背包右键进入加工；同类全身最多四颗生效。",
@@ -502,7 +502,7 @@
       }
     },
     {
-      "id": "item:material:7dd51398ea4c",
+      "id": "flawed_rocket_crystal",
       "kind": "material",
       "display_name": "有瑕疵的火箭晶石",
       "description": "原版战车晶石，可镶嵌到已开启的装备孔。背包右键进入加工；同类全身最多四颗生效。",
@@ -522,7 +522,7 @@
       }
     },
     {
-      "id": "item:material:1d49c09bf017",
+      "id": "socket_crystal_fragment",
       "kind": "material",
       "display_name": "晶石碎片",
       "description": "5个晶石碎片可以合成一个随机的有瑕疵的晶石。（有几率直接合成为明亮的晶石）",
@@ -542,7 +542,7 @@
       }
     },
     {
-      "id": "item:material:558e8a4df8ad",
+      "id": "iron_hook_steel_plate",
       "kind": "material",
       "display_name": "铁钩钢片",
       "description": "坚硬、但柔韧度欠缺，是强化白色品质磁悬浮炮的必要材料。",
@@ -562,7 +562,7 @@
       }
     },
     {
-      "id": "item:material:093a64c39287",
+      "id": "gyroscopic_suspension",
       "kind": "material",
       "display_name": "陀螺平衡悬挂",
       "description": "可使平行于振动板表面轴的旋转角速度产生的二阶弯曲振动模式的幅值更加平衡。是强化蓝色品质动力核心的必要材料。",
@@ -582,7 +582,7 @@
       }
     },
     {
-      "id": "item:material:bc5a18415358",
+      "id": "g91_energy_source",
       "kind": "material",
       "display_name": "G91特制能量源",
       "description": "被工程师用来改造神奇的G91装备，可对G91装备进行升阶。",
@@ -602,7 +602,7 @@
       }
     },
     {
-      "id": "item:material:b517321630b8",
+      "id": "g92_energy_source",
       "kind": "material",
       "display_name": "G92特制能量源",
       "description": "被工程师用来改造神奇的G92装备，可对G92装备进行升阶。",
@@ -622,7 +622,7 @@
       }
     },
     {
-      "id": "item:material:f5ec2ce95368",
+      "id": "high_grade_red_crystal_source",
       "kind": "material",
       "display_name": "高级红晶源",
       "description": "蕴含神秘能量的高阶红色晶源，可以将晶源体系列装备的阶数提升至15阶。",
@@ -642,7 +642,7 @@
       }
     },
     {
-      "id": "item:material:d6e5deb49f86",
+      "id": "high_grade_blue_crystal_source",
       "kind": "material",
       "display_name": "高级蓝晶源",
       "description": "蕴含神秘能量的高阶蓝色晶源，可以将晶源体系列装备的阶数提升至15阶。",
@@ -662,7 +662,7 @@
       }
     },
     {
-      "id": "item:material:0465103df5d2",
+      "id": "high_grade_green_crystal_source",
       "kind": "material",
       "display_name": "高级绿晶源",
       "description": "蕴含神秘能量的高阶绿色晶源，可以将晶源体系列装备的阶数提升至15阶。",
@@ -682,7 +682,7 @@
       }
     },
     {
-      "id": "item:material:6ac284bb6c59",
+      "id": "high_grade_purple_crystal_source",
       "kind": "material",
       "display_name": "高级紫晶源",
       "description": "蕴含神秘能量的高阶紫色晶源，可以将晶源体系列装备的阶数提升至15阶。",
@@ -702,7 +702,7 @@
       }
     },
     {
-      "id": "item:material:f7c412f12300",
+      "id": "turbine_stabilizer",
       "kind": "material",
       "display_name": "涡轮稳定器",
       "description": "主要由扩压室、预燃室、火焰稳定器、喷管组成，适应于低级动力总承。是强化白色品质动力核心的必要材料。",
@@ -722,7 +722,7 @@
       }
     },
     {
-      "id": "item:material:073e4b22d062",
+      "id": "five_element_steel_plate",
       "kind": "material",
       "display_name": "五行钢片",
       "description": "一旦需要与银做搭档，那么五行钢片这个最古老的材料是不二选择。是强化蓝色品质磁悬浮炮的必要材料。",
@@ -742,7 +742,7 @@
       }
     },
     {
-      "id": "item:material:583a985508e9",
+      "id": "stellar_magnetic_crystal",
       "kind": "material",
       "display_name": "星磁晶体",
       "description": "换取460级装备的高级晶体。",
@@ -762,7 +762,7 @@
       }
     },
     {
-      "id": "item:material:f1a46cb86792",
+      "id": "starlight_crystal",
       "kind": "material",
       "display_name": "星光晶体",
       "description": "换取460级装备的高级晶体。",
@@ -782,7 +782,7 @@
       }
     },
     {
-      "id": "item:material:77157411f2c7",
+      "id": "stellar_radiance_crystal",
       "kind": "material",
       "display_name": "星辉晶体",
       "description": "换取460级装备的高级晶体。",
@@ -802,7 +802,7 @@
       }
     },
     {
-      "id": "item:material:6bce58752c7d",
+      "id": "stellar_brilliance_crystal",
       "kind": "material",
       "display_name": "星耀晶体",
       "description": "换取460级装备的高级晶体。",
@@ -822,7 +822,7 @@
       }
     },
     {
-      "id": "item:material:beb673694521",
+      "id": "stellar_source_crystal",
       "kind": "material",
       "display_name": "星源晶体",
       "description": "换取460级装备的高级晶体。",
@@ -842,7 +842,7 @@
       }
     },
     {
-      "id": "item:material:bba50542ed38",
+      "id": "crystal_moon_mark",
       "kind": "material",
       "display_name": "水晶月痕",
       "description": "月光残影记录了我们祖先遗留的宝藏，使用后可以确定历险地点，祝你好运！",
@@ -862,7 +862,7 @@
       }
     },
     {
-      "id": "item:material:049296cd8264",
+      "id": "crystal_moon_fragment",
       "kind": "material",
       "display_name": "水晶月痕碎片",
       "description": "撒玛部队为了不留下当前罪恶的痕迹，把所有的水晶月痕都销毁了。集齐5个水晶月痕碎片可以合成一个水晶月痕。",
@@ -882,7 +882,7 @@
       }
     },
     {
-      "id": "item:material:34fd6a87af72",
+      "id": "assistant_time_card_15min",
       "kind": "material",
       "display_name": "挂机辅助时间卡（15分钟）",
       "description": "使用后可以增加15分钟的挂机使用时间，每天只可累计增加120分钟。（禁交易）",
@@ -902,7 +902,7 @@
       }
     },
     {
-      "id": "item:material:1916f1df829a",
+      "id": "megawatt_fiber",
       "kind": "material",
       "display_name": "兆瓦纤维",
       "description": "优异适应性的纤维，可保机体电路畅通。是强化白色品质机体的必要材料。",
@@ -922,7 +922,7 @@
       }
     },
     {
-      "id": "item:material:5773d6d74168",
+      "id": "purple_crystal_source",
       "kind": "material",
       "display_name": "紫晶源",
       "description": "一枚蕴含神秘能量的紫色晶源，可以提升晶源体系列装备的阶数。",
@@ -942,7 +942,7 @@
       }
     },
     {
-      "id": "item:material:9a81c6572eee",
+      "id": "thermal_crystal",
       "kind": "material",
       "display_name": "高热结晶体",
       "description": "最新发现的未知晶体,隐约可见晶体内部红色暗流涌动.",
@@ -962,7 +962,7 @@
       }
     },
     {
-      "id": "item:material:17500b513d35",
+      "id": "corrosive_crystal",
       "kind": "material",
       "display_name": "腐蚀结晶体",
       "description": "最新发现的未知晶体,隐约可见晶体内部绿色浓雾滚动.",
@@ -982,7 +982,7 @@
       }
     },
     {
-      "id": "item:material:d407556cd129",
+      "id": "magnetic_crystal",
       "kind": "material",
       "display_name": "磁化结晶体",
       "description": "最新发现的未知晶体,隐约可见晶体内部蓝色电流缠绕.",
@@ -1002,7 +1002,7 @@
       }
     },
     {
-      "id": "item:material:43ed7eecc949",
+      "id": "thermal_chip",
       "kind": "material",
       "display_name": "高热芯片",
       "description": "最新发现的高能量增幅芯片，可以全面增加高热发生器的威力.(附加高热伤害几率增加,持续时间延长,每秒伤害HP增加)",
@@ -1022,7 +1022,7 @@
       }
     },
     {
-      "id": "item:material:ee509dbc2244",
+      "id": "corrosive_chip",
       "kind": "material",
       "display_name": "腐蚀芯片",
       "description": "最新发现的高能量增幅芯片,可以全面增加腐蚀发生器的威力.(附加腐蚀伤害几率增加,持续时间延长,减少防御力最大值的效果增加)",
@@ -1042,7 +1042,7 @@
       }
     },
     {
-      "id": "item:material:f5fe4a61399b",
+      "id": "magnetic_chip",
       "kind": "material",
       "display_name": "磁化芯片",
       "description": "最新发现的高能量增幅芯片,可以全面增加磁化发生器的威力(附加磁暴伤害几率增加,持续时间延长,减少所装备武器的最大攻击力最大值的效果增加)",
@@ -1062,7 +1062,7 @@
       }
     },
     {
-      "id": "item:material:b76edad9fa8e",
+      "id": "middle_grade_quadruped_shell",
       "kind": "material",
       "display_name": "中级四足甲的壳",
       "description": "四足爬行类太空生物背上最坚硬的壳，很难被击穿，可以用来合成钢板。",
@@ -1082,7 +1082,7 @@
       }
     },
     {
-      "id": "item:material:deb4b85e31bd",
+      "id": "middle_grade_biosilicon",
       "kind": "material",
       "display_name": "中级生物硅",
       "description": "太空生物骨骼上的坚硬颗粒，是制造中必不可少的添加剂。",
@@ -1102,7 +1102,7 @@
       }
     },
     {
-      "id": "item:material:472d2fb951cb",
+      "id": "middle_grade_gel",
       "kind": "material",
       "display_name": "中级类胶",
       "description": "太空生物体内产生的一种粘稠状液体，可以用来提炼各种材料。",
@@ -1122,7 +1122,7 @@
       }
     },
     {
-      "id": "item:material:fa905bea2130",
+      "id": "middle_grade_energy_catalyst",
       "kind": "material",
       "display_name": "中级能量催化剂",
       "description": "制造或合成机械制品必须的催化剂。",
@@ -1142,7 +1142,7 @@
       }
     },
     {
-      "id": "item:material:cfa52e059e34",
+      "id": "middle_grade_energy_pack",
       "kind": "material",
       "display_name": "中级能量包",
       "description": "储藏有能量的罐状容器。含有10000单位能量",
@@ -1162,7 +1162,7 @@
       }
     },
     {
-      "id": "item:material:a4f7cbe44e92",
+      "id": "sensor",
       "kind": "material",
       "display_name": "传感器",
       "description": "高级星球城市及建筑设施的维修建设的原料。",
@@ -1182,7 +1182,7 @@
       }
     },
     {
-      "id": "item:material:7e5440c2f103",
+      "id": "power_board",
       "kind": "material",
       "display_name": "动力板",
       "description": "高级星球城市及建筑设施的维修建设的原料。",
@@ -1202,7 +1202,7 @@
       }
     },
     {
-      "id": "item:material:3e5df1aed65c",
+      "id": "adapter",
       "kind": "material",
       "display_name": "变接器",
       "description": "高级星球城市及建筑设施的维修建设的原料。",
@@ -1222,7 +1222,7 @@
       }
     },
     {
-      "id": "item:material:f046399c4dff",
+      "id": "capacity_expander",
       "kind": "material",
       "display_name": "扩充器+10",
       "description": "给附加装备增加载弹量的特殊芯片!",
@@ -1242,7 +1242,7 @@
       }
     },
     {
-      "id": "item:material:47b24f797e14",
+      "id": "flow_expander",
       "kind": "material",
       "display_name": "扩流器+2",
       "description": "特殊物品, 可给车的‘输出功率’加2",
@@ -1262,7 +1262,7 @@
       }
     },
     {
-      "id": "item:material:9713f13ede8d",
+      "id": "joint_upgrade_fragment",
       "kind": "material",
       "display_name": "接合器升级碎片",
       "description": "凑齐一定数量后，可在提炼厂的材料提炼机上合并为1级接合器升级晶片。",
@@ -1282,7 +1282,7 @@
       }
     },
     {
-      "id": "item:material:3481b7371d1e",
+      "id": "sama_upgrade_alloy",
       "kind": "material",
       "display_name": "撒玛合金+10",
       "description": "特殊物品, 可给车的‘生命力’加10",
@@ -1302,7 +1302,7 @@
       }
     },
     {
-      "id": "item:material:198e40429499",
+      "id": "firepower_component",
       "kind": "material",
       "display_name": "火力元件+1",
       "description": "给附加装备增加攻击力的特殊芯片!",
@@ -1322,7 +1322,7 @@
       }
     },
     {
-      "id": "item:material:dc8a42c2781e",
+      "id": "thermistor",
       "kind": "material",
       "display_name": "热敏电阻",
       "description": "高级星球城市及建筑设施的维修建设的原料。",
@@ -1342,7 +1342,7 @@
       }
     },
     {
-      "id": "item:material:e24d172fada7",
+      "id": "energy_focusing_chip",
       "kind": "material",
       "display_name": "聚能晶片+10",
       "description": "特殊物品, 可给能量炮的‘射程’加10",
@@ -1362,7 +1362,7 @@
       }
     },
     {
-      "id": "item:material:02212ea88168",
+      "id": "super_magnet",
       "kind": "material",
       "display_name": "超磁体+2",
       "description": "特殊物品, 可给引擎的‘推进力’加2",
@@ -1382,7 +1382,7 @@
       }
     },
     {
-      "id": "item:material:485f08ad24d4",
+      "id": "high_grade_quadruped_shell",
       "kind": "material",
       "display_name": "高级四足甲的壳",
       "description": "四足爬行类太空生物背上最坚硬的壳，很难被击穿，可以用来合成钢板。",
@@ -1402,7 +1402,7 @@
       }
     },
     {
-      "id": "item:material:99d2d25d7142",
+      "id": "high_grade_biosilicon",
       "kind": "material",
       "display_name": "高级生物硅",
       "description": "太空生物骨骼上的坚硬颗粒，是制造中必不可少的添加剂。",
@@ -1422,7 +1422,7 @@
       }
     },
     {
-      "id": "item:material:fa5a837875bb",
+      "id": "high_grade_gel",
       "kind": "material",
       "display_name": "高级类胶",
       "description": "太空生物体内产生的一种粘稠状液体，可以用来提炼各种材料。",
@@ -1442,7 +1442,7 @@
       }
     },
     {
-      "id": "item:material:fdae75215694",
+      "id": "high_grade_energy_catalyst",
       "kind": "material",
       "display_name": "高级能量催化剂",
       "description": "制造或合成机械制品必须的催化剂。",

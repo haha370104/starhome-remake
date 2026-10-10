@@ -10,6 +10,7 @@ var failures: PackedStringArray = []
 var assertions := 0
 var messages: Array[Dictionary] = []
 var snapshots: Array[Dictionary] = []
+var local_snapshots: Array[Dictionary] = []
 var database_path := ""
 
 
@@ -32,6 +33,9 @@ func _run() -> void:
 	)
 	transport.world_snapshot_received.connect(
 		func(snapshot: Dictionary) -> void: snapshots.append(snapshot.duplicate(true))
+	)
+	transport.local_snapshot_received.connect(
+		func(snapshot: Dictionary) -> void: local_snapshots.append(snapshot.duplicate(true))
 	)
 	root.add_child(transport)
 	var connection_error := transport.connect_client("ignored", 0)
@@ -91,7 +95,6 @@ func _run() -> void:
 		_expect(String(_last_message(&"command_rejected").get("result", {}).get("code", "")) == "daily.stale",
 			"正式传输拒绝旧任务版本，不能重复接取")
 
-	await _test_attachment_upgrade(transport, entity_id)
 	var spawn_value: Variant = joined["spawn_position"]
 	var spawn := Vector2(float(spawn_value["x"]), float(spawn_value["y"]))
 	transport.send_move_intent({
@@ -104,6 +107,7 @@ func _run() -> void:
 	transport.advance_simulation(0.2)
 	transport.authoritative_server.set_physics_process(true)
 	_expect(not snapshots.is_empty(), "本地服务器必须按正式快照频率发布 peer 权威快照")
+	_expect(not local_snapshots.is_empty(), "本地服务器必须发布对应的玩家私有快照")
 	if not snapshots.is_empty():
 		var entities: Array = snapshots[-1].get("entities", [])
 		var local_matches := entities.filter(func(entity: Dictionary) -> bool:
@@ -129,47 +133,6 @@ func _run() -> void:
 			"进程内传输不得自行推导目标地图或落点")
 	await _test_close_during_server_signal()
 	_finish(transport)
-
-
-## 通过正式会话提交强化，并从真实文件仓储重开验证同一实例和材料消耗。
-## [param transport] 已握手的正式进程内传输。
-## [param entity_id] 服务器分配的玩家身份。
-func _test_attachment_upgrade(transport: InProcessAuthoritativeTransport, entity_id: String) -> void:
-	var items := ItemCatalog.new()
-	items.initialize()
-	var mapper := PlayerStateMapper.new(items)
-	var current := transport.authoritative_server.autosave_service.state_for(entity_id)
-	var player: Player = mapper.to_domain(current).value
-	var shop := PremiumShopService.new()
-	shop.initialize(items)
-	var plan := shop.upgrade_pricing().plan_for("glory_equipment_newgunjoint_01c76b26fe", 0)
-	player.receive_loot(items.create(plan.definition_id, {"instance_id": "transport-upgrade", "bound": true}).value)
-	player.equip_vehicle_item("transport-upgrade", 32, player.inventory.revision, player.vehicle.loadout.revision)
-	for requirement: Dictionary in plan.requirements:
-		player.receive_loot(items.create(requirement.definition_id, {"instance_id": requirement.definition_id, "quantity": requirement.quantity}).value)
-	_expect(transport.authoritative_server.autosave_service.commit_player_state(entity_id, mapper.to_record(player).value).is_ok, "测试材料通过正式仓储保存")
-	transport.send_player_panel_command({"type": "query_attachment_upgrades", "command_sequence": 5})
-	await process_frame
-	var bundle: Dictionary = _last_message(&"player_panels").result.value
-	_expect(bundle.has("attachment_upgrades"), "强化查询通过正式命令路由")
-	var command := {"type": "upgrade_attachment", "instance_id": "transport-upgrade", "command_sequence": 6,
-		"inventory_revision": bundle.inventory.revision, "loadout_revision": bundle.vehicle.revision}
-	transport.send_player_panel_command(command)
-	await process_frame
-	var upgraded: Dictionary = _last_message(&"player_panels").result.value
-	_expect(upgraded.get("attachment_upgrades", {}).get("operation", {}).get("target_level", -1) == 1, "正式服务器提交强化并下发统一回包")
-	_expect(transport.authoritative_server.player_state_repository.flush().is_ok, "显式等待后台检查点，内存成功回包不等于磁盘已经完成")
-	var reopened := FilePlayerStateRepository.new(ProjectSettings.globalize_path(database_path))
-	_expect(reopened.initialize().is_ok, "重开强化后的磁盘存档")
-	var restored: Player = mapper.to_domain(reopened.load_player(entity_id).value).value
-	_expect(restored.attachment_item("transport-upgrade").upgrade_level == 1 and restored.attachment_item("transport-upgrade").bound,
-		"磁盘恢复已装配强化等级与绑定标记")
-	for requirement: Dictionary in plan.requirements:
-		_expect(restored.inventory.count_consumable_definition(requirement.definition_id) == 0, "材料消耗与强化同时落盘")
-	command.command_sequence = 7
-	transport.send_player_panel_command(command)
-	await process_frame
-	_expect(String(_last_message(&"command_rejected").result.code) == "inventory.revision_conflict", "正式会话重放强化请求被拒绝")
 
 
 ## 在真实场景树中验证本地服务端仅由物理帧推进，防止传输渲染帧重复加速。

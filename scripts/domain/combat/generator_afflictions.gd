@@ -15,6 +15,8 @@ class HeatPulse extends RefCounted:
 var _active: Array[Active] = []
 var _next_heat_tick := -1
 var _interval_ticks := 20
+var _effect_ids := PackedStringArray()
+var _effect_ids_dirty := true
 
 
 ## 施加或刷新来源装备的效果，重复命中不推迟已安排的高热结算。
@@ -25,6 +27,7 @@ var _interval_ticks := 20
 ## [param simulation_hz] 服务器频率。
 func apply(profile: GeneratorRules.Profile, actor_id: String, instance_id: String, tick: int, simulation_hz: int) -> void:
 	_interval_ticks = maxi(1, simulation_hz)
+	_effect_ids_dirty = true
 	var found: Active = null
 	for entry: Active in _active:
 		if entry.source_actor == actor_id and entry.source_instance == instance_id: found = entry
@@ -42,8 +45,10 @@ func apply(profile: GeneratorRules.Profile, actor_id: String, instance_id: Strin
 ## [param tick] 当前权威时钟。
 ## 返回一份带击杀归属的伤害脉冲或null；多个发生器不会倍增同类持续伤害。
 func advance(tick: int) -> HeatPulse:
+	var active_count := _active.size()
 	for index: int in range(_active.size() - 1, -1, -1):
 		if _active[index].expires_tick < tick: _active.remove_at(index)
+	if _active.size() != active_count: _effect_ids_dirty = true
 	var strongest: Active = null
 	for entry: Active in _active:
 		if entry.profile.heat_damage > 0 and (strongest == null or entry.profile.heat_damage > strongest.profile.heat_damage): strongest = entry
@@ -87,6 +92,7 @@ func attack_after(base: int, channel: String = "") -> int:
 ## [param actor_id] 离开或刷新装配的玩家。
 ## [param retained_instances] 该玩家仍然有效的发生器实例。
 func remove_source(actor_id: String, retained_instances: PackedStringArray = []) -> void:
+	_effect_ids_dirty = true
 	for index: int in range(_active.size() - 1, -1, -1):
 		var entry := _active[index]
 		if entry.source_actor == actor_id and entry.source_instance not in retained_instances: _active.remove_at(index)
@@ -97,6 +103,7 @@ func remove_source(actor_id: String, retained_instances: PackedStringArray = [])
 func clear() -> void:
 	_active.clear()
 	_next_heat_tick = -1
+	_effect_ids_dirty = true
 
 
 ## 导出已生效的状态名称，不把尚未识别目标类型的能量炮压制显示为生效。
@@ -110,9 +117,11 @@ func labels() -> PackedStringArray:
 ## 导出稳定状态身份，协议和资源匹配不依赖中文名称。
 ## 返回本目标实际生效的高热、蚀甲、磁化集合。
 func effect_ids() -> PackedStringArray:
-	var result := PackedStringArray()
+	if not _effect_ids_dirty: return _effect_ids
+	_effect_ids = PackedStringArray()
 	for entry: Active in _active:
-		if entry.profile.heat_damage > 0 and "heat" not in result: result.append("heat")
-		if (entry.profile.defense_flat_reduction > 0 or entry.profile.defense_percent_reduction > 0) and "corrosion" not in result: result.append("corrosion")
-		if entry.profile.attack_percent_reduction > 0 and "magnetism" not in result: result.append("magnetism")
-	return result
+		if entry.profile.heat_damage > 0 and "heat" not in _effect_ids: _effect_ids.append("heat")
+		if (entry.profile.defense_flat_reduction > 0 or entry.profile.defense_percent_reduction > 0) and "corrosion" not in _effect_ids: _effect_ids.append("corrosion")
+		if entry.profile.attack_percent_reduction > 0 and "magnetism" not in _effect_ids: _effect_ids.append("magnetism")
+	_effect_ids_dirty = false
+	return _effect_ids

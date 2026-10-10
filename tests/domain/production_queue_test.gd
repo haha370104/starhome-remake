@@ -1,6 +1,6 @@
 extends SceneTree
 
-const IRON := "item:material:8f615d2ef879"
+const IRON := "iron"
 var checks := 0
 var failures: Array[String] = []
 var catalog := ItemCatalog.new()
@@ -70,8 +70,11 @@ func _test_lifecycle() -> void:
 	done = player.production.complete_cycle(player, recipe, catalog, "last", 0, config, [0.0])
 	_check(done.is_ok and done.value.order_done and player.production.order == null and player.production.revision == 7, "最后一轮清空订单但保留版本")
 	serialized = mapper.to_record(player).value.to_dictionary()
+	serialized.production.erase("order")
+	_check(not PlayerStateRecord.from_dictionary(serialized).is_ok, "当前生产状态缺订单字段必须拒绝")
+	serialized = mapper.to_record(player).value.to_dictionary()
 	serialized.erase("production")
-	_check(PlayerStateRecord.from_dictionary(serialized).value.production.order == null, "旧档无订单字段兼容")
+	_check(not PlayerStateRecord.from_dictionary(serialized).is_ok, "当前玩家存档缺生产状态必须拒绝")
 
 
 ## 验证无效速度、版本、满包与失败周期不会推进订单或消耗材料。

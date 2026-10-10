@@ -4,11 +4,11 @@
 
 - 客户端重构与后续开发遵循 [工程规范](./docs/engineering_standards.md)，按状态所有权拆分，禁止用大型上下文对象或入口转发层替代模块边界。
 
-- 新对话从 [项目交接](./docs/project_handoff.md) 开始，再读
+- 需要查阅项目历史背景时，从 [项目交接](./docs/project_handoff.md) 开始，再读
   [复刻对齐方案](./docs/remake_alignment_plan.md) 与 [原客户端阅读指南](./docs/original_client_reading_guide.md)。
 - 整体 review 从 [docs/review_guide.md](./docs/review_guide.md) 开始；全部文档分类见
   [docs/README.md](./docs/README.md)。实际目录与目标架构分开描述，不以计划当完成证明。
-- 修改状态所有权、协议、保存、资源加载或玩法边界时，同步维护对应模块文档及 review 导航。
+- 修改状态所有权、协议、保存、资源加载或玩法边界时，按下文“文档维护”规则处理对应模块文档及 review 导航。
   逆向结论、复刻默认、未验证项分开标记；历史评审保留阶段和日期，不覆盖用户原始意见。
 - 所有具名 GDScript 函数使用中文 `##` 注释：说明作用、`[param 参数名]`、非 void 返回值；
   抽象/权威/缓存等特殊设计额外写“设计：”。不能用重复函数名的模板文案代替契约说明。
@@ -43,6 +43,9 @@
 
 - 版本名称：荣耀版
 - 客户端映射名：`starhome_lz_ry`
+
+迁移前的目录记录如下，路径不再作为当前资源依赖：
+
 - 唯一原始资源根：`../starhome_lz_ry_full/`
 - 唯一解析资源根：`../starhome_lz_ry_full_parsed/`
 - 原始全量资源：`../starhome_lz_ry_full/raw/`
@@ -51,15 +54,23 @@
 - FTC/FCC 解包结果：`../starhome_lz_ry_full_parsed/ftc_resources/`
 - UTF-8 装备、配方、NPC 数据：`../starhome_lz_ry_full_parsed/catalogs_utf8/`
 
+当前目录边界：
+
+- 工程外原始资源根：`../starhome_lz_ry_full/raw/`（本地归档，不属于主仓库）
+- 清单外荣耀原件：`../starhome_lz_ry_full/unindexed_raw/`（与 `raw/` 分开归档，不属于主仓库）
+- 开发及运行精灵：`assets/glory/sprites/`；其他运行素材也统一在 `assets/`
+- 原档索引和常规审计需要的少量 FTC/CSV 证据：`data/source_evidence/glory/`
+- `starhome_lz_ry_full_parsed/` 是可重建的离线处理缓存，不是长期资源源。
+
 ## 强制规则
 
 1. 后续人物、NPC、怪物、场景、装备、物品、地图和非 HUD UI 素材都从荣耀版提取。
-   素材检索只从上面的两个根目录及其 `official_lazy_cache` 开始，不把中间工作目录当作正式来源。
+   素材检索先查工程外原档和 `assets/` 中已物化的资源，不把中间工作目录当作正式来源。
    `files_dir.dz` 不是官网资源全集；FCC 提供精确逻辑路径而本地未命中时，地图离线工具可向
-   荣耀版官网同路径请求一次，通过文件头和实际解析校验后写入持久缓存。
+   荣耀版官网同路径请求一次，通过文件头和实际解析校验后将原件归档到 `unindexed_raw/`。
 2. UI 例外：顶部栏、底部控制栏/快捷栏、小地图边框和控制按钮可从 `starhome_lz_fr`（免费版）导入。2026-09-07 用户另指定免费版任务日志、商城和底栏系统菜单，并允许用户列表免费版回退；细节见 `docs/bottom_menu_windows.md`。边界以 `docs/free_hud_rendering.md` 第 1 节为准；小地图实际 JPG、未获准弹窗和全部非 UI 资源不在豁免内。
 3. `starhome_jznp`（激战版）仍只用于格式研究和版本对比，不作为新增正式素材来源；免费版除上一条列出的窄范围 UI 外也同样如此。
-4. 如果荣耀版清单、本地惰性缓存和官网精确路径均不存在所需的非 HUD 素材，应先报告缺失和
+4. 如果荣耀版清单、本地清单外原件和官网精确路径均不存在所需的非 HUD 素材，应先报告缺失和
    检索证据；没有用户明确许可，不得自动用其他版本替代。官网恢复禁止模糊文件名猜测和跨版本回退。
 5. 每次按需导入应在对应 manifest 或提交说明中记录原始发布版与原始逻辑路径，避免只保留无法
    追溯的 PNG；官网惰性恢复还必须记录 URL、HTTP 状态、字节数、MD5、SHA-256 和解析结果。
@@ -68,7 +79,7 @@
 7. 同一业务实体只保留一个正式目录；版本差异用 manifest 的来源信息表达，不得通过 `pic2`、`new`、`final` 一类目录继续叠补丁。
 8. 本约定不自动追溯替换此前已经导入工程的素材版本；HUD 在相关功能再次开发时迁移到免费版目标，其余旧素材仍有计划地迁移到荣耀版，并统一遵守业务语义命名。
 9. 每完成一个可独立验收的模块或模块子步骤就提交 Git，不积攒跨模块大提交。单次提交最多改动 20 个文件，文本新增行与删除行之和最多 2000 行；二进制文件计入文件数。超过任一上限时，必须按可独立测试、可安全回退的子步骤继续拆分，不得通过合并无关改动、跳过测试或排除应提交文件规避限制。
-10. 大型可再生成地图层按 `.gitattributes` 进入 Git LFS；小型角色、怪物、UI 精灵继续使用普通 Git。任何 `assets/` 下达到 5 MiB 的非 LFS 文件由 `tools/check_asset_size_policy.py` 拒绝，禁止通过全局 `*.png` 规则把所有小图推入 LFS。
+10. 开发运行资源统一物化在 `assets/`，由 `data/content/content_materialization_manifest_v1.json` 记录来源 ZIP、文件数和校验值；荣耀原始档案在项目上级目录 `../starhome_lz_ry_full/`，其他离线中间产物可位于临时工作区，不重新引入 `assets/` 子模块。
 11. 多人长期状态只由服务端仓储拥有。JSON 可作为只读定义或明确标注的开发快照，但不能冒充生产存档；领域/应用层只依赖 `PlayerStateRepository`，真实 SQLite 驱动通过端口接入，客户端和场景节点不得直接读写数据库。
 
 ## 代码评审后的架构约束
@@ -117,7 +128,7 @@ D04 通过共享 `PlayerWorldAvatar` 投影为荣耀版新兵战车。服务端�
 
 2026-09-14 当前能力、最近修复及仍有缺口统一维护在 `docs/project_handoff.md`；
 商店、任务、制造已有权威服务，不能继续按早期计划描述为只有 UI。SQLite 和正式身份仍未完成。
-文档链接与目录覆盖用 `python -X utf8 tools/check_documentation_links.py` 检查；不会运行文档中的命令。
+新增或修改当前有效文档链接时，可用 `python -X utf8 tools/check_documentation_links.py` 检查；历史来源链接缺失不触发批量修复，也不运行文档中的命令。
 
 提交前必须同时检查 `git diff --cached --name-only` 与 `git diff --cached --numstat`；素材批量
 导入、离线解析产物、运行时代码和架构重构不得混入同一提交。
@@ -126,8 +137,34 @@ D04 通过共享 `PlayerWorldAvatar` 投影为荣耀版新兵战车。服务端�
 
 这份文件是后续开发与素材检索的项目级上下文。若对话中的临时猜测与本文件冲突，以用户最新明确指令为准。
 
-## Git 仓库边界（2026-09-14）
+## 文档维护
 
-代码、数据定义和工具归主仓库；所有运行素材及其导入设置归 `assets` 子模块。
-素材 LFS 规则只在 `assets/.gitattributes` 维护；素材提交后须更新主仓库的 gitlink。
-原版解包档案继续保存在本地仓库外。协作命令见[仓库组织](docs/repository_layout.md)。
+- `docs/` 默认是按需查阅的历史证据库，不作为每次开发都要同步更新的项目说明书；不要为一次代码改动遍历或改写整个文档群。
+- 日常只维护与实际行为有关的入口、工程约束和 `TODO.md`。模块文档仅在长期契约、素材来源或不可从代码与数据直接看出的事实发生实质变化时修改；保留作者原有表述，不添加重复的进度和测试流水账。
+- 旧文档中的阶段状态、数量和通过记录须核对当前源码、清单与运行结果。过时内容不必逐篇追改；需要引用时注明其历史范围。
+
+## 当前目录边界
+
+- `starhome-remake/` 是 Godot 4.7.2 项目。运行时资源统一在项目根 `assets/`，代码使用 `res://assets/...`；本轮仅恢复资源根名称，不改变展开加载与私有素材的版本关联方式。`assets/` 被 Git 忽略，物化来源及校验见 `data/content/content_materialization_manifest_v1.json`。
+- `starhome-recovery/` 存恢复索引、审计记录和跨版本缓存。荣耀版原档位于主项目上级目录的 `../starhome_lz_ry_full/raw/`，已取得的免费版和激战版原档分别位于 `../starhome_lz_fr_full/raw/`、`../starhome_jznp_full/raw/`；三者均位于工程外。荣耀下载索引和常规检查证据位于 `data/source_evidence/glory/`，地图恢复证据位于 `data/source_evidence/glory/map_recovery/`，解码精灵位于 `assets/glory/sprites/`。按需导入器从 raw 临时解码，不要求保留相邻的 `_parsed`、地图解析缓存或荣耀 FCC 来源树。
+- 恢复工具以主仓库 `tools/recovery/` 的版本化实现为准；ALE/FCC 按需解码入口分别见 `tools/recovery/source_workspace.py`、`tools/recovery/fcc_workspace.py`。跨版本路径由 `tools/recovery/cross_release_paths.py` 管理，可用 `STARHOME_RECOVERY_ROOT` 或 `STARHOME_CROSS_RELEASE_ROOT` 覆盖。
+
+## 素材与来源
+
+- 正式素材以荣耀版为基线。免费版 HUD 和已经明确批准的跨版本补图有各自限定范围，见 `PROJECT_CONTEXT.md`、`data/import/recovered_asset_selections_v1.json` 和来源审计。先查荣耀版源与现有映射；不要按相似名称、模糊路径或视觉猜测替换素材。
+- 跨版本恢复以 173 项 selection 为边界；现有 188 条运行时恢复引用包含先前 15 条。`remote_checks.json` 是审计证据，不是图像。按选定的精确路径和哈希核对原 ALE，无须为少量目标重建两个完整版本。
+- 只对已确定的官方路径执行所需下载；不要探测官方更新源。保留原档、索引、解密结果、解析结果和来源哈希，不用空 ZIP、占位图或伪造资源掩盖缺口。导入产物使用业务命名，原版路径留在来源字段。
+- 按“运行时引用 -> 素材来源 -> 现有生成器 -> `assets/` 输出”查缺口。优先修正 producer 和映射，再重新物化并验证；不要逐条手写大量 PNG/TRES。
+
+## 恢复格式要点
+
+- `files_dir.dz` 是 FTC1；经 `fkernel.dll` 的 `UnCode` 后直接得到资源索引文本。FTC! 常再包含 CAB。索引路径按 GBK 字节和前缀压缩规则解析，下载后按索引 MD5 校验。
+- ALE/RLE0/AEX 使用 `tools/recovery/sprites/ale_sprite.py` 和批处理工具。AEX 三段 payload 的磁盘顺序为 `size3 -> size1 -> size2`；不要引入第二份 decoder。空帧容器可能是合法占位。
+- 地图从 FCC、导航、图层、场景物件和专用小地图生成；`partial` 要按各层问题判断，不能等同整张地图失效。PKH 的 Linux 解包器在 `tools/recovery/maps/pkh_unpack.py`。
+- Godot 初次运行前先做 editor 导入，建立脚本类缓存。地图成品使用 Godot 原生纹理导入；已有资源树可先运行 `python3 tools/build_glory_map_content_packs.py --prepare-import` 调整忽略范围，无需重建地图。`assets/glory/sprites/` 和调色板仍以 `.gdignore` 排除，通过现有素材仓储读取。
+
+## 修改与验证
+
+- 开始前看 `git status`、当前定义和生成脚本，保留已有工作区改动。`data/` 中的索引、清单与实际 `assets/` 文件要一起核对；历史完成数字不是当前验证结果。
+- 测试仅在必要时增加最小有效覆盖, 不必要时不加测试。资源修复至少核对文件及来源哈希、Godot 实际纹理加载和主场景首个真实错误；区分静态审计、headless 运行与可见画面检查。
+- 修改素材来源、状态所有权或运行边界时，按上述规则只更新受影响的有效文档。未证实的映射保留缺口，记录到 `TODO.md`。

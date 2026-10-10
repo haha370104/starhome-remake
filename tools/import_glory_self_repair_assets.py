@@ -10,11 +10,11 @@ from PIL import Image
 
 
 ROOT = Path(__file__).resolve().parents[1]
-PARSED_ROOT = ROOT.parent / "starhome_lz_ry_full_parsed" / "ale_sprites" / "pic3" / "other"
+PARSED_ROOT = ROOT / "assets" / "glory" / "sprites" / "pic3" / "other"
 TARGET_ROOT = ROOT / "assets" / "equipment_world" / "shared" / "self_repair"
 SOURCES = {
-    "energy_field": PARSED_ROOT / "MinSpan1",
-    "ground_shadow": PARSED_ROOT / "MinSpanShadow",
+    "energy_field": PARSED_ROOT / "minspan1",
+    "ground_shadow": PARSED_ROOT / "minspanshadow",
 }
 
 

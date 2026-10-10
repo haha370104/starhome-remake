@@ -129,7 +129,7 @@ func primary_device_kind() -> String:
 	match _device_kind:
 		"mining_arm", "repair_arm":
 			return _device_kind
-		"energy_cannon", "vehicle_weapon":
+		"energy_cannon":
 			return "energy_cannon"
 	return ""
 

@@ -3,15 +3,16 @@ extends Node
 
 const RAW_ANIMATION := &"raw"
 
+var _clock := 0.0
+var _epoch := 0
 var _world_parent: Node2D
 var _effect_definitions: Dictionary = {}
 var _active_effects: Array[Dictionary] = []
 var _presented_generations: Dictionary = {}
-var _ale_repository: RefCounted
 var _glory_presentations: RefCounted
 
 
-## 配置怪物死亡特效控制器，并校验业务清单中的 SpriteFrames。
+## 配置怪物死亡特效控制器，并校验业务清单中的动画描述。
 ## [param manifest] 战斗表现清单。
 ## [param world_parent] 承载独立死亡特效的世界节点。
 ## 返回配置是否成功。
@@ -31,108 +32,99 @@ func configure(manifest: Dictionary, world_parent: Node2D) -> Error:
 	return OK
 
 
-## 注入全量荣耀 ALE 仓储，供不在首批手工清单中的怪物使用。
-## [param repository] 调用方传入的 `repository` 参数。
-## [param presentations] 调用方传入的 `presentations` 参数。
-func configure_glory(repository: RefCounted, presentations: RefCounted) -> void:
-	_ale_repository = repository
+## 注入荣耀怪物的明确素材映射，资源加载统一交给共享队列。
+## [param presentations] 怪物表现目录。
+func configure_glory(presentations: RefCounted) -> void:
 	_glory_presentations = presentations
 
 
-## 在怪物原脚点播放一次权威死亡代际对应的爆散动画。
-## [param entity_id] 怪物实体 ID。
-## [param combat_actor_id] 怪物表现角色 ID。
-## [param world_position] 权威死亡脚点。
-## [param death_generation] 服务端生命周期代际。
-## 返回是否创建了新特效；重复事件与未知素材返回 false。
-func present_death(
-	entity_id: String,
-	combat_actor_id: String,
-	world_position: Vector2,
-	death_generation: int,
-) -> bool:
-	if entity_id.is_empty() or combat_actor_id.is_empty() or death_generation <= 0:
-		return false
-	if int(_presented_generations.get(entity_id, 0)) >= death_generation:
-		return false
-	var actor_value: Variant = _effect_definitions.get(combat_actor_id, {})
-	if not actor_value is Dictionary or (actor_value as Dictionary).is_empty():
-		return _present_ale_death(entity_id, combat_actor_id, world_position, death_generation)
-	var effect: Dictionary = (actor_value as Dictionary).get("death", {})
-	if not _valid_effect(effect):
-		return false
-	var frames := ResourceLoader.load(String(effect["resource"]), "SpriteFrames") as SpriteFrames
-	if frames == null or not frames.has_animation(RAW_ANIMATION):
-		return false
-	var wrapper := Node2D.new()
-	wrapper.name = "MonsterDeath_%s_%d" % [entity_id.replace(".", "_"), death_generation]
-	wrapper.position = world_position
-	var sprite := AnimatedSprite2D.new()
-	sprite.name = "Sprite"
-	sprite.sprite_frames = frames
-	sprite.animation = RAW_ANIMATION
-	sprite.frame = 0
-	sprite.centered = false
-	var offset_values: Array = effect["offset"]
-	sprite.offset = Vector2(float(offset_values[0]), float(offset_values[1]))
-	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	wrapper.add_child(sprite)
-	_world_parent.add_child(wrapper)
-	_active_effects.append({
-		"node": wrapper,
-		"elapsed": 0.0,
-		"frames": int(effect["frames"]),
-		"fps": float(effect["fps"]),
-	})
+## 当前地图出现该类怪物时预取死亡动画，不读取其他地图资源。
+## [param combat_actor_id] 已登记的怪物表现身份。
+func prefetch(combat_actor_id: String) -> void:
+	_request_effect(combat_actor_id, Callable())
+
+
+## 接收唯一死亡代际，权威死亡不等待资源；异步结果按原时间播放。
+## [param entity_id] 实体身份。[param combat_actor_id] 表现身份。[param world_position] 死亡脚点。[param death_generation] 代际。
+## 返回是否接受新事件，重复或无明确素材映射时为 false。
+func present_death(entity_id: String, combat_actor_id: String, world_position: Vector2, death_generation: int) -> bool:
+	if entity_id.is_empty() or combat_actor_id.is_empty() or death_generation <= 0: return false
+	if int(_presented_generations.get(entity_id, 0)) >= death_generation: return false
 	_presented_generations[entity_id] = death_generation
-	return true
+	return _request_effect(combat_actor_id,
+		_on_effect_ready.bind(entity_id, world_position, death_generation, _epoch, _clock))
 
 
-## 执行 `present_ale_death` 对应的模块操作。
-## [param entity_id] 调用方传入的 `entity_id` 参数。
-## [param combat_actor_id] 调用方传入的 `combat_actor_id` 参数。
-## [param world_position] 调用方传入的 `world_position` 参数。
-## [param death_generation] 调用方传入的 `death_generation` 参数。
-## 返回该函数计算、查询或操作得到的结果。
-func _present_ale_death(
-	entity_id: String,
-	combat_actor_id: String,
-	world_position: Vector2,
-	death_generation: int,
-) -> bool:
-	if _ale_repository == null or _glory_presentations == null:
-		return false
-	var presentation: Dictionary = _glory_presentations.definition_for_actor(combat_actor_id)
+## 只按明确的旧 SpriteFrames 或荣耀 ALE 映射请求资源。
+## [param actor_id] 表现身份。[param callback] 可选消费回调，预取不创建节点。
+## 返回是否有可用的资源映射。
+func _request_effect(actor_id: String, callback: Callable) -> bool:
+	var effect: Dictionary = _effect_definitions.get(actor_id, {}).get("death", {})
+	if not effect.is_empty():
+		if not _valid_effect(effect): return false
+		var receiver := _on_legacy_ready.bind(effect, callback) if callback.is_valid() else Callable()
+		SpriteResources.request_frames(String(effect.resource), receiver)
+		return true
+	if _glory_presentations == null: return false
+	var presentation: Dictionary = _glory_presentations.definition_for_actor(actor_id)
 	var reference := String(presentation.get("death_effect", "")).strip_edges()
-	if reference.is_empty():
-		return false
-	var animation: Dictionary = _ale_repository.load_animation(
-		reference, String(presentation.get("preferred_prefix", "pic3/npc"))
-	)
-	var frames: Array = animation.get("frames", [])
-	if frames.is_empty():
-		return false
-	var wrapper := Node2D.new()
-	wrapper.name = "MonsterDeath_%s_%d" % [entity_id.replace(".", "_"), death_generation]
-	wrapper.position = world_position
-	var sprite := Sprite2D.new()
-	sprite.name = "Sprite"
-	sprite.centered = false
-	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	_apply_ale_frame(sprite, frames[0])
-	wrapper.add_child(sprite)
-	_world_parent.add_child(wrapper)
-	_active_effects.append({
-		"node": wrapper, "elapsed": 0.0, "frames": frames.size(), "fps": 10.0,
-		"ale_frames": frames,
-	})
-	_presented_generations[entity_id] = death_generation
+	if reference.is_empty(): return false
+	SpriteResources.request_animation(reference, String(presentation.get("preferred_prefix", "pic3/npc")), callback)
 	return true
+
+
+## 合并已加载的旧动画与既有帧率、原点配置。
+## [param visual] 异步动画。[param effect] 业务配置。[param callback] 已绑定的死亡实例回调。
+func _on_legacy_ready(visual: Dictionary, effect: Dictionary, callback: Callable) -> void:
+	var result := visual.duplicate()
+	result["effect"] = effect
+	if callback.is_valid(): callback.call(result)
+
+
+## 只在同一地图、同一死亡代际且尚未过期时创建动画节点。
+## [param visual] 共享动画。[param entity_id] 怪物。[param point] 脚点。[param generation] 死亡代际。
+## [param epoch] 地图世代。[param started] 接收死亡时的表现时钟。
+func _on_effect_ready(visual: Dictionary, entity_id: String, point: Vector2, generation: int, epoch: int, started: float) -> void:
+	if epoch != _epoch or is_queued_for_deletion() or not is_instance_valid(_world_parent): return
+	if int(_presented_generations.get(entity_id, 0)) != generation: return
+	var elapsed := maxf(0.0, _clock - started)
+	var frames: Array = visual.get("frames", [])
+	var legacy := visual.get("sprite_frames") as SpriteFrames
+	var effect: Dictionary = visual.get("effect", {})
+	var fps := float(effect.get("fps", 10.0))
+	var count := int(effect.get("frames", 0)) if legacy != null else frames.size()
+	var frame := int(floor(elapsed * fps))
+	if frame >= count or (legacy != null and not legacy.has_animation(RAW_ANIMATION)): return
+	var wrapper := Node2D.new()
+	wrapper.name = "MonsterDeath_%s_%d" % [entity_id.replace(".", "_"), generation]
+	wrapper.position = point
+	var state := {"node": wrapper, "elapsed": elapsed, "frames": count, "fps": fps}
+	if legacy != null:
+		var sprite := AnimatedSprite2D.new()
+		sprite.name = "Sprite"
+		sprite.sprite_frames = legacy
+		sprite.animation = RAW_ANIMATION
+		sprite.frame = frame
+		sprite.centered = false
+		sprite.offset = Vector2(float(effect.offset[0]), float(effect.offset[1]))
+		sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		wrapper.add_child(sprite)
+	else:
+		var sprite := Sprite2D.new()
+		sprite.name = "Sprite"
+		sprite.centered = false
+		sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		_apply_ale_frame(sprite, frames[frame])
+		wrapper.add_child(sprite)
+		state["ale_frames"] = frames
+	_world_parent.add_child(wrapper)
+	_active_effects.append(state)
 
 
 ## 按渲染时间推进全部独立死亡特效。
 ## [param delta_seconds] 本帧秒数。
 func advance(delta_seconds: float) -> void:
+	_clock += maxf(0.0, delta_seconds)
 	if delta_seconds <= 0.0:
 		return
 	for index in range(_active_effects.size() - 1, -1, -1):
@@ -158,6 +150,7 @@ func advance(delta_seconds: float) -> void:
 
 ## 清除地图切换前残留的瞬态特效和事件代际游标。
 func clear() -> void:
+	_epoch += 1
 	for state in _active_effects:
 		_free_effect(state)
 	_active_effects.clear()

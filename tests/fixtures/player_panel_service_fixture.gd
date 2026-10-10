@@ -3,10 +3,13 @@ extends RefCounted
 
 const DomainResult := preload("res://scripts/core/domain_result.gd")
 const PlayerStateRecordScript := preload("res://scripts/server/persistence/player_state_record.gd")
+const InventoryStackRecordScript := preload("res://scripts/server/persistence/inventory_stack_record.gd")
+const EquipmentSlotRecordScript := preload("res://scripts/server/persistence/equipment_slot_record.gd")
 const PanelServiceScript := preload("res://scripts/server/player_panels/authoritative_player_panel_service.gd")
 
 var _service: AuthoritativePlayerPanelService
 var _state: PlayerStateRecord
+var _mapper: PlayerStateMapper
 
 
 ## 创建仅用于服务端面板单元测试的内存状态夹具。
@@ -17,7 +20,8 @@ func initialize() -> DomainResult:
 	var service_result := _service.initialize()
 	if not service_result.is_ok:
 		return service_result
-	var state_result = PlayerStateRecordScript.from_dictionary({
+	var state_data: Dictionary = PlayerStateRecordScript.new().to_dictionary()
+	state_data.merge({
 		"schema_version": PlayerStateRecord.CURRENT_SCHEMA_VERSION,
 		"account_id": "account.player.local",
 		"account_name": "player.local",
@@ -35,31 +39,10 @@ func initialize() -> DomainResult:
 		"character_faction": "龙之城",
 		"character_residence": "基地大厅一层",
 		"character_description": "荣耀版复刻工程的面板测试角色。",
-		"inventory_stacks": [{
-			"stack_id": "inventory.spare_engine",
-			"item_definition_id": "beginner_engine",
-			"quantity": 1,
-			"slot_index": 0,
-			"container_id": "main",
-			"position_px": [0, 0],
-			"footprint_px": [45, 45],
-			"locked": false,
-			"bound": false,
-			"max_durability": 900,
-			"durability": 900,
-		}, {
-			"stack_id": "inventory.training_shirt",
-			"item_definition_id": "male_sleeveless_shirt",
-			"quantity": 1,
-			"slot_index": 1,
-			"container_id": "main",
-			"position_px": [60, 0],
-			"footprint_px": [45, 45],
-			"locked": false,
-			"bound": true,
-			"max_durability": 64,
-			"durability": 64,
-		}],
+		"inventory_stacks": [
+			_stack("inventory.spare_engine", "beginner_engine", 0, [0, 0], false, 900),
+			_stack("inventory.training_shirt", "male_sleeveless_shirt", 1, [60, 0], true, 64),
+		],
 		"equipment_slots": [
 			_equipment("equipment.chassis", "chassis", 0, 0, "recruit_tank", 1020),
 			_equipment("equipment.weapon", "primary_weapon", 1, 1, "recruit_energy_cannon", 900),
@@ -83,11 +66,21 @@ func initialize() -> DomainResult:
 		"position": [720.0, 540.0],
 		"facing_direction": 6,
 		"checkpoint_id": "offline.debug",
-	})
+	}, true)
+	var state_result := PlayerStateRecordScript.from_dictionary(state_data)
 	if not state_result.is_ok:
 		return state_result
 	_state = state_result.value
+	_mapper = PlayerStateMapper.new(_service.catalog)
 	return DomainResult.ok(self)
+
+
+## 将当前测试记录还原为正式 Player 聚合。
+## 夹具外部需要调用当前服务 API 时使用此方法，不直接把存档 DTO 当作领域对象。
+func current_player() -> DomainResult:
+	if _mapper == null or _state == null:
+		return DomainResult.failure(&"panels.offline_unavailable", "offline player mapper is unavailable")
+	return _mapper.to_domain(_state)
 
 
 ## 执行离线调试面板命令并返回与服务器相同的 panel_bundle。
@@ -96,14 +89,23 @@ func initialize() -> DomainResult:
 func execute(command: Dictionary) -> DomainResult:
 	if _service == null or _state == null:
 		return DomainResult.failure(&"panels.offline_unavailable", "offline panel authority is unavailable")
-	var result := _service.execute(_state, command)
+	var player_result := current_player()
+	if not player_result.is_ok:
+		return player_result
+	var result: DomainResult = _service.execute(player_result.value, command)
 	if not result.is_ok:
 		return result
 	var value: Dictionary = result.value
 	if bool(value.get("changed", false)):
-		_state = value["candidate"]
+		var recorded: DomainResult = _mapper.to_record(value["candidate"])
+		if not recorded.is_ok:
+			return recorded
+		_state = recorded.value
 		_state.revision += 1
-	return DomainResult.ok(_service.build_bundle(_state))
+	var current := current_player()
+	if not current.is_ok:
+		return current
+	return DomainResult.ok(_service.build_bundle(current.value))
 
 
 ## 在显式离线调试中复用正式服务端的掉落入包事务。
@@ -113,13 +115,21 @@ func execute(command: Dictionary) -> DomainResult:
 func grant_loot(loot: Dictionary) -> DomainResult:
 	if _service == null or _state == null:
 		return DomainResult.failure(&"loot.offline_unavailable", "offline loot authority is unavailable")
-	var result := _service.grant_loot(_state, loot)
+	var player_result := current_player()
+	if not player_result.is_ok:
+		return player_result
+	var result: DomainResult = _service.receive_loot(player_result.value, loot)
 	if not result.is_ok:
 		return result
-	var value: Dictionary = result.value
-	_state = value["candidate"]
+	var recorded: DomainResult = _mapper.to_record(player_result.value)
+	if not recorded.is_ok:
+		return recorded
+	_state = recorded.value
 	_state.revision += 1
-	return DomainResult.ok(_service.build_bundle(_state))
+	var current := current_player()
+	if not current.is_ok:
+		return current
+	return DomainResult.ok(_service.build_bundle(current.value))
 
 
 ## 在显式离线调试中消费与正式服务器相同的技能成长事件。
@@ -129,13 +139,22 @@ func grant_loot(loot: Dictionary) -> DomainResult:
 func grant_skill_progression(progression_event: Dictionary) -> DomainResult:
 	if _service == null or _state == null:
 		return DomainResult.failure(&"progression.offline_unavailable", "offline progression authority is unavailable")
-	var result := _service.grant_skill_progression(_state, progression_event)
+	var player_result := current_player()
+	if not player_result.is_ok:
+		return player_result
+	var result: DomainResult = _service.grant_skill_progression(player_result.value, progression_event)
 	if not result.is_ok:
 		return result
 	var value: Dictionary = result.value
-	_state = value["candidate"]
+	var recorded: DomainResult = _mapper.to_record(value["candidate"])
+	if not recorded.is_ok:
+		return recorded
+	_state = recorded.value
+	var current := current_player()
+	if not current.is_ok:
+		return current
 	return DomainResult.ok({
-		"panel_bundle": _service.build_bundle(_state),
+		"panel_bundle": _service.build_bundle(current.value),
 		"progression": value["progression"],
 	})
 
@@ -156,7 +175,8 @@ static func _equipment(
 	definition_id: String,
 	durability: int,
 ) -> Dictionary:
-	return {
+	var equipment := EquipmentSlotRecordScript.new().to_dictionary()
+	equipment.merge({
 		"owner_kind": "vehicle",
 		"slot_id": slot_id,
 		"slot_location": location,
@@ -166,7 +186,32 @@ static func _equipment(
 		"max_durability": durability,
 		"durability": durability,
 		"upgrade_level": 0,
-	}
+	}, true)
+	return equipment
+
+
+static func _stack(
+	instance_id: String,
+	definition_id: String,
+	slot_index: int,
+	position: Array,
+	bound: bool,
+	durability: int,
+) -> Dictionary:
+	var stack := InventoryStackRecordScript.new().to_dictionary()
+	stack.merge({
+		"stack_id": instance_id,
+		"item_definition_id": definition_id,
+		"quantity": 1,
+		"slot_index": slot_index,
+		"container_id": "main",
+		"position_px": position,
+		"footprint_px": [45, 45],
+		"bound": bound,
+		"max_durability": durability,
+		"durability": durability,
+	}, true)
+	return stack
 
 
 ## 创建离线调试角色的完整技能成长初始状态。

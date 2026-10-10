@@ -63,14 +63,14 @@ func _equipment(id: String) -> void:
 	_check(restored.vehicle.loadout.at(profile.location).austin_glens.to_dictionary() == growth.to_dictionary(), "equipped JSON")
 	_check(restored.vehicle.calculate_stats() == after, "derived stats restored")
 	var client := CurrentPlayer.new(catalog)
-	_check(client.apply_bundle(fixture._service.build_bundle(mapper.to_record(restored).value)), "client bundle")
+	_check(client.apply_bundle(fixture._service.build_bundle(restored)), "client bundle")
 	_check(client.vehicle.loadout.at(profile.location).austin_glens.to_dictionary() == growth.to_dictionary(), "client projected growth")
 	_check(restored.unequip_vehicle_item(profile.location, restored.inventory.revision, restored.vehicle.loadout.revision).is_ok, "unequip")
 	_check(restored.vehicle.health == 29 and restored.vehicle.working_energy == 17 and restored.vehicle.reserve_energy == 300, "unequip preserves absolute resources")
-	_check(restored.warehouse.transfer(restored.inventory, 1, true, item.instance_id, 1, restored.inventory.revision, restored.warehouse.revision, "unused").is_ok, "warehouse deposit")
+	_check(restored.warehouse.transfer(restored.inventory, 1, true, item.instance_id, Vector2i(80, 80), restored.inventory.revision, restored.warehouse.revision).is_ok, "warehouse deposit")
 	restored = _roundtrip(restored)
 	_check(restored.warehouse.find(item.instance_id).austin_glens.to_dictionary() == growth.to_dictionary(), "warehouse JSON")
-	_check(restored.warehouse.transfer(restored.inventory, 1, false, item.instance_id, 1, restored.inventory.revision, restored.warehouse.revision, "unused").is_ok, "withdraw")
+	_check(restored.warehouse.transfer(restored.inventory, 1, false, item.instance_id, Vector2i(80, 80), restored.inventory.revision, restored.warehouse.revision).is_ok, "withdraw")
 	var desired: Array = []
 	for equipped: VehicleEquipment in restored.vehicle.loadout.items():
 		desired.append({"instance_id": equipped.instance_id, "definition_id": equipped.definition_id, "location": equipped.equipment_location, "display_name": equipped.display_name})

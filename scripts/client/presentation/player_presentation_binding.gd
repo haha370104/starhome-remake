@@ -50,6 +50,8 @@ func on_skill_level_up(event: Dictionary) -> void:
 ## [param current_player] 刚应用同事务权威快照的当前玩家聚合。
 func on_current_player_changed(current_player: Player) -> void:
 	if world_view.player != null:
+		world_view.player.set_display_name(current_player.display_name)
+		world_view.player.apply_character_sex(current_player.sex, character_catalog)
 		world_view.player.apply_character_equipment(
 			current_player.character_equipment,
 			character_catalog,
@@ -57,6 +59,7 @@ func on_current_player_changed(current_player: Player) -> void:
 		world_view.player.apply_vehicle_equipment(current_player.vehicle)
 		world_view.apply_weapon_equipment(current_player.vehicle)
 	if hud != null:
+		hud.set_vehicle_combat_state(current_player.calculate_vehicle_stats())
 		var primary_device: VehicleEquipment = current_player.vehicle.loadout.at(1)
 		hud.set_primary_device("" if primary_device == null else primary_device.primary_device_kind())
 		var tactical_equipment := current_player.vehicle.loadout.at(13) as VehicleWeapon

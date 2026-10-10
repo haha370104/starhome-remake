@@ -2,6 +2,12 @@ class_name Player
 extends MovableEntity
 
 
+const STATE_FIELDS := ["entity_id", "position", "movement_speed", "facing_direction", "account_id", "account_name", "account_status",
+	"display_name", "sex", "level", "profession", "faction", "residence", "description", "max_health", "health",
+	"experience", "revision", "map_id", "map_instance_id", "checkpoint_id", "inventory", "warehouse", "production",
+	"central", "vehicle_presets", "character_equipment", "vehicle", "skills", "quest_states", "achievements",
+	"daily_activities", "amethyst", "food_status", "reward_pipeline", "friend_ids", "enemy_ids", "mailbox"]
+
 var account_id: String
 var account_name: String
 var account_status: String
@@ -33,15 +39,19 @@ var daily_activities: DailyActivityJournal
 var amethyst: AmethystWallet
 var food_status: FoodStatus
 var reward_pipeline := RewardPipeline.new()
+var friend_ids: Array[String] = []
+var enemy_ids: Array[String] = []
+var mailbox: Array[Dictionary] = []
 
 
 ## 结算在线食品回血并回收过期战车属性，死亡人物不会因此复活。
 ## [param now] 权威当前秒数。
 func advance_food_status(now: int) -> void:
+	var expired_attributes := food_status.active.any(func(effect: FoodEffect) -> bool: return effect.kind >= 13 and effect.kind <= 17 and effect.expires_at <= now)
 	var healing := food_status.advance(now)
 	if health > 0:
 		health = mini(max_health, health + healing)
-	vehicle.reconcile_loadout_state(false)
+	if expired_attributes: vehicle.reconcile_loadout_state(false)
 
 
 ## 按实例身份查询玩家背包或已装配的战车装备，不接受外部玩家实例。
@@ -159,6 +169,12 @@ func _init(state: Dictionary = {}) -> void:
 	quest_states = (quest_value as Dictionary).duplicate(true) if quest_value is Dictionary else {}
 	achievements = PlayerAchievements.new(state.get("achievements", {}))
 	vehicle.achievement_bonuses = achievements.bonuses()
+	friend_ids = _relation_ids(state.get("friend_ids", []))
+	enemy_ids = _relation_ids(state.get("enemy_ids", []))
+	var mailbox_value: Variant = state.get("mailbox", [])
+	mailbox.clear()
+	if mailbox_value is Array:
+		mailbox.assign(mailbox_value.duplicate(true))
 
 
 ## 在玩家一致性边界内应用成就事实并同步当前称号的战车增益。
@@ -246,11 +262,18 @@ func arrange_inventory(expected_inventory_revision: int) -> DomainResult:
 ## [param instance_id] 自有物品实例。
 ## [param quantity] 拆分数量；合并时忽略。
 ## [param expected_revision] 背包版本。
+## [param target_instance_id] 合并目标；省略时将兼容堆叠合入 instance_id。
 ## 返回堆叠操作结果。
-func change_stack(action: String, instance_id: String, quantity: int, expected_revision: int) -> DomainResult:
+func change_stack(
+	action: String,
+	instance_id: String,
+	quantity: int,
+	expected_revision: int,
+	target_instance_id: String = "",
+) -> DomainResult:
 	if action == "split_inventory_item":
 		return InventoryStackActions.split(inventory, instance_id, quantity, expected_revision)
-	return InventoryStackActions.merge(inventory, instance_id, expected_revision)
+	return InventoryStackActions.merge(inventory, instance_id, expected_revision, target_instance_id)
 
 
 ## 在聚合边界内使用物品，由领域行为校验并统一修改背包与资源。
@@ -500,3 +523,24 @@ func refresh_clothing_bonuses() -> void:
 	var loaded := ClothingEnhancementRules.load_default()
 	if loaded.is_ok:
 		vehicle.clothing_bonuses = ClothingBonuses.collect(character_equipment.items(), loaded.value)
+
+
+## 原位接收已校验的聚合字段，保留玩家身份；调用方负责候选隔离和事务版本。
+## [param candidate] 完整校验成功的候选。
+func apply_state(candidate: Player) -> void:
+	for field: String in STATE_FIELDS:
+		set(field, candidate.get(field))
+	friend_ids = candidate.friend_ids.duplicate()
+	enemy_ids = candidate.enemy_ids.duplicate()
+	mailbox = candidate.mailbox.duplicate(true)
+
+
+func _relation_ids(value: Variant) -> Array[String]:
+	var result: Array[String] = []
+	if not value is Array:
+		return result
+	for relation_id: Variant in value:
+		var identity := String(relation_id)
+		if not identity.is_empty() and identity not in result:
+			result.append(identity)
+	return result

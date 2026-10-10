@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-"""Build mountable Glory map packs and typed runtime definitions.
+"""Materialize Glory map presentations and typed runtime definitions.
 
-Decoded source data remains outside the remake repository.  This tool copies
-only the runtime contract: flattened map presentation, minimap, navigation,
-scene provenance and transitions.  Existing hand-promoted maps keep their
+Map presentations are rendered on demand from workspace-local raw FCC, images,
+sprites and saved transition evidence. Existing hand-promoted maps keep their
 semantic-layer definitions and are not duplicated in the generated directory.
+Run --prepare-import to expose existing maps to Godot's native texture importer
+without regenerating maps; sprite and palette archives remain ignored.
 """
 
 from __future__ import annotations
@@ -15,17 +16,23 @@ import io
 import json
 import math
 import re
-import zipfile
-from dataclasses import dataclass
+import shutil
+from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any, Iterable
 
-from PIL import Image
+from PIL import Image, ImageChops
+if __package__:
+    from tools.glory_map_workspace import RawMapWorkspace
+else:
+    from glory_map_workspace import RawMapWorkspace
 
 try:
     from tools.import_glory_map_presentation import (
         build_scene_ownership,
+        build_chunks,
         load_first_frame,
+        pack_chunks,
         resolve_frame_source,
         scene_placement_key,
         transition_placement_keys,
@@ -33,7 +40,9 @@ try:
 except ModuleNotFoundError:  # Direct execution from the tools directory.
     from import_glory_map_presentation import (  # type: ignore[no-redef]
         build_scene_ownership,
+        build_chunks,
         load_first_frame,
+        pack_chunks,
         resolve_frame_source,
         scene_placement_key,
         transition_placement_keys,
@@ -41,12 +50,12 @@ except ModuleNotFoundError:  # Direct execution from the tools directory.
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-OUTPUTS_ROOT = PROJECT_ROOT.parent
-PARSED_MAP_ROOT = OUTPUTS_ROOT / "starhome_lz_ry_maps_parsed" / "maps"
+MAP_EVIDENCE_ROOT = PROJECT_ROOT / "data" / "source_evidence" / "glory" / "map_recovery"
+PARSED_MAP_ROOT = MAP_EVIDENCE_ROOT / "maps"
 KNOWN_MAPS_PATH = PROJECT_ROOT / "data" / "content" / "known_maps_v1.json"
 CURRENT_DIRECTORY_PATH = PROJECT_ROOT / "data" / "maps" / "map_directory.json"
-PACK_ROOT = PROJECT_ROOT / "assets" / "content_packs"
-CATALOG_PATH = PROJECT_ROOT / "data" / "content" / "glory_map_content_packs_v1.json"
+MAP_CONTENT_ROOT = PROJECT_ROOT / "assets" / "glory" / "maps"
+DEFINITION_CONTENT_ROOT = PROJECT_ROOT / "assets" / "glory" / "map_definitions"
 RUNTIME_INDEX_PATH = PROJECT_ROOT / "data" / "content" / "glory_map_runtime_index_v1.json"
 GENERATED_DIRECTORY_PATH = PROJECT_ROOT / "data" / "maps" / "glory_map_directory_v1.json"
 CONTENT_VERSION = "glory-map-runtime-v1"
@@ -62,22 +71,34 @@ WORLD_IDS = {
 TRANSITION_RECOVERY_WORLD = "NFT_BL"
 TRANSITION_RECOVERY_BRANCH = "NFT_BT"
 REQUIRED_SOURCE_FILES = (
-    "background.png",
-    "composite.png",
-    "minimap.jpg",
     "navigation_grid.bin",
     "map_metadata.json",
     "scene_objects.json",
     "transitions.json",
 )
-
-
+CURATED_SEMANTIC_PRESENTATIONS = frozenset({
+    "2beautyroom",
+    "armshop1",
+    "city1svr/variant_01_nft_bl",
+    "clothshop1",
+    "factory1",
+    "foodroom1",
+    "funroom1/variant_01_nft_bl",
+    "nasa1/variant_01_nft_bl",
+    "roomsvr1/variant_01_nft_bl",
+    "shop1",
+    "traderoom1",
+    "treeroom1",
+    "weaponshop1",
+})
+OFFICIAL_FULL_MAP_IMAGES = {
+    "nasa1/variant_01_nft_bl": PROJECT_ROOT / "../starhome_lz_ry_full/raw/map/mapimg/jpg/NASA1.jpg",
+}
 @dataclass(frozen=True)
 class Presentation:
     resource_id: str
     source: Path
     relative_source: str
-    size_bytes: int
 
 
 def read_object(path: Path) -> dict[str, Any]:
@@ -168,20 +189,17 @@ def existing_definitions() -> tuple[
 
 
 def discover_presentations() -> dict[str, Presentation]:
-    """Index every complete parsed presentation by known registry resource ID."""
+    """Index audited map definitions without materializing their large images."""
     result: dict[str, Presentation] = {}
     for metadata_path in sorted(PARSED_MAP_ROOT.rglob("map_metadata.json")):
         source = metadata_path.parent
         if not all((source / filename).is_file() for filename in REQUIRED_SOURCE_FILES):
             continue
+        if not (source / "minimap.jpg").is_file() and not (source / "thumbnail.jpg").is_file():
+            continue
         relative = source.relative_to(PARSED_MAP_ROOT).as_posix()
         resource_id = "maps/" + relative
-        size = sum(
-            (source / name).stat().st_size
-            for name in REQUIRED_SOURCE_FILES
-            if name != "background.png"
-        )
-        result[resource_id.lower()] = Presentation(resource_id, source, relative, size)
+        result[resource_id.lower()] = Presentation(resource_id, source, relative)
     return result
 
 
@@ -199,7 +217,20 @@ def resolve_presentation(
         matches = [value for key, value in presentations.items() if key.startswith(prefix)]
         if len(matches) == 1:
             return matches[0]
+        # The extractor preserves the FCC-expanded spelling for this legacy
+        # source key, while the author registry records the logical map name.
+        expanded = presentations.get((resource_id + "_fcc_expanded").lower())
+        if expanded is not None:
+            return expanded
     return None
+
+
+def minimap_source(source: Path) -> Path:
+    for name in ("minimap.jpg", "thumbnail.jpg"):
+        candidate = source / name
+        if candidate.is_file():
+            return candidate
+    raise FileNotFoundError(f"map has neither minimap.jpg nor thumbnail.jpg: {source}")
 
 
 def runtime_id(world_code: str, map_code: str) -> str:
@@ -399,6 +430,18 @@ def build_runtime_floor(presentation: Presentation) -> tuple[bytes, dict[str, An
         for item in scene.get("objects", [])
         if isinstance(item, dict) and scene_placement_key(item) in transition_keys
     ]
+    official_image = OFFICIAL_FULL_MAP_IMAGES.get(presentation.relative_source.lower())
+    if official_image is not None and official_image.is_file() and not matching_items:
+        with Image.open(official_image) as image:
+            output = io.BytesIO()
+            image.convert("RGBA").save(output, format="PNG", compress_level=3)
+        payload = output.getvalue()
+        return payload, {
+            "excluded_static_transition_placements": 0,
+            "unresolved_static_transition_sources": 0,
+            "runtime_floor_sha256": sha256_bytes(payload),
+            "official_full_map_image": official_image.relative_to(PROJECT_ROOT).as_posix(),
+        }
     source_composite = presentation.source / "composite.png"
     if not matching_items:
         payload = source_composite.read_bytes()
@@ -466,8 +509,45 @@ def build_manifest(
     presentation: Presentation,
     metadata: dict[str, Any],
     runtime_floor_audit: dict[str, Any],
+    semantic: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     scene = read_object(presentation.source / "scene_objects.json")
+    if semantic is not None:
+        missing_dependencies = semantic["missing_dependencies"]
+        partial = bool(missing_dependencies)
+        return {
+            "schema_version": 1,
+            "source_release": "starhome_lz_ry",
+            "composition": {
+                "render_strategy": "semantic_foreground_overlay" if partial else "semantic_owner_layers",
+                "semantic_atlas": semantic["atlas_resource"],
+                "semantic_atlas_size": semantic["atlas_size"],
+                "semantic_layers": semantic["layers"],
+                "props": [],
+                "missing_dependencies": missing_dependencies,
+                "validation": {
+                    "semantic_reconstruction_exact": not partial,
+                    "semantic_occlusion_available": True,
+                    "flattened_static_scene": partial,
+                    "flattened_floor_overlay": partial,
+                    "excluded_static_transition_placements": runtime_floor_audit[
+                        "excluded_static_transition_placements"
+                    ],
+                    "unresolved_static_transition_sources": runtime_floor_audit[
+                        "unresolved_static_transition_sources"
+                    ],
+                    "runtime_transition_registry_only": True,
+                },
+            },
+            "source_audit": {
+                "source_map_code": str(metadata.get("map_code", "")),
+                "source_output": "starhome_lz_ry_maps_parsed/maps/" + presentation.relative_source,
+                "minimap_source": minimap_source(presentation.source).name,
+                "resolved_placements": int(metadata.get("scene_objects", {}).get("resolved", 0)),
+                "missing_placements": len(missing_dependencies),
+                "presentation_quality": "semantic_foreground_overlay" if partial else "semantic_foreground_layers",
+            },
+        }
     return {
         "schema_version": 1,
         "source_release": "starhome_lz_ry",
@@ -487,11 +567,13 @@ def build_manifest(
                     "unresolved_static_transition_sources"
                 ],
                 "runtime_transition_registry_only": True,
+                "official_full_map_image": runtime_floor_audit.get("official_full_map_image", ""),
             },
         },
         "source_audit": {
             "source_map_code": str(metadata.get("map_code", "")),
             "source_output": "starhome_lz_ry_maps_parsed/maps/" + presentation.relative_source,
+            "minimap_source": minimap_source(presentation.source).name,
             "resolved_placements": int(metadata.get("scene_objects", {}).get("resolved", 0)),
             "missing_placements": int(metadata.get("scene_objects", {}).get("missing", 0)),
         },
@@ -504,12 +586,13 @@ def build_definition(
     map_id: str,
     world_id: str,
     target_ids: dict[tuple[str, str], str],
+    semantic_presentation: bool,
 ) -> dict[str, Any]:
     metadata = read_object(presentation.source / "map_metadata.json")
     transitions = read_object(presentation.source / "transitions.json")
     map_size = [int(value) for value in metadata["map_pixel_size"]]
     map_code = str(row["map_code"]).lower()
-    asset_root = "content/glory/maps/" + presentation.relative_source
+    asset_root = "assets/glory/maps/" + presentation.relative_source
     business_asset_root = "maps/runtime/map_" + hashlib.sha256(
         str(row["id"]).encode("utf-8")
     ).hexdigest()[:12]
@@ -590,7 +673,7 @@ def build_definition(
             "navigation_sha256": sha256(presentation.source / "navigation_grid.bin"),
             "navigation_passable": int(metadata["navigation"]["passable"]),
             "navigation_blocked": int(metadata["navigation"]["blocked"]),
-            "presentation_state": "runtime_ready_flattened",
+            "presentation_state": "runtime_ready_semantic" if semantic_presentation else "runtime_ready_flattened",
             "promoted_transition_count": len(raw_transitions),
             "transition_recovery": ({
                 "kind": "same_release_sibling_world_transport_metadata",
@@ -601,43 +684,158 @@ def build_definition(
     }
 
 
-def fixed_zip_info(path: str) -> zipfile.ZipInfo:
-    info = zipfile.ZipInfo(path, (2026, 1, 1, 0, 0, 0))
-    info.compress_type = zipfile.ZIP_STORED
-    info.external_attr = 0o100644 << 16
-    return info
+def build_semantic_atlas(
+    scene_color: Image.Image,
+    owner: Any,
+    owners: list[dict[str, Any]],
+    atlas_path: Path,
+) -> dict[str, Any] | None:
+    chunks = build_chunks(scene_color, owner, owners)
+    if not chunks:
+        return None
+    atlas, packed_chunks = pack_chunks(chunks)
+    atlas.save(atlas_path, compress_level=3)
+    owner_lookup = {int(item["owner_id"]): item for item in owners}
+    atlas_resource = "res://" + str(atlas_path.relative_to(PROJECT_ROOT)).replace("\\", "/")
+    layers = []
+    for index, item in enumerate(sorted(
+        packed_chunks,
+        key=lambda value: (value["sort_baseline"], value["pixel_offset"][1], value["pixel_offset"][0]),
+    )):
+        layers.append({
+            "layer_id": "semantic_scene_%04d" % index,
+            "texture": atlas_resource,
+            "atlas_region": item["atlas_region"],
+            "pixel_offset": item["pixel_offset"],
+            "size": item["size"],
+            "sort_baseline": item["sort_baseline"],
+            "owners": [
+                {
+                    "owner_id": owner_id,
+                    "source_index": owner_lookup[owner_id]["source_index"],
+                    "asset_id": owner_lookup[owner_id]["asset_id"],
+                }
+                for owner_id in item["owner_ids"]
+            ],
+        })
+    return {
+        "atlas_resource": atlas_resource,
+        "atlas_size": list(atlas.size),
+        "layers": layers,
+    }
 
 
-def add_file(archive: zipfile.ZipFile, source: Path, target: str) -> None:
-    archive.writestr(fixed_zip_info(target), source.read_bytes())
+def _semantic_presentation(
+    presentation: Presentation,
+    target: Path,
+    runtime_floor: bytes,
+    runtime_floor_audit: dict[str, Any],
+) -> dict[str, Any] | None:
+    scene = read_object(presentation.source / "scene_objects.json")
+    transitions = read_object(presentation.source / "transitions.json")
+    transition_keys = transition_placement_keys(transitions)
+    with Image.open(presentation.source / "background.png") as image:
+        background = image.convert("RGBA")
+    scene_color, owner, owners, missing, _, _ = build_scene_ownership(
+        background,
+        scene,
+        "maps/runtime/" + presentation.relative_source,
+        transition_keys,
+    )
+    semantic = build_semantic_atlas(
+        scene_color,
+        owner,
+        owners,
+        target / "semantic_layer_atlas.png",
+    )
+    if semantic is None:
+        return None
+    with Image.open(io.BytesIO(runtime_floor)) as image:
+        runtime_floor_image = image.convert("RGBA")
+    if not missing and ImageChops.difference(
+        Image.alpha_composite(background, scene_color), runtime_floor_image
+    ).getbbox() is not None:
+        return None
+    expected_floor = runtime_floor_image if missing else background
+    expected_floor.save(target / "floor.png", compress_level=3)
+    return {
+        **semantic,
+        "missing_dependencies": missing,
+    }
 
 
-def add_bytes(archive: zipfile.ZipFile, payload: bytes, target: str) -> None:
-    archive.writestr(fixed_zip_info(target), payload)
+def materialize_presentation(
+    presentation: Presentation,
+    target_root: Path,
+    semantic_presentation: bool,
+) -> Path:
+    source = presentation.source
+    target = target_root / presentation.relative_source
+    target.mkdir(parents=True, exist_ok=True)
+    metadata = read_object(source / "map_metadata.json")
+    runtime_floor, floor_audit = build_runtime_floor(presentation)
+    semantic = _semantic_presentation(
+        presentation, target, runtime_floor, floor_audit
+    ) if semantic_presentation else None
+    if semantic is None:
+        (target / "floor.png").write_bytes(runtime_floor)
+    shutil.copyfile(minimap_source(source), target / "minimap.jpg")
+    for source_name, target_name in (
+        ("navigation_grid.bin", "navigation_grid.bin"),
+        ("scene_objects.json", "source_scene_objects.json"),
+        ("transitions.json", "source_transitions.json"),
+        ("map_metadata.json", "source_metadata.json"),
+    ):
+        shutil.copyfile(source / source_name, target / target_name)
+    write_object(target / "scene_manifest.json", build_manifest(
+        presentation, metadata, floor_audit, semantic
+    ))
+    return target
 
 
-def add_json(archive: zipfile.ZipFile, value: dict[str, Any], target: str) -> None:
-    payload = (json.dumps(value, ensure_ascii=False, separators=(",", ":")) + "\n").encode("utf-8")
-    archive.writestr(fixed_zip_info(target), payload)
-
-
-def partition_presentations(
-    presentations: list[Presentation],
-    maximum_bytes: int,
-) -> list[list[Presentation]]:
-    parts: list[list[Presentation]] = []
-    current: list[Presentation] = []
-    current_size = 0
-    for presentation in presentations:
-        if current and current_size + presentation.size_bytes > maximum_bytes:
-            parts.append(current)
-            current = []
-            current_size = 0
-        current.append(presentation)
-        current_size += presentation.size_bytes
-    if current:
-        parts.append(current)
-    return parts
+def materialize_cached_semantic_overlay(target: Path) -> bool:
+    floor_path = target / "floor.png"
+    scene_path = target / "source_scene_objects.json"
+    transition_path = target / "source_transitions.json"
+    manifest_path = target / "scene_manifest.json"
+    if not all(path.is_file() for path in (floor_path, scene_path, transition_path, manifest_path)):
+        return False
+    scene = read_object(scene_path)
+    transitions = read_object(transition_path)
+    with Image.open(floor_path) as image:
+        background = Image.new("RGBA", image.size, (0, 0, 0, 0))
+    scene_color, owner, owners, _, _, _ = build_scene_ownership(
+        background,
+        scene,
+        "maps/runtime/" + target.relative_to(MAP_CONTENT_ROOT).as_posix(),
+        transition_placement_keys(transitions),
+    )
+    semantic = build_semantic_atlas(
+        scene_color,
+        owner,
+        owners,
+        target / "semantic_layer_atlas.png",
+    )
+    if semantic is None:
+        return False
+    manifest = read_object(manifest_path)
+    manifest["composition"] = {
+        "render_strategy": "semantic_foreground_overlay",
+        "semantic_atlas": semantic["atlas_resource"],
+        "semantic_atlas_size": semantic["atlas_size"],
+        "semantic_layers": semantic["layers"],
+        "props": [],
+        "missing_dependencies": scene.get("missing", []),
+        "validation": {
+            "semantic_occlusion_available": True,
+            "semantic_reconstruction_exact": False,
+            "flattened_floor_overlay": True,
+            "runtime_transition_registry_only": True,
+        },
+    }
+    manifest.setdefault("source_audit", {})["presentation_quality"] = "semantic_foreground_overlay"
+    write_object(manifest_path, manifest)
+    return True
 
 
 def build(arguments: argparse.Namespace) -> dict[str, Any]:
@@ -649,6 +847,9 @@ def build(arguments: argparse.Namespace) -> dict[str, Any]:
     resolved_rows: list[tuple[dict[str, Any], Presentation, str, str]] = []
     unresolved_rows: list[str] = []
     for row in rows:
+        if row.get("availability", {}).get("runtime") != "ready":
+            unresolved_rows.append(str(row["id"]))
+            continue
         world_code = str(row["world_code"])
         world_id = WORLD_IDS.get(world_code, "glory_" + stable_token(world_code))
         map_code = str(row["map_code"]).lower()
@@ -664,11 +865,33 @@ def build(arguments: argparse.Namespace) -> dict[str, Any]:
     generated_definitions: dict[str, dict[str, Any]] = {}
     runtime_rows: list[dict[str, Any]] = []
     used_presentations: dict[str, Presentation] = {}
+    field_presentations = {
+        presentation.relative_source.lower()
+        for row, presentation, _, _ in resolved_rows
+        if row.get("category") == "field_code"
+    }
+    materialized_semantic_presentations = {
+        presentation.relative_source.lower()
+        for _, presentation, _, _ in resolved_rows
+        if (
+            (MAP_CONTENT_ROOT / presentation.relative_source / "scene_manifest.json").is_file()
+            and read_object(MAP_CONTENT_ROOT / presentation.relative_source / "scene_manifest.json")
+            .get("composition", {}).get("render_strategy")
+            in ["semantic_owner_layers", "semantic_foreground_overlay"]
+        )
+    }
+    semantic_presentations = materialized_semantic_presentations
+    semantic_candidates = semantic_presentations | CURATED_SEMANTIC_PRESENTATIONS
     for row, presentation, map_id, world_id in resolved_rows:
         is_existing = map_id in existing_ready
         if not is_existing:
             generated_definitions[map_id] = build_definition(
-                row, presentation, map_id, world_id, target_ids
+                row,
+                presentation,
+                map_id,
+                world_id,
+                target_ids,
+                presentation.relative_source.lower() in semantic_presentations,
             )
         used_presentations[presentation.relative_source.lower()] = presentation
         runtime_rows.append({
@@ -678,9 +901,9 @@ def build(arguments: argparse.Namespace) -> dict[str, Any]:
             "map_code": row["map_code"],
             "runtime_id": map_id,
             "definition_path": current_paths[map_id] if is_existing
-                else "res://content/glory/map_definitions/%s.json" % map_id,
+                else "res://assets/glory/map_definitions/%s.json" % map_id,
             "presentation_id": presentation.resource_id,
-            "presentation_mode": "semantic" if is_existing else "flattened_source_composite",
+            "presentation_mode": "semantic" if presentation.relative_source.lower() in semantic_presentations else "flattened_source_composite",
         })
 
     plan = {
@@ -691,73 +914,83 @@ def build(arguments: argparse.Namespace) -> dict[str, Any]:
         "generated_definitions": len(generated_definitions),
         "existing_semantic_definitions": len(runtime_rows) - len(generated_definitions),
         "unique_presentations": len(used_presentations),
+        "field_presentations": len(field_presentations),
+        "semantic_presentations": len(semantic_presentations),
         "unresolved_source_rows": len(unresolved_rows),
     }
     if arguments.plan_only:
         print(json.dumps(plan, ensure_ascii=False, indent=2))
         return plan
 
-    PACK_ROOT.mkdir(parents=True, exist_ok=True)
-    index_pack = PACK_ROOT / "glory_maps_index_v1.zip"
-    with zipfile.ZipFile(index_pack, "w", allowZip64=True) as archive:
+    if not arguments.materialize_only:
         for map_id, definition in sorted(generated_definitions.items()):
-            add_json(archive, definition, "content/glory/map_definitions/%s.json" % map_id)
-
-    pack_files = [index_pack]
-    if arguments.index_only:
-        pack_files.extend(sorted(PACK_ROOT.glob("glory_maps_[0-9][0-9][0-9]_v1.zip")))
-        if len(pack_files) == 1:
-            raise FileNotFoundError("--index-only requires existing Glory presentation packs")
-    else:
-        parts = partition_presentations(
-            sorted(used_presentations.values(), key=lambda item: item.relative_source.lower()),
-            int(arguments.maximum_pack_mib * 1024 * 1024),
-        )
-        for part_index, part in enumerate(parts, start=1):
-            pack_path = PACK_ROOT / ("glory_maps_%03d_v1.zip" % part_index)
-            with zipfile.ZipFile(pack_path, "w", allowZip64=True) as archive:
-                for presentation in part:
-                    root = "content/glory/maps/" + presentation.relative_source
-                    metadata = read_object(presentation.source / "map_metadata.json")
-                    runtime_floor, runtime_floor_audit = build_runtime_floor(presentation)
-                    add_bytes(archive, runtime_floor, root + "/floor.png")
-                    add_file(archive, presentation.source / "minimap.jpg", root + "/minimap.jpg")
-                    add_file(archive, presentation.source / "navigation_grid.bin", root + "/navigation_grid.bin")
-                    add_json(
-                        archive,
-                        build_manifest(presentation, metadata, runtime_floor_audit),
-                        root + "/scene_manifest.json",
+            write_object(DEFINITION_CONTENT_ROOT / (map_id + ".json"), definition)
+    if arguments.cached_semantic_only or (arguments.semantic_only and not arguments.index_only):
+        for indexed in sorted(used_presentations.values(), key=lambda item: item.relative_source.lower()):
+            if arguments.field_only and indexed.relative_source.lower() not in field_presentations:
+                continue
+            if arguments.semantic_only and indexed.relative_source.lower() not in semantic_candidates:
+                continue
+            if materialize_cached_semantic_overlay(MAP_CONTENT_ROOT / indexed.relative_source):
+                print("BUILT CACHED", indexed.relative_source)
+    elif not arguments.index_only:
+        with RawMapWorkspace() as workspace:
+            selected_presentations = sorted(
+                used_presentations.values(), key=lambda item: item.relative_source.lower()
+            )
+            if arguments.semantic_batches > 1:
+                selected_presentations = [
+                    indexed
+                    for index, indexed in enumerate(selected_presentations)
+                    if index % arguments.semantic_batches == arguments.semantic_batch
+                ]
+            for indexed in selected_presentations:
+                if arguments.field_only and indexed.relative_source.lower() not in field_presentations:
+                    continue
+                if arguments.semantic_only and indexed.relative_source.lower() not in semantic_candidates:
+                    continue
+                with workspace.render(indexed.relative_source) as (source, _):
+                    materialize_presentation(
+                        replace(indexed, source=source),
+                        MAP_CONTENT_ROOT,
+                        indexed.relative_source.lower() in semantic_candidates,
                     )
-                    add_file(archive, presentation.source / "scene_objects.json", root + "/source_scene_objects.json")
-                    add_file(archive, presentation.source / "transitions.json", root + "/source_transitions.json")
-                    add_file(archive, presentation.source / "map_metadata.json", root + "/source_metadata.json")
-            pack_files.append(pack_path)
-            print("BUILT", pack_path.name, len(part), "presentations")
-        current_pack_paths = set(pack_files)
-        for stale_pack in PACK_ROOT.glob("glory_maps_[0-9][0-9][0-9]_v1.zip"):
-            if stale_pack not in current_pack_paths:
-                stale_pack.unlink()
-                print("REMOVED_STALE", stale_pack.name)
-
-    pack_entries = []
-    for path in pack_files:
-        pack_entries.append({
-            "pack_id": path.stem,
-            "path": "res://assets/content_packs/" + path.name,
-            "size_bytes": path.stat().st_size,
-            "sha256": sha256(path),
-            "content_groups": ["maps"],
-        })
-    write_object(CATALOG_PATH, {
-        "schema_version": 1,
-        "content_version": CONTENT_VERSION,
-        "packs": pack_entries,
-        "summary": plan,
-    })
+                print("BUILT", indexed.relative_source)
+    if arguments.cached_semantic_only or (arguments.semantic_only and not arguments.index_only):
+        semantic_presentations = {
+            indexed.relative_source.lower()
+            for indexed in used_presentations.values()
+            if (
+                (MAP_CONTENT_ROOT / indexed.relative_source / "scene_manifest.json").is_file()
+                and read_object(MAP_CONTENT_ROOT / indexed.relative_source / "scene_manifest.json")
+                .get("composition", {}).get("render_strategy")
+                in ["semantic_owner_layers", "semantic_foreground_overlay"]
+            )
+        }
+        for runtime_row in runtime_rows:
+            presentation_id = str(runtime_row["presentation_id"]).removeprefix("maps/").lower()
+            runtime_row["presentation_mode"] = (
+                "semantic" if presentation_id in semantic_presentations
+                else "flattened_source_composite"
+            )
+        for row, presentation, map_id, _ in resolved_rows:
+            definition = generated_definitions.get(map_id)
+            if definition is None:
+                continue
+            definition["source_audit"]["presentation_state"] = (
+                "runtime_ready_semantic"
+                if presentation.relative_source.lower() in semantic_presentations
+                else "runtime_ready_flattened"
+            )
+            if not arguments.materialize_only:
+                write_object(DEFINITION_CONTENT_ROOT / (map_id + ".json"), definition)
+        plan["semantic_presentations"] = len(semantic_presentations)
+    if arguments.materialize_only:
+        return plan
     write_runtime_index(RUNTIME_INDEX_PATH, plan, runtime_rows, unresolved_rows)
     merged_paths = dict(current_paths)
     for map_id in generated_definitions:
-        merged_paths[map_id] = "res://content/glory/map_definitions/%s.json" % map_id
+        merged_paths[map_id] = "res://assets/glory/map_definitions/%s.json" % map_id
     write_object(GENERATED_DIRECTORY_PATH, {
         "schema_version": 1,
         "directory_id": "glory_all_runtime_maps",
@@ -769,19 +1002,39 @@ def build(arguments: argparse.Namespace) -> dict[str, Any]:
         },
     })
     print(json.dumps(plan, ensure_ascii=False))
-    print("GLORY_MAP_CONTENT_PACKS_BUILT", len(pack_files), "packs")
+    print("GLORY_MAP_CONTENT_BUILT", len(used_presentations), "presentations")
     return plan
+
+
+def prepare_godot_import() -> None:
+    glory = PROJECT_ROOT / "assets" / "glory"
+    for name in ("sprites", "mine_palettes", "monster_palettes", "map_definitions"):
+        directory = glory / name
+        directory.mkdir(parents=True, exist_ok=True)
+        (directory / ".gdignore").touch()
+    (glory / ".gdignore").unlink(missing_ok=True)
 
 
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--plan-only", action="store_true")
     parser.add_argument("--index-only", action="store_true")
-    parser.add_argument("--maximum-pack-mib", type=int, default=1024)
+    parser.add_argument("--field-only", action="store_true")
+    parser.add_argument("--semantic-only", action="store_true")
+    parser.add_argument("--semantic-batch", type=int, default=0)
+    parser.add_argument("--semantic-batches", type=int, default=1)
+    parser.add_argument("--materialize-only", action="store_true")
+    parser.add_argument("--cached-semantic-only", action="store_true")
+    parser.add_argument("--prepare-import", action="store_true", help="Configure native map imports without rebuilding")
     arguments = parser.parse_args()
-    if arguments.maximum_pack_mib < 64:
-        parser.error("--maximum-pack-mib must be at least 64")
+    if arguments.semantic_batches <= 0 or not 0 <= arguments.semantic_batch < arguments.semantic_batches:
+        parser.error("semantic batch must be within semantic batch count")
+    if arguments.prepare_import:
+        prepare_godot_import()
+        return 0
     build(arguments)
+    if not arguments.plan_only:
+        prepare_godot_import()
     return 0
 
 

@@ -1,11 +1,11 @@
 """Register seven Glory materials and price every supported joint upgrade stage."""
-import hashlib
 import json
 import re
 from pathlib import Path
+from recovery.fcc_workspace import RawFccWorkspace
+from material_id_registry import canonical_material_id
 
 ROOT = Path(__file__).resolve().parents[1]
-SOURCE = ROOT.parent / "starhome_lz_ry_fcc_source"
 MATERIALS = {
     "NewJointImpactChip": ("冲击晶体", 300, "ven/stuffclt2_ven.fcc"),
     "NewJointBody": ("接合器升级晶体", 600, "ven/stuffclt2_ven.fcc"),
@@ -30,6 +30,9 @@ def write(path, rows, key="definitions"):
 
 def build():
     """Keep source identities, preserve non-premium costs, and rebalance only purchased materials."""
+    with RawFccWorkspace() as fcc:
+        source_texts = {path: fcc.text(path) for path in
+                        {entry[2] for entry in MATERIALS.values()} | {"ven/SynthesizeNPC.fcc"}}
     items = [row for path in ("stage3/starter_loadout_v1", "character_items_v1", "material_items_v1",
              "official_rocket_items_v1", "glory/glory_items_v1", "industrial_materials_v1")
              for row in read(f"data/gameplay/{path}.json")["definitions"]]
@@ -43,12 +46,12 @@ def build():
     sprites.update(recovered)
     definitions, ids, prices = [], {}, {}
     for source_class, (name, price, file) in MATERIALS.items():
-        source = (SOURCE / file).read_text(encoding="utf-8-sig")
+        source = source_texts[file]
         match = re.search(r"^class " + re.escape(source_class) + r":.*?(?=^class |\Z)", source, re.M | re.S)
         assert match, source_class
         reference = re.search(r'src=\$\+"../([^"\n]+)"', match[0])[1].lower().removesuffix(".ale")
         previous = by_name.get(source_class)
-        item_id = previous["id"] if previous else "upgrade_material_" + hashlib.sha256(source_class.encode()).hexdigest()[:12]
+        item_id = previous["id"] if previous else canonical_material_id(name, source_class)
         row = {"id": item_id, "kind": "material", "display_name": name, "source_class": source_class,
                "max_stack": 99, "premium_category": "upgrade_material", "description": f"接合器升级材料：{name}。",
                "source_audit": {"source_release": "starhome_lz_ry", "source_file": file,
@@ -74,7 +77,7 @@ def build():
     shop["offers"] = [row for row in shop["offers"] if row["definition_id"] not in prices]
     shop["offers"] += [{"definition_id": item_id, "price": price} for item_id, price in prices.items()]
     (ROOT / "data/gameplay/commerce/premium_shop_v1.json").write_text(json.dumps(shop, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-    source = (SOURCE / "ven/SynthesizeNPC.fcc").read_text(encoding="utf-8-sig")
+    source = source_texts["ven/SynthesizeNPC.fcc"]
     rules = []
     for source_class in (*NEW, *OLD):
         coefficient = 1800 if source_class in ("NewGunJoint", "HuoLiJieHeQi") else 1200 if source_class == "NewFireGunJoint" else 1500

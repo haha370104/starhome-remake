@@ -9,26 +9,30 @@ const RANDOM_ATTEMPTS := 256
 ## [param random_seed] 保证服务器重放一致性的随机种子。
 ## [param occupied_positions] 已被实体占用的世界坐标。
 ## [param minimum_separation] 新出生点与现有实体的最小距离。
+## [param point_ids] 可复用的导航候选节点；未提供时读取当前图。
 ## 返回满足条件的坐标；无候选点时返回无穷坐标。
 static func sample(
 	navigation,
 	random_seed: int,
 	occupied_positions: Array[Vector2],
 	minimum_separation: float,
+	point_ids: PackedInt64Array = PackedInt64Array(),
 ) -> Vector2:
 	if navigation == null or navigation.graph == null:
 		return Vector2.INF
-	var point_ids: PackedInt64Array = navigation.graph.get_point_ids()
-	if point_ids.is_empty():
+	var candidates := point_ids
+	if candidates.is_empty():
+		candidates = navigation.graph.get_point_ids()
+	if candidates.is_empty():
 		return Vector2.INF
 	var random := RandomNumberGenerator.new()
 	random.seed = random_seed
 	var best_position := Vector2.INF
 	var best_clearance_squared := -1.0
 	var required_squared := maxf(0.0, minimum_separation) ** 2
-	var attempts := mini(RANDOM_ATTEMPTS, point_ids.size())
+	var attempts := mini(RANDOM_ATTEMPTS, candidates.size())
 	for _attempt in range(attempts):
-		var point_id: int = point_ids[random.randi_range(0, point_ids.size() - 1)]
+		var point_id: int = candidates[random.randi_range(0, candidates.size() - 1)]
 		var candidate: Vector2 = navigation.graph.get_point_position(point_id)
 		var clearance_squared := _nearest_clearance_squared(candidate, occupied_positions)
 		if clearance_squared >= required_squared:

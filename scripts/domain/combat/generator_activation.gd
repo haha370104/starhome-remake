@@ -20,7 +20,7 @@ func try_activate(equipment: VehicleEquipment, state: VehicleCombatState, tick: 
 		return false
 	if tick < _ready_ticks.get(equipment.instance_id, 0) or equipment.magazine.remaining <= 0:
 		return false
-	if not state.consume_working_energy(profile.working_energy_cost).is_ok: return false
+	if not state.consume_working_energy(profile.working_energy_per_trigger).is_ok: return false
 	equipment.magazine.consume()
 	_ready_ticks[equipment.instance_id] = tick + ceili(profile.cooldown_seconds * simulation_hz)
 	return true

@@ -92,7 +92,7 @@ class OfficialAleRecoveryTests(unittest.TestCase):
             recovery = OfficialAleRecovery(
                 "http://example.invalid/ry_www/",
                 cache_root,
-                PROJECT_ROOT.parents[1] / "work" / "ale_sprite.py",
+                PROJECT_ROOT / "tools" / "recovery" / "sprites" / "ale_sprite.py",
             )
             with patch(
                 "official_asset_recovery.urllib.request.urlopen",
@@ -109,7 +109,7 @@ class OfficialAleRecoveryTests(unittest.TestCase):
             offline = OfficialAleRecovery(
                 "http://example.invalid/ry_www/",
                 cache_root,
-                PROJECT_ROOT.parents[1] / "work" / "ale_sprite.py",
+                PROJECT_ROOT / "tools" / "recovery" / "sprites" / "ale_sprite.py",
                 allow_network=False,
             )
             folder, resolution = offline.resolve("map/mapimg/house/demo.ale")
@@ -123,7 +123,7 @@ class OfficialAleRecoveryTests(unittest.TestCase):
             recovery = OfficialAleRecovery(
                 "http://example.invalid/ry_www/",
                 cache_root,
-                PROJECT_ROOT.parents[1] / "work" / "ale_sprite.py",
+                PROJECT_ROOT / "tools" / "recovery" / "sprites" / "ale_sprite.py",
             )
             error = urllib.error.HTTPError(
                 "http://example.invalid/missing.ale", 404, "Not Found", {}, None
@@ -139,7 +139,7 @@ class OfficialAleRecoveryTests(unittest.TestCase):
             second_run = OfficialAleRecovery(
                 "http://example.invalid/ry_www/",
                 cache_root,
-                PROJECT_ROOT.parents[1] / "work" / "ale_sprite.py",
+                PROJECT_ROOT / "tools" / "recovery" / "sprites" / "ale_sprite.py",
             )
             with patch("official_asset_recovery.urllib.request.urlopen") as request:
                 folder, resolution = second_run.resolve("map/missing.ale")

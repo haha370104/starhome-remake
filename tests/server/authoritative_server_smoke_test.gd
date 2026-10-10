@@ -83,18 +83,22 @@ func _test_authoritative_movement() -> void:
 	)
 	var adjusted := server.handle_peer_move(11, blocked_payload)
 	_expect(adjusted.ok, "阻挡目标应被服务端调整到就近可达点：%s" % adjusted)
-	_expect(adjusted.value.adjusted, "阻挡目标响应应明确标记 adjusted")
-	_expect(
-		server.map_instance.navigation.is_walkable(adjusted.value.authoritative_target),
-		"服务端回退目标必须可行走",
-	)
+	if adjusted.ok:
+		_expect(adjusted.value.adjusted, "阻挡目标响应应明确标记 adjusted")
+		_expect(
+			server.map_instance.navigation.is_walkable(adjusted.value.authoritative_target),
+			"服务端回退目标必须可行走",
+		)
 	var outside_contract = MoveIntentContract.new(map_instance_id, Vector2(99999, -500), 2)
 	var outside := server.handle_peer_move(11, outside_contract.to_dictionary())
-	_expect(outside.ok and outside.value.adjusted, "地图外目标也应回退到同一连通区")
-	_expect(
-		server.map_instance.navigation.is_walkable(outside.value.authoritative_target),
-		"地图外目标的权威落点必须可行走",
-	)
+	var outside_adjusted := outside.ok and outside.value is Dictionary \
+		and bool(outside.value.get("adjusted", false))
+	_expect(outside_adjusted, "地图外目标也应回退到同一连通区")
+	if outside.ok and outside.value is Dictionary:
+		_expect(
+			server.map_instance.navigation.is_walkable(outside.value.authoritative_target),
+			"地图外目标的权威落点必须可行走",
+		)
 	var stale_contract = MoveIntentContract.new(map_instance_id, Vector2(800, 1200), 2)
 	var stale := server.handle_peer_move(11, stale_contract.to_dictionary())
 	_expect(not stale.ok and stale.code == ErrorCodes.STALE_SEQUENCE, "旧输入序列必须被拒绝")
@@ -301,8 +305,8 @@ func _test_authoritative_map_transition() -> void:
 	var joined_result = MapJoinedContract.from_dictionary(transferred.value.map_joined)
 	_expect(joined_result.is_ok and joined_result.value.entity_id == entity_id, "成功响应必须符合 MapJoined 契约")
 	_expect(transferred.value.transition_sequence == 1, "成功响应必须确认切图命令序列")
-	var moved_snapshot := server.snapshot_for_peer(61)
-	var observer_snapshot := server.snapshot_for_peer(62)
+	var moved_snapshot: Dictionary = server.snapshot_bundle_for_peer(61).world_snapshot
+	var observer_snapshot: Dictionary = server.snapshot_bundle_for_peer(62).world_snapshot
 	_expect(_snapshot_has_entity(moved_snapshot, entity_id), "迁移玩家应收到目标地图实体")
 	_expect(not _snapshot_has_entity(moved_snapshot, observer_id), "目标地图快照不得泄漏源地图观察者")
 	_expect(_snapshot_has_entity(observer_snapshot, observer_id), "源地图观察者仍应收到自身实体")
@@ -359,9 +363,9 @@ func _test_fixed_tick_and_snapshot_rate() -> void:
 	)
 	var opened := server.open_session(33, _handshake(), 1100)
 	var entity_id: String = opened.value.session.entity_id
-	var world_snapshot: Dictionary = server.map_instance.snapshot(10, 0.5)
+	var world_snapshot: Dictionary = server.map_instance.world_snapshot(10, 0.5)
 	_expect(
-		world_snapshot.keys().all(func(key): return key in ["server_tick", "server_time_seconds", "entities"]),
+		world_snapshot.keys().all(func(key): return key in ["map_instance_id", "server_tick", "server_time_seconds", "entities", "combat_world"]),
 		"世界快照只使用统一顶层字段",
 	)
 	var local_snapshot: Dictionary = world_snapshot.entities[0]
@@ -382,7 +386,7 @@ func _test_destroyed_vehicle_recovery() -> void:
 	var hall: AuthoritativeMapInstance = server.map_registry.instance_by_map_id(
 		"yian_harbor_hall_floor_1"
 	)
-	var field: AuthoritativeMapInstance = server.ensure_runtime_map("d04_field_zone").value
+	var field: AuthoritativeMapInstance = server.ensure_runtime_map("glory_nft_bl_d04").value
 	var source_entity: AuthoritativeEntity = hall.entities[entity_id]
 	var parked_state = hall.vehicle_combat_state_for(entity_id)
 	parked_state.apply_damage(parked_state.max_health)
@@ -390,13 +394,13 @@ func _test_destroyed_vehicle_recovery() -> void:
 		hall.instance_id, source_entity.position + Vector2(48, 0), 1
 	).to_dictionary())
 	_expect(hall_move.ok, "非战斗地图停放战车为0血时，人物仍应能够移动")
-	var hall_snapshot: Dictionary = hall.snapshot_for_actor(0, 0.0, entity_id)
-	_expect(not bool(hall_snapshot.combat.vehicle_combat_active),
+	var hall_snapshot: Dictionary = hall.world_snapshot(0, 0.0)
+	_expect(not bool(hall_snapshot.combat_world.vehicle_combat_active),
 		"大厅战车资源快照必须明确标记为非战斗状态")
 	var field_spawn := field.admitted_spawn_position(Vector2(2412, 2400))
 	var spawned := field.spawn_entity(entity_id, field_spawn, source_entity.movement_speed)
 	_expect(spawned.ok, "恢复测试实体应能进入战斗地图")
-	server.call("_copy_transitioned_entity_state", source_entity, spawned.value)
+	server._map_transition_coordinator.copy_transitioned_entity_state(source_entity, spawned.value)
 	hall.remove_entity(entity_id)
 	session.map_instance_id = field.instance_id
 	var state = field.vehicle_combat_state_for(entity_id)
@@ -406,8 +410,8 @@ func _test_destroyed_vehicle_recovery() -> void:
 	).to_dictionary())
 	_expect(not move_result.ok and move_result.code == &"combat.vehicle_destroyed",
 		"击毁战车不得继续提交移动")
-	var field_snapshot: Dictionary = field.snapshot_for_actor(0, 0.0, entity_id)
-	_expect(bool(field_snapshot.combat.vehicle_combat_active),
+	var field_snapshot: Dictionary = field.world_snapshot(0, 0.0)
+	_expect(bool(field_snapshot.combat_world.vehicle_combat_active),
 		"D04战车资源快照必须明确标记为战斗状态")
 	var request := VehicleRecoveryIntentContract.new(
 		field.instance_id, VehicleRecoveryIntentContract.RETURN_TO_BASE, 1
@@ -449,7 +453,7 @@ func _test_live_return_to_base() -> void:
 	var source: AuthoritativeEntity = hall.entities[entity_id]
 	var spawn := city.admitted_spawn_position(city.definition.spawn_by_id(city.definition.default_spawn_id).position)
 	var placed := city.spawn_entity(entity_id, spawn, source.movement_speed)
-	server.call("_copy_transitioned_entity_state", source, placed.value)
+	server._map_transition_coordinator.copy_transitioned_entity_state(source, placed.value)
 	hall.remove_entity(entity_id)
 	session.map_instance_id = city.instance_id
 	var health: int = city.vehicle_combat_state_for(entity_id).health

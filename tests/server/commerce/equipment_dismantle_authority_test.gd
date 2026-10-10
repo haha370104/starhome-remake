@@ -1,5 +1,7 @@
 extends SceneTree
 
+const CommerceRecordAdapter := preload("res://tests/fixtures/commerce_record_adapter.gd")
+
 var _checks := 0
 var _failures := 0
 
@@ -18,21 +20,21 @@ func _initialize() -> void:
 	var state: PlayerStateRecord = mapper.to_record(player).value
 	var command := {"type": "dismantle_equipment", "instance_id": "source", "inventory_revision": state.inventory_revision,
 		"confirm_destruction": true, "quality": 3, "currency": 0, "probability": 1.0, "outputs": [{"definition_id": "iron_piece", "quantity": 999}]}
-	_check(not service.execute(state, command).is_ok, "cannot forge white quality")
+	_check(not CommerceRecordAdapter.execute(service, state, command).is_ok, "cannot forge white quality")
 	player.inventory.find("source").quality.grade = 1
 	state = mapper.to_record(player).value
 	var before := state.to_dictionary()
 	var query := command.duplicate(true)
 	query.type = "query_equipment_dismantle"
-	var result := service.execute(state, query)
+	var result := CommerceRecordAdapter.execute(service, state, query)
 	_check(result.is_ok and not result.value.changed and state.to_dictionary() == before, "read only preview")
 	var preview: Dictionary = result.value.panel_bundle.equipment_dismantle.preview
 	_check(preview.can_execute and preview.text.contains("无材料返还") and preview.text.contains("永久消失"), "visible risk")
 	_check(not preview.has("plans") and JSON.stringify(result.value.panel_bundle).length() > 0, "wire boundary")
 	command.confirm_destruction = false
-	_check(not service.execute(state, command).is_ok, "requires confirmation")
+	_check(not CommerceRecordAdapter.execute(service, state, command).is_ok, "requires confirmation")
 	command.confirm_destruction = true
-	result = service.execute(state, command)
+	result = CommerceRecordAdapter.execute(service, state, command)
 	_check(result.is_ok and state.to_dictionary() == before, "isolated candidate")
 	_check(result.value.candidate.currency == 800, "authoritative cost")
 	var next: Player = mapper.to_domain(result.value.candidate).value
@@ -40,7 +42,7 @@ func _initialize() -> void:
 	var outcome: EquipmentDismantleRules.Outcome = items.dismantle_rules.profiles[target].outcomes[int(result.value.operation.outcome_index)]
 	for material: Dictionary in outcome.materials:
 		_check(next.inventory.count_definition(material.definition_id) == int(material.quantity), "original table output")
-	_check(not service.execute(result.value.candidate, command).is_ok, "duplicate request")
+	_check(not CommerceRecordAdapter.execute(service, result.value.candidate, command).is_ok, "duplicate request")
 	print("Equipment dismantle authority: %d checks, %d failures" % [_checks, _failures])
 	quit(1 if _failures else 0)
 

@@ -6,7 +6,7 @@ var active: Array[FoodEffect] = []
 var cooldowns: Dictionary = {}
 
 
-## 还原体力及按效果类型保存的限时状态，旧存档默认满体力且无增益。
+## 还原体力及按效果类型保存的限时状态。
 ## [param state] 已校验的存档或网络状态。
 func _init(state: Dictionary = {}) -> void:
 	physical = int(state.get("physical", 100))
@@ -19,17 +19,19 @@ func _init(state: Dictionary = {}) -> void:
 ## [param state] 待解析的原始状态。
 ## 返回是否符合食品状态契约。
 static func valid_state(state: Variant) -> bool:
-	if not state is Dictionary or not state.get("active", []) is Array or not state.get("cooldowns", {}) is Dictionary:
+	if not state is Dictionary or state.size() != 3 or not state.has("physical") \
+		or not state.has("active") or not state.has("cooldowns") \
+		or not state.active is Array or not state.cooldowns is Dictionary:
 		return false
-	if not state.get("physical", 100) is float and not state.get("physical", 100) is int:
+	if not state.physical is float and not state.physical is int:
 		return false
-	if not is_finite(float(state.get("physical", 100))) or float(state.get("physical", 100)) != floorf(float(state.get("physical", 100))):
+	if not is_finite(float(state.physical)) or float(state.physical) != floorf(float(state.physical)):
 		return false
-	if int(state.get("physical", 100)) < 0 or int(state.get("physical", 100)) > 100:
+	if int(state.physical) < 0 or int(state.physical) > 100:
 		return false
 	var seen: Array[int] = []
-	for row: Variant in state.get("active", []):
-		if not row is Dictionary:
+	for row: Variant in state.active:
+		if not row is Dictionary or row.size() != 6:
 			return false
 		for key: String in ["kind", "amount", "duration", "cooldown", "expires_at", "last_tick"]:
 			if not row.get(key) is int and not row.get(key) is float:
@@ -40,7 +42,7 @@ static func valid_state(state: Variant) -> bool:
 		if kind < 1 or kind > 18 or kind in seen:
 			return false
 		seen.append(kind)
-	for key: Variant in state.get("cooldowns", {}):
+	for key: Variant in state.cooldowns:
 		if not String(key).is_valid_int() or int(key) < 1 or int(key) > 19:
 			return false
 		var value: Variant = state.cooldowns[key]

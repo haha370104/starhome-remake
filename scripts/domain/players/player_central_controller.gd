@@ -5,19 +5,22 @@ var _grades: Dictionary[String, int] = {}
 var evolved := false
 
 
-## 恢复角色永久芯片状态；空旧档是六类全部未激活。
+## 恢复角色永久芯片状态。
 ## [param raw] 存档或快照边界。
 ## 返回合法控制器或拒绝伪造等级、缺少前置的进化状态。
 static func restore(raw: Variant) -> DomainResult:
-	if not raw is Dictionary or not raw.get("grades", {}) is Dictionary or not raw.get("evolved", false) is bool:
+	if not raw is Dictionary or raw.size() != 2 or not raw.has("grades") or not raw.has("evolved") \
+		or not raw.grades is Dictionary or raw.grades.size() != CentralRules.CHIP_IDS.size() \
+		or not raw.evolved is bool:
 		return DomainResult.failure(&"central.state", "中枢角色状态无效")
 	var controller := PlayerCentralController.new()
-	for key: Variant in raw.get("grades", {}):
+	for key: Variant in raw.grades:
 		if key not in CentralRules.CHIP_IDS or not CentralRules.integer(raw.grades[key], 0, 3):
 			return DomainResult.failure(&"central.state", "中枢芯片等级无效")
 	for id: String in CentralRules.CHIP_IDS:
-		controller._grades[id] = int(raw.get("grades", {}).get(id, 0))
-	controller.evolved = bool(raw.get("evolved", false))
+		if not raw.grades.has(id): return DomainResult.failure(&"central.state", "中枢芯片状态不完整")
+		controller._grades[id] = int(raw.grades[id])
+	controller.evolved = raw.evolved
 	if controller.evolved and controller.core_grade() != 3:
 		return DomainResult.failure(&"central.state", "进化中枢要求六类芯片均为3级")
 	return DomainResult.ok(controller)

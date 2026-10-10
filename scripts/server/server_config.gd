@@ -2,6 +2,7 @@ class_name DedicatedServerConfig
 extends RefCounted
 
 const Protocol := preload("res://scripts/network/contracts/network_protocol.gd")
+const LlmProviderConfigScript := preload("res://scripts/server/llm/llm_provider_config.gd")
 const DEFAULT_MAP_CONFIG := "res://data/maps/yian_harbor_hall_floor_1.json"
 const DEFAULT_MAP_CATALOG := "res://data/maps/map_directory.json"
 const DEFAULT_PLAYER_STATE_STORE := "user://server/player_states.json"
@@ -25,6 +26,7 @@ var network_enabled := true
 var smoke_test := false
 var persistence_enabled := true
 var player_state_store_path := DEFAULT_PLAYER_STATE_STORE
+var llm_config_path := LlmProviderConfigScript.default_path()
 var autosave_interval_seconds := 60.0
 
 
@@ -43,6 +45,8 @@ static func from_command_line(arguments: PackedStringArray) -> DedicatedServerCo
 			config.persistence_enabled = false
 		elif argument.begins_with("--player-state-store="):
 			config.player_state_store_path = argument.trim_prefix("--player-state-store=")
+		elif argument.begins_with("--llm-config="):
+			config.llm_config_path = argument.trim_prefix("--llm-config=")
 		elif argument.begins_with("--autosave-interval-seconds="):
 			config.autosave_interval_seconds = float(
 				argument.trim_prefix("--autosave-interval-seconds=")
@@ -101,6 +105,8 @@ func validation_errors() -> PackedStringArray:
 		errors.append("map_config_path cannot be empty")
 	if map_catalog_path.is_empty():
 		errors.append("map_catalog_path cannot be empty")
+	if llm_config_path.is_empty():
+		errors.append("llm_config_path cannot be empty")
 	if persistence_enabled and player_state_store_path.is_empty():
 		errors.append("player_state_store_path cannot be empty when persistence is enabled")
 	if autosave_interval_seconds <= 0.0:

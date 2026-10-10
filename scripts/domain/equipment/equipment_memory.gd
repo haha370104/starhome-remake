@@ -12,12 +12,15 @@ var source_forging := EquipmentForging.new()
 
 
 ## 恢复模块内唯一一种成长，拒绝不完整、空载伪装和混合载荷。
-## [param raw] 旧档默认空对象，新档携带来源和类型化成长边界。
+## [param raw] 当前成长载荷；空对象表示未安装模块。
 ## 返回独立记忆对象或错误。
 static func restore(raw: Variant) -> DomainResult:
 	if not raw is Dictionary: return DomainResult.failure(&"memory.state", "记忆模块状态必须为对象")
 	var result := EquipmentMemory.new()
 	if raw.is_empty(): return DomainResult.ok(result)
+	if raw.size() not in [4, 5] or not raw.has("version") or not raw.has("source_definition_id") \
+		or not raw.has("module_type") or not raw.has("payload"):
+		return DomainResult.failure(&"memory.state", "记忆模块状态字段不完整")
 	var kind: Variant = raw.get("module_type")
 	if not (kind is int or kind is float) or not is_finite(float(kind)) or float(kind) != int(kind) or int(kind) not in EquipmentMemoryRules.TYPES:
 		return DomainResult.failure(&"memory.state", "记忆模块类型无效")
@@ -117,7 +120,7 @@ static func capture(equipment: VehicleEquipment, kind: int) -> DomainResult:
 		"source_forging": equipment.forging.to_dictionary() if kind == 1 else {}})
 
 
-## 保存原始来源和独立成长载荷，空模块保持空对象兼容旧档。
+## 保存原始来源和独立成长载荷，空模块使用规范空对象零态。
 ## 返回可序列化状态。
 func to_dictionary() -> Dictionary:
 	if source_definition_id.is_empty(): return {}

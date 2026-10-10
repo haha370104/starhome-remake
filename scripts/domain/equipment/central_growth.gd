@@ -4,14 +4,15 @@ extends RefCounted
 var grade := 0
 
 
-## 恢复圣焱附属装备的独立阶数；旧存档默认零阶。
+## 恢复圣焱附属装备的独立阶数。
 ## [param raw] 持久化边界。
 ## 返回成长状态或拒绝非法阶数。
 static func restore(raw: Variant) -> DomainResult:
-	if not raw is Dictionary or not CentralRules.integer(raw.get("grade", 0), 0, 18):
+	if not raw is Dictionary or raw.size() != 1 or not raw.has("grade") \
+		or not CentralRules.integer(raw.grade, 0, 18):
 		return DomainResult.failure(&"central.growth_state", "中枢装备阶数无效")
 	var growth := CentralGrowth.new()
-	growth.grade = int(raw.get("grade", 0))
+	growth.grade = int(raw.grade)
 	return DomainResult.ok(growth)
 
 

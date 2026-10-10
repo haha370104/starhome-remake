@@ -2,7 +2,6 @@ class_name AuthoritativeMapInstance
 extends RefCounted
 
 const MapDefinitionLoaderScript := preload("res://scripts/maps/map_definition_loader.gd")
-const DiamondNavigationScript := preload("res://scripts/navigation/diamond_navigation.gd")
 const MonsterRoutePlannerScript := preload("res://scripts/navigation/monster_route_planner.gd")
 const RandomWalkableSpawnSamplerScript := preload(
 	"res://scripts/navigation/random_walkable_spawn_sampler.gd"
@@ -10,6 +9,8 @@ const RandomWalkableSpawnSamplerScript := preload(
 const EntityScript := preload("res://scripts/server/authoritative_entity.gd")
 const MoveIntentContract := preload("res://scripts/network/contracts/move_intent.gd")
 const ErrorCodes := preload("res://scripts/network/contracts/network_error_codes.gd")
+const PerformanceTelemetryScript := preload("res://scripts/core/performance_telemetry.gd")
+const DeterministicSpatialGridScript := preload("res://scripts/core/deterministic_spatial_grid.gd")
 const CombatModuleScript := preload("res://scripts/server/modules/combat/authoritative_combat_module.gd")
 const MiningModuleScript := preload(
 	"res://scripts/server/modules/mining/authoritative_mining_module.gd"
@@ -37,6 +38,15 @@ var _monster_spawn_sequence := 0
 var _elite_population := TimedPopulationQuota.new()
 var _additional_populations: Dictionary[StringName, TimedPopulationQuota] = {}
 var suspended_at_server_tick := -1
+var navigation_cache: MapNavigationCache
+var loot_recipient_resolver := Callable()
+var player_resolver := Callable()
+var _spawn_point_ids := PackedInt64Array()
+var _population_refresh_processed := false
+var _snapshot_cache_tick := -1
+var _snapshot_cache: Dictionary = {}
+var _dynamic_entity_grid := DeterministicSpatialGridScript.new(256.0)
+var _navigation_point_grid := DeterministicSpatialGridScript.new(256.0)
 
 
 ## 检查空地图是否已结清在途攻击和矿物事务，允许释放导航。
@@ -46,6 +56,13 @@ func can_suspend_runtime() -> bool:
 		and (combat_module == null or (combat_module.pending_projectiles.is_empty() \
 			and combat_module.pending_monster_attacks.is_empty() and combat_module.corrosion.is_empty())) \
 		and (mining_module == null or mining_module.can_suspend())
+
+
+## 注入服务端队伍掉落资格解析器，并同步到已创建的战斗模块。
+func set_loot_recipient_resolver(resolver: Callable) -> void:
+	loot_recipient_resolver = resolver
+	if combat_module != null:
+		combat_module.set_loot_recipient_resolver(resolver)
 
 
 ## 空地图仅保留领域状态，解除导航及反向回调的重资源引用。
@@ -61,24 +78,25 @@ func suspend_runtime(server_tick: int) -> bool:
 	if mining_module != null:
 		mining_module.release_navigation()
 	navigation = null
+	_navigation_point_grid.clear()
 	return true
 
 
-## 再次进入时只重建导航，复用原怪物、矿源和掉落，并按休眠时间补充种群。
+## 再次进入时优先复用近期导航，保留怪物、矿源和掉落，并按休眠时间补充种群。
 ## [param server_tick] 本次唤醒的服务器时钟。
 ## 返回导航恢复结果；失败时保持休眠数据不变。
 func resume_runtime(server_tick: int) -> Dictionary:
 	if suspended_at_server_tick < 0:
 		return _success(self)
-	var restored_navigation = DiamondNavigationScript.new()
-	if not restored_navigation.load_from(definition.navigation_data_path,
-			definition.navigation_grid_size, definition.navigation_cell_size):
+	var restored_navigation: DiamondNavigation = navigation if navigation != null else _acquire_navigation()
+	if restored_navigation == null:
 		return _failure(&"invalid_navigation", "cannot resume map navigation")
 	navigation = restored_navigation
 	var elapsed_ticks := maxi(0, server_tick - suspended_at_server_tick)
 	if combat_module != null:
 		combat_module.set_monster_position_resolver(_resolve_monster_position)
 		combat_module.set_monster_route_resolver(_resolve_monster_route)
+		combat_module.set_loot_recipient_resolver(loot_recipient_resolver)
 		combat_module.advance_suspended_time(elapsed_ticks)
 		if _next_monster_replenishment_tick >= 0 \
 				and combat_module.current_tick >= _next_monster_replenishment_tick:
@@ -107,15 +125,37 @@ func load_map(map_config_path: String) -> Dictionary:
 	if definition == null:
 		return _failure(&"invalid_map_definition", "; ".join(loader.errors))
 	instance_id = "%s.instance.1" % definition.map_id
-	navigation = DiamondNavigationScript.new()
-	if not navigation.load_from(
-		definition.navigation_data_path,
-		definition.navigation_grid_size,
-		definition.navigation_cell_size,
-	):
+	navigation = _acquire_navigation()
+	if navigation == null:
 		definition = null
 		return _failure(&"invalid_navigation", "map navigation failed to load")
 	return _success(definition)
+
+
+func load_runtime(path: String, combat_catalog, mining_catalog, simulation_hz: int, navigation_only := false) -> Dictionary:
+	var loaded := load_map(path)
+	if not loaded.ok: return loaded
+	if navigation_only: return _success(self)
+	loaded = configure_combat(combat_catalog, simulation_hz)
+	if loaded.ok: loaded = configure_mining(mining_catalog, simulation_hz)
+	return _success(self) if loaded.ok else loaded
+
+
+## 从服务器独立缓存取得导航；独立使用的地图实例也保留自己的缓存。
+## 返回完整导航，加载失败返回 null。
+func _acquire_navigation() -> DiamondNavigation:
+	if navigation_cache == null:
+		navigation_cache = MapNavigationCache.new()
+	var acquired: DiamondNavigation = navigation_cache.acquire(definition.navigation_data_path,
+		definition.navigation_grid_size, definition.navigation_cell_size)
+	if acquired != null and acquired.graph != null:
+		_spawn_point_ids = acquired.graph.get_point_ids()
+		_navigation_point_grid.clear()
+		for point_id: int in _spawn_point_ids:
+			_navigation_point_grid.register(
+				str(point_id), acquired.graph.get_point_position(point_id)
+			)
+	return acquired
 
 
 ## 执行 `configure_combat` 对应的模块操作。
@@ -162,12 +202,17 @@ func configure_combat(catalog, simulation_hz: int) -> Dictionary:
 		return _failure(configured.error_code, configured.error_message)
 	combat_module.set_monster_position_resolver(_resolve_monster_position)
 	combat_module.set_monster_route_resolver(_resolve_monster_route)
+	combat_module.set_loot_recipient_resolver(loot_recipient_resolver)
+	var occupied_positions: Array[Vector2] = []
 	for raw_definition: Variant in lifecycle_result.value:
 		var monster_definition: Dictionary = raw_definition.duplicate(true)
-		var requested_position := _random_monster_spawn_position(int(monster_definition["spawn_index"]))
+		var requested_position := _random_monster_spawn_position(
+			int(monster_definition["spawn_index"]), occupied_positions
+		)
 		if not requested_position.is_finite():
 			return _failure(&"combat.no_monster_spawn", "monster group has no walkable spawn")
 		monster_definition["position"] = requested_position
+		occupied_positions.append(requested_position)
 		var registration = combat_module.register_monster(monster_definition)
 		if not registration.is_ok:
 			return _failure(registration.error_code, registration.error_message)
@@ -234,6 +279,8 @@ func spawn_entity(entity_id: String, requested_position: Vector2, movement_speed
 		if not combat_result.ok:
 			entities.erase(entity_id)
 			return combat_result
+	_dynamic_entity_grid.register(entity_id, entity.position)
+	_snapshot_cache_tick = -1
 	return _success(entity)
 
 
@@ -263,11 +310,15 @@ func admitted_spawn_position(
 func remove_entity(entity_id: String) -> bool:
 	if combat_module != null:
 		combat_module.unregister_vehicle(entity_id)
+	_dynamic_entity_grid.remove(entity_id)
 	_combat_loadout_by_entity.erase(entity_id)
 	_accepted_movement_distance.erase(entity_id)
 	if mining_module != null:
 		mining_module.unregister_actor(entity_id)
-	return entities.erase(entity_id)
+	var removed := entities.erase(entity_id)
+	if removed:
+		_snapshot_cache_tick = -1
+	return removed
 
 
 ## 执行 `handle_use_ability` 对应的模块操作。
@@ -309,7 +360,7 @@ func handle_use_ability(
 			else _failure(mining_result.error_code, mining_result.error_message)
 	if combat_module == null or not is_vehicle_combat_active():
 		return _failure(&"combat.not_available", "this map has no configured combat encounter")
-	if mining_module != null:
+	if mining_module != null and ability_id != AuthoritativeCombatModule.SELF_REPAIR_ABILITY_ID:
 		mining_module.interrupt(entity_id, &"attack")
 	var result = combat_module.handle_self_repair(
 		entity_id,
@@ -383,11 +434,20 @@ func handle_move_intent(entity_id: String, raw_intent: Variant) -> Dictionary:
 	var authoritative_path := _find_authoritative_path(entity_id, entity.position, authoritative_target)
 	if authoritative_path.is_empty():
 		return _failure(&"unreachable_target", "no authoritative path exists")
+	if is_vehicle_combat_active() and vehicle_state != null and entity.action != &"walking" \
+			and not authoritative_target.is_equal_approx(entity.position):
+		var assembly: Dictionary = _combat_loadout_by_entity.get(entity_id, {}).get("assembly", _combat_assembly)
+		var energy_result := vehicle_state.consume_working_energy(
+			float(assembly.get("working_energy_per_movement", 0.0))
+		)
+		if not energy_result.is_ok:
+			return _failure(energy_result.error_code, energy_result.error_message)
 	entity.set_path(authoritative_path, authoritative_target, sequence)
 	if combat_module != null and not authoritative_target.is_equal_approx(entity.position):
 		combat_module.interrupt_self_repair(entity_id, &"movement")
 	if mining_module != null and not authoritative_target.is_equal_approx(entity.position):
 		mining_module.interrupt(entity_id, &"movement")
+	_snapshot_cache_tick = -1
 	return _success({
 		"sequence": sequence,
 		"requested_target": requested_position,
@@ -401,6 +461,10 @@ func handle_move_intent(entity_id: String, raw_intent: Variant) -> Dictionary:
 ## [param delta] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## 设计：该函数位于权威服务器边界，客户端不得覆盖其计算结果。
 func simulate(delta: float) -> void:
+	_population_refresh_processed = false
+	var entity_movement_started_at := PerformanceTelemetryScript.begin(
+		&"server_map_entity_movement"
+	)
 	var entity_ids := entities.keys()
 	entity_ids.sort()
 	for entity_id: String in entity_ids:
@@ -414,34 +478,48 @@ func simulate(delta: float) -> void:
 			entity.path = PackedVector2Array([entity.position])
 			entity.path_index = entity.path.size()
 			entity.action = &"idle"
-			continue
-		if not dynamic_blocking_enabled or entities.size() <= 1:
-			entity.simulate(delta)
 		else:
-			var motion_state := _capture_motion_state(entity)
-			entity.simulate(delta)
-			if (
-				not entity.position.is_equal_approx(previous_position)
-				and _movement_intersects_dynamic_blocker(
-					entity_id, previous_position, entity.position
-				)
-			):
-				_restore_motion_state(entity, motion_state)
-		if mining_module != null and not entity.position.is_equal_approx(previous_position):
-			mining_module.interrupt(entity_id, &"movement")
-		if is_vehicle_combat_active() and not entity.position.is_equal_approx(previous_position):
-			_accepted_movement_distance[entity_id] = float(
-				_accepted_movement_distance.get(entity_id, 0.0)
-			) + previous_position.distance_to(entity.position)
+			if not dynamic_blocking_enabled or entities.size() <= 1:
+				entity.simulate(delta)
+			else:
+				var motion_state := _capture_motion_state(entity)
+				entity.simulate(delta)
+				if (
+					not entity.position.is_equal_approx(previous_position)
+					and _movement_intersects_dynamic_blocker(
+						entity_id, previous_position, entity.position
+					)
+				):
+					_restore_motion_state(entity, motion_state)
+			if mining_module != null and not entity.position.is_equal_approx(previous_position):
+				mining_module.interrupt(entity_id, &"movement")
+			if is_vehicle_combat_active() and not entity.position.is_equal_approx(previous_position):
+				_accepted_movement_distance[entity_id] = float(
+					_accepted_movement_distance.get(entity_id, 0.0)
+				) + previous_position.distance_to(entity.position)
+		_dynamic_entity_grid.update(entity_id, entity.position)
+		if combat_module != null:
+			combat_module.update_actor_position(entity_id, entity.position)
+	PerformanceTelemetryScript.end(&"server_map_entity_movement", entity_movement_started_at)
 	if combat_module != null:
-		for entity_id: String in entities:
-			combat_module.update_actor_position(entity_id, entities[entity_id].position)
+		var combat_advance_started_at := PerformanceTelemetryScript.begin(
+			&"server_map_combat_advance"
+		)
 		combat_module.advance_ticks(1, not entities.is_empty())
+		PerformanceTelemetryScript.end(&"server_map_combat_advance", combat_advance_started_at)
 		_replenish_monster_population_if_due()
 		_replenish_elite_population_if_due()
 		_replenish_additional_populations_if_due()
 	if mining_module != null:
 		mining_module.advance_ticks(1)
+
+
+## 取出本次模拟是否处理了定时种群刷新，并清除该帧标记。
+## 返回值供服务器错开自动存档与刷新工作。
+func consume_population_refresh_flag() -> bool:
+	var processed := _population_refresh_processed
+	_population_refresh_processed = false
+	return processed
 
 
 ## 取出到期的采矿周期，交给服务器完成背包与持久化事务。
@@ -469,6 +547,7 @@ func _replenish_monster_population_if_due() -> void:
 	if combat_module == null or _next_monster_replenishment_tick < 0 \
 		or combat_module.current_tick < _next_monster_replenishment_tick:
 		return
+	_population_refresh_processed = true
 	var interval_ticks := maxi(1, roundi(
 		float(_monster_population_policy.get("replenish_interval_seconds", 60.0))
 		* combat_module.simulation_hz
@@ -488,6 +567,7 @@ func _replenish_monster_population_if_due() -> void:
 	combat_module.remove_dead_monsters(instance_id)
 	if replenish_count <= 0:
 		return
+	var occupied_positions := _alive_monster_positions()
 	var generated = _combat_catalog.monster_replenishment_for_map(
 		String(definition.map_id), instance_id, alive_by_species,
 		_monster_spawn_sequence, replenish_count,
@@ -497,11 +577,15 @@ func _replenish_monster_population_if_due() -> void:
 		return
 	for raw_definition: Variant in generated.value:
 		var monster_definition: Dictionary = raw_definition.duplicate(true)
-		var position := _random_monster_spawn_position(int(monster_definition["spawn_index"]))
+		var position := _random_monster_spawn_position(
+			int(monster_definition["spawn_index"]), occupied_positions
+		)
 		if not position.is_finite():
 			continue
 		monster_definition["position"] = position
-		combat_module.register_monster(monster_definition)
+		var registration := combat_module.register_monster(monster_definition)
+		if registration.is_ok:
+			occupied_positions.append(position)
 	_monster_spawn_sequence += generated.value.size()
 
 
@@ -523,6 +607,7 @@ func _replenish_additional_populations_if_due() -> void:
 func _replenish_timed_population(kind: StringName, quota: TimedPopulationQuota) -> void:
 	if combat_module == null or not quota.is_due(combat_module.current_tick):
 		return
+	_population_refresh_processed = true
 	var alive_by_species: Dictionary = {}
 	var alive_count := 0
 	for monster: MonsterLifecycle in combat_module.monsters.values():
@@ -539,33 +624,48 @@ func _replenish_timed_population(kind: StringName, quota: TimedPopulationQuota) 
 		push_error("Timed population replenishment failed: %s" % generated.error_message)
 		return
 	combat_module.remove_dead_monsters(instance_id)
+	var occupied_positions := _alive_monster_positions()
 	for raw: Dictionary in generated.value:
-		raw.position = _random_monster_spawn_position(int(raw.spawn_index))
+		raw.position = _random_monster_spawn_position(int(raw.spawn_index), occupied_positions)
 		if raw.position.is_finite():
 			var result := combat_module.register_monster(raw)
 			if not result.is_ok:
 				push_error("Timed population registration failed: %s" % result.error_message)
+			else:
+				occupied_positions.append(raw.position)
 	_monster_spawn_sequence += generated.value.size()
 
 
 ## 为下一只怪物选择与存活实体保持配置间距的权威出生点。
 ## [param spawn_sequence] 用于确定性随机采样的全局生成序号。
+## [param occupied_positions] 当前批次的占用坐标，注册成功后由调用方追加。
 ## 返回可用出生坐标；地图没有候选点时返回无穷坐标。
-func _random_monster_spawn_position(spawn_sequence: int) -> Vector2:
-	var occupied: Array[Vector2] = []
-	if combat_module != null:
-		for monster: MonsterLifecycle in combat_module.monsters.values():
-			if monster.map_instance_id == instance_id and monster.is_alive():
-				occupied.append(monster.position)
+func _random_monster_spawn_position(
+	spawn_sequence: int,
+	occupied_positions: Array[Vector2],
+) -> Vector2:
 	var minimum_separation := float(
 		_monster_population_policy.get("minimum_spawn_separation", 0.0)
 	)
 	return RandomWalkableSpawnSamplerScript.sample(
 		navigation,
 		hash("%s.monster.%d" % [instance_id, spawn_sequence]),
-		occupied,
+		occupied_positions,
 		minimum_separation,
+		_spawn_point_ids,
 	)
+
+
+## 批量出生前只扫描一次当前地图中的存活怪物。
+## 返回可复用的占用坐标，避免每只新怪物重复遍历全部实体。
+func _alive_monster_positions() -> Array[Vector2]:
+	var occupied: Array[Vector2] = []
+	if combat_module == null:
+		return occupied
+	for monster: MonsterLifecycle in combat_module.monsters.values():
+		if monster.map_instance_id == instance_id and monster.is_alive():
+			occupied.append(monster.position)
+	return occupied
 
 
 ## 提取自上次调用后产生的技能成长事件，并清空已消费的移动累计。
@@ -609,7 +709,7 @@ func drain_skill_progression_events() -> Array[Dictionary]:
 				"entity_id": String(combat_event.get("actor_id", "")),
 				"source": "authoritative_action",
 				"skill_id": "repair",
-				"amount": 1.0,
+				"amount": float(combat_event["healed"]),
 				"combat_event_id": event_id,
 			})
 	return events
@@ -634,14 +734,29 @@ func _closest_dynamically_available_position(
 		return requested_position
 	var best_position := Vector2.INF
 	var best_distance_squared := INF
-	for point_id: int in navigation.graph.get_point_ids():
-		var candidate: Vector2 = navigation.graph.get_point_position(point_id)
-		if not _position_has_dynamic_clearance(candidate, excluded_entity_id, true):
-			continue
-		var distance_squared := candidate.distance_squared_to(requested_position)
-		if distance_squared < best_distance_squared:
+	var search_radius := maxf(dynamic_blocking_radius, _navigation_point_grid.cell_size)
+	var map_extent := Vector2(
+		float(navigation.grid_size.x) * navigation.cell_size.x,
+		float(navigation.grid_size.y) * navigation.cell_size.y,
+	)
+	var maximum_radius := requested_position.distance_to(map_extent) + map_extent.length()
+	while true:
+		for raw_point_id: String in _navigation_point_grid.query_circle(
+			requested_position, search_radius
+		):
+			var point_id := raw_point_id.to_int()
+			var candidate: Vector2 = navigation.graph.get_point_position(point_id)
+			var distance_squared := candidate.distance_squared_to(requested_position)
+			if distance_squared >= best_distance_squared \
+				or not _position_has_dynamic_clearance(candidate, excluded_entity_id, true):
+				continue
 			best_position = candidate
 			best_distance_squared = distance_squared
+		if best_position.is_finite() and search_radius * search_radius > best_distance_squared:
+			return best_position
+		if search_radius >= maximum_radius:
+			return best_position
+		search_radius = minf(search_radius * 2.0, maximum_radius)
 	return best_position
 
 
@@ -657,18 +772,20 @@ func _position_has_dynamic_clearance(
 	include_reserved_targets: bool,
 ) -> bool:
 	var minimum_distance_squared := dynamic_blocking_radius * dynamic_blocking_radius
-	for other_entity_id: String in entities:
+	for other_entity_id: String in _dynamic_entity_grid.query_circle(candidate, dynamic_blocking_radius):
 		if StringName(other_entity_id) == excluded_entity_id:
 			continue
 		var other: AuthoritativeEntity = entities[other_entity_id]
 		if candidate.distance_squared_to(other.position) < minimum_distance_squared:
 			return false
-		if (
-			include_reserved_targets
-			and not other.target_position.is_equal_approx(other.position)
-			and candidate.distance_squared_to(other.target_position) < minimum_distance_squared
-		):
-			return false
+	if include_reserved_targets:
+		for other_entity_id: String in entities:
+			if other_entity_id == String(excluded_entity_id):
+				continue
+			var other: AuthoritativeEntity = entities[other_entity_id]
+			if not other.target_position.is_equal_approx(other.position) \
+				and candidate.distance_squared_to(other.target_position) < minimum_distance_squared:
+				return false
 	return true
 
 
@@ -685,22 +802,38 @@ func _find_authoritative_path(
 ) -> PackedVector2Array:
 	if not dynamic_blocking_enabled or entities.size() <= 1:
 		return navigation.find_path(from_position, to_position)
-	var disabled_point_ids: Array[int] = []
-	var minimum_distance_squared := dynamic_blocking_radius * dynamic_blocking_radius
-	var from_point_id: int = navigation.cell_id(navigation.world_to_cell(from_position))
-	for point_id: int in navigation.graph.get_point_ids():
-		if point_id == from_point_id or navigation.graph.is_point_disabled(point_id):
-			continue
-		var point_position: Vector2 = navigation.graph.get_point_position(point_id)
-		for other_entity_id: String in entities:
-			if other_entity_id == entity_id:
-				continue
-			var other: AuthoritativeEntity = entities[other_entity_id]
-			if point_position.distance_squared_to(other.position) < minimum_distance_squared:
-				navigation.graph.set_point_disabled(point_id, true)
-				disabled_point_ids.append(point_id)
-				break
 	var path: PackedVector2Array = navigation.find_path(from_position, to_position, false)
+	var path_blocked := false
+	for index in range(path.size() - 1):
+		if _movement_intersects_dynamic_blocker(entity_id, path[index], path[index + 1]):
+			path_blocked = true
+			break
+	if path.is_empty() or not path_blocked:
+		return path
+	var disabled_point_ids: Array[int] = []
+	var from_point_id: int = navigation.cell_id(navigation.world_to_cell(from_position))
+	var blocked_point_ids: Dictionary = {}
+	var minimum_distance_squared := dynamic_blocking_radius * dynamic_blocking_radius
+	for other_entity_id: String in _dynamic_entity_grid.query_all():
+		if other_entity_id == entity_id:
+			continue
+		var other: AuthoritativeEntity = entities[other_entity_id]
+		for raw_point_id: String in _navigation_point_grid.query_circle(
+			other.position, dynamic_blocking_radius
+		):
+			var point_id := raw_point_id.to_int()
+			if point_id == from_point_id or blocked_point_ids.has(point_id) \
+				or navigation.graph.is_point_disabled(point_id):
+				continue
+			if (
+				navigation.graph.get_point_position(point_id).distance_squared_to(other.position)
+				>= minimum_distance_squared
+			):
+				continue
+			blocked_point_ids[point_id] = true
+			navigation.graph.set_point_disabled(point_id, true)
+			disabled_point_ids.append(point_id)
+	path = navigation.find_path(from_position, to_position, false)
 	for point_id: int in disabled_point_ids:
 		navigation.graph.set_point_disabled(point_id, false)
 	return path
@@ -744,7 +877,11 @@ func _movement_intersects_dynamic_blocker(
 	to_position: Vector2,
 ) -> bool:
 	var minimum_distance_squared := dynamic_blocking_radius * dynamic_blocking_radius
-	for other_entity_id: String in entities:
+	var padding := Vector2.ONE * dynamic_blocking_radius
+	for other_entity_id: String in _dynamic_entity_grid.query_aabb_candidates(
+		Vector2(minf(from_position.x, to_position.x), minf(from_position.y, to_position.y)) - padding,
+		Vector2(maxf(from_position.x, to_position.x), maxf(from_position.y, to_position.y)) + padding,
+	):
 		if other_entity_id == entity_id:
 			continue
 		var other: AuthoritativeEntity = entities[other_entity_id]
@@ -754,6 +891,16 @@ func _movement_intersects_dynamic_blocker(
 		if closest_point.distance_squared_to(other.position) < minimum_distance_squared:
 			return true
 	return false
+
+
+## 迁移后刷新动态占位索引；位置由迁移协调器直接写入，不能等待下一个 tick。
+func refresh_dynamic_entity_position(entity_id: String) -> bool:
+	var entity: AuthoritativeEntity = entities.get(entity_id)
+	if entity == null:
+		return false
+	if _dynamic_entity_grid.contains(entity_id):
+		return _dynamic_entity_grid.update(entity_id, entity.position)
+	return _dynamic_entity_grid.register(entity_id, entity.position)
 
 
 ## 执行 `closest_point_on_segment` 对应的模块操作。
@@ -774,38 +921,65 @@ func _closest_point_on_segment(
 	return segment_start + segment * weight
 
 
-## 执行 `snapshot` 对应的模块操作。
-## [param server_tick] 调用方传入的参数；具体约束由函数签名和所在模块定义。
-## [param server_time_seconds] 调用方传入的参数；具体约束由函数签名和所在模块定义。
-## 返回该函数计算、查询或操作得到的结果。
-## 设计：该函数位于权威服务器边界，客户端不得覆盖其计算结果。
-func snapshot(server_tick: int, server_time_seconds: float) -> Dictionary:
+## 构建当前地图唯一的共享世界快照。
+func world_snapshot(server_tick: int, server_time_seconds: float) -> Dictionary:
+	var result := _shared_snapshot(server_tick, server_time_seconds).duplicate(false)
+	result["map_instance_id"] = instance_id
+	result["player_presentation"] = definition.player_presentation.duplicate(true) if definition != null else {}
+	var combat_world := {
+		"monsters": [],
+		"ground_loot": [],
+		"mine_sources": mining_module.snapshot() if mining_module != null else [],
+		"corrosive_clouds": [],
+		"recent_events": [],
+		"vehicle_combat_active": is_vehicle_combat_active(),
+	}
+	if combat_module != null:
+		combat_world.merge(combat_module.world_snapshot_for_map(instance_id), true)
+	result["combat_world"] = combat_world
+	return result
+
+
+func _shared_snapshot(server_tick: int, server_time_seconds: float) -> Dictionary:
+	if _snapshot_cache_tick == server_tick:
+		return _snapshot_cache
 	var entity_snapshots: Array[Dictionary] = []
 	var entity_ids := entities.keys()
 	entity_ids.sort()
 	for entity_id in entity_ids:
-		entity_snapshots.append(entities[entity_id].snapshot(server_tick))
-	return {
+		var snapshot: Dictionary = entities[entity_id].snapshot(server_tick)
+		var player: Player = player_resolver.call(entity_id) if player_resolver.is_valid() else null
+		if player != null:
+			var appearance := {"display_name": player.display_name}
+			for slot: String in ["upper_body", "chassis", "primary_weapon"]:
+				var item: GameItem = player.character_equipment.at(slot) if slot == "upper_body" \
+					else player.vehicle.loadout.at(0 if slot == "chassis" else 1)
+				appearance[slot] = item.definition_id if item != null else ""
+			snapshot["appearance"] = appearance
+		entity_snapshots.append(snapshot)
+	_snapshot_cache_tick = server_tick
+	_snapshot_cache = {
 		"server_tick": server_tick,
 		"server_time_seconds": server_time_seconds,
 		"entities": entity_snapshots,
 	}
+	return _snapshot_cache
 
 
-## 执行 `snapshot_for_actor` 对应的模块操作。
-## [param server_tick] 调用方传入的参数；具体约束由函数签名和所在模块定义。
-## [param server_time_seconds] 调用方传入的参数；具体约束由函数签名和所在模块定义。
-## [param actor_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
-## 返回该函数计算、查询或操作得到的结果。
-func snapshot_for_actor(server_tick: int, server_time_seconds: float, actor_id: String) -> Dictionary:
-	var result := snapshot(server_tick, server_time_seconds)
+## 构建指定玩家唯一的私有快照。
+func local_snapshot_for_actor(server_tick: int, actor_id: String) -> Dictionary:
+	var result := {
+		"map_instance_id": instance_id,
+		"server_tick": server_tick,
+		"local_entity_id": actor_id,
+		"local_vehicle": {},
+		"local_weapon_flight": {},
+		"local_sama_effects": [],
+		"local_mining": mining_module.action_snapshot(actor_id) \
+			if mining_module != null else {"active": false},
+	}
 	if combat_module != null:
-		var combat_snapshot: Dictionary = combat_module.snapshot_for_actor(actor_id)
-		combat_snapshot["vehicle_combat_active"] = is_vehicle_combat_active()
-		combat_snapshot["mine_sources"] = mining_module.snapshot() if mining_module != null else []
-		combat_snapshot["local_mining"] = mining_module.action_snapshot(actor_id) \
-			if mining_module != null else {"active": false}
-		result["combat"] = combat_snapshot
+		result.merge(combat_module.local_snapshot_for_actor(actor_id), true)
 	return result
 
 
@@ -834,22 +1008,26 @@ func vehicle_combat_state_for(entity_id: String) -> VehicleCombatState:
 ## [param persisted_state] 已通过仓储校验的玩家完整聚合。
 ## 返回该函数计算、查询或操作得到的结果。
 ## 设计：装备定义仍决定容量与功率，存档只能恢复生命、储备能量和当前能量，不能改写配置上限。
-func restore_vehicle_combat_state(entity_id: String, persisted_state: PlayerStateRecord) -> Dictionary:
+func restore_vehicle_combat_state(entity_id: String, persisted_state: Player) -> Dictionary:
 	var vehicle_state := vehicle_combat_state_for(entity_id)
 	if vehicle_state == null or persisted_state == null:
 		return _failure(&"persistence.vehicle_state_unavailable", "map does not own this vehicle combat state")
 	if (
-		persisted_state.vehicle_health < 0
-		or persisted_state.vehicle_health > vehicle_state.max_health
-		or persisted_state.reserve_energy < 0.0
-		or persisted_state.reserve_energy > vehicle_state.reserve_energy_capacity
-		or persisted_state.working_energy < 0.0
-		or persisted_state.working_energy > vehicle_state.working_energy_capacity
+		persisted_state.vehicle.health < 0
+		or persisted_state.vehicle.health > vehicle_state.max_health
+		or persisted_state.vehicle.reserve_energy < 0.0
+		or persisted_state.vehicle.reserve_energy > vehicle_state.reserve_energy_capacity
+		or persisted_state.vehicle.working_energy < 0.0
+		or persisted_state.vehicle.working_energy > vehicle_state.working_energy_capacity
 	):
 		return _failure(&"persistence.vehicle_state_out_of_range", "persisted vehicle resources exceed current definitions")
-	vehicle_state.health = persisted_state.vehicle_health
-	vehicle_state.reserve_energy = persisted_state.reserve_energy
-	vehicle_state.working_energy = persisted_state.working_energy
+	persisted_state.vehicle.max_health = vehicle_state.max_health
+	persisted_state.vehicle.reserve_energy_capacity = vehicle_state.reserve_energy_capacity
+	persisted_state.vehicle.working_energy_capacity = vehicle_state.working_energy_capacity
+	persisted_state.vehicle.output_power = vehicle_state.power_output
+	vehicle_state.health = persisted_state.vehicle.health
+	vehicle_state.reserve_energy = persisted_state.vehicle.reserve_energy
+	vehicle_state.working_energy = persisted_state.vehicle.working_energy
 	return _success(vehicle_state)
 
 

@@ -61,6 +61,11 @@ func _test_protocol_configuration() -> void:
 		"future protocol version is rejected",
 	)
 	_expect_error(
+		Protocol.validate_versions(4, Protocol.PUBLIC_CONTENT_VERSION),
+		ErrorCodes.UNSUPPORTED_PROTOCOL_VERSION,
+		"旧的完整快照协议版本被拒绝",
+	)
+	_expect_error(
 		Protocol.validate_versions(Protocol.PROTOCOL_VERSION, Protocol.PUBLIC_CONTENT_VERSION + 1),
 		ErrorCodes.CONTENT_VERSION_MISMATCH,
 		"content mismatch is rejected",
@@ -167,7 +172,7 @@ func _test_map_transition_intent() -> void:
 ## 设计：瞄准坐标不是命中声明；客户端夹带目标、伤害、射程、能耗与冷却必须被拒绝。
 func _test_use_ability_intent() -> void:
 	var intent := UseAbilityIntentContract.new(
-		"d04_field_zone.instance.1", "energy_cannon.primary", Vector2(320.5, 180.25), 9
+		"glory_nft_bl_d04.instance.1", "energy_cannon.primary", Vector2(320.5, 180.25), 9
 	)
 	_expect_true(intent.validate().is_ok, "use ability constructor is valid")
 	var restored = UseAbilityIntentContract.from_dictionary(intent.to_dictionary())
@@ -203,7 +208,7 @@ func _test_use_ability_intent() -> void:
 ## 验证击毁恢复意图不能夹带目的地图、坐标或恢复数值。
 func _test_vehicle_recovery_intent() -> void:
 	var intent := VehicleRecoveryIntentContract.new(
-		"d04_field_zone.instance.1", VehicleRecoveryIntentContract.RETURN_TO_BASE, 4
+		"glory_nft_bl_d04.instance.1", VehicleRecoveryIntentContract.RETURN_TO_BASE, 4
 	)
 	_expect_true(intent.validate().is_ok, "vehicle recovery constructor is valid")
 	var restored = VehicleRecoveryIntentContract.from_dictionary(intent.to_dictionary())
@@ -279,11 +284,11 @@ func _test_map_joined() -> void:
 	zero_version["definition_version"] = 0
 	_expect_error(MapJoinedContract.from_dictionary(zero_version), ErrorCodes.VALUE_OUT_OF_RANGE, "map joined rejects zero definition version")
 	var forged_joined := joined.to_dictionary()
-	forged_joined["snapshot"] = {}
+	forged_joined["world_snapshot"] = {}
 	_expect_error(
 		MapJoinedContract.from_dictionary(forged_joined),
 		ErrorCodes.INVALID_PAYLOAD,
-		"map joined keeps snapshot outside its strict contract",
+		"map joined keeps snapshots outside its strict contract",
 	)
 
 

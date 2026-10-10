@@ -1,5 +1,5 @@
 class_name DailyActivitiesPanel
-extends NavigationWindow
+extends ModernNavigationWindow
 
 signal command_requested(command: Dictionary)
 
@@ -12,6 +12,7 @@ var accept_button: Button
 var complete_button: Button
 var abandon_button: Button
 var _snapshot: Dictionary = {}
+var _pending_activity: Dictionary = {}
 var _inventory_revision := -1
 var _rows: Array = []
 var _active_rows: Array = []
@@ -21,19 +22,7 @@ const COLORS := [Color("e2eaf0"), Color("80d695"), Color("75bfff"), Color("d1a0f
 
 ## 创建共用任务窗口；佣兵双栏和历练单栏共用状态及命令适配。
 func _ready() -> void:
-	build_window(Vector2(820, 550), null, "佣兵任务" if mode == "mercenary" else "人物历练")
-	theme.default_font_size = 16
-	var panel := Panel.new()
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color("101f2b")
-	style.border_color = Color("43849a")
-	style.set_border_width_all(2)
-	style.set_corner_radius_all(8)
-	panel.add_theme_stylebox_override("panel", style)
-	panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(panel)
-	move_child(panel, 0)
+	build_modern_window(Vector2(820, 550), "佣兵任务" if mode == "mercenary" else "人物历练")
 	summary = make_label("正在读取任务…", Rect2(24, 54, 780, 28))
 	make_button("刷新", Rect2(694, 92, 100, 32), open_board)
 	make_label("可接委托" if mode == "mercenary" else "每日固定目标 · 北京时间 0 点刷新", Rect2(24, 96, 620, 24))
@@ -54,6 +43,8 @@ func _ready() -> void:
 	complete_button.visible = mode == "mercenary"
 	abandon_button.visible = mode == "mercenary"
 	_update_buttons()
+	visibility_changed.connect(func() -> void:
+		if visible and not _pending_activity.is_empty(): apply_activity_bundle(_pending_activity))
 
 
 ## 创建任务列表，滚动和选择由原生控件负责。
@@ -80,6 +71,8 @@ func apply_activity_bundle(bundle: Dictionary) -> void:
 		_inventory_revision = int(bundle.inventory.get("revision", -1))
 	if not bundle.get("daily_activities") is Dictionary or available == null:
 		return
+	_pending_activity = bundle.duplicate(true)
+	if not is_visible_in_tree(): return
 	var selected := _selected_id(available, _rows, "id")
 	var selected_active := _selected_id(active, _active_rows, "ticket")
 	_snapshot = bundle.daily_activities.duplicate(true)

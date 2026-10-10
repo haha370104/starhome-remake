@@ -6,6 +6,13 @@ extends RefCounted
 ## [param path] 原生绝对文件路径。[param document] 隔离且可序列化的完整快照。
 ## 返回实际写盘结果；失败时保留或恢复上一份正式存档。
 static func write_document(path: String, document: Dictionary) -> DomainResult:
+	return write_serialized(path, JSON.stringify(document, "  "))
+
+
+## 写入已完成 JSON 编码的快照；编码和磁盘阶段由调用方分别计时。
+## [param path] 原生绝对文件路径。[param serialized] 完整 JSON 文本。
+## 返回实际写盘结果；失败时保留或恢复上一份正式存档。
+static func write_serialized(path: String, serialized: String) -> DomainResult:
 	var directory_path := path.get_base_dir()
 	var make_error := DirAccess.make_dir_recursive_absolute(directory_path)
 	if make_error != OK and make_error != ERR_ALREADY_EXISTS:
@@ -14,7 +21,7 @@ static func write_document(path: String, document: Dictionary) -> DomainResult:
 	var backup_path := path + ".bak"
 	var file := FileAccess.open(temporary_path, FileAccess.WRITE)
 	if file == null: return DomainResult.failure(&"persistence.storage_error", "cannot open temporary database file")
-	file.store_string(JSON.stringify(document, "  "))
+	file.store_string(serialized)
 	file.flush()
 	var write_error := file.get_error()
 	file.close()

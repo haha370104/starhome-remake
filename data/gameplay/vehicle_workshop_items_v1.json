@@ -10,7 +10,9 @@
       "max_stack": 99,
       "source_class": "Activator",
       "presentation": {
-        "ale_reference": "pic3/stuff/activator"
+        "inventory": {"ale_reference": "pic3/stuff/activator"},
+        "world": {"ale_reference": "pic3/stuff/activator"},
+        "dialog": {"ale_reference": "pic3/stuff/activator"}
       },
       "source_audit": {
         "source_release": "starhome_lz_ry",
@@ -27,7 +29,9 @@
       "max_stack": 99,
       "source_class": "PreciseHammer",
       "presentation": {
-        "ale_reference": "pic3/stuff/precisehammer"
+        "inventory": {"ale_reference": "pic3/stuff/precisehammer"},
+        "world": {"ale_reference": "pic3/stuff/precisehammer"},
+        "dialog": {"ale_reference": "pic3/stuff/precisehammer"}
       },
       "source_audit": {
         "source_release": "starhome_lz_ry",
@@ -44,11 +48,20 @@
       "max_stack": 99,
       "source_class": "ArmedChip",
       "presentation": {
-        "icon": "res://assets/items/materials/vehicle_armed_chip/icon.png",
-        "native_size": [
-          29,
-          27
-        ]
+        "inventory": {
+          "icon": "res://assets/items/materials/vehicle_armed_chip/icon.png",
+          "native_size": [
+            29,
+            27
+          ]
+        },
+        "world": {
+          "icon": "res://assets/items/materials/vehicle_armed_chip/icon.png",
+          "native_size": [
+            29,
+            27
+          ]
+        }
       },
       "source_audit": {
         "source_release": "starhome_lz_ry",

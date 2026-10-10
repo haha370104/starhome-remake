@@ -1,5 +1,7 @@
 extends SceneTree
 
+const AutosaveRecordAdapter := preload("res://tests/fixtures/autosave_record_adapter.gd")
+
 class RejectingRepository extends PlayerStateRepository:
 	## 注入可恢复的实际存档拒绝，不接触用户文件。
 	## [param _state] 不会写入的候选。[param _expected_revision] 预期版本。
@@ -33,7 +35,7 @@ func _run() -> void:
 func _test_exit(production: bool) -> void:
 	var config := DedicatedServerConfig.new()
 	config.network_enabled = false
-	config.map_config_path = "res://content/glory/map_definitions/glory_nft_bl_factory1.json" if production else "res://data/maps/d04_field_zone.json"
+	config.map_config_path = "res://assets/glory/map_definitions/glory_nft_bl_factory1.json" if production else "res://data/maps/glory_nft_bl_d04.json"
 	config.default_spawn = Vector2(1104, 420) if production else Vector2(2412, 2400)
 	config.player_state_store_path = "res://.godot/exit-%d-%s.json" % [Time.get_ticks_usec(), str(production)]
 	var server := AuthoritativeServer.new()
@@ -45,11 +47,11 @@ func _test_exit(production: bool) -> void:
 	var identity := session.entity_id
 	var token := session.reconnect_token
 	var map := server.map_registry.instance_by_id(session.map_instance_id)
-	var raw_before := server.autosave_service.state_for(identity)
+	var raw_before: PlayerStateRecord = AutosaveRecordAdapter.current(server.autosave_service, identity)
 	var expected_remaining := 0
 	if production:
-		var mapper: PlayerStateMapper = server.manufacturing_service._mapper
-		var catalog: ItemCatalog = server.manufacturing_service._item_catalog
+		var catalog: ItemCatalog = server.player_panel_service.catalog
+		var mapper: PlayerStateMapper = PlayerStateMapper.new(catalog)
 		var player: Player = mapper.to_domain(raw_before).value
 		player.skills = SkillBook.new({"refining": 100})
 		player.inventory = Inventory.new()
@@ -58,7 +60,7 @@ func _test_exit(production: bool) -> void:
 			if catalog.display_name(value.product_definition_id) == "铁": recipe = value
 		_check(recipe != null, "真实铁矿配方")
 		player.inventory.add_reward(catalog.create(recipe.materials[0].definition_id, {"instance_id": "exit.ore", "quantity": 60}).value)
-		server.autosave_service.commit_player_state(identity, mapper.to_record(player).value)
+		server.autosave_service.commit_player(identity, player)
 		var started := server.handle_peer_player_panel_command(PEER, {"type": "start_production", "station_id": "refining",
 			"recipe_id": recipe.recipe_id, "cycles": 3, "speed": 1,
 			"inventory_revision": player.inventory.revision, "production_revision": 0})
@@ -70,8 +72,12 @@ func _test_exit(production: bool) -> void:
 		combat.health = 35
 		combat.reserve_energy = 1777
 		combat.working_energy = 17.5
-	var current := server.autosave_service.state_for(identity)
-	var before := current.to_dictionary()
+	var current: PlayerStateRecord = AutosaveRecordAdapter.current(server.autosave_service, identity)
+	var live_before_exit: Player = server.autosave_service.player_for(identity)
+	var captured_before: DomainResult = server._capture_player_runtime(live_before_exit)
+	_check(captured_before.is_ok, "退出前捕获最新运行时状态")
+	var current_captured: PlayerStateRecord = server.autosave_service.mapper.to_record(live_before_exit).value
+	var before: Dictionary = current_captured.to_dictionary()
 	for invalid: Variant in [null, 123, "", "0123", "g".repeat(32)]:
 		_check(not server.handle_peer_player_panel_command(PEER, {"type": "prepare_exit", "request_id": invalid}).ok, "拒绝非法请求身份")
 	var command := {"type": "prepare_exit", "request_id": REQUEST_ID, "currency": 999999999, "character_id": "other"}
@@ -80,7 +86,8 @@ func _test_exit(production: bool) -> void:
 	server.dispatch_transport_command(PEER, AuthoritativeServer.TRANSPORT_PLAYER_PANEL_COMMAND, command)
 	var rejected: Dictionary = messages[-1]
 	_check(rejected.type == "command_rejected" and rejected.result.value.request_id == REQUEST_ID, "失败回包带匹配的退出身份")
-	_check(server.autosave_service.state_for(identity).to_dictionary() == before, "保存失败不改正式资源或生产状态")
+	var after_rejected: Dictionary = AutosaveRecordAdapter.current(server.autosave_service, identity).to_dictionary()
+	_check(after_rejected == before, "保存失败不改正式资源或生产状态")
 	_check(server.sessions.session_for_peer(PEER) == session and map.entities.has(identity), "失败不能清理会话与实体")
 	server.autosave_service._repository = real_repository
 	var saves := server.autosave_service.save_count
@@ -89,7 +96,7 @@ func _test_exit(production: bool) -> void:
 	_check(receipt.type == "player_panels" and receipt.result.ok and receipt.result.value.exit_receipt.request_id == REQUEST_ID, "仅成功写盘后回执确认")
 	_check(server.autosave_service.save_count == saves + 1, "一次退出只提交一次")
 	_check(server.sessions.session_for_peer(PEER) == null and not map.entities.has(identity) \
-		and not map.combat_module.actors.has(identity) and server.autosave_service.state_for(identity) == null, "回执之前结束角色全部运行所有权")
+		and not map.combat_module.actors.has(identity) and AutosaveRecordAdapter.current(server.autosave_service, identity) == null, "回执之前结束角色全部运行所有权")
 	var saved: PlayerStateRecord = real_repository.load_player(identity).value
 	_check(saved.currency == current.currency and saved.inventory_stacks.size() == current.inventory_stacks.size(), "客户端不能伪造退出存档内容")
 	if production:
@@ -114,7 +121,7 @@ func _test_exit(production: bool) -> void:
 	server.free()
 	var restarted := AuthoritativeServer.new()
 	_check(restarted.initialize(config).ok and restarted.open_session(PEER, handshake, 1000).ok, "退出后的存档可以重新进入")
-	var restored := restarted.autosave_service.state_for(identity)
+	var restored: PlayerStateRecord = AutosaveRecordAdapter.current(restarted.autosave_service, identity)
 	_check(restored != null and restored.currency == saved.currency and restored.vehicle_health == saved.vehicle_health, "重启还原最后确认的角色内容")
 	if production:
 		_check(restored.production.order.paused and restored.production.order.remaining_milliseconds == expected_remaining, "重启不会补跑退出期间生产")

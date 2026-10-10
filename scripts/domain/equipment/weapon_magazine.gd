@@ -4,13 +4,14 @@ extends RefCounted
 var remaining: int = -1
 
 
-## 恢复当前弹量；未出现过弹仓字段的旧档使用 -1，绑定装备时仅初始化一次。
+## 恢复完整弹仓状态。
 ## [param raw] 原始弹仓事实。
 ## 返回弹仓或非法状态。
 static func restore(raw: Variant) -> DomainResult:
-	if not raw is Dictionary or int(raw.get("version", 1)) != 1:
+	if not raw is Dictionary or raw.size() != 2 or not raw.has("version") \
+		or not raw.has("remaining") or raw.version != 1:
 		return DomainResult.failure(&"ammunition.invalid_state", "弹仓记录无效")
-	var count: Variant = raw.get("remaining", -1)
+	var count: Variant = raw.remaining
 	if not (count is int or count is float) or not is_finite(float(count)) or float(count) != int(count) or int(count) < -1:
 		return DomainResult.failure(&"ammunition.invalid_state", "弹药数量无效")
 	var magazine := WeaponMagazine.new()

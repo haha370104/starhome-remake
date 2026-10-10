@@ -9,6 +9,7 @@ const GROUND_RADIUS := 38.0
 
 var effect_id: String
 var attacker_id: String
+var species_id: String
 var combat_actor_id: String
 var map_instance_id: String
 var attached_actor_id: String
@@ -29,6 +30,7 @@ var _duration_ticks: int
 func _init(attack: Dictionary, point: Vector2, target_id: String, tick: int, hz: int) -> void:
 	effect_id = String(attack.attack_id)
 	attacker_id = String(attack.attacker_id)
+	species_id = String(attack.species_id)
 	combat_actor_id = String(attack.combat_actor_id)
 	map_instance_id = String(attack.map_instance_id)
 	attached_actor_id = target_id

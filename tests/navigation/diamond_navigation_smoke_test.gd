@@ -1,7 +1,7 @@
 extends SceneTree
 
 const DiamondNavigationScript := preload("res://scripts/navigation/diamond_navigation.gd")
-const GLORY_HALL_GRID := "res://assets/maps/yian_harbor/hall_floor_1/navigation_grid.bin"
+const GLORY_HALL_GRID := "res://assets/glory/maps/roomsvr1/variant_01_nft_bl/navigation_grid.bin"
 
 var failures: PackedStringArray = []
 
@@ -29,14 +29,42 @@ func _initialize() -> void:
 	var spawn_fallback := navigation.closest_walkable_position(Vector2(965, 920))
 	_expect(spawn_fallback.is_finite(), "旧配置中的阻挡出生点应能吸附到荣耀版可达格")
 	_expect(navigation.is_walkable(spawn_fallback), "出生点吸附结果必须可行走")
+	_check_cache()
 
 	if failures.is_empty():
-		print("DIAMOND_NAVIGATION_SMOKE_OK (10 assertions)")
+		print("DIAMOND_NAVIGATION_SMOKE_OK")
 		quit(0)
 		return
 	for failure in failures:
 		push_error(failure)
 	quit(1)
+
+
+## 验证近期复用、两端可变图隔离、配置失效和容量淘汰。
+func _check_cache() -> void:
+	var client := MapNavigationCache.new()
+	var server := MapNavigationCache.new()
+	var paths: Array[String] = []
+	for index in 3:
+		var path := "res://.godot/navigation_cache_%d.bin" % index
+		var file := FileAccess.open(path, FileAccess.WRITE)
+		file.store_buffer(PackedByteArray([1, 1, 1, 1]))
+		file.close()
+		paths.append(path)
+	var first := client.acquire(paths[0], Vector2i(2, 2), Vector2(48, 12))
+	_expect(client.acquire(paths[0], Vector2i(2, 2), Vector2(48, 12)) == first, "同缓存应复用导航")
+	var isolated := server.acquire(paths[0], Vector2i(2, 2), Vector2(48, 12))
+	first.graph.set_point_disabled(0, true)
+	_expect(not isolated.graph.is_point_disabled(0), "客户端和服务端不能共享可变寻路图")
+	var changed := client.acquire(paths[0], Vector2i(2, 2), Vector2(24, 6))
+	_expect(changed != first and changed.cell_size == Vector2(24, 6), "配置变化不能命中旧导航")
+	var retained: WeakRef = weakref(changed)
+	changed = null
+	for path: String in paths.slice(1):
+		client.acquire(path, Vector2i(2, 2), Vector2(48, 12))
+	_expect(retained.get_ref() == null, "超过两张地图后应释放最旧的缓存导航")
+	for path: String in paths:
+		DirAccess.remove_absolute(path)
 
 
 ## 执行 `expect` 对应的模块操作。

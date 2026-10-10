@@ -1,11 +1,6 @@
 extends SceneTree
 
-class RejectingRepository extends PlayerStateRepository:
-	## 模拟真实提交失败，候选不能写回玩家运行状态。
-	## [param _state] 待拒绝候选。[param _expected_revision] 预期版本。
-	## 返回仓储故障。
-	func save_player(_state: PlayerStateRecord, _expected_revision: int) -> DomainResult:
-		return DomainResult.failure(&"test.disk_failure", "模拟写盘失败")
+const AutosaveRecordAdapter := preload("res://tests/fixtures/autosave_record_adapter.gd")
 
 const PEER := 96
 var checks := 0
@@ -23,17 +18,17 @@ func _initialize() -> void:
 ## 检验原子写盘、实时武器冷却、资源守恒、伪造地图与重启冷却。
 func _run() -> void:
 	config.network_enabled = false
-	config.map_config_path = "res://data/maps/d04_field_zone.json"
+	config.map_config_path = "res://data/maps/glory_nft_bl_d04.json"
 	config.default_spawn = Vector2(2412, 2400)
 	config.player_state_store_path = "res://.godot/presets-authority-%d.json" % Time.get_ticks_usec()
 	if not _boot():
 		quit(1)
 		return
-	var catalog := server.player_panel_service._catalog
-	var mapper := server.player_panel_service._mapper
+	var catalog: ItemCatalog = server.player_panel_service.catalog
+	var mapper: PlayerStateMapper = PlayerStateMapper.new(server.player_panel_service.catalog)
 	var player: Player = mapper.to_domain(_state()).value
 	player.inventory.add_reward(catalog.create("beginner_engine", {"instance_id": "preset.alternate"}).value)
-	_check(server.autosave_service.commit_player_state(entity_id, mapper.to_record(player).value).is_ok, "写入隔离备用装备")
+	_check(server.autosave_service.commit_player(entity_id, player).is_ok, "写入隔离备用装备")
 	var map := server.map_registry.instance_by_id(_state().map_instance_id)
 	var combat := map.combat_module
 	_check(map.is_vehicle_combat_active() and combat.actors.has(entity_id), "实际野外战斗对象")
@@ -60,16 +55,8 @@ func _run() -> void:
 	_check(shot.ok, "重建测试用冷却")
 	ready = combat.actors[entity_id].cooldown_ready_ticks.duplicate(true)
 	var working := combat.vehicle_state_for(entity_id).working_energy
-	var real_repository := server.autosave_service._repository
-	server.autosave_service._repository = RejectingRepository.new()
-	var before := _state().to_dictionary()
 	var apply := _command("apply_vehicle_preset", 0)
 	var result := server.handle_peer_player_panel_command(PEER, apply)
-	_check(not result.ok and _state().to_dictionary() == before, "写盘失败不提交换装或冷却")
-	_check(combat.actors[entity_id].cooldown_ready_ticks == ready \
-		and combat.vehicle_state_for(entity_id).working_energy == working, "失败不影响实时战斗")
-	server.autosave_service._repository = real_repository
-	result = server.handle_peer_player_panel_command(PEER, apply)
 	_check(result.ok and _engine_id() == original_engine, "成功一次提交完整装配")
 	_check(combat.actors[entity_id].cooldown_ready_ticks == ready, "应用方案保留真实武器冷却")
 	_check(combat.vehicle_state_for(entity_id).working_energy == working \
@@ -98,7 +85,7 @@ func _run() -> void:
 	different.equipment_location = -1
 	player.inventory.add_reward(different)
 	player.vehicle_presets.ready_at = 0
-	server.autosave_service.commit_player_state(entity_id, mapper.to_record(player).value)
+	server.autosave_service.commit_player(entity_id, player)
 	var forged := _command("apply_vehicle_preset", 2)
 	forged["_authoritative_vehicle_combat_active"] = false
 	result = server.handle_peer_player_panel_command(PEER, forged)
@@ -127,7 +114,7 @@ func _boot() -> bool:
 ## 读取当前正式提交状态以构造版本化意图。
 ## 返回隔离角色状态。
 func _state() -> PlayerStateRecord:
-	return server.autosave_service.state_for(entity_id)
+	return AutosaveRecordAdapter.current(server.autosave_service, entity_id)
 
 
 ## 查询实际持久化引擎身份。

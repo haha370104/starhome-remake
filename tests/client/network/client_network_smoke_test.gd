@@ -16,13 +16,49 @@ var session_database_path := ""
 ## 启动客户端网络冒烟用例，并将需要 SceneTree 的会话集成测试延迟执行。
 ## 设计：纯逻辑用例同步运行，节点生命周期用例跨帧运行后再统一结束进程。
 func _init() -> void:
+	_test_snapshot_ownership()
 	_test_offline_adapter()
 	_test_local_prediction_and_reconciliation()
 	_test_destination_prediction_does_not_rewind_on_ack()
 	_test_remote_interpolation()
 	_test_heterogeneous_combat_events_do_not_drop_world_state()
+	_test_snapshot_pairing()
 	_test_mining_wire_projection()
 	call_deferred("_test_session_integration")
+
+
+## 快照在接收边界隔离一次，订阅者共享只读容器，外部修改不能污染已接收状态。
+func _test_snapshot_ownership() -> void:
+	var adapter := Adapter.new()
+	var received: Array[Dictionary] = []
+	adapter.authoritative_world_snapshot_received.connect(func(snapshot: Dictionary) -> void: received.append(snapshot))
+	var source := {"map_instance_id": "map.1", "server_tick": 1, "server_time_seconds": 0.05,
+		"entities": [], "combat_world": {"monsters": [{"health": 10, "position": [20, 30]}],
+		"ground_loot": [], "mine_sources": [], "corrosive_clouds": [], "recent_events": [],
+		"vehicle_combat_active": false}}
+	adapter.receive_world_snapshot(source)
+	var shared := received[0]
+	_expect_true(shared.is_read_only() and shared.combat_world.is_read_only(), "快照和嵌套对象均只读")
+	_expect_true(shared.combat_world.monsters.is_read_only() and shared.combat_world.monsters[0].is_read_only()
+		and shared.combat_world.monsters[0].position.is_read_only(), "数组及数组内对象均只读")
+	source.combat_world.monsters[0].health = 7
+	source.combat_world.monsters[0].position[0] = 99
+	_expect_equal(shared.combat_world.monsters[0].health, 10, "来源后续变化不覆盖已发布生命")
+	_expect_equal(shared.combat_world.monsters[0].position[0], 20, "来源后续变化不覆盖嵌套坐标")
+	adapter.receive_world_snapshot(shared)
+	_expect_true(is_same(received[1], shared), "进程内已封存快照不再复制")
+	var decoded: Dictionary = bytes_to_var(var_to_bytes(shared))
+	adapter.receive_world_snapshot(decoded)
+	_expect_equal(received[2], shared, "只读快照保持远程序列化字段和值")
+	_expect_true(received[2].combat_world.monsters.is_read_only(), "远程解码结果重新封存后才发布")
+	var assistant := SmartAssistantController.new()
+	assistant._observe(shared.combat_world)
+	_expect_true(is_same(assistant._snapshot, shared.combat_world), "智脑持有同一个只读快照")
+	assistant._map_changed(&"next", "next.1", Vector2.ZERO, 1)
+	_expect_true(assistant._snapshot.is_empty() and shared.combat_world.monsters.size() == 1,
+		"智脑切图只释放自身引用，不清空其他订阅者的快照")
+	assistant.free()
+	adapter.free()
 
 
 ## 验证进程内模式在显式连接前不会吞掉或伪装已发送命令。
@@ -167,11 +203,13 @@ func _test_remote_interpolation() -> void:
 ## 设计：recent_events 是异构领域事件窗口，只有 event_id/type 为公共字段。
 func _test_heterogeneous_combat_events_do_not_drop_world_state() -> void:
 	var session := Session.new()
-	var combat_snapshot := {
+	var world_snapshot := {
+		"map_instance_id": "map.test",
 		"server_tick": 20,
-		"local_entity_id": "player.test",
-		"vehicle_combat_active": false,
-		"local_vehicle": {},
+		"server_time_seconds": 1.0,
+		"entities": [],
+		"combat_world": {
+			"vehicle_combat_active": false,
 		"monsters": [{
 			"entity_id": "monster.test",
 			"species_id": "om_larva",
@@ -181,24 +219,52 @@ func _test_heterogeneous_combat_events_do_not_drop_world_state() -> void:
 			"max_health": 42,
 			"alive": true,
 		}],
-		"ground_loot": [],
-		"mine_sources": [{
+			"ground_loot": [],
+			"mine_sources": [{
 			"source_id": "field.mine.1",
 			"mineral_id": "iron_ore",
 			"position": [300.0, 400.0],
 			"remaining": 50,
 			"capacity": 50,
 		}],
-		"recent_events": [
+			"corrosive_clouds": [],
+			"recent_events": [
 			{"event_id": 1, "event_type": &"self_repair_started", "actor_id": "player.test"},
 			{"event_id": 2, "event_type": &"loot_picked_up", "loot_id": "loot.test"},
-		],
+			],
+		},
 	}
-	_expect_true(session.call("_is_valid_combat_snapshot", combat_snapshot),
+	var local_snapshot := {"map_instance_id": "map.test", "server_tick": 20, "local_entity_id": "player.test",
+		"local_vehicle": {}, "local_weapon_flight": {}, "local_sama_effects": [], "local_mining": {"active": false}}
+	_expect_true(session.call("_is_valid_world_snapshot", world_snapshot)
+		and session.call("_is_valid_local_snapshot", local_snapshot),
 		"合法非伤害事件不得毒化整份战斗快照")
-	combat_snapshot["vehicle_combat_active"] = "false"
-	_expect_false(session.call("_is_valid_combat_snapshot", combat_snapshot),
+	world_snapshot.combat_world["vehicle_combat_active"] = "false"
+	_expect_false(session.call("_is_valid_world_snapshot", world_snapshot),
 		"地图战车激活标记必须是布尔值")
+	session.free()
+
+
+func _test_snapshot_pairing() -> void:
+	var session := Session.new()
+	session.current_map_instance_id = "map.pair"
+	session.local_entity_id = &"player.pair"
+	var applied: Array[Dictionary] = []
+	session.combat_snapshot_received.connect(func(snapshot: Dictionary) -> void: applied.append(snapshot))
+	var world_20 := _snapshot_for_instance(20, "map.pair", [], [])
+	var local_19 := _local_snapshot_for_instance(19, "map.pair", "player.pair")
+	var local_20 := _local_snapshot_for_instance(20, "map.pair", "player.pair")
+	_expect_true(session._is_valid_world_snapshot(world_20), "配对测试世界快照满足严格结构")
+	_expect_true(session._is_valid_local_snapshot(local_20), "配对测试私有快照满足严格结构")
+	session._on_world_snapshot(world_20)
+	session._on_local_snapshot(local_19)
+	_expect_equal(applied.size(), 0, "错 tick 的世界/私有快照不得进入表现层")
+	session._on_local_snapshot(local_20)
+	_expect_equal(session._pending_world_snapshots.size(), 0, "配对后世界快照缓存应清空")
+	_expect_equal(session._pending_local_snapshots.size(), 0, "配对后私有快照缓存应清空")
+	_expect_equal(applied.size(), 1, "同地图同 tick 的两份快照才进入表现层")
+	_expect_true(session._pending_world_snapshots.is_empty() and session._pending_local_snapshots.is_empty(),
+		"已配对快照提交后清理缓存")
 	session.free()
 
 
@@ -237,6 +303,7 @@ func _test_mining_wire_projection() -> void:
 ## 验证离线会话节点对本地预测、远端快照和生命周期信号的集成。
 ## 设计：该异步夹具等待 SceneTree 帧，以覆盖节点就绪与信号回调时序。
 func _test_session_integration() -> void:
+	_test_combat_history()
 	var session := Session.new()
 	session.offline_debug_enabled = true
 	root.add_child(session)
@@ -272,7 +339,7 @@ func _test_session_integration() -> void:
 		server_session.map_instance_id
 	)
 	var field_instance: AuthoritativeMapInstance = server.ensure_runtime_map(
-		"d04_field_zone"
+		"glory_nft_bl_d04"
 	).value
 	var hall_entity: AuthoritativeEntity = hall_instance.entities[server_session.entity_id]
 	var field_spawn := field_instance.admitted_spawn_position(Vector2(2412, 2400))
@@ -280,10 +347,10 @@ func _test_session_integration() -> void:
 		server_session.entity_id, field_spawn, hall_entity.movement_speed
 	)
 	_expect_true(spawned.ok, "客户端恢复夹具应进入战斗地图")
-	server.call("_copy_transitioned_entity_state", hall_entity, spawned.value)
+	server._map_transition_coordinator.copy_transitioned_entity_state(hall_entity, spawned.value)
 	hall_instance.remove_entity(server_session.entity_id)
 	server_session.map_instance_id = field_instance.instance_id
-	session.current_map_id = &"d04_field_zone"
+	session.current_map_id = &"glory_nft_bl_d04"
 	session.configure_map_instance(field_instance.instance_id)
 	var vehicle_state = field_instance.vehicle_combat_state_for(server_session.entity_id)
 	vehicle_state.apply_damage(vehicle_state.max_health)
@@ -314,12 +381,11 @@ func _test_session_integration() -> void:
 	_expect_true(session.record_local_predicted_delta(1, Vector2(20.0, 0.0)), "session records prediction")
 	var injected_tick := int(session.local_presentation_state()["last_server_tick"]) + 1
 	session.inject_offline_snapshot({
-		"server_tick": injected_tick,
-		"server_time_seconds": float(injected_tick) / 10.0,
-		"entities": [
+		"world_snapshot": _snapshot_for_instance(injected_tick, session.current_map_instance_id, [
 			_entity(String(session.local_entity_id), start_position.x + 20.0, 2, 1, injected_tick),
 			_entity("player.other", 100.0, 6, 0, injected_tick),
-		],
+		], []),
+		"local_snapshot": _local_snapshot_for_instance(injected_tick, session.current_map_instance_id, String(session.local_entity_id)),
 	})
 	_expect_equal(session.local_presentation_state()["last_server_tick"], injected_tick,
 		"session routes authority")
@@ -341,7 +407,7 @@ func _test_session_integration() -> void:
 		"entity_id": "player.me",
 		"reconnect_token": "invalid-handshake-token",
 	}
-	invalid_handshake_join["snapshot"]["server_tick"] = 19
+	invalid_handshake_join["world_snapshot"]["server_tick"] = 19
 	invalid_session.network_adapter.receive_server_message({
 		"type": "session_opened",
 		"result": {"ok": true, "value": invalid_handshake_join},
@@ -387,6 +453,66 @@ func _test_session_integration() -> void:
 		if FileAccess.file_exists(path):
 			DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
 	_finish()
+
+
+## 通过真实会话和武器表现复现往返地图后的历史炮弹及爆炸重播。
+func _test_combat_history() -> void:
+	var session := Session.new()
+	root.add_child(session)
+	var world := Node2D.new()
+	root.add_child(world)
+	var weapon := WeaponAttackVisualController.new()
+	root.add_child(weapon)
+	var manifest: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://assets/equipment_world/combat_visual_manifest.json"))
+	_expect_equal(weapon.configure(manifest, world, &"recruit_energy_cannon"), OK, "历史事件回归应使用真实炮弹表现")
+	var received: Array[Dictionary] = []
+	session.combat_snapshot_received.connect(func(snapshot: Dictionary) -> void:
+		received.append(snapshot)
+		for event: Dictionary in snapshot.recent_events:
+			if event.event_type == "energy_cannon_projectile_spawned": weapon.present_confirmed_shot(event)
+		weapon.apply_authoritative_snapshot(snapshot, "energy_cannon.primary")
+	)
+	session.map_joined.connect(func(_map, _instance, _position, _version): weapon.clear_effects())
+	var snapshot_for := func(tick: int, events: Array, instance_id := "field_a.instance.1") -> Dictionary:
+		return {"world_snapshot": _snapshot_for_instance(tick, instance_id, [], events),
+			"local_snapshot": _local_snapshot_for_instance(tick, instance_id, "player.history")}
+	var deliver_snapshot := func(tick: int, events: Array, instance_id := "field_a.instance.1") -> void:
+		var bundle: Dictionary = snapshot_for.call(tick, events, instance_id)
+		session._on_world_snapshot(bundle.world_snapshot)
+		session._on_local_snapshot(bundle.local_snapshot)
+	var join_map := func(map_id: String, tick: int, events: Array) -> void:
+		var joined := MapJoined.new(map_id, map_id + ".instance.1", "player.history", Vector2.ZERO, 1, tick)
+		_expect_true(session._commit_map_joined({"map_joined": joined.to_dictionary()}.merged(snapshot_for.call(tick, events, joined.map_instance_id)), false), "地图握手应成功")
+	var history: Array = []
+	for index in 3:
+		var sequence := index + 1
+		history.append({"event_id": index * 2 + 1, "event_type": "energy_cannon_projectile_spawned", "attacker_id": "player.history",
+			"shot_id": "history.%d" % sequence, "input_sequence": sequence, "actor_position": [0, 0], "endpoint": [200, 0]})
+		history.append({"event_id": index * 2 + 2, "event_type": "energy_cannon_hit", "attacker_id": "player.history",
+			"input_sequence": sequence, "impact_position": [200, 0], "death": {"event_type": "monster_died", "death_generation": 1}})
+	join_map.call("field_a", 1, [])
+	deliver_snapshot.call(2, history)
+	_expect_equal(weapon.active_impact_count(), 3, "当前地图的新命中应正常爆炸")
+	join_map.call("field_b", 3, [])
+	join_map.call("field_a", 4, history)
+	deliver_snapshot.call(5, history)
+	_expect_equal(weapon.active_impact_count(), 0, "返回后首份及后续快照均不能重播历史命中爆炸")
+	_expect_true(received.back().recent_events.is_empty(), "历史发射、命中及嵌套死亡都应在会话入口过滤")
+	var fresh: Array = history.slice(0, 2).duplicate(true)
+	fresh[0].event_id = 7
+	fresh[0].shot_id = "fresh"
+	fresh[1].event_id = 8
+	deliver_snapshot.call(6, fresh)
+	_expect_equal(weapon.active_impact_count(), 1, "返回后的新命中仍应播放")
+	deliver_snapshot.call(7, fresh)
+	_expect_equal(weapon.active_impact_count(), 1, "重发新事件不能重复爆炸")
+	join_map.call("field_b", 8, [])
+	deliver_snapshot.call(9, history.slice(0, 2), "field_b.instance.1")
+	_expect_equal(weapon.active_impact_count(), 1, "另一地图较小的事件号仍应正常消费")
+	_expect_equal(history.size(), 6, "过滤不能改写原始历史事件窗口")
+	weapon.free()
+	world.free()
+	session.free()
 
 
 ## 验证切图请求的最小权限载荷、失败原子性，以及成功后的状态整体替换。
@@ -470,7 +596,8 @@ func _test_map_change_session(session) -> void:
 					"definition_version": 1,
 					"server_tick": 20,
 				},
-				"snapshot": _snapshot(19, [_entity("player.me", 400.0, 2, 0, 19)]),
+				"world_snapshot": _snapshot_for_instance(19, "g08.instance.mismatched", [_entity("player.me", 400.0, 2, 0, 19)], []),
+				"local_snapshot": _local_snapshot_for_instance(19, "g08.instance.mismatched", "player.me"),
 			},
 		},
 	})
@@ -547,9 +674,8 @@ func _test_map_change_session(session) -> void:
 
 	# A delayed packet from the previous map cannot roll back the newly reset predictor.
 	session.inject_offline_snapshot({
-		"server_tick": 19,
-		"server_time_seconds": 0.95,
-		"entities": [_entity("player.me", 1.0, 0, 0, 19)],
+		"world_snapshot": _snapshot_for_instance(19, "g08.instance.2", [_entity("player.me", 1.0, 0, 0, 19)], []),
+		"local_snapshot": _local_snapshot_for_instance(19, "g08.instance.2", "player.me"),
 	})
 	_expect_vector(session.local_presentation_state()["position"], Vector2(420.0, 520.0), "pre-join snapshot is ignored")
 
@@ -601,18 +727,15 @@ func _map_joined_message(
 					"definition_version": 1,
 					"server_tick": server_tick,
 				},
-				"snapshot": {
-					"server_tick": server_tick,
-					"server_time_seconds": float(server_tick) / 20.0,
-					"entities": [
-						_entity("player.me", spawn_position.x, 2, 0, server_tick).merged({
-							"position": {"x": spawn_position.x, "y": spawn_position.y},
-						}, true),
-						_entity("player.new_map", spawn_position.x + 20.0, 6, 0, server_tick).merged({
-							"position": {"x": spawn_position.x + 20.0, "y": spawn_position.y},
-						}, true),
-					],
-				},
+				"world_snapshot": _snapshot_for_instance(server_tick, instance_id, [
+					_entity("player.me", spawn_position.x, 2, 0, server_tick).merged({
+						"position": {"x": spawn_position.x, "y": spawn_position.y},
+					}, true),
+					_entity("player.new_map", spawn_position.x + 20.0, 6, 0, server_tick).merged({
+						"position": {"x": spawn_position.x + 20.0, "y": spawn_position.y},
+					}, true),
+				], []),
+				"local_snapshot": _local_snapshot_for_instance(server_tick, instance_id, "player.me"),
 			},
 		},
 	}
@@ -648,11 +771,28 @@ func _entity(
 ## [param server_tick] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## [param entities] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## 返回该函数计算、查询或操作得到的结果。
-func _snapshot(server_tick: int, entities: Array) -> Dictionary:
+func _snapshot_for_instance(server_tick: int, instance_id: String, entities: Array, events: Array) -> Dictionary:
 	return {
+		"map_instance_id": instance_id,
 		"server_tick": server_tick,
 		"server_time_seconds": float(server_tick) / 20.0,
 		"entities": entities,
+		"combat_world": {
+			"monsters": [], "ground_loot": [], "mine_sources": [], "corrosive_clouds": [],
+			"recent_events": events, "vehicle_combat_active": true,
+		},
+	}
+
+
+func _local_snapshot_for_instance(server_tick: int, instance_id: String, entity_id: String) -> Dictionary:
+	return {
+		"map_instance_id": instance_id,
+		"server_tick": server_tick,
+		"local_entity_id": entity_id,
+		"local_vehicle": {},
+		"local_weapon_flight": {},
+		"local_sama_effects": [],
+		"local_mining": {"active": false},
 	}
 
 

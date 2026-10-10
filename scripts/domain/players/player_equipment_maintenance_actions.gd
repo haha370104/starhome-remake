@@ -50,7 +50,7 @@ static func maintain(player: Player, id: String, revision: int, rules: Equipment
 	var bound := item.bound
 	for cost: Dictionary in item.maintenance_profile.materials:
 		for owned: GameItem in player.inventory.items():
-			if owned.definition_id == ItemDefinitionAliases.canonical(cost.definition_id) and not owned.locked:
+			if owned.definition_id == cost.definition_id and not owned.locked:
 				bound = bound or owned.bound
 	var paid := player.inventory.pay_upgrade_cost(item.maintenance_profile.materials, item.maintenance_profile.currency)
 	if not paid.is_ok:

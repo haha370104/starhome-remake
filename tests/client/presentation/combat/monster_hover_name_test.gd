@@ -32,10 +32,12 @@ func _run() -> void:
 	var first = world.get_node_or_null("Monster_monster_first")
 	var second = world.get_node_or_null("Monster_monster_second")
 	_expect(first != null and second != null, "两个怪物视图都必须生成")
+	_expect(controller.target_position("monster.orb") == Vector2(380.0, 190.0),
+		"感光质应瞄准判定圆心而非圆外脚点")
 	if first != null and second != null:
 		var shared_font: Font = first.name_label.get_theme_font("font")
 		_expect(shared_font == second.name_label.get_theme_font("font"),
-			"同屏怪物必须复用名称字体，避免每次补怪重新加载系统字体")
+			"同屏怪物必须复用名称字体资源，避免每次补怪重复创建")
 		_expect(not first.name_label.visible and not second.name_label.visible, "怪物名称默认必须隐藏")
 		_expect(
 			first.name_label.get_theme_color("font_color") == Color.RED,
@@ -72,17 +74,12 @@ func _run() -> void:
 			),
 			"怪物名称与血条必须沿同一水平中心线对齐",
 		)
-		_expect(
-			(first.name_label.get_theme_font("font") as SystemFont).font_weight == 700,
-			"怪物名称使用微软雅黑粗体提高辨识度",
-		)
 		_expect(first.name_label.get_theme_constant("outline_size") == 2, "名称使用黑色轮廓隔离地图背景")
 		_expect(first.health_bar.position.y == 25.0, "名称和血条从原20px基线整体下移5px")
 		var first_hover_point: Vector2 = first.position + first.visual_collision_offset
 		_expect(controller.update_hover_at(first_hover_point) == "monster.first", "应命中第一个怪物")
 		_expect(first.name_label.visible and not second.name_label.visible, "只显示第一个悬浮名称")
 		if "--capture" in OS.get_cmdline_user_args():
-			print("MONSTER_NAME_FONT: ", first.name_label.get_theme_font("font").get_font_name())
 			controller.set_process(false)
 			var backdrop := ColorRect.new()
 			backdrop.color = Color("827b60")
@@ -102,7 +99,7 @@ func _run() -> void:
 		controller.apply_snapshot(_snapshot())
 		var respawned = world.get_node_or_null("Monster_monster_first")
 		_expect(respawned != null and respawned.name_label.get_theme_font("font") == shared_font,
-			"旧怪物释放后再次补怪仍应复用名称字体")
+			"旧怪物释放后再次补怪仍应复用共享名称字体")
 	controller.clear()
 	controller.queue_free()
 	world.queue_free()
@@ -112,12 +109,16 @@ func _run() -> void:
 ## 构造包含两个相邻怪物的权威快照。
 ## 返回可供怪物表现层消费的测试快照。
 func _snapshot() -> Dictionary:
+	var orb := _monster("monster.orb", "感光质", Vector2(380.0, 220.0))
+	orb.species_id = "photosensitive_orb"
+	orb.combat_actor_id = "photosensitive_orb_standard"
 	return {
 		"server_tick": 1,
 		"local_entity_id": "player.local",
 		"monsters": [
 			_monster("monster.first", "奥姆虫", Vector2(140.0, 220.0)),
 			_monster("monster.second", "毒性奥姆虫", Vector2(260.0, 220.0)),
+			orb,
 		],
 		"recent_events": [],
 	}

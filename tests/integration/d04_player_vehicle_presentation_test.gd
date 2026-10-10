@@ -2,7 +2,7 @@ extends SceneTree
 
 const MainHallScene := preload("res://scenes/main_hall.tscn")
 const CITY_DEFINITION := "res://data/maps/yian_harbor_city.json"
-const D04_DEFINITION := "res://data/maps/d04_field_zone.json"
+const D04_DEFINITION := "res://data/maps/glory_nft_bl_d04.json"
 const ItemCatalogScript := preload("res://scripts/domain/items/item_catalog.gd")
 
 var assertions := 0

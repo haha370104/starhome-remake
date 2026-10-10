@@ -30,18 +30,24 @@ func execute(player: Player, provider_id: String, command: Dictionary) -> Domain
 	var definition: Dictionary = catalog.definitions.get(task_id, {})
 	if definition.is_empty() or String(definition["provider_id"]) != provider_id:
 		return DomainResult.failure(&"quest.unavailable", "此NPC不提供该任务")
-	if player.map_id not in catalog.providers[provider_id].get("map_ids", []):
+	var command_type := String(command.get("type", ""))
+	if command_type != "abandon_weapon_merchant_task" \
+		and player.map_id not in catalog.providers[provider_id].get("map_ids", []):
 		return DomainResult.failure(&"quest.wrong_map", "请前往任务发布者所在地图")
 	if String(definition.get("kind", "")) == "kill_training":
 		return _execute_training(player, definition, command)
 	var rule := RepeatableCollectionTask.new(definition)
 	var state: Dictionary = player.quest_states.get(task_id, {})
-	if String(command["type"]).begins_with("accept_"):
+	if command_type.begins_with("accept_"):
 		var accepted := rule.accept(state)
 		if not accepted.is_ok:
 			return accepted
 		player.quest_states[task_id] = accepted.value
 		return DomainResult.ok({"action": "accept_task", "task_id": task_id})
+	if command_type == "abandon_weapon_merchant_task":
+		return _abandon(player, task_id, state)
+	if command_type != "turn_in_weapon_merchant_task":
+		return DomainResult.failure(&"quest.unknown_command", "unknown repeatable task command")
 	var checked := player.inventory.require_revision(int(command.get("inventory_revision", -1)))
 	if not checked.is_ok:
 		return checked
@@ -91,12 +97,17 @@ func _execute_training(player: Player, definition: Dictionary, command: Dictiona
 		return DomainResult.failure(&"quest.skill_maximum", "该技能已满级，无需继续训练")
 	var rule := catalog.training_rule(definition)
 	var state: Dictionary = player.quest_states.get(task_id, {})
-	if String(command["type"]).begins_with("accept_"):
+	var command_type := String(command.get("type", ""))
+	if command_type.begins_with("accept_"):
 		var accepted := rule.accept(state, player.skills.base_level(skill_id), current_day(), randi())
 		if not accepted.is_ok:
 			return accepted
 		player.quest_states[task_id] = accepted.value
 		return DomainResult.ok({"action": "accept_task", "task_id": task_id})
+	if command_type == "abandon_weapon_merchant_task":
+		return _abandon(player, task_id, state)
+	if command_type != "turn_in_weapon_merchant_task":
+		return DomainResult.failure(&"quest.unknown_command", "unknown repeatable task command")
 	var completed := rule.turn_in(state)
 	if not completed.is_ok:
 		return completed
@@ -110,25 +121,38 @@ func _execute_training(player: Player, definition: Dictionary, command: Dictiona
 		"currency_reward": 0, "milestone_rewards": []})
 
 
+## 删除当前任务状态；已完成次数由独立成就账本保留。
+func _abandon(player: Player, task_id: String, state: Dictionary) -> DomainResult:
+	if not bool(state.get("accepted", false)):
+		return DomainResult.failure(&"quest.not_accepted", "请先接取任务")
+	player.quest_states.erase(task_id)
+	return DomainResult.ok({"action": "abandon_task", "task_id": task_id})
+
+
 ## 内部权威死亡入口；不提供对应客户端 RPC。一次击杀可推进多个匹配目标的已接任务。
 ## [param player] 击杀者的隔离聚合。
 ## [param event] 服务器生成的死亡事件。
 ## 返回是否至少推进了一项训练。
 func record_monster_kill(player: Player, event: Dictionary) -> bool:
-	if String(event.get("killer_id", "")) != player.entity_id:
-		return false
-	var changed := false
-	for definition: Dictionary in catalog.definitions.values():
-		if String(definition.get("kind", "")) != "kill_training":
-			continue
-		var task_id := String(definition["id"])
-		var state: Dictionary = player.quest_states.get(task_id, {})
+	var changes := prepare_monster_kill(player, event)
+	player.quest_states.merge(changes, true)
+	return not changes.is_empty()
+
+
+## 只准备受本次击杀影响的已接训练任务，领域规则仍只有一份。
+## [param player] 在线玩家。[param event] 权威死亡事实。
+## 返回任务 ID 到最终状态的写集。
+func prepare_monster_kill(player: Player, event: Dictionary) -> Dictionary:
+	var changes: Dictionary = {}
+	if String(event.get("killer_id", "")) != player.entity_id: return changes
+	for task_id: String in player.quest_states:
+		var definition: Dictionary = catalog.definitions.get(task_id, {})
+		if String(definition.get("kind", "")) != "kill_training": continue
+		var state: Dictionary = player.quest_states[task_id]
 		var updated := catalog.training_rule(definition).record_kill(state,
 			String(event.get("species_id", "")), String(event.get("death_id", "")))
-		if updated != state:
-			player.quest_states[task_id] = updated
-			changed = true
-	return changed
+		if updated != state: changes[task_id] = updated
+	return changes
 
 
 ## 按物品最大堆叠数拆分奖励，实例 ID 跨进程重启保持随机唯一。

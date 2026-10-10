@@ -1,7 +1,7 @@
 extends SceneTree
 
-const FIELD_MAPS := ["buli_c03_field_zone", "buli_c04_field_zone", "buli_c05_field_zone",
-	"buli_d03_field_zone", "buli_d05_field_zone"]
+const FIELD_MAPS := ["glory_nft_bl_c03", "glory_nft_bl_c04", "glory_nft_bl_c05",
+	"glory_nft_bl_d03", "glory_nft_bl_d05"]
 var failures: Array[String] = []
 var checks := 0
 var audited_maps := 0
@@ -39,7 +39,7 @@ func _run() -> void:
 			_expect(icon.is_playing() and (icon.frame != frame_before or icon.frame_progress != progress_before),
 				"%s 的 %s 必须实际推进动画" % [map_id, view.transition_id])
 			_expect(view.z_index < hall.world_view.player.z_index, "传送箭头须位于战车下方")
-		if map_id == "buli_c04_field_zone" and "--capture" in OS.get_cmdline_user_args():
+		if map_id == "glory_nft_bl_c04" and "--capture" in OS.get_cmdline_user_args():
 			await _capture_c04(hall)
 		await process_frame
 	hall.free()

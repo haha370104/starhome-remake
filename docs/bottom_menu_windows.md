@@ -2,11 +2,11 @@
 
 ## 当前入口
 
-当前入口排列为：人物属性、背包、战车装备、好友列表、当前场景玩家、任务日志、系统设置、成就系统、商城。
-2026-09-14 将商城与右邻按钮换位，原商城位置承载[成就系统](achievements.md)，更右侧按钮保持原状。
-按钮保持原像素大小；从 1024px 设计面 x=519 开始，每项间距 38px。删除的是入口，不更改顶部工具栏。
+当前入口排列为：显示/隐藏快捷栏、人物属性、背包、战车装备、好友列表、当前场景玩家、任务日志、星图、成就系统、商城、系统设置。
+2026-10-10 直接保留原背景图中的图标，点击区常态透明，悬停和按下复用原版青色状态图；星图和成就因缺少免费版状态图，保留底图图案并使用从系统按钮三态拟合的颜色变换。商城以原版三态按钮覆盖重复图标，星图保留入口并提示暂未开放。
+菜单从 1024px 设计面 x=519 开始，每项间距 38px，最后四项位置为 747、785、823、861。快捷栏开关位于人物左侧 (475, 2)，不更改顶部工具栏。
 
-人物、背包、战车沿用已有窗口。好友点击中央提示未实现。其他四窗归 `GameWindowManager` 管理，可右键关闭，除小型系统菜单外可拖动，不用系统模态弹窗阻断地图操作。
+人物、背包、战车沿用已有窗口。好友列表现在由 `GameWindowManager` 管理，关系变更仍以服务端权威结果为准。其他窗口同样可右键关闭，除小型系统菜单外可拖动，不用系统模态弹窗阻断地图操作。
 
 ## 原版证据与实现边界
 
@@ -14,13 +14,13 @@
 
 | 功能 | 本地原版源码 | 已接入 / 明确保留 |
 |---|---|---|
-| 底栏顺序与入口 | `starhome_lz_fr_fcc_source/menupart_main_common_dzl.fcc`，`base_ctrlpad`、`ShowPlayerTask`、`OnEnterShopping` | 8 个独立状态按钮；去除天阵、命运、星图、GM 反馈 |
+| 底栏顺序与入口 | `starhome_lz_fr_fcc_source/menupart_main_common_dzl.fcc`，`base_ctrlpad`、`ShowPlayerTask`、`OnEnterShopping` | 当前采用底图的 10 个固定槽位；星图仅保留入口，成就和商城使用用户指定位置 |
 | 用户列表 | `starhome_lz_ry_fcc_source/chatctrl_main.fcc`，`great/code_string.fcc` | 320×450；用户列表/当前区域在线用户列表；用户名、性别、战果、战斗积分四列和列头排序 |
 | 任务日志 | `starhome_lz_fr_fcc_source/bool/role/userrolewnd.fcc`、`great/bool_great.fcc` | 250×350；新兵任务、中级任务、高级任务、家园活动四页；名称、状态、材料、完成次数和奖励 |
-| 系统菜单 | `starhome_lz_fr_fcc_source/menupart_main_common_dzl.fcc`，`CtrlPad_SystemWnd` | 原 65×178 九行按钮图、逐项点击；仅提示，不实际退出、改设置或打开外链 |
+| 系统菜单 | `starhome_lz_fr_fcc_source/menupart_main_common_dzl.fcc`，`CtrlPad_SystemWnd` | 原 65×178 九行按钮图、逐项点击；信件/留言入口打开当前权威收件箱，其他未恢复设置仍提示 |
 | 商城 | `starhome_lz_fr_fcc_source/hp/adorn/adorn_ui.fcc`，`shopping_ui/InitUi/BtnWnd` | 原 720×502 背景，三大类及各子类、进入确认、搜索、翻页、物品信息区、退出 |
 
-用户列表高级社交操作、战果和战斗积分尚无模型支持：后两项显示“—”，双击用户明确提示未实现。不是伪造 0，也不泄露账号信息。
+用户列表提供组队邀请/申请、交易邀请、好友申请、私聊和区域聊天入口；战果与战斗积分仍无数据模型，以“—”显示。双击玩家行会发送组队邀请。
 
 任务日志只显示真实已接取或有完成记录的任务。2026-09-14 已扩展为四套材料循环任务和五类每日训练，
 规则与权威边界见 [任务说明](repeatable_quests.md)，不再只有武器店一项。
@@ -39,16 +39,18 @@
 - 玩家列表：`query_scene_players` 经过现有 `player_panel_command` 传输；服务器只认发起会话的 `map_instance_id`。排除其他实例和已断线宽限会话，返回实体 ID、显示名、性别及未实现值。客户端请求不得指定任意地图。
 - 任务日志：`PlayerPanelProjector` 从同一 `Player.quest_states` 与 `Inventory` 调用 `RepeatableCollectionTask.snapshot`。没有客户端任务规则副本，没有额外持久化表；领取与提交仍由商人权威服务处理。
 - 名单/日志仅在窗口可见时每 2 秒查询；普通物品与任务事务仍即时更新日志。查询不写数据库、不增加状态 revision。离线和 ENet 共用同一服务器处理器。
-- 窗口投影只负责展示/排序。数据来源是服务器；商城购买复用权威玩家事务，系统菜单的占位功能不变更游戏状态。
+- 窗口投影只负责展示/排序。数据来源是服务器；商城购买和信件读写复用权威玩家事务，系统菜单的未恢复功能仍不变更游戏状态。
 
 ## 素材与维护
 
 导入脚本 `tools/import_bottom_menu_windows.py` 使用帧元数据裁切、拼接边框，不拉伸源图。运行时路径为 `assets/ui/windows/navigation` 和 `assets/ui/free_hud/bottom_main/menu_buttons/premium_shop`，来源审计在 `assets/ui/source_audit/bottom_menu_windows.json`。
+脚本从工程外 `../starhome_lz_fr_full/raw/` 按需解码 ALE，临时帧自动清理；执行前会列出全部缺失原档。窗口所需的 22 份免费版 ALE 已按精确路径取得，来源 URL、SHA-256 和帧数见 `data/source_evidence/free/official_raw_recovery_v1.json`；各窗口的实际来源写入 `assets/ui/windows/navigation/source_manifest.json`。
+荣耀版的用户列表、商城确认、商城背景和系统菜单可用 `python3 tools/import_glory_panel_assets.py --navigation-variants` 按需生成。九分格源图需去除导引线并拼接；荣耀系统菜单直接取 63×138 的 `back.ale`，其布局与当前免费版九行菜单不同。结果与来源清单位于 `assets/ui/windows/navigation/glory_variants/`，不覆盖当前窗口，也不自动接入运行时。
 
-用户此次指定的免费版任务日志、商城、系统菜单，以及荣耀本地找不到边框时的用户列表回退，是窄范围 UI 豁免；不能推广到地图、装备、怪物或其他窗口。`tools/import_free_hud_assets.py` 同步维护这 8 项，重新导入不会恢复已删除入口。
+用户此次指定的免费版任务日志、商城、系统菜单，以及荣耀本地找不到边框时的用户列表回退，是窄范围 UI 豁免；不能推广到地图、装备、怪物或其他窗口。两个底栏导入脚本同步维护这 10 个槽位，重新导入不会恢复旧的覆盖重排布局。
 
 ## 验证
 
-`tests/ui/runtime/navigation_windows_test.gd` 已纳入总门禁：验证名单地图隔离和断线过滤、字段隐私、任务持久化进度、8 项顺序、窗口开关、商城确认/分类/空搜索、按可见性轮询。可选 `--capture-navigation` 使用真实渲染器输出 `.godot/navigation_windows.png` 供视觉检查。
+底部窗口的现行门禁由 HUD 和面板 smoke 测试覆盖；旧导航窗口夹具依赖已移除的记录式状态所有者，已清理。
 
 本轮：导航 30 项断言、原有三面板 72 项断言通过；入口脚本扫描 0 warning / 0 error，真实渲染截图已检查。未宣称全库测试通过：全库函数注释门禁还报告其他在改文件中的缺参/返回说明，未并入此次 HUD 改动。

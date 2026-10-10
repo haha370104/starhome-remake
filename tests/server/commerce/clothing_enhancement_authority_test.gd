@@ -1,5 +1,9 @@
 extends SceneTree
 
+const AutosaveRecordAdapter := preload("res://tests/fixtures/autosave_record_adapter.gd")
+
+const CommerceRecordAdapter := preload("res://tests/fixtures/commerce_record_adapter.gd")
+
 const Fixture := preload("res://tests/fixtures/player_panel_service_fixture.gd")
 var items := ItemCatalog.new()
 var service := AuthoritativeCommerceService.new()
@@ -29,7 +33,7 @@ func _run() -> void:
 		var command := _command(state, "enhance_clothing")
 		command["rank"] = 15
 		command["price"] = 0
-		var result := service.execute(state, command)
+		var result := CommerceRecordAdapter.execute(service, state, command)
 		_expect(result.is_ok and state.to_dictionary() == before, "只修改隔离候选，不信任客户端价格等级")
 		if not result.is_ok:
 			failures.append(result.error_message)
@@ -41,9 +45,10 @@ func _run() -> void:
 		var shirt := PlayerEnhancementActions.clothing(restored, "inventory.training_shirt")
 		_expect(shirt.enhancement.gem_stage == 1 and shirt.bound, "高级石打空装备仅一段且绑定保留")
 		_expect(candidate.currency == state.currency - 100 and restored.inventory.find("stone").quantity == 1, "精确扣一颗石头与100星际币")
-		_expect(not service.execute(candidate, command).is_ok, "背包版本阻止同一请求重放")
+		_expect(not CommerceRecordAdapter.execute(service, candidate, command).is_ok, "背包版本阻止同一请求重放")
 		var current := CurrentPlayer.new()
-		_expect(current.apply_bundle(result.value.panel_bundle), "客户端恢复服务端快照")
+		var bundle: Dictionary = CommerceRecordAdapter.build_bundle(service, candidate)
+		_expect(current.apply_bundle(bundle), "客户端恢复服务端快照")
 		_expect(PlayerEnhancementActions.clothing(current, "inventory.training_shirt").enhancement.gem_stage == 1, "客户端背包及穿着保留强化")
 	_test_failures()
 	_test_synthesis()
@@ -77,7 +82,7 @@ func _test_failures() -> void:
 		if failure == "revision":
 			command.inventory_revision = -1
 		var before := state.to_dictionary()
-		_expect(not service.execute(state, command).is_ok and state.to_dictionary() == before, "拒绝且不改动：" + failure)
+		_expect(not CommerceRecordAdapter.execute(service, state, command).is_ok and state.to_dictionary() == before, "拒绝且不改动：" + failure)
 
 
 ## 合成可跨堆叠消费，失败须恢复全部材料，绑定产物不可洗白。
@@ -86,7 +91,7 @@ func _test_synthesis() -> void:
 	var stone := _give(player, "enhancement:gem:defense:10", "stone", 2)
 	stone.bound = true
 	var state: PlayerStateRecord = mapper.to_record(player).value
-	var result := service.execute(state, _command(state, "synthesize_enhancement"))
+	var result := CommerceRecordAdapter.execute(service, state, _command(state, "synthesize_enhancement"))
 	_expect(result.is_ok, "十级宝石二合一")
 	if result.is_ok:
 		var next: Player = mapper.to_domain(result.value.candidate).value
@@ -124,13 +129,13 @@ func _test_equipment_changes() -> void:
 	player.equip_character_item("inventory.training_shirt", "upper_body", player.inventory.revision, player.revision)
 	var changed: PlayerStateRecord = mapper.to_record(player).value
 	var before := changed.to_dictionary()
-	var result := service.execute(changed, command)
+	var result := CommerceRecordAdapter.execute(service, changed, command)
 	_expect(not result.is_ok and result.error_code == &"inventory.revision_conflict"
 		and changed.to_dictionary() == before, "预览后换装仍拒绝旧命令且不扣材料和金币")
 	command = _command(changed, "enhance_clothing")
 	player.unequip_character_item("upper_body", player.inventory.revision, player.revision)
 	changed = mapper.to_record(player).value
-	result = service.execute(changed, command)
+	result = CommerceRecordAdapter.execute(service, changed, command)
 	_expect(not result.is_ok and result.error_code == &"inventory.revision_conflict", "预览后脱装仍拒绝旧命令")
 
 
@@ -176,14 +181,14 @@ func _expect(condition: bool, message: String) -> void:
 func _test_live_server() -> void:
 	var config := DedicatedServerConfig.new()
 	config.network_enabled = false
-	config.map_config_path = "res://data/maps/d04_field_zone.json"
+	config.map_config_path = "res://data/maps/glory_nft_bl_d04.json"
 	config.player_state_store_path = "res://.godot/clothing-live-%d.json" % Time.get_ticks_usec()
 	var server := AuthoritativeServer.new()
 	_expect(server.initialize(config).ok, "野外隔离服务器初始化")
 	var opened := server.open_session(91, {"protocol_version": config.protocol_version, "content_version": config.content_version}, 1000)
 	_expect(opened.ok, "正式玩家会话可进入野外")
 	var session := server.sessions.session_for_peer(91)
-	var record := server.autosave_service.state_for(session.entity_id)
+	var record: PlayerStateRecord = AutosaveRecordAdapter.current(server.autosave_service, session.entity_id)
 	var player: Player = mapper.to_domain(record).value
 	player.inventory.currency = 100000
 	var shirt: Clothing = items.create("male_sleeveless_shirt", {"instance_id": "live-shirt"}).value
@@ -191,7 +196,7 @@ func _test_live_server() -> void:
 	player.equip_character_item(shirt.instance_id, "upper_body", player.inventory.revision, player.revision)
 	player.receive_loot(items.create("male_sleeveless_shirt", {"instance_id": "live-target"}).value)
 	_give(player, "enhancement:gem:movement_speed:3", "live-stone", 8)
-	server.autosave_service.commit_player_state(session.entity_id, mapper.to_record(player).value)
+	server.autosave_service.commit_player(session.entity_id, player)
 	var map := server.map_registry.instance_by_id(session.map_instance_id)
 	_expect(map.is_vehicle_combat_active(), "在真实战斗地图验证")
 	var runtime := map.vehicle_combat_state_for(session.entity_id)
@@ -200,13 +205,15 @@ func _test_live_server() -> void:
 	var actor: Dictionary = map.combat_module.actors[session.entity_id]
 	actor.cooldown_ready_ticks["energy_cannon.primary"] = 999
 	var old_speed: float = map.entities[session.entity_id].movement_speed
-	record = server.autosave_service.state_for(session.entity_id)
+	record = AutosaveRecordAdapter.current(server.autosave_service, session.entity_id)
 	var command := {"type": "enhance_clothing", "instance_id": "live-shirt", "stone_id": "live-stone",
 		"state_revision": record.revision, "inventory_revision": record.inventory_revision}
+	var persisted_before: PlayerStateRecord = server.player_state_repository.load_player(session.entity_id).value
 	var autosaved := server.autosave_service.advance(config.autosave_interval_seconds,
-		Callable(server, "_capture_persistent_player_state"))
-	var after_autosave := server.autosave_service.state_for(session.entity_id)
-	_expect(autosaved.is_ok and after_autosave.revision > record.revision
+		Callable(server, "_capture_player_runtime"))
+	var after_autosave: PlayerStateRecord = AutosaveRecordAdapter.current(server.autosave_service, session.entity_id)
+	var persisted_after: PlayerStateRecord = server.player_state_repository.load_player(session.entity_id).value
+	_expect(autosaved.is_ok and persisted_after.revision > persisted_before.revision
 		and after_autosave.inventory_revision == record.inventory_revision,
 		"确认前自动保存只增加仓储版本，装备与材料版本不变")
 	var result := server.handle_peer_player_panel_command(91, command)
@@ -214,7 +221,7 @@ func _test_live_server() -> void:
 	_expect(runtime == map.vehicle_combat_state_for(session.entity_id) and runtime.health == 23 and runtime.working_energy == 17, "强化保留实际战车对象及实时资源")
 	_expect(actor.cooldown_ready_ticks["energy_cannon.primary"] == 999, "野外强化不重置冷却")
 	_expect(is_equal_approx(map.entities[session.entity_id].movement_speed, minf(240, old_speed + 2)), "宝石立即影响实际地图速度")
-	var saved := server.autosave_service.state_for(session.entity_id)
+	var saved: PlayerStateRecord = AutosaveRecordAdapter.current(server.autosave_service, session.entity_id)
 	_expect(PlayerEnhancementActions.clothing(mapper.to_domain(saved).value, "live-shirt").enhancement.gem_stage == 1, "强化写回真实仓储")
 	_expect(not server.handle_peer_player_panel_command(91, command).ok, "真实会话拒绝旧版本强化重放")
 	for action: String in ["enhance_clothing", "synthesize_enhancement", "transfer_clothing_gems", "reset_clothing_gems"]:
@@ -224,22 +231,24 @@ func _test_live_server() -> void:
 		_expect(queried.ok, "正式查询下一次预览：" + action)
 		command = {"type": action, "instance_id": clothing_id, "source_id": "live-shirt",
 			"stone_id": "live-stone", "inventory_revision": queried.value.inventory.revision}
-		var before_save := server.autosave_service.state_for(session.entity_id)
+		var before_save: PlayerStateRecord = AutosaveRecordAdapter.current(server.autosave_service, session.entity_id)
+		var persisted_before_save: PlayerStateRecord = server.player_state_repository.load_player(session.entity_id).value
 		for _save: int in range(2):
 			var background := server.autosave_service.advance(config.autosave_interval_seconds,
-				Callable(server, "_capture_persistent_player_state"))
+				Callable(server, "_capture_player_runtime"))
 			_expect(background.is_ok, "确认等待期间自动保存成功")
-		var before_action := server.autosave_service.state_for(session.entity_id)
-		_expect(before_action.revision == before_save.revision + 2
+		var before_action: PlayerStateRecord = AutosaveRecordAdapter.current(server.autosave_service, session.entity_id)
+		var persisted_before_action: PlayerStateRecord = server.player_state_repository.load_player(session.entity_id).value
+		_expect(persisted_before_action.revision > persisted_before_save.revision
 			and before_action.inventory_revision == before_save.inventory_revision, "等待两轮自动保存未改变物品版本")
 		result = server.handle_peer_player_panel_command(91, command)
 		_expect(result.ok, "两轮自动保存后无需手工刷新即可执行：" + action)
-		saved = server.autosave_service.state_for(session.entity_id)
+		saved = AutosaveRecordAdapter.current(server.autosave_service, session.entity_id)
 		_expect(saved.inventory_revision == before_action.inventory_revision + 1
 			and saved.currency < before_action.currency, "一次操作只提交一次物品变化和费用：" + action)
 		var replay := server.handle_peer_player_panel_command(91, command)
 		_expect(not replay.ok and replay.code == &"inventory.revision_conflict"
-			and server.autosave_service.state_for(session.entity_id).to_dictionary() == saved.to_dictionary(),
+			and AutosaveRecordAdapter.current(server.autosave_service, session.entity_id).to_dictionary() == saved.to_dictionary(),
 			"同一确认重放仍被拒绝且不重复扣费：" + action)
 	player = mapper.to_domain(saved).value
 	_expect(PlayerEnhancementActions.clothing(player, "live-shirt").enhancement.gem_stage == 0

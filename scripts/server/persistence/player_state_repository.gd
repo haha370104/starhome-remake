@@ -1,6 +1,14 @@
 class_name PlayerStateRepository
 extends RefCounted
 
+const GROUND_CLEAR_INTERVAL := 86400
+var ground_cleanup_at := (floori(Time.get_unix_time_from_system() / GROUND_CLEAR_INTERVAL) + 1) * GROUND_CLEAR_INTERVAL
+var ground_items: Dictionary = {}
+var ground_dirty := false
+
+
+func save_ground_transfer(_state: PlayerStateRecord, _expected_revision: int, _transfer: Dictionary) -> DomainResult:
+	return DomainResult.failure(&"persistence.repository_not_implemented", "ground item transactions are unavailable")
 
 
 ## 配置并初始化 `initialize` 对应的模块状态。
@@ -23,6 +31,11 @@ func load_player(_character_id: String) -> DomainResult:
 	return DomainResult.failure(&"persistence.repository_not_implemented", "repository load is not implemented")
 
 
+## 返回精确昵称匹配的角色标识；基础仓储没有角色目录实现时返回空数组。
+func find_player_ids_by_display_name(_display_name: String) -> Array[String]:
+	return []
+
+
 ## 执行 `save_player` 对应的模块操作。
 ## [param _state] 子类实现时使用的待保存角色状态。
 ## [param _expected_revision] 子类实现时校验的乐观锁版本。
@@ -36,6 +49,16 @@ func save_player(_state: PlayerStateRecord, _expected_revision: int) -> DomainRe
 ## [param _operation] 子类事务内执行的角色操作。
 ## 返回该函数计算、查询或操作得到的结果。
 ## 设计：该函数位于权威服务器边界，客户端不得覆盖其计算结果。
+func save_players_atomic(_states: Dictionary, _expected_revisions: Dictionary) -> DomainResult:
+	return DomainResult.failure(&"persistence.repository_not_implemented", "atomic multi-player save is unavailable")
+
+
+## 多角色原子保存，并在成功返回前完成持久化。
+## 同步仓储直接复用原子保存实现。
+func save_players_atomic_durable(states: Dictionary, expected_revisions: Dictionary) -> DomainResult:
+	return save_players_atomic(states, expected_revisions)
+
+
 func transact_player(_character_id: String, _operation: Callable) -> DomainResult:
 	return DomainResult.failure(&"persistence.repository_not_implemented", "repository transaction is not implemented")
 
@@ -56,6 +79,12 @@ func save_player_durable(state: PlayerStateRecord, expected_revision: int) -> Do
 ## 提交后台检查点；同步仓储没有待写队列。
 ## 返回提交状态。
 func queue_checkpoint() -> DomainResult:
+	return DomainResult.ok()
+
+
+## 查询后台检查点最近一次完成结果，不等待文件线程。
+## 返回同步仓储的成功状态或后台线程的最后一次结果。
+func checkpoint_status() -> DomainResult:
 	return DomainResult.ok()
 
 

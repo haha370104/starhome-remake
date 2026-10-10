@@ -85,6 +85,10 @@ func _available_materials(items: ItemCatalog, places: Dictionary, combat: Combat
 	for mineral: Dictionary in mining.minerals:
 		if enabled.has(mineral.id):
 			ids[mineral.item_definition_id] = true
+	var garden := BotanicalGardenCatalog.load_default()
+	if garden.is_ok:
+		for plant: Dictionary in garden.value.plants.values():
+			ids[String(plant.item_definition_id)] = true
 	var recipes: Array = JsonConfigLoader.load_dictionary("res://data/gameplay/industrial_recipes_v1.json").value.recipes
 	recipes.append_array(JsonConfigLoader.load_dictionary("res://data/gameplay/material_upgrade_recipes_v1.json").value.recipes)
 	for _pass in range(recipes.size()):
@@ -92,9 +96,9 @@ func _available_materials(items: ItemCatalog, places: Dictionary, combat: Combat
 		for recipe: Dictionary in recipes:
 			var ready := true
 			for ingredient: Dictionary in recipe.materials:
-				ready = ready and ids.has(ItemDefinitionAliases.canonical(String(ingredient.definition_id)))
+				ready = ready and ids.has(String(ingredient.definition_id))
 			if ready:
-				ids[ItemDefinitionAliases.canonical(String(recipe.product_definition_id))] = true
+				ids[String(recipe.product_definition_id)] = true
 		if ids.size() == count:
 			break
 	for id: String in ids:
@@ -104,6 +108,8 @@ func _available_materials(items: ItemCatalog, places: Dictionary, combat: Combat
 			var source_class := String(definition.get("source_class", definition.get("source_audit", {}).get("source_class", "")))
 			if not source_class.is_empty():
 				result[source_class] = id
+	if result.has("糖瓜"):
+		result["FoodA_7"] = result["糖瓜"]
 	return result
 
 

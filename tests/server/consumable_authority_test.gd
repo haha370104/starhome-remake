@@ -33,12 +33,13 @@ func _test_transactions() -> void:
 	var original := state.to_dictionary()
 	var command := {"type": "use_inventory_item", "instance_id": "比萨", "inventory_revision": state.inventory_revision,
 		"now": 0, "amount": 999999, "food_status": {"physical": 99999}}
-	var used := fixture._service.execute(state, command)
-	_expect(used.is_ok and state.to_dictionary() == original, "使用只生成候选且忽略伪造效果和时间")
-	player = mapper.to_domain(used.value.candidate).value
+	var used := fixture._service.execute(player, command)
+	_expect(used.is_ok and mapper.to_record(player).value.to_dictionary() == original, "使用只生成候选且忽略伪造效果和时间")
+	if not used.is_ok: return
+	player = used.value.candidate
 	_expect(player.inventory.find("比萨").quantity == 2 and player.food_status.physical == 90
 		and player.food_status.bonus(13) == 10, "一份比萨提供原版效果")
-	_expect(not fixture._service.execute(used.value.candidate, command).is_ok, "重复请求拒绝旧背包版本")
+	_expect(not fixture._service.execute(player, command).is_ok, "重复请求拒绝旧背包版本")
 	player.use_inventory_item("白兰地", player.inventory.revision, now)
 	_expect(player.vehicle.max_health == 270 and player.vehicle.health == 20, "生命上限增益不免费回血")
 	player.use_inventory_item("伏特加", player.inventory.revision, now)
@@ -67,14 +68,18 @@ func _test_transactions() -> void:
 	state = mapper.to_record(player).value
 	var restored := PlayerStateRecord.from_dictionary(JSON.parse_string(JSON.stringify(state.to_dictionary())))
 	_expect(restored.is_ok, "食品状态完成JSON存档往返")
-	state = fixture._service.advance_food_status(restored.value, now + 3).value
-	_expect(state.character_health == 50, "在线三秒恢复30人物生命")
-	state = fixture._service.advance_food_status(state, now + 3601).value
-	_expect(state.vehicle_max_health == 70 and state.vehicle_health == 70 and state.food_status.active.is_empty(), "到期截断生命且清除全部效果")
+	if not restored.is_ok: return
+	player = mapper.to_domain(restored.value).value
+	var bundle := fixture._service.build_bundle(player)
+	player.advance_food_status(now + 3)
+	_expect(player.health == 50, "在线三秒恢复30人物生命")
+	player.advance_food_status(now + 3601)
+	_expect(player.vehicle.max_health == 70 and player.vehicle.health == 70
+		and player.food_status.active.is_empty(), "到期截断生命且清除全部效果")
 	var projected := CurrentPlayer.new(catalog)
-	_expect(projected.apply_bundle(fixture._service.build_bundle(restored.value)) and projected.food_status.bonus(13) == 10,
+	_expect(projected.apply_bundle(bundle) and projected.food_status.bonus(13) == 10,
 		"客户端投影收到完整食品状态")
-	var invalid := fixture._service.build_bundle(restored.value)
+	var invalid: Dictionary = bundle.duplicate(true)
 	invalid.food_status.physical = -1
 	_expect(not projected.apply_bundle(invalid), "客户端拒绝非法食品投影")
 
@@ -90,57 +95,57 @@ func _test_live_server() -> void:
 	_expect(opened.ok, "正式会话建立")
 	var session: ServerSession = server.sessions.session_for_peer(77)
 	var id := session.entity_id
-	var state := server.autosave_service.state_for(id)
+	var state: Player = server.autosave_service.player_for(id)
 	for label: String in ["低级能量包", "龙舌兰酒", "比萨"]:
 		var quantity := 10 if label == "低级能量包" else 3
 		var item := _item(label, quantity)
-		state = server.player_panel_service.grant_loot(state, {"loot_id": label, "item_definition_id": item.definition_id, "quantity": quantity}).value.candidate
-	state.character_health = 10
-	server.autosave_service.commit_player_state(id, state)
+		_expect(item != null, "目录中存在消耗品：" + label)
+		if item == null: return
+		_expect(state.receive_loot(item).is_ok, "服务端食品加入在线背包")
+	state.health = 10
 	var map: AuthoritativeMapInstance = server.map_registry.instance_by_id(session.map_instance_id)
 	var runtime := map.vehicle_combat_state_for(id)
 	runtime.reserve_energy = 3500
 	var actor: Dictionary = map.combat_module.actors[id]
 	actor.cooldown_ready_ticks["energy_cannon.primary"] = 999
-	state = server.autosave_service.state_for(id)
-	var command := {"type": "use_inventory_item", "instance_id": "低级能量包", "inventory_revision": state.inventory_revision,
+	state = server.autosave_service.player_for(id)
+	var command := {"type": "use_inventory_item", "instance_id": "低级能量包", "inventory_revision": state.inventory.revision,
 		"quantity": 999, "energy": 999999, "reserve_energy": 0}
 	var result := server.handle_peer_player_panel_command(77, command)
-	state = server.autosave_service.state_for(id)
-	var player: Player = mapper.to_domain(state).value
-	_expect(result.ok and runtime.reserve_energy == 9500 and state.reserve_energy == 9500
-		and player.inventory.find("低级能量包").quantity == 4,
+	state = server.autosave_service.player_for(id)
+	_expect(result.ok and runtime.reserve_energy == 9500 and state.vehicle.reserve_energy == 9500
+		and state.inventory.find("低级能量包").quantity == 4,
 		"以地图实时能源3500批量补到9500，并原子保存只消耗六包；忽略客户端伪造数量和能源")
 	_expect(actor.cooldown_ready_ticks.get("energy_cannon.primary") == 999, "使用不会重置射击冷却")
 	_expect(not server.handle_peer_player_panel_command(77, command).ok and runtime.reserve_energy == 9500,
 		"权威背包版本拒绝成功后的重复补给请求")
-	command.inventory_revision = state.inventory_revision
+	command.inventory_revision = state.inventory.revision
 	result = server.handle_peer_player_panel_command(77, command)
-	state = server.autosave_service.state_for(id)
-	player = mapper.to_domain(state).value
-	_expect(result.ok and runtime.reserve_energy == 10000 and state.reserve_energy == 10000
-		and player.inventory.find("低级能量包").quantity == 3, "第二次使用一包，运行态和存档同时补满")
-	command.inventory_revision = state.inventory_revision
+	state = server.autosave_service.player_for(id)
+	_expect(result.ok and runtime.reserve_energy == 10000 and state.vehicle.reserve_energy == 10000
+		and state.inventory.find("低级能量包").quantity == 3, "第二次使用一包，运行态和存档同时补满")
+	command.inventory_revision = state.inventory.revision
 	var previous_revision := state.revision
 	result = server.handle_peer_player_panel_command(77, command)
 	_expect(not result.ok and result.code == &"items.energy_full"
-		and server.autosave_service.state_for(id).revision == previous_revision,
+		and server.autosave_service.player_for(id).revision == previous_revision,
 		"第三次满能量返回明确错误且不提交存档")
-	state = server.autosave_service.state_for(id)
-	result = server.handle_peer_player_panel_command(77, {"type": "use_inventory_item", "instance_id": "龙舌兰酒", "inventory_revision": state.inventory_revision})
+	state = server.autosave_service.player_for(id)
+	result = server.handle_peer_player_panel_command(77, {"type": "use_inventory_item", "instance_id": "龙舌兰酒", "inventory_revision": state.inventory.revision})
 	_expect(result.ok, "服务器使用回血食品")
 	# 以已提交的使用时刻为基准，避免初始化跨秒后把三秒误算成四秒。
-	var used_state := server.autosave_service.state_for(id)
-	var now := int(used_state.food_status.active.filter(func(effect: Dictionary) -> bool: return int(effect.kind) == 18)[0].last_tick)
+	var used_state: Player = server.autosave_service.player_for(id)
+	var health_effects: Array = used_state.food_status.active.filter(func(effect: FoodEffect) -> bool: return effect.kind == 18)
+	var now: int = health_effects[0].last_tick
 	server._advance_food_status()
 	server._food_runtime.advance(server.sessions.all_sessions(), now + 3)
-	state = server.autosave_service.state_for(id)
-	_expect(state.character_health == 40, "服务器食品时钟实际结算人物回血")
+	state = server.autosave_service.player_for(id)
+	_expect(state.health == 40, "服务器食品时钟实际结算人物回血")
 	server._food_runtime.advance(server.sessions.all_sessions(), now + 3)
-	_expect(server.autosave_service.state_for(id).character_health == 40, "重复时钟不重复治疗")
+	_expect(server.autosave_service.player_for(id).health == 40, "重复时钟不重复治疗")
 	server.disconnect_session(77, 2000)
 	server._food_runtime.advance(server.sessions.all_sessions(), now + 9)
-	_expect(server.autosave_service.state_for(id).character_health == 40, "断线宽限期不补发回血")
+	_expect(state.health == 40, "断线宽限期不补发回血")
 	server.free()
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(config.player_state_store_path))
 
@@ -151,8 +156,9 @@ func _test_live_server() -> void:
 ## 返回真实目录类型。
 func _item(label: String, quantity: int) -> ConsumableItem:
 	for id: String in catalog.definition_ids():
-		if catalog.display_name(id) == label:
-			return catalog.create(id, {"instance_id": label, "quantity": quantity}).value as ConsumableItem
+		if catalog.display_name(id) == label and catalog.definition(id).has("use_rule"):
+			var created := catalog.create(id, {"instance_id": label, "quantity": quantity})
+			if created.is_ok: return created.value as ConsumableItem
 	return null
 
 

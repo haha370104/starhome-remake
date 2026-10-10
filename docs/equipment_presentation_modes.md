@@ -42,7 +42,7 @@
 
 - `tests/domain/item_presentation_modes_test.gd`：旧/新格式隔离、缺失模式、深拷贝。
 - `tests/domain/glory_item_runtime_catalog_test.gd`：荣耀新兵战车、撒玛王战车、新兵炮、引擎分别解析 bag/dlg/body。
-- `tests/ui/runtime/player_panels_runtime_test.gd`：校验实际源贴图而不只校验控件尺寸；校验推进器位置，以及两种底盘各自的原点与原生尺寸。
+- `tests/integration/d04_player_vehicle_presentation_test.gd`：校验实际战车表现、推进器和采掘臂资源。
 - 运行面板测试时附加 `-- --capture-equipment`（非 headless）可保存 `.godot/equipment_panel_regression.png`，供实际渲染核对。
 - `tests/integration/d04_player_vehicle_presentation_test.gd`：野外八向移动、瞄准与战车层切换回归。
 
@@ -54,7 +54,7 @@
 
 HUD 按 `VehicleWeapon.combat_mode()` 判断副武器，所有同类装备共用导弹/火箭按钮。权威装配也只登记实际装在 Location 13 的副武器，使用该装备的攻击、能耗和冷却；空槽不能攻击。战车属性面板包含副武器基础攻击。
 
-长剑导弹售价 36000、回收价 18000；大力神售价 72000、回收价 36000。以毒刺售价 18000 为基准逐档翻倍，属于用户指定的复刻经济调整。
+长剑导弹售价 36000、出售价 18000；大力神售价 72000、出售价 36000。以毒刺售价 18000 为基准逐档翻倍，属于用户指定的复刻经济调整。
 
 ### 实际换装与弹体来源
 

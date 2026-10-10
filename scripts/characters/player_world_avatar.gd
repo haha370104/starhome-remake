@@ -28,6 +28,11 @@ var _current_direction := 6
 var _animation_speed_scale := 1.0
 var _vehicle_destroyed := false
 var _equipped_combat_actor_id: StringName = &""
+var _equipped_chassis_definition_id := ""
+var _equipped_primary_definition_id := ""
+var _clothing_appearance_key := ""
+var _character_sex := "male"
+var _public_appearance: Dictionary = {}
 
 
 ## 构建共享人形角色与按需隐藏的战斗载具表现。
@@ -56,6 +61,7 @@ func configure(
 		name_color,
 		human_name_offset,
 	)
+	_character_sex = human_character.body_sex
 	human_character.set_equipment_visible(false)
 	add_child(human_character)
 
@@ -76,6 +82,49 @@ func configure(
 	combat_status_bar.visible = false
 	add_child(combat_status_bar)
 	return OK
+
+func set_display_name(value: String) -> void:
+	human_character.display_name = value
+	human_character.name_label.text = value
+	combat_name_label.text = value
+
+
+func get_display_name() -> String:
+	return human_character.get_display_name()
+
+
+func get_combat_manifest() -> Dictionary:
+	return _combat_manifest
+
+
+func hit_test(world_position: Vector2) -> bool:
+	if presentation_kind == CHARACTER_KIND:
+		return human_character.hit_test(world_position)
+	return combat_presenter.hit_test(world_position)
+
+
+func apply_public_appearance(appearance: Dictionary, items: ItemCatalog, character_catalog: Dictionary) -> bool:
+	if appearance == _public_appearance:
+		return true
+	var clothing := CharacterEquipment.new()
+	var vehicle := PlayerVehicle.new()
+	for slot: String in ["upper_body", "chassis", "primary_weapon"]:
+		var definition_id := String(appearance.get(slot, ""))
+		if definition_id.is_empty():
+			continue
+		var created := items.create(definition_id, {"instance_id": slot})
+		if not created.is_ok:
+			return false
+		var restored := clothing.restore(created.value) if slot == "upper_body" else vehicle.loadout.restore(created.value)
+		if not restored.is_ok:
+			return false
+	set_display_name(String(appearance.get("display_name", get_display_name())))
+	if not apply_character_equipment(clothing, character_catalog):
+		return false
+	if not apply_vehicle_equipment(vehicle) and not String(appearance.get("chassis", "")).is_empty():
+		return false
+	_public_appearance = appearance
+	return true
 
 
 ## 执行 `validate_map_presentation` 对应的模块操作。
@@ -137,8 +186,12 @@ func apply_map_presentation(presentation: Dictionary) -> Error:
 ## [param action] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## [param direction] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func set_action(action: String, direction: int) -> void:
-	_current_action = StringName(action)
-	_current_direction = posmod(direction, 8)
+	var next_action := StringName(action)
+	var next_direction := posmod(direction, 8)
+	if _current_action == next_action and _current_direction == next_direction:
+		return
+	_current_action = next_action
+	_current_direction = next_direction
 	_apply_active_pose()
 
 
@@ -175,7 +228,14 @@ func apply_vehicle_equipment(vehicle: PlayerVehicle) -> bool:
 	if chassis == null:
 		combat_presenter.clear_actor()
 		_equipped_combat_actor_id = &""
+		_equipped_chassis_definition_id = ""
+		_equipped_primary_definition_id = ""
 		return false
+	var primary_definition_id := primary_weapon.definition_id if primary_weapon != null else ""
+	if chassis.definition_id == _equipped_chassis_definition_id \
+			and primary_definition_id == _equipped_primary_definition_id \
+			and combat_presenter.current_actor_id == &"equipped_combat_vehicle":
+		return true
 	var shadow_map: Dictionary = _combat_manifest.get("vehicle_shadow_component_by_chassis_definition", {})
 	var components: Dictionary = _combat_manifest.get("components", {})
 	var chassis_component := _equipment_component(chassis)
@@ -184,6 +244,8 @@ func apply_vehicle_equipment(vehicle: PlayerVehicle) -> bool:
 	if chassis_component.is_empty():
 		combat_presenter.clear_actor()
 		_equipped_combat_actor_id = &""
+		_equipped_chassis_definition_id = ""
+		_equipped_primary_definition_id = ""
 		return false
 	var layers: Array[Dictionary] = []
 	if not shadow_component.is_empty() and components.has(shadow_component):
@@ -192,7 +254,7 @@ func apply_vehicle_equipment(vehicle: PlayerVehicle) -> bool:
 		))
 	layers.append(_vehicle_layer(&"chassis", 0, chassis_component, true))
 	if not weapon_component.is_empty():
-		var primary_layer := _vehicle_layer(&"primary_weapon", 1, weapon_component, false)
+		var primary_layer := _vehicle_layer(&"primary_weapon", 0, weapon_component, false)
 		if primary_weapon is VehicleMiningArm:
 			primary_layer["actions"]["collect"] = weapon_component["action"].duplicate(true)
 		layers.append(primary_layer)
@@ -203,7 +265,7 @@ func apply_vehicle_equipment(vehicle: PlayerVehicle) -> bool:
 		"layers": layers,
 		"installed_components": [
 			_combat_manifest.get("vehicle_component_by_equipment_definition", {}).get(chassis.definition_id, chassis.definition_id),
-			_combat_manifest.get("vehicle_component_by_equipment_definition", {}).get(primary_weapon.definition_id, primary_weapon.definition_id) if primary_weapon != null else ""],
+			_equipment_component_key(primary_weapon) if primary_weapon != null else ""],
 	})
 	if registered != OK:
 		return false
@@ -211,6 +273,8 @@ func apply_vehicle_equipment(vehicle: PlayerVehicle) -> bool:
 	if presented != OK:
 		return false
 	_equipped_combat_actor_id = actor_id
+	_equipped_chassis_definition_id = chassis.definition_id
+	_equipped_primary_definition_id = primary_definition_id
 	combat_actor_id = actor_id if presentation_kind == COMBAT_ACTOR_KIND else &""
 	_apply_active_pose()
 	return true
@@ -254,9 +318,34 @@ func _vehicle_layer(
 func _equipment_component(equipment: VehicleEquipment) -> Dictionary:
 	if equipment == null:
 		return {}
-	var key := String(_combat_manifest.get("vehicle_component_by_equipment_definition", {}).get(equipment.definition_id, equipment.definition_id))
-	var component: Dictionary = _combat_manifest.get("components", {}).get(key, {})
+	var components: Dictionary = _combat_manifest.get("components", {})
+	var key := _equipment_component_key(equipment)
+	var component: Dictionary = components.get(key, {})
 	return component if not component.is_empty() else CombatAnimationLibrary.equipment_component(equipment)
+
+
+## 将实际装备映射到统一战车表现组件键。
+## [param equipment] 当前安装的战车装备。
+## 返回 manifest 中稳定的组件标识。
+func _equipment_component_key(equipment: VehicleEquipment) -> String:
+	var components: Dictionary = _combat_manifest.get("components", {})
+	var key := String(_combat_manifest.get("vehicle_component_by_equipment_definition", {}).get(equipment.definition_id, equipment.definition_id))
+	if equipment is VehicleMiningArm:
+		var mining_level := equipment.required_skill_level
+		if mining_level <= 0:
+			mining_level = {
+				"glory_equipment_collector_ac947ee094": 10,
+				"glory_equipment_collector2_21f80f2164": 30,
+				"glory_equipment_collector3_87154ee651": 60,
+				"glory_equipment_collector4_62b573e9d7": 100,
+				"glory_equipment_collector5_840acf4362": 150,
+				"glory_equipment_collector6_ac4d3e4b7b": 200,
+				"glory_equipment_collector7_76bbb2cfae": 250,
+			}.get(equipment.definition_id, 0)
+		var mining_key := "mining_arm_level_%d" % mining_level
+		if components.has(mining_key):
+			return mining_key
+	return key
 
 
 ## 执行 `set_combat_status` 对应的模块操作。
@@ -292,16 +381,29 @@ func apply_character_equipment(
 	var upper_body := equipment.at("upper_body")
 	if upper_body == null:
 		human_character.set_equipment_visible(false)
+		_clothing_appearance_key = ""
 		return true
-	var appearance_key := String(upper_body.presentation.get("world_equipment_key", ""))
+	var world_presentation := upper_body.presentation_for("world")
+	var appearance_key := String(world_presentation.get("world_equipment_key", ""))
 	if appearance_key.is_empty() or not character_catalog.has(appearance_key):
 		push_warning("Character clothing has no world appearance: %s" % upper_body.definition_id)
 		return false
+	if appearance_key == _clothing_appearance_key and human_character.equipment.visible:
+		return true
 	var character_set := CharacterFactoryScript.build_character_set(
-		character_catalog, appearance_key
+		character_catalog, appearance_key, _character_sex
 	)
 	human_character.set_equipment_set(character_set)
+	_clothing_appearance_key = appearance_key
 	return true
+
+
+## 权威角色性别变化时切换人形裸模及阴影。
+func apply_character_sex(sex: String, character_catalog: Dictionary) -> void:
+	if sex == _character_sex or human_character == null:
+		return
+	human_character.set_body_set(CharacterFactoryScript.build_body_set(character_catalog, sex))
+	_character_sex = sex
 
 
 ## 按荣耀版死亡表现降低战车本体透明度；名称和状态条保持可读。

@@ -5,13 +5,17 @@ var extensions: Dictionary[int, int] = {}
 
 
 ## 恢复原始扩展点数，不保存已经叠加加工或品质的结果。
-## [param raw] 旧档默认空对象。
+## [param raw] 当前锻造事实；空对象表示尚未锻造。
 ## 返回独立锻造事实或非法状态。
 static func restore(raw: Variant) -> DomainResult:
-	if not raw is Dictionary or raw.get("version", 1) != 1 or not raw.get("extensions", {}) is Dictionary:
+	if not raw is Dictionary:
 		return DomainResult.failure(&"forging.state", "装备锻造状态格式无效")
 	var result := EquipmentForging.new()
-	for key: Variant in raw.get("extensions", {}):
+	if raw.is_empty(): return DomainResult.ok(result)
+	if raw.size() != 2 or not raw.has("version") or not raw.has("extensions") \
+		or raw.version != 1 or not raw.extensions is Dictionary:
+		return DomainResult.failure(&"forging.state", "装备锻造状态格式无效")
+	for key: Variant in raw.extensions:
 		var value: Variant = raw.extensions[key]
 		var kind := str(key).to_int()
 		if not key is String or key != str(kind) or kind < 1 or kind > 8 or not (value is int or value is float) \
@@ -84,7 +88,7 @@ func expanded_processing(base: EquipmentProcessingRules.Profile, rules: Equipmen
 	return result
 
 
-## 输出持久化事实，空值与老存档等价。
+## 输出持久化事实，空对象是规范零态。
 ## 返回字符串键的JSON安全字典。
 func to_dictionary() -> Dictionary:
 	if extensions.is_empty(): return {}

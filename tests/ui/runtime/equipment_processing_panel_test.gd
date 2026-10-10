@@ -3,6 +3,7 @@ extends SceneTree
 var _fixture := PlayerPanelServiceFixture.new()
 var _commerce := AuthoritativeCommerceService.new()
 var _manager: GameWindowManager
+var _mapper: PlayerStateMapper
 var _checks := 0
 var _failures := 0
 var _executions := 0
@@ -20,14 +21,14 @@ func _run() -> void:
 	_check(_fixture.initialize().is_ok and _commerce.initialize().is_ok, "services")
 	var items := ItemCatalog.new()
 	items.initialize()
-	var mapper := PlayerStateMapper.new(items)
-	var player: Player = mapper.to_domain(_fixture._state).value
+	_mapper = PlayerStateMapper.new(items)
+	var player: Player = _mapper.to_domain(_fixture._state).value
 	player.skills = SkillBook.new({"processing": 1000})
 	var engine: VehicleEquipment = player.inventory.find("inventory.spare_engine")
 	for cost: Dictionary in items.processing_rules.profile(engine.definition_id).attributes.drive.materials:
 		player.inventory.add_reward(items.create(cost.definition_id, {"instance_id": cost.definition_id, "quantity": cost.quantity * 2}).value)
-	player.inventory.add_reward(items.create("item:material:02212ea88168", {"instance_id": "magnet", "quantity": 2}).value)
-	_fixture._state = mapper.to_record(player).value
+	player.inventory.add_reward(items.create("super_magnet", {"instance_id": "magnet", "quantity": 2}).value)
+	_fixture._state = _mapper.to_record(player).value
 	_manager = GameWindowManager.new()
 	root.add_child(_manager)
 	_check(_manager.configure(PlayerPanelSession.new(_dispatch)), "manager")
@@ -62,7 +63,7 @@ func _run() -> void:
 	panel._confirm()
 	_check(_executions == 1, "exactly once submission")
 	_check(panel.details.text.contains("推进力：22 / 28"), "processed value displayed")
-	_check((mapper.to_domain(_fixture._state).value.inventory.find(engine.instance_id) as VehicleEngine).drive == 22, "saved engine changed")
+	_check((_mapper.to_domain(_fixture._state).value.inventory.find(engine.instance_id) as VehicleEngine).drive == 22, "saved engine changed")
 	panel._ask()
 	panel.hide()
 	_check(panel._pending.is_empty() and not panel.confirmation.visible, "close cancels pending")
@@ -78,14 +79,23 @@ func _run() -> void:
 func _dispatch(command: Dictionary) -> DomainResult:
 	if _commerce.handles(String(command.get("type", ""))):
 		if command.type == "process_equipment_attribute": _executions += 1
-		var result := _commerce.execute(_fixture._state, command)
+		var current_result := _mapper.to_domain(_fixture._state)
+		if not current_result.is_ok:
+			return current_result
+		var result := _commerce.execute(current_result.value, command)
 		if not result.is_ok:
 			push_error(result.error_message)
 			return result
 		if result.value.changed:
-			_fixture._state = result.value.candidate
+			var recorded := _mapper.to_record(result.value.candidate)
+			if not recorded.is_ok:
+				return recorded
+			_fixture._state = recorded.value
 			_fixture._state.revision += 1
-		var bundle := _commerce.build_bundle(_fixture._state, result.value.operation)
+		var updated := _mapper.to_domain(_fixture._state)
+		if not updated.is_ok:
+			return updated
+		var bundle := _commerce.build_bundle(updated.value, result.value.operation)
 		_manager.panel_session.apply_bundle(bundle)
 		return DomainResult.ok(bundle)
 	var result := _fixture.execute(command)

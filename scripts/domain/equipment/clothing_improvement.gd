@@ -5,14 +5,15 @@ var attribute := ""
 var level := 0
 
 
-## 严格恢复独立改良事实，旧档默认未改良。
+## 严格恢复完整的独立改良事实。
 ## [param raw] 存档字典。
 ## 返回零到百级的成长对象或非法记录。
 static func restore(raw: Variant) -> DomainResult:
-	if not raw is Dictionary or raw.get("version", 1) != 1:
+	if not raw is Dictionary or raw.size() != 3 or not raw.has("version") \
+		or not raw.has("level") or not raw.has("attribute") or raw.version != 1:
 		return DomainResult.failure(&"clothing_improvement.state", "服装改良记录无效")
-	var count: Variant = raw.get("level", 0)
-	var kind: Variant = raw.get("attribute", "")
+	var count: Variant = raw.level
+	var kind: Variant = raw.attribute
 	if not (count is int or count is float) or not is_finite(float(count)) or count != int(count) or count < 0 or count > 100 or not kind is String:
 		return DomainResult.failure(&"clothing_improvement.state", "服装改良等级无效")
 	if (count == 0) != kind.is_empty():

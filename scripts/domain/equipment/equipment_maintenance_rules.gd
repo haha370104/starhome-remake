@@ -6,6 +6,7 @@ class Profile extends RefCounted:
 	var quick_allowed: bool = false
 	var no_wear: bool = true
 	var wear_enabled: bool = false
+	var wear_event: String = ""
 	var family: String = ""
 	var materials: Array[Dictionary] = []
 	var currency: int = 0
@@ -43,6 +44,7 @@ static func from_dictionary(data: Dictionary) -> DomainResult:
 		entry.quick_allowed = bool(raw.get("quick_allowed", false))
 		entry.no_wear = bool(raw.get("no_wear", true))
 		entry.wear_enabled = bool(raw.get("wear_enabled", false))
+		entry.wear_event = String(raw.get("wear_event", ""))
 		entry.family = String(raw.get("family", ""))
 		entry.currency = int(raw.get("currency", 0))
 		entry.skill_id = String(raw.get("skill_id", ""))
@@ -55,12 +57,16 @@ static func from_dictionary(data: Dictionary) -> DomainResult:
 			or entry.currency < 0 or entry.experience < 0 or entry.required_skill_level < 0 \
 			or not is_finite(entry.maximum_loss_fraction) or entry.maximum_loss_fraction < 0 or entry.maximum_loss_fraction >= 1:
 			return DomainResult.failure(&"maintenance.rules_invalid", "装备维护规则无效")
+		if not entry.wear_event.is_empty() and entry.wear_event not in EquipmentUsage.EVENTS:
+			return DomainResult.failure(&"maintenance.rules_invalid", "装备磨损事件无效")
 		for cost: Dictionary in raw.get("materials", []):
 			if String(cost.get("definition_id", "")).is_empty() or int(cost.get("quantity", 0)) <= 0:
 				return DomainResult.failure(&"maintenance.rules_invalid", "维护材料无效")
 			entry.materials.append(cost.duplicate(true))
 		rules._profiles[id] = entry
 		entry.wear_thresholds = data.get("wear_thresholds", {}).duplicate(true)
+		if not entry.wear_event.is_empty() and not entry.wear_thresholds.has(entry.wear_event):
+			return DomainResult.failure(&"maintenance.rules_invalid", "装备磨损事件缺少节奏")
 		for event: String in entry.wear_thresholds:
 			var threshold := float(entry.wear_thresholds[event])
 			if event not in EquipmentUsage.EVENTS or not is_finite(threshold) or threshold <= 0:

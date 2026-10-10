@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "source_release": "starhome_lz_ry",
+  "source_path": "map/mapimg/house/CHN_2005_06_28_19_27_41_7/tigerM.ale",
+  "source_sha256": "1c46128fbba664b6f8f7598745b726eb08202957af0e4d7b1bebdc6bad776403",
+  "content_path": "res://assets/world/entertainment/slot_machine/machine.png",
+  "content_sha256": "2a37c6b4e32777caa9209a84fe7e58bf9aecc095d42a9f6880310bc0de99c19f",
+  "rules_source": "help/tigerhelp.txt",
+  "rules_source_sha256": "d41d1d609e6d1d2a21113720a70a2a2332c6fb4456fd1e2d3d431768e8da9711",
+  "rules_note": "原客户端实际下注限制为 1-100；帮助文档的玩法段落另写 1-500。荣耀客户端关闭了入口，当前玩法由复刻版重新开放。原服务端的图案概率未恢复，复刻版暂按六种图案独立等概率抽取。"
+}

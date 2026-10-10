@@ -17,21 +17,21 @@ config/features=PackedStringArray("4.7")
 [autoload]
 
 CombatDiagnostics="*res://scripts/core/combat_diagnostics_lifecycle.gd"
+PerformanceTelemetryLifecycle="*res://scripts/core/performance_telemetry_lifecycle.gd"
 
 [display]
 
+; display_server/driver.linuxbsd="wayland"
 window/size/viewport_width=1280
 window/size/viewport_height=720
-window/size/window_width_override=1280
-window/size/window_height_override=720
+window/size/window_width_override=1600
+window/size/window_height_override=900
 window/size/min_width=960
 window/size/min_height=540
-window/size/resizable=true
-window/stretch/mode="disabled"
 
 [gui]
 
-theme/custom_font="res://assets/ui/fonts/legacy_panel_font.tres"
+theme/custom_font="res://assets/ui/fonts/NotoSansCJKsc-Regular.otf"
 
 [rendering]
 

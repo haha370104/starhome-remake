@@ -1,5 +1,7 @@
 extends SceneTree
 
+const CommerceRecordAdapter := preload("res://tests/fixtures/commerce_record_adapter.gd")
+
 var _items := ItemCatalog.new()
 var _fixture := PlayerPanelServiceFixture.new()
 var _service := AuthoritativeCommerceService.new()
@@ -47,14 +49,14 @@ func _test_regular() -> void:
 	var player := _player()
 	var engine := _give(player, "glory_equipment_engine8_df38922e4b", "engine") as VehicleEngine
 	engine.durability = 0
-	engine.processing.apply(_items.processing_rules.profile(engine.definition_id), _items.processing_rules.material("item:material:02212ea88168"))
+	engine.processing.apply(_items.processing_rules.profile(engine.definition_id), _items.processing_rules.material("super_magnet"))
 	for cost: Dictionary in engine.maintenance_profile.materials:
 		_give(player, cost.definition_id, cost.definition_id, cost.quantity)
 	var command := {"type": "maintain_equipment", "instance_id": engine.instance_id, "inventory_revision": player.inventory.revision,
 		"currency": 0, "maximum_after": 1000000, "state_revision": -500}
 	var state: PlayerStateRecord = _mapper.to_record(player).value
 	var before := state.to_dictionary()
-	var result := _service.execute(state, command)
+	var result := CommerceRecordAdapter.execute(_service, state, command)
 	_check(result.is_ok and state.to_dictionary() == before, "transaction does not modify committed state")
 	if not result.is_ok: return
 	var restored: Player = _mapper.to_domain(result.value.candidate).value
@@ -64,16 +66,16 @@ func _test_regular() -> void:
 	_check(restored.inventory.currency == 99960, "server fee")
 	for cost: Dictionary in engine.maintenance_profile.materials:
 		_check(restored.inventory.find(cost.definition_id) == null, "materials paid exactly")
-	_check(not _service.execute(result.value.candidate, command).is_ok, "replay rejected")
+	_check(not CommerceRecordAdapter.execute(_service, result.value.candidate, command).is_ok, "replay rejected")
 	command.type = "query_equipment_maintenance"
-	_check(not _service.execute(result.value.candidate, command).value.changed, "queries do not persist")
+	_check(not CommerceRecordAdapter.execute(_service, result.value.candidate, command).value.changed, "queries do not persist")
 	player = _player()
 	player.skills = SkillBook.new({"tailoring": 35})
 	var shirt := _give(player, "male_sleeveless_shirt", "shirt") as Clothing
 	shirt.durability = 1
 	for cost: Dictionary in shirt.maintenance_profile.materials:
 		_give(player, cost.definition_id, cost.definition_id, cost.quantity)
-	result = _service.execute(_mapper.to_record(player).value, {"type": "maintain_equipment", "instance_id": "shirt", "inventory_revision": player.inventory.revision})
+	result = CommerceRecordAdapter.execute(_service, _mapper.to_record(player).value, {"type": "maintain_equipment", "instance_id": "shirt", "inventory_revision": player.inventory.revision})
 	_check(result.is_ok, "tailoring repair")
 	restored = _mapper.to_domain(result.value.candidate).value
 	_check(restored.skills.current_experience("tailoring") == 28, "repair experience uses reward multiplier")
@@ -87,7 +89,7 @@ func _test_quick() -> void:
 	player.vehicle.loadout.at(3).durability = 500
 	var tool := _give(player, "maintenance_quickrepairbox2", "group", 2)
 	tool.bound = true
-	var result := _service.execute(_mapper.to_record(player).value, {"type": "quick_repair_equipment", "material_id": "group", "inventory_revision": player.inventory.revision})
+	var result := CommerceRecordAdapter.execute(_service, _mapper.to_record(player).value, {"type": "quick_repair_equipment", "material_id": "group", "inventory_revision": player.inventory.revision})
 	_check(result.is_ok, "group repair")
 	var restored: Player = _mapper.to_domain(result.value.candidate).value
 	_check(restored.vehicle.loadout.at(1).durability == 900 and restored.vehicle.loadout.at(3).durability == 900, "all repairable installed restored")
@@ -98,7 +100,7 @@ func _test_quick() -> void:
 	_check(PlayerEquipmentMaintenanceActions.quick_repair(restored, engine.instance_id, "ion", restored.inventory.revision, _items.maintenance_rules).is_ok, "ion backpack repair")
 	_check(engine.durability == 900 and restored.inventory.find("ion") == null, "ion consumed once")
 	var coins := restored.inventory.currency
-	result = _service.execute(_mapper.to_record(restored).value, {"type": "buy_maintenance_tool", "definition_id": "maintenance_elecrepairbox1", "quantity": 2, "inventory_revision": restored.inventory.revision, "price": 0})
+	result = CommerceRecordAdapter.execute(_service, _mapper.to_record(restored).value, {"type": "buy_maintenance_tool", "definition_id": "maintenance_elecrepairbox1", "quantity": 2, "inventory_revision": restored.inventory.revision, "price": 0})
 	_check(result.is_ok and result.value.candidate.currency == coins - 1000, "tool purchase server pricing")
 
 
@@ -109,7 +111,7 @@ func _test_failures() -> void:
 		var engine := player.inventory.find("inventory.spare_engine") as Equipment
 		engine.durability = 100
 		_give(player, "maintenance_quickrepairbox1", "quick")
-		if problem == "field": player.map_id = "buli_d03_field_zone"
+		if problem == "field": player.map_id = "glory_nft_bl_d03"
 		if problem == "full": engine.durability = engine.max_durability
 		if problem == "locked": engine.locked = true
 		var command := {"type": "quick_repair_equipment" if problem in ["wrong_scope", "missing"] else "maintain_equipment",
@@ -117,7 +119,7 @@ func _test_failures() -> void:
 			"inventory_revision": player.inventory.revision - (1 if problem == "stale" else 0)}
 		var state: PlayerStateRecord = _mapper.to_record(player).value
 		var before := state.to_dictionary()
-		_check(not _service.execute(state, command).is_ok and state.to_dictionary() == before, "atomic rejection " + problem)
+		_check(not CommerceRecordAdapter.execute(_service, state, command).is_ok and state.to_dictionary() == before, "atomic rejection " + problem)
 
 
 ## 记录业务边界断言。

@@ -6,12 +6,14 @@ const CONFIG_PATHS := {
 	"special_weapon_merchant": "res://data/gameplay/commerce/special_weapon_merchant_v1.json",
 }
 const PRICING_CONFIG_PATH := "res://data/gameplay/commerce/equipment_pricing_v1.json"
+const MATERIAL_PRICING_PATH := "res://data/gameplay/commerce/glory_material_prices_v1.json"
 
 var _item_catalog: ItemCatalog
 var _config: Dictionary = {}
 var _merchant_config: Dictionary = {}
 var _offers: Array[Dictionary] = []
 var _item_prices: Dictionary = {}
+var _sell_prices: Dictionary = {}
 
 
 ## 读取荣耀装备目录并建立武器商人可售清单。
@@ -28,9 +30,9 @@ func initialize(item_catalog: ItemCatalog, merchant_id := "weapon_merchant") -> 
 	var quests_loaded := quests.initialize(item_catalog)
 	if not quests_loaded.is_ok:
 		return quests_loaded
-	if not quests.providers.has(merchant_id):
-		return DomainResult.failure(&"commerce.merchant_missing", "merchant is not registered")
 	if config_path.is_empty():
+		if not quests.providers.has(merchant_id):
+			return DomainResult.failure(&"commerce.merchant_missing", "merchant is not registered")
 		_config = {"merchant": quests.providers[merchant_id].duplicate(true)}
 	else:
 		var loaded := JsonConfigLoader.load_dictionary(config_path)
@@ -45,8 +47,12 @@ func initialize(item_catalog: ItemCatalog, merchant_id := "weapon_merchant") -> 
 		return DomainResult.failure(&"commerce.invalid_config", "merchant definition is missing")
 	_merchant_config = (merchant_value as Dictionary).duplicate(true)
 	_offers.clear()
+	_sell_prices.clear()
 	for definition_id: String in _item_catalog.definition_ids():
 		var definition := _item_catalog.definition(definition_id)
+		var purchase_price_value := purchase_price(definition_id)
+		if purchase_price_value > 0:
+			_sell_prices[definition_id] = purchase_price_value
 		var category := _merchant_category(definition)
 		if category.is_empty() or not _is_sellable(definition):
 			continue
@@ -69,6 +75,12 @@ func offers() -> Array[Dictionary]:
 	return _offers.duplicate(true)
 
 
+## 返回客户端用于实时背包行投影的静态出售价表。
+## 返回 definition_id 到 unit_price 的映射。
+func sell_prices() -> Dictionary:
+	return _sell_prices.duplicate()
+
+
 ## 按定义查询一项在售商品。
 ## [param definition_id] 统一物品定义标识。
 ## 返回商品 DTO；不在售时返回空字典。
@@ -79,47 +91,60 @@ func offer(definition_id: String) -> Dictionary:
 	return {}
 
 
-## 按共享经济配置计算收购价，未调整的物品沿用原有收购规则。
+## 优先使用荣耀版原价及共享经济配置计算出售价。
 ## [param definition_id] 统一物品定义标识。
 ## 返回非负单价；未知物品或禁交易物品为 0。
 func purchase_price(definition_id: String) -> int:
 	var definition := _item_catalog.definition(definition_id)
 	if definition.is_empty():
 		return 0
+	var stats_value: Variant = definition.get("stats", {})
+	if not stats_value is Dictionary:
+		return 0
+	var stats: Dictionary = stats_value
 	if _item_prices.has(definition_id):
 		return int(_item_prices[definition_id]["sell_value"])
-	var stats: Dictionary = definition.get("stats", {})
+	if "material" in String(definition.get("kind", "")) \
+			and not stats.has("sell_value") and not stats.has("purchase_value"):
+		return 0
 	var original_sell_value := int(stats.get("sell_value", 0))
 	var original_purchase_value := int(stats.get("purchase_value", 0))
 	return maxi(1, maxi(original_sell_value, floori(float(original_purchase_value) / 2.0)))
 
 
-## 加载并校验各商人共享的复刻版交易价格。
+## 加载荣耀版材料原价及各商人共享的复刻版交易价格。
 ## 返回加载成功或物品标识、价格格式错误。
-## 设计：原始物品目录保留源码证据；经济调整由权威商店配置统一覆盖买卖投影及结算。
+## 设计：荣耀原价保留源码对应关系；复刻经济调整随后按物品标识覆盖，并共用权威结算。
 func _load_item_prices() -> DomainResult:
 	_item_prices.clear()
-	var loaded := JsonConfigLoader.load_dictionary(PRICING_CONFIG_PATH)
-	if not loaded.is_ok:
-		return loaded
-	var prices: Variant = loaded.value.get("item_prices")
-	if not prices is Dictionary:
-		return DomainResult.failure(&"commerce.invalid_prices", "item_prices must be an object")
-	for definition_id: String in prices:
-		var entry: Variant = prices[definition_id]
-		if _item_catalog.definition(definition_id).is_empty() or not entry is Dictionary:
-			return DomainResult.failure(&"commerce.invalid_prices", "unknown item or invalid price entry")
-		for key: String in ["purchase_value", "sell_value"]:
-			var amount: Variant = entry.get(key)
-			if not (amount is int or amount is float):
-				return DomainResult.failure(&"commerce.invalid_prices", "price must be numeric")
-			if not is_finite(float(amount)) or float(amount) != floorf(float(amount)) or float(amount) < 0:
-				return DomainResult.failure(&"commerce.invalid_prices", "price must be a nonnegative integer")
-		if int(entry["purchase_value"]) <= 0 or int(entry["sell_value"]) > int(entry["purchase_value"]):
-			return DomainResult.failure(&"commerce.invalid_prices", "invalid buy/sell price relationship")
-		_item_prices[definition_id] = {
-			"purchase_value": int(entry["purchase_value"]), "sell_value": int(entry["sell_value"]),
-		}
+	for path: String in [MATERIAL_PRICING_PATH, PRICING_CONFIG_PATH]:
+		var loaded := JsonConfigLoader.load_dictionary(path)
+		if not loaded.is_ok:
+			return loaded
+		var prices: Variant = loaded.value.get("item_prices")
+		if not prices is Dictionary:
+			return DomainResult.failure(&"commerce.invalid_prices", "item_prices must be an object")
+		for definition_id: String in prices:
+			var entry: Variant = prices[definition_id]
+			if _item_catalog.definition(definition_id).is_empty() or not entry is Dictionary:
+				return DomainResult.failure(&"commerce.invalid_prices", "unknown item or invalid price entry")
+			var fields: Array[String] = ["sell_value"]
+			if entry.has("purchase_value"):
+				fields.append("purchase_value")
+			for key: String in fields:
+				var amount: Variant = entry.get(key)
+				if not (amount is int or amount is float):
+					return DomainResult.failure(&"commerce.invalid_prices", "price must be numeric")
+				if not is_finite(float(amount)) or float(amount) != floorf(float(amount)) or float(amount) < 0:
+					return DomainResult.failure(&"commerce.invalid_prices", "price must be a nonnegative integer")
+			if path == PRICING_CONFIG_PATH and (not entry.has("purchase_value") \
+					or int(entry["purchase_value"]) <= 0 \
+					or int(entry["sell_value"]) > int(entry["purchase_value"])):
+				return DomainResult.failure(&"commerce.invalid_prices", "invalid buy/sell price relationship")
+			var item_price := {"sell_value": int(entry["sell_value"])}
+			if entry.has("purchase_value"):
+				item_price["purchase_value"] = int(entry["purchase_value"])
+			_item_prices[definition_id] = item_price
 	return DomainResult.ok()
 
 
@@ -128,7 +153,7 @@ func _load_item_prices() -> DomainResult:
 ## 返回商店展示和权威扣款共用的单价。
 func _sale_price(definition: Dictionary) -> int:
 	var definition_id := String(definition.get("id", ""))
-	if _item_prices.has(definition_id):
+	if _item_prices.has(definition_id) and _item_prices[definition_id].has("purchase_value"):
 		return int(_item_prices[definition_id]["purchase_value"])
 	return int((definition.get("stats", {}) as Dictionary).get("purchase_value", 0))
 
@@ -221,7 +246,8 @@ func _required_level(properties: Dictionary) -> int:
 func _offer(definition: Dictionary, category: String) -> Dictionary:
 	var stats: Dictionary = definition.get("stats", {})
 	var properties: Dictionary = stats.get("legacy_properties", {})
-	var presentation: Dictionary = definition.get("presentation", {})
+	var presentation_modes: Dictionary = definition.get("presentation", {})
+	var presentation: Dictionary = presentation_modes.get("inventory", {})
 	var description := String(definition.get("description", ""))
 	var profile: GeneratorRules.Profile = _item_catalog.generator_rules.profiles.get(String(definition.get("id", "")))
 	if profile != null: description += "\n\n" + profile.description()

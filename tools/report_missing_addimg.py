@@ -4,8 +4,15 @@ from collections import Counter
 from pathlib import Path
 
 
+def normalize_source(value: str) -> str:
+    source = value.replace("\\", "/").strip()
+    while source.startswith("../"):
+        source = source[3:]
+    return source.removesuffix(".ale").lower()
+
+
 def main() -> None:
-    output_root = Path(__file__).resolve().parents[2] / "starhome_lz_ry_maps_parsed"
+    output_root = Path(__file__).resolve().parents[1] / "data/source_evidence/glory/map_recovery"
     index = json.loads((output_root / "unique_maps.json").read_text(encoding="utf-8"))
     rows = index.get("maps", index) if isinstance(index, dict) else index
 
@@ -20,7 +27,27 @@ def main() -> None:
             continue
 
         scene = json.loads(scene_path.read_text(encoding="utf-8"))
-        unresolved = [obj for obj in scene.get("objects", []) if obj.get("status") != "ok"]
+        transitions_path = output_root / row["output"] / "transitions.json"
+        transition_keys: set[tuple[str, tuple[int, int]]] = set()
+        if transitions_path.is_file():
+            transitions = json.loads(transitions_path.read_text(encoding="utf-8"))
+            for group in ("enabled", "disabled_legacy"):
+                for entry in transitions.get(group, []):
+                    anchor = entry.get("icon_anchor", [])
+                    if not isinstance(anchor, list) or len(anchor) != 2:
+                        continue
+                    transition_keys.add(
+                        (normalize_source(str(entry.get("icon_ale", ""))),
+                         (int(anchor[0]), int(anchor[1])))
+                    )
+        unresolved = [
+            obj for obj in scene.get("objects", [])
+            if obj.get("status") != "ok"
+            and (
+                normalize_source(str(obj.get("source_ale", ""))),
+                tuple(obj.get("anchor", [])),
+            ) not in transition_keys
+        ]
         if not unresolved:
             continue
 

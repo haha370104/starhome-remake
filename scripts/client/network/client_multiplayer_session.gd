@@ -9,6 +9,7 @@ const UseAbilityIntentContract := preload("res://scripts/network/contracts/use_a
 const VehicleRecoveryIntentContract := preload(
 	"res://scripts/network/contracts/vehicle_recovery_intent.gd"
 )
+const PerformanceTelemetryScript := preload("res://scripts/core/performance_telemetry.gd")
 
 signal connection_state_changed(state: ClientNetworkAdapter.ConnectionState)
 signal connection_failed(message: String)
@@ -28,14 +29,18 @@ signal map_change_failed(transition_id: StringName, code: StringName, message: S
 signal combat_snapshot_received(snapshot: Dictionary)
 signal combat_event_received(event: Dictionary)
 signal player_panel_bundle_received(bundle: Dictionary)
-signal loot_picked_up(event: Dictionary, panel_bundle: Dictionary)
-signal mining_collected(event: Dictionary, panel_bundle: Dictionary)
+signal loot_picked_up(event: Dictionary, player_change: Dictionary)
+signal player_change_received(change: Dictionary)
+signal synchronization_started(sync_id: String)
+signal mining_collected(event: Dictionary, player_change: Dictionary)
 signal skill_level_up_received(event: Dictionary)
 signal vehicle_recovery_scheduled(delay_seconds: float)
 signal vehicle_recovery_failed(code: StringName, message: String)
+signal social_event_received(message: Dictionary)
 
 @export var offline_debug_enabled := false
 @export var local_entity_id: StringName = &"player.local"
+@export var local_display_name := ""
 @export var current_map_id: StringName = &""
 @export var current_map_instance_id := ""
 
@@ -45,7 +50,10 @@ var remote_interpolator := RemoteEntityInterpolator.new()
 var _known_remote_entity_ids: Dictionary = {}
 var _next_transition_sequence := 1
 var _pending_map_change: Dictionary = {}
+var _pending_world_snapshots: Dictionary = {}
+var _pending_local_snapshots: Dictionary = {}
 var _minimum_snapshot_server_tick := -1
+var _last_combat_event_id := -1
 var _suppress_local_presentation_signal := false
 var _next_ability_sequence := 1
 var _next_panel_command_sequence := 1
@@ -64,11 +72,13 @@ func _ready() -> void:
 	network_adapter.server_message_received.connect(_on_server_message_received)
 	network_adapter.session_opened.connect(_on_session_opened)
 	network_adapter.map_joined_received.connect(_on_map_joined_received)
-	network_adapter.authoritative_snapshot_received.connect(_on_world_snapshot)
+	network_adapter.authoritative_world_snapshot_received.connect(_on_world_snapshot)
+	network_adapter.authoritative_local_snapshot_received.connect(_on_local_snapshot)
 	local_predictor.presentation_state_changed.connect(_on_local_predictor_presentation_changed)
 	local_predictor.move_intent_created.connect(_on_move_intent_created)
 	remote_interpolator.presentation_state_changed.connect(remote_presentation_state_changed.emit)
 	network_adapter.configure_offline_debug(offline_debug_enabled)
+	network_adapter.local_display_name = local_display_name
 
 
 ## 按渲染帧推进当前节点的表现状态。
@@ -93,6 +103,8 @@ func connect_to_server(host: String, port: int = ClientNetworkAdapter.DEFAULT_PO
 func disconnect_from_server() -> void:
 	network_adapter.disconnect_from_server()
 	_pending_vehicle_recovery.clear()
+	_pending_world_snapshots.clear()
+	_pending_local_snapshots.clear()
 	_clear_remote_entities()
 
 
@@ -195,6 +207,17 @@ func request_player_panel_command(command: Dictionary) -> Dictionary:
 	return payload
 
 
+## 提交组队、聊天或玩家交易命令；载荷不附加角色身份或客户端状态。
+## 返回实际发送的可靠命令，连接不可用时返回空字典。
+func request_social_command(command: Dictionary) -> Dictionary:
+	if network_adapter == null or command.is_empty():
+		return {}
+	var payload := command.duplicate(true)
+	if network_adapter.send_social_command(payload) != OK:
+		return {}
+	return payload
+
+
 ## 执行 `request_map_change` 对应的模块操作。
 ## [param transition_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## [param destination_entry_number] 调用方传入的参数；具体约束由函数签名和所在模块定义。
@@ -289,11 +312,34 @@ func _on_move_intent_created(payload: Dictionary) -> void:
 ## [param snapshot] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## 设计：该函数位于客户端交互或表现边界，最终状态以服务器权威结果为准。
 func _on_world_snapshot(snapshot: Dictionary) -> void:
-	var server_tick := int(snapshot.get("server_tick", -1))
-	if server_tick < _minimum_snapshot_server_tick:
+	if not _is_valid_world_snapshot(snapshot):
 		return
-	var server_time := float(snapshot.get("server_time_seconds", 0.0))
-	var entities: Array = snapshot.get("entities", [])
+	var key := _snapshot_key(snapshot)
+	_pending_world_snapshots[key] = snapshot
+	_prune_pending_snapshots(snapshot)
+	_try_apply_snapshot_pair(key)
+
+
+func _on_local_snapshot(snapshot: Dictionary) -> void:
+	if not _is_valid_local_snapshot(snapshot):
+		return
+	var key := _snapshot_key(snapshot)
+	_pending_local_snapshots[key] = snapshot
+	_prune_pending_snapshots(snapshot)
+	_try_apply_snapshot_pair(key)
+
+
+func _try_apply_snapshot_pair(key: String) -> void:
+	if not _pending_world_snapshots.has(key) or not _pending_local_snapshots.has(key):
+		return
+	var world: Dictionary = _pending_world_snapshots[key]
+	var local: Dictionary = _pending_local_snapshots[key]
+	_pending_world_snapshots.erase(key)
+	_pending_local_snapshots.erase(key)
+	var apply_started_at := PerformanceTelemetryScript.begin(&"client_world_snapshot_apply")
+	var server_tick := int(world["server_tick"])
+	var server_time := float(world["server_time_seconds"])
+	var entities: Array = world["entities"]
 	var remote_entities: Array = []
 	for raw_entity in entities:
 		var entity_result = EntitySnapshotContract.from_dictionary(raw_entity)
@@ -312,8 +358,9 @@ func _on_world_snapshot(snapshot: Dictionary) -> void:
 				entity.movement_speed,
 			)
 		else:
-			remote_entities.append(entity.to_dictionary())
-	if not remote_interpolator.push_snapshot(server_tick, server_time, remote_entities):
+			remote_entities.append(raw_entity)
+	if not remote_interpolator.push_snapshot(server_tick, server_time, remote_entities, world.get("player_presentation", {})):
+		PerformanceTelemetryScript.end(&"client_world_snapshot_apply", apply_started_at)
 		return
 	var current_remote_entity_ids: Dictionary = {}
 	for remote_entity in remote_entities:
@@ -324,9 +371,35 @@ func _on_world_snapshot(snapshot: Dictionary) -> void:
 		remote_interpolator.remove_entity(known_entity_id)
 		remote_entity_removed.emit(known_entity_id)
 	_known_remote_entity_ids = current_remote_entity_ids
-	var combat_value: Variant = snapshot.get("combat")
-	if combat_value is Dictionary and _is_valid_combat_snapshot(combat_value):
-		combat_snapshot_received.emit((combat_value as Dictionary).duplicate(true))
+	# 网络协议已拆分；这里才组合成表现层仍使用的单次状态投影。
+	var combat_world: Dictionary = world["combat_world"]
+	var establish_baseline := _last_combat_event_id < 0
+	_last_combat_event_id = maxi(_last_combat_event_id, 0)
+	var new_events: Array = []
+	for event: Dictionary in combat_world["recent_events"]:
+		var event_id := int(event.event_id)
+		if event_id <= _last_combat_event_id: continue
+		_last_combat_event_id = event_id
+		if not establish_baseline: new_events.append(event)
+	var combat_snapshot := combat_world.duplicate()
+	combat_snapshot["server_tick"] = server_tick
+	combat_snapshot["server_time_seconds"] = server_time
+	combat_snapshot["recent_events"] = new_events
+	combat_snapshot.merge(local)
+	NetworkProtocol.freeze_snapshot(combat_snapshot)
+	combat_snapshot_received.emit(combat_snapshot)
+	PerformanceTelemetryScript.end(&"client_world_snapshot_apply", apply_started_at)
+
+
+func _prune_pending_snapshots(newest_snapshot: Dictionary) -> void:
+	var map_instance_id := String(newest_snapshot["map_instance_id"])
+	var server_tick := int(newest_snapshot["server_tick"])
+	for pending_snapshots: Dictionary in [_pending_world_snapshots, _pending_local_snapshots]:
+		for key: String in pending_snapshots.keys():
+			var pending: Dictionary = pending_snapshots[key]
+			if String(pending.get("map_instance_id", "")) == map_instance_id \
+				and int(pending.get("server_tick", -1)) < server_tick:
+				pending_snapshots.erase(key)
 
 
 ## 处理 `_on_session_opened` 对应的信号回调。
@@ -334,6 +407,7 @@ func _on_world_snapshot(snapshot: Dictionary) -> void:
 ## 设计：该函数位于客户端交互或表现边界，最终状态以服务器权威结果为准。
 func _on_session_opened(result: Dictionary) -> void:
 	var value: Dictionary = result.get("value", {})
+	synchronization_started.emit(String(value.get("session", {}).get("sync_id", "")))
 	if not _commit_map_joined(value, false):
 		connection_failed.emit("Server handshake contained an invalid initial map join")
 		network_adapter.disconnect_from_server()
@@ -370,29 +444,34 @@ func _commit_map_joined(value: Dictionary, explicit_transition: bool) -> bool:
 			"Map join changed the server-assigned local entity identity",
 		)
 		return false
-	var snapshot_value: Variant = value.get("snapshot")
-	if not snapshot_value is Dictionary:
+	var world_value: Variant = value.get("world_snapshot")
+	var local_value: Variant = value.get("local_snapshot")
+	if not world_value is Dictionary or not local_value is Dictionary:
 		_fail_pending_map_change(
 			NetworkErrorCodes.INVALID_PAYLOAD,
-			"Map join did not include a target-map snapshot",
+			"Map join did not include both target-map snapshots",
 		)
 		return false
-	var snapshot: Dictionary = snapshot_value
+	var world: Dictionary = world_value
+	var local: Dictionary = local_value
 	if (
-		typeof(snapshot.get("server_tick")) != TYPE_INT
-		or int(snapshot["server_tick"]) != joined.server_tick
-		or not snapshot.get("entities") is Array
+		not _is_valid_world_snapshot(world, joined.map_instance_id)
+		or not _is_valid_local_snapshot(local, joined.map_instance_id)
+		or String(world["map_instance_id"]) != joined.map_instance_id
+		or String(local["map_instance_id"]) != joined.map_instance_id
+		or int(world["server_tick"]) != joined.server_tick
+		or int(local["server_tick"]) != joined.server_tick
 	):
 		_fail_pending_map_change(
 			NetworkErrorCodes.INVALID_PAYLOAD,
 			"Map join snapshot does not match the authoritative join tick",
 		)
 		return false
-	snapshot = snapshot.duplicate(true)
+	world = world.duplicate(true)
 	# 移动序号属于同一认证会话的单调序列；map_instance_id 负责隔离地图。
 	# 切图只清除旧预测路线，不能把序号退回 1，否则服务端会将新地图首个输入判为重放。
 	var next_movement_sequence := _movement_sequence_after_join(
-		snapshot, StringName(joined.entity_id)
+		world, StringName(joined.entity_id)
 	)
 
 	_suppress_local_presentation_signal = true
@@ -403,11 +482,17 @@ func _commit_map_joined(value: Dictionary, explicit_transition: bool) -> bool:
 	network_adapter.map_id = joined.map_id
 	network_adapter.map_instance_id = joined.map_instance_id
 	_minimum_snapshot_server_tick = joined.server_tick
+	_last_combat_event_id = -1
 	local_predictor.reset(joined.spawn_position, next_movement_sequence, false)
 	_clear_remote_entities()
 	remote_interpolator.reset()
+	_pending_world_snapshots.clear()
+	_pending_local_snapshots.clear()
 	_pending_map_change.clear()
-	_on_world_snapshot(snapshot)
+	var joined_snapshot_key := _snapshot_key(world)
+	_pending_world_snapshots[joined_snapshot_key] = world
+	_pending_local_snapshots[joined_snapshot_key] = local
+	_try_apply_snapshot_pair(joined_snapshot_key)
 	_suppress_local_presentation_signal = false
 	map_joined.emit(
 		current_map_id,
@@ -464,6 +549,15 @@ func _on_command_rejected(code: StringName, message: String) -> void:
 ## 设计：该函数位于客户端交互或表现边界，最终状态以服务器权威结果为准。
 func _on_server_message_received(message: Dictionary) -> void:
 	var message_type := StringName(message.get("type", ""))
+	if message_type in [
+		&"social_result", &"party_invite", &"party_join_request", &"party_invite_declined", &"party_invite_cancelled", &"party_removed", &"party_state",
+			&"chat_event", &"trade_invite", &"trade_invite_declined", &"trade_state", &"trade_completed",
+			&"trade_cancelled", &"trade_invite_cancelled", &"friend_invite", &"friend_invite_declined",
+			&"friend_invite_cancelled", &"friend_state",
+			&"mail_state", &"mail_received",
+	]:
+		social_event_received.emit(message.duplicate(true))
+		return
 	if message_type == &"vehicle_recovery_scheduled":
 		var scheduled_result: Dictionary = message.get("result", {})
 		var scheduled_value: Variant = scheduled_result.get("value")
@@ -482,6 +576,7 @@ func _on_server_message_received(message: Dictionary) -> void:
 				== int(_pending_vehicle_recovery["input_sequence"]):
 			if _commit_map_joined(completed_value, true):
 				_pending_vehicle_recovery.clear()
+				request_player_panel_command({"type": "query"})
 		return
 	if message_type == &"skill_level_up":
 		var skill_result: Dictionary = message.get("result", {})
@@ -496,8 +591,9 @@ func _on_server_message_received(message: Dictionary) -> void:
 			var value: Dictionary = loot_value
 			loot_picked_up.emit(
 				(value.get("loot_event", {}) as Dictionary).duplicate(true),
-				(value.get("panel_bundle", {}) as Dictionary).duplicate(true),
+				(value.get("player_change", {}) as Dictionary).duplicate(true),
 			)
+			if value.has("manufacturing"): player_panel_bundle_received.emit(value)
 		return
 	if message_type == &"mining_collected":
 		var mining_result: Dictionary = message.get("result", {})
@@ -506,8 +602,15 @@ func _on_server_message_received(message: Dictionary) -> void:
 			var value: Dictionary = mining_value
 			mining_collected.emit(
 				(value.get("mining_event", {}) as Dictionary).duplicate(true),
-				(value.get("panel_bundle", {}) as Dictionary).duplicate(true),
+				(value.get("player_change", {}) as Dictionary).duplicate(true),
 			)
+			if value.has("manufacturing"): player_panel_bundle_received.emit(value)
+		return
+	if message_type == &"player_changed":
+		var change_result: Dictionary = message.get("result", {})
+		if bool(change_result.get("ok", false)) and change_result.get("value", {}).get("player_change") is Dictionary:
+			player_change_received.emit(change_result.value.player_change.duplicate(true))
+			if change_result.value.has("manufacturing"): player_panel_bundle_received.emit(change_result.value)
 		return
 	if message_type == &"player_panels":
 		var panels_result: Dictionary = message.get("result", {})
@@ -553,68 +656,66 @@ func _on_server_message_received(message: Dictionary) -> void:
 	)
 
 
-## 执行 `is_valid_combat_snapshot` 对应的模块操作。
-## [param snapshot] 调用方传入的参数；具体约束由函数签名和所在模块定义。
-## 返回该函数计算、查询或操作得到的结果。
-## 设计：该函数位于客户端交互或表现边界，最终状态以服务器权威结果为准。
-func _is_valid_combat_snapshot(snapshot: Dictionary) -> bool:
-	if typeof(snapshot.get("server_tick")) != TYPE_INT:
+func _snapshot_key(snapshot: Dictionary) -> String:
+	return "%s:%d" % [String(snapshot["map_instance_id"]), int(snapshot["server_tick"])]
+
+
+func _is_valid_world_snapshot(snapshot: Dictionary, expected_map_instance_id := "") -> bool:
+	var required_map_instance_id := expected_map_instance_id if not expected_map_instance_id.is_empty() else current_map_instance_id
+	if not required_map_instance_id.is_empty() \
+		and String(snapshot.get("map_instance_id", "")) != required_map_instance_id:
 		return false
-	if snapshot.has("vehicle_combat_active") \
-			and typeof(snapshot["vehicle_combat_active"]) != TYPE_BOOL:
+	if typeof(snapshot.get("map_instance_id")) != TYPE_STRING \
+		or String(snapshot["map_instance_id"]).is_empty() \
+		or typeof(snapshot.get("server_tick")) != TYPE_INT \
+		or int(snapshot["server_tick"]) < _minimum_snapshot_server_tick \
+		or typeof(snapshot.get("server_time_seconds")) not in [TYPE_INT, TYPE_FLOAT] \
+		or not snapshot.get("entities") is Array \
+		or not snapshot.get("combat_world") is Dictionary:
 		return false
-	if typeof(snapshot.get("local_entity_id")) != TYPE_STRING \
-		or not snapshot.get("local_vehicle") is Dictionary \
-		or not snapshot.get("monsters") is Array \
-		or not snapshot.get("ground_loot", []) is Array \
-		or not snapshot.get("mine_sources", []) is Array \
-		or not snapshot.get("local_mining", {}) is Dictionary \
-		or not snapshot.get("recent_events") is Array:
+	var combat_world: Dictionary = snapshot["combat_world"]
+	if not combat_world.get("monsters") is Array \
+		or not combat_world.get("ground_loot") is Array \
+		or not combat_world.get("mine_sources") is Array \
+		or not combat_world.get("corrosive_clouds") is Array \
+		or not combat_world.get("recent_events") is Array \
+		or typeof(combat_world.get("vehicle_combat_active")) != TYPE_BOOL:
 		return false
-	var mining: Dictionary = snapshot.get("local_mining", {})
-	if not mining.is_empty():
-		if typeof(mining.get("active")) != TYPE_BOOL:
-			return false
-		if mining.active:
-			var target: Variant = mining.get("target_position")
-			if not target is Array or target.size() != 2:
-				return false
-			for coordinate: Variant in target:
-				if typeof(coordinate) not in [TYPE_INT, TYPE_FLOAT] or not is_finite(float(coordinate)):
-					return false
-	for raw_monster: Variant in snapshot["monsters"]:
-		if not raw_monster is Dictionary:
-			return false
-		var monster: Dictionary = raw_monster
-		if typeof(monster.get("entity_id")) != TYPE_STRING \
-			or typeof(monster.get("species_id")) != TYPE_STRING \
-			or typeof(monster.get("combat_actor_id")) != TYPE_STRING \
-			or typeof(monster.get("position")) != TYPE_ARRAY \
-			or (monster["position"] as Array).size() != 2 \
-			or typeof(monster.get("health")) != TYPE_INT \
-			or typeof(monster.get("max_health")) != TYPE_INT \
-			or typeof(monster.get("alive")) != TYPE_BOOL:
-			return false
-	for raw_event: Variant in snapshot["recent_events"]:
+	for raw_event: Variant in combat_world["recent_events"]:
 		if not raw_event is Dictionary:
 			return false
 		var event: Dictionary = raw_event
-		var event_type_kind := typeof(event.get("event_type"))
-		if typeof(event.get("event_id")) != TYPE_INT \
-				or event_type_kind not in [TYPE_STRING, TYPE_STRING_NAME]:
-			return false
-	for raw_source: Variant in snapshot.get("mine_sources", []):
-		if not raw_source is Dictionary:
-			return false
-		var source: Dictionary = raw_source
-		if typeof(source.get("source_id")) != TYPE_STRING \
-				or typeof(source.get("mineral_id")) != TYPE_STRING \
-				or typeof(source.get("position")) != TYPE_ARRAY \
-				or (source["position"] as Array).size() != 2 \
-				or typeof(source.get("remaining")) != TYPE_INT \
-				or typeof(source.get("capacity")) != TYPE_INT:
+		if typeof(event.get("event_id")) != TYPE_INT:
 			return false
 	return true
+
+
+func _is_valid_local_snapshot(snapshot: Dictionary, expected_map_instance_id := "") -> bool:
+	var required_map_instance_id := expected_map_instance_id if not expected_map_instance_id.is_empty() else current_map_instance_id
+	if not required_map_instance_id.is_empty() \
+		and String(snapshot.get("map_instance_id", "")) != required_map_instance_id:
+		return false
+	if not (typeof(snapshot.get("map_instance_id")) == TYPE_STRING \
+		and not String(snapshot["map_instance_id"]).is_empty() \
+		and typeof(snapshot.get("server_tick")) == TYPE_INT \
+		and typeof(snapshot.get("local_entity_id")) == TYPE_STRING \
+		and not String(snapshot["local_entity_id"]).is_empty() \
+		and snapshot.get("local_vehicle") is Dictionary \
+		and snapshot.get("local_weapon_flight") is Dictionary \
+		and snapshot.get("local_sama_effects") is Array \
+		and snapshot.get("local_mining") is Dictionary):
+		return false
+	var mining: Dictionary = snapshot["local_mining"]
+	if typeof(mining.get("active")) != TYPE_BOOL:
+		return false
+	if mining.active:
+		var target: Variant = mining.get("target_position")
+		if not target is Array or target.size() != 2:
+			return false
+		for coordinate: Variant in target:
+			if typeof(coordinate) not in [TYPE_INT, TYPE_FLOAT] or not is_finite(float(coordinate)):
+				return false
+	return int(snapshot["server_tick"]) >= _minimum_snapshot_server_tick
 
 
 ## 执行 `fail_pending_map_change` 对应的模块操作。

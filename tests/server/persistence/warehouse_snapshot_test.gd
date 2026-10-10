@@ -38,7 +38,7 @@ func _initialize() -> void:
 	print("WAREHOUSE_240_ROUNDTRIP_MS ", (Time.get_ticks_usec() - start) / 10000.0)
 	_check(first.warehouse.materialize().is_ok and first.warehouse.unchanged_record() == null, "显式访问加载")
 	_check(second.warehouse.unchanged_record() == saved.warehouse, "另一事务保持延迟")
-	var taken := first.warehouse.transfer(first.inventory, 1, false, "stored.0.0", 1, first.inventory.revision, 0, "unused")
+	var taken := first.warehouse.transfer(first.inventory, 1, false, "stored.0.0", Vector2i(80, 80), first.inventory.revision, 0)
 	_check(taken.is_ok and first.warehouse.items(1).size() == 39, "首个事务取走一件")
 	_check(second.warehouse.find("stored.0.0") != null and second.warehouse.items(1).size() == 40, "其他事务没有被取走物品")
 	_check(saved.warehouse.to_dictionary().cabinets[0].size() == 40, "原提交快照没有被修改")

@@ -1,8 +1,8 @@
 class_name LegacyItemTooltip
 extends PanelContainer
 
-const REGULAR_FONT := preload("res://assets/ui/fonts/legacy_panel_font.tres")
-const BOLD_FONT := preload("res://assets/ui/fonts/legacy_panel_bold_font.tres")
+const REGULAR_FONT := preload("res://assets/ui/fonts/NotoSansCJKsc-Regular.otf")
+const BOLD_FONT := preload("res://assets/ui/fonts/NotoSansCJKsc-Bold.otf")
 const FONT_SIZE := 12
 const CONTENT_WIDTH := 218.0
 

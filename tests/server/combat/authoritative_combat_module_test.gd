@@ -166,7 +166,7 @@ func _test_line_projectile_uses_live_geometry() -> void:
 	module.advance_ticks(80, false)
 	_expect(module.monster_for("interceptor").health == 23, "发射时不在弹道上的怪物进入后应被命中")
 	_expect(module.pending_projectiles.is_empty(), "命中后弹体应完成结算")
-	var flight: Dictionary = module.snapshot_for_actor("player.a")["local_weapon_flight"][ABILITY_ID]
+	var flight: Dictionary = module.local_snapshot_for_actor("player.a")["local_weapon_flight"][ABILITY_ID]
 	_expect(flight["weapon_id"] == weapon["weapon_id"] and float(flight["range"]) == 400.0,
 		"表现协议必须导出实际天神之怒装备标识与四百射程")
 	_expect(float(flight["projectile_speed"]) == 100.0, "表现协议必须导出服务端实际弹速")
@@ -261,7 +261,8 @@ func _test_three_engagement_policies() -> void:
 	aggressive.register_monster(_behavior_monster_definition("monster.aggressive", &"aggressive"))
 	aggressive.advance_ticks(1)
 	_expect(aggressive.vehicle_state_for("player.policy").health == 67, "aggressive monster initiates inside aggro radius")
-	var snapshot: Dictionary = aggressive.snapshot_for_actor("player.policy")
+	var snapshot: Dictionary = aggressive.local_snapshot_for_actor("player.policy")
+	snapshot.merge(aggressive.world_snapshot_for_map(MAP_INSTANCE_ID))
 	_expect(String(snapshot.get("local_entity_id", "")) == "player.policy", "snapshot identifies local damage target")
 	_expect((snapshot.get("recent_events", []) as Array).size() == 2, "snapshot includes deduplicatable attack-start and damage events")
 
@@ -421,6 +422,12 @@ func _test_authoritative_ground_loot_lifecycle() -> void:
 		"player.loot", MAP_INSTANCE_ID, Vector2.ZERO, _assembly_result().value,
 		{ABILITY_ID: _fixed_damage_weapon(7)},
 	)
+	_expect(module.register_vehicle(
+		"player.other", MAP_INSTANCE_ID, Vector2.ZERO, _assembly_result().value, {},
+	).is_ok, "another nearby player can be registered for loot eligibility")
+	module.set_loot_recipient_resolver(func(_killer_id: String, _map_instance_id: String) -> Variant:
+		return ["player.loot"]
+	)
 	var definition := _monster_definition("monster.loot", 7, Vector2(40.0, 0.0))
 	definition["drops"] = [{
 		"item_definition_id": "low_grade_gel",
@@ -433,12 +440,27 @@ func _test_authoritative_ground_loot_lifecycle() -> void:
 		"player.loot", _attack_intent(Vector2(40.0, 0.0), 1)
 	)
 	_expect(shot.is_ok, "loot fixture attack should spawn")
+	var loot_window_started_msec := Time.get_ticks_msec()
 	_settle_all_projectiles(module)
+	var loot_window_ended_msec := Time.get_ticks_msec()
 	_expect(module.ground_loot.size() == 1, "one guaranteed drop should become one ground entity")
-	var snapshot := module.snapshot_for_actor("player.loot")
+	var snapshot := module.world_snapshot_for_map(MAP_INSTANCE_ID)
 	_expect((snapshot["ground_loot"] as Array).size() == 1, "ground loot should be included in the actor combat snapshot")
 	var loot: Dictionary = snapshot["ground_loot"][0]
 	_expect(loot.item_definition_id == "low_grade_gel" and loot.quantity == 2, "drop definition and rolled quantity should remain server-owned")
+	_expect(not loot.has("eligible_entity_ids") and not loot.has("eligible_until_msec"),
+		"public loot snapshots hide private pickup eligibility")
+	var loot_state: Dictionary = module.ground_loot[String(loot.loot_id)]
+	var eligible_until_msec := int(loot_state.get("eligible_until_msec", -1))
+	_expect(eligible_until_msec >= loot_window_started_msec + 120000 \
+		and eligible_until_msec <= loot_window_ended_msec + 120000,
+		"party pickup restriction lasts two minutes from drop creation")
+	_expect(not module.prepare_loot_pickup("player.other", String(loot.loot_id)).is_ok,
+		"non-party player cannot pick up restricted party loot")
+	loot_state["eligible_until_msec"] = Time.get_ticks_msec() - 1
+	module.ground_loot[String(loot.loot_id)] = loot_state
+	_expect(module.prepare_loot_pickup("player.other", String(loot.loot_id)).is_ok,
+		"party loot becomes freely pickable after two minutes")
 	var prepared := module.prepare_loot_pickup("player.loot", String(loot.loot_id))
 	_expect(prepared.is_ok, "nearby authenticated player should pass pickup preflight")
 	module.update_actor_position("player.loot", Vector2(165.0, 0.0))
@@ -463,7 +485,7 @@ func _test_authoritative_self_repair_cycles() -> void:
 	var assembly: Dictionary = _assembly_result().value
 	assembly["self_repair_base_strength"] = 5
 	assembly["self_repair_bonus_strength"] = 1
-	assembly["self_repair_energy_cost"] = 5.0
+	assembly["working_energy_per_repair"] = 5.0
 	assembly["self_repair_required_skill_level"] = 10
 	module.register_vehicle(
 		"player.repair", MAP_INSTANCE_ID, Vector2.ZERO, assembly,
@@ -502,7 +524,7 @@ func _test_authoritative_self_repair_cycles() -> void:
 	_expect(state.health == 55, "incoming damage should not alter the fixed repair cadence")
 	module.advance_ticks(1)
 	_expect(state.health == 61, "repair should resolve on schedule while the vehicle is under attack")
-	var snapshot := module.snapshot_for_actor("player.repair")
+	var snapshot := module.local_snapshot_for_actor("player.repair")
 	_expect(
 		bool(snapshot["local_vehicle"]["self_repair_active"]),
 		"combat snapshot should expose active repair presentation state",
@@ -513,7 +535,7 @@ func _test_authoritative_self_repair_cycles() -> void:
 	)
 	_expect(attack.is_ok, "an equipped weapon attack should be accepted during self-repair")
 	_expect(
-		not bool(module.snapshot_for_actor("player.repair")["local_vehicle"]["self_repair_active"]),
+		not bool(module.local_snapshot_for_actor("player.repair")["local_vehicle"]["self_repair_active"]),
 		"an accepted weapon attack should cancel self-repair",
 	)
 	_expect(
@@ -553,7 +575,7 @@ func _test_authoritative_self_repair_cycles() -> void:
 	level_module.advance_ticks(60)
 	_expect(level_state.health == 60, "insufficient working energy should apply no healing")
 	_expect(
-		not bool(level_module.snapshot_for_actor("player.level40")["local_vehicle"]["self_repair_active"]),
+		not bool(level_module.local_snapshot_for_actor("player.level40")["local_vehicle"]["self_repair_active"]),
 		"insufficient energy should stop the authoritative repair loop",
 	)
 
@@ -575,7 +597,7 @@ func _test_monster_projectile_timing() -> void:
 	_expect(module.pending_monster_attacks.size() == 1, "remote attack should reserve one authoritative projectile")
 	var attack: Dictionary = module.pending_monster_attacks[0]
 	_expect(int(attack["impact_tick"]) > module.current_tick, "monster projectile should expose a future impact tick")
-	var snapshot := module.snapshot_for_actor("player.projectile")
+	var snapshot := module.world_snapshot_for_map(MAP_INSTANCE_ID)
 	var monster_snapshot: Dictionary = (snapshot["monsters"] as Array)[0]
 	_expect(int(monster_snapshot["action_sequence"]) == 1, "attack start should advance the body-animation sequence")
 	var ticks_until_impact := int(attack["impact_tick"]) - module.current_tick
@@ -677,7 +699,7 @@ func _secondary_weapon(skill_id: String, mode: StringName, damage: int, speed: f
 		"attack_mode": mode,
 		"minimum_damage": damage,
 		"maximum_damage": damage,
-		"working_energy_cost": 0.0,
+		"working_energy_per_shot": 0.0,
 		"activation_power": null,
 		"range": 400.0,
 		"minimum_range": 0.0,
@@ -724,9 +746,14 @@ func _assembly_result():
 		{"weight": 50, "propulsion": 20, "required_driving_level": 10, "continuous_power_draw": 5},
 		{"weight": 50, "max_durability": 900, "continuous_power_draw": 2},
 	]
-	return VehicleAssemblyCalculator.calculate(
+	var result: DomainResult = VehicleAssemblyCalculator.calculate(
 		_chassis_definition(), components, 5, _movement_config()
 	)
+	if not result.is_ok:
+		return result
+	var assembly: Dictionary = result.value
+	assembly["central_controller"] = PlayerCentralController.new().to_dictionary()
+	return DomainResult.ok(assembly)
 
 
 ## 执行 `chassis_definition` 对应的模块操作。
@@ -755,7 +782,7 @@ func _weapon_definition() -> Dictionary:
 		"weapon_id": "rookie_energy_cannon",
 		"minimum_damage": 7,
 		"maximum_damage": 9,
-		"working_energy_cost": 10,
+		"working_energy_per_shot": 10,
 		"activation_power": 10,
 		"range": 250,
 		"upgrade_range_limit": 400,
@@ -869,7 +896,7 @@ func _test_pve_death_identity() -> void:
 	var death := deaths[0]
 	_expect(String(death.death_id).length() == 32 and int(death.death_time) > 0, "日志身份和时刻来自权威事件")
 	_expect(death.attacker_display_name == "日志测试怪" and death.death_map_instance_id == MAP_INSTANCE_ID, "保存实际来源及地图")
-	var replay := module.snapshot_for_actor("player.journal")
+	var replay := module.world_snapshot_for_map(MAP_INSTANCE_ID)
 	_expect(replay.recent_events.has(death), "快照复用原身份而非生成新死亡")
 	module.advance_ticks(50)
 	var after := 0

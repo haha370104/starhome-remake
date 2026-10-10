@@ -15,12 +15,11 @@ from pathlib import Path
 from typing import Any, Iterable
 
 from PIL import Image
+from recovery.source_workspace import RawSpriteWorkspace
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-OUTPUTS_ROOT = PROJECT_ROOT.parent
-PARSED_ROOT = OUTPUTS_ROOT / "starhome_lz_fr_full_parsed" / "ale_sprites"
-RAW_ROOT = OUTPUTS_ROOT / "starhome_lz_fr_full" / "raw"
+RAW_ROOT = PROJECT_ROOT / "../starhome_lz_fr_full" / "raw"
 DESTINATION_ROOT = PROJECT_ROOT / "assets" / "ui" / "free_hud"
 RUNTIME_MANIFEST = PROJECT_ROOT / "data" / "ui" / "free_hud_assets.json"
 SOURCE_AUDIT = (
@@ -42,20 +41,17 @@ TOP_BUTTONS = {
 }
 
 BOTTOM_MENU_BUTTONS = {
-    "character": ("pic2/ctrlpad/btn_humanwnd", [519, 0]),
-    "inventory": ("pic2/ctrlpad/btn_humanbag", [557, 0]),
-    "vehicle_equipment": ("pic2/ctrlpad/btn_humanequip", [595, 0]),
-    "friends": ("pic2/ctrlpad/btn_playerfriend", [633, 0]),
-    "scene_players": ("pic2/ctrlpad/btn_look", [671, 0]),
-    "missions": ("pic2/ctrlpad/btn_playertask", [709, 0]),
-    "system": ("pic2/ctrlpad/btn_system", [747, 0]),
-    "premium_shop": ("pic2/ctrlpad/shopping", [785, 0]),
+    "character": [519, 0],
+    "inventory": [557, 0],
+    "vehicle_equipment": [595, 0],
+    "friends": [633, 0],
+    "scene_players": [671, 0],
+    "missions": [709, 0],
+    "star_map": [747, 0],
+    "achievements": [785, 0],
+    "premium_shop": [823, 0],
+    "system": [861, 0],
 }
-
-
-def read_json(path: Path) -> dict[str, Any]:
-    """Decode one UTF-8 JSON object from ``path``."""
-    return json.loads(path.read_text(encoding="utf-8"))
 
 
 def write_json(path: Path, value: dict[str, Any]) -> None:
@@ -114,25 +110,16 @@ def state_set(frames: list[dict[str, Any]], names: Iterable[str]) -> dict[str, A
 
 
 class ImportSession:
-    def __init__(self) -> None:
+    def __init__(self, workspace: RawSpriteWorkspace) -> None:
         """Create an empty provenance session for this deterministic import."""
         self.sources: dict[str, Any] = {}
-        self.missing: list[dict[str, str]] = []
+        self.workspace = workspace
 
     def export_raw_png(
         self, business_id: str, logical_path: str, destination: Path
     ) -> dict[str, Any]:
         """Copy an approved source PNG and return its runtime geometry record."""
-        source = RAW_ROOT / Path(logical_path)
-        if not source.is_file():
-            self.missing.append(
-                {
-                    "business_id": business_id,
-                    "source_logical_path": logical_path,
-                    "reason": "Free-edition raw PNG is missing",
-                }
-            )
-            raise FileNotFoundError(source)
+        source = self.workspace.source(logical_path)
         destination.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(source, destination)
         with Image.open(destination) as image:
@@ -161,22 +148,12 @@ class ImportSession:
         destination: Path,
         filenames: list[str],
     ) -> list[dict[str, Any]]:
-        """Crop parsed ALE frames into named PNGs and record source provenance."""
+        """Decode the raw ALE, export named frames, and record source provenance."""
         logical = Path(logical_path_without_suffix)
-        parsed_dir = PARSED_ROOT / logical
-        raw_ale = RAW_ROOT / logical.with_suffix(".ale")
+        source_ref = logical.with_suffix(".ale").as_posix()
+        parsed_dir, metadata = self.workspace.decode(source_ref)
+        raw_ale = self.workspace.source(source_ref)
         frames_path = parsed_dir / "frames.json"
-        if not frames_path.is_file() or not raw_ale.is_file():
-            self.missing.append(
-                {
-                    "business_id": business_id,
-                    "source_logical_path": logical_path_without_suffix + ".ale",
-                    "reason": "Free-edition ALE or parsed frames are missing",
-                }
-            )
-            raise FileNotFoundError(frames_path if not frames_path.is_file() else raw_ale)
-
-        metadata = read_json(frames_path)
         frames = metadata["frames"]
         if len(frames) != len(filenames):
             raise RuntimeError(
@@ -228,15 +205,28 @@ def positioned(node: dict[str, Any], position: list[int]) -> dict[str, Any]:
     return {**node, "position": position}
 
 
-def main() -> int:
+def export_bottom_highlights(session: ImportSession) -> dict[str, Any]:
+    """Export native states; baked-only icons use the fitted system-button tint."""
+    for name, source in zip(("character", "inventory", "vehicle_equipment", "friends", "scene_players", "missions", "system", "premium_shop"),
+                            ("btn_humanwnd", "btn_humanbag", "btn_humanequip", "btn_playerfriend", "btn_look", "btn_playertask", "btn_system", "shopping")):
+        frames = session.export_ale_frames(f"bottom_main.menu_buttons.{name}", f"pic2/ctrlpad/{source}",
+                                 DESTINATION_ROOT / "bottom_main/menu_buttons" / name, ["normal.png", "hover.png", "pressed.png"])
+    with Image.open(DESTINATION_ROOT / "bottom_main/background.png") as background:
+        for state, tint in {
+            "hover": (-0.2007, 1.4252, -0.8747, 53.897, -0.3134, 0.8088, -0.0846, 121.482, -0.1296, 0.1176, 0.3595, 161.127),
+            "pressed": (-0.7617, 1.4359, -0.6910, 53.789, -0.9256, 0.7899, 0.1394, 120.282, -0.1727, 0.1109, 0.3707, 163.229),
+        }.items():
+            for name in ("star_map", "achievements"):
+                left, top = BOTTOM_MENU_BUTTONS[name]
+                icon = background.convert("RGB").crop((left, top, left + 31, top + 29)).convert("RGB", tint)
+                destination = DESTINATION_ROOT / "bottom_main/menu_buttons" / name
+                destination.mkdir(parents=True, exist_ok=True)
+                icon.save(destination / f"{state}.png")
+    return positioned(state_set(frames, ["normal", "hover", "pressed"]), BOTTOM_MENU_BUTTONS["premium_shop"])
+
+
+def build(session: ImportSession) -> int:
     """Rebuild all allowlisted Free-edition HUD assets and both manifests."""
-    if not PARSED_ROOT.is_dir() or not RAW_ROOT.is_dir():
-        raise SystemExit("Free-edition raw or parsed resource root is missing")
-
-    if DESTINATION_ROOT.exists():
-        shutil.rmtree(DESTINATION_ROOT)
-    session = ImportSession()
-
     top_background = session.export_ale_frames(
         "top_menu.background",
         "pic2/topmenu/topmenuback_0",
@@ -279,17 +269,8 @@ def main() -> int:
         ["steady.png", "flash.png"],
     )
 
-    bottom_buttons: dict[str, Any] = {}
-    for name, (source, position) in BOTTOM_MENU_BUTTONS.items():
-        frames = session.export_ale_frames(
-            f"bottom_main.menu_buttons.{name}",
-            source,
-            DESTINATION_ROOT / "bottom_main" / "menu_buttons" / name,
-            ["normal.png", "hover.png", "pressed.png"],
-        )
-        bottom_buttons[name] = positioned(
-            state_set(frames, ["normal", "hover", "pressed"]), position
-        )
+    bottom_buttons = {name: {"available": True, "position": position} for name, position in BOTTOM_MENU_BUTTONS.items()}
+    bottom_buttons["premium_shop"] = export_bottom_highlights(session)
 
     energy_cannon = session.export_ale_frames(
         "bottom_main.weapons.energy_cannon",
@@ -483,7 +464,7 @@ def main() -> int:
         "scope": "HUD appearance allowlist from docs/free_hud_rendering.md section 1",
         "policy": "Original paths are provenance only; runtime uses data/ui/free_hud_assets.json.",
         "sources": session.sources,
-        "missing_assets": session.missing,
+        "missing_assets": [],
     }
     write_json(RUNTIME_MANIFEST, runtime_manifest)
     write_json(SOURCE_AUDIT, source_audit)
@@ -493,14 +474,39 @@ def main() -> int:
                 "source_count": len(session.sources),
                 "top_buttons": len(top_buttons),
                 "bottom_menu_buttons": len(bottom_buttons),
-                "missing": len(session.missing),
+                "missing": 0,
                 "runtime_manifest": str(RUNTIME_MANIFEST),
             },
             ensure_ascii=False,
             indent=2,
         )
     )
-    return 0 if not session.missing else 2
+    return 0
+
+
+def main() -> int:
+    required = ["pic2/ctrlpad/mainctrlpad_1024.png"]
+    required.extend(source + ".ale" for source, _ in TOP_BUTTONS.values())
+    required.append("pic2/ctrlpad/shopping.ale")
+    required.extend(f"pic2/ctrlpad/btn_{name}.ale" for name in ("humanwnd", "humanbag", "humanequip", "playerfriend", "look", "playertask", "system"))
+    required.extend(source + ".ale" for source in (
+        "pic2/topmenu/topmenuback_0", "pic2/topmenu/btn_topmenuso",
+        "pic2/topmenu/btn_topmenufa", "pic2/ctrlpad/energybar",
+        "pic/equipface/tank_gun", "pic/equipface/tank_collent",
+        "pic/equipface/tank_repair", "pic/equipface/firegun",
+        "pic/equipface/missile", "pic/equipface/tank_hermit",
+        "pic/equipface/tank_radar", "pic/shortcutbar/generalbar",
+        "pic/shortcutbar/pageupbtn", "pic/shortcutbar/pagedownbtn",
+        "pic/shortcutbar/shortcutbtn1", "pic/shortcutbar/shortcutbtn",
+        "pic2/smap/ditu",
+        "pic/interface/chn_2005_06_28_19_00_09_1031",
+        "pic/interface/chn_2005_06_28_19_00_15_1032",
+        "pic/interface/chn_2005_06_28_19_00_21_1033",
+        "pic/interface/chn_2005_06_28_19_00_27_1034",
+    ))
+    with RawSpriteWorkspace(RAW_ROOT) as workspace:
+        workspace.require(required)
+        return build(ImportSession(workspace))
 
 
 def export_primary_device_modes(session: ImportSession) -> dict[str, Any]:

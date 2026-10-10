@@ -1,5 +1,7 @@
 extends SceneTree
 
+const AutosaveRecordAdapter := preload("res://tests/fixtures/autosave_record_adapter.gd")
+
 const PEER := 75
 var checks := 0
 var failures: Array[String] = []
@@ -14,7 +16,7 @@ func _initialize() -> void:
 func _run() -> void:
 	var config := DedicatedServerConfig.new()
 	config.network_enabled = false
-	config.map_config_path = "res://data/maps/d04_field_zone.json"
+	config.map_config_path = "res://data/maps/glory_nft_bl_d04.json"
 	config.player_state_store_path = "res://.godot/equipment-usage-%d.json" % Time.get_ticks_usec()
 	var server := AuthoritativeServer.new()
 	_check(server.initialize(config).ok, "server")
@@ -22,7 +24,7 @@ func _run() -> void:
 	var session := server.sessions.session_for_peer(PEER)
 	var map := server.map_registry.instance_by_id(session.map_instance_id)
 	map.combat_module.monsters.clear()
-	var current := server.autosave_service.state_for(session.entity_id)
+	var current: PlayerStateRecord = AutosaveRecordAdapter.current(server.autosave_service, session.entity_id)
 	var gun_id := ""
 	var engine_id := ""
 	for slot: EquipmentSlotRecord in current.equipment_slots:
@@ -35,11 +37,11 @@ func _run() -> void:
 			slot.usage.progress["movement"] = 59.95
 	var catalog := ItemCatalog.new()
 	_check(catalog.initialize().is_ok, "items")
-	var player: Player = server.player_panel_service.restore_player(current).value
+	var player: Player = PlayerStateMapper.new(catalog).to_domain(current).value
 	_check(player.inventory.add_reward(catalog.create("maintenance_quickrepairbox2", {"instance_id": "box"}).value).is_ok, "repair box")
 	current = PlayerStateMapper.new(catalog).to_record(player).value
-	_check(server.autosave_service.commit_player_state(session.entity_id, current).is_ok, "fixture commit")
-	var loadout := server._build_entity_combat_loadout(map, current)
+	_check(server.autosave_service.commit_player(session.entity_id, PlayerStateMapper.new(catalog).to_domain(current).value).is_ok, "fixture commit")
+	var loadout := server._build_entity_combat_loadout(map, player)
 	_check(loadout.is_ok and map.refresh_achievement_loadout(session.entity_id, loadout.value).is_ok, "fixture loadout")
 	var module := map.combat_module
 	var actor: Dictionary = module.actors[session.entity_id]
@@ -70,7 +72,7 @@ func _run() -> void:
 	condition = actor.equipment_condition
 	var engine: Dictionary = condition.snapshot()[engine_id]
 	_check(engine.durability == engine.max_durability - 1, "actual movement wears engine at threshold")
-	var captured: PlayerStateRecord = server._capture_persistent_player_state(server.autosave_service.state_for(session.entity_id)).value
+	var captured: PlayerStateRecord = server._capture_player_runtime(AutosaveRecordAdapter.current(server.autosave_service, session.entity_id)).value
 	for slot: EquipmentSlotRecord in captured.equipment_slots:
 		if slot.item_instance_id == engine_id: _check(slot.durability == engine.durability, "live wear reaches persistent record")
 	server._save_all_persistent_players()
@@ -78,7 +80,7 @@ func _run() -> void:
 	var restarted := AuthoritativeServer.new()
 	_check(restarted.initialize(config).ok, "restart")
 	_check(restarted.open_session(PEER, {"protocol_version": config.protocol_version, "content_version": config.content_version}, 1000).ok, "rejoin")
-	for slot: EquipmentSlotRecord in restarted.autosave_service.state_for(session.entity_id).equipment_slots:
+	for slot: EquipmentSlotRecord in AutosaveRecordAdapter.current(restarted.autosave_service, session.entity_id).equipment_slots:
 		if slot.item_instance_id == engine_id: _check(slot.durability == engine.durability, "wear survives restart")
 	restarted.free()
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(config.player_state_store_path))

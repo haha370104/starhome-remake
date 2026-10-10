@@ -171,13 +171,14 @@ func duplicate_queue() -> ProductionQueue:
 	return restore(to_dictionary()).value
 
 
-## 校验可选的新存档字段；旧档缺失时得到空订单，非法订单整体拒绝。
+## 校验当前版本生产状态，非法订单整体拒绝。
 ## [param raw] 读盘的订单状态。
 ## 返回合法领域队列或字段错误。
 static func restore(raw: Variant) -> DomainResult:
 	if not raw is Dictionary: return DomainResult.failure(&"production.state", "生产订单存档不是对象")
 	var queue := ProductionQueue.new()
-	if raw.is_empty(): return DomainResult.ok(queue)
+	if not raw.has("order") or raw.size() != 3:
+		return DomainResult.failure(&"production.state", "生产订单字段不符合当前结构")
 	if not valid_integer(raw.get("version"), 1, 1) or not valid_integer(raw.get("revision"), 0, 9007199254740991):
 		return DomainResult.failure(&"production.state", "生产订单版本无效")
 	queue.revision = int(raw.revision)

@@ -104,7 +104,10 @@ func _run() -> void:
 	_expect(controller.position() == before and controller.has_active_route(), "零移速停止位移且不重建路线")
 	var stale := entity.snapshot(tick - 1)
 	stale.movement_speed = 240.0
-	session._on_world_snapshot({"server_tick": tick - 1, "server_time_seconds": 0.0, "entities": [stale]})
+	session._on_world_snapshot({"map_instance_id": "test.movement", "server_tick": tick - 1, "server_time_seconds": 0.0,
+		"entities": [stale], "combat_world": {"monsters": [], "ground_loot": [], "mine_sources": [],
+		"corrosive_clouds": [], "recent_events": [], "vehicle_combat_active": false}})
+	session._on_local_snapshot(_local_snapshot(tick - 1))
 	controller.advance(1.0)
 	_expect(controller.position() == before, "旧快照不能覆盖最新移速")
 	entity.movement_speed = 87.0
@@ -150,8 +153,15 @@ func _test_contract(entity: AuthoritativeEntity) -> void:
 ## [param entity] 权威玩家实体。
 func _publish(session: ClientMultiplayerSession, entity: AuthoritativeEntity) -> void:
 	tick += 1
-	session._on_world_snapshot({"server_tick": tick, "server_time_seconds": tick * 0.05,
-		"entities": [entity.snapshot(tick)]})
+	session._on_world_snapshot({"map_instance_id": "test.movement", "server_tick": tick, "server_time_seconds": tick * 0.05,
+		"entities": [entity.snapshot(tick)], "combat_world": {"monsters": [], "ground_loot": [], "mine_sources": [],
+		"corrosive_clouds": [], "recent_events": [], "vehicle_combat_active": false}})
+	session._on_local_snapshot(_local_snapshot(tick))
+
+
+func _local_snapshot(server_tick: int) -> Dictionary:
+	return {"map_instance_id": "test.movement", "server_tick": server_tick, "local_entity_id": "player.local",
+		"local_vehicle": {}, "local_weapon_flight": {}, "local_sama_effects": [], "local_mining": {"active": false}}
 
 
 ## 累计断言并保留失败原因。

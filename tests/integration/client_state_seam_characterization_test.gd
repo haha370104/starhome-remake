@@ -75,9 +75,9 @@ func _test_pre_authority_preload_failure_keeps_old_world_active() -> void:
 	var old_npc_count: int = hall.active_world_controller.npc_instances.size()
 	hall.map_travel.pending_map_transition = {
 		"transition_id": &"review_missing_exit",
-		"destination_map_id": &"g08_field_zone",
+		"destination_map_id": &"glory_nft_bl_g08",
 	}
-	hall.map_travel.call("on_map_preload_failed", &"g08_field_zone", "测试资源缺失")
+	hall.map_travel.call("on_map_preload_failed", &"glory_nft_bl_g08", "测试资源缺失")
 	_expect(hall.map_travel.pending_map_transition.is_empty(), "请求前预载失败必须清空暂存切图")
 	_expect(not hall.combat.call("is_input_locked"), "请求前预载失败必须恢复旧地图输入")
 	_expect(hall.active_world_controller.definition.map_id == old_map_id, "请求前预载失败必须保留旧活动地图")

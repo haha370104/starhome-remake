@@ -1,6 +1,6 @@
 extends SceneTree
 
-const IRON := "item:material:8f615d2ef879"
+const IRON := "iron"
 
 var _checks := 0
 var _failures: Array[String] = []

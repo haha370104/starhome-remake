@@ -18,7 +18,6 @@ NUMERIC_STATS = {
     "sell": "sell_value",
     "attack": "base_attack",
     "attack_limit": "attack_limit",
-    "energy": "energy_cost",
     "distance": "range",
     "distance_limit": "range_limit",
     "weight": "weight",
@@ -30,6 +29,7 @@ NUMERIC_STATS = {
     "max_hardiness": "max_durability",
     "wear_degree": "wear_degree",
 }
+ROCKET_STAT_OVERRIDES = {"Space_FireGun1": {"working_energy_per_shot": 10, "max_durability": 900}}
 
 
 def read_json(path: Path) -> Any:
@@ -149,10 +149,62 @@ def equipment_definition(row: dict[str, str], known: dict[str, Any]) -> dict[str
         for source, output in NUMERIC_STATS.items()
         if str(row.get(source, "")).strip()
     }
+    kind = equipment_kind(row)
+    # Location-1 guns exported without their inherited EnergyGunBase class are
+    # still energy cannons in the runtime equipment contract.  Promote that
+    # source classification before emitting the runtime definition.
+    equip_kind = integer(props.get("m_nEquipKind2", -1))
+    source_location = integer(props.get("m_nLocation", -1))
+    if (
+        kind == "vehicle_weapon"
+        and equip_kind in {1, 101}
+        and source_location != 16
+        and integer(props.get("m_nIsGun", 0)) == 1
+    ):
+        kind = "energy_cannon"
+    raw_energy = props.pop("m_nenergy", None)
+    if raw_energy is None and str(row.get("energy", "")).strip():
+        raw_energy = row["energy"]
+    if raw_energy is not None:
+        energy_field = {
+            "vehicle_chassis": "working_energy_capacity",
+            "vehicle_engine": "working_energy_per_movement",
+            "energy_cannon": "working_energy_per_shot",
+            "missile_weapon": "working_energy_per_shot",
+            "rocket_weapon": "working_energy_per_shot",
+            "vehicle_weapon": "working_energy_per_trigger"
+            if integer(props.get("m_nLocation", -1)) == 14
+            else "working_energy_per_shot",
+        }.get(kind)
+        if kind == "vehicle_equipment" and integer(props.get("m_nLocation", -1)) == 14:
+            energy_field = "working_energy_per_trigger"
+        if energy_field:
+            stats[energy_field] = integer(raw_energy)
+    if kind == "energy_cannon":
+        props.pop("m_nacttime", None)
+        stats["attack_interval_seconds"] = 0.8
+    elif kind in {"missile_weapon", "rocket_weapon"} and source_location == 13:
+        raw_interval = props.pop("m_nacttime", None)
+        if raw_interval is not None:
+            stats["attack_interval_seconds"] = integer(raw_interval) / 1000.0
+    # The remaining FCC action-time value belongs only to the offline
+    # generator-rule importer (Location 14).  It is not a runtime item field.
+    if source_location != 14:
+        props.pop("m_nacttime", None)
+    if kind == "vehicle_equipment" and integer(props.get("m_nEquipKind2", -1)) == 4:
+        mining_energy = props.pop("m_noneenergy", None)
+        if mining_energy is not None:
+            stats["working_energy_per_mining_cycle"] = integer(mining_energy)
+    if "m_nOneRepairEnergy" in props:
+        stats["working_energy_per_repair"] = integer(props.pop("m_nOneRepairEnergy"))
+    if kind == "rocket_weapon":
+        if "m_nHitR" in props:
+            stats["runtime_area_radius"] = integer(props.pop("m_nHitR"))
+        stats.update(ROCKET_STAT_OVERRIDES.get(row["class_name"], {}))
     stats["legacy_properties"] = props
     definition: dict[str, Any] = {
         "id": equipment_id(row),
-        "kind": equipment_kind(row),
+        "kind": kind,
         "display_name": known.get("display_name", row["display_name"]),
         "description": known.get("description", row.get("description", "")),
         "max_stack": 1,
@@ -232,9 +284,13 @@ def sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def write_json(path: Path, payload: Any) -> None:
+def write_json(path: Path, payload: Any, indent: int | None = None) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(payload, ensure_ascii=False, separators=(",", ":")) + "\n", encoding="utf-8")
+    separators = None if indent is not None else (",", ":")
+    path.write_text(
+        json.dumps(payload, ensure_ascii=False, indent=indent, separators=separators) + "\n",
+        encoding="utf-8",
+    )
 
 
 def build_recipes(source_root: Path) -> dict[str, Any]:
@@ -257,7 +313,7 @@ def build_recipes(source_root: Path) -> dict[str, Any]:
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--source-root", type=Path, default=Path("../starhome_lz_ry_full_parsed"))
+    parser.add_argument("--source-root", type=Path, required=True, help="temporary decoded Glory catalog workspace")
     parser.add_argument("--output-root", type=Path, default=Path("data/gameplay/glory"))
     args = parser.parse_args()
     known_path = Path("data/content/known_items_v1.json")
@@ -293,6 +349,7 @@ def main() -> int:
             },
             "definitions": definitions,
         },
+        indent=2,
     )
     write_json(args.output_root / "glory_recipes_v1.json", build_recipes(args.source_root))
     print(f"Generated {len(equipment)} equipment, {len(materials)} materials and four recipe groups")

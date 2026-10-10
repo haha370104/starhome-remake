@@ -15,23 +15,30 @@ signal map_change_failed(transition_id: StringName, code: StringName, message: S
 signal combat_snapshot_received(snapshot: Dictionary)
 signal combat_event_received(event: Dictionary)
 signal player_panel_bundle_received(bundle: Dictionary)
+signal social_event_received(message: Dictionary)
 signal skill_level_up_received(event: Dictionary)
 signal vehicle_recovery_scheduled(delay_seconds: float)
 signal vehicle_recovery_failed(code: StringName, message: String)
 signal connection_failed(message: String)
 signal system_message_requested(message: String)
 signal network_notice_requested(message: String, duration_seconds: float)
+signal command_rejected(code: StringName, message: String)
 
 const SessionScript := preload("res://scripts/client/network/client_multiplayer_session.gd")
 const CharacterFactoryScript := preload("res://scripts/characters/character_factory.gd")
-const WorldCharacterScript := preload("res://scripts/characters/world_character.gd")
+const PlayerWorldAvatarScript := preload("res://scripts/characters/player_world_avatar.gd")
+
+signal synchronization_started(sync_id: String)
+signal player_change_received(change: Dictionary)
 
 var session: ClientMultiplayerSession
 var remote_characters: Dictionary = {}
+var last_connection_error_message := ""
 
-var _local_character: Node2D
+var _local_character: PlayerWorldAvatar
 var _remote_parent: Node2D
 var _character_catalog: Dictionary = {}
+var _item_catalog: ItemCatalog
 var _remote_appearance_key := "player"
 var _remote_animation_speed_scale := 1.0
 
@@ -42,13 +49,15 @@ var _remote_animation_speed_scale := 1.0
 ## [param character_catalog] 已加载的角色动画与外观目录。
 ## 设计：表现器只投影会话状态，不拥有路径规划、输入采样或传输协议。
 func configure(
-	local_character: Node2D,
+	local_character: PlayerWorldAvatar,
 	remote_parent: Node2D,
 	character_catalog: Dictionary,
+	item_catalog: ItemCatalog,
 ) -> void:
 	_local_character = local_character
 	_remote_parent = remote_parent
 	_character_catalog = character_catalog
+	_item_catalog = item_catalog
 
 
 ## 执行 `start` 对应的模块操作。
@@ -56,9 +65,10 @@ func configure(
 ## 返回该函数计算、查询或操作得到的结果。
 ## 设计：`offline_debug_enabled` 必须由调用方显式提供；缺省值始终选择真实网络边界。
 func start(settings: Dictionary) -> Error:
+	last_connection_error_message = ""
 	if session != null:
 		return ERR_ALREADY_IN_USE
-	if _local_character == null or _remote_parent == null or _character_catalog.is_empty():
+	if _local_character == null or _remote_parent == null or _character_catalog.is_empty() or _item_catalog == null:
 		return ERR_UNCONFIGURED
 	if not settings.has("offline_debug_enabled"):
 		return ERR_INVALID_PARAMETER
@@ -70,6 +80,7 @@ func start(settings: Dictionary) -> Error:
 	session.name = "ClientMultiplayerSession"
 	session.offline_debug_enabled = bool(settings["offline_debug_enabled"])
 	session.local_entity_id = StringName(settings.get("local_entity_id", &"player.local"))
+	session.local_display_name = String(settings.get("local_display_name", ""))
 	session.current_map_id = StringName(settings.get("map_id", &""))
 	session.current_map_instance_id = String(settings.get("map_instance_id", ""))
 	session.connection_state_changed.connect(_on_connection_state_changed)
@@ -84,8 +95,11 @@ func start(settings: Dictionary) -> Error:
 	session.combat_snapshot_received.connect(combat_snapshot_received.emit)
 	session.combat_event_received.connect(combat_event_received.emit)
 	session.loot_picked_up.connect(_on_loot_picked_up)
+	session.player_change_received.connect(player_change_received.emit)
+	session.synchronization_started.connect(synchronization_started.emit)
 	session.mining_collected.connect(_on_mining_collected)
 	session.player_panel_bundle_received.connect(player_panel_bundle_received.emit)
+	session.social_event_received.connect(social_event_received.emit)
 	session.skill_level_up_received.connect(skill_level_up_received.emit)
 	session.vehicle_recovery_scheduled.connect(vehicle_recovery_scheduled.emit)
 	session.vehicle_recovery_failed.connect(vehicle_recovery_failed.emit)
@@ -159,6 +173,13 @@ func request_player_panel_command(command: Dictionary) -> Dictionary:
 	return session.request_player_panel_command(command)
 
 
+## 将社交意图转交同一权威会话。
+func request_social_command(command: Dictionary) -> Dictionary:
+	if session == null:
+		return {}
+	return session.request_social_command(command)
+
+
 ## 执行 `request_map_change` 对应的模块操作。
 ## [param transition_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## [param destination_entry_number] 调用方传入的参数；具体约束由函数签名和所在模块定义。
@@ -213,6 +234,29 @@ func remote_character_count() -> int:
 	return remote_characters.size()
 
 
+## 查找鼠标命中的远端玩家；重叠时选择画面上更靠前的角色。
+func remote_character_at(world_position: Vector2) -> Dictionary:
+	var selected: Node2D
+	var selected_entity_id := StringName()
+	for entity_id in remote_characters:
+		var character := remote_characters[entity_id] as Node2D
+		if character == null or not is_instance_valid(character) \
+				or not character.has_method("hit_test") \
+				or not character.hit_test(world_position):
+			continue
+		if selected == null or character.global_position.y >= selected.global_position.y:
+			selected = character
+			selected_entity_id = StringName(entity_id)
+	if selected == null:
+		return {}
+	return {
+		"entity_id": String(selected_entity_id),
+		"character": selected,
+		"display_name": String(selected.get_display_name()) \
+			if selected.has_method("get_display_name") else String(selected_entity_id),
+	}
+
+
 ## 处理 `_on_local_presentation_state_changed` 对应的信号回调。
 ## [param state] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## 设计：表现器不得写本地角色坐标，否则会与路线控制器形成双写。
@@ -225,18 +269,29 @@ func _on_local_presentation_state_changed(state: Dictionary) -> void:
 ## 处理 `_on_remote_presentation_state_changed` 对应的信号回调。
 ## [param entity_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## [param state] 调用方传入的参数；具体约束由函数签名和所在模块定义。
-## 设计：所有玩家均经同一 `CharacterFactory` 与 `WorldCharacter` 组合，避免网络角色形成第二套素材体系。
+## 设计：所有玩家复用同一 `PlayerWorldAvatar`，地图决定人形/战车模式，实际装备决定外观。
 func _on_remote_presentation_state_changed(entity_id: StringName, state: Dictionary) -> void:
 	if entity_id == &"" or not state.has("position"):
 		return
+	var sex := String(state.get("sex", "male"))
+	if sex not in ["male", "female"]:
+		return
 	var character := remote_character(entity_id)
 	if character == null:
-		character = _create_remote_character(entity_id)
+		character = _create_remote_character(entity_id, sex)
 		if character == null:
 			return
+	character.apply_character_sex(sex, _character_catalog)
+	if not character.apply_public_appearance(state.get("appearance", {}), _item_catalog, _character_catalog):
+		return
+	var presentation: Dictionary = state.get("player_presentation", {})
+	if character.presentation_kind != StringName(presentation.get("kind", &"character")):
+		if character.apply_map_presentation(presentation) != OK:
+			return
+		character.combat_status_bar.hide()
 	character.position = Vector2(state["position"])
 	var direction := posmod(int(state.get("facing_direction", 6)), 8)
-	character.set_action(_world_character_action(StringName(state.get("action_id", &"idle"))), direction)
+	character.set_action(String(state.get("action_id", &"idle")), direction)
 
 
 ## 处理 `_on_remote_entity_removed` 对应的信号回调。
@@ -245,21 +300,21 @@ func _on_remote_entity_removed(entity_id: StringName) -> void:
 	_remove_remote_character(entity_id)
 
 
-## 将拾取成功回包拆分为世界事件和同事务面板快照。
+## 将拾取成功回包分派为玩家增量和幂等世界事件。
 ## [param event] 服务端提交地面实体移除后生成的权威事件。
-## [param panel_bundle] 完成入包和持久化后的三面板快照。
+## [param change] 同事务的背包与任务变更。
 ## 设计：世界表现和面板各消费自己的投影，但共享一次服务端事务结果。
-func _on_loot_picked_up(event: Dictionary, panel_bundle: Dictionary) -> void:
+func _on_loot_picked_up(event: Dictionary, change: Dictionary) -> void:
+	player_change_received.emit(change)
 	combat_event_received.emit(event.duplicate(true))
-	player_panel_bundle_received.emit(panel_bundle.duplicate(true))
 
 
-## 将采集结算同时投影到世界提示与三面板背包快照。
+## 将采集结算同时投影到世界提示与玩家组件变化。
 ## [param event] 调用方传入的 `event` 参数。
-## [param panel_bundle] 调用方传入的 `panel_bundle` 参数。
-func _on_mining_collected(event: Dictionary, panel_bundle: Dictionary) -> void:
+## [param change] 同事务的背包、成长和任务变化。
+func _on_mining_collected(event: Dictionary, change: Dictionary) -> void:
+	player_change_received.emit(change)
 	combat_event_received.emit(event.duplicate(true))
-	player_panel_bundle_received.emit(panel_bundle.duplicate(true))
 
 
 ## 处理 `_on_connection_state_changed` 对应的信号回调。
@@ -277,6 +332,7 @@ func _on_connection_state_changed(state: ClientNetworkAdapter.ConnectionState) -
 ## 处理 `_on_connection_failed` 对应的信号回调。
 ## [param message] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _on_connection_failed(message: String) -> void:
+	last_connection_error_message = message
 	push_warning("Connection failed: %s" % message)
 	var notice := PlayerErrorMessages.describe(&"connection.failed", message)
 	network_notice_requested.emit(notice, 4.0)
@@ -287,6 +343,7 @@ func _on_connection_failed(message: String) -> void:
 ## [param code] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## [param message] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _on_command_rejected(code: StringName, message: String) -> void:
+	command_rejected.emit(code, message)
 	push_warning("Command rejected [%s]: %s" % [code, message])
 	network_notice_requested.emit(_player_error_message(code, message), 4.0)
 	system_message_requested.emit(_player_error_message(code, message))
@@ -319,18 +376,22 @@ func _player_error_message(code: StringName, message: String) -> String:
 ## 执行 `create_remote_character` 对应的模块操作。
 ## [param entity_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## 返回该函数计算、查询或操作得到的结果。
-func _create_remote_character(entity_id: StringName) -> Node2D:
+func _create_remote_character(entity_id: StringName, sex: String) -> Node2D:
 	if not _character_catalog.has(_remote_appearance_key):
 		push_error("Remote character appearance is missing: %s" % _remote_appearance_key)
 		return null
-	var character: Node2D = WorldCharacterScript.new()
+	var character := PlayerWorldAvatarScript.new()
 	character.name = "Remote_%s" % String(entity_id)
-	character.configure(
-		CharacterFactoryScript.build_character_set(_character_catalog, _remote_appearance_key),
+	var configured := character.configure(
+		CharacterFactoryScript.build_character_set(_character_catalog, _remote_appearance_key, sex),
+		_local_character.get_combat_manifest(),
 		String(entity_id),
 		Color(0.55, 0.9, 1.0),
-		WorldCharacterScript.PLAYER_NAME_LABEL_POSITION,
+		PlayerWorldAvatarScript.HUMAN_NAME_LABEL_POSITION,
 	)
+	if configured != OK:
+		character.free()
+		return null
 	character.set_animation_speed_scale(_remote_animation_speed_scale)
 	_remote_parent.add_child(character)
 	remote_characters[entity_id] = character
@@ -347,16 +408,3 @@ func _remove_remote_character(entity_id: StringName) -> void:
 	remote_characters.erase(entity_id)
 	character.queue_free()
 	remote_character_removed.emit(entity_id)
-
-
-## 执行 `world_character_action` 对应的模块操作。
-## [param action_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
-## 返回该函数计算、查询或操作得到的结果。
-func _world_character_action(action_id: StringName) -> String:
-	match action_id:
-		&"move", &"moving", &"walk", &"walking", &"run", &"running":
-			return "move"
-		_:
-			return "stand"
-
-

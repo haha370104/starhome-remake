@@ -5,12 +5,13 @@ var level: int = 0
 
 
 ## 恢复独立星级，不将其混入接合器 upgrade_level。
-## [param raw] 旧档默认零星，新档只保存版本和星级。
+## [param raw] 带版本和星级的完整成长事实。
 ## 返回成长对象或非法事实。
 static func restore(raw: Variant) -> DomainResult:
-	if not raw is Dictionary or raw.get("version", 1) != 1:
+	if not raw is Dictionary or raw.size() != 2 or not raw.has("version") \
+		or not raw.has("level") or raw.version != 1:
 		return DomainResult.failure(&"strengthening.invalid_state", "装备星级记录无效")
-	var count: Variant = raw.get("level", 0)
+	var count: Variant = raw.level
 	if not (count is int or count is float) or not is_finite(float(count)) or float(count) != int(count) or count < 0 or count > 10:
 		return DomainResult.failure(&"strengthening.invalid_state", "装备星级必须在零到十星之间")
 	var result := EquipmentStrengthening.new()

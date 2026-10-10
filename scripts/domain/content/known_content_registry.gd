@@ -19,7 +19,6 @@ var content_version := ""
 var _definitions_by_id: Dictionary = {}
 var _ids_by_kind: Dictionary = {}
 var _runtime_index: Dictionary = {}
-var _legacy_index: Dictionary = {}
 var _summary_by_kind: Dictionary = {}
 
 
@@ -103,15 +102,6 @@ func registrations_for_runtime(kind: StringName, runtime_id: String) -> Array[Di
 	return _definitions_for_ids(_runtime_index.get(kind, {}).get(runtime_id, []))
 
 
-## 按旧客户端索引、类名、中文名或 runtime_key 查询来源注册。
-## 同名与重复类定义合法，因此返回数组而不是任意挑选一个。
-## [param kind] 调用方传入的 `kind` 参数。
-## [param legacy_key] 调用方传入的 `legacy_key` 参数。
-## 返回该函数计算、查询或操作得到的结果。
-func registrations_for_legacy_key(kind: StringName, legacy_key: String) -> Array[Dictionary]:
-	return _definitions_for_ids(_legacy_index.get(kind, {}).get(legacy_key, []))
-
-
 ## 返回生成器写入并经加载器核验的目录摘要。
 ## 执行 `summary_for` 对应的模块操作。
 ## [param kind] 调用方传入的 `kind` 参数。
@@ -155,7 +145,6 @@ func _load_catalog(kind: StringName, path: String, expected: Variant) -> DomainR
 		)
 	_ids_by_kind[kind] = []
 	_runtime_index[kind] = {}
-	_legacy_index[kind] = {}
 	for raw_definition: Variant in definitions_value:
 		if not raw_definition is Dictionary:
 			return DomainResult.failure(
@@ -179,8 +168,7 @@ func _load_catalog(kind: StringName, path: String, expected: Variant) -> DomainR
 				&"content_registry.invalid_availability", "registration availability is invalid"
 			)
 		var runtime_ids_value: Variant = definition.get("runtime_ids", [])
-		var legacy_keys_value: Variant = definition.get("legacy_keys", [])
-		if not runtime_ids_value is Array or not legacy_keys_value is Array:
+		if not runtime_ids_value is Array:
 			return DomainResult.failure(
 				&"content_registry.invalid_definition", "registration indexes must be arrays"
 			)
@@ -193,8 +181,6 @@ func _load_catalog(kind: StringName, path: String, expected: Variant) -> DomainR
 		(_ids_by_kind[kind] as Array).append(registration_id)
 		for runtime_value: Variant in runtime_ids_value:
 			_index_append(_runtime_index[kind], String(runtime_value), registration_id)
-		for legacy_value: Variant in legacy_keys_value:
-			_index_append(_legacy_index[kind], String(legacy_value), registration_id)
 	(_ids_by_kind[kind] as Array).sort()
 	_summary_by_kind[kind] = (document.get("summary", {}) as Dictionary).duplicate(true)
 	return DomainResult.ok()

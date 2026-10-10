@@ -1,5 +1,7 @@
 extends SceneTree
 
+const CommerceRecordAdapter := preload("res://tests/fixtures/commerce_record_adapter.gd")
+
 var checks := 0
 var failures: Array[String] = []
 var _state: PlayerStateRecord
@@ -32,19 +34,27 @@ func _run() -> void:
 	_window._select_task(4)
 	_expect(_window._selected_task_id == "training_repair", "可选维修训练")
 	_window._request_task_action()
-	await process_frame
+	await _wait_for_action_debounce()
 	_expect(_state.quest_states.get("training_repair", {}).get("accepted", false), "领取选中的维修任务而非默认能量炮")
 	_expect(_window._task_primary_button.disabled, "未完成禁止交付")
 	_window._select_task(0)
 	_window._request_task_action()
-	await process_frame
+	await _wait_for_action_debounce()
 	_expect(_state.quest_states.size() == 2, "两种训练可以并行")
-	var target := String(_state.quest_states["training_energy_cannon"]["target"]["species_id"])
+	var target_task_id := _window._selected_task_id
+	if not _state.quest_states.has(target_task_id):
+		print("TRAINING_STATE_KEYS ", _state.quest_states.keys(), " selected=", target_task_id)
+		push_error("selected training task was not accepted")
+		quit(1)
+		return
+	var target := String(_state.quest_states[target_task_id]["target"]["species_id"])
+	var mapper: PlayerStateMapper = PlayerStateMapper.new(_service._catalog)
 	for index in range(20):
-		var killed := _service.record_monster_kill(_state, {"killer_id": _state.character_id, "species_id": target, "death_id": "ui.%d" % index})
-		_expect(killed.is_ok, "击杀服务结算")
-		if killed.value.get("changed", false):
-			_state = killed.value["candidate"]
+		var player: Player = mapper.to_domain(_state).value
+		var killed: bool = _service.quests.record_monster_kill(player, {"killer_id": _state.character_id, "species_id": target, "death_id": "ui.%d" % index})
+		_expect(killed, "击杀服务结算")
+		if killed:
+			_state = mapper.to_record(player).value
 	_dispatch({"type": "query_weapon_merchant", "merchant_id": "combat_trainer"})
 	await process_frame
 	_expect(not _window._task_primary_button.disabled, "目标完成可领奖")
@@ -53,7 +63,7 @@ func _run() -> void:
 	_expect("等级提升1级" in _window._task_message.text, "完成消息显示技能奖励")
 	var journal := MissionJournalPanel.new()
 	root.add_child(journal)
-	var bundle := _service.build_bundle(_state, {"merchant_id": "combat_trainer"})
+	var bundle := CommerceRecordAdapter.build_bundle(_service, _state, {"merchant_id": "combat_trainer"})
 	journal.apply_entries(bundle["mission_journal"])
 	_expect(journal.listing.item_count == 2, "日志包含两种已接或完成训练")
 	journal._show_detail(0)
@@ -75,13 +85,18 @@ func _run() -> void:
 ## 将窗口意图交给真实权威服务并刷新已提交快照。
 ## [param command] 窗口生成的任务命令。
 func _dispatch(command: Dictionary) -> void:
-	var result := _service.execute(_state, command)
+	var result := CommerceRecordAdapter.execute(_service, _state, command)
 	_expect(result.is_ok, "窗口命令：" + result.error_message)
 	if not result.is_ok:
 		return
 	if result.value.get("changed", false):
 		_state = result.value["candidate"]
-	_window.apply_commerce_bundle(result.value["panel_bundle"])
+		_window.apply_commerce_bundle(CommerceRecordAdapter.build_bundle(_service, _state, result.value.get("operation", {})))
+	elif result.value.has("panel_bundle"):
+		var mapper: PlayerStateMapper = PlayerStateMapper.new(_service._catalog)
+		var current: DomainResult = mapper.to_domain(_state)
+		if current.is_ok:
+			_window.apply_commerce_bundle(result.value.panel_bundle, current.value)
 
 
 ## 核对每个任务发布者的场景路由、导航及可达落点。
@@ -111,6 +126,13 @@ func _check_npcs() -> void:
 			_expect(resolved.is_finite() and resolved.distance_to(spawn) <= 48.0, "NPC落点应位于配置位置附近的可走地面：" + provider)
 			print("QUEST_NPC %s %s %s" % [provider, map_id, resolved])
 		_expect(found, "NPC已经放入对应地图：" + provider)
+
+
+## 等待实际按钮 debounce 到期，避免 headless 定时器提前恢复造成竞态。
+func _wait_for_action_debounce() -> void:
+	while _window._task_action_debounce.remaining_msec(Time.get_ticks_msec()) > 0:
+		await process_frame
+		_window._process(0.016)
 
 
 ## 累计窗口与地图检查。

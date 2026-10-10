@@ -1,8 +1,9 @@
 extends SceneTree
 
 const HallHudScript := preload("res://scripts/ui/hall_hud.gd")
+const RuntimeTextureLoaderScript := preload("res://scripts/content/runtime_texture_loader.gd")
 const MANIFEST_PATH := "res://data/ui/free_hud_assets.json"
-const MINIMAP_PATH := "res://assets/maps/yian_harbor/hall_floor_1/minimap.jpg"
+const MINIMAP_PATH := "res://assets/glory/maps/roomsvr1/variant_01_nft_bl/minimap.jpg"
 
 var failures: PackedStringArray = []
 var assertions := 0
@@ -23,12 +24,21 @@ func _run() -> void:
 	_expect(manifest["bottom_main"]["reserve_energy"]["frames"] is Dictionary, "储备能量帧应以语义字典存储")
 	_expect(manifest["minimap_chrome"].get("map_content_source", "") == "current_glory_map", "小地图内容仍必须来自荣耀版地图")
 
+	var minimap_texture := RuntimeTextureLoaderScript.load_texture(MINIMAP_PATH)
+	if minimap_texture == null:
+		push_error("HUD test minimap is missing: " + MINIMAP_PATH)
+		quit(1)
+		return
 	var hud: CanvasLayer = HallHudScript.new()
-	hud.configure(Vector2(1944, 1920), load(MINIMAP_PATH), "龙之城基地大厅一层")
+	hud.configure(Vector2(1944, 1920), minimap_texture, "龙之城基地大厅一层")
 	root.add_child(hud)
 	await process_frame
 	await process_frame
 	_assert_1280_layout(hud)
+	_assert_hud_textures(hud)
+	if "--capture" in OS.get_cmdline_user_args():
+		await RenderingServer.frame_post_draw
+		root.get_texture().get_image().save_png("res://.godot/bottom-toolbar-1280.png")
 	_assert_state_updates(hud)
 	_assert_primary_devices(hud)
 	_assert_npc_popup(hud)
@@ -37,9 +47,13 @@ func _run() -> void:
 	_assert_transition_markers(hud)
 
 	root.size = Vector2i(1600, 900)
+	hud.show_system_message("窗口尺寸提示")
 	await process_frame
 	await process_frame
 	_assert_1600_layout(hud)
+	if "--capture" in OS.get_cmdline_user_args():
+		await RenderingServer.frame_post_draw
+		root.get_texture().get_image().save_png("res://.godot/bottom-toolbar-1600.png")
 
 	if failures.is_empty():
 		print("HUD_RUNTIME_SMOKE_OK (%d assertions)" % assertions)
@@ -71,9 +85,55 @@ func _assert_1280_layout(hud: CanvasLayer) -> void:
 	_expect(hud.shortcut_bar.size == Vector2(415, 40), "快捷栏必须保持 415×40 原始像素")
 	_expect(hud.shortcut_bar.position == Vector2(432.5, 651), "快捷栏应紧贴底部主栏上方居中")
 	hud.show_system_message("测试系统提示")
-	var message_center: Vector2 = (hud.system_message_feed.get_child(0) as Label).get_global_rect().get_center()
-	_expect(message_center.is_equal_approx(Vector2(640, 360)),
-		"系统提示应以 1280×720 游戏画面的正中心为初始锚点")
+	_expect(hud.system_message_feed.get_child_count() > 0, "系统提示应创建文字节点")
+	if hud.system_message_feed.get_child_count() > 0:
+		var message_center: Vector2 = (hud.system_message_feed.get_child(0) as Label).get_global_rect().get_center()
+		_expect(message_center.is_equal_approx(Vector2(640, 360)),
+			"系统提示应以 1280×720 游戏画面的正中心为初始锚点")
+
+
+func _assert_hud_textures(hud: CanvasLayer) -> void:
+	for action_id: String in hud.top_menu.action_buttons:
+		_assert_button_textures(hud.top_menu.action_buttons[action_id], "top menu " + action_id)
+	_assert_button_textures(hud.top_menu.collapse_button, "top menu collapse")
+	_assert_button_textures(hud.top_menu.expand_button, "top menu expand")
+	var bottom: Control = hud.bottom_main_bar
+	_expect((bottom.design_surface.get_node("Background") as TextureRect).texture != null, "底栏背景贴图必须已加载")
+	_expect(bottom.reserve_energy_fill.texture != null, "储备能量贴图必须已加载")
+	var actions: Array[String] = []
+	hud.hud_action_requested.connect(func(action: String) -> void: actions.append(action))
+	for index in FreeBottomMainBar.MENU_BUTTONS.size():
+		var action_id: String = FreeBottomMainBar.MENU_BUTTONS.keys()[index]
+		var button: Control = bottom.design_surface.get_node(action_id.to_pascal_case())
+		_expect(is_equal_approx(button.position.x, 519 + index * 38 + (1 if action_id == "premium_shop" else 0)), "底栏 " + action_id + " 必须对齐底图槽位")
+		if action_id == "premium_shop":
+			_assert_button_textures(button, "bottom menu " + action_id)
+		else:
+			_expect(button is LegacyStateButton and button.textures.normal == null and button.textures.hover is Texture2D and button.textures.pressed is Texture2D and button.hit_button.tooltip_text == FreeBottomMainBar.MENU_BUTTONS[action_id], "底栏 " + action_id + " 常态不绘图，悬停和按下使用原版青色状态图")
+		for pressed in [true, false]:
+			var click := InputEventMouseButton.new()
+			click.position = button.get_global_rect().get_center()
+			click.button_index = MOUSE_BUTTON_LEFT
+			click.pressed = pressed
+			root.push_input(click, true)
+		_expect(not actions.is_empty() and actions.back() == action_id, "鼠标点击底栏 " + action_id + " 必须发出对应动作")
+	_assert_button_textures(bottom.weapon_buttons["energy_cannon"], "primary weapon")
+	for button: Control in bottom.shortcut_visibility_buttons.values():
+		_assert_button_textures(button, "shortcut visibility")
+	var shortcut: Control = hud.shortcut_bar
+	_expect((shortcut.get_node("Background") as TextureRect).texture != null, "快捷栏背景贴图必须已加载")
+	for name: String in ["ItemPageUp", "ItemPageDown", "SkillPageUp", "SkillPageDown"]:
+		_expect((shortcut.get_node(name) as TextureButton).texture_normal != null, name + " 贴图必须已加载")
+	_expect(hud.minimap_dock.control_background.texture != null, "小地图控制栏贴图必须已加载")
+	for button: Control in hud.minimap_dock.size_buttons.values():
+		_assert_button_textures(button, "minimap size")
+	for button: Control in hud.minimap_dock.collapse_buttons.values():
+		_assert_button_textures(button, "minimap visibility")
+
+
+func _assert_button_textures(button: Control, description: String) -> void:
+	for state_name: String in button.textures:
+		_expect(button.textures[state_name] is Texture2D, description + " " + state_name + " 贴图必须已加载")
 
 
 ## 执行 `assert_state_updates` 对应的模块操作。
@@ -233,9 +293,12 @@ func _assert_1600_layout(hud: CanvasLayer) -> void:
 	_expect(hud.bottom_main_bar.design_surface.size == Vector2(1024, 29), "窗口变大不得拉伸底栏中央素材")
 	_expect(hud.shortcut_bar.position == Vector2(592.5, 831), "窗口变大后快捷栏仍应吸底居中")
 	_expect(hud.shortcut_bar.size == Vector2(415, 40), "窗口变大不得缩放快捷栏")
-	var message_center: Vector2 = (hud.system_message_feed.get_child(0) as Label).get_global_rect().get_center()
-	_expect(message_center.is_equal_approx(Vector2(800, 450)),
-		"窗口放大后系统提示仍应重新锚定屏幕正中心")
+	_expect(hud.system_message_feed.get_child_count() > 0, "窗口放大后系统提示应仍在展示")
+	if hud.system_message_feed.get_child_count() > 0:
+		var latest_message := hud.system_message_feed.get_child(-1) as Label
+		var message_center: Vector2 = latest_message.get_global_rect().get_center()
+		_expect(message_center.is_equal_approx(Vector2(800, 450)),
+			"窗口放大后系统提示仍应重新锚定屏幕正中心")
 
 
 ## 执行 `expect` 对应的模块操作。

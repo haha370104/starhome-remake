@@ -3,7 +3,7 @@
   "source_release": "starhome_lz_ry",
   "source_file": "cltobj/stuffclt2.fcc",
   "rules": {
-    "item:material:04081d3010ba": {
+    "cheese": {
       "kind": "food",
       "name": "奶酪",
       "physical": 10,
@@ -16,7 +16,7 @@
         }
       ]
     },
-    "item:material:0b8c4bb849e0": {
+    "cake": {
       "kind": "food",
       "name": "蛋糕",
       "physical": 10,
@@ -29,7 +29,7 @@
         }
       ]
     },
-    "item:material:1967f997dcb6": {
+    "burger_set": {
       "kind": "food",
       "name": "汉堡套餐",
       "physical": 10,
@@ -42,7 +42,7 @@
         }
       ]
     },
-    "item:material:1a7b61344813": {
+    "pie": {
       "kind": "food",
       "name": "派",
       "physical": 10,
@@ -55,7 +55,7 @@
         }
       ]
     },
-    "item:material:212c73d1769f": {
+    "brandy": {
       "kind": "food",
       "name": "白兰地",
       "physical": 10,
@@ -68,7 +68,7 @@
         }
       ]
     },
-    "item:material:29313f6e399b": {
+    "pizza": {
       "kind": "food",
       "name": "比萨",
       "physical": 10,
@@ -81,7 +81,7 @@
         }
       ]
     },
-    "item:material:2ad7220f1f76": {
+    "meat_pie": {
       "kind": "food",
       "name": "馅饼",
       "physical": 10,
@@ -94,7 +94,7 @@
         }
       ]
     },
-    "item:material:341abb62475c": {
+    "soybean_omelet_rice": {
       "kind": "food",
       "name": "素豆煎蛋饭",
       "physical": 10,
@@ -107,7 +107,7 @@
         }
       ]
     },
-    "item:material:37961e4dd452": {
+    "japanese_eel_rice": {
       "kind": "food",
       "name": "日式鳗鱼饭",
       "physical": 0,
@@ -120,7 +120,7 @@
         }
       ]
     },
-    "item:material:3a6a410118b6": {
+    "green_pepper_pork": {
       "kind": "food",
       "name": "青椒肉丝",
       "physical": 10,
@@ -133,7 +133,7 @@
         }
       ]
     },
-    "item:material:3cf03f3ca8f0": {
+    "tequila": {
       "kind": "food",
       "name": "龙舌兰酒",
       "physical": 10,
@@ -146,7 +146,7 @@
         }
       ]
     },
-    "item:material:491e4fbf9ddf": {
+    "ham_sandwich": {
       "kind": "food",
       "name": "火腿三明治",
       "physical": 0,
@@ -159,7 +159,7 @@
         }
       ]
     },
-    "item:material:56ad9259e3e1": {
+    "cookie": {
       "kind": "food",
       "name": "饼干",
       "physical": 10,
@@ -172,7 +172,7 @@
         }
       ]
     },
-    "item:material:589c3c4cec86": {
+    "italian_pizza": {
       "kind": "food",
       "name": "意式比萨饼",
       "physical": 0,
@@ -185,7 +185,7 @@
         }
       ]
     },
-    "item:material:67b74e673143": {
+    "rum": {
       "kind": "food",
       "name": "朗姆酒",
       "physical": 10,
@@ -198,7 +198,7 @@
         }
       ]
     },
-    "item:material:6af4c3a3cd7f": {
+    "fish_fried_rice": {
       "kind": "food",
       "name": "鱼肉炒饭",
       "physical": 10,
@@ -211,7 +211,7 @@
         }
       ]
     },
-    "item:material:756d808fdc15": {
+    "cream_cookie": {
       "kind": "food",
       "name": "奶油饼干",
       "physical": 10,
@@ -224,7 +224,7 @@
         }
       ]
     },
-    "item:material:7a9d652d9d30": {
+    "korean_sushi": {
       "kind": "food",
       "name": "韩式寿司",
       "physical": 0,
@@ -237,7 +237,7 @@
         }
       ]
     },
-    "item:material:826b21d5e192": {
+    "omelet_rice": {
       "kind": "food",
       "name": "蛋包饭",
       "physical": 10,
@@ -250,7 +250,7 @@
         }
       ]
     },
-    "item:material:906576ebac94": {
+    "nutritious_meal": {
       "kind": "food",
       "name": "营养料理餐",
       "physical": 10,
@@ -263,7 +263,7 @@
         }
       ]
     },
-    "item:material:936b913dcb1f": {
+    "vodka": {
       "kind": "food",
       "name": "伏特加",
       "physical": 10,
@@ -276,7 +276,7 @@
         }
       ]
     },
-    "item:material:9cbc7d0e0296": {
+    "rice_ball": {
       "kind": "food",
       "name": "饭团",
       "physical": 10,
@@ -289,7 +289,7 @@
         }
       ]
     },
-    "item:material:a0afe3b311fa": {
+    "fish_steak": {
       "kind": "food",
       "name": "鱼排",
       "physical": 10,
@@ -302,7 +302,7 @@
         }
       ]
     },
-    "item:material:b4bf241cd10e": {
+    "bread": {
       "kind": "food",
       "name": "面包",
       "physical": 10,
@@ -315,7 +315,7 @@
         }
       ]
     },
-    "item:material:b66b04c2509a": {
+    "sushi": {
       "kind": "food",
       "name": "寿司",
       "physical": 10,
@@ -328,7 +328,7 @@
         }
       ]
     },
-    "item:material:c27f83efbc0c": {
+    "eel_rice_ball": {
       "kind": "food",
       "name": "鳗鱼饭团",
       "physical": 10,
@@ -341,7 +341,7 @@
         }
       ]
     },
-    "item:material:c2af1947b661": {
+    "macaroni": {
       "kind": "food",
       "name": "通心面",
       "physical": 10,
@@ -354,7 +354,7 @@
         }
       ]
     },
-    "item:material:c61bd71bd4d0": {
+    "chow_mein_bread": {
       "kind": "food",
       "name": "炒面面包",
       "physical": 10,
@@ -367,7 +367,7 @@
         }
       ]
     },
-    "item:material:df6953c9d7c1": {
+    "beef_ramen": {
       "kind": "food",
       "name": "牛肉拉面",
       "physical": 10,
@@ -380,7 +380,7 @@
         }
       ]
     },
-    "item:material:e233a13a49e5": {
+    "cooked_rice": {
       "kind": "food",
       "name": "米饭",
       "physical": 10,
@@ -393,7 +393,7 @@
         }
       ]
     },
-    "item:material:e9de073940b0": {
+    "cream_sandwich": {
       "kind": "food",
       "name": "奶油三明治",
       "physical": 10,
@@ -406,14 +406,14 @@
         }
       ]
     },
-    "item:material:cfa52e059e34": {
+    "middle_grade_energy_pack": {
       "kind": "energy",
       "name": "中级能量包",
       "energy": 10000,
       "physical": 0,
       "effects": []
     },
-    "item:material:dc2a516b5a42": {
+    "low_grade_energy_pack": {
       "kind": "energy",
       "name": "低级能量包",
       "energy": 1000,

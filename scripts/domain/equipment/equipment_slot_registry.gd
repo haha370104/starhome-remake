@@ -119,7 +119,7 @@ static func special_row(location: int) -> int:
 
 ## 查询旧客户端 `EquipInDlg()` 为该逻辑 Location 指定的面板业务锚点。
 ## [param location] 荣耀客户端 Location 编号。
-## [param fallback] 尚未逆向的扩展位置使用的兼容锚点。
+## [param fallback] 尚未配置展示位置时使用的默认锚点。
 ## 返回不包含 ALE 帧 origin 的面板坐标；渲染器应将两者相加得到纹理左上角。
 ## 设计：锚点属于装备槽语义，不由纹理尺寸或透明边界推算，避免不同车体素材发生漂移。
 static func dialog_anchor(location: int, fallback: Vector2i = Vector2i(205, 245)) -> Vector2i:

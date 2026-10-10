@@ -10,40 +10,40 @@ var assertions := 0
 var database_path := ""
 
 
-## 延迟执行旧地图存档的完整启动场景回归。
+## 延迟执行当前地图存档的完整启动场景回归。
 func _initialize() -> void:
 	call_deferred("_run")
 
 
-## 预置业务化前的宇航中心地图 ID，并验证大厅启动能迁移地图、坐标和加载遮罩。
+## 预置当前宇航中心地图 ID，并验证大厅启动恢复地图、坐标和加载遮罩。
 func _run() -> void:
 	database_path = "res://persisted_map_startup_%d.tmp" % Time.get_ticks_usec()
 	var seeded_server = ServerScript.new()
 	var seeded_result: Dictionary = seeded_server.initialize(_server_config())
-	_expect(seeded_result.ok, "旧存档夹具必须初始化权威服务器")
+	_expect(seeded_result.ok, "地图存档夹具必须初始化权威服务器")
 	if not seeded_result.ok:
 		_finish(null, seeded_server)
 		return
 	var opened: Dictionary = seeded_server.open_session(2, _handshake(), 1000)
-	_expect(opened.ok, "旧存档夹具必须创建默认角色")
+	_expect(opened.ok, "地图存档夹具必须创建默认角色")
 	if not opened.ok:
 		_finish(null, seeded_server)
 		return
 	var entity_id := String(opened.value.session.entity_id)
 	var loaded = seeded_server.player_state_repository.load_player(entity_id)
-	_expect(loaded.is_ok, "旧存档夹具必须读取默认角色")
+	_expect(loaded.is_ok, "地图存档夹具必须读取默认角色")
 	if not loaded.is_ok:
 		_finish(null, seeded_server)
 		return
-	var legacy_state: PlayerStateRecord = loaded.value
-	legacy_state.map_id = "glory_nft_bl_nasa1"
-	legacy_state.map_instance_id = "glory_nft_bl_nasa1.instance.1"
-	legacy_state.position = Vector2(1381.0, 918.0)
+	var current_state: PlayerStateRecord = loaded.value
+	current_state.map_id = "dragon_city_space_center"
+	current_state.map_instance_id = "dragon_city_space_center.instance.1"
+	current_state.position = Vector2(1381.0, 918.0)
 	_expect(
 		seeded_server.player_state_repository.save_player(
-			legacy_state, legacy_state.revision
+			current_state, current_state.revision
 		).is_ok,
-		"旧存档夹具必须写入规范化前的宇航中心位置",
+		"当前地图存档必须保留宇航中心位置",
 	)
 	seeded_server.free()
 
@@ -68,7 +68,7 @@ func _run() -> void:
 		if hall.map_travel._initial_authoritative_world_ready:
 			break
 		await process_frame
-	_expect(hall.map_travel._initial_authoritative_world_ready, "旧地图存档必须在启动期间完成权威地图提交")
+	_expect(hall.map_travel._initial_authoritative_world_ready, "地图存档必须在启动期间完成权威地图提交")
 	_expect(not hall.initial_loading_screen.visible, "权威地图提交后必须关闭角色与地图加载遮罩")
 	_expect(
 		hall.active_world_controller.definition.map_id == &"dragon_city_space_center",
@@ -76,7 +76,7 @@ func _run() -> void:
 	)
 	_expect(
 		hall.world_view.player.position.is_equal_approx(Vector2(1381.0, 918.0)),
-		"客户端必须恢复旧存档中仍可达的角色坐标",
+		"客户端必须恢复当前地图存档中的角色坐标",
 	)
 	_finish(hall, null)
 

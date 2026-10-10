@@ -9,10 +9,12 @@ import argparse
 import hashlib
 import json
 from pathlib import Path
+import urllib.parse
 
 from PIL import Image
 
 from audit_monster_asset_sources import animation_bounds, build_tres, load_decoder
+from recovery.cross_release_paths import CACHE
 
 ROOT = Path(__file__).resolve().parents[1]
 CATALOG = ROOT / "data/gameplay/glory/monster_hit_effects_v1.json"
@@ -24,13 +26,39 @@ def export_effect(row: dict, decoder, check: bool) -> None:
     release = audit["source_release"]
     if release not in ("starhome_lz_fr", "starhome_lz_ry"):
         raise ValueError(f"Unsupported source release: {release}")
-    source_root = ROOT.parent / f"{release}_full/raw"
-    source = (source_root / audit["source_logical_path"]).resolve()
-    if not source.is_relative_to(source_root.resolve()):
-        raise ValueError("Source escapes original archive")
+    source_logical = Path(audit["source_logical_path"])
+    source_roots = [ROOT.parent / f"{release}_full/raw"]
+    if release == "starhome_lz_fr":
+        source_roots.append(CACHE / "free" / "raw")
+    source = None
+    source_root = None
+    for candidate_root in source_roots:
+        candidate = (candidate_root / source_logical).resolve()
+        if candidate.is_relative_to(candidate_root.resolve()) and candidate.is_file():
+            source = candidate
+            source_root = candidate_root
+            break
+    if source is None or source_root is None:
+        raise FileNotFoundError(f"Reviewed source is missing: {audit['source_logical_path']}")
     raw = source.read_bytes()
     if hashlib.sha256(raw).hexdigest() != audit["source_sha256"]:
         raise ValueError(f"Reviewed source changed: {source}")
+    source_fetch = audit.get("source_fetch")
+    if source_fetch:
+        url_base = (
+            "http://update.ftxjjy.com/gameser/fr_www/"
+            if release == "starhome_lz_fr"
+            else "http://update.ftxjjy.com/gameser/ry_www/"
+        )
+        expected_url = url_base + urllib.parse.quote(str(source_logical).replace("\\", "/"), safe="/")
+        if source_fetch.get("url") != expected_url or int(source_fetch.get("http_status", 0)) != 200:
+            raise ValueError(f"Official source fetch record is invalid: {row['id']}")
+        if source_fetch.get("bytes") != len(raw):
+            raise ValueError(f"Official source byte count changed: {row['id']}")
+        if source_fetch.get("md5") != hashlib.md5(raw, usedforsecurity=False).hexdigest():
+            raise ValueError(f"Official source MD5 changed: {row['id']}")
+        if source_fetch.get("sha256") != hashlib.sha256(raw).hexdigest():
+            raise ValueError(f"Official source SHA-256 changed: {row['id']}")
     descriptor = row["impact"]
     resource = (ROOT / descriptor["resource"].removeprefix("res://")).resolve()
     if not resource.is_relative_to((ROOT / "assets/monsters").resolve()):
@@ -40,9 +68,14 @@ def export_effect(row: dict, decoder, check: bool) -> None:
     width, height = right - left, bottom - top
     if descriptor["frames"] != len(ale.frames) or descriptor["offset"] != [left, top]:
         raise ValueError(f"Frame count or pivot changed: {row['id']}")
+    if source_fetch and (
+        source_fetch.get("decoded_frame_count") != len(ale.frames)
+        or source_fetch.get("coordinate_bounds") != [left, top, right, bottom]
+    ):
+        raise ValueError(f"Official source decode record changed: {row['id']}")
     atlas = Image.new("RGBA", (width * len(ale.frames), height))
     for frame in ale.frames:
-        atlas.paste(ale.decode_frame(frame),
+        atlas.paste(frame.image,
                     (frame.index * width + frame.origin_x - left, frame.origin_y - top))
     target = resource.parent
     texture = target / "frames.png"

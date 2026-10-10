@@ -8,7 +8,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import build_glory_monster_runtime_catalog as builder
 
 ROOT = Path(__file__).resolve().parents[2]
-SOURCE = ROOT.parent / "starhome_lz_ry_full_parsed"
+SOURCE = ROOT / "data/source_evidence/glory"
 
 
 class EncounterTests(unittest.TestCase):
@@ -19,7 +19,10 @@ class EncounterTests(unittest.TestCase):
         cls.relations = builder.read_json(SOURCE / "catalogs/monsters/glory_monster_map_relations.json")
         cls.index = builder.read_json(ROOT / "data/content/glory_map_runtime_index_v1.json")
         cls.known = builder.read_json(ROOT / "data/content/known_maps_v1.json")
-        cls.names = builder.recover_class_names(ROOT.parent / "starhome_lz_ry_fcc_source")
+        from recovery.fcc_workspace import RawFccWorkspace
+        with RawFccWorkspace() as fcc:
+            fcc.path("great/code_string.fcc")
+            cls.names = builder.recover_class_names(fcc.path("npcclt1.fcc").parent)
 
     def build(self, **overrides):
         arguments = dict(rows=self.rows, relations=self.relations, map_index=self.index,
@@ -45,7 +48,7 @@ class EncounterTests(unittest.TestCase):
         actual = {row["map_id"] for row in encounters}
         self.assertEqual(len(runtime_fields), 460)
         self.assertEqual(len(actual), 459)
-        self.assertEqual(runtime_fields - actual, {"d04_field_zone"})
+        self.assertEqual(runtime_fields - actual, {"glory_nft_bl_d04"})
         self.assertIn("glory_nft_bl_b02", actual)
         self.assertTrue(all(row["distribution_evidence"] == "design_inferred_radial_ecology" for row in encounters))
         valid = {builder.runtime_id(int(row["index"])) for row in self.rows}

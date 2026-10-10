@@ -1,5 +1,7 @@
 extends SceneTree
 
+const CommerceRecordAdapter := preload("res://tests/fixtures/commerce_record_adapter.gd")
+
 var checks := 0
 var failures := PackedStringArray()
 var catalog := ItemCatalog.new()
@@ -19,7 +21,7 @@ func _initialize() -> void:
 	for id: String in catalog.central_rules.offers:
 		var quantity := int(catalog.definition(id).get("max_stack", 1))
 		var before := state.to_dictionary()
-		var bought := service.execute(state, {"type":"buy_central", "definition_id":id, "quantity":quantity, "inventory_revision":state.inventory_revision, "price":0, "grade":18, "evolved":true})
+		var bought := CommerceRecordAdapter.execute(service, state, {"type":"buy_central", "definition_id":id, "quantity":quantity, "inventory_revision":state.inventory_revision, "price":0, "grade":18, "evolved":true})
 		_check(bought.is_ok and state.to_dictionary() == before, "purchase candidate isolation")
 		if not bought.is_ok:
 			push_error(bought.error_message)
@@ -27,7 +29,7 @@ func _initialize() -> void:
 			return
 		_check(bought.value.candidate.currency == state.currency - quantity * catalog.central_rules.offers[id], "server price only")
 		state = bought.value.candidate
-	var query := service.execute(state, {"type":"query_central"})
+	var query := CommerceRecordAdapter.execute(service, state, {"type":"query_central"})
 	_check(query.is_ok and not query.value.changed and query.value.panel_bundle.central_workshop.offers.size() == 31, "complete read only supply")
 	_check(query.value.panel_bundle.central.grades.gun == 0 and query.value.panel_bundle.central_workshop.chips.size() == 6, "permanent state separate from workshop")
 	var before := state.to_dictionary()
@@ -52,9 +54,9 @@ func _initialize() -> void:
 		before = state.to_dictionary()
 		_check(not _change(identity).is_ok and state.to_dictionary() == before, "eighteen cap atomic")
 	for invalid: Variant in [1.5, "1", true, -1, 0, 21]:
-		_check(not service.execute(state, {"type":"buy_central", "definition_id":"central_syancrystal", "quantity":invalid, "inventory_revision":state.inventory_revision}).is_ok, "bad quantity")
-	_check(not service.execute(state, {"type":"buy_central", "definition_id":"central_gun_module_1", "quantity":2, "inventory_revision":state.inventory_revision}).is_ok, "unique item quantity")
-	_check(not service.execute(state, {"type":"buy_central", "definition_id":"iron_piece", "inventory_revision":state.inventory_revision}).is_ok, "offer whitelist")
+		_check(not CommerceRecordAdapter.execute(service, state, {"type":"buy_central", "definition_id":"central_syancrystal", "quantity":invalid, "inventory_revision":state.inventory_revision}).is_ok, "bad quantity")
+	_check(not CommerceRecordAdapter.execute(service, state, {"type":"buy_central", "definition_id":"central_gun_module_1", "quantity":2, "inventory_revision":state.inventory_revision}).is_ok, "unique item quantity")
+	_check(not CommerceRecordAdapter.execute(service, state, {"type":"buy_central", "definition_id":"iron_piece", "inventory_revision":state.inventory_revision}).is_ok, "offer whitelist")
 	_failure_paths()
 	print("Central authority: %d checks, %d failures" % [checks, failures.size()])
 	for failure: String in failures: push_error(failure)
@@ -79,26 +81,26 @@ func _failure_paths() -> void:
 	snapshot = player.inventory.revision
 	_check(not PlayerCentralActions.execute(player, catalog, evolved.instance_id, snapshot, true).is_ok and player.inventory.find(evolved.instance_id) == evolved and player.inventory.revision == snapshot, "duplicate evolution retains crystal")
 	for invalid: Variant in ["yes", 1, []]:
-		_check(not service.execute(state, {"type":"change_central", "instance_id":"x", "confirmed":invalid, "inventory_revision":state.inventory_revision}).is_ok, "invalid confirmation type")
+		_check(not CommerceRecordAdapter.execute(service, state, {"type":"change_central", "instance_id":"x", "confirmed":invalid, "inventory_revision":state.inventory_revision}).is_ok, "invalid confirmation type")
 
 
 ## 执行成功流程并检查预览无副作用、确认和重发保护。
 ## [param id] 唯一实例。
 func _use(id: String) -> void:
 	var before := state.to_dictionary()
-	var query := service.execute(state, {"type":"query_central", "instance_id":id})
+	var query := CommerceRecordAdapter.execute(service, state, {"type":"query_central", "instance_id":id})
 	_check(query.is_ok and not query.value.changed and query.value.panel_bundle.central_workshop.preview.can_execute and state.to_dictionary() == before, "read only actual quote")
 	var command := {"type":"change_central", "instance_id":id, "inventory_revision":state.inventory_revision, "confirmed":false, "grade":18, "costs":[], "evolved":true}
-	_check(not service.execute(state, command).is_ok, "confirmation required")
+	_check(not CommerceRecordAdapter.execute(service, state, command).is_ok, "confirmation required")
 	command.confirmed = true
-	var result := service.execute(state, command)
+	var result := CommerceRecordAdapter.execute(service, state, command)
 	_check(result.is_ok and state.to_dictionary() == before, "isolated mutation")
 	if not result.is_ok:
 		push_error(result.error_message)
 		return
 	_check(result.value.candidate.currency == state.currency, "no invented extra fee")
 	state = result.value.candidate
-	_check(not service.execute(state, command).is_ok, "stale repeat rejected")
+	_check(not CommerceRecordAdapter.execute(service, state, command).is_ok, "stale repeat rejected")
 
 
 ## 查询当前持有的定义实例。
@@ -114,7 +116,7 @@ func _instance(definition_id: String) -> String:
 ## [param id] 目标身份。
 ## 返回权威结果。
 func _change(id: String) -> DomainResult:
-	return service.execute(state, {"type":"change_central", "instance_id":id, "inventory_revision":state.inventory_revision, "confirmed":true})
+	return CommerceRecordAdapter.execute(service, state, {"type":"change_central", "instance_id":id, "inventory_revision":state.inventory_revision, "confirmed":true})
 
 
 ## 汇总事务断言。

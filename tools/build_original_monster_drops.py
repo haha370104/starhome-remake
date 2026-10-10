@@ -3,17 +3,13 @@ import argparse
 import json
 import re
 from pathlib import Path
+from recovery.fcc_workspace import RawFccWorkspace
 
 ROOT = Path(__file__).resolve().parents[1]
-SOURCE = ROOT.parent / "starhome_lz_ry_fcc_source"
-RAW = ROOT.parent / "starhome_lz_ry_full/raw"
+CLASS_SOURCES = ("cltobj/stuffclt2.fcc", "ven/stuffclt2_ven.fcc")
+RAW = ROOT / "../starhome_lz_ry_full/raw"
 CRAWLERS = {"glory_monster_046", "glory_monster_114"}
 FRAGMENT = "接合器升级碎片"
-ALIASES = {
-    "低级类胶": "low_grade_gel", "低级生物硅": "low_grade_biosilicon",
-    "低级四足甲的壳": "low_grade_quadruped_shell", "低级能量催化剂": "low_grade_energy_catalyst",
-    "低级能量包": "low_grade_energy_pack",
-}
 SEMANTIC = {
     "Activator2": "density_solvent", "ColourfulCrystal": "five_color_crystal",
     "DCProtecter": "electromagnetic_protector", "DJBJJ": "electric_wave_crystal",
@@ -58,7 +54,9 @@ def write(path, data):
 
 def item_ids():
     result = {row["display_name"]: row["id"] for row in read("data/gameplay/glory/glory_items_v1.json")["definitions"]}
-    result.update(ALIASES)
+    for binding in read("data/gameplay/original_drop_bindings_v1.json")["definitions"]:
+        result[binding["source_class"]] = binding["item_definition_id"]
+        result[binding["display_name"]] = binding["item_definition_id"]
     return result
 
 
@@ -125,15 +123,17 @@ def build_drops():
 def source_classes():
     """Read source as text only; no original code is evaluated."""
     classes, strings = {}, {}
-    for path in sorted(SOURCE.rglob("*.fcc")):
-        text = path.read_text("utf-8-sig")
+    with RawFccWorkspace() as fcc:
+        text = fcc.text("great/code_string.fcc")
         strings.update(re.findall(r'^\s*#define\s+(\w+)\s+"([^"\n]*)"', text, re.M))
-        matches = list(re.finditer(r'^\s*class\s+(\w+)\s*:\s*(\w+)', text, re.M))
-        for index, match in enumerate(matches):
-            body = text[match.end():matches[index+1].start() if index+1 < len(matches) else len(text)]
-            body = re.sub(r'/\*.*?\*/|//[^\n]*', '', body, flags=re.S)
-            classes.setdefault(match[1], []).append(dict(parent=match[2], body=body,
-                source_file=path.relative_to(SOURCE).as_posix(), source_line=text[:match.start()].count('\n')+1))
+        for logical_path in CLASS_SOURCES:
+            text = fcc.text(logical_path)
+            matches = list(re.finditer(r'^\s*class\s+(\w+)\s*:\s*(\w+)', text, re.M))
+            for index, match in enumerate(matches):
+                body = text[match.end():matches[index+1].start() if index+1 < len(matches) else len(text)]
+                body = re.sub(r'/\*.*?\*/|//[^\n]*', '', body, flags=re.S)
+                classes.setdefault(match[1], []).append(dict(parent=match[2], body=body,
+                    source_file=logical_path, source_line=text[:match.start()].count('\n')+1))
     return classes, strings
 
 
@@ -147,7 +147,10 @@ def enrich_items():
     monsters = read("data/gameplay/glory/glory_monsters_v1.json")["definitions"]
     names = sorted({drop['display_name'] for monster in monsters for drop in monster['source_drop_candidates']})
     original = {row['id']: row for row in read("data/gameplay/glory/glory_items_v1.json")['definitions']}
+    original_by_name = {row['display_name']: row for row in original.values()}
     presentation = read("data/presentation/ground_loot_v1.json")
+    audited_bindings = {row['item_definition_id']: row
+                        for row in read("data/gameplay/original_drop_bindings_v1.json")['definitions']}
     decoder = load_decoder()
     definitions, manifest, images = [], [], []
 
@@ -184,7 +187,8 @@ def enrich_items():
                      source_file=source['source_file'], source_line=source['source_line'],
                      source_logical_path=sprite_path, source_sha256=file_hash(RAW / sprite_path, 'sha256'),
                      source_palette=palette, source_palette_sha256=file_hash(RAW / palette, 'sha256') if palette else '')
-        if raw_name not in ALIASES and raw_name != 'NewJointImpactChip':
+        original_item = original_by_name.get(raw_name, {})
+        if original_item.get('id') == item_id and raw_name != 'NewJointImpactChip':
             old = original[item_id]
             assert old['source_audit']['status'] == 'name_only', item_id
             definitions.append(dict(id=item_id, kind='material', display_name=name, description=description,
@@ -197,9 +201,13 @@ def enrich_items():
             semantic = SEMANTIC[raw_name]
             ale = decoder.AleFile(RAW / sprite_path)
             frame = ale.frames[0]
-            image = apply_palette(decode_index_alpha(ale, frame), act_colors(RAW / palette)) if palette else ale.decode_frame(frame)
+            image = apply_palette(decode_index_alpha(ale, frame), act_colors(RAW / palette)) if palette else frame.image
             assert image.getbbox(), sprite_path
-            crop = image.getbbox()
+            previous = audited_bindings.get(item_id, {})
+            crop = (tuple(previous['source_crop'])
+                    if previous.get('source_sha256') == audit['source_sha256']
+                    and previous.get('source_palette_sha256', '') == audit['source_palette_sha256']
+                    and 'source_crop' in previous else image.getbbox())
             image = image.crop(crop)
             resource = f'res://assets/items/materials/{semantic}/icon.tres'
             audit.update(resource=resource, source_frame=0, source_frame_count=len(ale.frames), source_crop=list(crop))

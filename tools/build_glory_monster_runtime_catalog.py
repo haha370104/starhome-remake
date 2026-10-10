@@ -15,6 +15,7 @@ import json
 import re
 from collections import defaultdict
 from pathlib import Path
+from recovery.fcc_workspace import RawFccWorkspace
 from typing import Any
 
 
@@ -158,6 +159,9 @@ def presentation(row: dict[str, str], index: int) -> dict[str, Any]:
     if palette:
         actor = actor_id(index)
         actions = {action: f"monster_palettes/{actor}/{action}" for action in actions}
+    orb_sprite = {6: 75, 10: 79, 68: 71}.get(index)
+    if orb_sprite is not None:
+        actions = {action: f"{orb_sprite}-{2 if action == 'idle' else 1}.ale" for action in actions}
     return {
         "mode": "ale_repository",
         "preferred_prefix": "pic3/npc",
@@ -371,7 +375,7 @@ def build_encounters(
     encounters = []
     for source_id, map_id in sorted(source_to_runtime.items()):
         # Kept in the existing stage3 definition; the runtime applies that override.
-        if map_id == "d04_field_zone":
+        if map_id == "glory_nft_bl_d04":
             continue
         groups, progression = designed_spawn_groups(source_id, map_id)
         encounter = {
@@ -404,8 +408,9 @@ def write_json(path: Path, payload: Any) -> None:
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--source-root", type=Path, default=Path("../starhome_lz_ry_full_parsed"))
-    parser.add_argument("--fcc-source-root", type=Path, default=Path("../starhome_lz_ry_fcc_source"))
+    parser.add_argument("--source-root", type=Path, default=Path("data/source_evidence/glory"),
+                        help="Glory NPC catalog and map-relation source directory")
+    parser.add_argument("--fcc-source-root", type=Path, help="optional already-decoded temporary FCC source tree")
     parser.add_argument("--output-root", type=Path, default=Path("data/gameplay/glory"))
     args = parser.parse_args()
     source_csv = args.source_root / "catalogs_utf8" / "npc_catalog.csv"
@@ -413,11 +418,23 @@ def main() -> int:
     map_index_path = Path("data/content/glory_map_runtime_index_v1.json")
     with source_csv.open(encoding="utf-8-sig", newline="") as source:
         rows = list(csv.DictReader(source))
+    if args.fcc_source_root:
+        fcc_root = args.fcc_source_root
+        class_names = recover_class_names(fcc_root)
+        class_names_sha256 = sha256(fcc_root / "npcclt1.fcc")
+        string_constants_sha256 = sha256(fcc_root / "great/code_string.fcc")
+    else:
+        with RawFccWorkspace() as fcc:
+            fcc.path("great/code_string.fcc")
+            class_path = fcc.path("npcclt1.fcc")
+            class_names = recover_class_names(class_path.parent)
+            class_names_sha256 = sha256(class_path)
+            string_constants_sha256 = sha256(fcc.path("great/code_string.fcc"))
     definitions = build_definitions(rows, source_csv)
     encounters, joins = build_encounters(
         rows, read_json(relations_path), read_json(map_index_path),
         read_json(Path("data/content/known_maps_v1.json")),
-        recover_class_names(args.fcc_source_root),
+        class_names,
     )
     known_maps = read_json(Path("data/content/known_maps_v1.json"))
     field_sources = {row["id"] for row in known_maps["definitions"] if row["category"] == "field_code"}
@@ -454,8 +471,8 @@ def main() -> int:
             "source_audit": {
                 "source_release": "starhome_lz_ry",
                 "map_relations_sha256": sha256(relations_path),
-                "class_names_sha256": sha256(args.fcc_source_root / "npcclt1.fcc"),
-                "string_constants_sha256": sha256(args.fcc_source_root / "great/code_string.fcc"),
+                "class_names_sha256": class_names_sha256,
+                "string_constants_sha256": string_constants_sha256,
             },
             "encounters": encounters,
             "confirmed_joins": joins,

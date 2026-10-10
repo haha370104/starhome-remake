@@ -16,10 +16,16 @@ func _initialize() -> void:
 		"精灵内容包目录应有效：%s" % "; ".join(packs.errors),
 	)
 	_expect(packs.pack_ids().size() == 3, "全量 ALE 应拆为三个精灵包")
-	_expect(packs.mount_all(false), "精灵包应可挂载：%s" % "; ".join(packs.errors))
+	_expect(packs.mount_all(), "精灵包应可挂载：%s" % "; ".join(packs.errors))
 	var repository = RepositoryScript.new()
 	_expect(repository.load_default(), "ALE 索引应有效：%s" % "; ".join(repository.errors))
-	_expect(repository.size() == 14182, "基础 ALE、两类 ACT 变种与188项已确认恢复素材的数量不匹配")
+	var expected_ids := {}
+	for index_path in [RepositoryScript.DEFAULT_INDEX_PATH, RepositoryScript.DEFAULT_PALETTE_INDEX_PATH,
+		RepositoryScript.DEFAULT_MINE_PALETTE_INDEX_PATH, RepositoryScript.DEFAULT_RECOVERED_INDEX_PATH]:
+		var index_rows: Array = JsonConfigLoader.load_dictionary(index_path).value.sprites
+		for row: Dictionary in index_rows:
+			expected_ids[String(row.logical_id).to_lower()] = true
+	_expect(repository.size() == expected_ids.size(), "基础 ALE、两类 ACT 变种与恢复素材的去重数量不匹配")
 	var recovered: Array = JsonConfigLoader.load_dictionary(RepositoryScript.DEFAULT_RECOVERED_INDEX_PATH).value.sprites
 	for row: Dictionary in recovered:
 		var restored: Dictionary = repository.load_animation(row.logical_id)

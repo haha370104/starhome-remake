@@ -25,11 +25,17 @@ from PIL import Image
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 OUTPUTS_ROOT = PROJECT_ROOT.parent
-GLORY_RAW = OUTPUTS_ROOT / "starhome_lz_ry_full" / "raw"
-GLORY_PARSED = OUTPUTS_ROOT / "starhome_lz_ry_full_parsed" / "ale_sprites"
+GLORY_RAW = PROJECT_ROOT / "../starhome_lz_ry_full" / "raw"
+GLORY_PARSED = PROJECT_ROOT / "assets" / "glory" / "sprites"
 MONSTER_ROOT = PROJECT_ROOT / "assets" / "monsters"
 CATALOG_PATH = PROJECT_ROOT / "data" / "monster_animations.json"
-DECODER_ROOT = PROJECT_ROOT.parent.parent / "work"
+DECODER_ROOT = PROJECT_ROOT / "tools" / "recovery" / "sprites"
+
+
+def provenance_path(path: Path) -> str:
+    """Return a repository-relative path for generated source metadata."""
+
+    return Path(os.path.relpath(path.resolve(), PROJECT_ROOT.resolve())).as_posix()
 
 ALE = {
     "adult_attack": "pic3/npc/CHN_2005_06_28_18_48_40_915.ale",
@@ -185,6 +191,30 @@ def file_hash(path: Path, algorithm: str) -> str:
     return digest.hexdigest()
 
 
+def resolve_source_path(root: Path, logical_path: str | Path) -> Path:
+    """Resolve a client logical path while tolerating case-only archive differences."""
+    relative = Path(logical_path)
+    if relative.is_absolute() or any(part in {".", ".."} for part in relative.parts):
+        raise RuntimeError(f"invalid source logical path: {logical_path}")
+    resolved_root = root.resolve()
+    current = resolved_root
+    for part in relative.parts:
+        exact = current / part
+        if exact.exists():
+            current = exact
+            continue
+        if not current.is_dir():
+            raise FileNotFoundError(f"source path component missing: {current / part}")
+        matches = [child for child in current.iterdir() if child.name.casefold() == part.casefold()]
+        if len(matches) != 1:
+            raise FileNotFoundError(f"source path component is missing or ambiguous: {current / part}")
+        current = matches[0]
+    result = current.resolve()
+    if not result.is_relative_to(resolved_root):
+        raise RuntimeError(f"source path escapes root: {logical_path}")
+    return result
+
+
 def load_decoder():
     if not (DECODER_ROOT / "ale_sprite.py").is_file():
         raise RuntimeError(f"canonical ALE decoder not found: {DECODER_ROOT / 'ale_sprite.py'}")
@@ -317,12 +347,12 @@ def build_preview(resource: Path, pivot_x: int, pivot_y: int) -> str:
 
 def verify_parsed_geometry(source_logical: str, ale) -> str:
     relative = Path(source_logical)
-    parsed_dir = GLORY_PARSED / relative.with_suffix("")
+    parsed_dir = resolve_source_path(GLORY_PARSED, relative.with_suffix(""))
     manifest_path = parsed_dir / "frames.json"
     if not manifest_path.is_file():
         raise RuntimeError(f"missing Glory parsed frames: {manifest_path}")
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-    if manifest["frame_count"] != ale.frame_count:
+    if manifest["frame_count"] != len(ale.frames):
         raise RuntimeError(f"frame count differs from parsed export: {source_logical}")
     for expected, actual in zip(manifest["frames"], ale.frames, strict=True):
         geometry = [actual.width, actual.height, actual.origin_x, actual.origin_y]
@@ -334,9 +364,9 @@ def verify_parsed_geometry(source_logical: str, ale) -> str:
 
 def export_asset(target_relative: str, ale_key: str, palette_key: str | None, decoder) -> dict[str, Any]:
     source_logical = ALE[ale_key]
-    source = GLORY_RAW / Path(source_logical)
+    source = resolve_source_path(GLORY_RAW, source_logical)
     if not source.is_file():
-        raise RuntimeError(f"missing Glory ALE: {source}")
+        raise RuntimeError(f"missing Glory ALE: {source_logical}")
     ale = decoder.AleFile(source)
     if palette_key and ale.version != 1:
         raise RuntimeError(f"external monster palette requires ALE v1: {source}")
@@ -344,19 +374,20 @@ def export_asset(target_relative: str, ale_key: str, palette_key: str | None, de
     left, top, right, bottom = animation_bounds(ale.frames)
     cell_width = max(1, right - left)
     cell_height = max(1, bottom - top)
-    if cell_width * ale.frame_count > 8192:
+    frame_count = len(ale.frames)
+    if cell_width * frame_count > 8192:
         raise RuntimeError(f"single-row monster atlas exceeds 8192 px: {target_relative}")
 
     target = MONSTER_ROOT / Path(target_relative)
     target.mkdir(parents=True, exist_ok=True)
-    rgba_atlas = Image.new("RGBA", (cell_width * ale.frame_count, cell_height))
+    rgba_atlas = Image.new("RGBA", (cell_width * frame_count, cell_height))
     indexed_atlas = Image.new("LA", rgba_atlas.size) if ale.version == 1 else None
     external_palette = None
     palette_logical = None
     palette_source = None
     if palette_key:
         palette_logical = PALETTES[palette_key]
-        palette_source = GLORY_RAW / Path(palette_logical)
+        palette_source = resolve_source_path(GLORY_RAW, palette_logical)
         external_palette = act_colors(palette_source)
 
     frame_rows: list[dict[str, Any]] = []
@@ -364,7 +395,7 @@ def export_asset(target_relative: str, ale_key: str, palette_key: str | None, de
         cell_x = frame.index * cell_width
         paste = (cell_x + frame.origin_x - left, frame.origin_y - top)
         indexed = decode_index_alpha(ale, frame) if ale.version == 1 else None
-        rendered = apply_palette(indexed, external_palette) if external_palette else ale.decode_frame(frame)
+        rendered = apply_palette(indexed, external_palette) if external_palette else frame.image.copy()
         if indexed_atlas is not None and indexed is not None:
             indexed_atlas.paste(indexed, paste)
         rgba_atlas.alpha_composite(rendered, paste)
@@ -392,9 +423,13 @@ def export_asset(target_relative: str, ale_key: str, palette_key: str | None, de
         indexed_atlas.save(indexed_path, optimize=True)
     elif indexed_path.exists():
         indexed_path.unlink()
-    if ale.palette is not None:
+    if ale.palette_bgra is not None:
         embedded = Image.new("RGBA", (256, 1))
-        embedded.putdata(ale.palette)
+        embedded.putdata([
+            (ale.palette_bgra[offset + 2], ale.palette_bgra[offset + 1],
+             ale.palette_bgra[offset], ale.palette_bgra[offset + 3])
+            for offset in range(0, len(ale.palette_bgra), 4)
+        ])
         embedded.save(embedded_path, optimize=True)
         embedded.close()
     elif embedded_path.exists():
@@ -405,13 +440,13 @@ def export_asset(target_relative: str, ale_key: str, palette_key: str | None, de
 
     tres_path = target / "animation_frames.tres"
     preview_path = target / "preview.tscn"
-    atomic_text(tres_path, build_tres(rgba_path, ale.frame_count, cell_width, cell_height))
+    atomic_text(tres_path, build_tres(rgba_path, frame_count, cell_width, cell_height))
     atomic_text(preview_path, build_preview(tres_path, -left, -top))
     source_md5 = file_hash(source, "md5")
     metadata: dict[str, Any] = {
         "export_format_version": 2,
         "source_version": "starhome_lz_ry",
-        "source": str(source.resolve()),
+        "source": provenance_path(source),
         "source_logical_path": source_logical,
         "source_parsed_logical_path": parsed_logical,
         "source_md5": source_md5,
@@ -421,9 +456,9 @@ def export_asset(target_relative: str, ale_key: str, palette_key: str | None, de
             "荣耀版 npcclt1/npcclt1.fcc.cab class and palette mapping",
             "Glory raw ALE geometry verified against Glory parsed frames.json",
         ],
-        "container": ale.container,
+        "container": ale.wrapper,
         "ale_version": ale.version,
-        "frame_count": ale.frame_count,
+        "frame_count": frame_count,
         "animation_semantics": "business_role_from_target_directory",
         "default_preview_fps": 10.0,
         "normalized_cell": {
@@ -434,7 +469,7 @@ def export_asset(target_relative: str, ale_key: str, palette_key: str | None, de
         },
         "rgba_atlases": [res_path(rgba_path)],
         "indexed_atlases": [res_path(indexed_path)] if indexed_atlas is not None else [],
-        "embedded_palette": res_path(embedded_path) if ale.palette is not None else None,
+        "embedded_palette": res_path(embedded_path) if ale.palette_bgra is not None else None,
         "godot_sprite_frames": res_path(tres_path),
         "godot_scene": res_path(preview_path),
         "frames": frame_rows,
@@ -450,7 +485,7 @@ def export_asset(target_relative: str, ale_key: str, palette_key: str | None, de
     if palette_source and palette_logical:
         metadata.update(
             {
-                "palette_source": str(palette_source.resolve()),
+                "palette_source": provenance_path(palette_source),
                 "palette_source_logical_path": palette_logical,
                 "palette_md5": file_hash(palette_source, "md5"),
                 "rendering": "Glory ALE index/alpha rendered through Glory ACT palette",
@@ -464,7 +499,7 @@ def export_asset(target_relative: str, ale_key: str, palette_key: str | None, de
         "source_logical_path": source_logical,
         "source_md5": source_md5,
         "palette_source_logical_path": palette_logical,
-        "frames": ale.frame_count,
+        "frames": frame_count,
         "cell": [cell_width, cell_height],
     }
 
@@ -495,7 +530,7 @@ def migrate() -> None:
     palette_rows = []
     for relative, palette_key in PALETTE_OUTPUTS.items():
         source_logical = PALETTES[palette_key]
-        source = GLORY_RAW / Path(source_logical)
+        source = resolve_source_path(GLORY_RAW, source_logical)
         colors = act_colors(source)
         image = Image.new("RGBA", (256, 1))
         image.putdata(colors)
@@ -517,8 +552,8 @@ def migrate() -> None:
             "schema_version": 1,
             "source_version": "starhome_lz_ry",
             "source_roots": {
-                "raw": str(GLORY_RAW.resolve()),
-                "parsed": str(GLORY_PARSED.resolve()),
+                "raw": "../starhome_lz_ry_full/raw",
+                "parsed": "assets/glory/sprites",
             },
             "evidence": [
                 "starhome_lz_ry_full_parsed/ftc_resources/expanded/loadfile/npcinfo_xc/npcinfo_xc.tab.cab",
@@ -535,14 +570,43 @@ def migrate() -> None:
 
 def audit() -> dict[str, Any]:
     errors: list[str] = []
-    metadata_files = sorted(MONSTER_ROOT.rglob("import_metadata.json"))
+    all_metadata_files = sorted(MONSTER_ROOT.rglob("import_metadata.json"))
+    metadata_files = [
+        path for path in all_metadata_files
+        if path.parent.relative_to(MONSTER_ROOT).as_posix() in ASSETS
+    ]
+    source_manifest_path = MONSTER_ROOT / "source_manifest.json"
+    if not source_manifest_path.is_file():
+        errors.append("monster source manifest is missing")
+    else:
+        source_manifest = json.loads(source_manifest_path.read_text(encoding="utf-8"))
+        if len(source_manifest.get("animations", [])) != len(ASSETS):
+            errors.append("monster source manifest animation count differs from migration map")
+        palette_rows = source_manifest.get("palettes", [])
+        if len(palette_rows) != len(PALETTE_OUTPUTS):
+            errors.append("monster source manifest palette count differs from migration map")
+        for row in palette_rows:
+            image_path = MONSTER_ROOT / Path(str(row.get("asset", "")))
+            if not image_path.is_file():
+                errors.append(f"monster palette image is missing: {row.get('asset', '')}")
+                continue
+            with Image.open(image_path) as image:
+                if image.size != (256, 1):
+                    errors.append(f"monster palette image has wrong size: {row.get('asset', '')}")
+            try:
+                source = resolve_source_path(GLORY_RAW, str(row.get("source_logical_path", "")))
+            except (FileNotFoundError, RuntimeError):
+                errors.append(f"monster palette source is missing: {row.get('source_logical_path', '')}")
+            else:
+                if file_hash(source, "md5") != row.get("source_md5"):
+                    errors.append(f"monster palette source MD5 changed: {row.get('source_logical_path', '')}")
     for path in metadata_files:
         metadata = json.loads(path.read_text(encoding="utf-8"))
         label = path.relative_to(PROJECT_ROOT).as_posix()
         if metadata.get("source_version") != "starhome_lz_ry":
             errors.append(f"{label}: source_version is not starhome_lz_ry")
             continue
-        source = Path(str(metadata.get("source", "")))
+        source = resolve_source_path(GLORY_RAW, str(metadata.get("source_logical_path", "")))
         try:
             source.resolve().relative_to(GLORY_RAW.resolve())
         except (ValueError, OSError):
@@ -552,8 +616,13 @@ def audit() -> dict[str, Any]:
             errors.append(f"{label}: source does not exist")
         elif file_hash(source, "md5") != metadata.get("source_md5"):
             errors.append(f"{label}: source MD5 changed")
-        parsed = GLORY_PARSED / Path(str(metadata.get("source_parsed_logical_path", "")))
-        if not (parsed / "frames.json").is_file():
+        try:
+            parsed = resolve_source_path(
+                GLORY_PARSED, str(metadata.get("source_parsed_logical_path", ""))
+            )
+        except (FileNotFoundError, RuntimeError):
+            parsed = Path()
+        if not parsed.is_dir() or not (parsed / "frames.json").is_file():
             errors.append(f"{label}: parsed Glory frames missing")
         for field in ("rgba_atlases", "indexed_atlases"):
             for resource in metadata.get(field, []):
@@ -582,10 +651,11 @@ def audit() -> dict[str, Any]:
                 errors.append(f"{label}: SpriteFrames region count differs from metadata")
 
     searched = [
-        path
-        for path in MONSTER_ROOT.rglob("*")
-        if path.is_file() and path.suffix.casefold() in {".json", ".tres", ".tscn", ".import"}
-    ] + [CATALOG_PATH]
+        path for path in MONSTER_ROOT.rglob("*")
+        if path.is_file()
+        and path.suffix.casefold() in {".json", ".tres", ".tscn", ".import"}
+        and path.parent.relative_to(MONSTER_ROOT).as_posix() in ASSETS
+    ] + [source_manifest_path, CATALOG_PATH]
     forbidden = ("starhome_lz_fr", "免费版")
     for path in searched:
         if not path.is_file():
@@ -597,9 +667,20 @@ def audit() -> dict[str, Any]:
                 errors.append(f"{path.relative_to(PROJECT_ROOT).as_posix()}: forbidden source token {token}")
 
     actual_groups = {
-        path.parent.relative_to(MONSTER_ROOT).as_posix() for path in metadata_files
+        path.parent.relative_to(MONSTER_ROOT).as_posix() for path in all_metadata_files
     }
     expected_groups = set(ASSETS)
+    hit_catalog_path = PROJECT_ROOT / "data" / "gameplay" / "glory" / "monster_hit_effects_v1.json"
+    if hit_catalog_path.is_file():
+        hit_catalog = json.loads(hit_catalog_path.read_text(encoding="utf-8"))
+        for row in hit_catalog.get("definitions", []):
+            impact = row.get("impact", {})
+            resource = str(impact.get("resource", "")) if isinstance(impact, dict) else ""
+            if resource.startswith("res://assets/monsters/"):
+                relative = (PROJECT_ROOT / resource.removeprefix("res://")).parent
+                expected_groups.add(relative.relative_to(MONSTER_ROOT).as_posix())
+    else:
+        errors.append("monster impact catalog is missing")
     for missing in sorted(expected_groups - actual_groups):
         errors.append(f"expected migrated asset missing: {missing}")
     for unknown in sorted(actual_groups - expected_groups):
@@ -609,6 +690,7 @@ def audit() -> dict[str, Any]:
         "source_version": "starhome_lz_ry",
         "animation_groups": len(metadata_files),
         "expected_animation_groups": len(ASSETS),
+        "registered_hit_effect_groups": len(expected_groups - set(ASSETS)),
         "removed_groups": len(REMOVED),
         "errors": errors,
     }

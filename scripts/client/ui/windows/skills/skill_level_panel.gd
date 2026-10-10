@@ -2,22 +2,25 @@ class_name SkillLevelPanel
 extends DraggableGameWindow
 
 const BACKGROUND := preload("res://assets/ui/windows/skills/background.png")
-const LEGACY_PANEL_FONT := preload("res://assets/ui/fonts/legacy_panel_font.tres")
+const LEGACY_PANEL_FONT := preload("res://assets/ui/fonts/NotoSansCJKsc-Regular.otf")
 const TEXT_COLOR := Color("faf0c8")
-const HEADER_Y := 15.0
-const FIRST_ROW_Y := 40.0
-const ROW_STEP := 25.0
+const HEADER_Y := 22.0
+const FIRST_ROW_Y := 46.0
+const ROW_STEP := 24.3
 
 var _rows: Array[Dictionary] = []
+var _skills: Array = []
 
 
 ## 创建旧客户端技能等级窗口的固定像素布局。
 ## 设计：这是普通可拖动游戏窗口而非 Popup，不会在窗口外拦截地图移动和战斗输入。
 func _ready() -> void:
-	configure(Vector2(240, 375), BACKGROUND, Vector2(208, 19))
+	configure(Vector2(240, 375), BACKGROUND, Vector2(215, 9))
 	_create_header("技能名称", Vector2(20, HEADER_Y), Vector2(72, 18))
 	_create_header("技能等级", Vector2(95, HEADER_Y), Vector2(70, 18))
 	_create_header("当前经验", Vector2(167, HEADER_Y), Vector2(66, 18))
+	visibility_changed.connect(func() -> void:
+		if visible: apply_skills(_skills))
 	for index in SkillBook.ORDERED_SKILLS.size():
 		_rows.append(_create_row(index))
 
@@ -27,7 +30,9 @@ func _ready() -> void:
 func apply_skills(skills_value: Variant) -> void:
 	if not skills_value is Array:
 		return
-	var skills: Array = skills_value
+	_skills = skills_value.duplicate(true)
+	if not is_visible_in_tree(): return
+	var skills: Array = _skills
 	for index in _rows.size():
 		var row: Dictionary = _rows[index]
 		if index >= skills.size() or not skills[index] is Dictionary:
@@ -105,3 +110,12 @@ func _create_label(label_position: Vector2, label_size: Vector2) -> Label:
 func _set_row_visible(row: Dictionary, visible_value: bool) -> void:
 	for label_key: String in ["name", "level", "experience"]:
 		(row[label_key] as Label).visible = visible_value
+
+
+## 用稳定技能身份更新缓存，隐藏窗口下次显示时再呈现。
+## [param changes] 发生变化的技能最终状态。
+func apply_changes(changes: Array[Dictionary]) -> void:
+	for skill: Dictionary in changes:
+		for index in _skills.size():
+			if _skills[index].id == skill.id: _skills[index] = skill
+	if is_visible_in_tree(): apply_skills(_skills)

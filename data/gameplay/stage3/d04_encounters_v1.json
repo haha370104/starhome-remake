@@ -2,7 +2,7 @@
   "schema_version": 1,
   "content_version": "stage3_v1",
   "encounter_id": "d04_intro_encounter",
-  "map_id": "d04_field_zone",
+  "map_id": "glory_nft_bl_d04",
   "enabled": true,
   "population_policy": {
     "maximum_population": 200,
@@ -28,8 +28,8 @@
   },
   "source_audit": {
     "source_release": "starhome_lz_ry",
-    "map_definition": "res://data/maps/d04_field_zone.json",
-    "navigation": "res://assets/maps/exploration/d04_field_zone/navigation_grid.bin",
+    "map_definition": "res://data/maps/glory_nft_bl_d04.json",
+    "navigation": "res://assets/maps/exploration/glory_nft_bl_d04/navigation_grid.bin",
     "navigation_sha256": "6596d9afc3b99553649f5d980de0365dc51a36eacb50a2e07fc0075fa612f65b",
     "authoritative_d04_spawn_records_found": false,
     "inactive_client_marker_example": {

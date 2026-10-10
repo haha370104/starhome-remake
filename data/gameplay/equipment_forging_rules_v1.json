@@ -7,14 +7,14 @@
     0.95
   ],
   "channels": [
-    {"type": 1, "attribute": "max_health", "label": "生命上限", "step": 10, "direct_bonus": false, "expands_processing": true, "material_id": "equipment_forging_life", "requirements": [{"definition_id": "industrial_material_7ea69a6eaf61", "quantity": 100}]},
-    {"type": 2, "attribute": "drive", "label": "推进上限", "step": 1, "direct_bonus": false, "expands_processing": true, "material_id": "equipment_forging_drive", "requirements": [{"definition_id": "industrial_material_1476d4c8c1c2", "quantity": 100}]},
+    {"type": 1, "attribute": "max_health", "label": "生命上限", "step": 10, "direct_bonus": false, "expands_processing": true, "material_id": "equipment_forging_life", "requirements": [{"definition_id": "radium_chromium_alloy", "quantity": 100}]},
+    {"type": 2, "attribute": "drive", "label": "推进上限", "step": 1, "direct_bonus": false, "expands_processing": true, "material_id": "equipment_forging_drive", "requirements": [{"definition_id": "barium_magnesium_alloy", "quantity": 100}]},
     {"type": 3, "attribute": "output_power", "label": "输出上限", "step": 1, "direct_bonus": false, "expands_processing": true, "material_id": "equipment_forging_output", "requirements": [{"definition_id": "forging_zirconium_scandium_alloy", "quantity": 100}]},
-    {"type": 4, "attribute": "range", "label": "射程上限", "step": 1, "direct_bonus": false, "expands_processing": true, "material_id": "equipment_forging_rangea", "requirements": [{"definition_id": "industrial_material_1476d4c8c1c2", "quantity": 100}]},
-    {"type": 5, "attribute": "base_attack", "label": "能量炮攻击", "step": 1, "direct_bonus": true, "expands_processing": true, "material_id": "equipment_forging_attack", "requirements": [{"definition_id": "industrial_material_8043340c252f", "quantity": 100}]},
+    {"type": 4, "attribute": "range", "label": "射程上限", "step": 1, "direct_bonus": false, "expands_processing": true, "material_id": "equipment_forging_rangea", "requirements": [{"definition_id": "barium_magnesium_alloy", "quantity": 100}]},
+    {"type": 5, "attribute": "base_attack", "label": "能量炮攻击", "step": 1, "direct_bonus": true, "expands_processing": true, "material_id": "equipment_forging_attack", "requirements": [{"definition_id": "zinc_titanium_alloy", "quantity": 100}]},
     {"type": 6, "attribute": "ammunition_capacity", "label": "载弹上限", "step": 10, "direct_bonus": false, "expands_processing": true, "material_id": "equipment_forging_bullet", "requirements": [{"definition_id": "forging_zirconium_scandium_alloy", "quantity": 100}]},
     {"type": 7, "attribute": "range", "label": "火箭射程", "step": 1, "direct_bonus": true, "expands_processing": false, "material_id": "equipment_forging_rangeb", "requirements": [{"definition_id": "forging_nickel_iridium_alloy", "quantity": 100}]},
-    {"type": 8, "attribute": "base_attack", "label": "副武器攻击上限", "step": 1, "direct_bonus": false, "expands_processing": true, "material_id": "equipment_forging_firepower", "requirements": [{"definition_id": "industrial_material_7ea69a6eaf61", "quantity": 100}]}
+    {"type": 8, "attribute": "base_attack", "label": "副武器攻击上限", "step": 1, "direct_bonus": false, "expands_processing": true, "material_id": "equipment_forging_firepower", "requirements": [{"definition_id": "radium_chromium_alloy", "quantity": 100}]}
   ],
   "source": "ven/SynthesizeNPC.fcc EquipCalcinedNPC; ven/SynthesizeWnd.fcc; inherited IsMaxCalcinedNum and Get*UL",
   "remake_policy": "Step sizes: health and ammunition 10, all others 1; failure reduces selected extension by one step to a minimum of zero. Every attempt clears ordinary processing as warned by original UI; other growth retained. Magazine clamps down only when capacity shrinks. No free resources or experience. Chips sold at original Worth=20; server increment distribution unavailable.",

@@ -131,6 +131,17 @@ func _test_secondary_weapons(controller: Node, world_parent: Node2D, manifest: D
 	)
 	controller.clear_effects()
 
+	controller.set_visual_collision_resolver(_fake_visual_collision)
+	controller.present_confirmed_shot({"shot_id": "rocket.endpoint", "attack_mode": "rocket_aoe",
+		"actor_position": [0, 0], "origin": [0, 0], "endpoint": [300, 0]})
+	controller._advance_projectiles(0.25)
+	_expect(controller.active_projectile_count() == 1 and controller.active_impact_count() == 0,
+		"火箭穿过沿途怪物碰撞圈时不能提前爆炸")
+	controller._advance_projectiles(1.0)
+	_expect(controller.active_impact_count() == 1 and controller._impacts[0].node.position == Vector2(300, 0),
+		"火箭爆炸必须位于权威指定落点")
+	controller.clear_effects()
+
 	_expect(
 		controller.configure(manifest, world_parent, &"starter_missile") == OK,
 		"Glory starter missile effects should configure",

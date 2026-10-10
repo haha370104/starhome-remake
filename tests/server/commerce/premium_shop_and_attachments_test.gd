@@ -1,19 +1,21 @@
 extends SceneTree
 
+const CommerceRecordAdapter := preload("res://tests/fixtures/commerce_record_adapter.gd")
+
 const Fixture := preload("res://tests/fixtures/player_panel_service_fixture.gd")
 var failures: Array[String] = []
 var assertions := 0
 var catalog := ItemCatalog.new()
 
 
-## 验证紫晶购买原子性、装置分组上限、旧存档迁移与双槽往返。
+## 验证紫晶购买原子性、装置分组上限及当前双槽往返。
 func _initialize() -> void:
 	var fixture := Fixture.new()
 	_expect(fixture.initialize().is_ok and catalog.initialize().is_ok, "夹具和物品目录初始化")
 	var service := AuthoritativeCommerceService.new()
 	_expect(service.initialize().is_ok, "商城初始化")
 	var state := fixture._state
-	var queried := service.execute(state, {"type": "query_premium_shop"})
+	var queried := CommerceRecordAdapter.execute(service, state, {"type": "query_premium_shop"})
 	_expect(queried.is_ok and not queried.value.changed, "商城查询不写存档")
 	var offers: Array = queried.value.panel_bundle.premium_shop.offers
 	_expect(offers.size() == 16, "四种新式、五种旧式及七种升级材料，不含赠品")
@@ -22,26 +24,26 @@ func _initialize() -> void:
 			_expect(int(offer.price) == (1000 if offer.family == "new_joint" else 2000), "装置本体沿用分代定价")
 	var command := {"type": "buy_premium_item", "definition_id": offers[0].definition_id,
 		"inventory_revision": state.inventory_revision, "price": 1, "amethyst": 999999, "quantity": 99}
-	_expect(service.execute(state, command).error_code == &"commerce.insufficient_amethyst", "金币和伪造余额不能代替紫晶")
+	_expect(CommerceRecordAdapter.execute(service, state, command).error_code == &"commerce.insufficient_amethyst", "金币和伪造余额不能代替紫晶")
 	state.amethyst = 5000
 	var before := state.to_dictionary()
-	var purchased := service.execute(state, command)
+	var purchased := CommerceRecordAdapter.execute(service, state, command)
 	_expect(purchased.is_ok, "充足紫晶购买成功")
 	_expect(state.to_dictionary() == before, "执行事务不原地修改已提交存档")
 	var candidate: PlayerStateRecord = purchased.value.candidate
 	_expect(candidate.amethyst == 4000 and candidate.currency == state.currency, "忽略伪造价格和数量，仅扣一件紫晶")
 	_expect(candidate.inventory_stacks.size() == state.inventory_stacks.size() + 1, "单件入包")
-	_expect(service.execute(candidate, command).error_code == &"inventory.revision_conflict", "相同版本重放不得重复消费")
+	_expect(CommerceRecordAdapter.execute(service, candidate, command).error_code == &"inventory.revision_conflict", "相同版本重放不得重复消费")
 	command.definition_id = "recruit_tank"
-	_expect(service.execute(state, command).error_code == &"commerce.item_not_offered", "禁止购买白名单外物品")
+	_expect(CommerceRecordAdapter.execute(service, state, command).error_code == &"commerce.item_not_offered", "禁止购买白名单外物品")
 	command.definition_id = offers[0].definition_id
 	state.inventory_capacity = state.inventory_stacks.size()
-	var full := service.execute(state, command)
+	var full := CommerceRecordAdapter.execute(service, state, command)
 	_expect(not full.is_ok and state.amethyst == 5000, "背包满不扣款")
 	state.inventory_capacity = 40
 	var legacy := state.to_dictionary()
 	legacy.erase("amethyst")
-	_expect(PlayerStateRecord.from_dictionary(legacy).value.amethyst == 0, "旧存档缺字段默认零紫晶")
+	_expect(not PlayerStateRecord.from_dictionary(legacy).is_ok, "当前玩家存档缺紫晶字段必须拒绝")
 	legacy.amethyst = -1
 	_expect(not PlayerStateRecord.from_dictionary(legacy).is_ok, "拒绝负余额")
 	var mapper := PlayerStateMapper.new(catalog)
@@ -82,16 +84,6 @@ func _initialize() -> void:
 	var projected := PlayerPanelProjector.new(catalog).build_bundle(player)
 	_expect(current.apply_bundle(projected), "客户端接受六装置快照")
 	_expect(current.vehicle.loadout.at(33) != null and current.amethyst.balance() == 5000, "客户端还原实际第二槽和紫晶")
-	# 模拟旧版只有两个新式接合器占用 16/17 的存档。
-	var migrated_state := fixture._state.duplicate_record()
-	for location in [32, 33]:
-		for slot: EquipmentSlotRecord in persisted.value.equipment_slots:
-			if slot.slot_location == location:
-				var old_slot := slot.duplicate_record()
-				old_slot.slot_location = 16 if location == 32 else 17
-				migrated_state.equipment_slots.append(old_slot)
-	var migrated := mapper.to_domain(migrated_state)
-	_expect(migrated.is_ok and migrated.value.vehicle.loadout.at(33) != null, "旧新式装配自动迁移，不丢第二件")
 	_finish()
 
 

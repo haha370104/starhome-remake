@@ -30,25 +30,25 @@ func _run() -> void:
 	_check(commands.size() == count, "空名称不发送请求")
 	panel.title_edit.text = "常用火力"
 	panel.capture_button.pressed.emit()
-	_check(fixture._state.vehicle_presets.at(0).name == "常用火力" \
+	_check(String(fixture._state.vehicle_presets.at(0).get("name", "")) == "常用火力" \
 		and panel.details.text.contains("主武器") and panel.details.text.contains("推进器"), "保存实际装配并展示完整槽位")
 	_check(commands[-1].type == "capture_vehicle_preset" and not commands[-1].has("slots"), "客户端不发送装备副本")
 	panel.title_edit.text = "尚未保存的草稿"
-	panel._process(2.1)
+	panel._process(5.1)
 	_check(panel.title_edit.text == "尚未保存的草稿", "轮询不覆盖正在编辑名称")
 	panel.capture_button.pressed.emit()
-	_check(panel.confirmation.visible and fixture._state.vehicle_presets.at(0).name == "常用火力", "覆盖前确认且未提交")
+	_check(panel.confirmation.visible and String(fixture._state.vehicle_presets.at(0).get("name", "")) == "常用火力", "覆盖前确认且未提交")
 	panel.confirmation.canceled.emit()
 	panel.confirmation.hide()
 	panel._confirm_capture()
-	_check(fixture._state.vehicle_presets.at(0).name == "常用火力", "取消确认不覆盖")
+	_check(String(fixture._state.vehicle_presets.at(0).get("name", "")) == "常用火力", "取消确认不覆盖")
 	panel.title_edit.text = "主战方案"
 	panel.capture_button.pressed.emit()
 	# 自动保存推进聚合版本，方案与装配未变化，所以原确认仍有效。
 	fixture._state.revision += 1
 	panel.confirmation.hide()
 	panel.confirmation.confirmed.emit()
-	_check(fixture._state.vehicle_presets.at(0).name == "主战方案", "无关玩家版本变化不会误伤覆盖确认")
+	_check(String(fixture._state.vehicle_presets.at(0).get("name", "")) == "主战方案", "无关玩家版本变化不会误伤覆盖确认")
 	count = commands.size()
 	panel._confirm_capture()
 	_check(commands.size() == count, "已消费的确认不会重复发送")
@@ -58,13 +58,13 @@ func _run() -> void:
 	_check(panel.title_edit.text == "方案2" and panel.apply_button.disabled, "选择另一套不沿用前套名称或启用状态")
 	panel.title_edit.text = "备用推进器"
 	panel.capture_button.pressed.emit()
-	_check(fixture._state.vehicle_presets.at(1).name == "备用推进器", "保存第二套真实装配")
+	_check(String(fixture._state.vehicle_presets.at(1).get("name", "")) == "备用推进器", "保存第二套真实装配")
 	panel.choices[0].pressed.emit()
 	_check(panel.title_edit.text == "主战方案" and not panel.apply_button.disabled, "切回实际方案")
 	reject_once = true
 	panel.apply_button.pressed.emit()
 	_check(panel.apply_button.disabled and manager.panel_session.current_player.vehicle.loadout.at(3).instance_id == "inventory.spare_engine", "等待期间不预测换装")
-	panel._process(2.1)
+	panel._process(5.1)
 	_check(not panel.apply_button.disabled, "拒绝无回包时查询恢复动作")
 	panel.apply_button.pressed.emit()
 	_check(manager.panel_session.current_player.vehicle.loadout.at(3).instance_id == "equipment.engine", "按钮真实调用整套换装")
@@ -75,7 +75,7 @@ func _run() -> void:
 	panel._refresh_actions()
 	panel.apply_button.pressed.emit()
 	_check(manager.panel_session.current_player.vehicle.loadout.at(3).instance_id == "equipment.engine", "本地倒计时篡改不能绕过服务端冷却")
-	panel._process(2.1)
+	panel._process(5.1)
 	_check(panel.status.text.contains("冷却") and panel.apply_button.disabled, "重新查询纠正倒计时")
 	panel.choices[0].pressed.emit()
 	panel.capture_button.pressed.emit()
@@ -83,15 +83,15 @@ func _run() -> void:
 	fixture._state.vehicle_presets.revision += 1
 	panel.confirmation.hide()
 	panel.confirmation.confirmed.emit()
-	_check(commands[-1].preset_revision == pending.preset_revision and panel._awaiting, "确认绑定原方案版本，不偷偷改成新版本")
-	panel._process(2.1)
+	_check(int(commands[-1].get("preset_revision", -1)) == int(pending.get("preset_revision", -1)) and panel._awaiting, "确认绑定原方案版本，不偷偷改成新版本")
+	panel._process(5.1)
 	_check(not panel._awaiting and panel.title_edit.text == "主战方案", "旧确认失败后可恢复操作")
-	var mapper := fixture._service._mapper
+	var mapper: PlayerStateMapper = fixture._mapper
 	var player: Player = mapper.to_domain(fixture._state).value
 	player.unequip_vehicle_item(3, player.inventory.revision, player.vehicle.loadout.revision)
 	player.inventory.remove_for_transfer("equipment.engine")
 	fixture._state = mapper.to_record(player).value
-	panel._process(2.1)
+	_dispatch({"type": "query_vehicle_presets"})
 	_check(panel.details.text.contains("不在背包或战车中"), "装备售出或转移后明确提示缺失")
 	_check(not panel.details.bbcode_enabled and panel.title_edit.max_length == 24, "统一可读文本且标题长度受限")
 	await process_frame
@@ -117,6 +117,11 @@ func _dispatch(command: Dictionary) -> void:
 	commands.append(command.duplicate(true))
 	if reject_once and command.type == "apply_vehicle_preset":
 		reject_once = false
+		return
+	if command.type == "query_vehicle_presets":
+		var current := fixture.current_player()
+		if current.is_ok:
+			manager.panel_session.apply_bundle(fixture._service.build_bundle(current.value))
 		return
 	var result := fixture.execute(command)
 	if result.is_ok: manager.panel_session.apply_bundle(result.value)

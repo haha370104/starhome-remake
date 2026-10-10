@@ -8,14 +8,14 @@ var _revision := 0
 var _cabinets: Array[Cabinet] = [Cabinet.new()]
 
 
-## 从JSON边界恢复独立柜及完整物品记录，旧存档缺字段时提供一个空柜。
+## 从JSON边界恢复独立柜及完整物品记录。
 ## [param raw] 原始仓库字段。
 ## 返回结构有效的记录，不接受重复身份、非法版本或未开通柜中的物品。
 static func from_dictionary(raw: Variant) -> DomainResult:
-	if not raw is Dictionary:
+	if not raw is Dictionary or raw.size() != 3 or not raw.has("version") \
+		or not raw.has("revision") or not raw.has("cabinets"):
 		return DomainResult.failure(&"warehouse.state", "仓库存档必须是对象")
 	var result := PersonalWarehouseRecord.new()
-	if raw.is_empty(): return DomainResult.ok(result)
 	var version: Variant = raw.get("revision")
 	if raw.get("version") != 1 or not (version is int or version is float) or not is_finite(float(version)) or version < 0 or float(version) != floorf(float(version)):
 		return DomainResult.failure(&"warehouse.state", "仓库存档版本无效")

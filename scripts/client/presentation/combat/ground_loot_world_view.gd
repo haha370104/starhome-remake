@@ -15,39 +15,23 @@ var _hover_material: ShaderMaterial
 var _sprite: Sprite2D
 var _tooltip: Label
 var _local_hit_rect := Rect2()
+var _presentation: Dictionary
 
 
 ## 使用权威掉落快照与业务表现定义创建地面物品视图。
 ## [param ground_item] 与背包共用类型的领域物品实例。
 ## [param snapshot] 含 loot_id、物品定义、数量与世界坐标的权威快照。
-## 返回配置是否成功；未知纹理或非法尺寸返回对应 Error。
+## 空物品返回错误；贴图异步加载，缺少素材时显示可拾取的名称。
 ## 设计：节点脚点等于权威世界坐标，纹理严格按原客户端 ALE 原点以 1:1 像素绘制。
 func configure(ground_item: GameItem, snapshot: Dictionary) -> Error:
 	if ground_item == null:
 		return ERR_INVALID_PARAMETER
 	item = ground_item
-	var presentation := item.presentation_for("world")
-	var texture_path := String(presentation.get("texture", ""))
-	var native_size_value: Variant = presentation.get("native_size", [])
-	var origin_value: Variant = presentation.get("origin", [])
-	if (
-		texture_path.is_empty()
-		or not ResourceLoader.exists(texture_path)
-		or not native_size_value is Array
-		or (native_size_value as Array).size() != 2
-		or not origin_value is Array
-		or (origin_value as Array).size() != 2
-	):
-		return ERR_INVALID_DATA
-	var native_size := Vector2(float(native_size_value[0]), float(native_size_value[1]))
-	var origin := Vector2(float(origin_value[0]), float(origin_value[1]))
-	if native_size.x <= 0.0 or native_size.y <= 0.0:
-		return ERR_INVALID_DATA
+	_presentation = item.presentation_for("world")
+	if _presentation.is_empty(): _presentation = item.presentation_for("inventory")
 	_sprite = Sprite2D.new()
 	_sprite.name = "WorldIcon"
-	_sprite.texture = load(texture_path)
 	_sprite.centered = false
-	_sprite.position = origin
 	_hover_material = ShaderMaterial.new()
 	_hover_material.shader = HOVER_GLOW_SHADER
 	_hover_material.set_shader_parameter("glow_color", HOVER_GLOW_COLOR)
@@ -55,12 +39,9 @@ func configure(ground_item: GameItem, snapshot: Dictionary) -> Error:
 	_hover_material.set_shader_parameter("hover_amount", 0.0)
 	_sprite.material = _hover_material
 	add_child(_sprite)
-	_local_hit_rect = Rect2(origin, native_size)
 	_tooltip = Label.new()
 	_tooltip.name = "HoverTooltip"
-	_tooltip.position = Vector2(origin.x + native_size.x + 6.0, origin.y - 2.0)
 	_tooltip.z_index = 100
-	_tooltip.visible = false
 	_tooltip.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_tooltip.add_theme_font_size_override("font_size", 13)
 	_tooltip.add_theme_color_override("font_color", Color(0.72, 1.0, 0.58))
@@ -69,6 +50,7 @@ func configure(ground_item: GameItem, snapshot: Dictionary) -> Error:
 	_tooltip.add_theme_constant_override("shadow_offset_y", 1)
 	add_child(_tooltip)
 	apply_snapshot(item, snapshot)
+	if not _presentation.is_empty(): SpriteResources.request(_presentation, _apply_texture.bind(loot_id))
 	return OK
 
 
@@ -85,6 +67,9 @@ func apply_snapshot(ground_item: GameItem, snapshot: Dictionary) -> void:
 		position = Vector2(float(point_value[0]), float(point_value[1]))
 	if _tooltip != null:
 		_tooltip.text = "%s × %d" % [item.display_name, quantity]
+		if _sprite.texture == null:
+			_tooltip.position = -_tooltip.get_minimum_size() * 0.5
+			_local_hit_rect = Rect2(_tooltip.position, _tooltip.get_minimum_size())
 
 
 ## 判断一个世界坐标是否落在原始 ALE 帧的真实矩形内。
@@ -104,7 +89,7 @@ func contains_pickup_point(world_position: Vector2) -> bool:
 	if _local_hit_rect.grow(HOVER_GLOW_RADIUS).has_point(local_point):
 		return true
 	return _tooltip != null and _tooltip.visible \
-		and _tooltip.get_rect().grow(HOVER_GLOW_RADIUS).has_point(local_point)
+		and Rect2(_tooltip.position, _tooltip.size).grow(HOVER_GLOW_RADIUS).has_point(local_point)
 
 
 ## 切换原客户端风格的地面物品悬浮反馈。
@@ -113,7 +98,7 @@ func set_hovered(hovered: bool) -> void:
 	if _hover_material != null:
 		_hover_material.set_shader_parameter("hover_amount", 1.0 if hovered else 0.0)
 	if _tooltip != null:
-		_tooltip.visible = hovered
+		_tooltip.visible = hovered or _sprite.texture == null
 
 
 ## 查询原版绿色晕染材质是否已启用，供表现回归测试使用。
@@ -136,3 +121,29 @@ func hover_glow_radius() -> float:
 ## 返回以权威脚点为原点的本地矩形。
 func local_hit_rect() -> Rect2:
 	return _local_hit_rect
+
+
+## 只给仍在当前世界的同一掉落实例绑定异步纹理。
+## [param visual] 已就绪的图标。[param requested_id] 请求时的实例身份。
+func _apply_texture(visual: Dictionary, requested_id: String) -> void:
+	if not is_inside_tree() or is_queued_for_deletion() or requested_id != loot_id: return
+	_sprite.texture = visual.get("texture") as Texture2D
+	if _sprite.texture == null:
+		var inventory := item.presentation_for("inventory")
+		if not inventory.is_empty() and inventory != _presentation:
+			_presentation = inventory
+			SpriteResources.request(_presentation, _apply_texture.bind(loot_id))
+		return
+	_tooltip.visible = is_hover_glow_enabled()
+	var native_size := _sprite.texture.get_size()
+	if _sprite.texture is AtlasTexture:
+		var atlas := _sprite.texture as AtlasTexture
+		var page_size := atlas.atlas.get_size()
+		_hover_material.set_shader_parameter("source_region", Vector4(atlas.region.position.x / page_size.x,
+			atlas.region.position.y / page_size.y, atlas.region.size.x / page_size.x, atlas.region.size.y / page_size.y))
+	var origin: Vector2 = visual.origin if _presentation.has("ale_reference") else -native_size * 0.5
+	if _presentation.has("origin"):
+		origin = Vector2(_presentation.origin[0], _presentation.origin[1])
+	_sprite.position = origin
+	_local_hit_rect = Rect2(origin, native_size)
+	_tooltip.position = Vector2(origin.x + native_size.x + 6.0, origin.y - 2.0)

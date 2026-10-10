@@ -70,14 +70,14 @@ func _test_formal_starter_definitions() -> void:
 	_expect(int(assembly["self_repair_base_strength"]) == 5, "starter chassis should own five base self-repair power")
 	_expect(int(assembly["self_repair_bonus_strength"]) == 0, "starter loadout should have no extra self-repair modifier")
 	_expect(int(assembly["self_repair_required_skill_level"]) == 10, "starter chassis should require repair level ten")
-	_expect(is_equal_approx(float(assembly["self_repair_energy_cost"]), 5.0), "starter chassis should consume five energy per repair cycle")
+	_expect(is_equal_approx(float(assembly["working_energy_per_repair"]), 5.0), "starter chassis should consume five energy per repair cycle")
 	_expect(assembly["unknown_fields"].has("beginner_engine.server_energy_drain_interval_seconds"), "unknown engine drain cadence should remain explicit")
 	var weapon_result: Variant = catalog.starter_energy_cannon(20)
 	_expect(weapon_result.is_ok, "formal starter cannon should normalize")
 	var weapon: Dictionary = weapon_result.value
 	_expect(String(weapon["ability_id"]) == "energy_cannon.primary", "starter cannon should use stable ability ID")
 	_expect(int(weapon["minimum_damage"]) == 7 and int(weapon["maximum_damage"]) == 7, "confirmed base attack should be the explicit direct model")
-	_expect(is_equal_approx(float(weapon["working_energy_cost"]), 10.0), "confirmed shot cost should consume working energy")
+	_expect(is_equal_approx(float(weapon["working_energy_per_shot"]), 10.0), "confirmed shot cost should consume working energy")
 	_expect(is_equal_approx(float(weapon["range"]), 250.0), "current attack range should remain 250")
 	_expect(is_equal_approx(float(weapon["upgrade_range_limit"]), 400.0), "400 should remain only the equipment-growth limit")
 	_expect(int(weapon["cooldown_ticks"]) == 16, "0.8 seconds at 20 Hz should map to 16 ticks")
@@ -91,7 +91,7 @@ func _test_formal_starter_definitions() -> void:
 	_expect(float(rocket["area_radius"]) == 36.0, "rocket area radius should be the provisional two vehicle hitbox radii")
 	var missile: Dictionary = secondary["missile.primary"]
 	_expect(int(missile["minimum_damage"]) == 17 and int(missile["cooldown_ticks"]) == 40, "Glory starter missile should preserve attack and two-second cadence")
-	_expect(float(missile["projectile_speed"]) == 600.0 and float(missile["range"]) == 400.0, "Glory missile should preserve client flight speed and lock range")
+	_expect(float(missile["projectile_speed"]) == 250.0 and float(missile["range"]) == 400.0, "Glory missile should use the converted client flight speed and lock range")
 
 
 ## 验证未知掉落和空掉落表仍有区别，且复制后的条目不反向修改定义。
@@ -130,7 +130,7 @@ func _test_d04_lifecycle_definitions() -> void:
 		_expect(String(definition["map_instance_id"]) == MAP_INSTANCE_ID, "each lifecycle should bind the requested map instance")
 		_expect(not Vector2(definition["position"]).is_finite(), "catalog should delegate spawn coordinates to map navigation")
 		_expect(definition["spawn_distribution"] == "full_walkable_map", "each monster should request full-map random placement")
-		_expect(not definition.has("defense") and not definition.has("move_speed"), "runtime definition must not invent defense or speed")
+		_expect(definition.has("defense") and definition.has("runtime_move_speed"), "runtime monster definition must expose explicit combat movement fields")
 		_expect(definition["unknown_fields"].has("defense") and definition["unknown_fields"].has("move_speed"), "unknown monster stats should remain explicit")
 		_expect(definition["projectile_hitbox"] is Dictionary, "each runtime monster should expose authoritative projectile geometry")
 		_expect(is_equal_approx(float(definition["wander_interval_seconds"]), 5.0), "each D04 monster should use the configured five-second idle interval")
@@ -158,14 +158,14 @@ func _test_d04_lifecycle_definitions() -> void:
 	for species_id: String in ["om_adult", "om_larva", "photosensitive_orb", "toxic_gel"]:
 		_expect(int(population_by_species.get(species_id, 0)) == 50, "equal weights should start with fifty %s" % species_id)
 	var replenish: Variant = catalog.monster_replenishment_for_map(
-		"d04_field_zone", MAP_INSTANCE_ID, {"om_adult": 49, "om_larva": 50, "photosensitive_orb": 50, "toxic_gel": 50}, 200, 1
+		"glory_nft_bl_d04", MAP_INSTANCE_ID, {"om_adult": 49, "om_larva": 50, "photosensitive_orb": 50, "toxic_gel": 50}, 200, 1
 	)
 	_expect(replenish.is_ok and String(replenish.value[0]["species_id"]) == "om_adult", "replenishment should fill the largest weighted deficit first")
-	_expect(catalog.monster_replenishment_count("d04_field_zone", 99) == 40, "below fifty percent should add twenty percent")
-	_expect(catalog.monster_replenishment_count("d04_field_zone", 100) == 20, "exactly fifty percent should use the ten-percent tier")
-	_expect(catalog.monster_replenishment_count("d04_field_zone", 159) == 20, "below eighty percent should add ten percent")
-	_expect(catalog.monster_replenishment_count("d04_field_zone", 160) == 10, "exactly eighty percent should use the five-percent tier")
-	_expect(catalog.monster_replenishment_count("d04_field_zone", 198) == 2, "replenishment must not exceed the map cap")
+	_expect(catalog.monster_replenishment_count("glory_nft_bl_d04", 99) == 40, "below fifty percent should add twenty percent")
+	_expect(catalog.monster_replenishment_count("glory_nft_bl_d04", 100) == 20, "exactly fifty percent should use the ten-percent tier")
+	_expect(catalog.monster_replenishment_count("glory_nft_bl_d04", 159) == 20, "below eighty percent should add ten percent")
+	_expect(catalog.monster_replenishment_count("glory_nft_bl_d04", 160) == 10, "exactly eighty percent should use the five-percent tier")
+	_expect(catalog.monster_replenishment_count("glory_nft_bl_d04", 198) == 2, "replenishment must not exceed the map cap")
 	var lifecycle: MonsterLifecycle = MonsterLifecycleScript.new()
 	var admitted_definition: Dictionary = lifecycles[0].duplicate(true)
 	admitted_definition["position"] = Vector2(240, 240)

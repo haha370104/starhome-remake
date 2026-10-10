@@ -9,8 +9,10 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
+from recovery.cross_release_paths import CACHE, CROSS_RELEASE_ROOT, REPORTS
+
 ROOT=Path(__file__).resolve().parents[1]
-DEST=ROOT.parent/'cross_release_asset_review'
+DEST=CROSS_RELEASE_ROOT
 BASES={'free':'http://update.ftxjjy.com/gameser/fr_www/','jz':'http://update.ftxjjy.com/gameser/jznp_www/'}
 MAX_BYTES=64*1024*1024
 
@@ -32,7 +34,7 @@ def probe(task):
             result['status']='invalid_animation_header';return result
         if not key.endswith('.ale') and data.lstrip()[:1]==b'<':
             result['status']='html_response_not_asset';return result
-        target=DEST/'remote_cache'/release/'raw'/key
+        target=CACHE/release/'raw'/key
         target.parent.mkdir(parents=True,exist_ok=True);target.write_bytes(data)
         result.update(status='downloaded',local_path=str(target))
     except urllib.error.HTTPError as error:
@@ -44,8 +46,8 @@ def probe(task):
 
 def main():
     """Persist all successes and failures; repeat runs never repeat an already-recorded URL."""
-    report=json.loads((DEST/'audit.json').read_text('utf-8'))
-    path=DEST/'remote_checks.json'
+    report=json.loads((REPORTS/'audit.json').read_text('utf-8'))
+    path=REPORTS/'remote_checks.json'
     checks=json.loads(path.read_text('utf-8')) if path.exists() else {}
     tasks=[]
     for row in report['records']:
@@ -61,12 +63,14 @@ def main():
             if index%20==0 or result['status']=='downloaded':print(index,result['status'],result['logical_path'],flush=True)
     from collections import Counter
     print('REMOTE_RESULTS',dict(Counter(x['status'] for x in checks.values())),flush=True)
-    spec=importlib.util.spec_from_file_location('audit_ale_decoder',ROOT.parent/'fch_decrypt_tool/ale_sprite.py')
+    spec=importlib.util.spec_from_file_location(
+        'audit_ale_decoder', ROOT / 'tools' / 'recovery' / 'sprites' / 'ale_sprite.py'
+    )
     decoder=importlib.util.module_from_spec(spec);sys.modules[spec.name]=decoder;spec.loader.exec_module(decoder)
     for row in checks.values():
         if row['status'] not in ['downloaded','decoded'] or not row['logical_path'].endswith('.ale'):continue
         try:
-            target=DEST/'remote_cache'/row['release']/'ale_sprites'/row['logical_path'].removesuffix('.ale')
+            target=CACHE/row['release']/'ale_sprites'/row['logical_path'].removesuffix('.ale')
             if not (target/'frames.json').exists():decoder.build_sheets(decoder.AleFile(Path(row['local_path'])),target,8192)
             row['status']='decoded'
         except Exception as error:row.update(status='decode_error',error=str(error))

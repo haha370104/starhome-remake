@@ -117,7 +117,6 @@
   客户端 `CurrentPlayer` 的完整重建。
 - `authoritative_autosave_test.gd`：真实 `AuthoritativeServer` 面板命令立即提交，并在新服务器
   实例中恢复像素布局。
-- `player_panels_runtime_test.gd`：游戏窗口原始尺寸、显隐、当前人物投影、裸体/服装坐标、非模态技能窗口、
-  战车三层坐标、右侧属性文本、权威物品/槽位投影及视口约束。
+- `reusable_player_ui_test.gd`：游戏窗口的可复用布局、显隐和权威物品投影。
 
 完整工程门禁通过 `tools/run_project_checks.ps1` 统一运行上述测试、旧回归、真实 ENet 和素材审计。

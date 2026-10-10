@@ -1,6 +1,6 @@
 extends SceneTree
 
-const FRAGMENT := "item:material:9713f13ede8d"
+const FRAGMENT := "joint_upgrade_fragment"
 const CRAWLERS := ["glory_monster_046", "glory_monster_114"]
 var failures: Array[String] = []
 var checks := 0
@@ -57,8 +57,8 @@ func _run() -> void:
 		_expect(absf(mean - 1.5) < 0.03, "真实随机结算均值接近1.5")
 		print("CRAWLER_DROP %s histogram=%s mean=%.4f" % [id, histogram, mean])
 	var gel: Array = catalog.monster_definition("glory_monster_009").drops
-	_expect(gel.any(func(row: Dictionary) -> bool: return row.item_definition_id == "item:material:472d2fb951cb"), "恶性毒胶实际掉中级类胶")
-	_expect(gel.any(func(row: Dictionary) -> bool: return row.item_definition_id == "item:material:fa5a837875bb"), "恶性毒胶实际掉高级类胶")
+	_expect(gel.any(func(row: Dictionary) -> bool: return row.item_definition_id == "middle_grade_gel"), "恶性毒胶实际掉中级类胶")
+	_expect(gel.any(func(row: Dictionary) -> bool: return row.item_definition_id == "high_grade_gel"), "恶性毒胶实际掉高级类胶")
 	_expect(catalog.monster_definition("om_adult").drops.size() == 2, "新手怪物的重复原始记录应合并为两种候选")
 	var spawned_crawler := false
 	for map_id: String in catalog.monster_encounter_map_ids():
@@ -75,7 +75,7 @@ func _run() -> void:
 	_expect(spawned_crawler, "普通爬虫在当前启用地图有实际种群")
 	var daily := DailyActivityCatalog.new()
 	_expect(daily.initialize(items).is_ok, "任务目录认识新增材料来源")
-	_expect(daily.tasks.values().any(func(task: MercenaryDefinition) -> bool: return task.target_id == "item:material:472d2fb951cb"), "中级类胶收集委托进入可完成目录")
+	_expect(daily.tasks.values().any(func(task: MercenaryDefinition) -> bool: return task.target_id == "middle_grade_gel"), "中级类胶收集委托进入可完成目录")
 	print("AVAILABLE_DAILY_TASKS %d" % daily.tasks.size())
 	await _test_mining()
 	_finish()
@@ -109,7 +109,7 @@ func _test_drop_views(items: ItemCatalog, catalog: CombatDefinitionCatalog) -> v
 	var module := AuthoritativeCombatModule.new()
 	module.configure(20, 20260916)
 	var found := {}
-	var generated: Array = catalog.monster_lifecycles_for_map("buli_d03_field_zone", "loot.d03").value
+	var generated: Array = catalog.monster_lifecycles_for_map("glory_nft_bl_d03", "loot.d03").value
 	for definition: Dictionary in generated:
 		if definition.species_id not in ["glory_monster_005", "glory_monster_006"] or found.has(definition.species_id):
 			continue
@@ -221,7 +221,6 @@ func _test_mining() -> void:
 		var label := Label.new()
 		label.text = "%s · %d级" % [mineral.display_name, rule[0]]
 		label.position = Vector2(50 + (index % 4) * 200, 180 + floori(index / 4.0) * 170)
-		label.add_theme_font_override("font", preload("res://assets/ui/fonts/legacy_panel_font.tres"))
 		world.add_child(label)
 	display.apply_snapshot({"mine_sources": snapshots})
 	_expect(display.active_view_count() == expected.size(), "所有新增矿源可见，不能出现隐形矿点")

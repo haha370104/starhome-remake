@@ -4,7 +4,7 @@ extends RefCounted
 class Profile extends RefCounted:
 	var definition_id := ""
 	var label := ""
-	var working_energy_cost := 0.0
+	var working_energy_per_trigger := 0.0
 	var cooldown_seconds := 0.0
 	var chance := 0.0
 	var duration_seconds := 0.0
@@ -45,7 +45,7 @@ class Profile extends RefCounted:
 			if defense_flat_reduction > 0: lines.append("蚀甲：防御 -%d" % defense_flat_reduction)
 			if defense_percent_reduction > 0: lines.append("腐蚀：防御 -%.0f%%" % (defense_percent_reduction * 100))
 			if attack_percent_reduction > 0: lines.append("磁化：攻击 -%.0f%%" % (attack_percent_reduction * 100))
-			lines.append("触发消耗 1 发弹药、%s 工作能量；冷却 %s 秒" % [str(working_energy_cost), str(cooldown_seconds)])
+			lines.append("触发消耗 1 发弹药、%s 工作能量；冷却 %s 秒" % [str(working_energy_per_trigger), str(cooldown_seconds)])
 		if energy_attack_percent_reduction > 0: lines.append("能量炮压制 %.0f%%：当前怪物武器类型未核实，暂不生效" % (energy_attack_percent_reduction * 100))
 		lines.append("发生器最多装备两件；同类临时效果取最强值")
 		return "\n".join(lines)
@@ -67,7 +67,7 @@ static func from_dictionary(raw: Dictionary) -> DomainResult:
 		profile.label = String(row.get("label", ""))
 		if profile.definition_id.is_empty() or profile.label.is_empty() or rules.profiles.has(profile.definition_id):
 			return DomainResult.failure(&"generator.rules", "发生器身份无效或重复")
-		for field: String in ["working_energy_cost", "cooldown_seconds", "chance", "duration_seconds", "heat_damage", "defense_flat_reduction", "defense_percent_reduction", "attack_percent_reduction", "energy_attack_percent_reduction", "max_health", "defense", "energy_cannon_attack"]:
+		for field: String in ["working_energy_per_trigger", "cooldown_seconds", "chance", "duration_seconds", "heat_damage", "defense_flat_reduction", "defense_percent_reduction", "attack_percent_reduction", "energy_attack_percent_reduction", "max_health", "defense", "energy_cannon_attack"]:
 			var value: Variant = row.get(field)
 			if not (value is int or value is float) or not is_finite(float(value)) or float(value) < 0:
 				return DomainResult.failure(&"generator.rules", "发生器数值无效：" + field)

@@ -16,12 +16,13 @@ func _initialize() -> void:
 	_expect(not restored.record(AchievementEvent.new(AchievementEvent.Kind.MONSTER_KILLED, "unknown", 10, "x")), "未知目标不累计")
 	_expect(not restored.record(AchievementEvent.new(AchievementEvent.Kind.MINERAL_COLLECTED, "iron_ore", -1, "bad")), "负数无效")
 	_expect(restored.record(AchievementEvent.new(AchievementEvent.Kind.MINERAL_COLLECTED, "iron_ore", 10, "ore.1")), "采矿独立累计")
-	_expect(restored.total_points() == 10 and restored.snapshot()["title_id"] == "rookie", "精确门槛自动晋升")
-	_expect(restored.bonuses().energy_cannon_attack == 1 and restored.bonuses().max_health == 10, "称号增益来自配置")
+	_expect(restored.total_points() == 10 and restored.snapshot()["title_id"] == "none", "未达到50点时保持无称号")
+	_expect(restored.bonuses().energy_cannon_attack == 0 and restored.bonuses().max_health == 0, "无称号时不产生增益")
 	restored.record(AchievementEvent.new(AchievementEvent.Kind.MONSTER_KILLED, "toxic_gel", 1000, "death.batch.2"))
 	restored.record(AchievementEvent.new(AchievementEvent.Kind.MINERAL_COLLECTED, "iron_ore", 1000, "ore.2"))
 	_expect(restored.total_points() == 100, "批量事实跨阶结算且进度封顶")
-	_expect(restored.bonuses().energy_cannon_attack == 3, "只生效最高称号，不叠加低阶")
+	_expect(restored.snapshot()["title_id"] == "pioneer", "达到100点时晋升对应称号")
+	_expect(restored.bonuses().energy_cannon_attack == 1, "只生效最高称号，不叠加低阶")
 	_expect(not restored.record(AchievementEvent.new(AchievementEvent.Kind.MONSTER_KILLED, "toxic_gel", 1, "after.cap")), "满进度不扩充收据")
 	var raw := restored.to_dictionary()
 	raw["points"] = 999999
@@ -33,6 +34,7 @@ func _initialize() -> void:
 	var config: Dictionary = JsonConfigLoader.load_dictionary("res://data/gameplay/achievements_v1.json").value
 	config["milestones"]["kill"][0]["points"] = -1
 	_expect(not AchievementCatalog.new().initialize(config).is_ok, "无效奖励配置被拒绝")
+	_test_title_ladder()
 	_test_combat(restored)
 	for failure in failures:
 		push_error(failure)
@@ -45,7 +47,7 @@ func _initialize() -> void:
 func _test_combat(achievements: PlayerAchievements) -> void:
 	var fixture := PlayerPanelServiceFixture.new()
 	_expect(fixture.initialize().is_ok, "玩家夹具初始化")
-	var player: Player = fixture._service.restore_player(fixture._state).value
+	var player: Player = fixture.current_player().value
 	var catalog: CombatDefinitionCatalog = CombatDefinitionCatalog.load_default().value
 	var movement := {"base_speed_multiplier": 1500.0, "base_speed_cap": 240.0}
 	var original: Dictionary = catalog.vehicle_combat_loadout(player, 20, movement).value
@@ -54,21 +56,27 @@ func _test_combat(achievements: PlayerAchievements) -> void:
 	player.vehicle.health = 40
 	player.vehicle.reconcile_loadout_state(false)
 	var modified: Dictionary = catalog.vehicle_combat_loadout(player, 20, movement).value
-	_expect(modified.assembly.max_health == original.assembly.max_health + 30, "真实战斗生命上限增加")
+	_expect(modified.assembly.max_health == original.assembly.max_health + 10, "真实战斗生命上限增加")
 	_expect(player.vehicle.health == 40, "晋升不恢复当前生命")
 	for ability: String in original.weapons:
-		_expect(modified.weapons[ability].minimum_damage == original.weapons[ability].minimum_damage + 3, "实际武器攻击增加 " + ability)
-	_expect(modified.weapons["energy_cannon.primary"].range == original.weapons["energy_cannon.primary"].range + 10, "实际能量炮射程增加")
-	_expect(modified.assembly.self_repair_bonus_strength == original.assembly.self_repair_bonus_strength + 2, "实际自维修增益")
+		var attack_bonus := achievements.bonuses().attack_for(String(original.weapons[ability].skill_id))
+		_expect(modified.weapons[ability].minimum_damage == original.weapons[ability].minimum_damage + attack_bonus,
+			"实际武器攻击按称号分类增加 " + ability)
+	_expect(modified.weapons["energy_cannon.primary"].range == original.weapons["energy_cannon.primary"].range,
+		"当前称号未授予能量炮射程")
+	_expect(modified.assembly.self_repair_bonus_strength == original.assembly.self_repair_bonus_strength,
+		"当前称号未授予自维修增益")
 	var items := ItemCatalog.new()
 	items.initialize()
 	var mapper := PlayerStateMapper.new(items)
 	var record: PlayerStateRecord = mapper.to_record(player).value
 	var round_trip: Player = mapper.to_domain(record).value
-	_expect(round_trip.vehicle.max_health == 100 and round_trip.vehicle.health == 40, "存档恢复不重复加成或缩放生命")
+	_expect(round_trip.vehicle.max_health == modified.assembly.max_health and round_trip.vehicle.health == 40,
+		"存档恢复不重复加成或缩放生命")
 	var client := CurrentPlayer.new(items)
-	_expect(client.apply_bundle(fixture._service.build_bundle(record)), "客户端接收完整投影")
-	_expect(client.vehicle.max_health == 100 and client.achievements.total_points() == 100, "客户端面板与服务器称号一致")
+	_expect(client.apply_bundle(fixture._service.build_bundle(round_trip)), "客户端接收完整投影")
+	_expect(client.vehicle.max_health == modified.assembly.max_health and client.achievements.total_points() == 100,
+		"客户端面板与服务器称号一致")
 	var combat := AuthoritativeCombatModule.new()
 	combat.configure(20, 1)
 	combat.register_vehicle("player", "field", Vector2.ZERO, original.assembly, original.weapons)
@@ -82,11 +90,39 @@ func _test_combat(achievements: PlayerAchievements) -> void:
 	actor.self_repair.next_cycle_tick = 999
 	_expect(combat.refresh_achievement_loadout("player", modified).is_ok, "热更新成功")
 	_expect(actor.cooldown_ready_ticks["energy_cannon.primary"] == 123 and actor.last_command_sequence == 77, "升级保留冷却和防重放序号")
-	_expect(state.health == 40 and state.max_health == 100 and state.working_energy == 25, "热更新不补血或补能量")
+	_expect(state.health == 40 and state.max_health == modified.assembly.max_health and state.working_energy == 25,
+		"热更新不补血或补能量")
 	_expect(actor.self_repair.active and actor.self_repair.next_cycle_tick == 999, "热更新保留维修时序")
 	_expect(actor.self_repair.health_per_cycle == modified.assembly.self_repair_base_strength + modified.assembly.self_repair_bonus_strength, "进行中的维修使用新加成")
 	combat.advance_ticks(999, false)
 	_expect(state.health > 40, "权威维修周期实际恢复生命")
+
+
+## 核对称号配置的全部门槛和独立增益值。
+func _test_title_ladder() -> void:
+	var expected := [
+		{"id": "none", "points": 0, "bonuses": {"energy_cannon_attack": 0, "energy_cannon_range": 0, "rocket_attack": 0, "missile_attack": 0, "max_health": 0, "self_repair": 0}},
+		{"id": "rookie", "points": 50, "bonuses": {"energy_cannon_attack": 0, "energy_cannon_range": 0, "rocket_attack": 0, "missile_attack": 0, "max_health": 10, "self_repair": 0}},
+		{"id": "pioneer", "points": 100, "bonuses": {"energy_cannon_attack": 1, "energy_cannon_range": 0, "rocket_attack": 0, "missile_attack": 0, "max_health": 10, "self_repair": 0}},
+		{"id": "elite", "points": 200, "bonuses": {"energy_cannon_attack": 1, "energy_cannon_range": 0, "rocket_attack": 1, "missile_attack": 1, "max_health": 10, "self_repair": 0}},
+		{"id": "commander", "points": 500, "bonuses": {"energy_cannon_attack": 2, "energy_cannon_range": 0, "rocket_attack": 1, "missile_attack": 1, "max_health": 20, "self_repair": 0}},
+		{"id": "legend", "points": 1000, "bonuses": {"energy_cannon_attack": 2, "energy_cannon_range": 5, "rocket_attack": 1, "missile_attack": 1, "max_health": 20, "self_repair": 0}},
+		{"id": "guardian", "points": 2000, "bonuses": {"energy_cannon_attack": 2, "energy_cannon_range": 5, "rocket_attack": 1, "missile_attack": 1, "max_health": 20, "self_repair": 1}},
+		{"id": "marshal", "points": 3000, "bonuses": {"energy_cannon_attack": 2, "energy_cannon_range": 5, "rocket_attack": 2, "missile_attack": 2, "max_health": 50, "self_repair": 1}},
+		{"id": "overlord", "points": 5000, "bonuses": {"energy_cannon_attack": 5, "energy_cannon_range": 5, "rocket_attack": 2, "missile_attack": 2, "max_health": 50, "self_repair": 2}},
+		{"id": "mythic", "points": 10000, "bonuses": {"energy_cannon_attack": 5, "energy_cannon_range": 10, "rocket_attack": 5, "missile_attack": 5, "max_health": 50, "self_repair": 2}},
+	]
+	var catalog := AchievementCatalog.shared()
+	_expect(catalog.titles.size() == expected.size(), "称号阶梯应包含十档")
+	for index: int in expected.size():
+		var row: Dictionary = expected[index]
+		var rank: AchievementCatalog.Title = catalog.title_for(int(row.points))
+		_expect(rank != null and rank.id == row.id, "称号门槛选择正确：%s" % row.id)
+		_expect(rank.bonuses.to_dictionary() == row.bonuses, "称号增益符合设计：%s" % row.id)
+		if index > 0:
+			var previous: Dictionary = expected[index - 1]
+			_expect(catalog.title_for(int(row.points) - 1).id == previous.id,
+				"称号在门槛前不提前晋升：%s" % row.id)
 
 
 ## 累计领域断言并记录失败原因。

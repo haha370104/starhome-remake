@@ -528,7 +528,7 @@ Godot 控制台程序位于 `C:/Users/tomato/Downloads/Godot_v4.7.2-stable_win64
 | 商店与任务 | 权威购买/出售；四套材料循环任务、五类每日战斗训练、任务日志 | 所有原版任务已还原、经济流水/跨进程重试幂等已完善 |
 | 生产 | 裁缝/烹饪；提炼、合金、主装备、附属装备、维护包制造 | 346 条历史配方均可执行、强化/升级/拆解全部接线 |
 | 保存 | 服务端三秒自动保存和事务提交；开发文件仓储可重启恢复角色 | 已接入真实 SQLite、世界全部状态落库、账号身份稳定 |
-| 社交与商城 | 名单查询；好友/系统功能占位；商城分类、搜索空态等 UI | 商城商品/支付、好友交易和完整社交系统 |
+| 社交与商城 | 服务端权威组队、聊天/私聊、好友/仇人、原子玩家交易、信件/留言及窗口已接入 | 两个独立 ENet 客户端进程已验证队伍邀请/接受、队伍/私聊、好友状态与重连、离线好友移除、信件/留言、物品金币交易及重载持久化；未做渲染窗口手工验收，原版掉落分配规则仍缺本地证据；商城商品/支付仍未接 |
 
 来源目录数量、可加载数量、实际启用数量、实测通过数量必须分别报告。
 具体内容与缺失口径见 [runtime_content](runtime_content.md)，生产边界见
@@ -588,20 +588,25 @@ Godot 控制台程序位于 `C:/Users/tomato/Downloads/Godot_v4.7.2-stable_win64
 
 | 路径 | 用途 / 管理边界 |
 | --- | --- |
-| `../starhome_lz_ry_full/raw/` | 荣耀下载原件，保留原路径便于审计，不直接当新工程业务目录 |
-| `../starhome_lz_ry_full_parsed/` | ALE 帧图、FTC 解包、catalogs、catalogs_utf8、官网惰性缓存 |
+| `../starhome_lz_ry_full/raw/` | 工程外荣耀原档，本地保留，不属于主仓库；索引在 `data/source_evidence/glory/` |
+| `assets/glory/sprites/` | 已核对的 ALE 精灵物化结果，运行与日常开发读取此处 |
+| `data/source_evidence/glory/` | 原档索引、校验信息及少量审计所需的解包证据 |
 | `../starhome_lz_ry_fcc_source/` | 荣耀 UTF-8 可读 FCC 源码树；不是原服完整源码 |
 | `../starhome_lz_fr_fcc_source/` | 获准 HUD/窗口的免费版阅读来源 |
-| `../starhome_lz_ry_maps_parsed/` | 地图、跳转图、缺失来源清单 |
+| `data/source_evidence/glory/map_recovery/` | 地图元数据、导航、跳转图及缺失来源清单；大图按需从工程外原档重建 |
 | `../starhome_lz_ry_maps_missing_review/index.html` | 缺失场景素材人工复核入口；49 图/298 摆放为当前保存的审计快照 |
-| `../../work/`、`../fch_decrypt_tool/` | 工作区解密/下载/转码工具，不随 Git 克隆自然获得 |
-| `assets/content_packs/` | Git LFS 运行包；不是重放逆向所需的全部原件 |
+| `tools/recovery/` | 版本化的解密、索引和转码工具；生成的二进制与大型中间产物不入 Git |
+| `assets/` | 当前开发阶段唯一运行时资源树；由物化清单记录原 ZIP 的校验信息 |
 | `.godot/` | 导入缓存、测试日志和临时验证产物，不作为知识唯一来源 |
 
 本机默认角色保存为：
 `C:/Users/tomato/AppData/Roaming/Godot/app_userdata/starhome_remake/server/player_states.json`。
 日志在同目录的 `logs/` 和 `diagnostics/`。它们不在代码仓库，也不是可随意重置的测试文件。
 同机器多个默认离线游戏/独立服可能写同一开发存档；测试必须注入独立配置或仓储。
+
+2026-09-27 已将运行资源统一物化到 `assets/`，不再挂载 ZIP；迁移校验见
+`data/content/content_materialization_manifest_v1.json`。大厅启动与城市切图曾通过 headless 验证；
+已知未完成事项以 `TODO.md` 和当前运行结果为准，不把当时的测试结果当作本次验收。
 
 ## 8. 接下来的工作方式
 

@@ -50,7 +50,7 @@ func _ready() -> void:
 	physical_threshold = _slider(Vector2(398, 491), 50)
 	status = make_label("未启用", Rect2(24, 530, 632, 28))
 	status.clip_text = true
-	var help := make_label("食品效果到期也会补给；同类冷却、锁定及能量包批量规则照常生效。\n设置自动保存；死亡、切图或重登后需手动启用。", Rect2(24, 568, 632, 42))
+	var help := make_label("食品效果到期也会补给；同类冷却、锁定及能量包批量规则照常生效。\n设置自动保存，切图和重登后保持启用；战车被击毁后需手动启用。", Rect2(24, 568, 632, 42))
 	help.add_theme_font_size_override("font_size", 14)
 	make_button("PVE 击毁记录", Rect2(476, 614, 180, 32), journal_requested.emit)
 	make_button("战车装备方案", Rect2(272, 614, 180, 32), presets_requested.emit)

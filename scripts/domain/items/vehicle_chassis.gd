@@ -7,7 +7,7 @@ var working_energy_capacity: float
 var reserve_energy_capacity: float
 var output_power: float
 var base_self_repair_power: int
-var self_repair_energy_cost: float
+var working_energy_per_repair: float
 var required_repair_skill_level: int
 
 
@@ -27,7 +27,7 @@ func refresh_processed_stats() -> void:
 	reserve_energy_capacity = maxf(0.0, float(stat("reserve_energy_capacity", 0.0)))
 	output_power = maxf(0.0, float(stat("output_power", 0.0)))
 	base_self_repair_power = maxi(0, int(stat("repair_strength", 0)))
-	self_repair_energy_cost = maxf(0.0, float(stat("repair_energy_cost", 0.0)))
+	working_energy_per_repair = maxf(0.0, float(stat("working_energy_per_repair", 0.0)))
 	required_repair_skill_level = maxi(0, int(stat("repair_skill_level", 0)))
 
 

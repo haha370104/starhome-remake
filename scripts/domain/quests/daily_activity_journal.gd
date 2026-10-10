@@ -4,32 +4,43 @@ extends RefCounted
 var _state: Dictionary
 
 
-## 恢复玩家每日活动账本；旧存档使用空账本，不发放奖励。
+class Change extends RefCounted:
+	var reset: Dictionary = {}
+	var active: Dictionary = {}
+	var experience: Dictionary = {}
+	var receipt := ""
+	var revision_steps := 0
+
+	## 判断本计划是否包含可提交变化。
+	## 返回是否需要推进日常账本版本。
+	func changed() -> bool:
+		return revision_steps > 0
+
+
+## 恢复玩家每日活动账本。
 ## [param saved] 已通过持久化边界校验的纯状态。
 func _init(saved: Dictionary = {}) -> void:
-	_state = saved.duplicate(true)
-	for key: String in ["active", "experience_counts", "experience_claims", "receipts"]:
-		if not _state.has(key):
-			_state[key] = {}
-	for key: String in ["revision", "serial", "accepted_today", "completed_today", "points"]:
-		_state[key] = int(_state.get(key, 0))
+	_state = {
+		"active": {}, "experience_counts": {}, "experience_claims": {}, "receipts": {},
+		"revision": 0, "serial": 0, "accepted_today": 0, "completed_today": 0,
+		"points": 0, "offers": [], "day": "",
+	} if saved.is_empty() else saved.duplicate(true)
 	for row: Dictionary in _state.active.values():
 		row.progress = int(row.progress)
 	for key: String in ["experience_counts", "experience_claims"]:
 		for id: String in _state[key]:
 			_state[key][id] = int(_state[key][id])
-	if not _state.has("offers"):
-		_state.offers = []
-	if not _state.has("day"):
-		_state.day = ""
 
 
 ## 校验存档容器及不可为负的计数，防止坏存档进入领域。
 ## [param raw] 持久化边界收到的可选活动字段。
 ## 返回字段是否可安全还原。
 static func valid_state(raw: Variant) -> bool:
-	if not raw is Dictionary:
+	if not raw is Dictionary or raw.size() != 11:
 		return false
+	for key: String in ["active", "experience_counts", "experience_claims", "receipts", "revision",
+		"serial", "accepted_today", "completed_today", "points", "offers", "day"]:
+		if not raw.has(key): return false
 	for key: String in ["active", "experience_counts", "experience_claims", "receipts"]:
 		if not raw.get(key, {}) is Dictionary:
 			return false
@@ -71,16 +82,26 @@ static func _valid_count(value: Variant) -> bool:
 ## [param catalog] 权威任务规则。
 ## [param level] 玩家综合等级。
 func prepare(day: String, catalog: DailyActivityCatalog, level: int) -> void:
-	if String(_state.day) != day:
-		_state.day = day
-		_state.accepted_today = 0
-		_state.completed_today = 0
-		_state.experience_counts = {}
-		_state.experience_claims = {}
-		_state.offers = []
-		_state.revision += 1
-	if _state.offers.is_empty():
-		_refresh(catalog, level)
+	commit(prepare_day(day, catalog, level))
+
+
+## 准备换日和可接任务，不复制跨日保留的死亡收据。
+## [param day] 权威日期。[param catalog] 日常规则。[param level] 综合等级。
+## 返回尚未写入账本的计划。
+func prepare_day(day: String, catalog: DailyActivityCatalog, level: int) -> Change:
+	var change := Change.new()
+	var new_day := String(_state.day) != day
+	if new_day:
+		change.reset = {"day": day, "accepted_today": 0, "completed_today": 0,
+			"experience_counts": {}, "experience_claims": {}}
+		change.revision_steps += 1
+	if new_day or _state.offers.is_empty():
+		var candidates := catalog.eligible(level)
+		for row: Dictionary in _state.active.values(): candidates.erase(String(row.id))
+		candidates.shuffle()
+		change.reset["offers"] = candidates.slice(0, mini(int(catalog.policy.board_size), candidates.size()))
+		change.revision_steps += 1
+	return change
 
 
 ## 抽取互不重复的可接任务；只由服务器调用，不接收客户端随机种子。
@@ -166,25 +187,41 @@ func complete(ticket: String, revision: int, catalog: DailyActivityCatalog, inve
 ## [param catalog] 可完成目标目录。
 ## 返回是否改变进度。
 func record_kill(species_id: String, death_id: String, catalog: DailyActivityCatalog) -> bool:
-	if death_id.is_empty() or _state.receipts.has(death_id):
-		return false
-	var changed := false
-	for row: Dictionary in _state.active.values():
+	var change := prepare_kill(species_id, death_id, catalog)
+	commit(change)
+	return change.changed()
+
+
+## 准备一笔击杀涉及的任务计数；可与同事务换日计划合并。
+## [param species_id] 物种。[param death_id] 死亡身份。[param catalog] 规则。[param change] 可选换日计划。
+## 返回仅含本次最终计数及新增收据的计划。
+func prepare_kill(species_id: String, death_id: String, catalog: DailyActivityCatalog, change: Change = null) -> Change:
+	if change == null: change = Change.new()
+	if death_id.is_empty() or _state.receipts.has(death_id): return change
+	for ticket: String in _state.active:
+		var row: Dictionary = _state.active[ticket]
 		var task: MercenaryDefinition = catalog.tasks.get(String(row.id))
 		if task != null and task.kind == 1 and task.target_id == species_id and int(row.progress) < task.quantity:
-			row.progress += 1
-			changed = true
+			change.active[ticket] = int(row.progress) + 1
 	for activity: Dictionary in catalog.experience:
 		var id := String(activity.id)
 		if bool(activity.enabled) and not String(activity.target_id).is_empty() and activity.target_id == species_id:
-			var count := int(_state.experience_counts.get(id, 0))
-			if count < int(activity.limit):
-				_state.experience_counts[id] = count + 1
-				changed = true
-	if changed:
-		_state.receipts[death_id] = true
-		_state.revision += 1
-	return changed
+			var count := 0 if change.reset.has("day") else int(_state.experience_counts.get(id, 0))
+			if count < int(activity.limit): change.experience[id] = count + 1
+	if not change.active.is_empty() or not change.experience.is_empty():
+		change.receipt = death_id
+		change.revision_steps += 1
+	return change
+
+
+## 无回调提交准备好的日常变更，不替换其他任务或历史收据。
+## [param change] 本对象在同一同步事务中准备的计划。
+func commit(change: Change) -> void:
+	_state.merge(change.reset, true)
+	for ticket: String in change.active: _state.active[ticket].progress = change.active[ticket]
+	_state.experience_counts.merge(change.experience, true)
+	if not change.receipt.is_empty(): _state.receipts[change.receipt] = true
+	_state.revision += change.revision_steps
 
 
 ## 领取当日已达成且未入账的历练次数，不接受客户端奖励数值。

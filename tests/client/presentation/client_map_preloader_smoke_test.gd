@@ -23,14 +23,11 @@ func _run() -> void:
 	preloader.configure({
 		&"yian_harbor_hall_floor_1": "res://data/maps/yian_harbor_hall_floor_1.json",
 		&"yian_harbor_city": "res://data/maps/yian_harbor_city.json",
-		&"g08_field_zone": "res://data/maps/g08_field_zone.json",
+		&"glory_nft_bl_g08": "res://data/maps/glory_nft_bl_g08.json",
 	})
 
 	_expect(preloader.preload_map(&"missing_map") == ERR_DOES_NOT_EXIST, "未知地图必须在预载前失败")
 	_expect(failed_map_id == &"missing_map", "未知地图失败事件应保留请求 map_id")
-	failed_map_id = &""
-	_expect(preloader.preload_map(&"g08_field_zone") == ERR_FILE_NOT_FOUND, "未导入表现资源的地图必须安全失败")
-	_expect(failed_map_id == &"g08_field_zone", "表现资源缺失事件应保留请求 map_id")
 	failed_map_id = &""
 	_expect(preloader.preload_map(&"yian_harbor_hall_floor_1") == OK, "大厅预载应进入线程队列")
 	_expect(preloader.is_preloading(), "加载完成前应报告预载中")
@@ -49,7 +46,7 @@ func _run() -> void:
 	_expect(not preloader.is_preloading(), "原子交付后必须释放暂存状态")
 	ready_bundle.clear()
 	ready_map_id = &""
-	_expect(preloader.preload_map(&"yian_harbor_city") == OK, "城市语义表现应可异步预载")
+	_expect(preloader.preload_map(&"yian_harbor_city") == OK, "城市表现应可异步预载")
 	for _frame in range(240):
 		if not ready_bundle.is_empty() or not failed_map_id.is_empty():
 			break
@@ -57,7 +54,7 @@ func _run() -> void:
 	_expect(failed_map_id.is_empty(), "城市预载不应失败")
 	_expect(ready_map_id == &"yian_harbor_city", "城市预载应交付对应业务 map_id")
 	if not ready_bundle.is_empty():
-		_expect(ready_bundle["map_manifest"]["composition"]["render_strategy"] == "semantic_owner_layers", "城市必须使用语义遮挡图层")
+		_expect(ready_bundle["map_manifest"]["composition"]["render_strategy"] == "flattened_source_composite", "城市应交付当前物化的原版合成图")
 
 	if failures.is_empty():
 		print("CLIENT_MAP_PRELOADER_SMOKE_OK (%d assertions)" % assertions)

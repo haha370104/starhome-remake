@@ -55,7 +55,7 @@
 
 ### 2.2 不是重写密码算法，而是复用原客户端函数
 
-辅助程序源码：[fch_decode.c](../../fch_decrypt_tool/fch_decode.c)。程序：[fch_decode.exe](../../fch_decrypt_tool/fch_decode.exe)。
+辅助程序源码：[fch_decode.c](../tools/recovery/ftc/fch_decode.c)。程序需按该源码自行编译，不将生成的 exe 纳入仓库。
 
 它完成以下操作：
 
@@ -207,7 +207,7 @@ MD5 在这里用于匹配历史清单和发现损坏，不构成现代可信签�
 
 ### 5.2 ALE 是格式解码，不等于解密
 
-使用当前的 [work/ale_sprite.py](../../../work/ale_sprite.py) 和 [batch_ale_sprites.py](../../../work/batch_ale_sprites.py)，不要误用 `fch_decrypt_tool` 内较早的转图副本。
+使用当前的 [ale_sprite.py](../tools/recovery/sprites/ale_sprite.py) 和 [batch_ale_sprites.py](../tools/recovery/sprites/batch_ale_sprites.py)，不要误用旧的转图副本。
 
 解析器处理帧记录、逐行 RLE、透明度、尺寸及原点偏移。ALE v1 使用 256 色调色板，v3 使用 RGB565；批处理还识别 `RLE0` 和 `AEX` 包装。
 
@@ -257,22 +257,22 @@ MD5 在这里用于匹配历史清单和发现损坏，不构成现代可信签�
 目录与证据：
 
 - [启动脚本和解密清单](../../ourgamestart_ry_decrypted/README.md)。
-- [清单下载原件](../../starhome_lz_ry_full/README_全量资源说明.md)、[下载汇总](../../starhome_lz_ry_full/download_summary.json)。
-- [FTC 处理汇总](../../starhome_lz_ry_full_parsed/ftc_resources/fcc_summary.json)、[ALE 处理汇总](../../starhome_lz_ry_full_parsed/ale_sprites/ale_summary.json)。
+- [工程外荣耀原档](../../starhome_lz_ry_full/raw/)、[原档索引与迁移审计](../data/source_evidence/glory/README.md)。
+- 历史 FTC/ALE 处理汇总属于已清理的解析缓存；需要时从工程外原档重新生成。
 - [源码清单](../../starhome_lz_ry_fcc_source/fcc_source_manifest.json)。
-- [额外官网补抓记录](../../starhome_lz_ry_full_parsed/official_lazy_cache/official_recovery_manifest.json)。
+- 历史额外官网补抓记录不随本地解析缓存保留；实际已采用资源以 `assets/` 和对应来源记录为准。
 
 这些结果不是原游戏完整服务端工程。客户端脚本中能找到部分装备、怪物、配方和交互逻辑，不等于已经取得服务器专有逻辑、数据库或运行状态。
 
 ## 8. 重放命令
 
-在工作区根目录 `C:/Users/tomato/Documents/Codex/2026-08-25/new-chat` 运行。以下使用新的重放目录，避免批量脚本重新展开 CAB 时替换现有解析成果。需要 Python 3、Pillow、Windows `expand.exe` 和匹配版本的引擎 DLL。
+以下是原工作区的历史重放流程，需原 `work/` 脚本、编译后的 `fch_decode.exe`、Python 3、Pillow、Windows `expand.exe` 和匹配版本的引擎 DLL。当前按需导入不依赖这套完整解析目录。
 
 ### 8.1 解密启动文件及资源清单（使用现有下载原件）
 
 ```powershell
 $replayRoot = 'work/fcc_recovery_replay'
-$decoder = 'outputs/fch_decrypt_tool/fch_decode.exe'
+$decoder = 'tools/recovery/ftc/fch_decode.exe'
 $engineDll = 'D:/Program Files/FancyBoxII Games/newsystem_ry/fkernel.dll'
 New-Item -ItemType Directory -Path "$replayRoot/startup" -Force | Out-Null
 
@@ -309,7 +309,7 @@ python work/download_full_resources.py `
 python work/batch_decrypt_fcc.py `
   work/fcc_recovery_replay/full/raw `
   work/fcc_recovery_replay/parsed/ftc_resources `
-  --decoder outputs/fch_decrypt_tool/fch_decode.exe `
+  --decoder tools/recovery/ftc/fch_decode.exe `
   --fkernel 'D:/Program Files/FancyBoxII Games/newsystem_ry/fkernel.dll' `
   --key 0003 --workers 4 --all-files
 
@@ -317,7 +317,7 @@ python work/materialize_fcc_source.py `
   work/fcc_recovery_replay/parsed/ftc_resources `
   work/fcc_recovery_replay/fcc_source
 
-python work/batch_ale_sprites.py `
+python tools/recovery/sprites/batch_ale_sprites.py `
   work/fcc_recovery_replay/full/raw `
   work/fcc_recovery_replay/parsed/ale_sprites `
   --workers 8 --max-sheet-size 8192

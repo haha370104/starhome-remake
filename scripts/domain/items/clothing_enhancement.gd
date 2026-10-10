@@ -14,28 +14,30 @@ var gem := ""
 var gem_stage := 0
 
 
-## 校验持久化或协议边界，旧装备空状态视为未强化。
+## 校验完整的持久化或协议边界状态。
 ## [param raw] 尚未可信的强化状态。
 ## 返回合法的类型化强化状态或具体错误；不默默吞掉损坏数据。
 static func restore(raw: Variant) -> DomainResult:
-	if not raw is Dictionary:
+	if not raw is Dictionary or raw.size() != 7 or not raw.has("version") \
+		or not raw.has("prefix") or not raw.has("prefix_quality") or not raw.has("trait") \
+		or not raw.has("trait_quality") or not raw.has("gem") or not raw.has("gem_stage"):
 		return DomainResult.failure(&"enhancement.invalid_state", "人物装备强化状态格式错误")
 	var result := ClothingEnhancement.new()
-	if int(raw.get("version", 1)) != 1:
+	if raw.version != 1:
 		return DomainResult.failure(&"enhancement.invalid_state", "不支持的人物装备强化版本")
 	for key: String in ["prefix", "trait", "gem"]:
-		if not raw.get(key, "") is String:
+		if not raw[key] is String:
 			return DomainResult.failure(&"enhancement.invalid_state", "强化类型必须是文本标识")
 	for key: String in ["prefix_quality", "trait_quality", "gem_stage"]:
-		var value: Variant = raw.get(key, 0)
-		if typeof(value) not in [TYPE_INT, TYPE_FLOAT] or float(value) != floorf(float(value)):
+		var value: Variant = raw[key]
+		if typeof(value) not in [TYPE_INT, TYPE_FLOAT] or not is_finite(float(value)) or float(value) != floorf(float(value)):
 			return DomainResult.failure(&"enhancement.invalid_state", "强化等级必须是整数")
-	result.prefix = String(raw.get("prefix", ""))
-	result.prefix_quality = int(raw.get("prefix_quality", 0))
-	result.trait_id = String(raw.get("trait", ""))
-	result.trait_quality = int(raw.get("trait_quality", 0))
-	result.gem = String(raw.get("gem", ""))
-	result.gem_stage = int(raw.get("gem_stage", 0))
+	result.prefix = raw.prefix
+	result.prefix_quality = int(raw.prefix_quality)
+	result.trait_id = raw.trait
+	result.trait_quality = int(raw.trait_quality)
+	result.gem = raw.gem
+	result.gem_stage = int(raw.gem_stage)
 	if not _valid_pair(result.prefix, result.prefix_quality, PREFIXES, 6) \
 		or not _valid_pair(result.trait_id, result.trait_quality, TRAITS, 6) \
 		or not _valid_pair(result.gem, result.gem_stage, GEMS, 15):

@@ -17,6 +17,16 @@ var _layer_visibility_overrides: Dictionary = {}
 var _elapsed_seconds := 0.0
 
 
+func hit_test(world_position: Vector2) -> bool:
+	for sprite: AnimatedSprite2D in _layers.values():
+		if not sprite.visible or sprite.name == "Shadow":
+			continue
+		var texture := sprite.sprite_frames.get_frame_texture(sprite.animation, sprite.frame)
+		if texture != null and Rect2(sprite.offset, texture.get_size()).has_point(sprite.to_local(world_position)):
+			return true
+	return false
+
+
 ## 执行 `configure` 对应的模块操作。
 ## [param manifest] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## 返回该函数计算、查询或操作得到的结果。
@@ -119,7 +129,10 @@ func set_action(action_id: StringName) -> bool:
 ## 执行 `set_direction` 对应的模块操作。
 ## [param direction] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func set_direction(direction: int) -> void:
-	current_direction = posmod(direction, 8)
+	var next_direction := posmod(direction, 8)
+	if current_direction == next_direction:
+		return
+	current_direction = next_direction
 	_apply_pose()
 
 

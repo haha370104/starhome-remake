@@ -2,7 +2,7 @@
 
 核查日期：2026-09-15。本文是客户端配置的 UTF-8 阅读副本，不是复刻运行配置。
 
-来源：[已解包任务表](../../starhome_lz_fr_full_parsed/ftc_resources/expanded/bool/role/mercenaryrole/mercenaryrole.txt.cab)，逻辑路径 `bool/ROLE/MercenaryRole.txt`，原文编码 GB18030。
+来源：历史核查中解包的免费版任务表，逻辑路径 `bool/ROLE/MercenaryRole.txt`，原文编码 GB18030。原表现保存在工程外 `../starhome_lz_fr_full/raw/bool/role/mercenaryrole.txt`；本文保留其 495 条记录，[复刻使用的结构化定义](../data/gameplay/quests/mercenary_tasks_v1.json)另有用途。
 
 原始解包内容 SHA-256：`1820cc7c25da698a186005e2e163c8b45834f8c762108a72feefeaaa167927a6`。
 

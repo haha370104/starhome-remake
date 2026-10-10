@@ -76,6 +76,7 @@ func _test_three_second_authoritative_autosave() -> void:
 	if panel_query.ok:
 		var panel_bundle: Dictionary = panel_query.value
 		_expect(panel_bundle.inventory.items.size() == 2, "新角色应有备用引擎和训练服")
+		var online_revision: int = first_server.autosave_service.player_for(entity_id).revision
 		var panel_move: Dictionary = first_server.handle_peer_player_panel_command(71, {
 			"type": "move_inventory_item",
 			"instance_id": "inventory.%s.spare_engine" % entity_id,
@@ -83,9 +84,16 @@ func _test_three_second_authoritative_autosave() -> void:
 			"inventory_revision": int(panel_bundle.inventory.revision),
 		})
 		_expect(panel_move.ok, "背包移动应由权威服务器立即原子提交")
+		_expect(first_server.autosave_service.player_for(entity_id).revision == online_revision + 1, "面板事务应立即推进在线事务版本")
 		var panel_committed = first_server.player_state_repository.load_player(entity_id)
-		_expect(panel_committed.is_ok and panel_committed.value.revision == 2, "面板事务应立即推进玩家聚合 revision")
-		_expect(panel_committed.value.inventory_stacks[0].position_px == Vector2i(92, 61), "面板事务应持久化原始自由像素坐标")
+		_expect(panel_committed.is_ok and panel_committed.value.revision == 1, "面板事务不应提前推进检查点保存版本")
+		first_server.advance_simulation(3.0, 7000)
+		panel_committed = first_server.player_state_repository.load_player(entity_id)
+		_expect(panel_committed.is_ok and panel_committed.value.revision == 2, "下一检查点应推进保存版本")
+		_expect(panel_committed.value.inventory_stacks[0].position_px == Vector2i(92, 61), "检查点应持久化背包自由像素坐标")
+		expected_health = combat_state.health
+		expected_reserve = combat_state.reserve_energy
+		expected_working = combat_state.working_energy
 
 	var second_server = ServerScript.new()
 	_expect(first_server.player_state_repository.flush().is_ok, "新实例读取前显式等待后台检查点完成")
@@ -117,43 +125,43 @@ func _test_three_second_authoritative_autosave() -> void:
 		"新服务器应恢复当前能量",
 	)
 
-	var legacy_state_result = second_server.player_state_repository.load_player(entity_id)
-	_expect(legacy_state_result.is_ok, "地图 ID 迁移夹具必须能读取现有角色")
-	if legacy_state_result.is_ok:
-		var legacy_state: PlayerStateRecord = legacy_state_result.value
-		legacy_state.map_id = "glory_nft_bl_nasa1"
-		legacy_state.map_instance_id = "glory_nft_bl_nasa1.instance.1"
-		legacy_state.position = Vector2(1381.0, 918.0)
-		var staged_legacy = second_server.player_state_repository.save_player(
-			legacy_state, legacy_state.revision
+	var location_state_result = second_server.player_state_repository.load_player(entity_id)
+	_expect(location_state_result.is_ok, "跨地图恢复夹具必须能读取现有角色")
+	if location_state_result.is_ok:
+		var location_state: PlayerStateRecord = location_state_result.value
+		location_state.map_id = "dragon_city_space_center"
+		location_state.map_instance_id = "dragon_city_space_center.instance.1"
+		location_state.position = Vector2(1381.0, 918.0)
+		var staged_location = second_server.player_state_repository.save_player(
+			location_state, location_state.revision
 		)
-		_expect(staged_legacy.is_ok, "测试必须能写入业务化前的宇航中心地图 ID")
-		if staged_legacy.is_ok:
-			_expect(second_server.player_state_repository.flush().is_ok, "迁移重开前等待后台快照完成")
-			var migrated_server = ServerScript.new()
-			var migrated_initialized: Dictionary = migrated_server.initialize(
+		_expect(staged_location.is_ok, "测试必须能写入当前宇航中心地图 ID")
+		if staged_location.is_ok:
+			_expect(second_server.player_state_repository.flush().is_ok, "跨地图重开前等待后台快照完成")
+			var location_server = ServerScript.new()
+			var location_initialized: Dictionary = location_server.initialize(
 				_full_server_config()
 			)
-			_expect(migrated_initialized.ok, "完整地图目录服务器应接受旧地图存档")
-			if migrated_initialized.ok:
-				var migrated_session: Dictionary = migrated_server.open_session(
+			_expect(location_initialized.ok, "完整地图目录服务器应接受宇航中心存档")
+			if location_initialized.ok:
+				var location_session: Dictionary = location_server.open_session(
 					73, _handshake(), 6000
 				)
-				_expect(migrated_session.ok, "旧地图 ID 不得阻塞角色会话恢复")
-				if migrated_session.ok:
+				_expect(location_session.ok, "宇航中心存档应能恢复角色会话")
+				if location_session.ok:
 					_expect(
-						String(migrated_session.value.map_joined.map_id) \
+						String(location_session.value.map_joined.map_id) \
 						== "dragon_city_space_center",
-						"旧宇航中心 ID 必须迁移为当前业务地图 ID",
+						"宇航中心存档应恢复到当前业务地图 ID",
 					)
 					_expect(
 						Vector2(
-							migrated_session.value.map_joined.spawn_position.x,
-							migrated_session.value.map_joined.spawn_position.y,
+							location_session.value.map_joined.spawn_position.x,
+							location_session.value.map_joined.spawn_position.y,
 						).is_equal_approx(Vector2(1381.0, 918.0)),
-						"地图 ID 迁移必须保留仍然可达的角色坐标",
+						"跨地图恢复必须保留仍然可达的角色坐标",
 					)
-			migrated_server.free()
+			location_server.free()
 	first_server.free()
 	second_server.free()
 
@@ -165,7 +173,7 @@ func _server_config():
 	config.persistence_enabled = true
 	config.player_state_store_path = database_path
 	config.autosave_interval_seconds = 3.0
-	config.map_config_path = "res://data/maps/d04_field_zone.json"
+	config.map_config_path = "res://data/maps/glory_nft_bl_d04.json"
 	config.map_catalog_path = "res://tests/fixtures/nonexistent_map_catalog.json"
 	config.default_spawn = Vector2(2412.0, 2400.0)
 	config.dynamic_blocking_enabled = false
