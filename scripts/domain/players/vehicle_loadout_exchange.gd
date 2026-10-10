@@ -53,7 +53,7 @@ static func apply(player: Player, slots: Array, inventory_revision: int, loadout
 		if selected.has(item.instance_id): continue
 		if final_items.size() >= inventory.capacity:
 			return DomainResult.failure(&"inventory.no_space", "背包不足以容纳整套换装卸下的物品")
-		var position := InventoryLayout.first_available_position(layouts, item.footprint_px)
+		var position := InventoryLayout.first_available_position(layouts)
 		var layout := item.to_layout_dictionary()
 		layout.position_px = [position.x, position.y]
 		layouts.append(layout)

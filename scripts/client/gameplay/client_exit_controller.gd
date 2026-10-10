@@ -1,6 +1,8 @@
 class_name ClientExitController
 extends Node
 
+const PerformanceTelemetryScript := preload("res://scripts/core/performance_telemetry.gd")
+
 var dialog: ExitProgressDialog
 var _presenter: HallMultiplayerPresenter
 var _panels: PlayerPanelSession
@@ -10,6 +12,7 @@ var _request_id := ""
 var _waiting := false
 var _completed := false
 var _elapsed := 0.0
+var _exit_started_at_usec := 0
 var _previous_auto_quit := true
 
 
@@ -41,6 +44,7 @@ func request_exit() -> void:
 		call_deferred("_finish")
 		return
 	if _request_id.is_empty(): _request_id = Crypto.new().generate_random_bytes(16).hex_encode()
+	if _exit_started_at_usec == 0: _exit_started_at_usec = Time.get_ticks_usec()
 	_waiting = true
 	_elapsed = 0
 	_combat.application_exiting = true
@@ -69,6 +73,11 @@ func _bundle_received(bundle: Dictionary) -> void:
 	var receipt: Variant = bundle.get("exit_receipt")
 	if receipt is Dictionary and receipt.get("request_id") == _request_id \
 		and _valid_saved_revision(receipt.get("saved_revision")):
+		if _exit_started_at_usec > 0:
+			PerformanceTelemetryScript.record_duration(
+				&"client_exit_to_saved_receipt", Time.get_ticks_usec() - _exit_started_at_usec
+			)
+		_exit_started_at_usec = 0
 		_waiting = false
 		_completed = true
 		dialog.waiting("存档已完成，正在退出……")
@@ -86,6 +95,7 @@ func _return_to_game() -> void:
 	if _completed: return
 	_waiting = false
 	_request_id = ""
+	_exit_started_at_usec = 0
 	_combat.application_exiting = false
 
 

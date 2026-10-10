@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "map_id": "glory_nft_bl_d04",
+  "monster_count": 200,
+  "player_count": 4,
+  "warmup_seconds": 10,
+  "sample_seconds": 40,
+  "scenarios": [
+    {"id": "standing", "label": "预热后静止"},
+    {"id": "moving", "label": "战车与怪物移动"},
+    {"id": "moving_combat", "label": "移动中的远程战斗"},
+    {"id": "firing", "label": "开火"},
+    {"id": "mining", "label": "采矿"},
+    {"id": "spawning", "label": "刷怪"},
+    {"id": "replacement", "label": "10 个新怪物替换"},
+    {"id": "offscreen", "label": "视野外怪物"},
+    {"id": "autosave_due", "label": "自动存档到期"}
+  ]
+}

@@ -20,7 +20,9 @@ var failures: Array[String] = []
 
 ## 检验后台阻塞、顺序、隔离、快照合并及正常关闭排空。
 func _initialize() -> void:
-	var base := ProjectSettings.globalize_path("user://background-test")
+	var base := ProjectSettings.globalize_path(
+		"user://background-test-%d-%d" % [OS.get_process_id(), Time.get_ticks_usec()]
+	)
 	var writer := BlockedWriter.new()
 	_check(writer.start() == OK, "启动文件线程")
 	writer.enqueue_snapshot(base + "/state.json", {"revision": 0})
@@ -57,6 +59,9 @@ func _initialize() -> void:
 	limited.enqueue_trace(base + "/limited.jsonl", {"index": 2}, 1)
 	_check(limited.flush().error_code == &"diagnostics.size_limit", "日志容量限制保留")
 	limited.close()
+	for path: String in [base + "/state.json", base + "/trace.jsonl", base + "/limited.jsonl"]:
+		if FileAccess.file_exists(path): DirAccess.remove_absolute(path)
+	DirAccess.remove_absolute(base)
 	for failure in failures: push_error(failure)
 	print("BACKGROUND_FILE_WRITER_%s (%d checks)" % ["OK" if failures.is_empty() else "FAIL", checks])
 	quit(0 if failures.is_empty() else 1)

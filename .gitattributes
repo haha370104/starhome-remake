@@ -5,4 +5,7 @@
 *.jpeg binary
 *.bin binary
 
-# Asset LFS rules belong to the independent assets/.gitattributes submodule.
+# Decoded original FCC evidence must keep its exact bytes and original whitespace.
+data/source_evidence/glory/*.fcc.cab -text -whitespace
+
+# Runtime assets are materialized under assets/ and are not tracked in this repository.

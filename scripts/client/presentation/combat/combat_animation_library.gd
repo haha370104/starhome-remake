@@ -1,55 +1,81 @@
 class_name CombatAnimationLibrary
 extends RefCounted
 
-static var _repository: AleSpriteRepository
-static var _cache: Dictionary = {}
-
-
 ## 把离线核对的武器弹体关联追加到既有表现清单，不改变权威伤害规则。
 ## [param base] 已导入的新手弹道、烟雾和爆炸模板。
 ## 返回含全部可用武器弹体的隔离清单。
 static func with_weapon_bindings(base: Dictionary) -> Dictionary:
 	var result := base.duplicate(true)
+	var weapons: Dictionary = result.get("weapons", {})
+	_ensure_secondary_weapon_templates(weapons)
+	result["weapons"] = weapons
 	var loaded := JsonConfigLoader.load_dictionary("res://data/presentation/weapon_visual_bindings_v1.json")
 	if not loaded.is_ok:
 		return result
 	var templates := {"energy_cannon": "recruit_energy_cannon", "missile": "starter_missile", "rocket_launcher": "starter_rocket_launcher"}
 	for definition_id: String in loaded.value.weapons:
 		var binding: Dictionary = loaded.value.weapons[definition_id]
-		var weapon: Dictionary = base.weapons[templates[binding.mode]].duplicate(true)
+		var template_id: String = templates.get(String(binding.mode), "")
+		if template_id.is_empty() or not weapons.has(template_id):
+			continue
+		var weapon: Dictionary = weapons[template_id].duplicate(true)
 		weapon.projectile.erase("resource")
 		weapon.projectile.merge(binding.projectile, true)
-		result.weapons[definition_id] = weapon
+		weapons[definition_id] = weapon
 	return result
+
+
+## 为基础清单补上已导入的初始副武器模板。
+## 这些模板属于客户端公共表现资源；跨版本绑定只覆盖弹体引用，不改变基础爆炸资源。
+static func _ensure_secondary_weapon_templates(weapons: Dictionary) -> void:
+	if not weapons.has("starter_missile"):
+		weapons["starter_missile"] = {
+			"owner_actor_id": "starter_combat_vehicle",
+			"maximum_visual_range": 400.0,
+			"minimum_visual_range": 0.0,
+			"cooldown_seconds": 2.0,
+			"muzzle_offset": [0.0, -16.0],
+			"projectile": {
+				"resource": "res://assets/equipment_world/starter_secondary_weapons/missile/projectile/flight/animation_frames.tres",
+				"frames": 1, "fps": 10.0, "loop": true,
+				"travel_pixels_per_second": 250.0,
+			},
+			"impact": {
+				"resource": "res://assets/equipment_world/starter_secondary_weapons/missile/impact/explosion/animation_frames.tres",
+				"frames": 6, "fps": 12.0, "loop": false,
+			},
+		}
+	if not weapons.has("starter_rocket_launcher"):
+		weapons["starter_rocket_launcher"] = {
+			"owner_actor_id": "starter_combat_vehicle",
+			"maximum_visual_range": 350.0,
+			"minimum_visual_range": 150.0,
+			"cooldown_seconds": 3.0,
+			"muzzle_offset": [0.0, -16.0],
+			"muzzle": {
+				"resource": "res://assets/equipment_world/starter_secondary_weapons/rocket/impact/smoke/animation_frames.tres",
+				"frames": 6, "fps": 12.0, "loop": false,
+			},
+			"projectile": {
+				"resource": "res://assets/equipment_world/starter_secondary_weapons/rocket/projectile/flight/animation_frames.tres",
+				"frames": 4, "fps": 10.0, "loop": true,
+				"travel_pixels_per_second": 1000.0,
+			},
+			"impact": {
+				"resource": "res://assets/equipment_world/starter_secondary_weapons/rocket/impact/explosion/animation_frames.tres",
+				"frames": 8, "fps": 12.0, "loop": false,
+			},
+		}
 
 
 ## 按需读取已有荣耀素材包，保留每帧原点并缓存为共享 SpriteFrames。
 ## [param asset_reference] 由本地表现目录提供的 ALE 引用，不能来自网络消息。
 ## 返回带原点元数据的动画；资源缺失时返回 null。
 static func load_ale(asset_reference: String) -> SpriteFrames:
-	if _cache.has(asset_reference):
-		return _cache[asset_reference]
-	if _repository == null:
-		if not bool(RuntimeContentBootstrap.mount_default().get("ok", false)):
-			return null
-		_repository = AleSpriteRepository.new()
-		if not _repository.load_default():
-			_repository = null
-			return null
-	var animation := _repository.load_animation(asset_reference)
-	var source_frames: Array = animation.get("frames", [])
-	if source_frames.is_empty():
+	var repository := SpriteResources.repository()
+	if repository == null:
 		return null
-	var frames := SpriteFrames.new()
-	frames.add_animation(&"raw")
-	frames.set_animation_speed(&"raw", 10.0)
-	var origins: Array[Vector2] = []
-	for frame: Dictionary in source_frames:
-		frames.add_frame(&"raw", frame["texture"])
-		origins.append(frame["origin"])
-	frames.set_meta("ale_origins", origins)
-	_cache[asset_reference] = frames
-	return frames
+	return repository.load_sprite_frames(asset_reference)
 
 
 ## 从实际装备的世界表现构建八向或共享动作，不回退为上一件装备。

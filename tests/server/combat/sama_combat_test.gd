@@ -55,17 +55,17 @@ func _initialize() -> void:
 	(module.actors.tester.equipment_condition as EquipmentConditionLoadout)._items.clear()
 	module.advance_ticks(10)
 	_check(module.monsters.near.health == 93 and module.monsters.next.health == 93 and module.pending_projectiles.is_empty(), "removed source stops at next new target, never repeats prior hit")
-	_check(module.snapshot_for_actor("tester").local_sama_effects.is_empty(), "removed source clears displayed state")
+	_check(module.local_snapshot_for_actor("tester").local_sama_effects.is_empty(), "removed source clears displayed state")
 	module = _module(["piercing"])
 	_shoot(module, 1, Vector2.RIGHT * 400)
-	var snapshot := module.snapshot_for_actor("tester")
+	var snapshot := module.local_snapshot_for_actor("tester")
 	_check(snapshot.local_sama_effects.size() == 1 and is_equal_approx(snapshot.local_sama_effects[0].remaining_seconds, 8), "authoritative remaining duration")
 	var loadout := {"assembly": _assembly(module.actors.tester.equipment_condition), "weapons":{"cannon":_weapon()}}
 	module.advance_ticks(2)
 	module.refresh_achievement_loadout("tester", loadout)
-	_check(module.snapshot_for_actor("tester").local_sama_effects[0].remaining_seconds < 8, "ordinary refresh never extends duration")
+	_check(module.local_snapshot_for_actor("tester").local_sama_effects[0].remaining_seconds < 8, "ordinary refresh never extends duration")
 	module.current_tick = 160
-	_check(module.snapshot_for_actor("tester").local_sama_effects.is_empty(), "expires exactly at end tick")
+	_check(module.local_snapshot_for_actor("tester").local_sama_effects.is_empty(), "expires exactly at end tick")
 	module = _module(["fission"])
 	_shoot(module, 1, Vector2.RIGHT * 400)
 	module._record_combat_event({"event_type":&"monster_attack_resolved", "target_entity_id":"tester", "damage":1, "target_destroyed":true})
@@ -74,11 +74,11 @@ func _initialize() -> void:
 	_check(not module.sama._states.has("tester"), "exit cleanup")
 	module = _module(["pvp_absorption"])
 	_shoot(module, 1, Vector2.RIGHT * 400)
-	_check(module.snapshot_for_actor("tester").local_sama_effects.is_empty() and module.combat_events.size() == 1, "PvP effects never activate against monsters")
+	_check(module.local_snapshot_for_actor("tester").local_sama_effects.is_empty() and module.combat_events.size() == 1, "PvP effects never activate against monsters")
 	module = _module(["pulse"])
 	for index in 40: _monster(module, "crowd%d" % index, Vector2(200, index - 20), 100)
 	_shoot(module, 1, Vector2.RIGHT * 400)
-	_check(module.snapshot_for_actor("tester").recent_events[0].event_type == &"energy_cannon_projectile_spawned", "area hit burst retains originating visual event")
+	_check(module.world_snapshot_for_map("map").recent_events[0].event_type == &"energy_cannon_projectile_spawned", "area hit burst retains originating visual event")
 	print("Sama combat: %d checks, %d failures" % [checks, failures.size()])
 	for failure: String in failures: push_error(failure)
 	quit(0 if failures.is_empty() else 1)
@@ -123,7 +123,7 @@ func _assembly(condition: EquipmentConditionLoadout) -> Dictionary:
 ## 固定普通炮伤害和轨迹，使附加效果可单独断言。
 ## 返回测试武器定义。
 func _weapon() -> Dictionary:
-	return {"weapon_id":"rookie_energy_cannon","skill_id":"energy_cannon","minimum_damage":7,"maximum_damage":7,"working_energy_cost":10,"activation_power":0,"range":400,"cooldown_ticks":20,"projectile_speed":1000.0,"muzzle_offset":[0.0,0.0],"muzzle_forward_offset":0.0}
+	return {"weapon_id":"rookie_energy_cannon","skill_id":"energy_cannon","minimum_damage":7,"maximum_damage":7,"working_energy_per_shot":10,"activation_power":0,"range":400,"cooldown_ticks":20,"projectile_speed":1000.0,"muzzle_offset":[0.0,0.0],"muzzle_forward_offset":0.0}
 
 
 ## 投放有保证掉落的静止怪物，避免AI漂移干扰碰撞断言。

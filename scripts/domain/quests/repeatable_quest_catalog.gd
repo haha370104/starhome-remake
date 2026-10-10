@@ -25,7 +25,8 @@ func initialize(items: ItemCatalog) -> DomainResult:
 	var entries: Array = loaded.value.get("tasks", []).duplicate(true)
 	entries.append_array(training.value.get("tasks", []))
 	definitions.clear()
-	for entry: Dictionary in entries:
+	for raw_entry: Dictionary in entries:
+		var entry: Dictionary = raw_entry.duplicate(true)
 		var task_id := String(entry.get("id", ""))
 		if task_id.is_empty() or definitions.has(task_id) or not providers.has(entry.get("provider_id", "")):
 			return DomainResult.failure(&"quest.invalid_config", "任务标识或发布者无效")
@@ -127,7 +128,7 @@ func tasks_for(provider_id: String) -> Array[Dictionary]:
 	return result
 
 
-## 兼容单奖励对象及多奖励数组，支持护甲成对发放。
+## 汇总单件或成组的里程碑奖励，支持护甲成对发放。
 ## [param definition] 包含里程碑奖励的任务定义。
 ## [param completions] 已完成轮数。
 ## 返回下一个未达成里程碑的全部奖励。
@@ -140,7 +141,7 @@ static func next_rewards(definition: Dictionary, completions: int) -> Array:
 
 
 ## 返回指定轮次的全部额外物品奖励。
-## 按精确完成轮次查找里程碑，兼容单件和多件奖励配置。
+## 按精确完成轮次查找单件或多件奖励。
 ## [param definition] 原始任务定义。
 ## [param completion] 要查询的完成轮次。
 static func rewards_at(definition: Dictionary, completion: int) -> Array:

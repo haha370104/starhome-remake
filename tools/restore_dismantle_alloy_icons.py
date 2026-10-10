@@ -8,7 +8,7 @@ from build_equipment_processing_rules import ROOT, SOURCE, read, write
 def main():
     original = (SOURCE / "cltobj/stuffclt2.fcc").read_text(encoding="utf-8-sig")
     definitions = read("data/gameplay/glory/glory_items_v1.json")["definitions"]
-    raw = ROOT.parent / "starhome_lz_ry_full/raw"
+    raw = ROOT / "../starhome_lz_ry_full/raw"
     ale_path = "pic3/stuff/hejin.ale"
     ale = indexed.load_decoder().AleFile(raw / ale_path)
     assert len(ale.frames) == 1

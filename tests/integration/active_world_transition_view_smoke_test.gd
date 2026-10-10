@@ -89,7 +89,7 @@ func _run() -> void:
 	_test_city_transition_views(active)
 	_test_refinery_transition_view(active)
 	_test_space_center_transition_view(hall, active)
-	_expect(assertions == 111, "组合回归必须执行完整的 111 条前置业务断言")
+	_expect(assertions == 112, "组合回归必须执行完整的 112 条前置业务断言")
 	_finish(hall)
 
 
@@ -112,12 +112,13 @@ func _test_failed_bundle_isolation(hall: Node2D, active: Node) -> void:
 	if bad_bundle.is_empty():
 		return
 	var bad_manifest: Dictionary = bad_bundle["map_manifest"].duplicate(true)
-	var composition: Dictionary = bad_manifest.get("composition", {})
-	var layers: Array = composition.get("semantic_layers", [])
-	_expect(not layers.is_empty(), "城市 bundle 必须包含可故障注入的语义层")
-	if layers.is_empty():
-		return
-	layers[0]["atlas_region"] = [0, 0, 32]
+	var texture_path: String = bad_bundle.definition.resource_paths.floor
+	bad_bundle.resources[texture_path] = bad_bundle.resources.floor
+	bad_manifest["composition"] = {
+		"render_strategy": "semantic_owner_layers",
+		"semantic_layers": [{"texture": texture_path, "pixel_offset": [0, 0], "atlas_region": [0, 0, 32]}],
+	}
+	_expect(bad_bundle.resources[texture_path] is Texture2D, "故障夹具必须提供已加载纹理，仅破坏图层区域")
 	bad_bundle["map_manifest"] = bad_manifest
 	_expect(not active.commit_bundle(bad_bundle, Vector2(1399, 954)), "任一目标依赖缺失时原子提交必须失败")
 
@@ -140,6 +141,7 @@ func _test_city_transition_views(active: Node) -> void:
 	if city_bundle.is_empty():
 		return
 	_expect(active.commit_bundle(city_bundle, Vector2(1399, 954)), "城区 bundle 必须可原子提交")
+	_expect((root.canvas_transform * Vector2(1399, 954)).is_equal_approx(root.get_visible_rect().size * 0.5), "切图提交当帧必须已将玩家落点映射到画面中心，不得等下一帧更新相机")
 	_expect(active.transition_views.size() == 20, "龙之城二十个已启用出口必须全部显示传送动画")
 	var expected_orientations := {
 		&"enter_base_hall_floor_1": "north_east",
@@ -183,7 +185,7 @@ func _test_refinery_transition_view(active: Node) -> void:
 	var cases: Array[Dictionary] = [
 		{
 			"name": "一层",
-			"path": "res://content/glory/map_definitions/glory_nft_bl_factory1.json",
+			"path": "res://assets/glory/map_definitions/glory_nft_bl_factory1.json",
 		},
 		{"name": "二层", "path": "res://data/maps/dragon_city_refinery_floor_2.json"},
 		{"name": "三层", "path": "res://data/maps/dragon_city_refinery_floor_3.json"},
@@ -239,8 +241,9 @@ func _test_refinery_transition_view(active: Node) -> void:
 ## [param active] 当前活动世界控制器。
 ## 设计：该回归同时保护 FCC `img` 底图恢复和无源 Transport 时的反向边重建。
 func _test_space_center_transition_view(hall: Node2D, active: Node) -> void:
+	var directory: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/maps/glory_map_directory_v1.json"))
 	var bundle: Dictionary = active.prepare_initial_bundle(
-		"res://data/maps/dragon_city_space_center.json"
+		String(directory.definitions["dragon_city_space_center"])
 	)
 	_expect(not bundle.is_empty(), "宇航中心业务定义与荣耀版素材必须可加载")
 	if bundle.is_empty():

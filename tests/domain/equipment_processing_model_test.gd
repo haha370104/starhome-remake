@@ -11,7 +11,7 @@ func _initialize() -> void:
 	var tank: VehicleChassis = catalog.create("recruit_tank", {}).value
 	var rules := catalog.processing_rules
 	var profile := rules.profile(tank.definition_id)
-	var material := rules.material("item:material:47b24f797e14")
+	var material := rules.material("flow_expander")
 	for index: int in 5:
 		var result := tank.processing.apply(profile, material)
 		_check(result.is_ok and result.value.points == (1 if index == 4 else 2), "last increment clamped")
@@ -29,7 +29,7 @@ func _initialize() -> void:
 	_check(not EquipmentProcessing.restore({"increments": {"invented": 1}}).is_ok, "reject unknown stat")
 	_check(not EquipmentProcessing.restore({"version": 2}).is_ok, "reject future version")
 	_check(not catalog.create("recruit_tank", {"processing": {"increments": {"max_health": 31}}}).is_ok, "reject excessive save")
-	var gun: VehicleWeapon = catalog.create("recruit_energy_cannon", {"processing": {"increments": {"base_attack": 2, "range": 10}}}).value
+	var gun: VehicleWeapon = catalog.create("recruit_energy_cannon", {"processing": {"version": 1, "increments": {"base_attack": 2, "range": 10}}}).value
 	_check(gun.base_attack == 9 and gun.attack_range == 260, "gun uses attack and range increments")
 	_check(gun.working_energy_per_shot == float(catalog.definition(gun.definition_id).stats.working_energy_per_shot), "energy cost unchanged")
 	_test_persistence(catalog)
@@ -55,10 +55,10 @@ func _test_persistence(catalog: ItemCatalog) -> void:
 	var mapper := PlayerStateMapper.new(catalog)
 	var player: Player = mapper.to_domain(fixture._state).value
 	var tank := player.vehicle.loadout.at(0)
-	tank.processing.apply(catalog.processing_rules.profile(tank.definition_id), catalog.processing_rules.material("item:material:3481b7371d1e"))
+	tank.processing.apply(catalog.processing_rules.profile(tank.definition_id), catalog.processing_rules.material("sama_upgrade_alloy"))
 	tank.refresh_processed_stats()
 	var engine: Equipment = player.inventory.find("inventory.spare_engine")
-	engine.processing.apply(catalog.processing_rules.profile(engine.definition_id), catalog.processing_rules.material("item:material:02212ea88168"))
+	engine.processing.apply(catalog.processing_rules.profile(engine.definition_id), catalog.processing_rules.material("super_magnet"))
 	engine.refresh_processed_stats()
 	var record := mapper.to_record(player)
 	_check(record.is_ok, "persist record")

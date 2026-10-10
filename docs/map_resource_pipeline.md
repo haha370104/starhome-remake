@@ -14,7 +14,7 @@
 `yian_harbor_*` 仍是已有稳定运行 ID，不在文案修正时顺手迁移存档键。该大厅使用
 `variant_02_nft_bt`（脚本分支 `NFT_BT/NFT_SK`）：
 
-- 地图脚本与结构化结果：`starhome_lz_ry_maps_parsed/maps/roomsvr1/variant_02_nft_bt`
+- 地图脚本：`../starhome_lz_ry_full/raw/NFT_BT/map/RoomSvr1/`；结构化证据：`data/source_evidence/glory/map_recovery/maps/roomsvr1/variant_02_nft_bt/`
 - 小地图、底图、导航：同一荣耀版地图变体的解析结果
 - 场景构件：荣耀版 FCC 的 `AddImg/AddImgEx` 引用及荣耀版 ALE 帧
 - 运行时导入器：`tools/import_glory_base_hall.py`
@@ -128,9 +128,12 @@ top_left_y = anchor_y + frame.origin_y
 
 ## 3. PKH 碰撞网格
 
-`indexdata` 的十六进制内容先还原为 PKH 字节，再调用对应版本 `fkernel.dll` 中的
-`FTGameOS::nzip::lzw_img_unpack` 解压。仓库工具不复制原游戏 DLL，而是由调用者显式
-传入 DLL 和 `pkh_unpack.exe`，确保解析版本可追溯。
+`indexdata` 的十六进制内容先还原为 PKH 字节。原客户端调用对应版本 `fkernel.dll` 中的
+`FTGameOS::nzip::lzw_img_unpack` 解压；原生解包器由调用者显式传入 DLL 和
+`pkh_unpack.exe`，确保解析版本可追溯。
+
+Linux 可用 `tools/recovery/maps/pkh_unpack.py` 解包，无需 Wine；
+`tools/recovery/maps/pkh_unpack.c` 保留原生 DLL 复核入口。
 
 解压后的每个网格单元固定为 3 字节：
 
@@ -207,7 +210,7 @@ Godot 的 `DiamondNavigation` 对菱形边邻居建图，再在不穿墙角的�
   `fkernel.dll` 重新提取，解压成功且网格尺寸、记录数、标志分布全部自洽。
 
 早期“只有 21 张地图”的记录来自尚未下载完整时的旧缓存分析，不能代表现在的
-`starhome_lz_ry_full`。登录服务器失效不会影响已经落在本地全量包里的 FCC、ALE、
+`../starhome_lz_ry_full`。登录服务器失效不会影响已经落在本地全量包里的 FCC、ALE、
 小地图和碰撞数据。但 `files_dir.dz` 只是更新/校验目录，不是官网物理目录的完整枚举：
 全局依赖审计发现 294 种脚本引用的 ALE 未在清单资源库命中，其中 269 种仍能按 FCC
 精确路径从荣耀官网取得并成功解析，25 种返回 404。
@@ -228,8 +231,18 @@ GB18030 解码。形如 `A02`、`H09` 的值是合法野外编号，不是乱码
 
 ## 6. 可复现提取
 
-项目提供 `tools/map_pipeline/extract_navigation.py` 和
-`tools/map_pipeline/extract_all_maps.py`。以下命令只生成分析产物，不会写入 `assets/`：
+当前地图生成器通过 `tools/glory_map_workspace.py` 从工程外原档按需读取，
+解析精灵取自 `assets/glory/sprites/`，导航和跳转证据保存在 `data/source_evidence/glory/map_recovery/`。
+常用入口：
+
+```bash
+python3 tools/build_glory_map_content_packs.py --plan-only
+python3 tools/report_missing_addimg.py
+```
+
+无参数运行 `build_glory_map_content_packs.py` 会重建现有地图产物；
+旧缓存抽样核对见 `data/source_evidence/glory/map_recovery/rebuild_sample_audit.json`。
+下面是早期完整解析树的研究命令，需先生成其中的 `_parsed` 临时输入；当前地图生成器不依赖它。
 
 ```powershell
 python tools/map_pipeline/extract_navigation.py `
@@ -250,7 +263,7 @@ python tools/map_pipeline/extract_navigation.py `
 `source_*` 字段中保留原逻辑路径。原客户端的 NFT、`pic/pic2`、时间戳或哈希目录
 不能直接进入运行时 `assets/`。
 
-全量荣耀版地图的可复现命令为：
+早期全量荣耀版地图的研究命令为：
 
 ```powershell
 python tools/map_pipeline/extract_all_maps.py `
@@ -340,6 +353,13 @@ D04 的十二条有效出口按旧样式编号 1 至 8 对应荣耀版
 该对象只代表旧客户端脚本中的动画摆放，不得再以首帧写入静态语义 atlas。有效传送点由
 运行时注册创建 `AnimatedSprite2D`；`disabled_legacy` 对应的旧出口也从静态场景排除，但不
 创建运行时对象。这样既避免静态首帧遮住动画，也避免已经禁用的出口留下误导性图标。
+
+`jt-01.ale` 至 `jt-08.ale` 是 FCC 地图脚本中的野外传送箭头原始引用，不是荣耀包中另一套
+运行时资源。荣耀版 `as1.ale` 至 `as8.ale` 与免费版对应的 `jt-01.ale` 至 `jt-08.ale`
+已逐字节核对一致；来源清单因此记录免费版精确原路径和 SHA-256，运行时只使用已经业务化的
+共享方向资源，不新增 `jt` 到 `lmt-jt` 的别名或兼容解析。地图缺口报告遇到与
+`transitions.json` 的路径和锚点同时匹配的 `jt` 摆放时，将其视为“运行时传送注册表拥有”，
+不计入静态场景缺失；原始 `jt` 路径仍保留在场景和来源审计中。
 这条规则同时适用于语义分层地图和全量地图内容包：后者虽然仍输出单张 `floor.png`，构建器
 也必须先以去除传送摆放后的场景恢复其像素，再写入压平地板，不能直接复制解析阶段的
 `composite.png`。

@@ -332,6 +332,6 @@ item_shortcuts[10]
 | 底部主栏、武器槽、总能量条、小地图创建 | `outputs/starhome_lz_fr_fcc_source/menupart_main_common_dzl.fcc` |
 | 小地图样式和状态切换 | `outputs/starhome_lz_fr_fcc_source/menupart_main_style.fcc` |
 | 物品/技能快捷栏 | `outputs/starhome_lz_fr_fcc_source/ven/shortcuttoolbar.fcc` |
-| 免费版解析 HUD 素材 | `outputs/starhome_lz_fr_full_parsed/ale_sprites/pic2/topmenu/`、`pic2/ctrlpad/`、`pic/shortcutbar/` |
-| 底部 1024 背景 | `outputs/starhome_lz_fr_full/raw/pic2/ctrlpad/mainctrlpad_1024.png` |
+| 免费版 HUD 原始素材 | `../starhome_lz_fr_full/raw/pic2/topmenu/`、`pic2/ctrlpad/`、`pic/shortcutbar/`；导入时临时解码 |
+| 底部 1024 背景 | `../starhome_lz_fr_full/raw/pic2/ctrlpad/mainctrlpad_1024.png` |
 | 双能量同步与装备扣能 | `outputs/starhome_lz_ry_fcc_source/mainclient_char.fcc`、`cltobj/equipclt.fcc`、`cltobj/appendequipclt.fcc` |

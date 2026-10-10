@@ -642,7 +642,7 @@
     },
     {
       "category": "mine",
-      "id": "item:material:078bc4104cd1",
+      "id": "energy_ore",
       "name": "能量矿"
     },
     {
@@ -652,7 +652,7 @@
     },
     {
       "category": "mine",
-      "id": "item:material:1850770283a8",
+      "id": "copper_ore",
       "name": "铜矿"
     },
     {
@@ -667,147 +667,147 @@
     },
     {
       "category": "mine",
-      "id": "item:material:dbd4b5c8b82f",
+      "id": "silver_ore",
       "name": "银矿"
     },
     {
       "category": "mine",
-      "id": "item:material:6b764a13c668",
+      "id": "gold_ore",
       "name": "金矿"
     },
     {
       "category": "mine",
-      "id": "item:material:ba90bdec9217",
+      "id": "gem_ore",
       "name": "宝石矿"
     },
     {
       "category": "mine",
-      "id": "item:material:8e82258ba743",
+      "id": "chromium_ore",
       "name": "铬矿"
     },
     {
       "category": "mine",
-      "id": "item:material:a039c10cf145",
+      "id": "red_crystal_ore",
       "name": "红水晶矿"
     },
     {
       "category": "mine",
-      "id": "item:material:f112d2e6b2a1",
+      "id": "blue_crystal_ore",
       "name": "蓝水晶矿"
     },
     {
       "category": "mine",
-      "id": "item:material:39aa70e8697d",
+      "id": "radium_ore",
       "name": "镭矿"
     },
     {
       "category": "mine",
-      "id": "item:material:32205fa18c6a",
+      "id": "green_crystal_ore",
       "name": "绿水晶矿"
     },
     {
       "category": "mine",
-      "id": "item:material:1342bef47b1c",
+      "id": "nickel_ore",
       "name": "镍矿"
     },
     {
       "category": "mine",
-      "id": "item:material:8e983c02db12",
+      "id": "zinc_ore",
       "name": "锌矿"
     },
     {
       "category": "mine",
-      "id": "item:material:639ecee21fb7",
+      "id": "purple_crystal_ore",
       "name": "紫水晶矿"
     },
     {
       "category": "mine",
-      "id": "item:material:185cf7b29406",
+      "id": "magnesium_ore",
       "name": "镁矿"
     },
     {
       "category": "mine",
-      "id": "item:material:6b0269b35f1b",
+      "id": "barium_ore",
       "name": "钡矿"
     },
     {
       "category": "mine",
-      "id": "item:material:4f5c6d64fd5b",
+      "id": "vanadium_ore",
       "name": "钒矿"
     },
     {
       "category": "mine",
-      "id": "item:material:8811cec57497",
+      "id": "cobalt_ore",
       "name": "钴矿"
     },
     {
       "category": "mine",
-      "id": "item:material:283227001fe4",
+      "id": "molybdenum_ore",
       "name": "钼矿"
     },
     {
       "category": "mine",
-      "id": "item:material:1793569f3af3",
+      "id": "tantalum_ore",
       "name": "钽矿"
     },
     {
       "category": "mine",
-      "id": "item:material:8d7632e7294c",
+      "id": "platinum_ore",
       "name": "铂金矿"
     },
     {
       "category": "mine",
-      "id": "item:material:6ce6d7cd8016",
+      "id": "treasure_ore",
       "name": "藏宝矿"
     },
     {
       "category": "mine",
-      "id": "item:material:5f3632e66566",
+      "id": "zirconium_ore",
       "name": "锆矿"
     },
     {
       "category": "mine",
-      "id": "item:material:7289df5b1ab9",
+      "id": "alloy_ore",
       "name": "合金矿"
     },
     {
       "category": "mine",
-      "id": "item:material:3d9597ddfaa0",
+      "id": "potassium_ore",
       "name": "钾矿"
     },
     {
       "category": "mine",
-      "id": "item:material:ba72367493f5",
+      "id": "scandium_ore",
       "name": "钪矿"
     },
     {
       "category": "mine",
-      "id": "item:material:b739c1f3c1d8",
+      "id": "phosphorus_ore",
       "name": "磷矿"
     },
     {
       "category": "mine",
-      "id": "item:material:5479cbea59ce",
+      "id": "sulfur_ore",
       "name": "硫矿"
     },
     {
       "category": "mine",
-      "id": "item:material:7c2a619313f6",
+      "id": "manganese_ore",
       "name": "锰矿"
     },
     {
       "category": "mine",
-      "id": "item:material:f5a20e4fbcd6",
+      "id": "titanium_ore",
       "name": "钛矿"
     },
     {
       "category": "mine",
-      "id": "item:material:a1d287e71f35",
+      "id": "tungsten_ore",
       "name": "钨矿"
     },
     {
       "category": "mine",
-      "id": "item:material:aa7b06e40657",
+      "id": "iridium_ore",
       "name": "铱矿"
     },
     {
@@ -824,11 +824,6 @@
       "category": "quest",
       "id": "armory_npc_supply",
       "name": "护甲材料收集"
-    },
-    {
-      "category": "quest",
-      "id": "special_arms_npc_supply",
-      "name": "特种武器材料收集"
     },
     {
       "category": "quest",
@@ -873,40 +868,40 @@
     {
       "id": "rookie",
       "name": "初露锋芒",
-      "required_points": 10,
+      "required_points": 50,
       "bonuses": {
-        "energy_cannon_attack": 1,
-        "energy_cannon_range": 5,
-        "rocket_attack": 1,
-        "missile_attack": 1,
+        "energy_cannon_attack": 0,
+        "energy_cannon_range": 0,
+        "rocket_attack": 0,
+        "missile_attack": 0,
         "max_health": 10,
-        "self_repair": 1
+        "self_repair": 0
       }
     },
     {
       "id": "pioneer",
       "name": "星际开拓者",
-      "required_points": 50,
+      "required_points": 100,
       "bonuses": {
-        "energy_cannon_attack": 3,
-        "energy_cannon_range": 10,
-        "rocket_attack": 3,
-        "missile_attack": 3,
-        "max_health": 30,
-        "self_repair": 2
+        "energy_cannon_attack": 1,
+        "energy_cannon_range": 0,
+        "rocket_attack": 0,
+        "missile_attack": 0,
+        "max_health": 10,
+        "self_repair": 0
       }
     },
     {
       "id": "elite",
       "name": "精英先锋",
-      "required_points": 150,
+      "required_points": 200,
       "bonuses": {
-        "energy_cannon_attack": 6,
-        "energy_cannon_range": 20,
-        "rocket_attack": 6,
-        "missile_attack": 6,
-        "max_health": 70,
-        "self_repair": 3
+        "energy_cannon_attack": 1,
+        "energy_cannon_range": 0,
+        "rocket_attack": 1,
+        "missile_attack": 1,
+        "max_health": 10,
+        "self_repair": 0
       }
     },
     {
@@ -914,25 +909,77 @@
       "name": "星际统领",
       "required_points": 500,
       "bonuses": {
-        "energy_cannon_attack": 12,
-        "energy_cannon_range": 35,
-        "rocket_attack": 12,
-        "missile_attack": 12,
-        "max_health": 150,
-        "self_repair": 5
+        "energy_cannon_attack": 2,
+        "energy_cannon_range": 0,
+        "rocket_attack": 1,
+        "missile_attack": 1,
+        "max_health": 20,
+        "self_repair": 0
       }
     },
     {
       "id": "legend",
       "name": "星域传奇",
-      "required_points": 1500,
+      "required_points": 1000,
       "bonuses": {
-        "energy_cannon_attack": 25,
-        "energy_cannon_range": 50,
-        "rocket_attack": 25,
-        "missile_attack": 25,
-        "max_health": 300,
-        "self_repair": 10
+        "energy_cannon_attack": 2,
+        "energy_cannon_range": 5,
+        "rocket_attack": 1,
+        "missile_attack": 1,
+        "max_health": 20,
+        "self_repair": 0
+      }
+    },
+    {
+      "id": "guardian",
+      "name": "银河守护者",
+      "required_points": 2000,
+      "bonuses": {
+        "energy_cannon_attack": 2,
+        "energy_cannon_range": 5,
+        "rocket_attack": 1,
+        "missile_attack": 1,
+        "max_health": 20,
+        "self_repair": 1
+      }
+    },
+    {
+      "id": "marshal",
+      "name": "星海统帅",
+      "required_points": 3000,
+      "bonuses": {
+        "energy_cannon_attack": 2,
+        "energy_cannon_range": 5,
+        "rocket_attack": 2,
+        "missile_attack": 2,
+        "max_health": 50,
+        "self_repair": 1
+      }
+    },
+    {
+      "id": "overlord",
+      "name": "星河霸主",
+      "required_points": 5000,
+      "bonuses": {
+        "energy_cannon_attack": 5,
+        "energy_cannon_range": 5,
+        "rocket_attack": 2,
+        "missile_attack": 2,
+        "max_health": 50,
+        "self_repair": 2
+      }
+    },
+    {
+      "id": "mythic",
+      "name": "宇宙传奇",
+      "required_points": 10000,
+      "bonuses": {
+        "energy_cannon_attack": 5,
+        "energy_cannon_range": 10,
+        "rocket_attack": 5,
+        "missile_attack": 5,
+        "max_health": 50,
+        "self_repair": 2
       }
     }
   ]

@@ -21,6 +21,15 @@ var _header_height := 38.0
 func handle_context_click(_point: Vector2) -> bool:
 	return false
 
+
+## PopupMenu 窗口拦截右键；转发给具体窗口重开目标菜单。
+func handle_context_menu_right_click(point: Vector2, inside_menu: bool) -> void:
+	if not visible:
+		return
+	if not handle_context_click(point) and not inside_menu:
+		request_close()
+
+
 ## 创建保持原始像素尺寸的可拖动游戏窗口。
 ## [param window_size] 背景和交互区域尺寸。
 ## [param background_texture] 对应荣耀版面板背景。

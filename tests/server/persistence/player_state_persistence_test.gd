@@ -1,9 +1,9 @@
 extends SceneTree
 
 const DomainResult := preload("res://scripts/core/domain_result.gd")
-const PlayerStateRecordScript := preload("res://scripts/server/persistence/player_state_record.gd")
 const FileRepositoryScript := preload("res://scripts/server/persistence/file_player_state_repository.gd")
 const SqliteDriverPortScript := preload("res://scripts/server/persistence/sqlite_driver_port.gd")
+const Fixture := preload("res://tests/fixtures/player_panel_service_fixture.gd")
 const SQL_MIGRATION_PATH := "res://data/server/persistence/migrations/001_initial.sql"
 const SKILL_MIGRATION_PATH := "res://data/server/persistence/migrations/002_skill_progression.sql"
 const TEST_DIRECTORY := "res://"
@@ -11,16 +11,18 @@ const TEST_DIRECTORY := "res://"
 var failures: Array[String] = []
 var assertions := 0
 var database_path := ""
+var fixture: PlayerPanelServiceFixture
 
 
 ## 初始化当前模块或独立测试夹具。
 func _initialize() -> void:
+	fixture = Fixture.new()
+	_expect(fixture.initialize().is_ok, "current-schema player fixture should initialize")
 	database_path = TEST_DIRECTORY.path_join(
 		"player_state_%d_%d.tmp" % [OS.get_process_id(), Time.get_ticks_msec()]
 	)
 	_test_sqlite_runtime_and_schema_seam()
-	_test_schema_zero_migration()
-	_test_legacy_inventory_row_rounding()
+	_test_inventory_position_required()
 	_test_atomic_transaction_and_reload()
 	_cleanup_test_files()
 	if failures.is_empty():
@@ -49,43 +51,11 @@ func _test_sqlite_runtime_and_schema_seam() -> void:
 		_expect(sql.contains("CREATE TABLE IF NOT EXISTS %s" % table_name), "SQL migration should define %s" % table_name)
 
 
-## 验证旧背包序号跨行时向下取整，不能把第七格提前推到下一行。
-func _test_legacy_inventory_row_rounding() -> void:
-	for slot in [0, 7, 8, 15, 16]:
-		var decoded := InventoryStackRecord.from_dictionary({
-			"stack_id": "fixture", "item_definition_id": "fixture", "quantity": 1,
-			"slot_index": slot,
-		})
-		_expect(decoded.is_ok, "legacy inventory slot should decode")
-		if decoded.is_ok:
-			var expected_row := 0 if slot < 8 else (1 if slot < 16 else 2)
-			_expect(decoded.value.position_px == Vector2i((slot % 8) * 30, expected_row * 30),
-				"legacy slot must preserve its original row and column")
-
-
-## 执行 `test_schema_zero_migration` 对应的模块操作。
-func _test_schema_zero_migration() -> void:
-	var migration_path := database_path.replace("player_state_", "player_state_migration_")
-	var state: PlayerStateRecord = _fixture_state()
-	var legacy := {
-		"schema_version": 0,
-		"characters": {state.character_id: state.to_dictionary()},
-	}
-	var file := FileAccess.open(migration_path, FileAccess.WRITE)
-	_expect(file != null, "migration fixture should open")
-	if file == null:
-		return
-	file.store_string(JSON.stringify(legacy))
-	file.close()
-	var repository: FilePlayerStateRepository = FileRepositoryScript.new(migration_path)
-	var initialized := repository.initialize()
-	_expect(initialized.is_ok, "schema-zero file should migrate during initialization")
-	_expect(repository.current_schema_version() == 2, "repository should expose migrated schema two")
-	var loaded := repository.load_player(state.character_id)
-	_expect(loaded.is_ok and loaded.value.display_name == state.display_name, "migrated player aggregate should remain loadable")
-	var migrated_root: Variant = JSON.parse_string(FileAccess.get_file_as_string(migration_path))
-	_expect(migrated_root is Dictionary and int(migrated_root["schema_version"]) == 2, "migration should be materialized to disk")
-	_expect(migrated_root.has("players") and not migrated_root.has("characters"), "migration should replace the legacy aggregate key")
+func _test_inventory_position_required() -> void:
+	var raw: Dictionary = _fixture_state().inventory_stacks[0].to_dictionary()
+	raw.erase("position_px")
+	var decoded := InventoryStackRecord.from_dictionary(raw)
+	_expect(not decoded.is_ok, "inventory position must be present in current records")
 
 
 ## 执行 `test_atomic_transaction_and_reload` 对应的模块操作。
@@ -124,7 +94,7 @@ func _test_atomic_transaction_and_reload() -> void:
 	_expect(reloaded_repository.initialize().is_ok, "new repository instance should reopen committed storage")
 	var restored := reloaded_repository.load_player("character.tomato")
 	_expect(restored.is_ok, "disconnect/reconnect reload should recover the character")
-	_expect(restored.value.map_id == "d04_field_zone" and restored.value.map_instance_id == "d04.instance.7", "reload should restore location and map instance")
+	_expect(restored.value.map_id == "glory_nft_bl_d04" and restored.value.map_instance_id == "d04.instance.7", "reload should restore location and map instance")
 	_expect(restored.value.position == Vector2(1200.0, 1200.0), "reload should restore authoritative position")
 	_expect(int(restored.value.vehicle_health) == 55, "reload should restore vehicle combat state")
 	_expect(int(restored.value.inventory_stacks[0].quantity) == 8, "reload should restore committed inventory stacks")
@@ -137,7 +107,7 @@ func _test_atomic_transaction_and_reload() -> void:
 ## [param state] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## 返回该函数计算、查询或操作得到的结果。
 func _apply_checkpoint_transaction(state: PlayerStateRecord) -> DomainResult:
-	state.map_id = "d04_field_zone"
+	state.map_id = "glory_nft_bl_d04"
 	state.map_instance_id = "d04.instance.7"
 	state.position = Vector2(1200.0, 1200.0)
 	state.facing_direction = 3
@@ -160,66 +130,44 @@ func _abort_after_mutation(state: PlayerStateRecord) -> DomainResult:
 ## 执行 `fixture_state` 对应的模块操作。
 ## 返回该函数计算、查询或操作得到的结果。
 func _fixture_state() -> PlayerStateRecord:
-	var result := PlayerStateRecordScript.from_dictionary({
-		"schema_version": PlayerStateRecord.CURRENT_SCHEMA_VERSION,
-		"account_id": "account.tomato",
-		"account_name": "tomato",
-		"account_status": "active",
-		"character_id": "character.tomato",
-		"display_name": "H番茄花园",
-		"revision": 0,
-		"inventory_revision": 0,
-		"inventory_capacity": 40,
-		"inventory_stacks": [{
-			"stack_id": "stack.iron.1",
-			"item_definition_id": "item.material.iron",
-			"quantity": 5,
-			"slot_index": 0,
-		}],
-		"equipment_slots": [{
-			"owner_kind": "vehicle",
-			"slot_id": "primary_weapon",
-			"item_instance_id": "equipment.cannon.1",
-			"item_definition_id": "recruit_energy_cannon",
-			"max_durability": 900,
-			"durability": 900,
-			"upgrade_level": 0,
-		}],
-		"character_max_health": 100,
-		"character_health": 100,
-		"character_experience": 0,
-		"character_skills": {
-			"energy_cannon": {"level": 10, "current_exp": 4, "fractional_exp": 0.5},
-			"driving": {"level": 10, "current_exp": 0, "fractional_exp": 0.0},
-		},
-		"vehicle_id": "vehicle.tomato.1",
-		"vehicle_definition_id": "recruit_tank",
-		"vehicle_max_health": 70,
-		"vehicle_health": 70,
-		"reserve_energy_capacity": 10000,
-		"reserve_energy": 10000,
-		"working_energy_capacity": 100,
-		"working_energy": 100,
-		"output_power": 21,
-		"map_id": "yian_harbor_hall_floor_1",
-		"map_instance_id": "RoomSvr1.instance.1",
-		"position": [730, 1330],
-		"facing_direction": 0,
-		"checkpoint_id": "hall.default",
-	})
-	_expect(result.is_ok, "persistence fixture should satisfy aggregate invariants")
-	return result.value
+	var state: PlayerStateRecord = fixture._state.duplicate_record()
+	state.account_id = "account.tomato"
+	state.account_name = "tomato"
+	state.character_id = "character.tomato"
+	state.display_name = "H番茄花园"
+	state.inventory_stacks = [state.inventory_stacks[0].duplicate_record()]
+	state.inventory_stacks[0].stack_id = "stack.iron.1"
+	state.inventory_stacks[0].quantity = 5
+	var weapon := state.equipment_slots[1].duplicate_record()
+	weapon.item_instance_id = "equipment.cannon.1"
+	state.equipment_slots = [weapon]
+	state.character_health = 100
+	state.character_max_health = 100
+	state.vehicle_health = 70
+	state.vehicle_max_health = 70
+	state.vehicle_id = "vehicle.tomato.1"
+	state.map_instance_id = "RoomSvr1.instance.1"
+	state.position = Vector2(730, 1330)
+	state.checkpoint_id = "hall.default"
+	var validation := state.validate()
+	_expect(validation.is_ok, "persistence fixture should satisfy aggregate invariants")
+	return state
 
 
 ## 移除并清理 `cleanup_test_files` 对应的模块状态。
 func _cleanup_test_files() -> void:
-	var migration_path := database_path.replace("player_state_", "player_state_migration_")
 	for path: String in [
 		database_path, database_path + ".tmp", database_path + ".bak",
-		migration_path, migration_path + ".tmp", migration_path + ".bak",
 	]:
 		if FileAccess.file_exists(path):
 			DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
+	for old_version: int in [0, 1, 2]:
+		var old_path := database_path.replace(
+			"player_state_", "player_state_old_%d_" % old_version
+		)
+		for path: String in [old_path, old_path + ".tmp", old_path + ".bak"]:
+			if FileAccess.file_exists(path):
+				DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
 
 
 ## 执行 `expect` 对应的模块操作。

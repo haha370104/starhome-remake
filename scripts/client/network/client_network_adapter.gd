@@ -9,8 +9,9 @@ signal use_ability_intent_sent(payload: Dictionary)
 signal vehicle_recovery_intent_sent(payload: Dictionary)
 signal pickup_loot_intent_sent(payload: Dictionary)
 signal player_panel_command_sent(payload: Dictionary)
-signal authoritative_snapshot_received(snapshot: Dictionary)
-signal remote_snapshot_received(snapshot: Dictionary)
+signal social_command_sent(payload: Dictionary)
+signal authoritative_world_snapshot_received(snapshot: Dictionary)
+signal authoritative_local_snapshot_received(snapshot: Dictionary)
 signal server_message_received(message: Dictionary)
 signal session_opened(result: Dictionary)
 signal map_joined_received(result: Dictionary)
@@ -36,6 +37,7 @@ var reconnect_token := ""
 var entity_id := ""
 var map_id := ""
 var map_instance_id := ""
+var local_display_name := ""
 var _transport_endpoint: Node
 var _in_process_server_config
 var _in_process_repository
@@ -71,6 +73,13 @@ func configure_in_process_server(server_config, repository = null) -> bool:
 	return true
 
 
+## 返回当前进程内传输拥有的权威服务器；真实网络客户端永远返回空值。
+func in_process_authoritative_server() -> Node:
+	if not offline_debug_enabled or _transport_endpoint == null:
+		return null
+	return _transport_endpoint.get("authoritative_server") as Node
+
+
 ## 执行 `connect_to_server` 对应的模块操作。
 ## [param host] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## [param port] 调用方传入的参数；具体约束由函数签名和所在模块定义。
@@ -83,7 +92,8 @@ func connect_to_server(host: String, port: int = DEFAULT_PORT) -> Error:
 	_ensure_transport_endpoint()
 	var error: Error = _transport_endpoint.call("connect_client", host, port)
 	if error != OK:
-		connection_failed.emit(error_string(error))
+		var message := String(_transport_endpoint.get("last_connection_error_message")).strip_edges()
+		connection_failed.emit(message if not message.is_empty() else error_string(error))
 		return error
 	_set_connection_state(ConnectionState.CONNECTING)
 	return OK
@@ -171,20 +181,26 @@ func send_player_panel_command(payload: Dictionary) -> Error:
 	return OK
 
 
+## 将组队、聊天或玩家交易意图发往可靠命令通道。
+## 具体业务身份和状态只由服务端社交服务验证。
+func send_social_command(payload: Dictionary) -> Error:
+	if connection_state != ConnectionState.CONNECTED:
+		return ERR_UNCONFIGURED
+	social_command_sent.emit(payload.duplicate(true))
+	_transport_endpoint.send_social_command(payload)
+	return OK
+
+
 ## 执行 `inject_authoritative_snapshot` 对应的模块操作。
 ## [param snapshot] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## 设计：该函数位于客户端交互或表现边界，最终状态以服务器权威结果为准。
 func inject_authoritative_snapshot(snapshot: Dictionary) -> void:
 	if offline_debug_enabled:
-		authoritative_snapshot_received.emit(snapshot.duplicate(true))
-
-
-## 执行 `inject_remote_snapshot` 对应的模块操作。
-## [param snapshot] 调用方传入的参数；具体约束由函数签名和所在模块定义。
-## 设计：该函数位于客户端交互或表现边界，最终状态以服务器权威结果为准。
-func inject_remote_snapshot(snapshot: Dictionary) -> void:
-	if offline_debug_enabled:
-		remote_snapshot_received.emit(snapshot.duplicate(true))
+		if not snapshot.get("world_snapshot") is Dictionary \
+			or not snapshot.get("local_snapshot") is Dictionary:
+			return
+		receive_world_snapshot(snapshot["world_snapshot"])
+		receive_local_snapshot(snapshot["local_snapshot"])
 
 
 ## 执行 `receive_server_message` 对应的模块操作。
@@ -214,8 +230,11 @@ func receive_server_message(message: Dictionary) -> void:
 ## [param snapshot] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## 设计：该函数位于客户端交互或表现边界，最终状态以服务器权威结果为准。
 func receive_world_snapshot(snapshot: Dictionary) -> void:
-	authoritative_snapshot_received.emit(snapshot.duplicate(true))
-	remote_snapshot_received.emit(snapshot.duplicate(true))
+	authoritative_world_snapshot_received.emit(NetworkProtocol.share_snapshot(snapshot))
+
+
+func receive_local_snapshot(snapshot: Dictionary) -> void:
+	authoritative_local_snapshot_received.emit(NetworkProtocol.share_snapshot(snapshot))
 
 
 ## 处理 `_on_connected_to_server` 对应的信号回调。
@@ -226,6 +245,8 @@ func _on_connected_to_server() -> void:
 		"protocol_version": Protocol.PROTOCOL_VERSION,
 		"content_version": Protocol.PUBLIC_CONTENT_VERSION,
 	}
+	if not local_display_name.strip_edges().is_empty():
+		request["display_name"] = local_display_name.strip_edges()
 	if not reconnect_token.is_empty():
 		request["reconnect_token"] = reconnect_token
 	_transport_endpoint.request_session(request)
@@ -286,6 +307,7 @@ func _ensure_transport_endpoint() -> void:
 	_connect_transport_signal(&"server_disconnected", _on_server_disconnected)
 	_connect_transport_signal(&"server_message_received", receive_server_message)
 	_connect_transport_signal(&"world_snapshot_received", receive_world_snapshot)
+	_connect_transport_signal(&"local_snapshot_received", receive_local_snapshot)
 
 
 ## 将传输端点信号与客户端回调绑定，并保证重连或复用根节点时不会重复绑定。
@@ -314,5 +336,3 @@ func _apply_session_opened(result: Dictionary) -> void:
 	session_opened.emit(result.duplicate(true))
 	if not session_ready:
 		return
-	if value.get("snapshot") is Dictionary:
-		receive_world_snapshot(value["snapshot"])

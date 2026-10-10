@@ -34,7 +34,7 @@ func reset() -> void:
 ## [param entities] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## 返回该函数计算、查询或操作得到的结果。
 ## 设计：该函数位于客户端交互或表现边界，最终状态以服务器权威结果为准。
-func push_snapshot(server_tick: int, server_time_seconds: float, entities: Array) -> bool:
+func push_snapshot(server_tick: int, server_time_seconds: float, entities: Array, player_presentation: Dictionary = {}) -> bool:
 	if server_tick <= last_server_tick:
 		stale_snapshot_rejected.emit(server_tick)
 		return false
@@ -56,6 +56,9 @@ func push_snapshot(server_tick: int, server_time_seconds: float, entities: Array
 			"position": _to_vector2(entity["position"]),
 			"facing_direction": int(entity.get("facing_direction", 0)),
 			"action_id": StringName(String(entity.get("action_id", "idle"))),
+			"sex": String(entity.get("sex", "male")),
+			"appearance": entity.get("appearance", {}),
+			"player_presentation": player_presentation,
 			"speed": float(entity.get("speed", 0.0)),
 		}
 		var track: Array = _tracks.get(entity_id, [])
@@ -104,13 +107,10 @@ func sample_entity_at(entity_id: StringName, server_time_seconds: float) -> Dict
 			0.0,
 			1.0,
 		)
-		return {
-			"position": Vector2(previous["position"]).lerp(Vector2(current["position"]), weight),
-			"facing_direction": int(current["facing_direction"]),
-			"action_id": StringName(current["action_id"]),
-			"speed": lerpf(float(previous["speed"]), float(current["speed"]), weight),
-			"server_tick": int(current["server_tick"]),
-		}
+		var result := _presentation_from_sample(current)
+		result["position"] = Vector2(previous["position"]).lerp(Vector2(current["position"]), weight)
+		result["speed"] = lerpf(float(previous["speed"]), float(current["speed"]), weight)
+		return result
 	return _presentation_from_sample(track[track.size() - 1])
 
 
@@ -144,13 +144,9 @@ func remove_entity(entity_id: StringName) -> void:
 ## 返回该函数计算、查询或操作得到的结果。
 ## 设计：该函数位于客户端交互或表现边界，最终状态以服务器权威结果为准。
 func _presentation_from_sample(sample: Dictionary) -> Dictionary:
-	return {
-		"position": Vector2(sample["position"]),
-		"facing_direction": int(sample["facing_direction"]),
-		"action_id": StringName(sample["action_id"]),
-		"speed": float(sample["speed"]),
-		"server_tick": int(sample["server_tick"]),
-	}
+	var result := sample.duplicate()
+	result.erase("server_time")
+	return result
 
 
 ## 序列化或保存 `to_vector2` 对应的模块状态。
@@ -162,4 +158,6 @@ func _to_vector2(value: Variant) -> Vector2:
 		return value
 	if value is Dictionary:
 		return Vector2(float(value.get("x", 0.0)), float(value.get("y", 0.0)))
+	if value is Array and (value as Array).size() == 2:
+		return Vector2(float(value[0]), float(value[1]))
 	return Vector2.ZERO

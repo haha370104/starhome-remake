@@ -2,9 +2,9 @@
 import json
 import re
 from pathlib import Path
+from recovery.fcc_workspace import RawFccWorkspace
 
 ROOT = Path(__file__).resolve().parents[1]
-SOURCE = ROOT.parent / "starhome_lz_ry_fcc_source"
 
 
 def quoted(value):
@@ -16,7 +16,8 @@ def main():
     """Compile default-style bindings using the existing Glory sprite index."""
     items = json.loads((ROOT / "data/gameplay/glory/glory_items_v1.json").read_text(encoding="utf-8-sig"))["definitions"]
     rockets = json.loads((ROOT / "data/gameplay/official_rocket_items_v1.json").read_text(encoding="utf-8-sig"))["definitions"]
-    source = (SOURCE / "cltobj/fireguncltclass.fcc").read_text(encoding="utf-8-sig")
+    with RawFccWorkspace() as fcc:
+        source = fcc.text("cltobj/fireguncltclass.fcc")
     for item in rockets:
         number = item["id"].rsplit("_", 1)[1]
         body = re.search(r'class\s+FireGun_?' + number + r'\s*:[^{]+\{(.*?)(?=\nclass|\Z)', source, re.S | re.I).group(1)

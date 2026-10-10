@@ -21,6 +21,7 @@ func _run() -> void:
 	root.add_child(monster_controller)
 	var manifest: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://assets/equipment_world/combat_visual_manifest.json"))
 	_check(monster_controller.configure(world, manifest, player) == OK, "world controller configure")
+	monster_controller.apply_snapshot({"monsters": [], "recent_events": []})
 	var effects := monster_controller._sama_effects
 	effects.set_process(false)
 	var snapshot := {"local_entity_id":"tester", "monsters":[], "recent_events":[{"event_id":1,"event_type":"sama_activated","kind":"pulse","attacker_id":"tester","origin":[220,440],"direction":[1,0]}],

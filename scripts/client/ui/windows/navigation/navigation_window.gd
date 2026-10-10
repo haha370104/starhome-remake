@@ -3,7 +3,7 @@ extends DraggableGameWindow
 
 signal notice_requested(message: String)
 
-const FONT := preload("res://assets/ui/fonts/legacy_panel_font.tres")
+const FONT := preload("res://assets/ui/fonts/NotoSansCJKsc-Regular.otf")
 
 
 ## 配置导航窗口的固定尺寸、原版背景与统一字体。
@@ -11,7 +11,7 @@ const FONT := preload("res://assets/ui/fonts/legacy_panel_font.tres")
 ## [param background] 受控业务路径的原版背景。
 ## [param title] 窗口标题；为空时不叠加文字。
 func build_window(dimensions: Vector2, background: Texture2D, title: String) -> void:
-	configure(dimensions, background, Vector2(dimensions.x - 25, 15))
+	configure(dimensions, background, Vector2(dimensions.x - 25, 11))
 	var window_theme := Theme.new()
 	window_theme.default_font = FONT
 	window_theme.default_font_size = 12

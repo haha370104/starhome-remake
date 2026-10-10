@@ -11,26 +11,21 @@ from pathlib import Path
 from typing import Any
 
 from PIL import Image
+from recovery.cross_release_paths import CACHE
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 OUTPUTS_ROOT = PROJECT_ROOT.parent
-GLORY_RAW = OUTPUTS_ROOT / "starhome_lz_ry_full" / "raw"
-GLORY_PARSED = OUTPUTS_ROOT / "starhome_lz_ry_full_parsed" / "ale_sprites"
+GLORY_RAW = PROJECT_ROOT / "../starhome_lz_ry_full" / "raw"
+GLORY_PARSED = PROJECT_ROOT / "assets" / "glory" / "sprites"
 MAP_PATHS = (
     PROJECT_ROOT / "data" / "maps" / "yian_harbor_hall_floor_1.json",
     PROJECT_ROOT / "data" / "maps" / "yian_harbor_city.json",
-    PROJECT_ROOT / "data" / "maps" / "d04_field_zone.json",
-    PROJECT_ROOT / "data" / "maps" / "g08_field_zone.json",
+    PROJECT_ROOT / "data" / "maps" / "glory_nft_bl_d04.json",
+    PROJECT_ROOT / "data" / "maps" / "glory_nft_bl_g08.json",
 )
-GLORY_MAPS_PARSED = OUTPUTS_ROOT / "starhome_lz_ry_maps_parsed"
-FREE_FIELD_MARKER_FALLBACK = (
-    OUTPUTS_ROOT
-    / "starhome_lz_ry_full_parsed"
-    / "official_lazy_cache"
-    / "free_version_transition_fallback"
-    / "raw"
-)
+GLORY_MAPS_PARSED = PROJECT_ROOT / "data" / "source_evidence" / "glory" / "map_recovery"
+FREE_FIELD_MARKER_FALLBACK = CACHE / "free" / "raw" / "map" / "mapimg" / "ani" / "chn_2005_06_28_19_32_06_50"
 TARGET_ROOT = PROJECT_ROOT / "assets" / "maps" / "shared" / "directional_transitions"
 TARGET_CATALOG = PROJECT_ROOT / "data" / "presentation" / "map_transition_marker_catalog.json"
 
@@ -138,13 +133,13 @@ def _export_direction(legacy_style: int) -> dict[str, Any]:
         "source_release": "starhome_lz_ry",
         "source_logical_path": f"pic3/interface/sportimg/{legacy_name}.ale",
         "source_sha256": _sha256(raw_path),
-        "source_frames_json": f"starhome_lz_ry_full_parsed/ale_sprites/pic3/interface/sportimg/{legacy_name}/frames.json",
+        "source_frames_json": f"assets/glory/sprites/pic3/interface/sportimg/{legacy_name}/frames.json",
         "extraction_policy": "all_frames_in_source_order",
         "legacy_playdelay_ms": 100,
         "direction": direction,
         "frame_count": len(source_frames),
     }
-    field_marker_fallback = FREE_FIELD_MARKER_FALLBACK / f"source_style_{legacy_style:02d}.ale"
+    field_marker_fallback = FREE_FIELD_MARKER_FALLBACK / f"jt-{legacy_style:02d}..ale"
     if not field_marker_fallback.is_file():
         raise FileNotFoundError(f"missing field marker fallback evidence: {field_marker_fallback}")
     fallback_hash = _sha256(field_marker_fallback)

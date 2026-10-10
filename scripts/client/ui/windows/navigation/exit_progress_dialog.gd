@@ -9,7 +9,7 @@ var _can_return := false
 ## 创建使用统一字体的退出状态窗，等待保存期间不把关闭窗口视作成功。
 func _ready() -> void:
 	theme = Theme.new()
-	theme.default_font = preload("res://assets/ui/fonts/legacy_panel_font.tres")
+	theme.default_font = preload("res://assets/ui/fonts/NotoSansCJKsc-Regular.otf")
 	theme.default_font_size = 16
 	title = "保存并退出"
 	ok_button_text = "重试保存"

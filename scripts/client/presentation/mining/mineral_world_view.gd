@@ -17,6 +17,7 @@ var _sprite: Sprite2D
 var _tooltip
 var _hover_material: ShaderMaterial
 var _local_hit_rect := Rect2()
+var _hit_mask: BitMap
 
 
 ## 以荣耀版 ALE 帧表和权威矿源快照创建一处矿物表现。
@@ -46,22 +47,7 @@ func configure(snapshot: Dictionary, presentation: Dictionary) -> Error:
 		Vector2(cell_size.x * float(visual_variant), 0.0),
 		cell_size,
 	)
-	_sprite = Sprite2D.new()
-	_sprite.name = "MineralSprite"
-	_sprite.texture = atlas
-	_sprite.centered = false
-	_sprite.position = origin
-	_hover_material = ShaderMaterial.new()
-	_hover_material.shader = HOVER_GLOW_SHADER
-	_hover_material.set_shader_parameter("glow_color", HOVER_GLOW_COLOR)
-	_hover_material.set_shader_parameter("glow_radius", HOVER_GLOW_RADIUS)
-	_hover_material.set_shader_parameter("hover_amount", 0.0)
-	_set_shader_frame_region(atlas)
-	_sprite.material = _hover_material
-	add_child(_sprite)
-	_local_hit_rect = Rect2(origin, cell_size)
-	_tooltip = WorldHoverTooltipScript.new()
-	add_child(_tooltip)
+	_create_visual_nodes(atlas, origin, cell_size)
 	apply_snapshot(snapshot)
 	return OK
 
@@ -104,6 +90,8 @@ func _create_visual_nodes(
 	_sprite.texture = texture
 	_sprite.centered = false
 	_sprite.position = origin
+	_hit_mask = BitMap.new()
+	_hit_mask.create_from_image_alpha(texture.get_image())
 	_hover_material = ShaderMaterial.new()
 	_hover_material.shader = HOVER_GLOW_SHADER
 	_hover_material.set_shader_parameter("glow_color", HOVER_GLOW_COLOR)
@@ -147,11 +135,17 @@ func apply_snapshot(snapshot: Dictionary) -> void:
 		])
 
 
-## 判断世界坐标是否命中此矿点的原始 ALE 帧矩形。
+## 判断世界坐标是否命中当前 ALE 帧的可见像素。
 ## [param world_position] 调用方传入的 `world_position` 参数。
 ## 返回该函数计算、查询或操作得到的结果。
 func contains_world_point(world_position: Vector2) -> bool:
-	return visible and _local_hit_rect.has_point(to_local(world_position))
+	if not visible or _hit_mask == null:
+		return false
+	var local_point := to_local(world_position)
+	var pixel := local_point - _sprite.position
+	return _local_hit_rect.has_point(local_point) \
+		and Rect2(Vector2.ZERO, _hit_mask.get_size()).has_point(pixel) \
+		and _hit_mask.get_bitv(Vector2i(pixel.floor()))
 
 
 ## 切换荣耀版地面资源通用的绿色悬浮描边与说明文字。

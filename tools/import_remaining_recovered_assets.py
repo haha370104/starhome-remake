@@ -1,34 +1,27 @@
-"""Build the explicitly approved cross-release recovery pack without filename fallback at runtime."""
+"""Materialize approved cross-release ALE assets from local raw into assets/recovered."""
 from __future__ import annotations
 import copy
 import hashlib
 import json
 import re
-import zipfile
+import shutil
+from contextlib import ExitStack
 from pathlib import Path
+from tempfile import TemporaryDirectory
 
-from audit_cross_release_assets import normalize, read, RELEASES, DEST
-from import_approved_equipment_assets import ROOT, OUTPUTS
+from audit_cross_release_assets import normalize, read, RELEASES
+from recovery.fcc_workspace import RawFccWorkspace
+from recovery.source_workspace import RawSpriteWorkspace
 
+ROOT = Path(__file__).resolve().parents[1]
 SELECTIONS = ROOT / 'data/import/recovered_asset_selections_v1.json'
-PACK = ROOT / 'assets/content_packs/recovered_equipment_and_scenery.zip'
+RAW_ROOTS = {release: ROOT / (name + '_full') / 'raw' for release, name in RELEASES.items()}
+DESTINATION = ROOT / 'assets/recovered'
 
 
 def digest(data):
     """Return the content hash used by provenance and deterministic pack checks."""
     return hashlib.sha256(data).hexdigest()
-
-
-def source_files(release, reference):
-    """Resolve an explicitly selected archive entry, never a basename search."""
-    raw = OUTPUTS / (RELEASES[release] + '_full/raw') / reference
-    parsed = OUTPUTS / (RELEASES[release] + '_full_parsed/ale_sprites') / reference.removesuffix('.ale')
-    if not raw.is_file():
-        raw = DEST / 'remote_cache' / release / 'raw' / reference
-        parsed = DEST / 'remote_cache' / release / 'ale_sprites' / reference.removesuffix('.ale')
-    if not raw.is_file() or not (parsed / 'frames.json').is_file():
-        raise FileNotFoundError(reference)
-    return raw, parsed
 
 
 def write_rows(path, prefix, key, rows):
@@ -41,11 +34,32 @@ def write_rows(path, prefix, key, rows):
     path.write_text(header + ',"' + key + '":' + opening + '\n' + ',\n'.join(entries) + '\n' + closing + '}\n', encoding='utf-8')
 
 
-def pack_entry(archive, path, payload):
-    """Use stable timestamps and semantic resource paths for repeatable archives."""
-    info = zipfile.ZipInfo(path, (2026, 9, 17, 0, 0, 0))
-    info.compress_type = zipfile.ZIP_DEFLATED
-    archive.writestr(info, payload)
+def preserved_runtime_specs(index_rows, selections):
+    """Return previously indexed recovered sprites that are outside the new selections."""
+    selected = {(row['source_logical_path'], row['source_sha256']) for row in selections}
+    release_names = {'starhome_lz_fr': 'free', 'starhome_jznp': 'jz'}
+    specs = []
+    for row in index_rows:
+        identity = (row.get('source_logical_path', ''), row.get('source_sha256', ''))
+        if identity in selected:
+            continue
+        source_version = release_names.get(row.get('source_release', ''))
+        frames_path = str(row.get('frames_path', ''))
+        prefix = 'res://assets/recovered/'
+        suffix = '/frames.json'
+        if source_version is None or not frames_path.startswith(prefix) or not frames_path.endswith(suffix):
+            continue
+        specs.append({
+            'source_audit_id': 'legacy-runtime:' + str(row['logical_id']),
+            'source_reference': row.get('source_replaced_reference', row['source_logical_path']),
+            'source_version': source_version,
+            'source_logical_path': row['source_logical_path'],
+            'source_sha256': row['source_sha256'],
+            'asset_path': frames_path[len(prefix):-len(suffix)],
+            'source_match': 'preserved_runtime_index',
+            'source_comparison': 'previously_recovered',
+        })
+    return specs
 
 
 def build():
@@ -57,64 +71,85 @@ def build():
     overrides_path = ROOT / 'data/presentation/recovered_equipment_v1.json'
     overrides = read(overrides_path)['definitions']
     items = read(ROOT / 'data/gameplay/glory/glory_items_v1.json')['definitions']
-    evidence, destinations = [], set()
-    checks = read(DEST / 'remote_checks.json')
-    with zipfile.ZipFile(PACK, 'w') as archive:
-        for spec in selections:
-            raw, parsed = source_files(spec['source_version'], spec['source_logical_path'])
-            source_bytes = raw.read_bytes()
-            if digest(source_bytes) != spec['source_sha256']:
+    legacy_specs = preserved_runtime_specs(index['sprites'], selections)
+    evidence, legacy_evidence, destinations = [], [], set()
+    specs = selections + legacy_specs
+    with ExitStack() as stack:
+        workspaces = {release: stack.enter_context(RawSpriteWorkspace(raw_root))
+                      for release, raw_root in RAW_ROOTS.items()}
+        for release, workspace in workspaces.items():
+            workspace.require([spec['source_logical_path'] for spec in specs if spec['source_version'] == release])
+        for spec in specs:
+            raw = workspaces[spec['source_version']].source(spec['source_logical_path'])
+            if digest(raw.read_bytes()) != spec['source_sha256']:
                 raise ValueError('source changed: ' + spec['source_reference'])
-            metadata = copy.deepcopy(read(parsed / 'frames.json'))
-            target = 'assets/recovered/' + spec['asset_path']
-            if target in destinations or '..' in target:
-                raise ValueError('invalid or duplicate destination: ' + target)
-            destinations.add(target)
-            page_names = []
-            page_hashes = []
-            for n, source_page in enumerate(metadata['pages']):
-                page = 'atlas.png' if n == 0 else f'atlas_{n}.png'
-                payload = (parsed / source_page).read_bytes()
-                page_hashes.append(digest(payload))
-                pack_entry(archive, target + '/' + page, payload)
-                page_names.append(page)
-            release = RELEASES[spec['source_version']]
-            metadata.update(pages=page_names, source=release + '/raw/' + spec['source_logical_path'], source_release=release)
-            pack_entry(archive, target + '/frames.json', json.dumps(metadata, ensure_ascii=False, separators=(',', ':')).encode())
-            logical = normalize(spec['source_reference']).removesuffix('.ale')
-            row = {'logical_id': logical, 'frames_path': 'res://' + target + '/frames.json',
-                   'page_paths': ['res://' + target + '/' + p for p in page_names], 'frame_count': metadata['frame_count'],
-                   'source_release': release, 'source_logical_path': spec['source_logical_path'],
-                   'source_replaced_reference': spec['source_reference'], 'source_sha256': spec['source_sha256']}
-            rows[logical] = row
-            evidence.append({**spec, 'frame_count': metadata['frame_count'], 'page_sha256': page_hashes})
-            for item in items:
-                for mode, presentation in item.get('presentation', {}).items():
-                    if not isinstance(presentation, dict) or normalize(presentation.get('ale_reference', '')).removesuffix('.ale') != logical:
-                        continue
-                    restored = copy.deepcopy(presentation)
-                    # Explicit normalized references also repair the source's doubled slash in old armor paths.
-                    restored.update(ale_reference=logical, asset_status='recovered_from_user_approved_release', source_release=release)
-                    overrides.setdefault(item['id'], {})[mode] = restored
-        manifest = {'schema_version': 1, 'authorization': '2026-09-17 user: install every remaining candidate; free edition preferred when identical; earlier explicit selections preserved',
-                    'policy': 'All source frames, pages and pivots preserved. Explicit references only; no runtime filename fallback.',
-                    'assets': evidence, 'source_remote_checks': checks}
-        pack_entry(archive, 'assets/recovered/source_manifest.json', json.dumps(manifest, ensure_ascii=False, separators=(',', ':')).encode())
+
+        with TemporaryDirectory(prefix='starhome-recovered-') as temporary:
+            staged = Path(temporary)
+            for spec_index, spec in enumerate(specs):
+                relative = Path(spec['asset_path'])
+                if relative == Path('.') or relative.is_absolute() or '..' in relative.parts or relative in destinations:
+                    raise ValueError('invalid or duplicate destination: ' + spec['asset_path'])
+                destinations.add(relative)
+                decoded, decoded_metadata = workspaces[spec['source_version']].decode(spec['source_logical_path'])
+                metadata = copy.deepcopy(decoded_metadata)
+                target = staged / relative
+                target.mkdir(parents=True, exist_ok=True)
+                page_names, page_hashes = [], []
+                for number, source_page in enumerate(metadata['pages']):
+                    page = 'atlas.png' if number == 0 else f'atlas_{number}.png'
+                    payload = (decoded / source_page).read_bytes()
+                    (target / page).write_bytes(payload)
+                    page_hashes.append(digest(payload))
+                    page_names.append(page)
+                release = RELEASES[spec['source_version']]
+                metadata.update(pages=page_names, source=release + '/raw/' + spec['source_logical_path'], source_release=release)
+                (target / 'frames.json').write_text(json.dumps(metadata, ensure_ascii=False, separators=(',', ':')), encoding='utf-8')
+                if spec_index < len(selections):
+                    logical = normalize(spec['source_reference']).removesuffix('.ale')
+                    resource = 'res://assets/recovered/' + relative.as_posix()
+                    rows[logical] = {'logical_id': logical, 'frames_path': resource + '/frames.json',
+                        'page_paths': [resource + '/' + page for page in page_names], 'frame_count': metadata['frame_count'],
+                        'source_release': release, 'source_logical_path': spec['source_logical_path'],
+                        'source_replaced_reference': spec['source_reference'], 'source_sha256': spec['source_sha256']}
+                    evidence.append({**spec, 'frame_count': metadata['frame_count'], 'page_sha256': page_hashes})
+                    for item in items:
+                        for mode, presentation in item.get('presentation', {}).items():
+                            if not isinstance(presentation, dict) or normalize(presentation.get('ale_reference', '')).removesuffix('.ale') != logical:
+                                continue
+                            restored = copy.deepcopy(presentation)
+                            restored.update(ale_reference=logical, asset_status='recovered_from_user_approved_release', source_release=release)
+                            overrides.setdefault(item['id'], {})[mode] = restored
+                else:
+                    legacy_evidence.append({**spec, 'frame_count': metadata['frame_count'], 'page_sha256': page_hashes})
+
+            manifest = {'schema_version': 1, 'authorization': '2026-09-17 user: install every remaining candidate; free edition preferred when identical; earlier explicit selections preserved',
+                        'policy': 'All source frames, pages and pivots preserved. Explicit references only; no runtime filename fallback.',
+                        'assets': evidence, 'preserved_runtime_assets': legacy_evidence}
+            previous_manifest = DESTINATION / 'source_manifest.json'
+            if previous_manifest.is_file():
+                previous_checks = read(previous_manifest).get('source_remote_checks')
+                if previous_checks:
+                    manifest['source_remote_checks'] = previous_checks
+            (staged / 'source_manifest.json').write_text(json.dumps(manifest, ensure_ascii=False, separators=(',', ':')), encoding='utf-8')
+            for source in staged.rglob('*'):
+                if not source.is_file():
+                    continue
+                target = DESTINATION / source.relative_to(staged)
+                target.parent.mkdir(parents=True, exist_ok=True)
+                if not target.is_file() or source.read_bytes() != target.read_bytes():
+                    shutil.copy2(source, target)
     write_rows(index_path, {'schema_version': 1, 'content_version': 'approved-recovered-sprites-v2'}, 'sprites', sorted(rows.values(), key=lambda r: r['logical_id']))
     write_rows(overrides_path, {'schema_version': 1}, 'definitions', dict(sorted(overrides.items())))
-    catalog = {'schema_version': 1, 'content_version': 'approved-recovered-sprites-v2', 'packs': [{
-        'pack_id': 'recovered_equipment_and_scenery', 'path': 'res://assets/content_packs/' + PACK.name,
-        'size_bytes': PACK.stat().st_size, 'sha256': digest(PACK.read_bytes()), 'content_groups': ['recovered_equipment', 'recovered_scenery']}],
-        'summary': {'packed_references': len(selections), 'total_recovered_references': len(rows), 'item_definitions': len(overrides)}}
-    (ROOT / 'data/content/recovered_content_packs_v1.json').write_text(json.dumps(catalog, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
     build_scene_decorations()
-    print('RECOVERY_PACK', catalog['summary'], 'bytes', PACK.stat().st_size)
+    print('RECOVERED_CONTENT', {'selected': len(selections), 'total_references': len(rows), 'item_definitions': len(overrides)})
 
 
 def build_scene_decorations():
     """Recover original screen positions/timing; directional arrows already have identical shared art."""
     source_file = 'NFT_BL/map/traderoom1.fcc'
-    source = (OUTPUTS/'starhome_lz_ry_fcc_source'/source_file).read_text(encoding='utf-8')
+    with RawFccWorkspace() as fcc:
+        source = fcc.text(source_file)
     rows = []
     for line, text in enumerate(source.splitlines(), 1):
         match = re.search(r"AddImgEx\('',\$\+'([^']*d\.\.ale)',(\d+),(\d+),0,(\d+)\)", text)

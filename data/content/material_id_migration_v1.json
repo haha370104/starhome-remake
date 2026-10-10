@@ -1,0 +1,3594 @@
+{
+  "schema_version": 1,
+  "content_version": "material-id-semantics-v1",
+  "policy": "旧散列材料 ID 仅作为一次性迁移审计；运行时和玩法配置只使用 id。",
+  "definitions": [
+    {
+      "legacy_id": "industrial_material_00282d58b30e",
+      "id": "small_force_field_energy_pack_4",
+      "display_name": "小型力场能量包4",
+      "source_classes": [],
+      "display_names": [
+        "小型力场能量包4"
+      ]
+    },
+    {
+      "legacy_id": "industrial_material_06a28970281e",
+      "id": "ordinary_warrior_repair_stone",
+      "display_name": "普通战神修复石",
+      "source_classes": [
+        "普通战神修复石"
+      ],
+      "display_names": [
+        "普通战神修复石"
+      ]
+    },
+    {
+      "legacy_id": "industrial_material_08713a2f8c65",
+      "id": "blue_crystal",
+      "display_name": "蓝水晶",
+      "source_classes": [
+        "蓝水晶"
+      ],
+      "display_names": [
+        "蓝水晶"
+      ]
+    },
+    {
+      "legacy_id": "industrial_material_08e05ef748e8",
+      "id": "repair_arm_maintenance_pack",
+      "display_name": "维修臂维护包",
+      "source_classes": [],
+      "display_names": [
+        "维修臂维护包"
+      ]
+    },
+    {
+      "legacy_id": "industrial_material_10ea59b2be89",
+      "id": "missile_maintenance_pack",
+      "display_name": "导弹维护包",
+      "source_classes": [],
+      "display_names": [
+        "导弹维护包"
+      ]
+    },
+    {
+      "legacy_id": "industrial_material_1476d4c8c1c2",
+      "id": "barium_magnesium_alloy",
+      "display_name": "钡镁合金",
+      "source_classes": [
+        "钡镁合金"
+      ],
+      "display_names": [
+        "钡镁合金"
+      ]
+    },
+    {
+      "legacy_id": "industrial_material_1a3dea08ae42",
+      "id": "sulfur",
+      "display_name": "硫",
+      "source_classes": [
+        "硫"
+      ],
+      "display_names": [
+        "硫"
+      ]
+    },
+    {
+      "legacy_id": "industrial_material_2830485bb462",
+      "id": "red_crystal",
+      "display_name": "红水晶",
+      "source_classes": [
+        "红水晶"
+      ],
+      "display_names": [
+        "红水晶"
+      ]
+    },
+    {
+      "legacy_id": "industrial_material_2a4dc87c556e",
+      "id": "titanium",
+      "display_name": "钛",
+      "source_classes": [
+        "钛"
+      ],
+      "display_names": [
+        "钛"
+      ]
+    },
+    {
+      "legacy_id": "industrial_material_3f3f3c3d9d8d",
+      "id": "green_crystal",
+      "display_name": "绿水晶",
+      "source_classes": [
+        "绿水晶"
+      ],
+      "display_names": [
+        "绿水晶"
+      ]
+    },
+    {
+      "legacy_id": "industrial_material_4517603a3f65",
+      "id": "medium_force_field_energy_pack_z",
+      "display_name": "中型力场能量包z",
+      "source_classes": [],
+      "display_names": [
+        "中型力场能量包z"
+      ]
+    },
+    {
+      "legacy_id": "industrial_material_4fb661ea2c04",
+      "id": "medium_force_field_energy_pack_4",
+      "display_name": "中型力场能量包4",
+      "source_classes": [],
+      "display_names": [
+        "中型力场能量包4"
+      ]
+    },
+    {
+      "legacy_id": "industrial_material_534c863bf4c7",
+      "id": "ordinary_glory_repair_stone",
+      "display_name": "普通荣耀修复石",
+      "source_classes": [
+        "普通荣耀修复石"
+      ],
+      "display_names": [
+        "普通荣耀修复石"
+      ]
+    },
+    {
+      "legacy_id": "industrial_material_549f3de74766",
+      "id": "engine_maintenance_pack",
+      "display_name": "引擎维护包",
+      "source_classes": [],
+      "display_names": [
+        "引擎维护包"
+      ]
+    },
+    {
+      "legacy_id": "industrial_material_62511a7b3b81",
+      "id": "energy_cannon_maintenance_pack",
+      "display_name": "能量炮维护包",
+      "source_classes": [],
+      "display_names": [
+        "能量炮维护包"
+      ]
+    },
+    {
+      "legacy_id": "industrial_material_6410f3538a8f",
+      "id": "small_force_field_energy_pack_c",
+      "display_name": "小型力场能量包c",
+      "source_classes": [],
+      "display_names": [
+        "小型力场能量包c"
+      ]
+    },
+    {
+      "legacy_id": "industrial_material_6d71f72f220b",
+      "id": "titanium_chromium_alloy",
+      "display_name": "钛铬合金",
+      "source_classes": [
+        "钛铬合金"
+      ],
+      "display_names": [
+        "钛铬合金"
+      ]
+    },
+    {
+      "legacy_id": "industrial_material_72db4bbf4066",
+      "id": "medium_force_field_energy_pack_c",
+      "display_name": "中型力场能量包c",
+      "source_classes": [],
+      "display_names": [
+        "中型力场能量包c"
+      ]
+    },
+    {
+      "legacy_id": "industrial_material_7ea69a6eaf61",
+      "id": "radium_chromium_alloy",
+      "display_name": "镭铬合金",
+      "source_classes": [
+        "镭铬合金"
+      ],
+      "display_names": [
+        "镭铬合金"
+      ]
+    },
+    {
+      "legacy_id": "industrial_material_8043340c252f",
+      "id": "zinc_titanium_alloy",
+      "display_name": "锌钛合金",
+      "source_classes": [
+        "锌钛合金"
+      ],
+      "display_names": [
+        "锌钛合金"
+      ]
+    },
+    {
+      "legacy_id": "industrial_material_8717abc2a2d6",
+      "id": "ordinary_repair_stone",
+      "display_name": "普通修复石",
+      "source_classes": [
+        "普通修复石"
+      ],
+      "display_names": [
+        "普通修复石"
+      ]
+    },
+    {
+      "legacy_id": "industrial_material_8788f3555328",
+      "id": "radar_maintenance_pack",
+      "display_name": "雷达维护包",
+      "source_classes": [],
+      "display_names": [
+        "雷达维护包"
+      ]
+    },
+    {
+      "legacy_id": "industrial_material_9d1dd3481d3e",
+      "id": "zinc_barium_alloy",
+      "display_name": "锌钡合金",
+      "source_classes": [
+        "锌钡合金"
+      ],
+      "display_names": [
+        "锌钡合金"
+      ]
+    },
+    {
+      "legacy_id": "industrial_material_a61f5d056705",
+      "id": "small_force_field_energy_pack_z",
+      "display_name": "小型力场能量包z",
+      "source_classes": [],
+      "display_names": [
+        "小型力场能量包z"
+      ]
+    },
+    {
+      "legacy_id": "industrial_material_a9d9e5da4be1",
+      "id": "scandium",
+      "display_name": "钪",
+      "source_classes": [
+        "钪"
+      ],
+      "display_names": [
+        "钪"
+      ]
+    },
+    {
+      "legacy_id": "industrial_material_b46c70d83f30",
+      "id": "nickel_zinc_alloy",
+      "display_name": "镍锌合金",
+      "source_classes": [
+        "镍锌合金"
+      ],
+      "display_names": [
+        "镍锌合金"
+      ]
+    },
+    {
+      "legacy_id": "industrial_material_c32e9e0435b4",
+      "id": "phosphorus",
+      "display_name": "磷",
+      "source_classes": [
+        "磷"
+      ],
+      "display_names": [
+        "磷"
+      ]
+    },
+    {
+      "legacy_id": "industrial_material_cb71724883be",
+      "id": "vehicle_maintenance_pack",
+      "display_name": "战车维护包",
+      "source_classes": [],
+      "display_names": [
+        "战车维护包"
+      ]
+    },
+    {
+      "legacy_id": "industrial_material_cfb4093a1ef4",
+      "id": "purple_crystal",
+      "display_name": "紫水晶",
+      "source_classes": [
+        "紫水晶"
+      ],
+      "display_names": [
+        "紫水晶"
+      ]
+    },
+    {
+      "legacy_id": "industrial_material_db7885085558",
+      "id": "barium",
+      "display_name": "钡",
+      "source_classes": [
+        "钡"
+      ],
+      "display_names": [
+        "钡"
+      ]
+    },
+    {
+      "legacy_id": "industrial_material_dd0d2372a7b8",
+      "id": "collector_maintenance_pack",
+      "display_name": "挖掘臂维护包",
+      "source_classes": [],
+      "display_names": [
+        "挖掘臂维护包"
+      ]
+    },
+    {
+      "legacy_id": "industrial_material_e2bb4b741e5a",
+      "id": "magnesium",
+      "display_name": "镁",
+      "source_classes": [
+        "镁"
+      ],
+      "display_names": [
+        "镁"
+      ]
+    },
+    {
+      "legacy_id": "industrial_material_e7b669d116f4",
+      "id": "scandium_magnesium_alloy",
+      "display_name": "钪镁合金",
+      "source_classes": [
+        "钪镁合金"
+      ],
+      "display_names": [
+        "钪镁合金"
+      ]
+    },
+    {
+      "legacy_id": "industrial_material_efbb9f30ff09",
+      "id": "cloaking_device_maintenance_pack",
+      "display_name": "隐身器维护包",
+      "source_classes": [],
+      "display_names": [
+        "隐身器维护包"
+      ]
+    },
+    {
+      "legacy_id": "industrial_material_f5324d80cb1f",
+      "id": "rocket_maintenance_pack",
+      "display_name": "火箭维护包",
+      "source_classes": [],
+      "display_names": [
+        "火箭维护包"
+      ]
+    },
+    {
+      "legacy_id": "industrial_material_f8ea963add7c",
+      "id": "joint_chip_2",
+      "display_name": "接合器升级晶片2级",
+      "source_classes": [
+        "接合器升级晶片2级"
+      ],
+      "display_names": [
+        "接合器升级晶片2级"
+      ]
+    },
+    {
+      "legacy_id": "industrial_material_fcdab4094871",
+      "id": "potassium",
+      "display_name": "钾",
+      "source_classes": [
+        "钾"
+      ],
+      "display_names": [
+        "钾"
+      ]
+    },
+    {
+      "legacy_id": "item:material:02212ea88168",
+      "id": "super_magnet",
+      "display_name": "超磁体+2",
+      "source_classes": [
+        "超磁体1"
+      ],
+      "display_names": [
+        "超磁体+2",
+        "超磁体1"
+      ]
+    },
+    {
+      "legacy_id": "item:material:0265b3639865",
+      "id": "milk",
+      "display_name": "奶",
+      "source_classes": [],
+      "display_names": [
+        "奶"
+      ]
+    },
+    {
+      "legacy_id": "item:material:02ff69f031b5",
+      "id": "low_grade_gel",
+      "display_name": "低级类胶",
+      "source_classes": [],
+      "display_names": [
+        "低级类胶"
+      ]
+    },
+    {
+      "legacy_id": "item:material:04081d3010ba",
+      "id": "cheese",
+      "display_name": "奶酪",
+      "source_classes": [],
+      "display_names": [
+        "奶酪"
+      ]
+    },
+    {
+      "legacy_id": "item:material:0465103df5d2",
+      "id": "high_grade_green_crystal_source",
+      "display_name": "TopLvCrystal",
+      "source_classes": [
+        "TopLvCrystal"
+      ],
+      "display_names": [
+        "TopLvCrystal",
+        "高级绿晶源"
+      ]
+    },
+    {
+      "legacy_id": "item:material:049296cd8264",
+      "id": "crystal_moon_fragment",
+      "display_name": "YHOfInterstellar_Frag",
+      "source_classes": [
+        "YHOfInterstellar_Frag"
+      ],
+      "display_names": [
+        "YHOfInterstellar_Frag",
+        "水晶月痕碎片"
+      ]
+    },
+    {
+      "legacy_id": "item:material:062a265c9544",
+      "id": "mech_moonlight_crystal_1",
+      "display_name": "JiJiaYueHuiJingTi1",
+      "source_classes": [
+        "JiJiaYueHuiJingTi1"
+      ],
+      "display_names": [
+        "JiJiaYueHuiJingTi1",
+        "机甲月辉晶体I"
+      ]
+    },
+    {
+      "legacy_id": "item:material:0720b10532ed",
+      "id": "sugarcane_juice",
+      "display_name": "甘蔗汁",
+      "source_classes": [],
+      "display_names": [
+        "甘蔗汁"
+      ]
+    },
+    {
+      "legacy_id": "item:material:073e4b22d062",
+      "id": "five_element_steel_plate",
+      "display_name": "WXSteelChip",
+      "source_classes": [
+        "WXSteelChip"
+      ],
+      "display_names": [
+        "WXSteelChip",
+        "五行钢片"
+      ]
+    },
+    {
+      "legacy_id": "item:material:078bc4104cd1",
+      "id": "energy_ore",
+      "display_name": "",
+      "source_classes": [],
+      "display_names": [
+        "能量矿"
+      ]
+    },
+    {
+      "legacy_id": "item:material:093a64c39287",
+      "id": "gyroscopic_suspension",
+      "display_name": "TLPHSuspension",
+      "source_classes": [
+        "TLPHSuspension"
+      ],
+      "display_names": [
+        "TLPHSuspension",
+        "陀螺平衡悬挂"
+      ]
+    },
+    {
+      "legacy_id": "item:material:094b4f4431e4",
+      "id": "ryzgn_drawing_4",
+      "display_name": "RYZGNDrawing_4",
+      "source_classes": [],
+      "display_names": [
+        "RYZGNDrawing_4"
+      ]
+    },
+    {
+      "legacy_id": "item:material:0b8c4bb849e0",
+      "id": "cake",
+      "display_name": "蛋糕",
+      "source_classes": [],
+      "display_names": [
+        "蛋糕"
+      ]
+    },
+    {
+      "legacy_id": "item:material:0f2b9045caf2",
+      "id": "synthetic_thread",
+      "display_name": "合成线",
+      "source_classes": [
+        "合成线"
+      ],
+      "display_names": [
+        "合成线"
+      ]
+    },
+    {
+      "legacy_id": "item:material:0f483f3a7043",
+      "id": "lemon_juice",
+      "display_name": "柠檬汁",
+      "source_classes": [],
+      "display_names": [
+        "柠檬汁"
+      ]
+    },
+    {
+      "legacy_id": "item:material:101b5757960f",
+      "id": "catalyst_dust",
+      "display_name": "催化之尘",
+      "source_classes": [
+        "催化之尘"
+      ],
+      "display_names": [
+        "催化之尘"
+      ]
+    },
+    {
+      "legacy_id": "item:material:1342bef47b1c",
+      "id": "nickel_ore",
+      "display_name": "",
+      "source_classes": [],
+      "display_names": [
+        "镍矿"
+      ]
+    },
+    {
+      "legacy_id": "item:material:15b01fd17a56",
+      "id": "synthetic_fleece",
+      "display_name": "合成绒",
+      "source_classes": [
+        "合成绒"
+      ],
+      "display_names": [
+        "合成绒"
+      ]
+    },
+    {
+      "legacy_id": "item:material:15d96a683ca0",
+      "id": "sorghum",
+      "display_name": "高粱",
+      "source_classes": [],
+      "display_names": [
+        "高粱"
+      ]
+    },
+    {
+      "legacy_id": "item:material:17500b513d35",
+      "id": "corrosive_crystal",
+      "display_name": "new003",
+      "source_classes": [
+        "new003"
+      ],
+      "display_names": [
+        "new003",
+        "腐蚀结晶体"
+      ]
+    },
+    {
+      "legacy_id": "item:material:176a7137ad13",
+      "id": "synthetic_silk",
+      "display_name": "合成丝",
+      "source_classes": [
+        "合成丝"
+      ],
+      "display_names": [
+        "合成丝"
+      ]
+    },
+    {
+      "legacy_id": "item:material:1793569f3af3",
+      "id": "tantalum_ore",
+      "display_name": "",
+      "source_classes": [],
+      "display_names": [
+        "钽矿"
+      ]
+    },
+    {
+      "legacy_id": "item:material:17f9ecffc9b0",
+      "id": "zsfznv_drawing_5",
+      "display_name": "ZSFZNVDrawing_5",
+      "source_classes": [],
+      "display_names": [
+        "ZSFZNVDrawing_5"
+      ]
+    },
+    {
+      "legacy_id": "item:material:1850770283a8",
+      "id": "copper_ore",
+      "display_name": "",
+      "source_classes": [],
+      "display_names": [
+        "铜矿"
+      ]
+    },
+    {
+      "legacy_id": "item:material:185cf7b29406",
+      "id": "magnesium_ore",
+      "display_name": "",
+      "source_classes": [],
+      "display_names": [
+        "镁矿"
+      ]
+    },
+    {
+      "legacy_id": "item:material:1916f1df829a",
+      "id": "megawatt_fiber",
+      "display_name": "ZWFibar",
+      "source_classes": [
+        "ZWFibar"
+      ],
+      "display_names": [
+        "ZWFibar",
+        "兆瓦纤维"
+      ]
+    },
+    {
+      "legacy_id": "item:material:1967f997dcb6",
+      "id": "burger_set",
+      "display_name": "汉堡套餐",
+      "source_classes": [],
+      "display_names": [
+        "汉堡套餐"
+      ]
+    },
+    {
+      "legacy_id": "item:material:198e40429499",
+      "id": "firepower_component",
+      "display_name": "火力元件",
+      "source_classes": [
+        "火力元件"
+      ],
+      "display_names": [
+        "火力元件",
+        "火力元件+1"
+      ]
+    },
+    {
+      "legacy_id": "item:material:1a7b61344813",
+      "id": "pie",
+      "display_name": "派",
+      "source_classes": [],
+      "display_names": [
+        "派"
+      ]
+    },
+    {
+      "legacy_id": "item:material:1aac8b956f80",
+      "id": "rice",
+      "display_name": "米",
+      "source_classes": [],
+      "display_names": [
+        "米"
+      ]
+    },
+    {
+      "legacy_id": "item:material:1bbf2f65a730",
+      "id": "brandy_recipe",
+      "display_name": "白兰地工艺图",
+      "source_classes": [],
+      "display_names": [
+        "白兰地工艺图"
+      ]
+    },
+    {
+      "legacy_id": "item:material:1c2f1b420a34",
+      "id": "ryzgnv_drawing_4",
+      "display_name": "RYZGNVDrawing_4",
+      "source_classes": [],
+      "display_names": [
+        "RYZGNVDrawing_4"
+      ]
+    },
+    {
+      "legacy_id": "item:material:1c7023f7029f",
+      "id": "space_cotton",
+      "display_name": "太空棉",
+      "source_classes": [
+        "太空棉"
+      ],
+      "display_names": [
+        "太空棉"
+      ]
+    },
+    {
+      "legacy_id": "item:material:1d49c09bf017",
+      "id": "socket_crystal_fragment",
+      "display_name": "RYRimeFragment",
+      "source_classes": [
+        "RYRimeFragment"
+      ],
+      "display_names": [
+        "RYRimeFragment",
+        "晶石碎片"
+      ]
+    },
+    {
+      "legacy_id": "item:material:212589b5bafd",
+      "id": "sugar_melon",
+      "display_name": "糖瓜",
+      "source_classes": [],
+      "display_names": [
+        "糖瓜"
+      ]
+    },
+    {
+      "legacy_id": "item:material:212c73d1769f",
+      "id": "brandy",
+      "display_name": "白兰地",
+      "source_classes": [],
+      "display_names": [
+        "白兰地"
+      ]
+    },
+    {
+      "legacy_id": "item:material:21d36a6bd737",
+      "id": "silicon",
+      "display_name": "硅",
+      "source_classes": [
+        "硅"
+      ],
+      "display_names": [
+        "硅"
+      ]
+    },
+    {
+      "legacy_id": "item:material:2235990e8b35",
+      "id": "delicious_recipe",
+      "display_name": "DeliciousRecipe",
+      "source_classes": [],
+      "display_names": [
+        "DeliciousRecipe"
+      ]
+    },
+    {
+      "legacy_id": "item:material:225e4dd3528c",
+      "id": "copper_iron_alloy",
+      "display_name": "铜铁合金",
+      "source_classes": [
+        "铜铁合金"
+      ],
+      "display_names": [
+        "铜铁合金"
+      ]
+    },
+    {
+      "legacy_id": "item:material:22917cc64c50",
+      "id": "glory_heart_bracer_male_blueprint",
+      "display_name": "辉煌之心护臂（男）设计图纸",
+      "source_classes": [],
+      "display_names": [
+        "辉煌之心护臂（男）设计图纸"
+      ]
+    },
+    {
+      "legacy_id": "item:material:25f04b6fa409",
+      "id": "glass_bottle",
+      "display_name": "玻璃酒瓶",
+      "source_classes": [],
+      "display_names": [
+        "玻璃酒瓶"
+      ]
+    },
+    {
+      "legacy_id": "item:material:264fc131f777",
+      "id": "thick_polymer_silicon_skin",
+      "display_name": "厚脂硅皮",
+      "source_classes": [
+        "厚脂硅皮"
+      ],
+      "display_names": [
+        "厚脂硅皮"
+      ]
+    },
+    {
+      "legacy_id": "item:material:283227001fe4",
+      "id": "molybdenum_ore",
+      "display_name": "",
+      "source_classes": [],
+      "display_names": [
+        "钼矿"
+      ]
+    },
+    {
+      "legacy_id": "item:material:290e2b0129b5",
+      "id": "silicon_copper_alloy",
+      "display_name": "硅铜合金",
+      "source_classes": [
+        "硅铜合金"
+      ],
+      "display_names": [
+        "硅铜合金"
+      ]
+    },
+    {
+      "legacy_id": "item:material:29313f6e399b",
+      "id": "pizza",
+      "display_name": "比萨",
+      "source_classes": [],
+      "display_names": [
+        "比萨"
+      ]
+    },
+    {
+      "legacy_id": "item:material:2990ca709816",
+      "id": "green_beans",
+      "display_name": "生豆",
+      "source_classes": [],
+      "display_names": [
+        "生豆"
+      ]
+    },
+    {
+      "legacy_id": "item:material:2ad7220f1f76",
+      "id": "meat_pie",
+      "display_name": "馅饼",
+      "source_classes": [],
+      "display_names": [
+        "馅饼"
+      ]
+    },
+    {
+      "legacy_id": "item:material:2c89d0a8d7c5",
+      "id": "ryzgn_drawing_3",
+      "display_name": "RYZGNDrawing_3",
+      "source_classes": [],
+      "display_names": [
+        "RYZGNDrawing_3"
+      ]
+    },
+    {
+      "legacy_id": "item:material:2f79e1fce542",
+      "id": "meat",
+      "display_name": "肉",
+      "source_classes": [],
+      "display_names": [
+        "肉"
+      ]
+    },
+    {
+      "legacy_id": "item:material:2fd944f953bd",
+      "id": "high_grade_polymer_fat",
+      "display_name": "高级聚熔脂",
+      "source_classes": [
+        "高级聚熔脂"
+      ],
+      "display_names": [
+        "高级聚熔脂"
+      ]
+    },
+    {
+      "legacy_id": "item:material:30f5b8f1bfa4",
+      "id": "zsfznv_drawing_4",
+      "display_name": "ZSFZNVDrawing_4",
+      "source_classes": [],
+      "display_names": [
+        "ZSFZNVDrawing_4"
+      ]
+    },
+    {
+      "legacy_id": "item:material:3180b2c701a4",
+      "id": "low_grade_force_field_core",
+      "display_name": "低级力场源核",
+      "source_classes": [],
+      "display_names": [
+        "低级力场源核"
+      ]
+    },
+    {
+      "legacy_id": "item:material:32205fa18c6a",
+      "id": "green_crystal_ore",
+      "display_name": "",
+      "source_classes": [],
+      "display_names": [
+        "绿水晶矿"
+      ]
+    },
+    {
+      "legacy_id": "item:material:32d088b3a77f",
+      "id": "war_god_cloth",
+      "display_name": "战神布",
+      "source_classes": [],
+      "display_names": [
+        "战神布"
+      ]
+    },
+    {
+      "legacy_id": "item:material:33d330a61be3",
+      "id": "mech_auxiliary_crystal_2",
+      "display_name": "JiJiaFuShuJingTi2",
+      "source_classes": [
+        "JiJiaFuShuJingTi2"
+      ],
+      "display_names": [
+        "JiJiaFuShuJingTi2",
+        "机甲附属晶体II"
+      ]
+    },
+    {
+      "legacy_id": "item:material:341abb62475c",
+      "id": "soybean_omelet_rice",
+      "display_name": "素豆煎蛋饭",
+      "source_classes": [],
+      "display_names": [
+        "素豆煎蛋饭"
+      ]
+    },
+    {
+      "legacy_id": "item:material:3481b7371d1e",
+      "id": "sama_upgrade_alloy",
+      "display_name": "撒玛合金+10",
+      "source_classes": [
+        "撒玛合金5"
+      ],
+      "display_names": [
+        "撒玛合金+10",
+        "撒玛合金5"
+      ]
+    },
+    {
+      "legacy_id": "item:material:34fd6a87af72",
+      "id": "assistant_time_card_15min",
+      "display_name": "ZNGJTimeCard15",
+      "source_classes": [
+        "ZNGJTimeCard15"
+      ],
+      "display_names": [
+        "ZNGJTimeCard15",
+        "挂机辅助时间卡（15分钟）"
+      ]
+    },
+    {
+      "legacy_id": "item:material:36bb36393ae9",
+      "id": "ryzgnv_drawing_3",
+      "display_name": "RYZGNVDrawing_3",
+      "source_classes": [],
+      "display_names": [
+        "RYZGNVDrawing_3"
+      ]
+    },
+    {
+      "legacy_id": "item:material:37961e4dd452",
+      "id": "japanese_eel_rice",
+      "display_name": "日式鳗鱼饭",
+      "source_classes": [],
+      "display_names": [
+        "日式鳗鱼饭"
+      ]
+    },
+    {
+      "legacy_id": "item:material:38357ddb6494",
+      "id": "zsfzn_drawing_4",
+      "display_name": "ZSFZNDrawing_4",
+      "source_classes": [],
+      "display_names": [
+        "ZSFZNDrawing_4"
+      ]
+    },
+    {
+      "legacy_id": "item:material:38cf3eba1a82",
+      "id": "glory_cotton",
+      "display_name": "荣耀棉",
+      "source_classes": [],
+      "display_names": [
+        "荣耀棉"
+      ]
+    },
+    {
+      "legacy_id": "item:material:390575d3e7c8",
+      "id": "red_crystal_source",
+      "display_name": "HongCrystal",
+      "source_classes": [
+        "HongCrystal"
+      ],
+      "display_names": [
+        "HongCrystal",
+        "红晶源"
+      ]
+    },
+    {
+      "legacy_id": "item:material:398c4aced04f",
+      "id": "zsfzn_drawing_1",
+      "display_name": "ZSFZNDrawing_1",
+      "source_classes": [],
+      "display_names": [
+        "ZSFZNDrawing_1"
+      ]
+    },
+    {
+      "legacy_id": "item:material:39aa70e8697d",
+      "id": "radium_ore",
+      "display_name": "",
+      "source_classes": [],
+      "display_names": [
+        "镭矿"
+      ]
+    },
+    {
+      "legacy_id": "item:material:3a6a410118b6",
+      "id": "green_pepper_pork",
+      "display_name": "青椒肉丝",
+      "source_classes": [],
+      "display_names": [
+        "青椒肉丝"
+      ]
+    },
+    {
+      "legacy_id": "item:material:3c1e31a193cd",
+      "id": "gold",
+      "display_name": "金",
+      "source_classes": [
+        "金"
+      ],
+      "display_names": [
+        "金"
+      ]
+    },
+    {
+      "legacy_id": "item:material:3cf03f3ca8f0",
+      "id": "tequila",
+      "display_name": "龙舌兰酒",
+      "source_classes": [],
+      "display_names": [
+        "龙舌兰酒"
+      ]
+    },
+    {
+      "legacy_id": "item:material:3d9597ddfaa0",
+      "id": "potassium_ore",
+      "display_name": "",
+      "source_classes": [],
+      "display_names": [
+        "钾矿"
+      ]
+    },
+    {
+      "legacy_id": "item:material:3e5df1aed65c",
+      "id": "adapter",
+      "display_name": "变接器",
+      "source_classes": [
+        "变接器"
+      ],
+      "display_names": [
+        "变接器"
+      ]
+    },
+    {
+      "legacy_id": "item:material:3e90e9216b1f",
+      "id": "mid_grade_nuclear_enzyme",
+      "display_name": "中级敛核酶",
+      "source_classes": [
+        "中级敛核酶"
+      ],
+      "display_names": [
+        "中级敛核酶"
+      ]
+    },
+    {
+      "legacy_id": "item:material:3ed7f1287e45",
+      "id": "mech_moonlight_crystal_2",
+      "display_name": "JiJiaYueHuiJingTi2",
+      "source_classes": [
+        "JiJiaYueHuiJingTi2"
+      ],
+      "display_names": [
+        "JiJiaYueHuiJingTi2",
+        "机甲月辉晶体II"
+      ]
+    },
+    {
+      "legacy_id": "item:material:3f18a2e09208",
+      "id": "zsfznv_drawing_3",
+      "display_name": "ZSFZNVDrawing_3",
+      "source_classes": [],
+      "display_names": [
+        "ZSFZNVDrawing_3"
+      ]
+    },
+    {
+      "legacy_id": "item:material:426079a31a98",
+      "id": "interstellar_coin",
+      "display_name": "星际币",
+      "source_classes": [],
+      "display_names": [
+        "星际币"
+      ]
+    },
+    {
+      "legacy_id": "item:material:42a4513d7a29",
+      "id": "gold_steel_alloy",
+      "display_name": "金钢合金",
+      "source_classes": [
+        "金钢合金"
+      ],
+      "display_names": [
+        "金钢合金"
+      ]
+    },
+    {
+      "legacy_id": "item:material:43ed7eecc949",
+      "id": "thermal_chip",
+      "display_name": "new005",
+      "source_classes": [
+        "new005"
+      ],
+      "display_names": [
+        "new005",
+        "高热芯片"
+      ]
+    },
+    {
+      "legacy_id": "item:material:443be5b44324",
+      "id": "glory_heart_bracer_female_blueprint",
+      "display_name": "辉煌之心护臂（女）设计图纸",
+      "source_classes": [],
+      "display_names": [
+        "辉煌之心护臂（女）设计图纸"
+      ]
+    },
+    {
+      "legacy_id": "item:material:454e2a7ebe11",
+      "id": "mid_grade_polymer_fat",
+      "display_name": "中级聚熔脂",
+      "source_classes": [
+        "中级聚熔脂"
+      ],
+      "display_names": [
+        "中级聚熔脂"
+      ]
+    },
+    {
+      "legacy_id": "item:material:45f0c2d97be1",
+      "id": "vegetables",
+      "display_name": "菜",
+      "source_classes": [],
+      "display_names": [
+        "菜"
+      ]
+    },
+    {
+      "legacy_id": "item:material:472d2fb951cb",
+      "id": "middle_grade_gel",
+      "display_name": "中级类胶",
+      "source_classes": [
+        "中级类胶"
+      ],
+      "display_names": [
+        "中级类胶"
+      ]
+    },
+    {
+      "legacy_id": "item:material:47b24f797e14",
+      "id": "flow_expander",
+      "display_name": "扩流器+2",
+      "source_classes": [
+        "扩流器1"
+      ],
+      "display_names": [
+        "扩流器+2",
+        "扩流器1"
+      ]
+    },
+    {
+      "legacy_id": "item:material:485f08ad24d4",
+      "id": "high_grade_quadruped_shell",
+      "display_name": "高级四足甲的壳",
+      "source_classes": [
+        "高级四足甲的壳"
+      ],
+      "display_names": [
+        "高级四足甲的壳"
+      ]
+    },
+    {
+      "legacy_id": "item:material:491e4fbf9ddf",
+      "id": "ham_sandwich",
+      "display_name": "火腿三明治",
+      "source_classes": [],
+      "display_names": [
+        "火腿三明治"
+      ]
+    },
+    {
+      "legacy_id": "item:material:4a5765fedd43",
+      "id": "vodka_recipe",
+      "display_name": "伏特加工艺图",
+      "source_classes": [],
+      "display_names": [
+        "伏特加工艺图"
+      ]
+    },
+    {
+      "legacy_id": "item:material:4c333a5dbd34",
+      "id": "tequila_recipe",
+      "display_name": "龙舌兰酒工艺图",
+      "source_classes": [],
+      "display_names": [
+        "龙舌兰酒工艺图"
+      ]
+    },
+    {
+      "legacy_id": "item:material:4d8166e88520",
+      "id": "silver",
+      "display_name": "银",
+      "source_classes": [
+        "银"
+      ],
+      "display_names": [
+        "银"
+      ]
+    },
+    {
+      "legacy_id": "item:material:4e13c89d94da",
+      "id": "zsfzn_drawing_2",
+      "display_name": "ZSFZNDrawing_2",
+      "source_classes": [],
+      "display_names": [
+        "ZSFZNDrawing_2"
+      ]
+    },
+    {
+      "legacy_id": "item:material:4f5c6d64fd5b",
+      "id": "vanadium_ore",
+      "display_name": "",
+      "source_classes": [],
+      "display_names": [
+        "钒矿"
+      ]
+    },
+    {
+      "legacy_id": "item:material:51184b9aa6d9",
+      "id": "ryzgn_drawing_2",
+      "display_name": "RYZGNDrawing_2",
+      "source_classes": [],
+      "display_names": [
+        "RYZGNDrawing_2"
+      ]
+    },
+    {
+      "legacy_id": "item:material:53c994c7fe99",
+      "id": "psychic_dream_fragment",
+      "display_name": "异能梦境碎片",
+      "source_classes": [],
+      "display_names": [
+        "异能梦境碎片"
+      ]
+    },
+    {
+      "legacy_id": "item:material:53ec9c8610db",
+      "id": "graphite_ore",
+      "display_name": "石墨矿",
+      "source_classes": [
+        "石墨矿源"
+      ],
+      "display_names": [
+        "石墨矿"
+      ]
+    },
+    {
+      "legacy_id": "item:material:5479cbea59ce",
+      "id": "sulfur_ore",
+      "display_name": "",
+      "source_classes": [],
+      "display_names": [
+        "硫矿"
+      ]
+    },
+    {
+      "legacy_id": "item:material:5515b16b622f",
+      "id": "silver_steel_alloy",
+      "display_name": "银钢合金",
+      "source_classes": [
+        "银钢合金"
+      ],
+      "display_names": [
+        "银钢合金"
+      ]
+    },
+    {
+      "legacy_id": "item:material:558e8a4df8ad",
+      "id": "iron_hook_steel_plate",
+      "display_name": "TGSteelChip",
+      "source_classes": [
+        "TGSteelChip"
+      ],
+      "display_names": [
+        "TGSteelChip",
+        "铁钩钢片"
+      ]
+    },
+    {
+      "legacy_id": "item:material:559bd8ece73d",
+      "id": "glory_heart_boots_male_blueprint",
+      "display_name": "辉煌之心长靴（男）设计图纸",
+      "source_classes": [],
+      "display_names": [
+        "辉煌之心长靴（男）设计图纸"
+      ]
+    },
+    {
+      "legacy_id": "item:material:56ad9259e3e1",
+      "id": "cookie",
+      "display_name": "饼干",
+      "source_classes": [],
+      "display_names": [
+        "饼干"
+      ]
+    },
+    {
+      "legacy_id": "item:material:5773d6d74168",
+      "id": "purple_crystal_source",
+      "display_name": "ZiCrystal",
+      "source_classes": [
+        "ZiCrystal"
+      ],
+      "display_names": [
+        "ZiCrystal",
+        "紫晶源"
+      ]
+    },
+    {
+      "legacy_id": "item:material:583a985508e9",
+      "id": "stellar_magnetic_crystal",
+      "display_name": "XingCiCrystal",
+      "source_classes": [
+        "XingCiCrystal"
+      ],
+      "display_names": [
+        "XingCiCrystal",
+        "星磁晶体"
+      ]
+    },
+    {
+      "legacy_id": "item:material:589c3c4cec86",
+      "id": "italian_pizza",
+      "display_name": "意式比萨饼",
+      "source_classes": [],
+      "display_names": [
+        "意式比萨饼"
+      ]
+    },
+    {
+      "legacy_id": "item:material:590d39a561f2",
+      "id": "iron_ore",
+      "display_name": "铁矿",
+      "source_classes": [
+        "铁矿源"
+      ],
+      "display_names": [
+        "铁矿"
+      ]
+    },
+    {
+      "legacy_id": "item:material:5af99a4c900e",
+      "id": "ryzgnv_drawing_2",
+      "display_name": "RYZGNVDrawing_2",
+      "source_classes": [],
+      "display_names": [
+        "RYZGNVDrawing_2"
+      ]
+    },
+    {
+      "legacy_id": "item:material:5dbe93b102a3",
+      "id": "quantum_element",
+      "display_name": "QuantumElement",
+      "source_classes": [
+        "QuantumElement"
+      ],
+      "display_names": [
+        "QuantumElement",
+        "量子元素"
+      ]
+    },
+    {
+      "legacy_id": "item:material:5f3632e66566",
+      "id": "zirconium_ore",
+      "display_name": "",
+      "source_classes": [],
+      "display_names": [
+        "锆矿"
+      ]
+    },
+    {
+      "legacy_id": "item:material:5f4f7401945d",
+      "id": "constant_gold_plastic",
+      "display_name": "恒金塑脂",
+      "source_classes": [
+        "恒金塑脂"
+      ],
+      "display_names": [
+        "恒金塑脂"
+      ]
+    },
+    {
+      "legacy_id": "item:material:5ff80685f85e",
+      "id": "agave",
+      "display_name": "龙舌兰",
+      "source_classes": [],
+      "display_names": [
+        "龙舌兰"
+      ]
+    },
+    {
+      "legacy_id": "item:material:60754fe3f1c8",
+      "id": "middle_grade_force_field_core",
+      "display_name": "中级力场源核",
+      "source_classes": [],
+      "display_names": [
+        "中级力场源核"
+      ]
+    },
+    {
+      "legacy_id": "item:material:6116d8b965c6",
+      "id": "melon",
+      "display_name": "面瓜",
+      "source_classes": [],
+      "display_names": [
+        "面瓜"
+      ]
+    },
+    {
+      "legacy_id": "item:material:6307f070e4f1",
+      "id": "glory_heart_helmet_female_blueprint",
+      "display_name": "辉煌之心头盔（女）设计图纸",
+      "source_classes": [],
+      "display_names": [
+        "辉煌之心头盔（女）设计图纸"
+      ]
+    },
+    {
+      "legacy_id": "item:material:639ecee21fb7",
+      "id": "purple_crystal_ore",
+      "display_name": "",
+      "source_classes": [],
+      "display_names": [
+        "紫水晶矿"
+      ]
+    },
+    {
+      "legacy_id": "item:material:665dc0e01888",
+      "id": "low_grade_composite_gel_plate",
+      "display_name": "低级复合胶板",
+      "source_classes": [
+        "低级复合胶板"
+      ],
+      "display_names": [
+        "低级复合胶板"
+      ]
+    },
+    {
+      "legacy_id": "item:material:67b74e673143",
+      "id": "rum",
+      "display_name": "朗姆酒",
+      "source_classes": [],
+      "display_names": [
+        "朗姆酒"
+      ]
+    },
+    {
+      "legacy_id": "item:material:68750122f534",
+      "id": "rye",
+      "display_name": "黑麦",
+      "source_classes": [],
+      "display_names": [
+        "黑麦"
+      ]
+    },
+    {
+      "legacy_id": "item:material:6915fd2fd5f5",
+      "id": "uyibrown_grape_juice",
+      "display_name": "乌艺布朗葡萄汁",
+      "source_classes": [],
+      "display_names": [
+        "乌艺布朗葡萄汁"
+      ]
+    },
+    {
+      "legacy_id": "item:material:69abe5cda0be",
+      "id": "glory_heart_armor_female_blueprint",
+      "display_name": "辉煌之心铠甲（女）设计图纸",
+      "source_classes": [],
+      "display_names": [
+        "辉煌之心铠甲（女）设计图纸"
+      ]
+    },
+    {
+      "legacy_id": "item:material:6ac284bb6c59",
+      "id": "high_grade_purple_crystal_source",
+      "display_name": "TopZiCrystal",
+      "source_classes": [
+        "TopZiCrystal"
+      ],
+      "display_names": [
+        "TopZiCrystal",
+        "高级紫晶源"
+      ]
+    },
+    {
+      "legacy_id": "item:material:6af4c3a3cd7f",
+      "id": "fish_fried_rice",
+      "display_name": "鱼肉炒饭",
+      "source_classes": [],
+      "display_names": [
+        "鱼肉炒饭"
+      ]
+    },
+    {
+      "legacy_id": "item:material:6b0269b35f1b",
+      "id": "barium_ore",
+      "display_name": "",
+      "source_classes": [],
+      "display_names": [
+        "钡矿"
+      ]
+    },
+    {
+      "legacy_id": "item:material:6b764a13c668",
+      "id": "gold_ore",
+      "display_name": "",
+      "source_classes": [],
+      "display_names": [
+        "金矿"
+      ]
+    },
+    {
+      "legacy_id": "item:material:6bc8ec6ae477",
+      "id": "low_grade_polymer_fat",
+      "display_name": "低级聚熔脂",
+      "source_classes": [
+        "低级聚熔脂"
+      ],
+      "display_names": [
+        "低级聚熔脂"
+      ]
+    },
+    {
+      "legacy_id": "item:material:6bce58752c7d",
+      "id": "stellar_brilliance_crystal",
+      "display_name": "XingYaoCrystal",
+      "source_classes": [
+        "XingYaoCrystal"
+      ],
+      "display_names": [
+        "XingYaoCrystal",
+        "星耀晶体"
+      ]
+    },
+    {
+      "legacy_id": "item:material:6ce6d7cd8016",
+      "id": "treasure_ore",
+      "display_name": "",
+      "source_classes": [],
+      "display_names": [
+        "藏宝矿"
+      ]
+    },
+    {
+      "legacy_id": "item:material:6f7dc56b4eaf",
+      "id": "mid_grade_hard_substance",
+      "display_name": "中级硬质素",
+      "source_classes": [
+        "中级硬质素"
+      ],
+      "display_names": [
+        "中级硬质素"
+      ]
+    },
+    {
+      "legacy_id": "item:material:708c97df7bec",
+      "id": "graphite",
+      "display_name": "石墨",
+      "source_classes": [
+        "石墨"
+      ],
+      "display_names": [
+        "石墨"
+      ]
+    },
+    {
+      "legacy_id": "item:material:70bdaf03183a",
+      "id": "glory_heart_leggings_female_blueprint",
+      "display_name": "辉煌之心护腿（女）设计图纸",
+      "source_classes": [],
+      "display_names": [
+        "辉煌之心护腿（女）设计图纸"
+      ]
+    },
+    {
+      "legacy_id": "item:material:71548d3aa10f",
+      "id": "electric_wave_crystal",
+      "display_name": "DJBJJ",
+      "source_classes": [
+        "DJBJJ"
+      ],
+      "display_names": [
+        "DJBJJ",
+        "电激波结晶"
+      ]
+    },
+    {
+      "legacy_id": "item:material:7289df5b1ab9",
+      "id": "alloy_ore",
+      "display_name": "",
+      "source_classes": [],
+      "display_names": [
+        "合金矿"
+      ]
+    },
+    {
+      "legacy_id": "item:material:743ceffa7af7",
+      "id": "mech_moonlight_crystal_3",
+      "display_name": "JiJiaYueHuiJingTi3",
+      "source_classes": [
+        "JiJiaYueHuiJingTi3"
+      ],
+      "display_names": [
+        "JiJiaYueHuiJingTi3",
+        "机甲月辉晶体III"
+      ]
+    },
+    {
+      "legacy_id": "item:material:749c38da4b65",
+      "id": "ryzgnv_drawing_5",
+      "display_name": "RYZGNVDrawing_5",
+      "source_classes": [],
+      "display_names": [
+        "RYZGNVDrawing_5"
+      ]
+    },
+    {
+      "legacy_id": "item:material:756d808fdc15",
+      "id": "cream_cookie",
+      "display_name": "奶油饼干",
+      "source_classes": [],
+      "display_names": [
+        "奶油饼干"
+      ]
+    },
+    {
+      "legacy_id": "item:material:760ebf2df00d",
+      "id": "electric_wave_chip",
+      "display_name": "DJBXP",
+      "source_classes": [
+        "DJBXP"
+      ],
+      "display_names": [
+        "DJBXP",
+        "电激波芯片"
+      ]
+    },
+    {
+      "legacy_id": "item:material:77157411f2c7",
+      "id": "stellar_radiance_crystal",
+      "display_name": "XingHuiCrystal",
+      "source_classes": [
+        "XingHuiCrystal"
+      ],
+      "display_names": [
+        "XingHuiCrystal",
+        "星辉晶体"
+      ]
+    },
+    {
+      "legacy_id": "item:material:78c123731110",
+      "id": "psychic_material_fragment",
+      "display_name": "异能物质碎片",
+      "source_classes": [],
+      "display_names": [
+        "异能物质碎片"
+      ]
+    },
+    {
+      "legacy_id": "item:material:78e287f1c596",
+      "id": "ryzgn_drawing_5",
+      "display_name": "RYZGNDrawing_5",
+      "source_classes": [],
+      "display_names": [
+        "RYZGNDrawing_5"
+      ]
+    },
+    {
+      "legacy_id": "item:material:78e702a7e31d",
+      "id": "cotton_thread",
+      "display_name": "棉线",
+      "source_classes": [
+        "棉线"
+      ],
+      "display_names": [
+        "棉线"
+      ]
+    },
+    {
+      "legacy_id": "item:material:78f2a523a761",
+      "id": "density_solvent",
+      "display_name": "Activator2",
+      "source_classes": [
+        "Activator2"
+      ],
+      "display_names": [
+        "Activator2",
+        "初级密度柔解剂"
+      ]
+    },
+    {
+      "legacy_id": "item:material:794588abb6cf",
+      "id": "flawed_health_crystal",
+      "display_name": "RYRime:0 1002 0",
+      "source_classes": [
+        "RYRime:0 1002 0"
+      ],
+      "display_names": [
+        "RYRime:0 1002 0",
+        "有瑕疵的生命晶石"
+      ]
+    },
+    {
+      "legacy_id": "item:material:7a9d652d9d30",
+      "id": "korean_sushi",
+      "display_name": "韩式寿司",
+      "source_classes": [],
+      "display_names": [
+        "韩式寿司"
+      ]
+    },
+    {
+      "legacy_id": "item:material:7af4e01eeadf",
+      "id": "mid_grade_composite_gel_plate",
+      "display_name": "中级复合胶板",
+      "source_classes": [
+        "中级复合胶板"
+      ],
+      "display_names": [
+        "中级复合胶板"
+      ]
+    },
+    {
+      "legacy_id": "item:material:7c2a619313f6",
+      "id": "manganese_ore",
+      "display_name": "",
+      "source_classes": [],
+      "display_names": [
+        "锰矿"
+      ]
+    },
+    {
+      "legacy_id": "item:material:7dd51398ea4c",
+      "id": "flawed_rocket_crystal",
+      "display_name": "RYRime:0 1006 0",
+      "source_classes": [
+        "RYRime:0 1006 0"
+      ],
+      "display_names": [
+        "RYRime:0 1006 0",
+        "有瑕疵的火箭晶石"
+      ]
+    },
+    {
+      "legacy_id": "item:material:7df65e194766",
+      "id": "green_crystal_source",
+      "display_name": "LvCrystal",
+      "source_classes": [
+        "LvCrystal"
+      ],
+      "display_names": [
+        "LvCrystal",
+        "绿晶源"
+      ]
+    },
+    {
+      "legacy_id": "item:material:7e5440c2f103",
+      "id": "power_board",
+      "display_name": "动力板",
+      "source_classes": [
+        "动力板"
+      ],
+      "display_names": [
+        "动力板"
+      ]
+    },
+    {
+      "legacy_id": "item:material:81b83f432bf9",
+      "id": "zsfzn_drawing_5",
+      "display_name": "ZSFZNDrawing_5",
+      "source_classes": [],
+      "display_names": [
+        "ZSFZNDrawing_5"
+      ]
+    },
+    {
+      "legacy_id": "item:material:826b21d5e192",
+      "id": "omelet_rice",
+      "display_name": "蛋包饭",
+      "source_classes": [],
+      "display_names": [
+        "蛋包饭"
+      ]
+    },
+    {
+      "legacy_id": "item:material:82b550887686",
+      "id": "blackstone_rifling",
+      "display_name": "HSRifling",
+      "source_classes": [
+        "HSRifling"
+      ],
+      "display_names": [
+        "HSRifling",
+        "黑石膛线"
+      ]
+    },
+    {
+      "legacy_id": "item:material:874643a452b9",
+      "id": "high_grade_composite_gel_plate",
+      "display_name": "高级复合胶板",
+      "source_classes": [
+        "高级复合胶板"
+      ],
+      "display_names": [
+        "高级复合胶板"
+      ]
+    },
+    {
+      "legacy_id": "item:material:8811cec57497",
+      "id": "cobalt_ore",
+      "display_name": "",
+      "source_classes": [],
+      "display_names": [
+        "钴矿"
+      ]
+    },
+    {
+      "legacy_id": "item:material:8cb61bb909ff",
+      "id": "biological_fiber",
+      "display_name": "生物纤维",
+      "source_classes": [
+        "生物纤维"
+      ],
+      "display_names": [
+        "生物纤维"
+      ]
+    },
+    {
+      "legacy_id": "item:material:8d7632e7294c",
+      "id": "platinum_ore",
+      "display_name": "",
+      "source_classes": [],
+      "display_names": [
+        "铂金矿"
+      ]
+    },
+    {
+      "legacy_id": "item:material:8e172eb667a3",
+      "id": "pepper",
+      "display_name": "椒",
+      "source_classes": [],
+      "display_names": [
+        "椒"
+      ]
+    },
+    {
+      "legacy_id": "item:material:8e82258ba743",
+      "id": "chromium_ore",
+      "display_name": "",
+      "source_classes": [],
+      "display_names": [
+        "铬矿"
+      ]
+    },
+    {
+      "legacy_id": "item:material:8e983c02db12",
+      "id": "zinc_ore",
+      "display_name": "",
+      "source_classes": [],
+      "display_names": [
+        "锌矿"
+      ]
+    },
+    {
+      "legacy_id": "item:material:8ee8f0a1b4f7",
+      "id": "silver_copper_alloy",
+      "display_name": "银铜合金",
+      "source_classes": [
+        "银铜合金"
+      ],
+      "display_names": [
+        "银铜合金"
+      ]
+    },
+    {
+      "legacy_id": "item:material:8f615d2ef879",
+      "id": "iron",
+      "display_name": "铁",
+      "source_classes": [
+        "铁"
+      ],
+      "display_names": [
+        "铁"
+      ]
+    },
+    {
+      "legacy_id": "item:material:906576ebac94",
+      "id": "nutritious_meal",
+      "display_name": "营养料理餐",
+      "source_classes": [],
+      "display_names": [
+        "营养料理餐"
+      ]
+    },
+    {
+      "legacy_id": "item:material:91710794969d",
+      "id": "hard_substance_buckle",
+      "display_name": "硬质扣",
+      "source_classes": [
+        "硬质扣"
+      ],
+      "display_names": [
+        "硬质扣"
+      ]
+    },
+    {
+      "legacy_id": "item:material:920f37756918",
+      "id": "seven_color_crystal",
+      "display_name": "MorColourfulCrystal",
+      "source_classes": [
+        "MorColourfulCrystal"
+      ],
+      "display_names": [
+        "MorColourfulCrystal",
+        "七彩水晶"
+      ]
+    },
+    {
+      "legacy_id": "item:material:936b913dcb1f",
+      "id": "vodka",
+      "display_name": "伏特加",
+      "source_classes": [],
+      "display_names": [
+        "伏特加"
+      ]
+    },
+    {
+      "legacy_id": "item:material:95aa2445915e",
+      "id": "electronic_control_chip",
+      "display_name": "ElectronicZX",
+      "source_classes": [
+        "ElectronicZX"
+      ],
+      "display_names": [
+        "ElectronicZX",
+        "电子制芯"
+      ]
+    },
+    {
+      "legacy_id": "item:material:96e11629660e",
+      "id": "glory_heart_boots_female_blueprint",
+      "display_name": "辉煌之心长靴（女）设计图纸",
+      "source_classes": [],
+      "display_names": [
+        "辉煌之心长靴（女）设计图纸"
+      ]
+    },
+    {
+      "legacy_id": "item:material:9713f13ede8d",
+      "id": "joint_upgrade_fragment",
+      "display_name": "接合器升级碎片",
+      "source_classes": [
+        "接合器升级碎片"
+      ],
+      "display_names": [
+        "接合器升级碎片"
+      ]
+    },
+    {
+      "legacy_id": "item:material:99d2d25d7142",
+      "id": "high_grade_biosilicon",
+      "display_name": "高级生物硅",
+      "source_classes": [
+        "高级生物硅"
+      ],
+      "display_names": [
+        "高级生物硅"
+      ]
+    },
+    {
+      "legacy_id": "item:material:9a81c6572eee",
+      "id": "thermal_crystal",
+      "display_name": "new002",
+      "source_classes": [
+        "new002"
+      ],
+      "display_names": [
+        "new002",
+        "高热结晶体"
+      ]
+    },
+    {
+      "legacy_id": "item:material:9c54bd29370a",
+      "id": "dense_gel_thread",
+      "display_name": "密质胶线",
+      "source_classes": [
+        "密质胶线"
+      ],
+      "display_names": [
+        "密质胶线"
+      ]
+    },
+    {
+      "legacy_id": "item:material:9cbc7d0e0296",
+      "id": "rice_ball",
+      "display_name": "饭团",
+      "source_classes": [],
+      "display_names": [
+        "饭团"
+      ]
+    },
+    {
+      "legacy_id": "item:material:9e3e97236c4e",
+      "id": "salt",
+      "display_name": "盐",
+      "source_classes": [],
+      "display_names": [
+        "盐"
+      ]
+    },
+    {
+      "legacy_id": "item:material:a039c10cf145",
+      "id": "red_crystal_ore",
+      "display_name": "",
+      "source_classes": [],
+      "display_names": [
+        "红水晶矿"
+      ]
+    },
+    {
+      "legacy_id": "item:material:a095c982b884",
+      "id": "flawed_guidance_crystal",
+      "display_name": "RYRime:0 1004 0",
+      "source_classes": [
+        "RYRime:0 1004 0"
+      ],
+      "display_names": [
+        "RYRime:0 1004 0",
+        "有瑕疵的制导晶石"
+      ]
+    },
+    {
+      "legacy_id": "item:material:a0afe3b311fa",
+      "id": "fish_steak",
+      "display_name": "鱼排",
+      "source_classes": [],
+      "display_names": [
+        "鱼排"
+      ]
+    },
+    {
+      "legacy_id": "item:material:a109b21525df",
+      "id": "zsfznv_drawing_2",
+      "display_name": "ZSFZNVDrawing_2",
+      "source_classes": [],
+      "display_names": [
+        "ZSFZNVDrawing_2"
+      ]
+    },
+    {
+      "legacy_id": "item:material:a1d287e71f35",
+      "id": "tungsten_ore",
+      "display_name": "",
+      "source_classes": [],
+      "display_names": [
+        "钨矿"
+      ]
+    },
+    {
+      "legacy_id": "item:material:a4f7cbe44e92",
+      "id": "sensor",
+      "display_name": "传感器",
+      "source_classes": [
+        "传感器"
+      ],
+      "display_names": [
+        "传感器"
+      ]
+    },
+    {
+      "legacy_id": "item:material:a5086e3ba88e",
+      "id": "low_grade_nuclear_enzyme",
+      "display_name": "低级敛核酶",
+      "source_classes": [
+        "低级敛核酶"
+      ],
+      "display_names": [
+        "低级敛核酶"
+      ]
+    },
+    {
+      "legacy_id": "item:material:a55a9a5d270a",
+      "id": "blue_crystal_source",
+      "display_name": "LanCrystal",
+      "source_classes": [
+        "LanCrystal"
+      ],
+      "display_names": [
+        "LanCrystal",
+        "蓝晶源"
+      ]
+    },
+    {
+      "legacy_id": "item:material:a7bccd7c1408",
+      "id": "flawed_firepower_crystal",
+      "display_name": "RYRime:0 1001 0",
+      "source_classes": [
+        "RYRime:0 1001 0"
+      ],
+      "display_names": [
+        "RYRime:0 1001 0",
+        "有瑕疵的火力晶石"
+      ]
+    },
+    {
+      "legacy_id": "item:material:a9e617883ac5",
+      "id": "grape_juice",
+      "display_name": "葡萄汁",
+      "source_classes": [],
+      "display_names": [
+        "葡萄汁"
+      ]
+    },
+    {
+      "legacy_id": "item:material:aa7b06e40657",
+      "id": "iridium_ore",
+      "display_name": "",
+      "source_classes": [],
+      "display_names": [
+        "铱矿"
+      ]
+    },
+    {
+      "legacy_id": "item:material:abb79c50c89f",
+      "id": "mech_auxiliary_crystal_1",
+      "display_name": "JiJiaFuShuJingTi1",
+      "source_classes": [
+        "JiJiaFuShuJingTi1"
+      ],
+      "display_names": [
+        "JiJiaFuShuJingTi1",
+        "机甲附属晶体I"
+      ]
+    },
+    {
+      "legacy_id": "item:material:ac3069de6824",
+      "id": "fish",
+      "display_name": "鱼",
+      "source_classes": [],
+      "display_names": [
+        "鱼"
+      ]
+    },
+    {
+      "legacy_id": "item:material:b250e229ae32",
+      "id": "plush",
+      "display_name": "毛绒",
+      "source_classes": [],
+      "display_names": [
+        "毛绒"
+      ]
+    },
+    {
+      "legacy_id": "item:material:b366aac2e554",
+      "id": "synthetic_cotton",
+      "display_name": "合成棉",
+      "source_classes": [
+        "合成棉"
+      ],
+      "display_names": [
+        "合成棉"
+      ]
+    },
+    {
+      "legacy_id": "item:material:b4bf241cd10e",
+      "id": "bread",
+      "display_name": "面包",
+      "source_classes": [],
+      "display_names": [
+        "面包"
+      ]
+    },
+    {
+      "legacy_id": "item:material:b517321630b8",
+      "id": "g92_energy_source",
+      "display_name": "G92特制能量源",
+      "source_classes": [
+        "TZNLY_G92"
+      ],
+      "display_names": [
+        "G92特制能量源",
+        "TZNLY_G92"
+      ]
+    },
+    {
+      "legacy_id": "item:material:b66b04c2509a",
+      "id": "sushi",
+      "display_name": "寿司",
+      "source_classes": [],
+      "display_names": [
+        "寿司"
+      ]
+    },
+    {
+      "legacy_id": "item:material:b705e6d48734",
+      "id": "zsfznv_drawing_1",
+      "display_name": "ZSFZNVDrawing_1",
+      "source_classes": [],
+      "display_names": [
+        "ZSFZNVDrawing_1"
+      ]
+    },
+    {
+      "legacy_id": "item:material:b739c1f3c1d8",
+      "id": "phosphorus_ore",
+      "display_name": "",
+      "source_classes": [],
+      "display_names": [
+        "磷矿"
+      ]
+    },
+    {
+      "legacy_id": "item:material:b76edad9fa8e",
+      "id": "middle_grade_quadruped_shell",
+      "display_name": "中级四足甲的壳",
+      "source_classes": [
+        "中级四足甲的壳"
+      ],
+      "display_names": [
+        "中级四足甲的壳"
+      ]
+    },
+    {
+      "legacy_id": "item:material:b80499528adf",
+      "id": "low_grade_quadruped_shell",
+      "display_name": "低级四足甲的壳",
+      "source_classes": [],
+      "display_names": [
+        "低级四足甲的壳"
+      ]
+    },
+    {
+      "legacy_id": "item:material:b91edfc5468c",
+      "id": "gold_copper_alloy",
+      "display_name": "金铜合金",
+      "source_classes": [
+        "金铜合金"
+      ],
+      "display_names": [
+        "金铜合金"
+      ]
+    },
+    {
+      "legacy_id": "item:material:ba72367493f5",
+      "id": "scandium_ore",
+      "display_name": "",
+      "source_classes": [],
+      "display_names": [
+        "钪矿"
+      ]
+    },
+    {
+      "legacy_id": "item:material:ba90bdec9217",
+      "id": "gem_ore",
+      "display_name": "",
+      "source_classes": [],
+      "display_names": [
+        "宝石矿"
+      ]
+    },
+    {
+      "legacy_id": "item:material:bba50542ed38",
+      "id": "crystal_moon_mark",
+      "display_name": "YHOfInterstellar",
+      "source_classes": [
+        "YHOfInterstellar"
+      ],
+      "display_names": [
+        "YHOfInterstellar",
+        "水晶月痕"
+      ]
+    },
+    {
+      "legacy_id": "item:material:bc1d28d1b8bc",
+      "id": "zinc",
+      "display_name": "锌",
+      "source_classes": [
+        "锌"
+      ],
+      "display_names": [
+        "锌"
+      ]
+    },
+    {
+      "legacy_id": "item:material:bc5a18415358",
+      "id": "g91_energy_source",
+      "display_name": "G91特制能量源",
+      "source_classes": [
+        "TZNLY_G91"
+      ],
+      "display_names": [
+        "G91特制能量源",
+        "TZNLY_G91"
+      ]
+    },
+    {
+      "legacy_id": "item:material:be59bb7699ac",
+      "id": "copper",
+      "display_name": "铜",
+      "source_classes": [
+        "铜"
+      ],
+      "display_names": [
+        "铜"
+      ]
+    },
+    {
+      "legacy_id": "item:material:beb673694521",
+      "id": "stellar_source_crystal",
+      "display_name": "XingYuanCrystal",
+      "source_classes": [
+        "XingYuanCrystal"
+      ],
+      "display_names": [
+        "XingYuanCrystal",
+        "星源晶体"
+      ]
+    },
+    {
+      "legacy_id": "item:material:bf7cb63cd4fa",
+      "id": "plant_cotton",
+      "display_name": "植物棉",
+      "source_classes": [],
+      "display_names": [
+        "植物棉"
+      ]
+    },
+    {
+      "legacy_id": "item:material:c09a0751c6b6",
+      "id": "nickel",
+      "display_name": "镍",
+      "source_classes": [
+        "镍"
+      ],
+      "display_names": [
+        "镍"
+      ]
+    },
+    {
+      "legacy_id": "item:material:c0cad9b715fb",
+      "id": "flawed_critical_crystal",
+      "display_name": "RYRime:0 1005 0",
+      "source_classes": [
+        "RYRime:0 1005 0"
+      ],
+      "display_names": [
+        "RYRime:0 1005 0",
+        "有瑕疵的暴击晶石"
+      ]
+    },
+    {
+      "legacy_id": "item:material:c27f83efbc0c",
+      "id": "eel_rice_ball",
+      "display_name": "鳗鱼饭团",
+      "source_classes": [],
+      "display_names": [
+        "鳗鱼饭团"
+      ]
+    },
+    {
+      "legacy_id": "item:material:c2af1947b661",
+      "id": "macaroni",
+      "display_name": "通心面",
+      "source_classes": [],
+      "display_names": [
+        "通心面"
+      ]
+    },
+    {
+      "legacy_id": "item:material:c50b86c65f90",
+      "id": "ryzgn_drawing_1",
+      "display_name": "RYZGNDrawing_1",
+      "source_classes": [],
+      "display_names": [
+        "RYZGNDrawing_1"
+      ]
+    },
+    {
+      "legacy_id": "item:material:c61bd71bd4d0",
+      "id": "chow_mein_bread",
+      "display_name": "炒面面包",
+      "source_classes": [],
+      "display_names": [
+        "炒面面包"
+      ]
+    },
+    {
+      "legacy_id": "item:material:c86bc88f2604",
+      "id": "sugar",
+      "display_name": "糖",
+      "source_classes": [
+        "糖"
+      ],
+      "display_names": [
+        "糖"
+      ]
+    },
+    {
+      "legacy_id": "item:material:c87ab4c9ebec",
+      "id": "young_coconut",
+      "display_name": "小椰子",
+      "source_classes": [],
+      "display_names": [
+        "小椰子"
+      ]
+    },
+    {
+      "legacy_id": "item:material:ca08ba067eb1",
+      "id": "war_god_material_fragment",
+      "display_name": "战神物质碎片",
+      "source_classes": [],
+      "display_names": [
+        "战神物质碎片"
+      ]
+    },
+    {
+      "legacy_id": "item:material:cc9af00bb8f9",
+      "id": "zsfzn_drawing_3",
+      "display_name": "ZSFZNDrawing_3",
+      "source_classes": [],
+      "display_names": [
+        "ZSFZNDrawing_3"
+      ]
+    },
+    {
+      "legacy_id": "item:material:cfa52e059e34",
+      "id": "middle_grade_energy_pack",
+      "display_name": "中级能量包",
+      "source_classes": [
+        "中级能量包"
+      ],
+      "display_names": [
+        "中级能量包"
+      ]
+    },
+    {
+      "legacy_id": "item:material:d07cd4b0a23b",
+      "id": "cooking_oil",
+      "display_name": "油",
+      "source_classes": [
+        "油"
+      ],
+      "display_names": [
+        "油"
+      ]
+    },
+    {
+      "legacy_id": "item:material:d1e296971655",
+      "id": "silicon_iron_alloy",
+      "display_name": "硅铁合金",
+      "source_classes": [
+        "硅铁合金"
+      ],
+      "display_names": [
+        "硅铁合金"
+      ]
+    },
+    {
+      "legacy_id": "item:material:d247fd43ad3c",
+      "id": "electromagnetic_protector",
+      "display_name": "DCProtecter",
+      "source_classes": [
+        "DCProtecter"
+      ],
+      "display_names": [
+        "DCProtecter",
+        "电磁护具"
+      ]
+    },
+    {
+      "legacy_id": "item:material:d2a1d9d06fbc",
+      "id": "frozen_steel_plate",
+      "display_name": "DJSteelChip",
+      "source_classes": [
+        "DJSteelChip"
+      ],
+      "display_names": [
+        "DJSteelChip",
+        "冻结钢片"
+      ]
+    },
+    {
+      "legacy_id": "item:material:d407556cd129",
+      "id": "magnetic_crystal",
+      "display_name": "new004",
+      "source_classes": [
+        "new004"
+      ],
+      "display_names": [
+        "new004",
+        "磁化结晶体"
+      ]
+    },
+    {
+      "legacy_id": "item:material:d524bd8652dc",
+      "id": "mysterious_treasure",
+      "display_name": "神秘宝藏",
+      "source_classes": [],
+      "display_names": [
+        "神秘宝藏"
+      ]
+    },
+    {
+      "legacy_id": "item:material:d690c44b6030",
+      "id": "flawed_defense_crystal",
+      "display_name": "RYRime:0 1003 0",
+      "source_classes": [
+        "RYRime:0 1003 0"
+      ],
+      "display_names": [
+        "RYRime:0 1003 0",
+        "有瑕疵的防御晶石"
+      ]
+    },
+    {
+      "legacy_id": "item:material:d6e5deb49f86",
+      "id": "high_grade_blue_crystal_source",
+      "display_name": "TopLanCrystal",
+      "source_classes": [
+        "TopLanCrystal"
+      ],
+      "display_names": [
+        "TopLanCrystal",
+        "高级蓝晶源"
+      ]
+    },
+    {
+      "legacy_id": "item:material:d91f56fe75e4",
+      "id": "radium",
+      "display_name": "镭",
+      "source_classes": [
+        "镭"
+      ],
+      "display_names": [
+        "镭"
+      ]
+    },
+    {
+      "legacy_id": "item:material:d9fd9cd7a965",
+      "id": "low_grade_hard_substance",
+      "display_name": "低级硬质素",
+      "source_classes": [
+        "低级硬质素"
+      ],
+      "display_names": [
+        "低级硬质素"
+      ]
+    },
+    {
+      "legacy_id": "item:material:dbd4b5c8b82f",
+      "id": "silver_ore",
+      "display_name": "",
+      "source_classes": [],
+      "display_names": [
+        "银矿"
+      ]
+    },
+    {
+      "legacy_id": "item:material:dc2a516b5a42",
+      "id": "low_grade_energy_pack",
+      "display_name": "低级能量包",
+      "source_classes": [],
+      "display_names": [
+        "低级能量包"
+      ]
+    },
+    {
+      "legacy_id": "item:material:dc8a42c2781e",
+      "id": "thermistor",
+      "display_name": "热敏电阻",
+      "source_classes": [
+        "热敏电阻"
+      ],
+      "display_names": [
+        "热敏电阻"
+      ]
+    },
+    {
+      "legacy_id": "item:material:dd5d544c5ddc",
+      "id": "glory_heart_armor_male_blueprint",
+      "display_name": "辉煌之心铠甲（男）设计图纸",
+      "source_classes": [],
+      "display_names": [
+        "辉煌之心铠甲（男）设计图纸"
+      ]
+    },
+    {
+      "legacy_id": "item:material:deb4b85e31bd",
+      "id": "middle_grade_biosilicon",
+      "display_name": "中级生物硅",
+      "source_classes": [
+        "中级生物硅"
+      ],
+      "display_names": [
+        "中级生物硅"
+      ]
+    },
+    {
+      "legacy_id": "item:material:df6953c9d7c1",
+      "id": "beef_ramen",
+      "display_name": "牛肉拉面",
+      "source_classes": [],
+      "display_names": [
+        "牛肉拉面"
+      ]
+    },
+    {
+      "legacy_id": "item:material:e06ae9135201",
+      "id": "joint_chip_1",
+      "display_name": "接合器升级晶片1级",
+      "source_classes": [
+        "接合器升级晶片1级"
+      ],
+      "display_names": [
+        "接合器升级晶片1级"
+      ]
+    },
+    {
+      "legacy_id": "item:material:e07b300afb44",
+      "id": "low_grade_energy_catalyst",
+      "display_name": "低级能量催化剂",
+      "source_classes": [],
+      "display_names": [
+        "低级能量催化剂"
+      ]
+    },
+    {
+      "legacy_id": "item:material:e0ce2334b50c",
+      "id": "flour",
+      "display_name": "面",
+      "source_classes": [
+        "面"
+      ],
+      "display_names": [
+        "面"
+      ]
+    },
+    {
+      "legacy_id": "item:material:e233a13a49e5",
+      "id": "cooked_rice",
+      "display_name": "米饭",
+      "source_classes": [],
+      "display_names": [
+        "米饭"
+      ]
+    },
+    {
+      "legacy_id": "item:material:e24d172fada7",
+      "id": "energy_focusing_chip",
+      "display_name": "聚能晶片+10",
+      "source_classes": [
+        "聚能晶片5"
+      ],
+      "display_names": [
+        "聚能晶片+10",
+        "聚能晶片5"
+      ]
+    },
+    {
+      "legacy_id": "item:material:e283667ae437",
+      "id": "mech_auxiliary_crystal_3",
+      "display_name": "JiJiaFuShuJingTi3",
+      "source_classes": [
+        "JiJiaFuShuJingTi3"
+      ],
+      "display_names": [
+        "JiJiaFuShuJingTi3",
+        "机甲附属晶体III"
+      ]
+    },
+    {
+      "legacy_id": "item:material:e326d911de1e",
+      "id": "glory_heart_helmet_male_blueprint",
+      "display_name": "辉煌之心头盔（男）设计图纸",
+      "source_classes": [],
+      "display_names": [
+        "辉煌之心头盔（男）设计图纸"
+      ]
+    },
+    {
+      "legacy_id": "item:material:e37764581d17",
+      "id": "glory_cloth",
+      "display_name": "辉煌布",
+      "source_classes": [],
+      "display_names": [
+        "辉煌布"
+      ]
+    },
+    {
+      "legacy_id": "item:material:e96fcefe620f",
+      "id": "rum_recipe",
+      "display_name": "朗姆酒工艺图",
+      "source_classes": [],
+      "display_names": [
+        "朗姆酒工艺图"
+      ]
+    },
+    {
+      "legacy_id": "item:material:e9de073940b0",
+      "id": "cream_sandwich",
+      "display_name": "奶油三明治",
+      "source_classes": [],
+      "display_names": [
+        "奶油三明治"
+      ]
+    },
+    {
+      "legacy_id": "item:material:ea24749b450c",
+      "id": "silicon_ore",
+      "display_name": "硅矿",
+      "source_classes": [
+        "硅矿源"
+      ],
+      "display_names": [
+        "硅矿"
+      ]
+    },
+    {
+      "legacy_id": "item:material:ed8dc4cc263b",
+      "id": "high_grade_hard_substance",
+      "display_name": "高级硬质素",
+      "source_classes": [
+        "高级硬质素"
+      ],
+      "display_names": [
+        "高级硬质素"
+      ]
+    },
+    {
+      "legacy_id": "item:material:edebdbaab63d",
+      "id": "egg",
+      "display_name": "蛋",
+      "source_classes": [],
+      "display_names": [
+        "蛋"
+      ]
+    },
+    {
+      "legacy_id": "item:material:ee509dbc2244",
+      "id": "corrosive_chip",
+      "display_name": "new006",
+      "source_classes": [
+        "new006"
+      ],
+      "display_names": [
+        "new006",
+        "腐蚀芯片"
+      ]
+    },
+    {
+      "legacy_id": "item:material:ee7bb2dd8d5e",
+      "id": "synthetic_fiber",
+      "display_name": "合成纤维",
+      "source_classes": [
+        "合成纤维"
+      ],
+      "display_names": [
+        "合成纤维"
+      ]
+    },
+    {
+      "legacy_id": "item:material:f046399c4dff",
+      "id": "capacity_expander",
+      "display_name": "扩充器",
+      "source_classes": [
+        "扩充器"
+      ],
+      "display_names": [
+        "扩充器",
+        "扩充器+10"
+      ]
+    },
+    {
+      "legacy_id": "item:material:f112d2e6b2a1",
+      "id": "blue_crystal_ore",
+      "display_name": "",
+      "source_classes": [],
+      "display_names": [
+        "蓝水晶矿"
+      ]
+    },
+    {
+      "legacy_id": "item:material:f1a46cb86792",
+      "id": "starlight_crystal",
+      "display_name": "XingGuangCrystal",
+      "source_classes": [
+        "XingGuangCrystal"
+      ],
+      "display_names": [
+        "XingGuangCrystal",
+        "星光晶体"
+      ]
+    },
+    {
+      "legacy_id": "item:material:f324fc489c38",
+      "id": "glory_heart_leggings_male_blueprint",
+      "display_name": "辉煌之心护腿（男）设计图纸",
+      "source_classes": [],
+      "display_names": [
+        "辉煌之心护腿（男）设计图纸"
+      ]
+    },
+    {
+      "legacy_id": "item:material:f3fe549c15c1",
+      "id": "g91_precision_trigger",
+      "display_name": "G91精密触发器",
+      "source_classes": [
+        "JMCFQ_G91"
+      ],
+      "display_names": [
+        "G91精密触发器",
+        "JMCFQ_G91"
+      ]
+    },
+    {
+      "legacy_id": "item:material:f5a20e4fbcd6",
+      "id": "titanium_ore",
+      "display_name": "",
+      "source_classes": [],
+      "display_names": [
+        "钛矿"
+      ]
+    },
+    {
+      "legacy_id": "item:material:f5ec2ce95368",
+      "id": "high_grade_red_crystal_source",
+      "display_name": "TopHongCrystal",
+      "source_classes": [
+        "TopHongCrystal"
+      ],
+      "display_names": [
+        "TopHongCrystal",
+        "高级红晶源"
+      ]
+    },
+    {
+      "legacy_id": "item:material:f5fe4a61399b",
+      "id": "magnetic_chip",
+      "display_name": "new007",
+      "source_classes": [
+        "new007"
+      ],
+      "display_names": [
+        "new007",
+        "磁化芯片"
+      ]
+    },
+    {
+      "legacy_id": "item:material:f6487f0e04b8",
+      "id": "five_color_crystal",
+      "display_name": "ColourfulCrystal",
+      "source_classes": [
+        "ColourfulCrystal"
+      ],
+      "display_names": [
+        "ColourfulCrystal",
+        "五彩水晶"
+      ]
+    },
+    {
+      "legacy_id": "item:material:f65184d5f9b2",
+      "id": "impact_crystal",
+      "display_name": "NewJointImpactChip",
+      "source_classes": [
+        "NewJointImpactChip"
+      ],
+      "display_names": [
+        "NewJointImpactChip",
+        "冲击晶体"
+      ]
+    },
+    {
+      "legacy_id": "item:material:f7c412f12300",
+      "id": "turbine_stabilizer",
+      "display_name": "TurbineWDQ",
+      "source_classes": [
+        "TurbineWDQ"
+      ],
+      "display_names": [
+        "TurbineWDQ",
+        "涡轮稳定器"
+      ]
+    },
+    {
+      "legacy_id": "item:material:f9ebd578a89a",
+      "id": "silk_thread",
+      "display_name": "丝线",
+      "source_classes": [],
+      "display_names": [
+        "丝线"
+      ]
+    },
+    {
+      "legacy_id": "item:material:fa5a837875bb",
+      "id": "high_grade_gel",
+      "display_name": "高级类胶",
+      "source_classes": [
+        "高级类胶"
+      ],
+      "display_names": [
+        "高级类胶"
+      ]
+    },
+    {
+      "legacy_id": "item:material:fa7c8b091389",
+      "id": "chromium",
+      "display_name": "铬",
+      "source_classes": [
+        "铬"
+      ],
+      "display_names": [
+        "铬"
+      ]
+    },
+    {
+      "legacy_id": "item:material:fa905bea2130",
+      "id": "middle_grade_energy_catalyst",
+      "display_name": "中级能量催化剂",
+      "source_classes": [
+        "中级能量催化剂"
+      ],
+      "display_names": [
+        "中级能量催化剂"
+      ]
+    },
+    {
+      "legacy_id": "item:material:fae271064451",
+      "id": "high_grade_nuclear_enzyme",
+      "display_name": "高级敛核酶",
+      "source_classes": [
+        "高级敛核酶"
+      ],
+      "display_names": [
+        "高级敛核酶"
+      ]
+    },
+    {
+      "legacy_id": "item:material:fc4cebd5d85b",
+      "id": "low_grade_biosilicon",
+      "display_name": "低级生物硅",
+      "source_classes": [],
+      "display_names": [
+        "低级生物硅"
+      ]
+    },
+    {
+      "legacy_id": "item:material:fdae75215694",
+      "id": "high_grade_energy_catalyst",
+      "display_name": "高级能量催化剂",
+      "source_classes": [
+        "高级能量催化剂"
+      ],
+      "display_names": [
+        "高级能量催化剂"
+      ]
+    },
+    {
+      "legacy_id": "item:material:feb78203298e",
+      "id": "ryzgnv_drawing_1",
+      "display_name": "RYZGNVDrawing_1",
+      "source_classes": [],
+      "display_names": [
+        "RYZGNVDrawing_1"
+      ]
+    },
+    {
+      "legacy_id": "upgrade_material_072d8beff422",
+      "id": "purple_tuo_metal",
+      "display_name": "紫陀金",
+      "source_classes": [
+        "紫陀金"
+      ],
+      "display_names": [
+        "紫陀金"
+      ]
+    },
+    {
+      "legacy_id": "upgrade_material_17f973d2a8d2",
+      "id": "joint_upgrade_crystal",
+      "display_name": "接合器升级晶体",
+      "source_classes": [
+        "NewJointBody"
+      ],
+      "display_names": [
+        "接合器升级晶体"
+      ]
+    },
+    {
+      "legacy_id": "upgrade_material_6f71998aa32b",
+      "id": "proton_magnetic_storm_armor",
+      "display_name": "质子磁暴甲",
+      "source_classes": [
+        "质子磁暴甲"
+      ],
+      "display_names": [
+        "质子磁暴甲"
+      ]
+    },
+    {
+      "legacy_id": "upgrade_material_a3c001f4ff7f",
+      "id": "high_grade_impact_crystal",
+      "display_name": "高级冲击晶体",
+      "source_classes": [
+        "SuperNewJointImpactBody"
+      ],
+      "display_names": [
+        "高级冲击晶体"
+      ]
+    },
+    {
+      "legacy_id": "upgrade_material_e822c3f954f6",
+      "id": "kun_crystal",
+      "display_name": "锟晶体",
+      "source_classes": [
+        "锟晶体"
+      ],
+      "display_names": [
+        "锟晶体"
+      ]
+    },
+    {
+      "legacy_id": "upgrade_material_fbb7efbe11af",
+      "id": "processing_stone",
+      "display_name": "加工石",
+      "source_classes": [
+        "ProcessStone"
+      ],
+      "display_names": [
+        "加工石"
+      ]
+    }
+  ],
+  "by_display_name": {
+    "Activator2": "density_solvent",
+    "ColourfulCrystal": "five_color_crystal",
+    "DCProtecter": "electromagnetic_protector",
+    "DJBJJ": "electric_wave_crystal",
+    "DJBXP": "electric_wave_chip",
+    "DJSteelChip": "frozen_steel_plate",
+    "DeliciousRecipe": "delicious_recipe",
+    "ElectronicZX": "electronic_control_chip",
+    "G91特制能量源": "g91_energy_source",
+    "G91精密触发器": "g91_precision_trigger",
+    "G92特制能量源": "g92_energy_source",
+    "HSRifling": "blackstone_rifling",
+    "HongCrystal": "red_crystal_source",
+    "JMCFQ_G91": "g91_precision_trigger",
+    "JiJiaFuShuJingTi1": "mech_auxiliary_crystal_1",
+    "JiJiaFuShuJingTi2": "mech_auxiliary_crystal_2",
+    "JiJiaFuShuJingTi3": "mech_auxiliary_crystal_3",
+    "JiJiaYueHuiJingTi1": "mech_moonlight_crystal_1",
+    "JiJiaYueHuiJingTi2": "mech_moonlight_crystal_2",
+    "JiJiaYueHuiJingTi3": "mech_moonlight_crystal_3",
+    "LanCrystal": "blue_crystal_source",
+    "LvCrystal": "green_crystal_source",
+    "MorColourfulCrystal": "seven_color_crystal",
+    "NewJointImpactChip": "impact_crystal",
+    "QuantumElement": "quantum_element",
+    "RYRime:0 1001 0": "flawed_firepower_crystal",
+    "RYRime:0 1002 0": "flawed_health_crystal",
+    "RYRime:0 1003 0": "flawed_defense_crystal",
+    "RYRime:0 1004 0": "flawed_guidance_crystal",
+    "RYRime:0 1005 0": "flawed_critical_crystal",
+    "RYRime:0 1006 0": "flawed_rocket_crystal",
+    "RYRimeFragment": "socket_crystal_fragment",
+    "RYZGNDrawing_1": "ryzgn_drawing_1",
+    "RYZGNDrawing_2": "ryzgn_drawing_2",
+    "RYZGNDrawing_3": "ryzgn_drawing_3",
+    "RYZGNDrawing_4": "ryzgn_drawing_4",
+    "RYZGNDrawing_5": "ryzgn_drawing_5",
+    "RYZGNVDrawing_1": "ryzgnv_drawing_1",
+    "RYZGNVDrawing_2": "ryzgnv_drawing_2",
+    "RYZGNVDrawing_3": "ryzgnv_drawing_3",
+    "RYZGNVDrawing_4": "ryzgnv_drawing_4",
+    "RYZGNVDrawing_5": "ryzgnv_drawing_5",
+    "TGSteelChip": "iron_hook_steel_plate",
+    "TLPHSuspension": "gyroscopic_suspension",
+    "TZNLY_G91": "g91_energy_source",
+    "TZNLY_G92": "g92_energy_source",
+    "TopHongCrystal": "high_grade_red_crystal_source",
+    "TopLanCrystal": "high_grade_blue_crystal_source",
+    "TopLvCrystal": "high_grade_green_crystal_source",
+    "TopZiCrystal": "high_grade_purple_crystal_source",
+    "TurbineWDQ": "turbine_stabilizer",
+    "WXSteelChip": "five_element_steel_plate",
+    "XingCiCrystal": "stellar_magnetic_crystal",
+    "XingGuangCrystal": "starlight_crystal",
+    "XingHuiCrystal": "stellar_radiance_crystal",
+    "XingYaoCrystal": "stellar_brilliance_crystal",
+    "XingYuanCrystal": "stellar_source_crystal",
+    "YHOfInterstellar": "crystal_moon_mark",
+    "YHOfInterstellar_Frag": "crystal_moon_fragment",
+    "ZNGJTimeCard15": "assistant_time_card_15min",
+    "ZSFZNDrawing_1": "zsfzn_drawing_1",
+    "ZSFZNDrawing_2": "zsfzn_drawing_2",
+    "ZSFZNDrawing_3": "zsfzn_drawing_3",
+    "ZSFZNDrawing_4": "zsfzn_drawing_4",
+    "ZSFZNDrawing_5": "zsfzn_drawing_5",
+    "ZSFZNVDrawing_1": "zsfznv_drawing_1",
+    "ZSFZNVDrawing_2": "zsfznv_drawing_2",
+    "ZSFZNVDrawing_3": "zsfznv_drawing_3",
+    "ZSFZNVDrawing_4": "zsfznv_drawing_4",
+    "ZSFZNVDrawing_5": "zsfznv_drawing_5",
+    "ZWFibar": "megawatt_fiber",
+    "ZiCrystal": "purple_crystal_source",
+    "new002": "thermal_crystal",
+    "new003": "corrosive_crystal",
+    "new004": "magnetic_crystal",
+    "new005": "thermal_chip",
+    "new006": "corrosive_chip",
+    "new007": "magnetic_chip",
+    "七彩水晶": "seven_color_crystal",
+    "丝线": "silk_thread",
+    "中型力场能量包4": "medium_force_field_energy_pack_4",
+    "中型力场能量包c": "medium_force_field_energy_pack_c",
+    "中型力场能量包z": "medium_force_field_energy_pack_z",
+    "中级力场源核": "middle_grade_force_field_core",
+    "中级四足甲的壳": "middle_grade_quadruped_shell",
+    "中级复合胶板": "mid_grade_composite_gel_plate",
+    "中级敛核酶": "mid_grade_nuclear_enzyme",
+    "中级生物硅": "middle_grade_biosilicon",
+    "中级硬质素": "mid_grade_hard_substance",
+    "中级类胶": "middle_grade_gel",
+    "中级聚熔脂": "mid_grade_polymer_fat",
+    "中级能量催化剂": "middle_grade_energy_catalyst",
+    "中级能量包": "middle_grade_energy_pack",
+    "乌艺布朗葡萄汁": "uyibrown_grape_juice",
+    "五彩水晶": "five_color_crystal",
+    "五行钢片": "five_element_steel_plate",
+    "伏特加": "vodka",
+    "伏特加工艺图": "vodka_recipe",
+    "传感器": "sensor",
+    "低级力场源核": "low_grade_force_field_core",
+    "低级四足甲的壳": "low_grade_quadruped_shell",
+    "低级复合胶板": "low_grade_composite_gel_plate",
+    "低级敛核酶": "low_grade_nuclear_enzyme",
+    "低级生物硅": "low_grade_biosilicon",
+    "低级硬质素": "low_grade_hard_substance",
+    "低级类胶": "low_grade_gel",
+    "低级聚熔脂": "low_grade_polymer_fat",
+    "低级能量催化剂": "low_grade_energy_catalyst",
+    "低级能量包": "low_grade_energy_pack",
+    "催化之尘": "catalyst_dust",
+    "兆瓦纤维": "megawatt_fiber",
+    "冲击晶体": "impact_crystal",
+    "冻结钢片": "frozen_steel_plate",
+    "初级密度柔解剂": "density_solvent",
+    "加工石": "processing_stone",
+    "动力板": "power_board",
+    "厚脂硅皮": "thick_polymer_silicon_skin",
+    "变接器": "adapter",
+    "合成丝": "synthetic_silk",
+    "合成棉": "synthetic_cotton",
+    "合成纤维": "synthetic_fiber",
+    "合成线": "synthetic_thread",
+    "合成绒": "synthetic_fleece",
+    "合金矿": "alloy_ore",
+    "太空棉": "space_cotton",
+    "奶": "milk",
+    "奶油三明治": "cream_sandwich",
+    "奶油饼干": "cream_cookie",
+    "奶酪": "cheese",
+    "宝石矿": "gem_ore",
+    "密质胶线": "dense_gel_thread",
+    "导弹维护包": "missile_maintenance_pack",
+    "寿司": "sushi",
+    "小型力场能量包4": "small_force_field_energy_pack_4",
+    "小型力场能量包c": "small_force_field_energy_pack_c",
+    "小型力场能量包z": "small_force_field_energy_pack_z",
+    "小椰子": "young_coconut",
+    "异能梦境碎片": "psychic_dream_fragment",
+    "异能物质碎片": "psychic_material_fragment",
+    "引擎维护包": "engine_maintenance_pack",
+    "恒金塑脂": "constant_gold_plastic",
+    "意式比萨饼": "italian_pizza",
+    "战神布": "war_god_cloth",
+    "战神物质碎片": "war_god_material_fragment",
+    "战车维护包": "vehicle_maintenance_pack",
+    "扩充器": "capacity_expander",
+    "扩充器+10": "capacity_expander",
+    "扩流器+2": "flow_expander",
+    "扩流器1": "flow_expander",
+    "挂机辅助时间卡（15分钟）": "assistant_time_card_15min",
+    "挖掘臂维护包": "collector_maintenance_pack",
+    "接合器升级晶体": "joint_upgrade_crystal",
+    "接合器升级晶片1级": "joint_chip_1",
+    "接合器升级晶片2级": "joint_chip_2",
+    "接合器升级碎片": "joint_upgrade_fragment",
+    "撒玛合金+10": "sama_upgrade_alloy",
+    "撒玛合金5": "sama_upgrade_alloy",
+    "日式鳗鱼饭": "japanese_eel_rice",
+    "星光晶体": "starlight_crystal",
+    "星源晶体": "stellar_source_crystal",
+    "星磁晶体": "stellar_magnetic_crystal",
+    "星耀晶体": "stellar_brilliance_crystal",
+    "星辉晶体": "stellar_radiance_crystal",
+    "星际币": "interstellar_coin",
+    "普通修复石": "ordinary_repair_stone",
+    "普通战神修复石": "ordinary_warrior_repair_stone",
+    "普通荣耀修复石": "ordinary_glory_repair_stone",
+    "晶石碎片": "socket_crystal_fragment",
+    "有瑕疵的制导晶石": "flawed_guidance_crystal",
+    "有瑕疵的暴击晶石": "flawed_critical_crystal",
+    "有瑕疵的火力晶石": "flawed_firepower_crystal",
+    "有瑕疵的火箭晶石": "flawed_rocket_crystal",
+    "有瑕疵的生命晶石": "flawed_health_crystal",
+    "有瑕疵的防御晶石": "flawed_defense_crystal",
+    "朗姆酒": "rum",
+    "朗姆酒工艺图": "rum_recipe",
+    "机甲月辉晶体I": "mech_moonlight_crystal_1",
+    "机甲月辉晶体II": "mech_moonlight_crystal_2",
+    "机甲月辉晶体III": "mech_moonlight_crystal_3",
+    "机甲附属晶体I": "mech_auxiliary_crystal_1",
+    "机甲附属晶体II": "mech_auxiliary_crystal_2",
+    "机甲附属晶体III": "mech_auxiliary_crystal_3",
+    "柠檬汁": "lemon_juice",
+    "棉线": "cotton_thread",
+    "植物棉": "plant_cotton",
+    "椒": "pepper",
+    "比萨": "pizza",
+    "毛绒": "plush",
+    "水晶月痕": "crystal_moon_mark",
+    "水晶月痕碎片": "crystal_moon_fragment",
+    "汉堡套餐": "burger_set",
+    "油": "cooking_oil",
+    "派": "pie",
+    "涡轮稳定器": "turbine_stabilizer",
+    "火力元件": "firepower_component",
+    "火力元件+1": "firepower_component",
+    "火箭维护包": "rocket_maintenance_pack",
+    "火腿三明治": "ham_sandwich",
+    "炒面面包": "chow_mein_bread",
+    "热敏电阻": "thermistor",
+    "牛肉拉面": "beef_ramen",
+    "玻璃酒瓶": "glass_bottle",
+    "甘蔗汁": "sugarcane_juice",
+    "生物纤维": "biological_fiber",
+    "生豆": "green_beans",
+    "电子制芯": "electronic_control_chip",
+    "电激波结晶": "electric_wave_crystal",
+    "电激波芯片": "electric_wave_chip",
+    "电磁护具": "electromagnetic_protector",
+    "白兰地": "brandy",
+    "白兰地工艺图": "brandy_recipe",
+    "盐": "salt",
+    "石墨": "graphite",
+    "石墨矿": "graphite_ore",
+    "硅": "silicon",
+    "硅矿": "silicon_ore",
+    "硅铁合金": "silicon_iron_alloy",
+    "硅铜合金": "silicon_copper_alloy",
+    "硫": "sulfur",
+    "硫矿": "sulfur_ore",
+    "硬质扣": "hard_substance_buckle",
+    "磁化结晶体": "magnetic_crystal",
+    "磁化芯片": "magnetic_chip",
+    "磷": "phosphorus",
+    "磷矿": "phosphorus_ore",
+    "神秘宝藏": "mysterious_treasure",
+    "米": "rice",
+    "米饭": "cooked_rice",
+    "糖": "sugar",
+    "糖瓜": "sugar_melon",
+    "素豆煎蛋饭": "soybean_omelet_rice",
+    "紫晶源": "purple_crystal_source",
+    "紫水晶": "purple_crystal",
+    "紫水晶矿": "purple_crystal_ore",
+    "紫陀金": "purple_tuo_metal",
+    "红晶源": "red_crystal_source",
+    "红水晶": "red_crystal",
+    "红水晶矿": "red_crystal_ore",
+    "维修臂维护包": "repair_arm_maintenance_pack",
+    "绿晶源": "green_crystal_source",
+    "绿水晶": "green_crystal",
+    "绿水晶矿": "green_crystal_ore",
+    "聚能晶片+10": "energy_focusing_chip",
+    "聚能晶片5": "energy_focusing_chip",
+    "肉": "meat",
+    "能量炮维护包": "energy_cannon_maintenance_pack",
+    "能量矿": "energy_ore",
+    "腐蚀结晶体": "corrosive_crystal",
+    "腐蚀芯片": "corrosive_chip",
+    "荣耀棉": "glory_cotton",
+    "菜": "vegetables",
+    "营养料理餐": "nutritious_meal",
+    "葡萄汁": "grape_juice",
+    "蓝晶源": "blue_crystal_source",
+    "蓝水晶": "blue_crystal",
+    "蓝水晶矿": "blue_crystal_ore",
+    "藏宝矿": "treasure_ore",
+    "蛋": "egg",
+    "蛋包饭": "omelet_rice",
+    "蛋糕": "cake",
+    "质子磁暴甲": "proton_magnetic_storm_armor",
+    "超磁体+2": "super_magnet",
+    "超磁体1": "super_magnet",
+    "辉煌之心头盔（女）设计图纸": "glory_heart_helmet_female_blueprint",
+    "辉煌之心头盔（男）设计图纸": "glory_heart_helmet_male_blueprint",
+    "辉煌之心护腿（女）设计图纸": "glory_heart_leggings_female_blueprint",
+    "辉煌之心护腿（男）设计图纸": "glory_heart_leggings_male_blueprint",
+    "辉煌之心护臂（女）设计图纸": "glory_heart_bracer_female_blueprint",
+    "辉煌之心护臂（男）设计图纸": "glory_heart_bracer_male_blueprint",
+    "辉煌之心铠甲（女）设计图纸": "glory_heart_armor_female_blueprint",
+    "辉煌之心铠甲（男）设计图纸": "glory_heart_armor_male_blueprint",
+    "辉煌之心长靴（女）设计图纸": "glory_heart_boots_female_blueprint",
+    "辉煌之心长靴（男）设计图纸": "glory_heart_boots_male_blueprint",
+    "辉煌布": "glory_cloth",
+    "通心面": "macaroni",
+    "量子元素": "quantum_element",
+    "金": "gold",
+    "金矿": "gold_ore",
+    "金钢合金": "gold_steel_alloy",
+    "金铜合金": "gold_copper_alloy",
+    "钒矿": "vanadium_ore",
+    "钛": "titanium",
+    "钛矿": "titanium_ore",
+    "钛铬合金": "titanium_chromium_alloy",
+    "钡": "barium",
+    "钡矿": "barium_ore",
+    "钡镁合金": "barium_magnesium_alloy",
+    "钨矿": "tungsten_ore",
+    "钪": "scandium",
+    "钪矿": "scandium_ore",
+    "钪镁合金": "scandium_magnesium_alloy",
+    "钴矿": "cobalt_ore",
+    "钼矿": "molybdenum_ore",
+    "钽矿": "tantalum_ore",
+    "钾": "potassium",
+    "钾矿": "potassium_ore",
+    "铁": "iron",
+    "铁矿": "iron_ore",
+    "铁钩钢片": "iron_hook_steel_plate",
+    "铂金矿": "platinum_ore",
+    "铜": "copper",
+    "铜矿": "copper_ore",
+    "铜铁合金": "copper_iron_alloy",
+    "铬": "chromium",
+    "铬矿": "chromium_ore",
+    "铱矿": "iridium_ore",
+    "银": "silver",
+    "银矿": "silver_ore",
+    "银钢合金": "silver_steel_alloy",
+    "银铜合金": "silver_copper_alloy",
+    "锆矿": "zirconium_ore",
+    "锌": "zinc",
+    "锌矿": "zinc_ore",
+    "锌钛合金": "zinc_titanium_alloy",
+    "锌钡合金": "zinc_barium_alloy",
+    "锟晶体": "kun_crystal",
+    "锰矿": "manganese_ore",
+    "镁": "magnesium",
+    "镁矿": "magnesium_ore",
+    "镍": "nickel",
+    "镍矿": "nickel_ore",
+    "镍锌合金": "nickel_zinc_alloy",
+    "镭": "radium",
+    "镭矿": "radium_ore",
+    "镭铬合金": "radium_chromium_alloy",
+    "陀螺平衡悬挂": "gyroscopic_suspension",
+    "隐身器维护包": "cloaking_device_maintenance_pack",
+    "雷达维护包": "radar_maintenance_pack",
+    "青椒肉丝": "green_pepper_pork",
+    "面": "flour",
+    "面包": "bread",
+    "面瓜": "melon",
+    "韩式寿司": "korean_sushi",
+    "饭团": "rice_ball",
+    "饼干": "cookie",
+    "馅饼": "meat_pie",
+    "高热结晶体": "thermal_crystal",
+    "高热芯片": "thermal_chip",
+    "高粱": "sorghum",
+    "高级冲击晶体": "high_grade_impact_crystal",
+    "高级四足甲的壳": "high_grade_quadruped_shell",
+    "高级复合胶板": "high_grade_composite_gel_plate",
+    "高级敛核酶": "high_grade_nuclear_enzyme",
+    "高级生物硅": "high_grade_biosilicon",
+    "高级硬质素": "high_grade_hard_substance",
+    "高级类胶": "high_grade_gel",
+    "高级紫晶源": "high_grade_purple_crystal_source",
+    "高级红晶源": "high_grade_red_crystal_source",
+    "高级绿晶源": "high_grade_green_crystal_source",
+    "高级聚熔脂": "high_grade_polymer_fat",
+    "高级能量催化剂": "high_grade_energy_catalyst",
+    "高级蓝晶源": "high_grade_blue_crystal_source",
+    "鱼": "fish",
+    "鱼排": "fish_steak",
+    "鱼肉炒饭": "fish_fried_rice",
+    "鳗鱼饭团": "eel_rice_ball",
+    "黑石膛线": "blackstone_rifling",
+    "黑麦": "rye",
+    "龙舌兰": "agave",
+    "龙舌兰酒": "tequila",
+    "龙舌兰酒工艺图": "tequila_recipe"
+  },
+  "by_source_class": {
+    "Activator2": "density_solvent",
+    "ColourfulCrystal": "five_color_crystal",
+    "DCProtecter": "electromagnetic_protector",
+    "DJBJJ": "electric_wave_crystal",
+    "DJBXP": "electric_wave_chip",
+    "DJSteelChip": "frozen_steel_plate",
+    "ElectronicZX": "electronic_control_chip",
+    "HSRifling": "blackstone_rifling",
+    "HongCrystal": "red_crystal_source",
+    "JMCFQ_G91": "g91_precision_trigger",
+    "JiJiaFuShuJingTi1": "mech_auxiliary_crystal_1",
+    "JiJiaFuShuJingTi2": "mech_auxiliary_crystal_2",
+    "JiJiaFuShuJingTi3": "mech_auxiliary_crystal_3",
+    "JiJiaYueHuiJingTi1": "mech_moonlight_crystal_1",
+    "JiJiaYueHuiJingTi2": "mech_moonlight_crystal_2",
+    "JiJiaYueHuiJingTi3": "mech_moonlight_crystal_3",
+    "LanCrystal": "blue_crystal_source",
+    "LvCrystal": "green_crystal_source",
+    "MorColourfulCrystal": "seven_color_crystal",
+    "NewJointBody": "joint_upgrade_crystal",
+    "NewJointImpactChip": "impact_crystal",
+    "ProcessStone": "processing_stone",
+    "QuantumElement": "quantum_element",
+    "RYRime:0 1001 0": "flawed_firepower_crystal",
+    "RYRime:0 1002 0": "flawed_health_crystal",
+    "RYRime:0 1003 0": "flawed_defense_crystal",
+    "RYRime:0 1004 0": "flawed_guidance_crystal",
+    "RYRime:0 1005 0": "flawed_critical_crystal",
+    "RYRime:0 1006 0": "flawed_rocket_crystal",
+    "RYRimeFragment": "socket_crystal_fragment",
+    "SuperNewJointImpactBody": "high_grade_impact_crystal",
+    "TGSteelChip": "iron_hook_steel_plate",
+    "TLPHSuspension": "gyroscopic_suspension",
+    "TZNLY_G91": "g91_energy_source",
+    "TZNLY_G92": "g92_energy_source",
+    "TopHongCrystal": "high_grade_red_crystal_source",
+    "TopLanCrystal": "high_grade_blue_crystal_source",
+    "TopLvCrystal": "high_grade_green_crystal_source",
+    "TopZiCrystal": "high_grade_purple_crystal_source",
+    "TurbineWDQ": "turbine_stabilizer",
+    "WXSteelChip": "five_element_steel_plate",
+    "XingCiCrystal": "stellar_magnetic_crystal",
+    "XingGuangCrystal": "starlight_crystal",
+    "XingHuiCrystal": "stellar_radiance_crystal",
+    "XingYaoCrystal": "stellar_brilliance_crystal",
+    "XingYuanCrystal": "stellar_source_crystal",
+    "YHOfInterstellar": "crystal_moon_mark",
+    "YHOfInterstellar_Frag": "crystal_moon_fragment",
+    "ZNGJTimeCard15": "assistant_time_card_15min",
+    "ZWFibar": "megawatt_fiber",
+    "ZiCrystal": "purple_crystal_source",
+    "new002": "thermal_crystal",
+    "new003": "corrosive_crystal",
+    "new004": "magnetic_crystal",
+    "new005": "thermal_chip",
+    "new006": "corrosive_chip",
+    "new007": "magnetic_chip",
+    "中级四足甲的壳": "middle_grade_quadruped_shell",
+    "中级复合胶板": "mid_grade_composite_gel_plate",
+    "中级敛核酶": "mid_grade_nuclear_enzyme",
+    "中级生物硅": "middle_grade_biosilicon",
+    "中级硬质素": "mid_grade_hard_substance",
+    "中级类胶": "middle_grade_gel",
+    "中级聚熔脂": "mid_grade_polymer_fat",
+    "中级能量催化剂": "middle_grade_energy_catalyst",
+    "中级能量包": "middle_grade_energy_pack",
+    "传感器": "sensor",
+    "低级复合胶板": "low_grade_composite_gel_plate",
+    "低级敛核酶": "low_grade_nuclear_enzyme",
+    "低级硬质素": "low_grade_hard_substance",
+    "低级聚熔脂": "low_grade_polymer_fat",
+    "催化之尘": "catalyst_dust",
+    "动力板": "power_board",
+    "厚脂硅皮": "thick_polymer_silicon_skin",
+    "变接器": "adapter",
+    "合成丝": "synthetic_silk",
+    "合成棉": "synthetic_cotton",
+    "合成纤维": "synthetic_fiber",
+    "合成线": "synthetic_thread",
+    "合成绒": "synthetic_fleece",
+    "太空棉": "space_cotton",
+    "密质胶线": "dense_gel_thread",
+    "恒金塑脂": "constant_gold_plastic",
+    "扩充器": "capacity_expander",
+    "扩流器1": "flow_expander",
+    "接合器升级晶片1级": "joint_chip_1",
+    "接合器升级晶片2级": "joint_chip_2",
+    "接合器升级碎片": "joint_upgrade_fragment",
+    "撒玛合金5": "sama_upgrade_alloy",
+    "普通修复石": "ordinary_repair_stone",
+    "普通战神修复石": "ordinary_warrior_repair_stone",
+    "普通荣耀修复石": "ordinary_glory_repair_stone",
+    "棉线": "cotton_thread",
+    "油": "cooking_oil",
+    "火力元件": "firepower_component",
+    "热敏电阻": "thermistor",
+    "生物纤维": "biological_fiber",
+    "石墨": "graphite",
+    "石墨矿源": "graphite_ore",
+    "硅": "silicon",
+    "硅矿源": "silicon_ore",
+    "硅铁合金": "silicon_iron_alloy",
+    "硅铜合金": "silicon_copper_alloy",
+    "硫": "sulfur",
+    "硬质扣": "hard_substance_buckle",
+    "磷": "phosphorus",
+    "糖": "sugar",
+    "紫水晶": "purple_crystal",
+    "紫陀金": "purple_tuo_metal",
+    "红水晶": "red_crystal",
+    "绿水晶": "green_crystal",
+    "聚能晶片5": "energy_focusing_chip",
+    "蓝水晶": "blue_crystal",
+    "质子磁暴甲": "proton_magnetic_storm_armor",
+    "超磁体1": "super_magnet",
+    "金": "gold",
+    "金钢合金": "gold_steel_alloy",
+    "金铜合金": "gold_copper_alloy",
+    "钛": "titanium",
+    "钛铬合金": "titanium_chromium_alloy",
+    "钡": "barium",
+    "钡镁合金": "barium_magnesium_alloy",
+    "钪": "scandium",
+    "钪镁合金": "scandium_magnesium_alloy",
+    "钾": "potassium",
+    "铁": "iron",
+    "铁矿源": "iron_ore",
+    "铜": "copper",
+    "铜铁合金": "copper_iron_alloy",
+    "铬": "chromium",
+    "银": "silver",
+    "银钢合金": "silver_steel_alloy",
+    "银铜合金": "silver_copper_alloy",
+    "锌": "zinc",
+    "锌钛合金": "zinc_titanium_alloy",
+    "锌钡合金": "zinc_barium_alloy",
+    "锟晶体": "kun_crystal",
+    "镁": "magnesium",
+    "镍": "nickel",
+    "镍锌合金": "nickel_zinc_alloy",
+    "镭": "radium",
+    "镭铬合金": "radium_chromium_alloy",
+    "面": "flour",
+    "高级四足甲的壳": "high_grade_quadruped_shell",
+    "高级复合胶板": "high_grade_composite_gel_plate",
+    "高级敛核酶": "high_grade_nuclear_enzyme",
+    "高级生物硅": "high_grade_biosilicon",
+    "高级硬质素": "high_grade_hard_substance",
+    "高级类胶": "high_grade_gel",
+    "高级聚熔脂": "high_grade_polymer_fat",
+    "高级能量催化剂": "high_grade_energy_catalyst"
+  }
+}

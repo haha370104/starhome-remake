@@ -1,5 +1,7 @@
 extends SceneTree
 
+const AutosaveRecordAdapter := preload("res://tests/fixtures/autosave_record_adapter.gd")
+
 class RejectingRepository extends PlayerStateRepository:
 	## 注入明确的保存拒绝，验证真实传输的失败反馈。
 	## [param _state] 不写盘的候选。[param _expected_revision] 原版本。
@@ -50,7 +52,7 @@ func _run() -> void:
 		quit(1)
 		return
 	var entity := session.entity_id
-	var before := server.autosave_service.state_for(entity).to_dictionary()
+	var before: Dictionary = AutosaveRecordAdapter.current(server.autosave_service, entity).to_dictionary()
 	var repository := server.autosave_service._repository
 	server.autosave_service._repository = RejectingRepository.new()
 	var prior_confirmation := ConfirmationDialog.new()
@@ -64,7 +66,7 @@ func _run() -> void:
 	_check(exit_flow.dialog.visible and not exit_flow.dialog.get_cancel_button().disabled, "明确失败允许返回游戏")
 	_check(exit_flow.dialog.dialog_text.contains("模拟保存失败"), "真实拒绝经过共享传输呈现")
 	_check(hall.combat.application_exiting, "失败提示仍持有输入锁直到用户返回")
-	_check(server.autosave_service.state_for(entity).to_dictionary() == before, "失败不改服务端正式记录")
+	_check(AutosaveRecordAdapter.current(server.autosave_service, entity).to_dictionary() == before, "失败不改服务端正式记录")
 	if "--capture" in OS.get_cmdline_user_args():
 		await RenderingServer.frame_post_draw
 		root.get_texture().get_image().save_png("res://.godot/graceful_exit_failure.png")

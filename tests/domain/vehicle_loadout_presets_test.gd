@@ -56,7 +56,7 @@ func _test_exchange() -> void:
 	_check(not _apply(reloaded, 0, 140).is_ok, "重启不能跳过剩余冷却")
 	_check(_apply(reloaded, 0, 160).is_ok and reloaded.vehicle.loadout.at(3).durability == 123, "重启后实际实例与状态仍可换回")
 	var current := CurrentPlayer.new(catalog)
-	var bundle := fixture._service.build_bundle(mapper.to_record(reloaded).value)
+	var bundle := fixture._service.build_bundle(reloaded)
 	_check(current.apply_bundle(bundle) and current.vehicle_presets.to_dictionary() == reloaded.vehicle_presets.to_dictionary(), "客户端唯一投影还原同一方案")
 	var clone: PlayerStateRecord = restored.value.duplicate_record()
 	clone.vehicle_presets.ready_at = 999
@@ -144,7 +144,7 @@ func _test_persistence_and_commands() -> void:
 	var old := fixture._state.to_dictionary()
 	old.erase("vehicle_presets")
 	var restored := PlayerStateRecord.from_dictionary(old)
-	_check(restored.is_ok and restored.value.vehicle_presets.at(0).is_empty(), "旧档默认四套空方案")
+	_check(not restored.is_ok, "当前玩家存档缺载具方案状态必须拒绝")
 
 
 ## 创建拥有真实车炮引擎与备用引擎的隔离玩家。

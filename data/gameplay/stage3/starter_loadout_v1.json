@@ -24,7 +24,7 @@
         "output_power_limit": 30,
         "max_durability": 1020,
         "repair_strength": 5,
-        "repair_energy_cost": 5,
+        "working_energy_per_repair": 5,
         "repair_skill_level": 10
       },
       "unknowns": {
@@ -58,7 +58,7 @@
         "stats.output_power_limit": {"status": "client_confirmed", "source_field": "m_noutpowerUL"},
         "stats.max_durability": {"status": "client_confirmed", "source_field": "m_nMax_Hardiness"},
         "stats.repair_strength": {"status": "client_confirmed", "source_field": "m_nOneRepairAttack"},
-        "stats.repair_energy_cost": {"status": "client_confirmed", "source_field": "m_nOneRepairEnergy"},
+        "stats.working_energy_per_repair": {"status": "client_confirmed", "source_field": "m_nOneRepairEnergy"},
         "stats.repair_skill_level": {"status": "client_confirmed", "source_field": "m_nRepairLevel"},
         "unknowns.server_damage_reduction_formula": {"status": "unknown", "reason": "The client exposes armor but not the retired server formula."},
         "unknowns.server_energy_conversion_formula": {"status": "unknown", "reason": "The relationship between reserve energy, working energy, and output power remains server-side evidence work."},
@@ -90,7 +90,7 @@
         "weight": 20,
         "drive": 20,
         "drive_limit": 28,
-        "working_energy_cost": 2,
+        "working_energy_per_movement": 2,
         "max_durability": 900
       },
       "unknowns": {
@@ -117,7 +117,7 @@
         "stats.weight": {"status": "client_confirmed", "source_field": "m_nweight"},
         "stats.drive": {"status": "client_confirmed", "source_field": "m_ndrive"},
         "stats.drive_limit": {"status": "client_confirmed", "source_field": "m_ndriveUL"},
-        "stats.working_energy_cost": {"status": "client_confirmed", "source_field": "m_nenergy"},
+        "stats.working_energy_per_movement": {"status": "client_confirmed", "source_field": "m_nenergy"},
         "stats.max_durability": {"status": "client_confirmed", "source_field": "m_nMax_Hardiness"},
         "unknowns.server_energy_drain_interval_seconds": {"status": "unknown", "reason": "The client row contains a raw action-time field, but its server consumption cadence is not proven."},
         "presentation.resources": {"status": "client_confirmed", "source": "Glory-only semantic equipment import and source manifest"}
@@ -189,7 +189,7 @@
         "stats.range": {"status": "client_confirmed", "source_field": "m_ndistance"},
         "stats.range_limit": {"status": "client_confirmed", "source_field": "m_ndistanceUL"},
         "stats.max_durability": {"status": "client_confirmed", "source_field": "m_nMax_Hardiness"},
-        "stats.attack_interval_seconds": {"status": "reconstructed_default", "reason": "The gameplay reconstruction document selects 0.8 seconds when the retired server cooldown is unavailable."},
+        "stats.attack_interval_seconds": {"status": "client_confirmed", "source_field": "m_nacttime", "source_unit": "milliseconds", "source_files": ["starhome_lz_ry_full/raw/cltobj/equipcltclass.fcc", "starhome_lz_ry_full/raw/cltobj/equipclt.fcc", "starhome_lz_fr_full/raw/cltobj/equipcltclass.fcc"]},
         "stats.runtime_projectile_speed": {"status": "reconstructed_default", "reason": "Shared server/client flight timing uses the current visual projectile speed until retired-server timing is measured."},
         "stats.runtime_muzzle_offset": {"status": "reconstructed_default", "reason": "Shared with the current Godot cannon presentation so authoritative and predicted sweeps start from the same point."},
         "stats.runtime_muzzle_forward_offset": {"status": "reconstructed_default", "reason": "Shared with the current Godot cannon presentation so short shots remain geometrically consistent."},

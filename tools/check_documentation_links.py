@@ -11,7 +11,7 @@ def main() -> int:
     """扫描维护入口和全部 docs 文档，报告失效本地链接及未登记的文档；返回失败数量是否非零。"""
     documents = sorted((ROOT / "docs").rglob("*.md"))
     entries = documents + [ROOT / p for p in (
-        "README.md", "PROJECT_CONTEXT.md", "使用说明.md", "assets/README.md", "data/npcs/README.md"
+        "README.md", "PROJECT_CONTEXT.md", "使用说明.md", "data/npcs/README.md"
     )]
     failures = []
     links = 0

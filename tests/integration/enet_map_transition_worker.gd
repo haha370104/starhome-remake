@@ -94,11 +94,11 @@ func _run_server() -> void:
 				saw_target_ownership = true
 				source_released = not source.entities.has(entity_id)
 				session_switched = active_session.map_instance_id == TARGET_INSTANCE_ID
-				var peer_snapshot := server.snapshot_for_peer(active_session.peer_id)
+				var peer_snapshot: Dictionary = server.snapshot_bundle_for_peer(active_session.peer_id).world_snapshot
 				target_snapshot_isolated = (
 					_snapshot_has_entity(peer_snapshot, entity_id)
 					and not _snapshot_has_foreign_entity(peer_snapshot, entity_id)
-					and not _snapshot_has_entity(source.snapshot(server.server_tick, 0.0), entity_id)
+					and not _snapshot_has_entity(source.world_snapshot(server.server_tick, 0.0), entity_id)
 				)
 		if (
 			saw_source_ownership
@@ -143,7 +143,7 @@ func _run_client() -> void:
 	root.add_child(session)
 	await process_frame
 	session.network_adapter.map_joined_received.connect(_on_map_joined_result)
-	session.network_adapter.authoritative_snapshot_received.connect(_on_snapshot_received)
+	session.network_adapter.authoritative_world_snapshot_received.connect(_on_snapshot_received)
 	if session.connect_to_server("127.0.0.1", port) != OK:
 		_fail("client could not start connecting")
 		_finish({})

@@ -9,8 +9,8 @@
 | --- | --- | --- |
 | 启动脚本 | [荣耀启动解密目录](../../ourgamestart_ry_decrypted/) | 看版本、更新根、DefLocMaping、CtrlFilesDir，不把启动脚本当全资源表 |
 | 可读客户端源码 | [荣耀 FCC](../../starhome_lz_ry_fcc_source/)、[免费 FCC](../../starhome_lz_fr_fcc_source/) | 原件只读，文本通常已有 UTF-8 副本；先确认版本及生效分支 |
-| 解包的表/配置 | [FTC 资源](../../starhome_lz_ry_full_parsed/ftc_resources/)、[catalogs](../../starhome_lz_ry_full_parsed/catalogs/) | 汇总是工具结果；缺字段/奇怪值要回到 decoded 和 expanded 原表 |
-| 图像与帧 | [ALE 图集](../../starhome_lz_ry_full_parsed/ale_sprites/) | sheet 必须连同 frames.json、ACT、原始 ALE 阅读 |
+| 解包的表/配置 | [项目内审计证据](../data/source_evidence/glory/)、[原档](../../starhome_lz_ry_full/raw/) | 常用证据保存在 data；其他 FTC 表按需从原档解包到临时工作区 |
+| 图像与帧 | [ALE 图集](../assets/glory/sprites/) | sheet 必须连同 frames.json、ACT、原始 ALE 阅读 |
 | 引擎容器 | 本机 `D:/Program Files/FancyBoxII Games/newsystem*` 的 exe/dll | 包含动画、坐标、渲染、解包等引擎语义，不是可以忽略的空壳 |
 | 新工程 | `scripts/domain`、`scripts/server`、`scripts/client`、`data`、`tools` | 将来源字段在目录边界转换为业务语义；不把原客户端当可直接移植的可信服务端 |
 

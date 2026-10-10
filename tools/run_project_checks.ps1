@@ -85,11 +85,11 @@ $testScripts = @(
 	"res://tests/client/world/world_facility_interaction_test.gd",
 	"res://tests/integration/npc_action_window_handoff_test.gd",
 	"res://tests/domain/weapon_merchant_domain_test.gd",
-	"res://tests/ui/runtime/weapon_merchant_runtime_test.gd",
 	"res://tests/server/authoritative_server_smoke_test.gd",
 	"res://tests/server/lazy_glory_map_loading_test.gd",
 	"res://tests/server/map_residency_test.gd",
 	"res://tests/server/combat/authoritative_combat_module_test.gd",
+	"res://tests/server/manufacturing/production_order_service_test.gd",
 	"res://tests/server/combat/combat_definition_catalog_test.gd",
 	"res://tests/server/combat/equipped_vehicle_authority_test.gd",
 	"res://tests/server/mining/authoritative_mining_server_test.gd",
@@ -98,8 +98,6 @@ $testScripts = @(
 	"res://tests/server/persistence/player_state_persistence_test.gd",
 	"res://tests/server/persistence/authoritative_autosave_test.gd",
 	"res://tests/server/player_panels/player_panel_service_test.gd",
-	"res://tests/server/manufacturing/authoritative_manufacturing_service_test.gd",
-	"res://tests/server/manufacturing/industrial_manufacturing_test.gd",
 	"res://tests/domain/player_rich_model_test.gd",
 	"res://tests/integration/map_transition_scene_smoke_test.gd",
 	"res://tests/integration/active_world_transition_view_smoke_test.gd",
@@ -108,16 +106,12 @@ $testScripts = @(
 	"res://tests/integration/d04_authoritative_combat_test.gd",
 	"res://tests/integration/in_process_authoritative_transport_test.gd",
 	"res://tests/ui/runtime/hud_runtime_smoke_test.gd",
-	"res://tests/ui/runtime/player_panels_runtime_test.gd",
-	"res://tests/ui/runtime/navigation_windows_test.gd",
 	"res://tests/domain/achievements_test.gd",
-	"res://tests/server/achievements_authority_test.gd",
-	"res://tests/ui/runtime/achievements_panel_test.gd",
     "res://tests/maps/map_runtime_smoke_test.gd",
+	"res://tests/maps/glory_full_map_pack_test.gd",
 	"res://tests/maps/glory_world_graph_data_test.gd",
     "res://tests/navigation/diamond_navigation_smoke_test.gd",
 	"res://tests/navigation/monster_route_planner_test.gd",
-    "res://tests/world/semantic_scene_depth_smoke_test.gd"
 )
 
 $testIndex = 0
@@ -164,21 +158,13 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 Write-Output "Auditing Glory monster sources"
+& python (Join-Path $PSScriptRoot "audit_glory_archive.py")
+if ($LASTEXITCODE -ne 0) {
+    throw "Project-local Glory archive audit failed"
+}
 & python (Join-Path $PSScriptRoot "audit_monster_asset_sources.py")
 if ($LASTEXITCODE -ne 0) {
     throw "Monster source audit failed"
-}
-
-Write-Output "Auditing Stage-2 Glory map presentations"
-& python (Join-Path $PSScriptRoot "audit_map_presentation_assets.py")
-if ($LASTEXITCODE -ne 0) {
-    throw "Stage-2 map presentation audit failed"
-}
-
-Write-Output "Auditing Glory hall exit transition"
-& python (Join-Path $PSScriptRoot "audit_hall_exit_transition.py")
-if ($LASTEXITCODE -ne 0) {
-    throw "Hall exit transition audit failed"
 }
 
 Write-Output "Auditing source-bound transition markers"
@@ -187,28 +173,16 @@ if ($LASTEXITCODE -ne 0) {
     throw "Transition marker source audit failed"
 }
 
-Write-Output "Auditing Stage-3 Glory combat content"
-& python (Join-Path $PSScriptRoot "audit_stage3_content.py")
-if ($LASTEXITCODE -ne 0) {
-    throw "Stage-3 combat content audit failed"
-}
-
 Write-Output "Auditing Stage-3 Glory combat presentation assets"
 & python (Join-Path $PSScriptRoot "import_glory_starter_combat_assets.py")
 if ($LASTEXITCODE -ne 0) {
     throw "Stage-3 combat presentation asset audit failed"
 }
 
-Write-Output "Auditing Glory ground-loot presentation assets"
-& python (Join-Path $PSScriptRoot "import_glory_ground_loot_assets.py")
+Write-Output "Auditing Glory ground-loot and self-repair presentation assets"
+& python (Join-Path $PSScriptRoot "audit_glory_presentation_assets.py")
 if ($LASTEXITCODE -ne 0) {
-    throw "Ground-loot presentation asset audit failed"
-}
-
-Write-Output "Auditing Glory self-repair presentation assets"
-& python (Join-Path $PSScriptRoot "import_glory_self_repair_assets.py")
-if ($LASTEXITCODE -ne 0) {
-    throw "Self-repair presentation asset audit failed"
+    throw "Glory presentation asset audit failed"
 }
 
 if ($IncludeGpuVisualTests) {

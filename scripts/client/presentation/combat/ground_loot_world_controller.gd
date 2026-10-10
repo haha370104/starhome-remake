@@ -4,12 +4,15 @@ extends Node
 const GroundLootWorldViewScript := preload(
 	"res://scripts/client/presentation/combat/ground_loot_world_view.gd"
 )
+const DeterministicSpatialGridScript := preload("res://scripts/core/deterministic_spatial_grid.gd")
+const HOVER_QUERY_RADIUS := 256.0
 
 var _world_parent: Node2D
 var _catalog: ItemCatalog
 var _items: Dictionary = {}
 var _views: Dictionary = {}
 var _hovered_loot_id := ""
+var _spatial_grid := DeterministicSpatialGridScript.new(HOVER_QUERY_RADIUS)
 
 
 ## 绑定世界父节点并载入地面物品业务表现目录。
@@ -21,6 +24,7 @@ func configure(world_parent: Node2D, item_catalog: ItemCatalog) -> Error:
 		return ERR_INVALID_PARAMETER
 	_world_parent = world_parent
 	_catalog = item_catalog
+	_spatial_grid.clear()
 	set_process(true)
 	return OK
 
@@ -63,11 +67,16 @@ func apply_snapshot(combat_snapshot: Dictionary) -> void:
 			if item != null:
 				item.quantity = maxi(1, int(loot.get("quantity", item.quantity)))
 				view.apply_snapshot(item, loot)
+		if _spatial_grid.contains(loot_id):
+			_spatial_grid.update(loot_id, view.global_position)
+		else:
+			_spatial_grid.register(loot_id, view.global_position)
 	for existing_id: String in _views.keys():
 		if observed.has(existing_id):
 			continue
 		var stale: GroundLootWorldView = _views[existing_id]
 		stale.queue_free()
+		_spatial_grid.remove(existing_id)
 		_views.erase(existing_id)
 		_items.erase(existing_id)
 		if _hovered_loot_id == existing_id:
@@ -80,7 +89,8 @@ func apply_snapshot(combat_snapshot: Dictionary) -> void:
 func loot_at(world_position: Vector2) -> String:
 	var selected := ""
 	var selected_y := -INF
-	for loot_id: String in _views:
+	var candidates := _spatial_grid.query_circle(world_position, HOVER_QUERY_RADIUS)
+	for loot_id: String in candidates:
 		var view: GroundLootWorldView = _views[loot_id]
 		if view.contains_pickup_point(world_position) and view.position.y >= selected_y:
 			selected = loot_id
@@ -95,6 +105,7 @@ func remove_loot(loot_id: String) -> void:
 	if view == null:
 		return
 	view.queue_free()
+	_spatial_grid.remove(loot_id)
 	_views.erase(loot_id)
 	_items.erase(loot_id)
 	if _hovered_loot_id == loot_id:
@@ -107,6 +118,7 @@ func clear() -> void:
 		view.queue_free()
 	_views.clear()
 	_items.clear()
+	_spatial_grid.clear()
 	_hovered_loot_id = ""
 
 

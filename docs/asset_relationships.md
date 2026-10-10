@@ -62,7 +62,7 @@
 
 新兵战车定义见 [`tank1`](../../starhome_lz_ry_fcc_source/cltobj/equipcltclass.fcc#L3-L53)，新兵能量炮定义见 [`gun1`](../../starhome_lz_ry_fcc_source/cltobj/equipcltclass.fcc#L1564-L1623)，初级维修臂定义见 [`repair`](../../starhome_lz_ry_fcc_source/cltobj/equipcltclass.fcc#L4205-L4240)。
 
-完整装备关系已经导出到 [`equipment_catalog.json`](../../starhome_lz_ry_full_parsed/catalogs_utf8/equipment_catalog.json)。当前荣耀目录中的统计为：
+以下是此前完整装备目录的审计统计；对应的临时解析目录已清理。当前项目内的三行 Stage-3 装备证据见 [`equipment_catalog.csv`](../data/source_evidence/glory/equipment_catalog.csv)，不能视为完整目录。
 
 | 类别 | 类记录数 | 同时解析出三视图 | 三视图路径互不相同 |
 | --- | ---: | ---: | ---: |
@@ -169,7 +169,7 @@ Godot 中应把服装实现为角色根节点下的多个 `AnimatedSprite2D` 图
 | 18 | `tank15shadow.ale` | 圣诞战车 | 有 |
 | 19 | `tankg91shadow.ale` | G91 系特殊影子 | 根目录缺；`equip/body/` 中有同名文件 |
 
-“当前荣耀缓存”只表示目前下载到 `starhome_lz_ry_full/raw/pic3/equip/` 的情况。FCC 已经确定引用但缓存缺失的文件，应进入资源缺口清单，不能静默换成另一辆战车的阴影。
+“当前荣耀缓存”只表示目前下载到 `../starhome_lz_ry_full/raw/pic3/equip/` 的情况。FCC 已经确定引用但缓存缺失的文件，应进入资源缺口清单，不能静默换成另一辆战车的阴影。
 
 ### 5.2 实现约束
 

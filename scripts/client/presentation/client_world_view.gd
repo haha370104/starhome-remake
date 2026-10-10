@@ -25,6 +25,7 @@ const SelfRepairVisualControllerScript := preload(
 	"res://scripts/client/presentation/combat/self_repair_visual_controller.gd"
 )
 const ItemCatalogScript := preload("res://scripts/domain/items/item_catalog.gd")
+const PerformanceTelemetryScript := preload("res://scripts/core/performance_telemetry.gd")
 var sortable_world: Node2D
 var map_background: Sprite2D
 var player: Node2D
@@ -72,7 +73,7 @@ func configure(character_catalog: Dictionary, animation_speed: float) -> void:
 	var avatar_error: Error = player.configure(
 		CharacterFactoryScript.build_character_set(character_catalog, "player"),
 		combat_manifest,
-		"H番茄花园",
+		"",
 		Color(0.35, 1.0, 0.92),
 		PlayerWorldAvatarScript.HUMAN_NAME_LABEL_POSITION,
 	)
@@ -107,7 +108,9 @@ func configure(character_catalog: Dictionary, animation_speed: float) -> void:
 		for controller: Node in combat_attack_controllers.values():
 			controller.set_visual_collision_resolver(monster_world_controller.first_visual_collision)
 	item_catalog = ItemCatalogScript.new()
+	var phase_started_at := PerformanceTelemetryScript.begin(&"client_startup_item_catalog")
 	var item_catalog_result := item_catalog.initialize()
+	PerformanceTelemetryScript.end(&"client_startup_item_catalog", phase_started_at)
 	if item_catalog_result.is_ok:
 		ground_loot_world_controller = GroundLootWorldControllerScript.new()
 		ground_loot_world_controller.name = "GroundLootWorldController"

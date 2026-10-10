@@ -105,6 +105,11 @@ func turn_in(state: Dictionary) -> DomainResult:
 	var result := state.duplicate(true)
 	result["accepted"] = false
 	result["completions"] = int(state.get("completions", 0)) + 1
+	# 目标只在当前一轮已接取时有效；领奖后清除，下一轮由 accept() 重新抽取。
+	result.erase("target")
+	result.erase("kills")
+	result.erase("seen_deaths")
+	result.erase("accepted_skill_level")
 	return DomainResult.ok(result)
 
 
@@ -117,7 +122,7 @@ func snapshot(state: Dictionary, day: String) -> Dictionary:
 	var count := daily_accepted(state, day)
 	var required := int(_definition["kill_count"])
 	var killed := mini(required, int(state.get("kills", 0)))
-	var target: Dictionary = state.get("target", {})
+	var target: Dictionary = state["target"] if accepted else {}
 	return {
 		"task_id": _definition["id"], "title": _definition["title"], "kind": "kill_training",
 		"provider_id": _definition["provider_id"], "accepted": accepted,

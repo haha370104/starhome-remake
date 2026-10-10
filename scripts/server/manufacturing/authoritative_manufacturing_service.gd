@@ -5,7 +5,6 @@ const ItemCatalogScript := preload("res://scripts/domain/items/item_catalog.gd")
 const RecipeBookScript := preload(
 	"res://scripts/domain/manufacturing/manufacturing_recipe_book.gd"
 )
-const PlayerStateMapperScript := preload("res://scripts/server/persistence/player_state_mapper.gd")
 const PlayerPanelProjectorScript := preload(
 	"res://scripts/shared/player_panel_projector.gd"
 )
@@ -21,7 +20,6 @@ var _item_catalog: ItemCatalog
 var _recipe_book: ManufacturingRecipeBook
 var _production_rules: ProductionRules
 var _orders: ProductionOrderService
-var _mapper: PlayerStateMapper
 var _projector: PlayerPanelProjector
 var _progression_config: Dictionary = {}
 var _facility_maps: Dictionary = {}
@@ -29,8 +27,8 @@ var _facility_maps: Dictionary = {}
 
 ## 初始化权威制造所需的物品、配方、技能和持久化映射边界。
 ## 返回加载成功的服务实例或具体配置错误。
-## [param rewards] 同一服务器共享的奖励切面，省略时使用独立默认策略。
-func initialize(rewards: RewardPipeline = null) -> DomainResult:
+## [param _rewards] 同一服务器共享的奖励切面，省略时使用独立默认策略。
+func initialize(_rewards: RewardPipeline = null) -> DomainResult:
 	_item_catalog = ItemCatalogScript.new()
 	var item_result := _item_catalog.initialize()
 	if not item_result.is_ok:
@@ -45,7 +43,6 @@ func initialize(rewards: RewardPipeline = null) -> DomainResult:
 	if not skill_result.is_ok:
 		return skill_result
 	_progression_config = skill_result.value
-	_mapper = PlayerStateMapperScript.new(_item_catalog, rewards)
 	_projector = PlayerPanelProjectorScript.new(_item_catalog, _progression_config)
 	var facilities := JsonConfigLoader.load_dictionary("res://data/world/manufacturing_facilities_v1.json")
 	if not facilities.is_ok:
@@ -54,7 +51,7 @@ func initialize(rewards: RewardPipeline = null) -> DomainResult:
 	var production_rules := ProductionRules.load_default()
 	if not production_rules.is_ok: return production_rules
 	_production_rules = production_rules.value
-	_orders = ProductionOrderService.new(_item_catalog, _recipe_book, _mapper, _production_rules, _progression_config)
+	_orders = ProductionOrderService.new(_item_catalog, _recipe_book, _production_rules, _progression_config)
 	return DomainResult.ok(self)
 
 
@@ -66,11 +63,11 @@ func handles(command_type: String) -> bool:
 
 
 ## 查询生产状态或处理订单意图，产出仅由服务器计时完成。
-## [param state] 当前权威玩家存档副本。
+## [param state] 当前权威在线玩家。
 ## [param command] 设施、配方、数量及相关版本组成的客户端意图。
-## 返回待提交存档、制造投影和统一玩家面板快照。
-func execute(state: PlayerStateRecord, command: Dictionary) -> DomainResult:
-	if state == null or _mapper == null or _recipe_book == null:
+## 返回待提交领域候选、制造投影和统一玩家面板快照。
+func execute(state: Player, command: Dictionary) -> DomainResult:
+	if state == null or _recipe_book == null:
 		return DomainResult.failure(&"manufacturing.service_unavailable", "manufacturing service is unavailable")
 	var command_type := String(command.get("type", ""))
 	if not handles(command_type): return DomainResult.failure(&"manufacturing.command", "生产命令无效")
@@ -82,16 +79,10 @@ func execute(state: PlayerStateRecord, command: Dictionary) -> DomainResult:
 	if command_type not in ["query_production", "pause_production", "cancel_production"] and not _map_has_station(state.map_id, station_id):
 		return DomainResult.failure(&"manufacturing.station_unavailable", "当前地图没有该生产设施")
 	if command_type in ProductionOrderService.COMMANDS:
-		var ordered := _orders.execute(state, command)
-		if ordered.is_ok:
-			ordered.value["panel_bundle"] = build_bundle(ordered.value.candidate, ordered.value.operation)
-		return ordered
-	var mapped := _mapper.to_domain(state)
-	if not mapped.is_ok:
-		return mapped
-	var player: Player = mapped.value
+		return _orders.execute(state, command)
+	var player := state
 	var operation := {"action": "query", "station_id": station_id}
-	var candidate := state.duplicate_record()
+	var candidate := state
 	return DomainResult.ok({
 		"candidate": candidate,
 		"changed": false,
@@ -104,12 +95,10 @@ func execute(state: PlayerStateRecord, command: Dictionary) -> DomainResult:
 ## [param state] 仓储中的权威玩家记录。
 ## [param operation] 最近一次生产结果。
 ## 返回合并制造数据的玩家面板 bundle；映射失败返回空字典。
-func build_bundle(state: PlayerStateRecord, operation: Dictionary = {}) -> Dictionary:
-	var mapped: DomainResult = _mapper.to_domain(state) if state != null else DomainResult.failure(
-		&"manufacturing.state_missing", "player state is missing"
-	)
+func build_bundle(state: Player, operation: Dictionary = {}) -> Dictionary:
+	if state == null: return {}
 	var station_id := String(operation.get("station_id", "tailoring"))
-	return _build_bundle(mapped.value, station_id, operation) if mapped.is_ok else {}
+	return _build_bundle(state, station_id, operation)
 
 
 ## 构造生产设施配方、玩家材料进度和三面板一致快照。
@@ -122,7 +111,7 @@ func _build_bundle(
 	station_id: String,
 	operation: Dictionary = {},
 ) -> Dictionary:
-	var bundle := _projector.build_bundle(player)
+	var bundle := {"inventory": {"revision": player.inventory.revision}}
 	var recipes: Array[Dictionary] = []
 	for recipe: RefCounted in _recipe_book.recipes_for_station(station_id):
 		recipes.append(recipe.to_view_dictionary(player, _item_catalog))
@@ -139,15 +128,21 @@ func _build_bundle(
 	return bundle
 
 
+## 生产事务只投影实际发生变化的玩家组件。
+## [param before] 在线状态。[param after] 已校验的候选。
+func changes(before: Player, after: Player) -> PlayerChange:
+	return _projector.changes(before, after)
+
+
 ## 为服务器时钟完成一轮生产；地图设施消失或车辆被击毁时只暂停，不结算物品。
 ## [param state] 已由时钟捕获到期时间的权威副本。
 ## 返回待提交的一轮结果或暂停候选。
-func complete_production_cycle(state: PlayerStateRecord) -> DomainResult:
+func complete_production_cycle(state: Player) -> DomainResult:
 	if state == null or state.production.order == null:
 		return DomainResult.failure(&"production.no_order", "当前没有生产订单")
 	var order := state.production.order
-	if state.map_id != order.map_id or not _map_has_station(state.map_id, order.station_id) or state.vehicle_health <= 0:
-		var candidate := state.duplicate_record()
+	if state.map_id != order.map_id or not _map_has_station(state.map_id, order.station_id) or state.vehicle.health <= 0:
+		var candidate: Player = PlayerTransaction.prepare(state, ["production"], _item_catalog).value
 		candidate.production.pause("地点改变或战车被击毁，请返回原设施继续")
 		return DomainResult.ok({"candidate": candidate, "changed": true,
 			"operation": {"station_id": order.station_id, "action": "pause_production", "message": candidate.production.order.pause_reason}})
@@ -163,3 +158,11 @@ func _map_has_station(map_id: String, station_id: String) -> bool:
 		if String(facility.get("station_id", "")) == station_id:
 			return true
 	return false
+
+
+func facilities_for_map(map_id: String) -> Array[Dictionary]:
+	var result: Array[Dictionary] = []
+	for facility: Variant in _facility_maps.get(map_id, []):
+		if facility is Dictionary:
+			result.append((facility as Dictionary).duplicate(true))
+	return result

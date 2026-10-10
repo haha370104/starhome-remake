@@ -37,6 +37,7 @@ func _run() -> void:
 	)]))
 	_expect(controller.active_view_count() == 1, "snapshot should create one loot view")
 	var view = controller.view_for_loot("loot.biosilicon.1")
+	await _wait_for_texture(view)
 	_expect(view != null, "loot view should be indexed by authoritative loot id")
 	if view != null:
 		_expect(
@@ -85,9 +86,31 @@ func _run() -> void:
 	)
 	controller.apply_snapshot(_snapshot([]))
 	_expect(controller.active_view_count() == 0, "missing authoritative loot should remove its view")
+	for definition_id: String in ["low_grade_nuclear_enzyme", "iron",
+		"glory_equipment_engine4_7fba1b4794", "glory_equipment_engine3_7a19d8f6cd",
+		"iron_ore", "recruit_energy_cannon", "beginner_engine"]:
+		controller.apply_snapshot(_snapshot([_loot(definition_id, definition_id, 1, Vector2(100, 200))]))
+		view = controller.view_for_loot(definition_id)
+		await _wait_for_texture(view)
+		_expect(view != null and controller.loot_at(view.position + view.local_hit_rect().get_center()) == definition_id,
+			"PNG, ALE and inventory-only drops must render and be pickable: " + definition_id)
+	var missing := GroundLootWorldView.new()
+	world.add_child(missing)
+	missing.configure(GameItem.new({"id": "missing", "display_name": "Missing texture"}), _loot("missing", "missing", 1, Vector2.ZERO))
+	missing.set_hovered(false)
+	_expect(missing.get_node("HoverTooltip").visible and missing.contains_pickup_point(Vector2.ZERO),
+		"items without artwork remain visible by name and manually pickable")
 	controller.queue_free()
 	world.queue_free()
 	_finish()
+
+
+func _wait_for_texture(view: GroundLootWorldView) -> void:
+	if view == null: return
+	var deadline := Time.get_ticks_msec() + 5000
+	while view.get_node("WorldIcon").texture == null and Time.get_ticks_msec() < deadline:
+		await process_frame
+	_expect(view.get_node("WorldIcon").texture != null, "ground item texture should load: " + view.item_definition_id)
 
 
 ## 构造只含地面掉落的最小战斗快照。

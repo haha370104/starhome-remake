@@ -43,12 +43,11 @@ func find(id: String) -> GameItem:
 ## [param cabinet] 从一开始的柜号。
 ## [param deposit] true为存入，false为取出。
 ## [param id] 来源物品身份。
-## [param amount] 完整接收才结算的正整数数量。
+## [param position] 目标容器内的物品中心坐标。
 ## [param inventory_revision] 客户端观察到的背包版本。
 ## [param warehouse_revision] 客户端观察到的仓库版本。
-## [param split_id] 由服务端生成、部分转移时使用的新身份。
 ## 返回实际转移结果；成功同时推进背包和仓库版本。
-func transfer(backpack: Inventory, cabinet: int, deposit: bool, id: String, amount: int, inventory_revision: int, warehouse_revision: int, split_id: String) -> DomainResult:
+func transfer(backpack: Inventory, cabinet: int, deposit: bool, id: String, position: Vector2i, inventory_revision: int, warehouse_revision: int) -> DomainResult:
 	var checked := backpack.require_revision(inventory_revision)
 	if not checked.is_ok: return checked
 	if warehouse_revision != revision:
@@ -59,11 +58,45 @@ func transfer(backpack: Inventory, cabinet: int, deposit: bool, id: String, amou
 		return DomainResult.failure(&"warehouse.cabinet", "请先开通该储物柜")
 	if deposit and find(id) != null:
 		return DomainResult.failure(&"warehouse.identity", "物品身份已存在于仓库")
-	if not split_id.is_empty() and (find(split_id) != null or backpack.find(split_id) != null):
-		return DomainResult.failure(&"warehouse.identity", "存取物品身份重复")
 	var source: Inventory = backpack if deposit else _cabinets[cabinet - 1]
 	var target: Inventory = _cabinets[cabinet - 1] if deposit else backpack
-	var result := InventoryTransfer.move(source, target, id, amount, split_id)
+	var result := InventoryTransfer.move(source, target, id, position)
+	if result.is_ok: revision += 1
+	return result
+
+
+func move_item(cabinet: int, id: String, position: Vector2i, expected_revision: int) -> DomainResult:
+	if expected_revision != revision:
+		return DomainResult.failure(&"warehouse.revision", "仓库状态已更新，请重试")
+	var loaded := materialize()
+	if not loaded.is_ok: return loaded
+	if cabinet < 1 or cabinet > cabinet_count():
+		return DomainResult.failure(&"warehouse.cabinet", "请先开通该储物柜")
+	var result := _cabinets[cabinet - 1].move_item(id, position, _cabinets[cabinet - 1].revision)
+	if result.is_ok: revision += 1
+	return result
+
+
+func arrange(cabinet: int, expected_revision: int) -> DomainResult:
+	if expected_revision != revision:
+		return DomainResult.failure(&"warehouse.revision", "仓库状态已更新，请重试")
+	var loaded := materialize()
+	if not loaded.is_ok: return loaded
+	if cabinet < 1 or cabinet > cabinet_count():
+		return DomainResult.failure(&"warehouse.cabinet", "请先开通该储物柜")
+	var result := _cabinets[cabinet - 1].arrange(_cabinets[cabinet - 1].revision)
+	if result.is_ok: revision += 1
+	return result
+
+
+func split_item(cabinet: int, id: String, amount: int, expected_revision: int) -> DomainResult:
+	if expected_revision != revision:
+		return DomainResult.failure(&"warehouse.revision", "仓库状态已更新，请重试")
+	var loaded := materialize()
+	if not loaded.is_ok: return loaded
+	if cabinet < 1 or cabinet > cabinet_count():
+		return DomainResult.failure(&"warehouse.cabinet", "请先开通该储物柜")
+	var result := InventoryStackActions.split(_cabinets[cabinet - 1], id, amount, _cabinets[cabinet - 1].revision)
 	if result.is_ok: revision += 1
 	return result
 

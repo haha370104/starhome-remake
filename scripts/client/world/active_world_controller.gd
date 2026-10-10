@@ -3,7 +3,6 @@ extends Node
 
 signal active_world_will_replace
 
-const DiamondNavigationScript := preload("res://scripts/navigation/diamond_navigation.gd")
 const MapDefinitionLoaderScript := preload("res://scripts/maps/map_definition_loader.gd")
 const CharacterFactoryScript := preload("res://scripts/characters/character_factory.gd")
 const YSortedPropScript := preload("res://scripts/world/y_sorted_prop.gd")
@@ -16,6 +15,8 @@ const RecoveredDecorationScript := preload("res://scripts/client/world/recovered
 const FacilityInteractionScript := preload(
 	"res://scripts/client/world/world_facility_interaction.gd"
 )
+const SlotMachineScript := preload("res://scripts/client/world/world_slot_machine.gd")
+const GardenPlantScript := preload("res://scripts/client/world/world_garden_plant.gd")
 const FACILITY_CATALOG_PATH := "res://data/world/manufacturing_facilities_v1.json"
 const TransitionMarkerCatalogScript := preload(
 	"res://scripts/client/world/map_transition_marker_catalog.gd"
@@ -40,7 +41,10 @@ var _hud: CanvasLayer
 var _character_catalog: Dictionary = {}
 var _npc_catalog: Dictionary = {}
 var _facility_catalog: Dictionary = {}
+var _garden_catalog: BotanicalGardenCatalog
+var _item_catalog: ItemCatalog
 var _transition_marker_catalog: RefCounted
+var _navigation_cache := MapNavigationCache.new()
 
 
 ## 执行 `configure` 对应的模块操作。
@@ -64,6 +68,7 @@ func configure(
 	hud: CanvasLayer,
 	character_catalog: Dictionary,
 	npc_catalog: Dictionary,
+	item_catalog: ItemCatalog = null,
 ) -> Error:
 	if (
 		world_root == null
@@ -85,6 +90,10 @@ func configure(
 	_hud.map_points_requested.connect(refresh_navigation_points)
 	_character_catalog = character_catalog
 	_npc_catalog = npc_catalog
+	_item_catalog = item_catalog
+	var garden := BotanicalGardenCatalog.load_default()
+	if not garden.is_ok: return ERR_INVALID_DATA
+	_garden_catalog = garden.value
 	if not FileAccess.file_exists(FACILITY_CATALOG_PATH):
 		return ERR_CANT_OPEN
 	var facility_value: Variant = JSON.parse_string(
@@ -115,14 +124,16 @@ func prepare_initial_bundle(definition_path: String) -> Dictionary:
 	var manifest_value: Variant = JSON.parse_string(FileAccess.get_file_as_string(manifest_path))
 	if not manifest_value is Dictionary:
 		return {}
-	var floor_texture := load(String(staged_definition.resource_paths.get("floor", ""))) as Texture2D
-	var minimap_texture := load(String(staged_definition.resource_paths.get("minimap", ""))) as Texture2D
-	if floor_texture == null or minimap_texture == null:
-		return {}
+	var resources: Dictionary = {}
+	var paths := ClientMapPreloader.texture_paths(staged_definition, manifest_value)
+	for key: String in paths:
+		var texture := load(String(paths[key])) as Texture2D
+		if texture == null: return {}
+		resources[key] = texture
 	return {
 		"definition": staged_definition,
 		"map_manifest": manifest_value,
-		"resources": {"floor": floor_texture, "minimap": minimap_texture},
+		"resources": resources,
 	}
 
 
@@ -154,6 +165,9 @@ func commit_bundle(bundle: Dictionary, spawn_position: Vector2) -> bool:
 	_camera.limit_right = int(map_size.x)
 	_camera.limit_bottom = int(map_size.y)
 	_camera.position = spawn_position
+	_camera.reset_smoothing()
+	# 重置平滑后立即提交画面变换，避免新地图首帧沿用旧视角。
+	_camera.force_update_scroll()
 	_hud.set_map(map_size, staged["minimap_texture"], definition.display_name, definition.enabled_transitions())
 	refresh_navigation_points()
 	return true
@@ -192,12 +206,12 @@ func _stage_bundle(bundle: Dictionary, spawn_position: Vector2) -> Dictionary:
 	var minimap_texture := resources.get("minimap") as Texture2D
 	if staged_definition == null or staged_manifest.is_empty() or floor_texture == null or minimap_texture == null:
 		return {}
-	var staged_navigation := DiamondNavigationScript.new()
-	if not staged_navigation.load_from(
+	var staged_navigation := _navigation_cache.acquire(
 		staged_definition.navigation_data_path,
 		staged_definition.navigation_grid_size,
 		staged_definition.navigation_cell_size,
-	):
+	)
+	if staged_navigation == null:
 		return {}
 	if not staged_navigation.is_walkable(spawn_position):
 		return {}
@@ -209,7 +223,7 @@ func _stage_bundle(bundle: Dictionary, spawn_position: Vector2) -> Dictionary:
 	var staged_npcs: Array[Node2D] = []
 	var staged_facilities: Array[Node2D] = []
 	var staged_transition_views: Array[Node2D] = []
-	if not _stage_scene_nodes(staged_manifest, container, staged_scene_nodes):
+	if not _stage_scene_nodes(staged_manifest, resources, container, staged_scene_nodes):
 		container.free()
 		return {}
 	if not RecoveredDecorationScript.stage(staged_definition.map_id, container, staged_scene_nodes):
@@ -264,26 +278,41 @@ func _stage_facilities(
 			return false
 		container.add_child(facility)
 		output.append(facility)
+	if SlotMachineRules.supports_map(String(staged_definition.map_id)):
+		for machine_id: String in SlotMachineRules.MACHINES:
+			var machine: Node2D = SlotMachineScript.new()
+			machine.configure(machine_id, SlotMachineRules.MACHINES[machine_id])
+			container.add_child(machine)
+			output.append(machine)
+	if _garden_catalog.supports_map(String(staged_definition.map_id)):
+		for plant: Dictionary in _garden_catalog.plants.values():
+			var view: Node2D = GardenPlantScript.new()
+			if view.configure(plant, _item_catalog) != OK:
+				view.free()
+				return false
+			container.add_child(view)
+			output.append(view)
 	return true
 
 
 ## 执行 `stage_scene_nodes` 对应的模块操作。
 ## [param manifest] 调用方传入的参数；具体约束由函数签名和所在模块定义。
+## [param resources] 预载完成的纹理，场景图层以原路径为键。
 ## [param container] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## [param output] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## 返回该函数计算、查询或操作得到的结果。
-func _stage_scene_nodes(manifest: Dictionary, container: Node2D, output: Array[Node2D]) -> bool:
+func _stage_scene_nodes(manifest: Dictionary, resources: Dictionary, container: Node2D, output: Array[Node2D]) -> bool:
 	var composition_value: Variant = manifest.get("composition", {})
 	if not composition_value is Dictionary:
 		return false
 	var composition: Dictionary = composition_value
-	if String(composition.get("render_strategy", "")) == "semantic_owner_layers":
+	if String(composition.get("render_strategy", "")) in ["semantic_owner_layers", "semantic_foreground_overlay"]:
 		var layers_value: Variant = composition.get("semantic_layers", [])
 		if not layers_value is Array:
 			return false
 		for index in range((layers_value as Array).size()):
 			var layer_definition: Dictionary = (layers_value as Array)[index]
-			var texture := load(String(layer_definition.get("texture", ""))) as Texture2D
+			var texture := resources.get(String(layer_definition.get("texture", ""))) as Texture2D
 			var offset: Array = layer_definition.get("pixel_offset", [])
 			var atlas_values: Array = layer_definition.get("atlas_region", [])
 			if texture == null or offset.size() != 2 or atlas_values.size() != 4:
@@ -304,7 +333,7 @@ func _stage_scene_nodes(manifest: Dictionary, container: Node2D, output: Array[N
 		return false
 	for index in range((props_value as Array).size()):
 		var prop_definition: Dictionary = (props_value as Array)[index]
-		var texture := load(String(prop_definition.get("texture", ""))) as Texture2D
+		var texture := resources.get(String(prop_definition.get("texture", ""))) as Texture2D
 		var anchor_values: Array = prop_definition.get("anchor", [])
 		var offset_values: Array = prop_definition.get("offset", [])
 		if texture == null or anchor_values.size() != 2 or offset_values.size() != 2:

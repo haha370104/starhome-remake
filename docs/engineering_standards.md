@@ -37,10 +37,8 @@
 
 ### 运行时字体
 
-全游戏动态文字统一使用微软雅黑 UI；系统缺少该字体时依次回退到微软雅黑、苹方、思源黑体和系统无衬线字体。
-`project.godot` 的 `gui/theme/custom_font` 与现有面板共同引用
-`assets/ui/fonts/legacy_panel_font.tres`，粗体使用同目录的 `legacy_panel_bold_font.tres`。
-这两个历史文件名为兼容既有引用而保留，内容不再是宋体。窗口不得自行创建另一套字体族。
+全游戏动态文字统一使用项目内的 Noto Sans CJK SC；常规和粗体分别使用同目录的
+`NotoSansCJKsc-Regular.otf` 与 `NotoSansCJKsc-Bold.otf`。两份字体均由 Godot 以 MSDF 方式导入，窗口不得自行创建另一套字体族。
 本次替换保留各控件的字号和字重；任务日志使用正文 16px、标题 20px。
 原图中烘焙的按钮字样属于图片内容，不受运行时字体设置影响。
 

@@ -22,6 +22,13 @@ func _initialize() -> void:
 	var iron: Dictionary = catalog.mineral("iron_ore")
 	_expect(iron.get("required_mining_level") == 10, "铁矿应保留 10 级需求")
 	_expect(not String(iron.get("description", "")).is_empty(), "矿物说明应保留")
+	var items := ItemCatalog.new()
+	_expect(items.initialize().is_ok, "矿物物品目录应加载")
+	for mineral_id: String in ["iron_ore", "silicon_ore", "graphite_ore"]:
+		var item_result := items.create(mineral_id, {})
+		var presentation: Dictionary = item_result.value.presentation_for("inventory") if item_result.is_ok else {}
+		_expect(not ItemPresentationTextureResolver.resolve(presentation).is_empty(),
+			"%s 的背包贴图应可加载" % mineral_id)
 	var source_maps := 0
 	for map_id: String in catalog.map_ids():
 		var policy: Dictionary = catalog.policy_for_map(map_id)

@@ -1,16 +1,19 @@
-"""Compile audited Sama growth rules and original material/effect artwork."""
+"""Compile audited Sama rules and artwork from workspace-local raw archives.
+
+Use --effects-only to rebuild Glory combat effects without Free-client materials.
+"""
 import argparse
 import hashlib
 import io
 
-import audit_monster_asset_sources as indexed
 from build_equipment_processing_rules import ROOT, read, write
+from glory_paths import resolve_casefold_path
+from recovery.sprites.ale_sprite import AleFile
 
 
-def build(check=False):
+def build(check=False, effects_only=False):
     definitions = read("data/gameplay/glory/glory_items_v1.json")["definitions"]
     profiles, offers, items, frames = [], [], [], []
-    decoder = indexed.load_decoder()
     for suffix, location, effect in [("JNQ", 19, "piercing"), ("MCQ", 20, "pulse"),
                                      ("HBQ", 21, "fission"), ("RLQ", 22, "pvp_absorption")]:
         row = next(r for r in definitions if r.get("source_class") == "SaMa" + suffix)
@@ -19,11 +22,13 @@ def build(check=False):
             offers.append({"id": row["id"] + "_" + str(color), "definition_id": row["id"], "color": color, "unit_price": price})
 
     def icon(release, logical, name, all_frames=False):
-        source = ROOT.parent / (release + "_full/raw") / logical
-        ale = decoder.AleFile(source)
+        source = resolve_casefold_path(ROOT / (release + "_full/raw"), logical)
+        if source is None:
+            raise FileNotFoundError(f"Missing {release} source: {logical}")
+        ale = AleFile(source)
         paths = []
         for index, frame in enumerate(ale.frames if all_frames else ale.frames[:1]):
-            bitmap = ale.decode_frame(frame)
+            bitmap = frame.image
             buffer = io.BytesIO()
             bitmap.save(buffer, format="PNG", optimize=True)
             target = ROOT / "assets/items/sama" / (name + ("_%02d" % index if all_frames else "") + ".png")
@@ -36,11 +41,11 @@ def build(check=False):
             paths.append("res://" + target.relative_to(ROOT).as_posix())
         return paths
 
-    for classname, name, label, bound, price, use in [
+    for classname, name, label, bound, price, use in ([] if effects_only else [
         ("DynamicCore", "dynamic_core", "远征军动力核心", False, 100, "提升撒玛装备成长阶段"),
         ("CapacityCore", "capacity_core", "远征军智能核心", True, 1000, "提升撒玛装备品质；使用后装备绑定"),
         ("MaintainWrap", "maintenance_pack", "远征军装备维护包", False, 500, "维护撒玛装备耐久；每次需要20个"),
-    ]:
+    ]):
         path = icon("starhome_lz_fr", f"pic2/Restore/{classname}.ale", name)[0]
         identifier = "sama_" + name
         items.append({"id": identifier, "kind": "material", "display_name": label,
@@ -51,10 +56,17 @@ def build(check=False):
     for name, logical, animated in [("piercing", "JNCT", False), ("fission", "HBFY", False),
                                      ("pulse_start", "MSAni/JNCT-1", True), ("pulse_end", "MSAni/JNCT-2", True)]:
         visuals[name] = icon("starhome_lz_ry", "pic3/stageskill/" + logical + ".ale", name, animated)
-    write("assets/items/sama/manifest.json", {"frames": frames}, check)
+    manifest_path = "assets/items/sama/manifest.json"
+    if effects_only and (ROOT / manifest_path).is_file():
+        generated = {frame["file"] for frame in frames}
+        frames = [frame for frame in read(manifest_path)["frames"] if frame["file"] not in generated] + frames
+    write(manifest_path, {"frames": frames}, check)
     write("data/presentation/sama_effects_v1.json", {"schema_version": 1,
           "effects": {kind: [{"texture": path, "offset": next(f["offset"] for f in frames if f["file"] == path.rsplit("/", 1)[1])} for path in paths] for kind, paths in visuals.items()},
           "pulse": {"fps": 25, "second_delay": 0.25, "lifetime": 0.7, "scale": 0.42}}, check)
+    if effects_only:
+        print(f"Sama effects: {sum(map(len, visuals.values()))} original frames")
+        return
     write("data/gameplay/sama_items_v1.json", {"schema_version": 1, "definitions": items}, check)
     write("data/gameplay/sama_rules_v1.json", {
         "schema_version": 1, "profiles": profiles, "offers": offers, "visuals": visuals,
@@ -75,4 +87,6 @@ def build(check=False):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--check", action="store_true")
-    build(parser.parse_args().check)
+    parser.add_argument("--effects-only", action="store_true", help="Rebuild only Glory combat effects")
+    args = parser.parse_args()
+    build(args.check, args.effects_only)

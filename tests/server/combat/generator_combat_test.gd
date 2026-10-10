@@ -57,7 +57,7 @@ func _test_activation() -> void:
 func _test_hit_lifecycle() -> void:
 	var module := _module(9)
 	var state := module.vehicle_state_for("p")
-	var condition: EquipmentConditionLoadout = module.actors.p.equipment_condition
+	var condition: EquipmentConditionLoadout = module.actors["p"].equipment_condition
 	var original := condition.generators()[0].magazine.remaining
 	_check(_fire(module, 1).is_ok, "接受主炮")
 	_check(not _fire(module, 1).is_ok, "重复命令拒绝")
@@ -87,7 +87,7 @@ func _test_hit_lifecycle() -> void:
 ## 缺弹、落空、换装、玩家死亡和离开不会产生幽灵状态或额外收费。
 func _test_exclusions() -> void:
 	var module := _module(100)
-	var condition: EquipmentConditionLoadout = module.actors.p.equipment_condition
+	var condition: EquipmentConditionLoadout = module.actors["p"].equipment_condition
 	for item: VehicleEquipment in condition.generators(): item.magazine.remaining = 0
 	_check(_fire(module, 1).is_ok, "装置缺弹不阻止主炮")
 	module.advance_ticks(5, false)
@@ -99,7 +99,7 @@ func _test_exclusions() -> void:
 	module = _module(100)
 	_fire(module, 1)
 	module.generators.retain_sources("p", PackedStringArray(), module.monsters)
-	module.actors.p.equipment_condition = EquipmentConditionLoadout.new()
+	module.actors["p"].equipment_condition = EquipmentConditionLoadout.new()
 	module.advance_ticks(5, false)
 	_check(module.monster_for("m").generator_afflictions.labels().is_empty(), "飞行途中卸装不触发")
 	module = _module(100)
@@ -138,8 +138,9 @@ func _module(health: int) -> AuthoritativeCombatModule:
 	var module := AuthoritativeCombatModule.new()
 	_check(module.configure(20, 31, 0).is_ok, "模块配置")
 	var assembly := {"max_health": 100, "reserve_energy_capacity": 10000, "working_energy_capacity": 100,
-		"power_output": 20, "passive_power_load": 0, "equipment_condition": EquipmentConditionLoadout.new(player)}
-	var weapon := {"weapon_id": "test.cannon", "minimum_damage": 1, "maximum_damage": 1, "working_energy_cost": 5,
+		"power_output": 20, "passive_power_load": 0, "equipment_condition": EquipmentConditionLoadout.new(player),
+		"central_controller": PlayerCentralController.new().to_dictionary()}
+	var weapon := {"weapon_id": "test.cannon", "minimum_damage": 1, "maximum_damage": 1, "working_energy_per_shot": 5,
 		"range": 250, "cooldown_ticks": 1, "projectile_speed": 1000, "muzzle_offset": [0, 0], "muzzle_forward_offset": 0}
 	_check(module.register_vehicle("p", "map", Vector2.ZERO, assembly, {"energy_cannon.primary": weapon}).is_ok, "注册战车")
 	_check(module.register_monster({"monster_id": "m", "species_id": "test", "map_instance_id": "map", "position": Vector2(100, 0),
@@ -159,7 +160,7 @@ func _generator(id: String, location: int) -> VehicleEquipment:
 	profile.chance = 1
 	profile.duration_seconds = 3
 	profile.heat_damage = 4
-	profile.working_energy_cost = 3
+	profile.working_energy_per_trigger = 3
 	item.generator_profile = profile
 	return item
 

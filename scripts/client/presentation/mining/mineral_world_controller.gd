@@ -4,14 +4,15 @@ extends Node
 const MineralWorldViewScript := preload(
 	"res://scripts/client/presentation/mining/mineral_world_view.gd"
 )
-const RuntimeContentBootstrapScript := preload("res://scripts/content/runtime_content_bootstrap.gd")
-const AleRepositoryScript := preload("res://scripts/content/ale_sprite_repository.gd")
+const DeterministicSpatialGridScript := preload("res://scripts/core/deterministic_spatial_grid.gd")
+const HOVER_QUERY_RADIUS := 256.0
 
 var _world_parent: Node2D
 var _definitions: Dictionary = {}
 var _views: Dictionary = {}
 var _hovered_source_id := ""
 var _repository: RefCounted
+var _spatial_grid := DeterministicSpatialGridScript.new(HOVER_QUERY_RADIUS)
 
 
 ## 绑定活动地图的共享 Y 排序层和已解析的矿物表现清单。
@@ -23,13 +24,11 @@ func configure(world_parent: Node2D, manifest: Dictionary) -> Error:
 		return ERR_INVALID_PARAMETER
 	_world_parent = world_parent
 	_definitions = (manifest["definitions"] as Dictionary).duplicate(true)
+	_spatial_grid.clear()
 	if _definitions.is_empty():
 		return ERR_INVALID_DATA
-	var mounted: Dictionary = RuntimeContentBootstrapScript.mount_default()
-	if not bool(mounted.get("ok", false)):
-		return ERR_CANT_OPEN
-	_repository = AleRepositoryScript.new()
-	if not _repository.load_default():
+	_repository = SpriteResources.repository()
+	if _repository == null:
 		return ERR_CANT_OPEN
 	set_process(true)
 	return OK
@@ -69,11 +68,16 @@ func apply_snapshot(combat_snapshot: Dictionary) -> void:
 			_views[source_id] = view
 		else:
 			view.apply_snapshot(source)
+		if _spatial_grid.contains(source_id):
+			_spatial_grid.update(source_id, view.global_position)
+		else:
+			_spatial_grid.register(source_id, view.global_position)
 	for existing_id: String in _views.keys():
 		if observed.has(existing_id):
 			continue
 		var stale: MineralWorldView = _views[existing_id]
 		stale.queue_free()
+		_spatial_grid.remove(existing_id)
 		_views.erase(existing_id)
 		if _hovered_source_id == existing_id:
 			_hovered_source_id = ""
@@ -85,7 +89,7 @@ func apply_snapshot(combat_snapshot: Dictionary) -> void:
 func source_at(world_position: Vector2) -> String:
 	var selected := ""
 	var selected_y := -INF
-	for source_id: String in _views:
+	for source_id: String in _spatial_grid.query_circle(world_position, HOVER_QUERY_RADIUS):
 		var view: MineralWorldView = _views[source_id]
 		if view.contains_world_point(world_position) and view.position.y >= selected_y:
 			selected = source_id
@@ -106,6 +110,7 @@ func clear() -> void:
 	for view: MineralWorldView in _views.values():
 		view.queue_free()
 	_views.clear()
+	_spatial_grid.clear()
 	_hovered_source_id = ""
 
 

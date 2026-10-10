@@ -18,7 +18,7 @@
 - `ven/FormClass_ven.fcc:55093` 每阶消耗1份材料，每三阶更换圣焱核晶/源石/量子/精粹/精源/精核；未找到失败分支，复刻采用确定成功。
 - `menupart_main.fcc:18401` 圣焱六档套装能力均要求命中玩家。连锁波及可攻击目标不等于可以对怪物触发，全部延期。
 - 原图均取本地免费版ALE首帧；升级外观逐档使用原类指定的图标，光/力3阶先换图，其余6阶开始换图。
-  源路径、帧号、ALE原点和哈希见 `assets/items/central/manifest.json`。
+  源路径、帧号、ALE原点和哈希见 `assets/items/central/manifest.json`；本地免费版原档及官网索引存于 `../starhome_lz_fr_full/raw/`，新增来源校验见 `data/source_evidence/free/central_and_quest_raw_recovery_v1.json`。
 
 ## 复刻配置
 

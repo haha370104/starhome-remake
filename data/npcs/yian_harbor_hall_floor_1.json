@@ -40,7 +40,7 @@
         "appearance": "npc_blue",
         "spawn": [864, 720],
         "patrol": {"speed": 203, "animation_speed_scale": 1.0, "initial_delay": [1.0, 2.0], "points": [{"position": [864, 720], "dwell": [5.0, 8.0]}]},
-        "interaction": {"body": "这里出售火箭、导弹、隐身器和雷达。", "actions": [{"id":"buy","label":"买东西"},{"id":"sell","label":"卖东西"},{"id":"task","label":"特种武器材料任务"}]}
+        "interaction": {"body": "这里出售火箭、导弹、隐身器和雷达。", "actions": [{"id":"buy","label":"买东西"},{"id":"sell","label":"卖东西"}]}
       }
     ]
   }

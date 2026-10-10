@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import json
+import hashlib
 import re
 import struct
 from pathlib import Path
@@ -194,7 +195,7 @@ def main() -> int:
         "pic2/ctrlpad/btn_playerfriend.ale",
         "pic2/ctrlpad/btn_look.ale",
         "pic2/ctrlpad/btn_playertask.ale",
-        "pic2/ctrlpad/btn_spacemap.ale",
+        "pic2/ctrlpad/shopping.ale",
         "pic2/ctrlpad/btn_system.ale",
         "pic/equipface/tank_gun.ale",
         "pic/equipface/tank_collent.ale",
@@ -226,6 +227,12 @@ def main() -> int:
         assert logical.endswith((".ale", ".png"))
         digest = source.get("source_ale_sha256", source.get("source_sha256", ""))
         assert len(digest) == 64
+        frames = source["exported_frames"] if "exported_frames" in source else [source["exported"]]
+        for frame in frames:
+            output = asset_path(frame["path"])
+            assert hashlib.sha256(output.read_bytes()).hexdigest() == frame["sha256"], (
+                f"HUD asset checksum mismatch: {output}"
+            )
 
     print("Free HUD asset audit passed: 40 allowlisted sources, no minimap JPG")
     return 0

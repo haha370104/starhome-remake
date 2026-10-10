@@ -19,6 +19,7 @@ static var _default: AchievementCatalog
 var definitions: Array[Definition] = []
 var titles: Array[Title] = []
 var caps: Dictionary = {}
+var _by_counter: Dictionary = {}
 
 
 ## 加载并缓存随游戏发布的成就规则，所有玩家共享不可修改的目录。
@@ -95,7 +96,22 @@ func initialize(config: Dictionary) -> DomainResult:
 	definitions = rows
 	titles = ranks
 	caps = limits
+	_by_counter.clear()
+	for row: Definition in rows:
+		var key := "%s:%s" % [row.category, row.target_id]
+		if not _by_counter.has(key): _by_counter[key] = []
+		_by_counter[key].append(row)
 	return DomainResult.ok(self)
+
+
+## 只计算一个目标已跨过的成就门槛，目录索引由所有玩家共享。
+## [param key] 类别和目标身份。[param count] 该目标最终计数。
+## 返回该目标贡献的成就点。
+func points_for(key: String, count: int) -> int:
+	var points := 0
+	for row: Definition in _by_counter.get(key, []):
+		if count >= row.required: points += row.points
+	return points
 
 
 ## 选择积分已达到的最高称号，低阶称号不参与叠加。

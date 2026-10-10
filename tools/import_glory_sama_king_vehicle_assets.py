@@ -95,7 +95,7 @@ def _actor(source_by_id: dict[str, dict[str, Any]], existing: dict[str, Any]) ->
         },
         {
             "id": "primary_weapon",
-            "z_index": 1,
+            "z_index": 0,
             "actions": {
                 action: _action(
                     _resource("divine_wrath_energy_cannon"), 1,

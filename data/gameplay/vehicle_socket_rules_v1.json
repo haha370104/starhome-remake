@@ -8,16 +8,16 @@
   "hammer_id": "vehicle_precise_hammer",
   "solvents": [
     {"definition_id": "vehicle_density_solvent_i", "chances": [0.5], "repeat_last": true, "failure": "destroy_equipment"},
-    {"definition_id": "item:material:78f2a523a761", "chances": [0.5, 0.2, 0.1, 0.01], "repeat_last": false, "failure": "close_last_socket"},
+    {"definition_id": "density_solvent", "chances": [0.5, 0.2, 0.1, 0.01], "repeat_last": false, "failure": "close_last_socket"},
     {"definition_id": "high_grade_density_solvent", "chances": [0.8, 0.6, 0.4, 0.2], "repeat_last": false, "failure": "none"}
   ],
   "crystals": [
-    {"definition_id": "item:material:a7bccd7c1408", "effect": "firepower", "value": 3, "grade": 1, "source_code": 1001},
-    {"definition_id": "item:material:794588abb6cf", "effect": "health", "value": 30, "grade": 1, "source_code": 1002},
-    {"definition_id": "item:material:d690c44b6030", "effect": "defense", "value": 1, "grade": 1, "source_code": 1003},
-    {"definition_id": "item:material:a095c982b884", "effect": "guidance", "value": 2, "grade": 1, "source_code": 1004},
-    {"definition_id": "item:material:c0cad9b715fb", "effect": "critical", "value": 0.01, "grade": 1, "source_code": 1005},
-    {"definition_id": "item:material:7dd51398ea4c", "effect": "rocket", "value": 3, "grade": 1, "source_code": 1006},
+    {"definition_id": "flawed_firepower_crystal", "effect": "firepower", "value": 3, "grade": 1, "source_code": 1001},
+    {"definition_id": "flawed_health_crystal", "effect": "health", "value": 30, "grade": 1, "source_code": 1002},
+    {"definition_id": "flawed_defense_crystal", "effect": "defense", "value": 1, "grade": 1, "source_code": 1003},
+    {"definition_id": "flawed_guidance_crystal", "effect": "guidance", "value": 2, "grade": 1, "source_code": 1004},
+    {"definition_id": "flawed_critical_crystal", "effect": "critical", "value": 0.01, "grade": 1, "source_code": 1005},
+    {"definition_id": "flawed_rocket_crystal", "effect": "rocket", "value": 3, "grade": 1, "source_code": 1006},
     {"definition_id": "bright_firepower_crystal", "effect": "firepower", "value": 5, "grade": 2, "source_code": 2001},
     {"definition_id": "bright_health_crystal", "effect": "health", "value": 50, "grade": 2, "source_code": 2002},
     {"definition_id": "bright_defense_crystal", "effect": "defense", "value": 3, "grade": 2, "source_code": 2003},

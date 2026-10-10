@@ -23,7 +23,7 @@
         48,
         12
       ],
-      "data_path": "res://assets/maps/yian_harbor/city/navigation_grid.bin"
+      "data_path": "res://assets/glory/maps/city1svr/variant_01_nft_bl/navigation_grid.bin"
     }
   },
   "assets": {
@@ -33,9 +33,9 @@
       "scene_manifest": "maps/yian_harbor/city/scene_manifest"
     },
     "resources": {
-      "floor": "res://assets/maps/yian_harbor/city/floor.png",
-      "minimap": "res://assets/maps/yian_harbor/city/minimap.jpg",
-      "scene_manifest": "res://assets/maps/yian_harbor/city/map_manifest.json"
+      "floor": "res://assets/glory/maps/city1svr/variant_01_nft_bl/floor.png",
+      "minimap": "res://assets/glory/maps/city1svr/variant_01_nft_bl/minimap.jpg",
+      "scene_manifest": "res://assets/glory/maps/city1svr/variant_01_nft_bl/scene_manifest.json"
     }
   },
   "spawn_points": {
@@ -195,7 +195,7 @@
         "activation": "enabled_transition"
       },
       "destination": {
-        "map_id": "d04_field_zone",
+        "map_id": "glory_nft_bl_d04",
         "legacy_code": "d04",
         "entry_number": 1,
         "external": false
@@ -229,7 +229,7 @@
         "activation": "enabled_transition"
       },
       "destination": {
-        "map_id": "d04_field_zone",
+        "map_id": "glory_nft_bl_d04",
         "legacy_code": "d04",
         "entry_number": 2,
         "external": false
@@ -263,7 +263,7 @@
         "activation": "enabled_transition"
       },
       "destination": {
-        "map_id": "d04_field_zone",
+        "map_id": "glory_nft_bl_d04",
         "legacy_code": "d04",
         "entry_number": 3,
         "external": false
@@ -297,7 +297,7 @@
         "activation": "enabled_transition"
       },
       "destination": {
-        "map_id": "d04_field_zone",
+        "map_id": "glory_nft_bl_d04",
         "legacy_code": "d04",
         "entry_number": 4,
         "external": false
@@ -311,6 +311,127 @@
         "source_marker_style": 2,
         "source_marker_family": "house_directional_marker"
       }
+    },
+    {
+      "transition_id": "enter_chemical_factory",
+      "kind": "standard",
+      "enabled": true,
+      "label": "进入化工厂",
+      "source_anchor": [840, 156],
+      "approach_point": [868, 164],
+      "presentation": {"kind": "directional_transition", "orientation": "north_west", "activation": "enabled_transition"},
+      "destination": {"world_id": "buli", "legacy_code": "adsfsdb", "entry_number": 0, "external": true},
+      "source_audit": {"source_release": "starhome_lz_ry", "source_map_code": "City1Svr", "source_output": "maps/city1svr/variant_01_nft_bl", "source_line": 407, "source_icon_ale": "../../map/mapimg/house/CHN_2005_06_28_19_30_52_38/as2.ale"}
+    },
+    {
+      "transition_id": "enter_apartment_community_floor_1",
+      "kind": "multi_choice",
+      "enabled": true,
+      "label": "一号公寓1层",
+      "source_anchor": [1272, 2988],
+      "approach_point": [1298, 3000],
+      "presentation": {"kind": "directional_transition", "orientation": "south", "activation": "enabled_transition"},
+      "destination": {"world_id": "buli", "legacy_code": "homesvr1", "entry_number": 0, "external": true},
+      "source_audit": {"source_release": "starhome_lz_ry", "source_map_code": "City1Svr", "source_output": "maps/city1svr/variant_01_nft_bl", "source_line": 394, "choice_index": 0, "source_icon_ale": "../../map/mapimg/house/CHN_2005_06_28_19_30_52_38/as2.ale"}
+    },
+    {
+      "transition_id": "enter_apartment_community_floor_2",
+      "kind": "multi_choice",
+      "enabled": true,
+      "label": "一号公寓2层",
+      "source_anchor": [1272, 2988],
+      "approach_point": [1298, 3000],
+      "presentation": {"kind": "directional_transition", "orientation": "south", "activation": "enabled_transition"},
+      "destination": {"world_id": "buli", "legacy_code": "homesvr5", "entry_number": 0, "external": true},
+      "source_audit": {"source_release": "starhome_lz_ry", "source_map_code": "City1Svr", "source_output": "maps/city1svr/variant_01_nft_bl", "source_line": 394, "choice_index": 1, "source_icon_ale": "../../map/mapimg/house/CHN_2005_06_28_19_30_52_38/as2.ale"}
+    },
+    {
+      "transition_id": "enter_apartment_community_floor_3",
+      "kind": "multi_choice",
+      "enabled": true,
+      "label": "一号公寓3层",
+      "source_anchor": [1272, 2988],
+      "approach_point": [1298, 3000],
+      "presentation": {"kind": "directional_transition", "orientation": "south", "activation": "enabled_transition"},
+      "destination": {"world_id": "buli", "legacy_code": "homesvr6", "entry_number": 0, "external": true},
+      "source_audit": {"source_release": "starhome_lz_ry", "source_map_code": "City1Svr", "source_output": "maps/city1svr/variant_01_nft_bl", "source_line": 394, "choice_index": 2, "source_icon_ale": "../../map/mapimg/house/CHN_2005_06_28_19_30_52_38/as2.ale"}
+    },
+    {
+      "transition_id": "enter_apartment_community_floor_4",
+      "kind": "multi_choice",
+      "enabled": true,
+      "label": "一号公寓4层",
+      "source_anchor": [1272, 2988],
+      "approach_point": [1298, 3000],
+      "presentation": {"kind": "directional_transition", "orientation": "south", "activation": "enabled_transition"},
+      "destination": {"world_id": "buli", "legacy_code": "homesvr7", "entry_number": 0, "external": true},
+      "source_audit": {"source_release": "starhome_lz_ry", "source_map_code": "City1Svr", "source_output": "maps/city1svr/variant_01_nft_bl", "source_line": 394, "choice_index": 3, "source_icon_ale": "../../map/mapimg/house/CHN_2005_06_28_19_30_52_38/as2.ale"}
+    },
+    {
+      "transition_id": "enter_apartment_community_floor_5",
+      "kind": "multi_choice",
+      "enabled": true,
+      "label": "一号公寓5层",
+      "source_anchor": [1272, 2988],
+      "approach_point": [1298, 3000],
+      "presentation": {"kind": "directional_transition", "orientation": "south", "activation": "enabled_transition"},
+      "destination": {"world_id": "buli", "legacy_code": "homesvr8", "entry_number": 0, "external": true},
+      "source_audit": {"source_release": "starhome_lz_ry", "source_map_code": "City1Svr", "source_output": "maps/city1svr/variant_01_nft_bl", "source_line": 394, "choice_index": 4, "source_icon_ale": "../../map/mapimg/house/CHN_2005_06_28_19_30_52_38/as2.ale"}
+    },
+    {
+      "transition_id": "enter_apartment_community_floor_6",
+      "kind": "multi_choice",
+      "enabled": true,
+      "label": "一号公寓6层",
+      "source_anchor": [1272, 2988],
+      "approach_point": [1298, 3000],
+      "presentation": {"kind": "directional_transition", "orientation": "south", "activation": "enabled_transition"},
+      "destination": {"world_id": "buli", "legacy_code": "homesvr9", "entry_number": 0, "external": true},
+      "source_audit": {"source_release": "starhome_lz_ry", "source_map_code": "City1Svr", "source_output": "maps/city1svr/variant_01_nft_bl", "source_line": 394, "choice_index": 5, "source_icon_ale": "../../map/mapimg/house/CHN_2005_06_28_19_30_52_38/as2.ale"}
+    },
+    {
+      "transition_id": "enter_apartment_community_floor_7",
+      "kind": "multi_choice",
+      "enabled": true,
+      "label": "一号公寓7层",
+      "source_anchor": [1272, 2988],
+      "approach_point": [1298, 3000],
+      "presentation": {"kind": "directional_transition", "orientation": "south", "activation": "enabled_transition"},
+      "destination": {"world_id": "buli", "legacy_code": "homesvr10", "entry_number": 0, "external": true},
+      "source_audit": {"source_release": "starhome_lz_ry", "source_map_code": "City1Svr", "source_output": "maps/city1svr/variant_01_nft_bl", "source_line": 394, "choice_index": 6, "source_icon_ale": "../../map/mapimg/house/CHN_2005_06_28_19_30_52_38/as2.ale"}
+    },
+    {
+      "transition_id": "enter_residential_block_2",
+      "kind": "standard",
+      "enabled": true,
+      "label": "进入二号公寓",
+      "source_anchor": [1680, 3144],
+      "approach_point": [1705, 3153],
+      "presentation": {"kind": "directional_transition", "orientation": "south", "activation": "enabled_transition"},
+      "destination": {"world_id": "buli", "legacy_code": "homesvr2", "entry_number": 0, "external": true},
+      "source_audit": {"source_release": "starhome_lz_ry", "source_map_code": "City1Svr", "source_output": "maps/city1svr/variant_01_nft_bl", "source_line": 396, "source_icon_ale": "../../map/mapimg/house/CHN_2005_06_28_19_30_52_38/as2.ale"}
+    },
+    {
+      "transition_id": "enter_residential_block_3",
+      "kind": "standard",
+      "enabled": true,
+      "label": "进入三号公寓",
+      "source_anchor": [2328, 3156],
+      "approach_point": [2355, 3170],
+      "presentation": {"kind": "directional_transition", "orientation": "south_east", "activation": "enabled_transition"},
+      "destination": {"world_id": "buli", "legacy_code": "homesvr3", "entry_number": 0, "external": true},
+      "source_audit": {"source_release": "starhome_lz_ry", "source_map_code": "City1Svr", "source_output": "maps/city1svr/variant_01_nft_bl", "source_line": 397, "source_icon_ale": "../../map/mapimg/house/CHN_2005_06_28_19_30_52_38/as3.ale"}
+    },
+    {
+      "transition_id": "enter_residential_block_4",
+      "kind": "standard",
+      "enabled": true,
+      "label": "进入四号公寓",
+      "source_anchor": [2352, 2808],
+      "approach_point": [2376, 2813],
+      "presentation": {"kind": "directional_transition", "orientation": "south_east", "activation": "enabled_transition"},
+      "destination": {"world_id": "buli", "legacy_code": "homesvr4", "entry_number": 0, "external": true},
+      "source_audit": {"source_release": "starhome_lz_ry", "source_map_code": "City1Svr", "source_output": "maps/city1svr/variant_01_nft_bl", "source_line": 393, "source_icon_ale": "../../map/mapimg/house/CHN_2005_06_28_19_30_52_38/as2.ale"}
     },
     {
       "transition_id": "enter_clothing_shop",
@@ -605,8 +726,8 @@
     "official_lazy_recovered_placements": 31,
     "rejected_cross_version_fallbacks": 0,
     "presentation_state": "glory_semantic_import_complete",
-    "promoted_transition_count": 20,
-    "deferred_enabled_transition_count": 12,
+    "promoted_transition_count": 31,
+    "deferred_enabled_transition_count": 0,
     "semantic_name_note": "玩家可见名称忠实采用荣耀版 City1Svr 的 m_sMapName：龙之城"
   }
 }

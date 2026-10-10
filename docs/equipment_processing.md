@@ -10,7 +10,7 @@
 - 聚能晶片源码存在 +10/+5 条件分支；沿用当前已经投放的 +10 物品定义，配置保留两种源值。
 - `engine10_Binding` 原表最后一项漏数量，采用普通 `engine10` 的同型号完整配方。配置标记 `unbound_recipe_repairs_missing_quantity`。
 - 后期普通车炮引擎有上限、缺独立配方时，采用同系最高已知配方，材料乘以 `ceil(当前技能门槛/原配方门槛)`；这些条目标记 `remake_scaled_last_family_recipe`，属于复刻设定。
-- 六种硬质素/复合胶板沿用已有工业提炼配方和身份，不另造材料。将原先仅名称的定义补上原客户端对应图像，见[材料定义](../data/gameplay/equipment_processing_items_v1.json)。
+- 六种硬质素/复合胶板沿用已有工业提炼配方和身份，不另造材料。将原先仅名称的定义补上原客户端对应图像，见[工业材料定义](../data/gameplay/industrial_materials_v1.json)。
 - 载弹量加工已开放：弹仓容量参与实际开火和补弹，扩容保留当前弹量，不赠送子弹。
 
 ## 状态与验证

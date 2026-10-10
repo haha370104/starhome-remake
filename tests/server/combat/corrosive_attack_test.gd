@@ -27,7 +27,7 @@ func _fixture() -> AuthoritativeCombatModule:
 		"working_energy_capacity": 100, "power_output": 10, "passive_power_load": 0}
 	_expect(module.register_vehicle("p", "map", Vector2(100, 0), assembly, {}).is_ok, "战车注册")
 	_expect(module.register_vehicle("remote", "other", Vector2(100, 0), assembly, {}).is_ok, "异图战车注册")
-	var population: Array = catalog.monster_lifecycles_for_map("buli_d03_field_zone", "map").value
+	var population: Array = catalog.monster_lifecycles_for_map("glory_nft_bl_d03", "map").value
 	for definition: Dictionary in population:
 		if definition.species_id == "glory_monster_005":
 			definition.monster_id = "gel"
@@ -44,7 +44,7 @@ func _test_attachment() -> void:
 	module._begin_monster_attack("gel", "p", Vector2(100, 0))
 	module.advance_ticks(10, false)
 	var state: VehicleCombatState = module.actors.p.vehicle_state
-	var clouds: Array = module.snapshot_for_actor("p").corrosive_clouds
+	var clouds: Array = module.world_snapshot_for_map("map").corrosive_clouds
 	_expect(state.health == 1000 and clouds.size() == 1, "命中形成附着，不再瞬间结算完整伤害")
 	if clouds.is_empty():
 		return
@@ -54,8 +54,8 @@ func _test_attachment() -> void:
 	module.update_actor_position("p", Vector2(800, 800))
 	module.advance_ticks(20, false)
 	_expect(state.health == 980, "离开命中地点仍承受附着伤害")
-	_expect(module.snapshot_for_actor("p").corrosive_clouds[0].position == [800.0, 784.0], "附着快照跟随战车")
-	_expect(module.snapshot_for_actor("remote").corrosive_clouds.is_empty(), "异图不泄漏毒雾快照")
+	_expect(module.world_snapshot_for_map("map").corrosive_clouds[0].position == [800.0, 784.0], "附着快照跟随战车")
+	_expect(module.world_snapshot_for_map("other").corrosive_clouds.is_empty(), "异图不泄漏毒雾快照")
 	module.advance_ticks(20, false)
 	_expect(state.health == 970 and not module.corrosion.is_empty(), "附着满三秒时仍可见且按周期扣血")
 	module.advance_ticks(40, false)
@@ -70,7 +70,7 @@ func _test_ground() -> void:
 	module._begin_monster_attack("gel", "p", Vector2(100, 0))
 	module.update_actor_position("p", Vector2(400, 400))
 	module.advance_ticks(10, false)
-	var clouds: Array = module.snapshot_for_actor("p").corrosive_clouds
+	var clouds: Array = module.world_snapshot_for_map("map").corrosive_clouds
 	_expect(clouds.size() == 1, "落空后留下地面残留")
 	if clouds.is_empty():
 		return
@@ -99,7 +99,7 @@ func _test_refresh_and_lifecycle() -> void:
 	module.corrosion.add(CorrosiveCloud.new(attack, Vector2.ZERO, "p", 19, 20), 19)
 	module.advance_ticks(1, false)
 	var state: VehicleCombatState = module.actors.p.vehicle_state
-	_expect(state.health == 990 and module.snapshot_for_actor("p").corrosive_clouds.size() == 1, "刷新不叠层且原伤害时钟照常触发")
+	_expect(state.health == 990 and module.world_snapshot_for_map("map").corrosive_clouds.size() == 1, "刷新不叠层且原伤害时钟照常触发")
 	module.corrosion.advance(20, module.actors)
 	_expect(state.health == 990, "重复推进同tick不会重复扣血")
 	module.unregister_vehicle("p")

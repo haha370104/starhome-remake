@@ -11,7 +11,7 @@ const HoverHighlight := preload("res://scripts/client/ui/windows/item_hover_high
 ## [param default_anchor] 缺少显式锚点时采用的面板坐标。
 ## [param fixed_rect] 非空时在指定槽位居中，否则保持原图尺寸和 ALE 原点。
 ## 返回图像是否可用；调用方负责释放失败的组件。
-func configure(equipment: Dictionary, default_anchor: Vector2, fixed_rect := Rect2()) -> bool:
+func configure(equipment: Dictionary, default_anchor: Vector2, fixed_rect := Rect2(), action_hint := "双击卸下") -> bool:
 	var presentation: Dictionary = equipment.get("dialog_presentation", {})
 	if presentation.is_empty():
 		presentation = {"dialog_texture": equipment.get("dialog_texture", "")}
@@ -33,5 +33,5 @@ func configure(equipment: Dictionary, default_anchor: Vector2, fixed_rect := Rec
 		size = fixed_rect.size
 		stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	mouse_filter = Control.MOUSE_FILTER_STOP
-	HoverHighlight.bind(self, self, TooltipFormatter.format(equipment))
+	HoverHighlight.bind(self, self, TooltipFormatter.format(equipment, action_hint))
 	return true

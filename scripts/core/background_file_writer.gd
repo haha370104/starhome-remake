@@ -1,6 +1,7 @@
 class_name BackgroundFileWriter
 extends RefCounted
 
+const PerformanceTelemetryScript := preload("res://scripts/core/performance_telemetry.gd")
 const MAX_PENDING_TRACE_RECORDS := 8192
 var _thread := Thread.new()
 var _mutex := Mutex.new()
@@ -10,6 +11,9 @@ var _closing := false
 var _trace_count := 0
 var _result: DomainResult = DomainResult.ok()
 var _files: Dictionary = {}
+var checkpoint_merge_count := 0
+var background_write_count := 0
+var last_write_bytes := 0
 
 
 ## 启动低优先级文件线程；线程只消费隔离数据，不访问场景或玩家领域对象。
@@ -20,20 +24,28 @@ func start() -> Error:
 
 ## 合并尚未执行的同一路径存档，使队列最终写入最新完整快照。
 ## [param path] 原生绝对路径。[param document] 主线程生成的完整存档数据。
+## [param transfer_ownership] 为 true 时调用方不得再修改该快照。
 ## 返回是否已接收入队；入队不代表已经落盘。
-func enqueue_snapshot(path: String, document: Dictionary) -> Error:
-	var snapshot := document.duplicate(true)
+func enqueue_snapshot(path: String, document: Dictionary, transfer_ownership := false, ordered := false) -> Error:
+	var snapshot := document if transfer_ownership else document.duplicate(true)
+	var enqueued_at_usec := Time.get_ticks_usec()
 	_mutex.lock()
 	if _closing:
 		_mutex.unlock()
 		return ERR_UNAVAILABLE
 	for index in range(_pending.size() - 1, -1, -1):
-		if _pending[index].has("fence"): break
+		if _pending[index].has("fence") or (ordered and _pending[index].get("kind") == "trace"): break
 		if _pending[index].get("kind") == "snapshot" and _pending[index].path == path:
 			_pending[index].document = snapshot
+			_pending[index].enqueued_at_usec = enqueued_at_usec
+			checkpoint_merge_count += 1
+			PerformanceTelemetryScript.increment(&"autosave_checkpoint_merges")
 			_mutex.unlock()
 			return OK
-	_pending.append({"kind": "snapshot", "path": path, "document": snapshot})
+	_pending.append({
+		"kind": "snapshot", "path": path, "document": snapshot,
+		"enqueued_at_usec": enqueued_at_usec,
+	})
 	_mutex.unlock()
 	_wake.post()
 	return OK
@@ -100,7 +112,7 @@ func _run() -> void:
 		_mutex.lock()
 		var closing := _closing
 		_mutex.unlock()
-		if not closing: OS.delay_msec(50)
+		if not closing: _wait_for_checkpoint_batch()
 		_mutex.lock()
 		var batch := _pending
 		_pending = []
@@ -121,11 +133,41 @@ func _run() -> void:
 	_files.clear()
 
 
+## 合并普通检查点；显式 flush fence 到达后立即开始写盘。
+func _wait_for_checkpoint_batch() -> void:
+	var deadline_usec := Time.get_ticks_usec() + 50000
+	while Time.get_ticks_usec() < deadline_usec:
+		_mutex.lock()
+		var durable_fence_pending := false
+		for job: Dictionary in _pending:
+			if job.has("fence"):
+				durable_fence_pending = true
+				break
+		_mutex.unlock()
+		if durable_fence_pending:
+			return
+		OS.delay_msec(1)
+
+
 ## 执行一份已冻结的文件任务，提供窄测试接缝以模拟慢盘。
 ## [param job] 队列拥有的快照或JSONL批次。
 ## 返回实际文件操作结果。
 func _write_job(job: Dictionary) -> DomainResult:
-	if job.kind == "snapshot": return AtomicJsonFile.write_document(job.path, job.document)
+	if job.kind == "snapshot":
+		PerformanceTelemetryScript.record_duration(
+			&"autosave_background_queue_wait",
+			Time.get_ticks_usec() - int(job.get("enqueued_at_usec", Time.get_ticks_usec())),
+		)
+		var encode_started_at := PerformanceTelemetryScript.begin(&"autosave_background_json_encode")
+		var serialized := JSON.stringify(job.document)
+		PerformanceTelemetryScript.end(&"autosave_background_json_encode", encode_started_at)
+		last_write_bytes = serialized.to_utf8_buffer().size()
+		var write_started_at := PerformanceTelemetryScript.begin(&"autosave_background_write")
+		var written := AtomicJsonFile.write_serialized(job.path, serialized)
+		PerformanceTelemetryScript.end(&"autosave_background_write", write_started_at)
+		background_write_count += 1
+		PerformanceTelemetryScript.increment(&"autosave_background_write_count")
+		return written
 	var path: String = job.path
 	if not _files.has(path):
 		if DirAccess.make_dir_recursive_absolute(path.get_base_dir()) != OK:

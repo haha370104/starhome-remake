@@ -1,9 +1,13 @@
 class_name InitialLoadingScreen
 extends CanvasLayer
 
+const MIN_TRANSITION_SPLASH_MSEC := 100
+
 var _status_label: Label
 var _elapsed_seconds := 0.0
 var _base_message := "正在读取角色与地图数据"
+var _minimum_visible_until_usec := 0
+var _finish_when_minimum_elapsed := false
 
 
 ## 创建覆盖整个游戏视口的启动加载画面，并保证其始终位于 HUD 与世界之上。
@@ -14,13 +18,16 @@ func _ready() -> void:
 	show_loading(_base_message)
 
 
-## 显示加载画面并更新当前初始化阶段文案。
+## 显示加载画面并更新当前阶段文案。
 ## [param message] 不包含动态省略号的加载阶段说明。
-func show_loading(message: String) -> void:
+## [param minimum_visible_msec] 关闭前至少保持显示的时长。
+func show_loading(message: String, minimum_visible_msec: int = 0) -> void:
+	_finish_when_minimum_elapsed = false
 	_base_message = message if not message.is_empty() else "正在读取角色与地图数据"
 	_elapsed_seconds = 0.0
 	visible = true
 	set_process(true)
+	_minimum_visible_until_usec = Time.get_ticks_usec() + maxi(0, minimum_visible_msec) * 1000
 	_update_status_text()
 
 
@@ -32,8 +39,14 @@ func set_status(message: String) -> void:
 	_update_status_text()
 
 
-## 在首份权威角色与地图状态原子提交后关闭加载画面。
+## 达到最短显示时长后关闭加载画面。
 func finish_loading() -> void:
+	if not visible:
+		return
+	if Time.get_ticks_usec() < _minimum_visible_until_usec:
+		_finish_when_minimum_elapsed = true
+		return
+	_finish_when_minimum_elapsed = false
 	visible = false
 	set_process(false)
 
@@ -43,6 +56,9 @@ func finish_loading() -> void:
 func _process(delta: float) -> void:
 	_elapsed_seconds += maxf(0.0, delta)
 	_update_status_text()
+	if _finish_when_minimum_elapsed \
+			and Time.get_ticks_usec() >= _minimum_visible_until_usec:
+		finish_loading()
 
 
 ## 以代码构造无业务素材依赖的全屏遮罩、标题和加载状态卡片。

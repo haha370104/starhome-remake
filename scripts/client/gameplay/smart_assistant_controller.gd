@@ -27,30 +27,28 @@ func configure(combat: CombatInteractionController, panel: SmartAssistantPanel) 
 	_settings_path = "user://smart-assistant-%s.cfg" % String(_combat.panel_session.current_player.entity_id).sha256_text().left(16)
 	var saved := ConfigFile.new()
 	if saved.load(_settings_path) == OK:
-		var values: Dictionary = saved.get_value("assistant", "preferences", {})
-		values["enabled"] = false
-		policy.apply(values)
+		policy.apply(saved.get_value("assistant", "preferences", {}))
 	_panel.apply_settings(policy.snapshot())
 	_combat.panel_session.player_changed.connect(_refresh_supplies)
 	_refresh_supplies(_combat.panel_session.current_player)
 
 
-## 切图后立即丢弃旧目标并停用自动操作，新地图必须由用户再次启用。
+## 切图后丢弃旧目标，等待新地图快照再继续自动操作。
 ## [param _map_id] 新地图定义 ID。
 ## [param _instance] 新地图实例 ID。
 ## [param _position] 新出生点。
 ## [param _version] 新地图定义版本。
 func _map_changed(_map_id: StringName, _instance: String, _position: Vector2, _version: int) -> void:
-	_snapshot.clear()
+	_snapshot = {}
+	_observed_at = 0
 	_retry_at.clear()
 	_weapon_elapsed = 0.0
-	_stop("已停用：切换地图后需手动启用")
 
 
 ## 只保存服务器已投影的可见对象，不修改生命或掉落状态。
 ## [param snapshot] 当前权威战斗快照。
 func _observe(snapshot: Dictionary) -> void:
-	_snapshot = snapshot.duplicate(true)
+	_snapshot = NetworkProtocol.share_snapshot(snapshot)
 	_observed_at = Time.get_ticks_msec()
 	if bool(snapshot.get("vehicle_combat_active", false)) and int(snapshot.get("local_vehicle", {}).get("health", 0)) <= 0:
 		_stop("已停用：战车被击毁")
@@ -168,7 +166,7 @@ func _refresh_supplies(player: Player) -> void:
 	_panel.apply_supplies(player.inventory)
 
 
-## 保留用户选项但停用所有自动动作，不在死亡或切图后自动恢复。
+## 战车被击毁后停用自动动作，保留其他用户选项。
 ## [param message] 生命周期停止原因。
 func _stop(message: String) -> void:
 	if not policy.enabled and _stopped_reason == message: return

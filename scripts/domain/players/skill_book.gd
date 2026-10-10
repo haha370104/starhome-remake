@@ -19,8 +19,8 @@ const DISPLAY_NAMES := {
 var _states: Dictionary = {}
 
 
-## 初始化玩家的完整技能状态集合，并兼容旧存档中的纯整数等级。
-## [param serialized_states] 技能标识到整数等级或技能状态字典的映射。
+## 初始化技能状态集合；整数输入仅作为本地初始化时的等级简写。
+## [param serialized_states] 技能标识到等级简写或技能状态字典的映射。
 ## 设计：SkillBook 是技能状态的一致性边界，调用方不能直接修改内部 SkillState。
 func _init(serialized_states: Dictionary = {}) -> void:
 	for raw_skill_id: Variant in serialized_states:
@@ -161,33 +161,40 @@ func to_view_array(
 ) -> Array[Dictionary]:
 	var modifiers := character_equipment.skill_modifiers() if character_equipment != null else {}
 	var result: Array[Dictionary] = []
-	var maximum_level := int(progression_config.get("maximum_level", 700))
 	for skill_id: String in ORDERED_SKILLS:
-		var state := _state_for(skill_id)
-		var threshold := 0
-		if not progression_config.is_empty() and state.level < maximum_level:
-			var threshold_result := SkillProgressionScript.get_need_points(
-				StringName(skill_id), state.level, progression_config
-			)
-			if threshold_result.is_ok:
-				threshold = int(threshold_result.value)
-		var progress_percent := displayed_progress_percent(skill_id, progression_config) \
-			if not progression_config.is_empty() else 0
-		result.append({
-			"id": skill_id,
-			"display_name": String(DISPLAY_NAMES[skill_id]),
-			"base_level": state.level,
-			"equipment_bonus": int(modifiers.get(skill_id, 0)),
-			"experience": state.current_exp,
-			"fractional_experience": state.fractional_exp,
-			"next_level_experience": threshold,
-			"progress_ratio": clampf(
-				(float(state.current_exp) + state.fractional_exp) / float(threshold), 0.0, 1.0
-			) if threshold > 0 else 1.0,
-			"progress_percent": progress_percent,
-			"maximum_level": state.level >= maximum_level,
-		})
+		result.append(to_view_row(skill_id, modifiers, progression_config))
 	return result
+
+
+## 只投影发生变化的技能，完整快照与增量共用同一计算规则。
+## [param skill_id] 已登记的技能身份。[param modifiers] 装备技能加成。[param progression_config] 成长规则。
+## 返回该技能的完整最终展示状态。
+func to_view_row(skill_id: String, modifiers: Dictionary, progression_config: Dictionary = {}) -> Dictionary:
+	var maximum_level := int(progression_config.get("maximum_level", 700))
+	var state := _state_for(skill_id)
+	var threshold := 0
+	if not progression_config.is_empty() and state.level < maximum_level:
+		var threshold_result := SkillProgressionScript.get_need_points(
+			StringName(skill_id), state.level, progression_config
+		)
+		if threshold_result.is_ok:
+			threshold = int(threshold_result.value)
+	var progress_percent := displayed_progress_percent(skill_id, progression_config) \
+		if not progression_config.is_empty() else 0
+	return {
+		"id": skill_id,
+		"display_name": String(DISPLAY_NAMES[skill_id]),
+		"base_level": state.level,
+		"equipment_bonus": int(modifiers.get(skill_id, 0)),
+		"experience": state.current_exp,
+		"fractional_experience": state.fractional_exp,
+		"next_level_experience": threshold,
+		"progress_ratio": clampf(
+			(float(state.current_exp) + state.fractional_exp) / float(threshold), 0.0, 1.0
+		) if threshold > 0 else 1.0,
+		"progress_percent": progress_percent,
+		"maximum_level": state.level >= maximum_level,
+	}
 
 
 ## 获取技能内部状态，不存在时创建零级状态。

@@ -19,6 +19,7 @@ func _run() -> void:
 	root.add_child(controller)
 	var manifest: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://assets/equipment_world/combat_visual_manifest.json"))
 	_check(controller.configure(world, manifest, player) == OK, "actual presentation configure")
+	controller.apply_snapshot({"monsters": [], "recent_events": []})
 	var event := {"event_id":1, "event_type":"central_fatal_hit", "attacker_id":"tester", "target_entity_id":"monster",
 		"shot_id":"shot.1", "impact_position":[300,300], "damage":50, "target_health":100}
 	var snapshot := {"local_entity_id":"tester", "monsters":[], "recent_events":[event]}

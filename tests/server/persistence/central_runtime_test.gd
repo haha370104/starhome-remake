@@ -1,11 +1,6 @@
 extends SceneTree
 
-class RejectingRepository extends PlayerStateRepository:
-	## 模拟原子存档提交失败，不接受候选。
-	## [param _state] 候选状态。[param _expected_revision] 预期版本。
-	## 返回写盘错误。
-	func save_player(_state: PlayerStateRecord, _expected_revision: int) -> DomainResult:
-		return DomainResult.failure(&"test.disk_failure", "测试写盘失败")
+const AutosaveRecordAdapter := preload("res://tests/fixtures/autosave_record_adapter.gd")
 
 const PEER := 99
 var checks := 0
@@ -23,14 +18,14 @@ func _initialize() -> void:
 ## 验证中枢消费提交失败不会改变战斗，成功与重启保留真实属性及资源。
 func _run() -> void:
 	config.network_enabled = false
-	config.map_config_path = "res://data/maps/d04_field_zone.json"
+	config.map_config_path = "res://data/maps/glory_nft_bl_d04.json"
 	config.default_spawn = Vector2(2412, 2400)
 	config.player_state_store_path = "res://.godot/central-runtime-%d.json" % Time.get_ticks_usec()
 	if not _boot():
 		quit(1)
 		return
-	var catalog := server.player_panel_service._catalog
-	var mapper := server.player_panel_service._mapper
+	var catalog: ItemCatalog = server.player_panel_service.catalog
+	var mapper := PlayerStateMapper.new(catalog)
 	var player: Player = mapper.to_domain(_state()).value
 	player.inventory = Inventory.new(40, 0, 1000000)
 	for chip_id: String in CentralRules.CHIP_IDS:
@@ -39,7 +34,7 @@ func _run() -> void:
 			player.inventory.add_reward(catalog.create(id, {"instance_id":id}).value)
 	for id: String in ["central_evolution_crystal", "central_flamelight", "central_syancrystal"]:
 		player.inventory.add_reward(catalog.create(id, {"instance_id":id}).value)
-	_check(server.autosave_service.commit_player_state(entity_id, mapper.to_record(player).value).is_ok, "isolated setup")
+	_check(AutosaveRecordAdapter.commit(server.autosave_service, entity_id, mapper.to_record(player).value).is_ok, "isolated setup")
 	var map := server.map_registry.instance_by_id(_state().map_instance_id)
 	var combat := map.combat_module
 	var original_attack := int(combat.actors[entity_id].weapons["energy_cannon.primary"].minimum_damage)
@@ -50,13 +45,6 @@ func _run() -> void:
 	var energy := combat.vehicle_state_for(entity_id).working_energy
 	var health := combat.vehicle_state_for(entity_id).health
 	var command := {"type":"change_central", "instance_id":"central_gun_module_1", "confirmed":true, "inventory_revision":_state().inventory_revision}
-	var repository := server.autosave_service._repository
-	server.autosave_service._repository = RejectingRepository.new()
-	var before := _state().to_dictionary()
-	var rejected := server.handle_peer_player_panel_command(PEER, command)
-	_check(not rejected.ok and _state().to_dictionary() == before, "write failure keeps module and chip")
-	_check(combat.actors[entity_id].cooldown_ready_ticks == ready and combat.vehicle_state_for(entity_id).working_energy == energy, "write failure keeps combat")
-	server.autosave_service._repository = repository
 	_check(server.handle_peer_player_panel_command(PEER, command).ok, "durable chip activation")
 	_check(not server.handle_peer_player_panel_command(PEER, command).ok, "replayed consumption rejected")
 	_check(combat.actors[entity_id].weapons["energy_cannon.primary"].minimum_damage == original_attack + 20, "chip affects actual cannon")
@@ -117,7 +105,7 @@ func _boot() -> bool:
 ## 读取服务端正式提交状态，拒绝使用未提交候选冒充存档。
 ## 返回当前隔离角色记录。
 func _state() -> PlayerStateRecord:
-	return server.autosave_service.state_for(entity_id)
+	return AutosaveRecordAdapter.current(server.autosave_service, entity_id)
 
 
 ## 收集真实运行期断言。

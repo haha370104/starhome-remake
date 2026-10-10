@@ -49,10 +49,18 @@ func configure(definition: Dictionary) -> DomainResult:
 ## [param quantity] 调用方传入的 `quantity` 参数。
 ## 返回该函数计算、查询或操作得到的结果。
 func extract(quantity: int) -> DomainResult:
-	if quantity <= 0 or quantity > remaining:
-		return DomainResult.failure(&"mining.invalid_yield", "mine extraction exceeds remaining content")
+	var checked := can_extract(quantity)
+	if not checked.is_ok: return checked
 	remaining -= quantity
 	return DomainResult.ok(remaining)
+
+
+## 在入包前检查产量，提交使用同一规则。
+## [param quantity] 本周期预约数量。
+func can_extract(quantity: int) -> DomainResult:
+	if quantity <= 0 or quantity > remaining:
+		return DomainResult.failure(&"mining.invalid_yield", "mine extraction exceeds remaining content")
+	return DomainResult.ok()
 
 
 ## 导出客户端只读快照；剩余量不会改变荣耀版矿源外观。

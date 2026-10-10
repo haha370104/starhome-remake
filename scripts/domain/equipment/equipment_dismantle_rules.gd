@@ -37,7 +37,7 @@ static func from_dictionary(raw: Dictionary, catalog: ItemCatalog) -> DomainResu
 			total += outcome.probability
 			var seen := PackedStringArray()
 			for material: Dictionary in entry.get("materials", []):
-				var definition_id := ItemDefinitionAliases.canonical(String(material.get("definition_id", "")))
+				var definition_id := String(material.get("definition_id", ""))
 				var definition := catalog.definition(definition_id)
 				var count := int(material.get("quantity", 0))
 				if definition.is_empty() or int(definition.get("max_stack", 1)) <= 1 or count <= 0 or definition_id in seen:

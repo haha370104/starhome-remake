@@ -11,6 +11,7 @@
 
 `tools/import_approved_equipment_assets.py` 可再生成本轮素材和配置；运行图集放在
 `assets/recovered/vehicles/` 与 `assets/recovered/equipment/` 下按实体、动作命名。
+导入器直接读取工程外 `../starhome_lz_fr_full/raw/`，仅在执行期间临时生成帧图集。所需 15 份 ALE 已按既有 SHA-256 核对并保存在工程外；重建后的内容文件与原物化清单逐项一致。
 每个实体的 `source_manifest.json` 记录授权、原路径、发布版、SHA-256；帧描述为可再生成的紧凑JSON。
 `data/content/recovered_sprite_runtime_index_v1.json` 只声明已批准的精确映射，不覆盖任何已有荣耀索引。
 `AleSpriteRepository` 按需加载，并返回真实 `source_release`；物品展示状态通过独立覆盖表更新，原始荣耀目录保留原版缺失证据。
@@ -27,11 +28,12 @@
 - 8个方向箭头与现有荣耀共享动画逐字节相同，补入精确来源映射，继续复用已连接的传送表现，避免重复叠图。
 - 交易中心缺失的绿色屏幕恢复3处，按原坐标、全部12帧、100毫秒/帧循环；纳入活动世界的暂存、失败隔离和切图清理。
 
-新增素材放入 `assets/content_packs/recovered_equipment_and_scenery.zip`（约3.3MB）。包内按业务实体命名，
-`assets/recovered/source_manifest.json` 记录全部来源、哈希、官网请求证据与批准范围；没有引入原始客户端档案。
-通过 `RuntimeContentBootstrap` 挂载，以原有 `RuntimeTextureLoader` 解码包内PNG，无需生成散落的 `.import`。
-`data/import/recovered_asset_selections_v1.json` 固定173项选择；运行 `python -X utf8 tools/import_remaining_recovered_assets.py`
-重建内容包、索引、物品覆盖和场景声明，再运行 `tools/build_weapon_visual_bindings.py` 与 `tools/build_attachment_upgrade_shop.py`
+新增素材已经物化到 `assets/recovered/`。历史 ZIP 的逐文件校验记录仍在
+`data/content/content_materialization_manifest_v1.json`；运行时按业务实体读取散文件。
+`assets/recovered/source_manifest.json` 记录全部来源、哈希、官网请求证据与批准范围；所需原始 ALE 保存在项目内被 Git 忽略的免费版和激战版 raw 目录。
+运行时由 `RuntimeContentBootstrap` 验证统一 `res://assets/`，以原有 `RuntimeTextureLoader` 解码 PNG，无需生成散落的 `.import`。
+`data/import/recovered_asset_selections_v1.json` 固定173项选择；运行 `python3 tools/import_remaining_recovered_assets.py`
+从 raw 直接重建 `assets/recovered/`、索引、物品覆盖和场景声明，再运行 `tools/build_weapon_visual_bindings.py` 与 `tools/build_attachment_upgrade_shop.py`
 同步弹体及加工石。初始导入器已保留后续恢复项，重复生成不会清掉新映射。
 
 同名候选核对：服装30组的pic/pic2文件哈希一致，且免费版 `cltobj/clothcltclass.fcc` 明确引用pic2路径，行号逐项记录。
@@ -70,10 +72,10 @@
 不会把游戏代码规定的播放间隔当作ALE内的属性。异路径同名候选保留匹配类型与原版关联核对记录。
 四处差异：A310/A311纳米前护甲面板/背包、A370帝王能量炮面板、A371千级帝王战车面板，均已由用户选择免费版。
 
-- [可筛选的完整检索表与对照图](../../cross_release_asset_review/index.html)
-- [机器审计结果](../../cross_release_asset_review/audit.json)
-- [官网逐项请求记录](../../cross_release_asset_review/remote_checks.json)：URL、状态、字节数、MD5、SHA-256、解码状态。
-- 原始下载与解析存于 `outputs/cross_release_asset_review/remote_cache/`，属于本地原档案，不进入素材子模块。
+- [可筛选的完整检索表与对照图](../../starhome-recovery/cross_release_asset_recovery/reports/index.html)
+- [机器审计结果](../../starhome-recovery/cross_release_asset_recovery/reports/audit.json)
+- [官网逐项请求记录](../../starhome-recovery/cross_release_asset_recovery/reports/remote_checks.json)：URL、状态、字节数、MD5、SHA-256、解码状态。
+- 已批准及既有引用所需的原始 ALE 保存在工程外 `../starhome_lz_fr_full/raw/` 与 `../starhome_jznp_full/raw/`；旧解析缓存仅是历史处理产物。
 - 运行 `python -X utf8 tools/audit_cross_release_assets.py` 重建本地比较报告；
   `tools/probe_cross_release_assets.py` 只查询尚未记录过的精确路径，成功/失败均缓存，不重复探测。
 

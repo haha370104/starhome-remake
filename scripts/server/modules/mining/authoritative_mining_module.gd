@@ -2,8 +2,10 @@ class_name AuthoritativeMiningModule
 extends RefCounted
 
 const MineSourceScript := preload("res://scripts/domain/mining/mine_source.gd")
+const DeterministicSpatialGridScript := preload("res://scripts/core/deterministic_spatial_grid.gd")
 
 const COLLECT_ABILITY_ID := "mining.collect"
+const SPATIAL_GRID_CELL_SIZE := 256.0
 
 var _enhancement_random := RandomNumberGenerator.new()
 var current_tick := 0
@@ -25,6 +27,8 @@ var _cycle_sequence := 0
 var _reward_namespace := Crypto.new().generate_random_bytes(16).hex_encode()
 var _next_replenishment_tick := -1
 var _last_command_sequences: Dictionary = {}
+var _source_spatial_grid := DeterministicSpatialGridScript.new(SPATIAL_GRID_CELL_SIZE)
+var _sorted_source_ids: Array[String] = []
 
 
 ## 为一张地图建立服务端矿源种群；非采矿地图保持禁用但不报错。
@@ -49,14 +53,26 @@ func configure(
 	map_instance_id = requested_instance_id
 	simulation_hz = requested_simulation_hz
 	_navigation = navigation
+	_source_spatial_grid.clear()
+	_sorted_source_ids.clear()
 	_policy = catalog.policy_for_map(map_id)
 	if _policy.is_empty():
 		return DomainResult.ok(0)
-	var maximum := int(_policy["maximum_sources"])
-	for _index: int in range(maximum):
-		var spawned := _spawn_one()
-		if not spawned.is_ok:
-			return spawned
+	var fixed_value: Variant = _policy.get("fixed_sources", [])
+	if fixed_value is Array and not (fixed_value as Array).is_empty():
+		for index: int in range((fixed_value as Array).size()):
+			var fixed_definition: Variant = (fixed_value as Array)[index]
+			if not fixed_definition is Dictionary:
+				return DomainResult.failure(&"mining.invalid_configuration", "fixed mine source must be an object")
+			var spawned := _spawn_one(fixed_definition, index)
+			if not spawned.is_ok:
+				return spawned
+	else:
+		var maximum := int(_policy["maximum_sources"])
+		for _index: int in range(maximum):
+			var spawned := _spawn_one()
+			if not spawned.is_ok:
+				return spawned
 	_next_replenishment_tick = _seconds_to_ticks(float(_policy["replenish_interval_seconds"]))
 	return DomainResult.ok(sources.size())
 
@@ -173,7 +189,7 @@ func drain_ready_cycles() -> Array[Dictionary]:
 ## 在背包成功入账后扣减矿源并安排同一目标的下一周期。
 ## [param token] 调用方传入的 `token` 参数。
 ## 返回该函数计算、查询或操作得到的结果。
-func commit_cycle(token: String) -> DomainResult:
+func prepare_cycle(token: String) -> DomainResult:
 	var reservation_value: Variant = _pending_cycles.get(token)
 	if not reservation_value is Dictionary:
 		return DomainResult.failure(&"mining.cycle_missing", "mining cycle reservation no longer exists")
@@ -185,6 +201,18 @@ func commit_cycle(token: String) -> DomainResult:
 		_pending_cycles.erase(token)
 		_actions.erase(actor_id)
 		return DomainResult.failure(&"mining.source_depleted", "mine source disappeared before settlement")
+	return source.can_extract(int(reservation["quantity"]))
+
+
+## 校验后扣除矿源并推进预约；同步事务中不得插入回调。
+## [param token] 已准备的采矿预约身份。
+func commit_cycle(token: String) -> DomainResult:
+	var checked := prepare_cycle(token)
+	if not checked.is_ok: return checked
+	var reservation: Dictionary = _pending_cycles[token]
+	var actor_id := String(reservation.actor_id)
+	var source_id := String(reservation.source_id)
+	var source: MineSource = sources[source_id]
 	var extracted: Variant = source.extract(int(reservation["quantity"]))
 	if not extracted.is_ok:
 		return extracted
@@ -192,6 +220,8 @@ func commit_cycle(token: String) -> DomainResult:
 	var depleted: bool = source.remaining <= 0
 	if depleted:
 		sources.erase(source_id)
+		_sorted_source_ids.erase(source_id)
+		_source_spatial_grid.remove(source_id)
 		_actions.erase(actor_id)
 	elif _actions.has(actor_id):
 		_actions[actor_id]["next_cycle_tick"] = current_tick \
@@ -240,10 +270,8 @@ func action_snapshot(actor_id: String) -> Dictionary:
 ## 返回按稳定标识排序的全部活动矿源快照。
 ## 构建 `snapshot` 对应的只读状态快照。
 func snapshot() -> Array[Dictionary]:
-	var ids := sources.keys()
-	ids.sort()
 	var result: Array[Dictionary] = []
-	for source_id: String in ids:
+	for source_id: String in _sorted_source_ids:
 		result.append(sources[source_id].snapshot())
 	return result
 
@@ -288,6 +316,20 @@ func _replenish_if_due() -> void:
 	var interval := _seconds_to_ticks(float(_policy["replenish_interval_seconds"]))
 	var missed_intervals := 1 + floori(float(current_tick - _next_replenishment_tick) / interval)
 	_next_replenishment_tick += missed_intervals * interval
+	var fixed_value: Variant = _policy.get("fixed_sources", [])
+	if fixed_value is Array and not (fixed_value as Array).is_empty():
+		for index: int in range((fixed_value as Array).size()):
+			var source_id := "%s.mine.fixed.%d" % [map_instance_id, index]
+			if sources.has(source_id):
+				continue
+			var fixed_definition: Variant = (fixed_value as Array)[index]
+			if not fixed_definition is Dictionary:
+				push_warning("Mine replenishment skipped invalid fixed source: %s" % source_id)
+				continue
+			var result := _spawn_one(fixed_definition, index)
+			if not result.is_ok:
+				push_warning("Mine replenishment stopped: %s" % result.error_message)
+		return
 	var missing := maxi(0, int(_policy["maximum_sources"]) - sources.size())
 	for _index: int in range(missing):
 		var result := _spawn_one()
@@ -298,23 +340,38 @@ func _replenish_if_due() -> void:
 
 ## 执行 `spawn_one` 对应的模块操作。
 ## 返回该函数计算、查询或操作得到的结果。
-func _spawn_one() -> DomainResult:
-	var selected: Variant = _catalog.mineral_for_spawn(map_id, _spawn_sequence)
-	if not selected.is_ok:
-		return selected
-	var occupied: Array[Vector2] = []
-	for source in sources.values():
-		occupied.append(source.position)
-	var position := RandomWalkableSpawnSampler.sample(
-		_navigation,
-		hash("%s.mine.%d" % [map_instance_id, _spawn_sequence]),
-		occupied,
-		float(_policy["minimum_spawn_separation"]),
-	)
-	if not position.is_finite():
-		return DomainResult.failure(&"mining.no_spawn", "map has no walkable mineral spawn")
-	var definition: Dictionary = selected.value
-	var source_id := "%s.mine.%d" % [map_instance_id, _spawn_sequence]
+func _spawn_one(fixed_definition: Dictionary = {}, fixed_index: int = -1) -> DomainResult:
+	var definition: Dictionary
+	var position: Vector2
+	var source_id: String
+	if fixed_index >= 0:
+		var fixed_position: Variant = fixed_definition.get("position", [])
+		if not fixed_position is Array or (fixed_position as Array).size() != 2:
+			return DomainResult.failure(&"mining.invalid_configuration", "fixed mine source position is invalid")
+		position = Vector2(float((fixed_position as Array)[0]), float((fixed_position as Array)[1]))
+		if not position.is_finite():
+			return DomainResult.failure(&"mining.invalid_configuration", "fixed mine source position is not finite")
+		definition = _catalog.mineral(String(fixed_definition.get("mineral_id", "")))
+		if definition.is_empty():
+			return DomainResult.failure(&"mining.invalid_configuration", "fixed mine source mineral is unknown")
+		source_id = "%s.mine.fixed.%d" % [map_instance_id, fixed_index]
+	else:
+		var selected: Variant = _catalog.mineral_for_spawn(map_id, _spawn_sequence)
+		if not selected.is_ok:
+			return selected
+		var occupied: Array[Vector2] = []
+		for source in sources.values():
+			occupied.append(source.position)
+		position = RandomWalkableSpawnSampler.sample(
+			_navigation,
+			hash("%s.mine.%d" % [map_instance_id, _spawn_sequence]),
+			occupied,
+			float(_policy["minimum_spawn_separation"]),
+		)
+		if not position.is_finite():
+			return DomainResult.failure(&"mining.no_spawn", "map has no walkable mineral spawn")
+		definition = selected.value
+		source_id = "%s.mine.%d" % [map_instance_id, _spawn_sequence]
 	var random := RandomNumberGenerator.new()
 	random.seed = hash(source_id)
 	var source := MineSourceScript.new()
@@ -336,6 +393,9 @@ func _spawn_one() -> DomainResult:
 	if not configured.is_ok:
 		return configured
 	sources[source_id] = source
+	_sorted_source_ids.append(source_id)
+	_sorted_source_ids.sort()
+	_source_spatial_grid.register(source_id, position)
 	_spawn_sequence += 1
 	return DomainResult.ok(source)
 
@@ -343,14 +403,12 @@ func _spawn_one() -> DomainResult:
 ## 执行 `source_at` 对应的模块操作。
 ## [param world_position] 调用方传入的 `world_position` 参数。
 func _source_at(world_position: Vector2):
-	var result = null
-	var closest_squared := float(_policy["selection_radius"]) ** 2
-	for source in sources.values():
-		var distance_squared: float = source.position.distance_squared_to(world_position)
-		if distance_squared <= closest_squared:
-			closest_squared = distance_squared
-			result = source
-	return result
+	var selection_radius := float(_policy["selection_radius"])
+	for source_id: String in _source_spatial_grid.query_circle(world_position, selection_radius):
+		var source: MineSource = sources[source_id]
+		if source.position.distance_squared_to(world_position) <= selection_radius * selection_radius:
+			return source
+	return null
 
 
 ## 执行 `actor_has_pending_cycle` 对应的模块操作。

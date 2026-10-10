@@ -17,8 +17,8 @@ from PIL import Image
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 OUTPUTS_ROOT = PROJECT_ROOT.parent
-GLORY_RAW = OUTPUTS_ROOT / "starhome_lz_ry_full" / "raw"
-GLORY_PARSED = OUTPUTS_ROOT / "starhome_lz_ry_full_parsed" / "ale_sprites"
+GLORY_RAW = PROJECT_ROOT / "../starhome_lz_ry_full" / "raw"
+GLORY_PARSED = PROJECT_ROOT / "assets" / "glory" / "sprites"
 TARGET_ROOT = PROJECT_ROOT / "assets" / "items" / "materials"
 PRESENTATION_PATH = PROJECT_ROOT / "data" / "presentation" / "ground_loot_v1.json"
 
@@ -73,7 +73,7 @@ def import_one(item_id: str, spec: dict[str, str]) -> tuple[dict[str, Any], dict
     """Export one decoded ALE frame and return runtime and audit records."""
     source_logical = Path(spec["source"])
     raw_path = GLORY_RAW / source_logical
-    parsed_root = GLORY_PARSED / source_logical.with_suffix("")
+    parsed_root = GLORY_PARSED / Path(source_logical.as_posix().lower()).with_suffix("")
     frames_path = parsed_root / "frames.json"
     frames = load_json(frames_path)
     if frames.get("frame_count") != 1 or len(frames.get("frames", [])) != 1:

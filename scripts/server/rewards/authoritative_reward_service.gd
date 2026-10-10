@@ -33,10 +33,10 @@ func roll_monster_loot(monster: MonsterLifecycle, killer_id: String, random: Ran
 	context.source = "monster_kill"
 	context.species_id = monster.species_id
 	context.population_kind = monster.population_kind
-	var state := _states.state_for(killer_id) if _states != null else null
+	var state := _states.player_for(killer_id) if _states != null else null
 	if state != null:
 		context.account_id = state.account_id
-		context.food_status = FoodStatus.new(state.food_status)
+		context.food_status = FoodStatus.new(state.food_status.to_dictionary())
 	var rolled := monster.drop_table.roll_with_modifiers(random, pipeline, context)
 	if not rolled.is_ok:
 		return rolled

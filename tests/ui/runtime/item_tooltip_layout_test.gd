@@ -1,7 +1,7 @@
 extends SceneTree
 
 const Hover := preload("res://scripts/client/ui/windows/item_hover_highlight.gd")
-const DESCRIPTION := "新兵能量炮\n新兵必备的攻击武器之一，但是火力较小。\n需求技能等级：10\n购买价：500\n出售值：250\n重量：20\n攻击力：7\n极限攻击力：10\n功耗：10\n射程：250\n极限射程：400\n耐久：900 / 900\n双击装备"
+const DESCRIPTION := "新兵能量炮\n新兵必备的攻击武器之一，但是火力较小。\n需求技能等级：10\n重量：20\n攻击力：7\n极限攻击力：10\n功耗：10\n射程：250\n极限射程：400\n耐久：900 / 900\n双击装备"
 var failures := PackedStringArray()
 
 
@@ -17,9 +17,13 @@ func _run() -> void:
 	root.add_child(target)
 	Hover.bind(target, target, DESCRIPTION)
 	target.mouse_entered.emit()
+	await create_timer(0.11).timeout
 	var tooltip := Hover.active_tooltip()
+	_expect(tooltip != null and tooltip.visible, "悬停100ms后显示说明")
+	if tooltip == null:
+		quit(1)
+		return
 	var first_size := tooltip.size
-	_expect(tooltip.visible, "首次悬停应立即显示")
 	_expect(first_size.x == 234 and first_size.y > 150 and first_size.y < 300,
 		"首次尺寸应紧贴十三行说明，实际 %s" % first_size)
 	await process_frame
@@ -27,6 +31,8 @@ func _run() -> void:
 	_expect(tooltip.size.is_equal_approx(first_size), "布局完成后不应从超大窗口跳变")
 	Hover._hide_active()
 	target.mouse_entered.emit()
+	await create_timer(0.11).timeout
+	tooltip = Hover.active_tooltip()
 	_expect(tooltip.size.is_equal_approx(first_size), "首次与再次悬停尺寸必须一致")
 	Hover._show_tooltip(target, "短标题\n只有一行")
 	_expect(tooltip.size.y < 70, "长说明切短说明应当场收缩，实际 %s" % tooltip.size)

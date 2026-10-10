@@ -40,7 +40,7 @@ func _initialize() -> void:
 			_check(not forged.validate_for(profile).is_ok, "reject corrupt saved cap")
 	for invalid: Variant in [1, [], {"version": 2}, {"extensions": []}, {"extensions": {"9": 1}}, {"extensions": {"1": -1}}, {"extensions": {"1": 1.5}}, {"extensions": {"1": INF}}, {"extensions": {1: 1}}]:
 		_check(not EquipmentForging.restore(invalid).is_ok, "reject invalid save")
-	_check(EquipmentForging.restore({}).value.to_dictionary().is_empty(), "old save default")
+	_check(EquipmentForging.restore({}).value.to_dictionary().is_empty(), "canonical unmodified state")
 	print("Equipment forging model: %d checks, %d failures" % [_checks, _failures.size()])
 	for failure in _failures: push_error(failure)
 	quit(0 if _failures.is_empty() else 1)

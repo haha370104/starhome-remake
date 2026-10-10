@@ -33,7 +33,7 @@ func _test_valid_configuration() -> void:
 	_expect(definition != null, "合法地图配置应加载成功：%s" % loader.errors)
 	if definition == null:
 		return
-	_expect(definition.map_id == &"g08_field_zone", "业务 map_id 未保留")
+	_expect(definition.map_id == &"glory_nft_bl_g08", "业务 map_id 未保留")
 	_expect(definition.transitions.size() == 2, "合法跳转没有完整加载")
 	_expect(definition.transition_by_id(&"west_to_f08").destination_legacy_code == "f08", "旧代码目标未保留")
 	_expect(definition.source_audit.get("source_release") == "glory", "荣耀版溯源没有保留")
@@ -102,11 +102,11 @@ func _test_unresolved_external_target() -> void:
 	var target = loader.load_file("res://tests/maps/fixtures/valid_empty_map.json")
 	catalog.add_map(source)
 	catalog.add_map(target)
-	_expect(catalog.map_by_id(&"g08_field_zone") == source, "按 map_id 查询失败")
+	_expect(catalog.map_by_id(&"glory_nft_bl_g08") == source, "按 map_id 查询失败")
 	_expect(catalog.map_by_legacy_code("G08") == source, "旧代码查询应忽略大小写")
 	_expect(catalog.validate_links(), "显式 external 的未解析目标应当保留且不报错：%s" % catalog.errors)
 	_expect(catalog.unresolved_external_transitions().size() == 1, "外部未解析目标应可供审计")
-	_expect(catalog.source_audit_for_map(&"g08_field_zone").get("source_release") == "glory", "Catalog 溯源查询失败")
+	_expect(catalog.source_audit_for_map(&"glory_nft_bl_g08").get("source_release") == "glory", "Catalog 溯源查询失败")
 
 
 ## 验证未声明为外部的缺失内部目标会使目录链接校验失败。

@@ -27,6 +27,7 @@ func configure(
 		return ERR_INVALID_PARAMETER
 	_repository = repository
 	_definition = definition.duplicate(true)
+	_animation_cache.clear()
 	current_actor_id = StringName(actor_id)
 	_body.name = "Body"
 	_body.centered = false
@@ -54,7 +55,10 @@ func set_action(action_id: StringName) -> bool:
 ## 执行 `set_direction` 对应的模块操作。
 ## [param direction] 调用方传入的 `direction` 参数。
 func set_direction(direction: int) -> void:
-	current_direction = posmod(direction, maxi(1, int(_definition.get("directions", 8))))
+	var next_direction := posmod(direction, maxi(1, int(_definition.get("directions", 8))))
+	if current_direction == next_direction:
+		return
+	current_direction = next_direction
 	_apply_pose()
 
 
@@ -106,14 +110,14 @@ func _action_reference(group_name: String, action_name: String) -> String:
 ## [param reference] 调用方传入的 `reference` 参数。
 ## 返回该函数计算、查询或操作得到的结果。
 func _load_animation(reference: String) -> Dictionary:
-	var cached: Variant = _animation_cache.get(reference)
-	if cached is Dictionary:
-		return cached
-	var loaded: Dictionary = _repository.load_animation(
+	if _animation_cache.has(reference):
+		return _animation_cache[reference]
+	var animation: Dictionary = _repository.load_animation(
 		reference, String(_definition.get("preferred_prefix", "pic3/npc"))
 	)
-	_animation_cache[reference] = loaded
-	return loaded
+	if not animation.is_empty():
+		_animation_cache[reference] = animation
+	return animation
 
 
 ## ALE 原点是相对实体脚点的负偏移；每帧应用可消除不同尺寸帧的抖动。

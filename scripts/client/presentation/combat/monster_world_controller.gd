@@ -2,6 +2,8 @@ class_name MonsterWorldController
 extends Node
 
 const MonsterWorldViewScript := preload("res://scripts/client/presentation/combat/monster_world_view.gd")
+const RemoteEntityInterpolatorScript := preload("res://scripts/client/network/remote_entity_interpolator.gd")
+const PerformanceTelemetryScript := preload("res://scripts/core/performance_telemetry.gd")
 const CombatDamageFloatScript := preload("res://scripts/client/presentation/combat/combat_damage_float.gd")
 const MonsterDeathEffectControllerScript := preload(
 	"res://scripts/client/presentation/combat/monster_death_effect_controller.gd"
@@ -14,18 +16,30 @@ const AleSpriteRepositoryScript := preload("res://scripts/content/ale_sprite_rep
 const GloryMonsterPresentationCatalogScript := preload(
 	"res://scripts/content/glory_monster_presentation_catalog.gd"
 )
+const PRESENTATION_RADIUS := 1600.0
+const MONSTER_VIEW_CREATION_BUDGET := 10
+const PRESENTATION_CULL_MARGIN := 128.0
+const MONSTER_ATTACK_SETTLE_EVENTS: Array[StringName] = [&"monster_attack_resolved", &"monster_attack_expired"]
+const DAMAGE_EVENTS: Array[StringName] = [&"energy_cannon_hit", &"rocket_launcher_hit", &"missile_hit", &"generator_heat_hit", &"sama_pulse_hit", &"sama_fission_hit", &"central_fatal_hit", &"monster_attack_resolved"]
+const NESTED_DEATH_EVENTS: Array[StringName] = [&"energy_cannon_hit", &"rocket_launcher_hit", &"missile_hit", &"generator_heat_hit", &"sama_pulse_hit", &"sama_fission_hit", &"central_fatal_hit"]
 
 var _world_parent: Node2D
 var _manifest: Dictionary = {}
 var _views: Dictionary = {}
+var _pending_monsters: Dictionary = {}
+var _view_pool: Array[MonsterWorldView] = []
+var _damage_float_pool: Array[CombatDamageFloat] = []
+var _active_damage_floats: Dictionary = {}
 var _local_player: Node2D
 var _last_event_id := 0
 var _death_effects: MonsterDeathEffectController
 var _attack_effects: MonsterAttackEffectController
 var _sama_effects: SamaEffectController
 var _hovered_entity_id := ""
+var _last_hover_world_position := Vector2.INF
 var _ale_repository: RefCounted
 var _glory_presentations: RefCounted
+var _position_interpolator := RemoteEntityInterpolatorScript.new()
 
 
 ## 执行 `configure` 对应的模块操作。
@@ -39,11 +53,8 @@ func configure(world_parent: Node2D, manifest: Dictionary, local_player: Node2D)
 	_world_parent = world_parent
 	_manifest = manifest.duplicate(true)
 	_local_player = local_player
-	var mount_result := RuntimeContentBootstrapScript.mount_default()
-	if bool(mount_result.get("ok", false)):
-		_ale_repository = AleSpriteRepositoryScript.new()
-		if not _ale_repository.load_default():
-			_ale_repository = null
+	_last_hover_world_position = Vector2.INF
+	_ale_repository = SpriteResources.repository()
 	_glory_presentations = GloryMonsterPresentationCatalogScript.new()
 	if not _glory_presentations.load_default():
 		_glory_presentations = null
@@ -55,7 +66,7 @@ func configure(world_parent: Node2D, manifest: Dictionary, local_player: Node2D)
 		_death_effects.queue_free()
 		_death_effects = null
 		return effect_error
-	_death_effects.configure_glory(_ale_repository, _glory_presentations)
+	_death_effects.configure_glory(_glory_presentations)
 	_attack_effects = MonsterAttackEffectControllerScript.new()
 	_attack_effects.name = "MonsterAttackEffects"
 	add_child(_attack_effects)
@@ -68,56 +79,67 @@ func configure(world_parent: Node2D, manifest: Dictionary, local_player: Node2D)
 	_sama_effects = SamaEffectController.new()
 	add_child(_sama_effects)
 	_sama_effects.configure(_world_parent, _local_player)
+	_position_interpolator.configure(0.1)
+	_position_interpolator.presentation_state_changed.connect(_on_interpolated_state)
 	return OK
 
 
 ## 每帧将视口鼠标位置换算为世界坐标，并刷新唯一的怪物悬浮目标。
 ## [param _delta] 当前渲染帧与上一帧之间的秒数；悬浮判定不依赖该值。
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
+	_materialize_pending_monsters(MONSTER_VIEW_CREATION_BUDGET)
+	_update_monster_culling()
+	_position_interpolator.advance(delta)
+	_advance_monster_presentations(delta)
 	if _world_parent == null or not is_instance_valid(_world_parent):
 		_set_hovered_entity("")
 		return
-	update_hover_at(_world_parent.get_global_mouse_position())
+	var mouse_position := _world_parent.get_global_mouse_position()
+	if mouse_position != _last_hover_world_position:
+		_last_hover_world_position = mouse_position
+		update_hover_at(mouse_position)
 
 
 ## 执行 `apply_snapshot` 对应的模块操作。
 ## [param combat_snapshot] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func apply_snapshot(combat_snapshot: Dictionary) -> void:
+	var apply_started_at := PerformanceTelemetryScript.begin(&"client_monster_presentation_apply")
+	var server_tick := int(combat_snapshot.get("server_tick", -1))
+	var has_timing := server_tick >= 0
+	if has_timing:
+		var server_time := float(combat_snapshot.get("server_time_seconds", server_tick / 20.0))
+		_position_interpolator.push_snapshot(server_tick, server_time, combat_snapshot.get("monsters", []))
 	var observed: Dictionary = {}
 	for raw_monster: Variant in combat_snapshot.get("monsters", []):
+		if not raw_monster is Dictionary:
+			continue
 		var monster: Dictionary = raw_monster
 		var entity_id := String(monster["entity_id"])
 		observed[entity_id] = true
 		var view: MonsterWorldView = _views.get(entity_id)
 		if view == null:
-			view = MonsterWorldViewScript.new()
-			view.name = "Monster_%s" % entity_id.replace(".", "_")
-			_world_parent.add_child(view)
-			var glory_presentation: Dictionary = {}
-			if _glory_presentations != null:
-				glory_presentation = _glory_presentations.definition_for_actor(
-					String(monster["combat_actor_id"])
-				)
-			if view.configure(
-				_manifest, monster, _ale_repository, glory_presentation
-			) != OK:
-				view.queue_free()
-				continue
-			_views[entity_id] = view
+			_pending_monsters[entity_id] = monster.duplicate(true)
 		else:
-			view.apply_snapshot(monster)
+			_pending_monsters.erase(entity_id)
+			view.apply_snapshot(monster, not has_timing)
+	for entity_id: String in _pending_monsters.keys():
+		if not observed.has(entity_id):
+			_pending_monsters.erase(entity_id)
+	_materialize_pending_monsters(MONSTER_VIEW_CREATION_BUDGET)
 	for entity_id: String in _views.keys():
 		if observed.has(entity_id):
 			continue
 		var stale: MonsterWorldView = _views[entity_id]
 		if entity_id == _hovered_entity_id:
 			_hovered_entity_id = ""
-		stale.queue_free()
+		_position_interpolator.remove_entity(StringName(entity_id))
+		_release_monster_view(stale)
 		_views.erase(entity_id)
 	_apply_recent_events(combat_snapshot)
 	if _sama_effects != null: _sama_effects.apply_snapshot(combat_snapshot)
 	if _attack_effects != null:
 		_attack_effects.apply_corrosion_snapshot(combat_snapshot, _local_player)
+	PerformanceTelemetryScript.end(&"client_monster_presentation_apply", apply_started_at)
 
 
 ## 执行 `nearest_target` 对应的模块操作。
@@ -160,7 +182,7 @@ func update_hover_at(world_position: Vector2) -> String:
 ## 返回该函数计算、查询或操作得到的结果。
 func target_position(entity_id: String) -> Vector2:
 	var view: MonsterWorldView = _views.get(entity_id)
-	return view.position if view != null and view.visible else Vector2.INF
+	return view.position + view.visual_collision_offset if view != null and view.is_presentation_visible() else Vector2.INF
 
 
 ## 执行 `first_visual_collision` 对应的模块操作。
@@ -180,13 +202,123 @@ func first_visual_collision(segment_start: Vector2, segment_end: Vector2) -> Dic
 func clear() -> void:
 	_set_hovered_entity("")
 	for view: MonsterWorldView in _views.values():
-		view.queue_free()
+		_release_monster_view(view)
 	_views.clear()
+	_pending_monsters.clear()
+	_last_hover_world_position = Vector2.INF
+	for damage_float: CombatDamageFloat in _active_damage_floats.values().duplicate():
+		_release_damage_float(damage_float)
+	_position_interpolator.reset()
 	_last_event_id = 0
 	if _death_effects != null:
 		_death_effects.clear()
 	if _attack_effects != null:
 		_attack_effects.clear()
+
+
+func _exit_tree() -> void:
+	for damage_float: CombatDamageFloat in _active_damage_floats.values():
+		damage_float.set_release_callback(Callable())
+
+
+func _materialize_pending_monsters(max_count: int) -> void:
+	if max_count <= 0 or _world_parent == null or not is_instance_valid(_world_parent):
+		return
+	if _pending_monsters.is_empty():
+		return
+	var materialize_started_at := PerformanceTelemetryScript.begin(&"client_monster_view_materialize")
+	var pending_ids: Array[String] = []
+	for entity_id: String in _pending_monsters:
+		pending_ids.append(entity_id)
+	var player_position := _local_player.position
+	pending_ids.sort_custom(func(left_id: String, right_id: String) -> bool:
+		var left_point: Array = _pending_monsters[left_id]["position"]
+		var right_point: Array = _pending_monsters[right_id]["position"]
+		var left_position := Vector2(float(left_point[0]), float(left_point[1]))
+		var right_position := Vector2(float(right_point[0]), float(right_point[1]))
+		return left_position.distance_squared_to(player_position) \
+				< right_position.distance_squared_to(player_position)
+	)
+	var materialized_count := 0
+	for entity_id: String in pending_ids:
+		if materialized_count >= max_count:
+			break
+		var monster: Dictionary = _pending_monsters.get(entity_id, {})
+		if monster.is_empty() or _views.has(entity_id):
+			_pending_monsters.erase(entity_id)
+			continue
+		var view := _acquire_monster_view()
+		view.name = "Monster_%s" % entity_id.replace(".", "_")
+		_world_parent.add_child(view)
+		var glory_presentation: Dictionary = {}
+		if _glory_presentations != null:
+			glory_presentation = _glory_presentations.definition_for_actor(
+				String(monster["combat_actor_id"])
+			)
+		if view.configure(_manifest, monster, _ale_repository, glory_presentation) != OK:
+			_release_failed_monster_view(view)
+			_pending_monsters.erase(entity_id)
+			continue
+		view.set_process(false)
+		_views[entity_id] = view
+		_pending_monsters.erase(entity_id)
+		_death_effects.prefetch(String(monster["combat_actor_id"]))
+		_attack_effects.prefetch(String(monster["combat_actor_id"]))
+		materialized_count += 1
+	PerformanceTelemetryScript.increment(&"client_monster_views_materialized", materialized_count)
+	PerformanceTelemetryScript.increment(&"client_monster_views_pending", _pending_monsters.size())
+	PerformanceTelemetryScript.end(&"client_monster_view_materialize", materialize_started_at)
+
+
+func _acquire_monster_view() -> MonsterWorldView:
+	if not _view_pool.is_empty():
+		var pooled_view: MonsterWorldView = _view_pool.pop_back()
+		if pooled_view.get_parent() != null:
+			pooled_view.get_parent().remove_child(pooled_view)
+		return pooled_view
+	return MonsterWorldViewScript.new()
+
+
+func _release_failed_monster_view(view: MonsterWorldView) -> void:
+	if view.get_parent() != null:
+		view.get_parent().remove_child(view)
+	view.reset_for_pool()
+	add_child(view)
+	_view_pool.append(view)
+
+
+func _release_monster_view(view: MonsterWorldView) -> void:
+	if view == null or not is_instance_valid(view):
+		return
+	if view.get_parent() != null:
+		view.get_parent().remove_child(view)
+	view.reset_for_pool()
+	add_child(view)
+	_view_pool.append(view)
+
+
+func _acquire_damage_float() -> CombatDamageFloat:
+	var damage_float: CombatDamageFloat
+	if _damage_float_pool.is_empty():
+		damage_float = CombatDamageFloatScript.new()
+	else:
+		damage_float = _damage_float_pool.pop_back()
+		if damage_float.get_parent() != null:
+			damage_float.get_parent().remove_child(damage_float)
+	damage_float.set_release_callback(_release_damage_float)
+	_active_damage_floats[damage_float.get_instance_id()] = damage_float
+	return damage_float
+
+
+func _release_damage_float(damage_float: CombatDamageFloat) -> void:
+	if damage_float == null or not is_instance_valid(damage_float):
+		return
+	_active_damage_floats.erase(damage_float.get_instance_id())
+	if damage_float.get_parent() != null:
+		damage_float.get_parent().remove_child(damage_float)
+	damage_float.reset_for_pool()
+	add_child(damage_float)
+	_damage_float_pool.append(damage_float)
 
 
 ## 在旧目标与新目标间原子切换名称可见性，保证全场最多显示一个怪物名。
@@ -203,9 +335,50 @@ func _set_hovered_entity(entity_id: String) -> void:
 		current.set_hovered(true)
 
 
+func _on_interpolated_state(entity_id: StringName, state: Dictionary) -> void:
+	var view: MonsterWorldView = _views.get(String(entity_id))
+	if view == null or not state.has("position"):
+		return
+	view.apply_interpolated_position(Vector2(state["position"]))
+
+
+func _advance_monster_presentations(delta: float) -> void:
+	if _local_player == null or not is_instance_valid(_local_player):
+		return
+	var advance_started_at := PerformanceTelemetryScript.begin(&"client_monster_presentation_advance")
+	var radius_squared := PRESENTATION_RADIUS * PRESENTATION_RADIUS
+	var advanced_count := 0
+	var skipped_count := 0
+	for view: MonsterWorldView in _views.values():
+		if not view.is_presentation_visible() or view.position.distance_squared_to(_local_player.position) > radius_squared:
+			skipped_count += 1
+			continue
+		view.advance_presentation(delta)
+		advanced_count += 1
+	PerformanceTelemetryScript.increment(&"client_monster_views_advanced", advanced_count)
+	PerformanceTelemetryScript.increment(&"client_monster_views_skipped", skipped_count)
+	PerformanceTelemetryScript.end(&"client_monster_presentation_advance", advance_started_at)
+
+
+func _update_monster_culling() -> void:
+	if _world_parent == null or not is_instance_valid(_world_parent):
+		return
+	var viewport := _world_parent.get_viewport()
+	if viewport == null:
+		return
+	var visible_screen := viewport.get_visible_rect()
+	var canvas_to_world := viewport.get_canvas_transform().affine_inverse()
+	var top_left := canvas_to_world * visible_screen.position
+	var bottom_right := canvas_to_world * (visible_screen.position + visible_screen.size)
+	var visible_world := Rect2(top_left, bottom_right - top_left).grow(PRESENTATION_CULL_MARGIN)
+	for view: MonsterWorldView in _views.values():
+		var world_position := _world_parent.to_global(view.position)
+		view.set_presentation_culled(not visible_world.has_point(world_position))
+
+
 ## 执行 `apply_recent_events` 对应的模块操作。
 ## [param combat_snapshot] 调用方传入的参数；具体约束由函数签名和所在模块定义。
-## 设计：快照允许重发事件，客户端游标保证每个权威伤害只表现一次。
+## 设计：会话层过滤入图历史，本地游标保证每个新伤害只表现一次。
 func _apply_recent_events(combat_snapshot: Dictionary) -> void:
 	var events_value: Variant = combat_snapshot.get("recent_events", [])
 	if not events_value is Array:
@@ -225,17 +398,14 @@ func _apply_recent_events(combat_snapshot: Dictionary) -> void:
 			_sama_effects.present_activation(event)
 		if event_type == &"monster_attack_started" and _attack_effects != null:
 			_attack_effects.present_attack(event)
-		if event_type in [&"monster_attack_resolved", &"monster_attack_expired"] and _attack_effects != null:
+		if event_type in MONSTER_ATTACK_SETTLE_EVENTS and _attack_effects != null:
 			_attack_effects.settle_attack(event)
-		if event_type in [
-			&"energy_cannon_hit", &"rocket_launcher_hit", &"missile_hit", &"generator_heat_hit", &"sama_pulse_hit", &"sama_fission_hit", &"central_fatal_hit",
-			&"monster_attack_resolved",
-		]:
+		if event_type in DAMAGE_EVENTS:
 			_present_damage(event, combat_snapshot)
 		if event_type == &"monster_attack_resolved":
 			_present_attack_impact(event, combat_snapshot)
 			_present_austin_effects(event, combat_snapshot)
-		if event_type in [&"energy_cannon_hit", &"rocket_launcher_hit", &"missile_hit", &"generator_heat_hit", &"sama_pulse_hit", &"sama_fission_hit", &"central_fatal_hit"]:
+		if event_type in NESTED_DEATH_EVENTS:
 			_present_nested_death(event)
 
 
@@ -249,7 +419,7 @@ func _present_damage(event: Dictionary, combat_snapshot: Dictionary) -> void:
 	var world_position := _damage_world_position(event, combat_snapshot)
 	if not is_finite(world_position.x) or not is_finite(world_position.y):
 		return
-	var damage_float: Node2D = CombatDamageFloatScript.new()
+	var damage_float := _acquire_damage_float()
 	damage_float.name = "DamageFloat_%d" % int(event.get("event_id", 0))
 	damage_float.position = world_position
 	_world_parent.add_child(damage_float)
@@ -273,7 +443,7 @@ func _present_austin_effects(event: Dictionary, snapshot: Dictionary) -> void:
 	for effect: Variant in effects:
 		if not effect is Dictionary or effect.get("kind") not in ["mitigation", "healing"] or int(effect.get("amount", 0)) <= 0: continue
 		var healing: bool = effect.kind == "healing"
-		var view := CombatDamageFloat.new()
+		var view := _acquire_damage_float()
 		view.position = world_position + Vector2(0, -24 * index)
 		_world_parent.add_child(view)
 		view.present_status("进化 +%d" % int(effect.amount) if healing else "光辉 减伤%d" % int(effect.amount), Color(0.4, 1, 0.6) if healing else Color(0.5, 0.9, 1))

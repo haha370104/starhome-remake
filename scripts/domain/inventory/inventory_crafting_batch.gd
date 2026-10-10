@@ -65,7 +65,7 @@ static func prepare(inventory: Inventory, requirements: Array[Dictionary], produ
 			layouts.append(layout)
 		if layouts.size() >= inventory.capacity:
 			return DomainResult.failure(&"inventory.no_space", "背包空间不足以接收本轮全部产物")
-		var position := InventoryLayout.first_available_position(layouts, item.footprint_px)
+		var position := InventoryLayout.first_available_position(layouts)
 		if position.x < 0:
 			return DomainResult.failure(&"inventory.no_space", "背包空间不足以接收本轮全部产物")
 		var entry := Entry.new(item)

@@ -120,10 +120,9 @@ func _test_missiles() -> void:
 ## [param player] 测试玩家。[param id] 策略选中的实例。
 ## 返回事务成功后的实际玩家。
 func _use(player: Player, id: String) -> Player:
-	var state: PlayerStateRecord = mapper.to_record(player).value
-	var used := fixture._service.execute(state, {"type": "use_inventory_item", "instance_id": id, "inventory_revision": state.inventory_revision})
+	var used := fixture._service.execute(player, {"type": "use_inventory_item", "instance_id": id, "inventory_revision": player.inventory.revision})
 	_check(used.is_ok, "真实使用事务")
-	return mapper.to_domain(used.value.candidate).value if used.is_ok else player
+	return used.value.candidate if used.is_ok else player
 
 
 ## 读取当前实际资源，模拟客户端接收的战斗资源投影。
@@ -138,9 +137,9 @@ func _vehicle(player: Player) -> Dictionary:
 ## [param title] 原名称。[param amount] 测试数量。
 ## 返回目录创建的实例。
 func _item(title: String, amount: int) -> ConsumableItem:
-	for id in catalog.definition_ids():
-		if catalog.display_name(id) == title: return catalog.create(id, {"instance_id": title, "quantity": amount}).value
-	return null
+	var ids := {"低级能量包": "low_grade_energy_pack", "中级能量包": "middle_grade_energy_pack", "比萨": "pizza"}
+	var created := catalog.create(String(ids.get(title, "")), {"instance_id": title, "quantity": amount})
+	return created.value as ConsumableItem if created.is_ok and created.value is ConsumableItem else null
 
 
 ## 汇总补给与显示行为断言。

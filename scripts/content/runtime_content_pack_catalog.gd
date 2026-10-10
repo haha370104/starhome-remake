@@ -7,7 +7,7 @@ var _packs: Dictionary = {}
 var _mounted: Dictionary = {}
 
 
-## 读取受控内容包目录。包路径只能位于工程的 assets/content_packs 下。
+## 读取受控内容清单。资源包已经物化到统一的 assets/ 根目录。
 ## [param path] 调用方传入的 `path` 参数。
 ## 返回该函数计算、查询或操作得到的结果。
 func load_file(path: String) -> bool:
@@ -35,43 +35,32 @@ func load_file(path: String) -> bool:
 	return errors.is_empty()
 
 
-## 挂载目录中的全部内容包。挂载后包内文件统一暴露为 res:// 路径。
-## [param verify_integrity] 调用方传入的 `verify_integrity` 参数。
-## 返回该函数计算、查询或操作得到的结果。
-func mount_all(verify_integrity := false) -> bool:
+## 注册清单中的全部内容组。资源已经位于 res://assets/，不再挂载 ZIP。
+## 返回全部内容组是否注册成功。
+func mount_all() -> bool:
 	for pack_id_value in _packs:
-		if not mount_pack(StringName(pack_id_value), verify_integrity):
+		if not mount_pack(StringName(pack_id_value)):
 			return false
 	return true
 
 
-## 挂载指定内容包；重复调用是幂等的。
+## 注册指定内容组；重复调用是幂等的。
 ## [param pack_id] 调用方传入的 `pack_id` 参数。
-## [param verify_integrity] 调用方传入的 `verify_integrity` 参数。
 ## 返回该函数计算、查询或操作得到的结果。
-func mount_pack(pack_id: StringName, verify_integrity := false) -> bool:
+func mount_pack(pack_id: StringName) -> bool:
 	if _mounted.has(pack_id):
 		return true
 	if not _packs.has(pack_id):
 		_add_error("pack", "未知内容包：%s" % pack_id)
 		return false
 	var entry: Dictionary = _packs[pack_id]
-	var pack_path := String(entry["path"])
-	if not FileAccess.file_exists(pack_path):
-		_add_error("pack", "内容包文件不存在：%s" % pack_path)
+	var content_root := String(entry.get("path", "res://assets/")).strip_edges()
+	if not content_root.begins_with("res://assets/"):
+		_add_error("pack", "内容组必须位于 res://assets/：%s" % pack_id)
 		return false
-	if verify_integrity:
-		var expected_size := int(entry.get("size_bytes", 0))
-		if expected_size > 0 and FileAccess.get_file_as_bytes(pack_path).size() != expected_size:
-			_add_error("pack", "内容包大小校验失败：%s" % pack_id)
-			return false
-		var expected_hash := String(entry.get("sha256", ""))
-		if not expected_hash.is_empty() and FileAccess.get_sha256(pack_path) != expected_hash:
-			_add_error("pack", "内容包 SHA-256 校验失败：%s" % pack_id)
-			return false
-	var absolute_path := ProjectSettings.globalize_path(pack_path)
-	if not ProjectSettings.load_resource_pack(absolute_path, false):
-		_add_error("pack", "Godot 无法挂载内容包：%s" % pack_path)
+	var absolute_root := ProjectSettings.globalize_path(content_root)
+	if not DirAccess.dir_exists_absolute(absolute_root):
+		_add_error("pack", "物化内容根目录不存在：%s" % content_root)
 		return false
 	_mounted[pack_id] = true
 	return true
@@ -116,12 +105,9 @@ func _load_pack_entry(value: Variant, index: int) -> void:
 	if _packs.has(pack_id):
 		_add_error(prefix + ".pack_id", "内容包 ID 重复：%s" % pack_id)
 		return
-	var pack_path := String(entry.get("path", "")).strip_edges()
-	if not pack_path.begins_with("res://assets/content_packs/"):
-		_add_error(prefix + ".path", "内容包必须位于 res://assets/content_packs/")
-		return
-	if not pack_path.ends_with(".zip") and not pack_path.ends_with(".pck"):
-		_add_error(prefix + ".path", "内容包只支持 zip 或 pck")
+	var pack_path := String(entry.get("path", "res://assets/")).strip_edges()
+	if not pack_path.begins_with("res://assets/"):
+		_add_error(prefix + ".path", "内容组必须位于 res://assets/")
 		return
 	entry["path"] = pack_path
 	_packs[pack_id] = entry

@@ -8,15 +8,21 @@ const MOVE_ANIMATION_FPS := 14.0
 ## [param catalog] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## [param key] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## 返回该函数计算、查询或操作得到的结果。
-static func build_character_set(catalog: Dictionary, key: String) -> Dictionary:
-	var body_group: Dictionary = catalog["shared_body"]
-	var shadow_group: Dictionary = catalog["shared_shadow"]
+static func build_character_set(catalog: Dictionary, key: String, sex := "male") -> Dictionary:
+	var character_set := build_body_set(catalog, sex)
 	var equipment_group: Dictionary = catalog[key]["equipment"]
+	character_set["equipment_frames"] = _build_frames(equipment_group)
+	character_set["equipment_offsets"] = _action_offsets(equipment_group)
+	return character_set
+
+
+static func build_body_set(catalog: Dictionary, sex: String) -> Dictionary:
+	var body_group: Dictionary = catalog["bodies"][sex]
+	var shadow_group: Dictionary = catalog["shadows"][sex]
 	return {
+		"sex": sex,
 		"body_frames": _build_frames(body_group),
 		"body_offsets": _action_offsets(body_group),
-		"equipment_frames": _build_frames(equipment_group),
-		"equipment_offsets": _action_offsets(equipment_group),
 		"shadow_frames": _build_frames(shadow_group),
 		"shadow_offsets": _action_offsets(shadow_group),
 	}

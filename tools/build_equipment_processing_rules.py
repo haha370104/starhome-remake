@@ -4,9 +4,9 @@ import json
 import math
 import re
 from pathlib import Path
+from recovery.fcc_workspace import RawFccWorkspace
 
 ROOT = Path(__file__).resolve().parents[1]
-SOURCE = ROOT.parent / "starhome_lz_ry_fcc_source"
 ATTRS = {"生命力": ("max_health", "m_nhealthUL"), "输出功率": ("output_power", "m_noutpowerUL"),
          "射程": ("range", "m_ndistanceUL"), "推进力": ("drive", "m_ndriveUL"),
          "攻击力": ("base_attack", "m_nattackUL"), "载弹量": ("ammunition_capacity", "m_nBulletCountUL")}
@@ -34,8 +34,6 @@ def build(check=False):
     paths = re.findall(r'"res://([^"]+)"', source.split("const GAMEPLAY_PATHS := [")[1].split("]")[0])
     definitions = {}
     for path in paths:
-        if path == "data/gameplay/equipment_processing_items_v1.json":
-            continue
         for row in read(path)["definitions"]:
             definitions[row["id"]] = row
     by_name = {row["display_name"]: row for row in sorted(definitions.values(), key=lambda row: row["id"], reverse=True)}
@@ -45,7 +43,9 @@ def build(check=False):
     originals = read("data/gameplay/glory/glory_items_v1.json")["definitions"]
     by_class = {row.get("source_class"): row for row in originals}
     recipes = {row["UpObjCName"]: row for row in read("data/gameplay/glory/glory_recipes_v1.json")["groups"]["equipment_upgrade"]}
-    raw_fireguns = (SOURCE / "cltobj/fireguncltclass.fcc").read_text(encoding="utf-8-sig")
+    with RawFccWorkspace() as fcc:
+        raw_fireguns = fcc.text("cltobj/fireguncltclass.fcc")
+        source_text = fcc.text("cltobj/stuffclt2.fcc")
     profiles = []
     for row in definitions.values():
         kind = row.get("kind")
@@ -103,7 +103,6 @@ def build(check=False):
                              "source_status": "unbound_recipe_repairs_missing_quantity" if repaired_recipe else "remake_scaled_last_family_recipe" if extrapolated else "client_table"})
     profiles.sort(key=lambda row: row["definition_id"])
     special = []
-    source_text = (SOURCE / "cltobj/stuffclt2.fcc").read_text(encoding="utf-8-sig")
     for row in read("data/gameplay/original_drop_items_v1.json")["definitions"]:
         name = row.get("source_class", "")
         match = re.search(r"^class " + re.escape(name) + r":.*?(?=^class |\Z)", source_text, re.M | re.S)
@@ -121,24 +120,7 @@ def build(check=False):
                      "late_equipment": "last confirmed same-family recipe scaled by ceil(required skill / source skill)",
                      "ammunition": "capacity upgrades preserve current rounds; refill missing rounds at configured maintenance locations"},
           "materials": special, "equipment": profiles}, check)
-    sprites = {row["logical_id"] for row in read("data/content/glory_sprite_runtime_index_v1.json")["sprites"]}
-    promoted = []
-    for grade in ["低级", "中级", "高级"]:
-        for kind in ["硬质素", "复合胶板"]:
-            name = grade + kind
-            previous = by_name[name]
-            assert previous.get("source_audit", {}).get("status") == "name_only", name
-            match = re.search(r"^class " + name + r":.*?(?=^class |\Z)", source_text, re.M | re.S)
-            logical = re.search(r'src=\$\+"../([^"\n]+)"', match[0])[1].lower().removesuffix(".ale")
-            assert logical in sprites, logical
-            promoted.append({"id": previous["id"], "kind": "material", "display_name": name, "source_class": name,
-                             "max_stack": 999, "replaces_name_only": True, "presentation": {"ale_reference": logical},
-                             "description": "基础加工材料，由同级四足甲的壳提炼。" if kind == "硬质素" else "基础加工材料，由同级类胶提炼。",
-                             "source_audit": {"source_release": "starhome_lz_ry", "source_file": "cltobj/stuffclt2.fcc",
-                                              "source_line": source_text.count("\n", 0, match.start()) + 1,
-                                              "presentation_policy": "decoded embedded palette, explicit source sprite per grade"}})
-    write("data/gameplay/equipment_processing_items_v1.json", {"schema_version": 1, "definitions": promoted}, check)
-    print(f"Processing catalog: {len(profiles)} equipment, {len(special)} enhancement materials, {len(promoted)} existing refining products")
+    print(f"Processing catalog: {len(profiles)} equipment, {len(special)} enhancement materials")
 
 
 if __name__ == "__main__":

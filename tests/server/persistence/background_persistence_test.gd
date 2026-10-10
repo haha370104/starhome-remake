@@ -21,10 +21,10 @@ func _run() -> void:
 	var config := DedicatedServerConfig.new()
 	_check(config.autosave_interval_seconds == 60.0, "游戏默认一分钟检查点")
 	config.network_enabled = false
-	config.map_config_path = "res://data/maps/d04_field_zone.json"
+	config.map_config_path = "res://data/maps/glory_nft_bl_d04.json"
 	config.map_catalog_path = "res://tests/fixtures/nonexistent_map_catalog.json"
 	config.default_spawn = Vector2(2412, 2400)
-	config.player_state_store_path = "user://background-persistence/state.json"
+	config.player_state_store_path = "user://background-persistence/state_%d_%d.json" % [OS.get_process_id(), Time.get_ticks_msec()]
 	config.autosave_interval_seconds = 0.5
 	var server := AuthoritativeServer.new()
 	_check(server.initialize(config).ok, "默认服务器启动后台仓储")
@@ -32,21 +32,23 @@ func _run() -> void:
 	_check(repository._writer != null, "真实游戏启用后台线程")
 	_check(server.open_session(97, {"protocol_version":config.protocol_version, "content_version":config.content_version}, 0).ok, "角色会话")
 	var session := server.sessions.session_for_peer(97)
-	var state := server.autosave_service.state_for(session.entity_id)
+	var player: Player = server.autosave_service.player_for(session.entity_id)
 	var disk: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(config.player_state_store_path))
 	_check(disk.players.is_empty(), "建号只进入内存，普通事务没有实时写盘")
-	state.currency += 123
-	var committed := server.autosave_service.commit_player_state(session.entity_id, state)
-	_check(committed.is_ok and repository.load_player(session.entity_id).value.currency == state.currency, "内存钱包与角色事务立即一致")
-	_check(repository.save_player(state, 0).error_code == &"persistence.revision_conflict", "后台模式仍拒绝旧版本")
-	var revision: int = committed.value.revision
+	player.inventory.currency += 123
+	var committed: DomainResult = server.autosave_service.commit_player(session.entity_id, player)
+	_check(committed.is_ok and server.autosave_service.player_for(session.entity_id).inventory.currency == 1123, "内存钱包与角色事务立即一致")
+	var recorded: DomainResult = server.autosave_service.mapper.to_record(player)
+	_check(recorded.is_ok, "事务候选应能转换为持久化记录")
+	var revision: int = repository.load_player(session.entity_id).value.revision
 	server.advance_simulation(0.49, 0)
 	_check(repository.load_player(session.entity_id).value.revision == revision, "检查点到期前不重复采集")
 	server.advance_simulation(0.01, 0)
 	_check(repository._writer.flush().is_ok, "等候已入队的定时快照")
 	disk = JSON.parse_string(FileAccess.get_file_as_string(config.player_state_store_path))
-	_check(disk.players[session.entity_id].currency == state.currency, "定时快照保存最新钱包")
-	var before := server.autosave_service.state_for(session.entity_id).to_dictionary()
+	_check(disk.players[session.entity_id].currency == player.inventory.currency, "定时快照保存最新钱包")
+	_check(repository.save_player(recorded.value, 0).error_code == &"persistence.revision_conflict", "后台模式仍拒绝旧版本")
+	var before: Dictionary = server.autosave_service.mapper.to_record(player).value.to_dictionary()
 	repository._writer.close()
 	repository._writer = FailingWriter.new()
 	repository._writer.start()
@@ -54,7 +56,7 @@ func _run() -> void:
 	var failed := server.handle_peer_player_panel_command(97, command)
 	_check(not failed.ok, "后台退出失败不给成功回执")
 	_check(server.sessions.session_for_peer(97) == session, "退出失败保留会话")
-	_check(server.autosave_service.state_for(session.entity_id).to_dictionary() == before, "退出失败不采用暂停生产或新版本候选")
+	_check(server.autosave_service.mapper.to_record(player).value.to_dictionary() == before, "退出失败不采用暂停生产或新版本候选")
 	repository._writer.close()
 	repository._writer = BackgroundFileWriter.new()
 	repository._writer.start()
@@ -70,6 +72,8 @@ func _run() -> void:
 	server.free()
 	var reopened := FilePlayerStateRepository.new(config.player_state_store_path)
 	_check(reopened.initialize().is_ok and reopened.load_player(identity).value.vehicle_health == 37, "正常退出后的文件可重新加载")
+	for path: String in [config.player_state_store_path, config.player_state_store_path + ".tmp", config.player_state_store_path + ".bak"]:
+		if FileAccess.file_exists(path): DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
 	for failure in failures: push_error(failure)
 	print("BACKGROUND_PERSISTENCE_%s (%d checks)" % ["OK" if failures.is_empty() else "FAIL", checks])
 	quit(0 if failures.is_empty() else 1)

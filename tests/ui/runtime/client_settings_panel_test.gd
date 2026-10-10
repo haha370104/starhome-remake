@@ -24,6 +24,12 @@ func _run() -> void:
 	controller._path = "res://.godot/settings-panel-%d.cfg" % Time.get_ticks_usec()
 	var settings := controller.preferences
 	settings.reset()
+	hall.hud.bottom_main_bar.shortcut_visibility_buttons.collapse.pressed.emit()
+	var saved_shortcut := ClientPreferences.new()
+	_check(saved_shortcut.load_file(controller._path) == OK and not saved_shortcut.shortcut_visible
+		and not hall.hud.shortcut_bar.visible, "收起快捷栏后保存当前状态")
+	settings.reset()
+	_check(hall.hud.shortcut_bar.visible, "恢复默认后展开快捷栏")
 	var panel := controller.panel
 	var manager: GameWindowManager = hall.game_window_manager
 	var map: MapNavigationPanel = hall.hud.map_navigation_panel
@@ -58,6 +64,15 @@ func _run() -> void:
 	_check(not map.visible, "文字输入不会打开地图")
 	editor.free()
 	controller._open_section("display")
+	_check(panel.game_scale_input.min_value == 100 and panel.game_scale_input.max_value == 200
+		and panel.game_scale_input.step == 5, "全局倍率从100%到200%，每次增减5%")
+	panel.game_scale_input.value = 125
+	await _frames(2)
+	_check(settings.game_scale == 1.25 and is_equal_approx(root.content_scale_factor, 1.25), "游戏内选择立即缩放世界与界面")
+	panel.game_scale_input.value = 200
+	await _frames(2)
+	_check(settings.game_scale == 2.0 and root.content_scale_factor == 2.0, "200%不再被窗口大小限制")
+	settings.set_game_scale(1.0)
 	settings.set_window_scale(1.3)
 	await _frames(2)
 	_check(panel.scale.is_equal_approx(Vector2(1.3, 1.3)), "设置窗口与文字整体放大")

@@ -12,8 +12,7 @@ from typing import Any
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-OUTPUTS_ROOT = PROJECT_ROOT.parent
-PARSED_MAP_ROOT = OUTPUTS_ROOT / "starhome_lz_ry_maps_parsed" / "maps"
+PARSED_MAP_ROOT = PROJECT_ROOT / "data" / "source_evidence" / "glory" / "map_recovery" / "maps"
 DIRECTORY_PATH = PROJECT_ROOT / "data" / "maps" / "map_directory.json"
 CELL_SIZE = (48, 12)
 

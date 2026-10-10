@@ -1,7 +1,7 @@
 class_name DailyActivityService
 extends RefCounted
 
-const COMMANDS := ["query_daily_activities", "accept_mercenary", "abandon_mercenary", "complete_mercenary", "claim_experience"]
+const COMMANDS := ["accept_mercenary", "abandon_mercenary", "complete_mercenary", "claim_experience"]
 var catalog := DailyActivityCatalog.new()
 var clock := Callable()
 
@@ -28,8 +28,6 @@ func execute(player: Player, command: Dictionary) -> DomainResult:
 	player.daily_activities.prepare(current_day(), catalog, player.level)
 	var revision := int(command.get("daily_revision", -1))
 	match String(command.type):
-		"query_daily_activities":
-			return DomainResult.ok({"action": "daily_query"})
 		"accept_mercenary":
 			return player.daily_activities.accept(String(command.get("task_id", "")), revision, catalog, player.level)
 		"abandon_mercenary":
@@ -44,10 +42,10 @@ func execute(player: Player, command: Dictionary) -> DomainResult:
 ## [param event] 经过击杀归属验证的死亡事件。
 ## 返回是否改变可持久化状态。
 func record_kill(player: Player, event: Dictionary) -> bool:
-	var before := player.daily_activities.to_dictionary()
-	player.daily_activities.prepare(current_day(), catalog, player.level)
-	player.daily_activities.record_kill(String(event.get("species_id", "")), String(event.get("death_id", "")), catalog)
-	return before != player.daily_activities.to_dictionary()
+	var change := player.daily_activities.prepare_day(current_day(), catalog, player.level)
+	player.daily_activities.prepare_kill(String(event.get("species_id", "")), String(event.get("death_id", "")), catalog, change)
+	player.daily_activities.commit(change)
+	return change.changed()
 
 
 ## 为窗口投影任务与钱包，不在查询投影时隐式换日或抽取。

@@ -2,6 +2,7 @@ class_name GameWindowManager
 extends Control
 
 signal notice_requested(message: String)
+signal social_command_requested(command: Dictionary)
 
 const CharacterPanelScript := preload("res://scripts/client/ui/windows/character/character_panel.gd")
 const InventoryPanelScript := preload("res://scripts/client/ui/windows/inventory/inventory_panel.gd")
@@ -13,16 +14,33 @@ const WeaponMerchantWindowScript := preload(
 const ManufacturingWindowScript := preload(
 	"res://scripts/client/ui/windows/manufacturing/manufacturing_window.gd"
 )
+const SlotMachineWindowScript := preload(
+	"res://scripts/client/ui/windows/entertainment/slot_machine_window.gd"
+)
+const PartyPanelScript := preload("res://scripts/client/ui/windows/navigation/party_panel.gd")
+const TradePanelScript := preload("res://scripts/client/ui/windows/navigation/trade_panel.gd")
+const ChatPanelScript := preload("res://scripts/client/ui/windows/navigation/chat_panel.gd")
+const FriendsPanelScript := preload("res://scripts/client/ui/windows/navigation/friends_panel.gd")
+const MailPanelScript := preload("res://scripts/client/ui/windows/navigation/mail_panel.gd")
 
 var character_panel: CharacterPanel
+var public_character_panel: CharacterPanel
 var inventory_panel: InventoryPanel
 var vehicle_panel: VehicleEquipmentPanel
+var public_vehicle_panel: VehicleEquipmentPanel
 var skill_panel: SkillLevelPanel
 var weapon_merchant_window: WeaponMerchantWindow
 var manufacturing_window: Control
+var slot_machine_window: SlotMachineWindow
+var party_window: PartyPanel
+var trade_window: TradePanel
+var chat_window: ChatPanel
+var friends_window: FriendsPanel
+var mail_window: MailPanel
 
 var panel_session: PlayerPanelSession
 var navigation_windows: Dictionary = {}
+var _requested_public_target_by_view: Dictionary = {}
 
 
 ## 创建窗口并订阅外部玩家会话；管理器不拥有玩家状态和命令版本。
@@ -31,7 +49,8 @@ var navigation_windows: Dictionary = {}
 func configure(session: PlayerPanelSession) -> bool:
 	panel_session = session
 	panel_session.bundle_received.connect(_apply_auxiliary_bundle)
-	panel_session.player_changed.connect(_apply_player)
+	panel_session.panel_state_changed.connect(_apply_panel_state)
+	panel_session.journal_changed.connect(_apply_journal_change)
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	set_process_input(true)
@@ -44,6 +63,11 @@ func configure(session: PlayerPanelSession) -> bool:
 	character_panel.skill_panel_requested.connect(_toggle_skill_panel)
 	character_panel.enhancement_requested.connect(_open_clothing_enhancement)
 	_add_window(character_panel)
+	public_character_panel = CharacterPanelScript.new()
+	public_character_panel.name = "PublicCharacterPanel"
+	public_character_panel.read_only = true
+	public_character_panel.position = Vector2(100, 90)
+	_add_window(public_character_panel)
 	inventory_panel = InventoryPanelScript.new()
 	inventory_panel.name = "InventoryPanel"
 	inventory_panel.position = Vector2(460, 70)
@@ -65,11 +89,17 @@ func configure(session: PlayerPanelSession) -> bool:
 	inventory_panel.sama_requested.connect(_open_sama)
 	inventory_panel.warehouse_requested.connect(_open_warehouse)
 	_add_window(inventory_panel)
+	inventory_panel._item_canvas.transfer_requested.connect(_transfer_warehouse_item.bind(false))
 	vehicle_panel = VehiclePanelScript.new()
 	vehicle_panel.name = "VehicleEquipmentPanel"
 	vehicle_panel.position = Vector2(250, 120)
 	vehicle_panel.command_requested.connect(panel_session.dispatch)
 	_add_window(vehicle_panel)
+	public_vehicle_panel = VehiclePanelScript.new()
+	public_vehicle_panel.name = "PublicVehicleEquipmentPanel"
+	public_vehicle_panel.read_only = true
+	public_vehicle_panel.position = Vector2(270, 140)
+	_add_window(public_vehicle_panel)
 	skill_panel = SkillLevelPanelScript.new()
 	skill_panel.name = "SkillLevelPanel"
 	skill_panel.position = Vector2(445, 70)
@@ -84,6 +114,11 @@ func configure(session: PlayerPanelSession) -> bool:
 	manufacturing_window.position = Vector2(190, 90)
 	manufacturing_window.command_requested.connect(panel_session.dispatch)
 	_add_window(manufacturing_window)
+	slot_machine_window = SlotMachineWindowScript.new()
+	slot_machine_window.name = "SlotMachineWindow"
+	slot_machine_window.position = Vector2(240, 100)
+	slot_machine_window.command_requested.connect(panel_session.dispatch)
+	_add_window(slot_machine_window)
 	var navigation_scripts := {
 		"crystal_source": preload("res://scripts/client/ui/windows/navigation/crystal_source_panel.gd"),
 		"central_controller": preload("res://scripts/client/ui/windows/navigation/central_panel.gd"),
@@ -93,6 +128,11 @@ func configure(session: PlayerPanelSession) -> bool:
 		"pve_death_journal": preload("res://scripts/client/ui/windows/navigation/pve_death_journal_panel.gd"),
 		"personal_warehouse": preload("res://scripts/client/ui/windows/navigation/personal_warehouse_panel.gd"),
 		"scene_players": preload("res://scripts/client/ui/windows/navigation/scene_players_panel.gd"),
+		"party": PartyPanelScript,
+		"trade": TradePanelScript,
+		"chat": ChatPanelScript,
+		"friends": FriendsPanelScript,
+		"mail": MailPanelScript,
 		"missions": preload("res://scripts/client/ui/windows/navigation/mission_journal_panel.gd"),
 		"system": preload("res://scripts/client/ui/windows/navigation/system_menu_panel.gd"),
 		"premium_shop": preload("res://scripts/client/ui/windows/navigation/premium_shop_panel.gd"),
@@ -117,7 +157,7 @@ func configure(session: PlayerPanelSession) -> bool:
 		var window: NavigationWindow = navigation_scripts[action].new()
 		if action in ["mercenary", "experience"]:
 			window.mode = action
-		if action in ["premium_shop", "mercenary", "experience", "attachment_upgrades", "clothing_enhancement", "vehicle_sockets", "equipment_processing", "equipment_maintenance", "extra_attributes", "equipment_strengthening", "armor_refinement", "clothing_improvement", "equipment_memory", "equipment_dismantle", "equipment_forging"]:
+		if action in ["missions", "premium_shop", "mercenary", "experience", "attachment_upgrades", "clothing_enhancement", "vehicle_sockets", "equipment_processing", "equipment_maintenance", "extra_attributes", "equipment_strengthening", "armor_refinement", "clothing_improvement", "equipment_memory", "equipment_dismantle", "equipment_forging"]:
 			window.command_requested.connect(panel_session.dispatch)
 		if window is EquipmentProcessingPanel:
 			window.workshop_requested.connect(_open_workshop)
@@ -129,17 +169,39 @@ func configure(session: PlayerPanelSession) -> bool:
 		window.notice_requested.connect(notice_requested.emit)
 		navigation_windows[action] = window
 		_add_window(window)
+		if window is PersonalWarehousePanel:
+			window.position.x = maxf(0.0, size.x * 0.75 - window.size.x * window.scale.x * 0.5)
+			window.item_canvas.transfer_requested.connect(_transfer_warehouse_item.bind(true))
+		if window is ScenePlayersPanel:
+			window.party_invite_requested.connect(_request_party_invite)
+			window.party_apply_requested.connect(_request_party_apply)
+			window.trade_invite_requested.connect(_request_trade_invite)
+			window.friend_requested.connect(_open_friend_target)
+			window.private_chat_requested.connect(_open_private_chat)
+			window.chat_requested.connect(_open_chat)
+		if window is PartyPanel:
+			party_window = window
+			window.command_requested.connect(social_command_requested.emit)
+		if window is TradePanel:
+			trade_window = window
+			window.command_requested.connect(social_command_requested.emit)
+		if window is ChatPanel:
+			chat_window = window
+			window.command_requested.connect(social_command_requested.emit)
+		if window is FriendsPanel:
+			friends_window = window
+			window.command_requested.connect(social_command_requested.emit)
+			window.private_chat_requested.connect(_open_private_chat)
+		if window is MailPanel:
+			mail_window = window
+			window.command_requested.connect(social_command_requested.emit)
+		if window is SystemMenuPanel:
+			window.mail_requested.connect(_open_mail)
 	navigation_windows["premium_shop"].attachment_upgrade_requested.connect(_open_attachment_upgrades)
 	navigation_windows["smart_assistant"].journal_requested.connect(func() -> void: toggle("pve_death_journal"))
 	navigation_windows["smart_assistant"].presets_requested.connect(_open_vehicle_presets)
-	var refresh := Timer.new()
-	refresh.wait_time = 2.0
-	refresh.timeout.connect(_refresh_navigation)
-	add_child(refresh)
-	refresh.start()
-
-	if not panel_session.snapshot_bundle().is_empty():
-		_apply_player(panel_session.current_player)
+	if panel_session.panel_state().is_ready():
+		_apply_panel_state(panel_session.panel_state(), null)
 	return true
 
 
@@ -172,11 +234,12 @@ func _topmost_window_at(viewport_position: Vector2) -> DraggableGameWindow:
 	return null
 
 
-## 按底栏 action_id 切换对应窗口，并在打开时拉取权威快照。
+## 按底栏 action_id 切换对应窗口；玩家三面板已有会话快照时直接复用增量状态。
 ## [param action_id] 底栏业务动作标识；未知动作不消费。
 ## 返回动作是否被窗口管理器消费。
 func toggle(action_id: String) -> bool:
 	var window: Control
+	var needs_initial_player_sync := not panel_session.current_player.is_ready()
 	match action_id:
 		"character": window = character_panel
 		"inventory": window = inventory_panel
@@ -188,7 +251,7 @@ func toggle(action_id: String) -> bool:
 	window.visible = not window.visible
 	if window.visible:
 		if action_id == "system":
-			window.position = Vector2(size.x / 2.0 + 235, size.y - 29 - window.size.y)
+			window.position = Vector2(size.x / 2.0 + 349, size.y - 29 - window.size.y)
 		if action_id == "premium_shop":
 			window.open_shop()
 		if action_id in ["mercenary", "experience", "central_controller"]:
@@ -197,32 +260,197 @@ func toggle(action_id: String) -> bool:
 		window.call("clamp_to_viewport", size)
 		if action_id == "scene_players":
 			panel_session.dispatch({"type": "query_scene_players"})
-		elif action_id not in ["system", "premium_shop", "mercenary", "experience", "smart_assistant", "pve_death_journal", "central_controller"]:
+		elif action_id == "party":
+			social_command_requested.emit({"type": "query_party"})
+		elif action_id == "trade":
+			social_command_requested.emit({"type": "query_trade"})
+		elif action_id == "friends":
+			social_command_requested.emit({"type": "query_friends"})
+		elif action_id == "mail" and mail_window != null:
+			mail_window.open_board()
+		elif action_id in ["character", "inventory", "vehicle_equipment"]:
+			if needs_initial_player_sync:
+				panel_session.request_full_sync()
+		elif action_id not in ["system", "premium_shop", "mercenary", "experience", "smart_assistant", "pve_death_journal", "central_controller", "missions", "achievements", "party", "chat", "friends", "mail"]:
 			panel_session.dispatch({"type": "query"})
 	return true
 
 
-## 仅在用户列表或任务日志可见时刷新只读查询，关闭窗口不产生轮询。
-func _refresh_navigation() -> void:
-	if navigation_windows["attachment_upgrades"].visible:
-		panel_session.dispatch({"type": "query_attachment_upgrades"})
-	if navigation_windows["mercenary"].visible or navigation_windows["experience"].visible:
-		panel_session.dispatch({"type": "query_daily_activities"})
-	if navigation_windows["scene_players"].visible:
-		panel_session.dispatch({"type": "query_scene_players"})
-	if navigation_windows["missions"].visible or navigation_windows["achievements"].visible:
-		panel_session.dispatch({"type": "query"})
+## 将场景玩家行的真实实体标识送入组队命令通道。
+func _request_party_invite(target_entity_id: String) -> void:
+	social_command_requested.emit({"type": "party_invite", "target_entity_id": target_entity_id})
+
+
+## 将场景玩家行的真实实体标识送入申请入队通道。
+func _request_party_apply(target_entity_id: String) -> void:
+	social_command_requested.emit({"type": "party_apply", "target_entity_id": target_entity_id})
+
+
+## 将场景玩家行的真实实体标识送入玩家交易邀请通道。
+func _request_trade_invite(target_entity_id: String) -> void:
+	social_command_requested.emit({"type": "trade_invite", "target_entity_id": target_entity_id})
+
+
+## 将世界玩家菜单动作复用到现有社交窗口和服务端命令通道。
+func request_player_social_action(
+	action_id: String,
+	target_entity_id: String,
+	display_name: String,
+) -> void:
+	match action_id:
+		"view_character": _request_public_profile(target_entity_id, "character")
+		"view_equipment": _request_public_profile(target_entity_id, "vehicle")
+		"party_invite": _request_party_invite(target_entity_id)
+		"party_apply": _request_party_apply(target_entity_id)
+		"trade_invite": _request_trade_invite(target_entity_id)
+		"friend": _open_friend_target(target_entity_id, display_name)
+		"private_chat": _open_private_chat(target_entity_id, display_name)
+
+
+func _request_public_profile(target_entity_id: String, view: String) -> void:
+	_requested_public_target_by_view[view] = target_entity_id
+	if view == "character":
+		public_character_panel.hide()
+	else:
+		public_vehicle_panel.hide()
+	panel_session.dispatch({"type": "query_public_player_profile", "target_entity_id": target_entity_id,
+		"view": view})
+
+
+func _open_friend_target(target_entity_id: String, display_name: String) -> void:
+	if friends_window == null:
+		return
+	friends_window.open_add_target(target_entity_id, display_name)
+	friends_window.visible = true
+	friends_window.move_to_front()
+	friends_window.clamp_to_viewport(size)
+	social_command_requested.emit({"type": "query_friends"})
+
+
+## 打开区域聊天窗口，不携带任何客户端猜测的玩家身份。
+func _open_chat() -> void:
+	if chat_window == null:
+		return
+	chat_window.open_area()
+	chat_window.visible = true
+	chat_window.move_to_front()
+	chat_window.clamp_to_viewport(size)
+
+
+## 从场景玩家列表打开指定玩家的私聊频道。
+func _open_private_chat(target_entity_id: String, display_name: String) -> void:
+	if chat_window == null:
+		return
+	chat_window.open_private(target_entity_id, display_name)
+	chat_window.visible = true
+	chat_window.move_to_front()
+	chat_window.clamp_to_viewport(size)
+
+
+func _open_mail(section: String = "mail") -> void:
+	if mail_window == null:
+		return
+	mail_window.open_board(section)
+	mail_window.visible = true
+	mail_window.move_to_front()
+	mail_window.clamp_to_viewport(size)
+
+
+## 消费服务端组队事件，并在收到邀请时打开队伍窗口。
+func apply_social_event(message: Dictionary) -> void:
+	if party_window != null:
+		party_window.apply_event(message)
+	if trade_window != null:
+		trade_window.apply_event(message)
+	if chat_window != null:
+		chat_window.apply_event(message)
+	if friends_window != null:
+		friends_window.apply_event(message)
+	if mail_window != null:
+		mail_window.apply_event(message)
+	var message_type := String(message.get("type", ""))
+	if message_type == "party_invite_cancelled":
+		social_command_requested.emit({"type": "query_party"})
+	elif message_type == "trade_invite_cancelled":
+		social_command_requested.emit({"type": "query_trade"})
+	elif message_type == "friend_invite_cancelled":
+		social_command_requested.emit({"type": "query_friends"})
+	if message_type in ["party_invite", "party_join_request"] and party_window != null:
+		_show_social_window(party_window)
+	if message_type in ["trade_invite", "trade_state"] and trade_window != null:
+		_show_social_window(trade_window)
+	if message_type == "social_result":
+		var value: Variant = message.get("result", {}).get("value", {})
+		if value is Dictionary:
+			var trade_value: Variant = value.get("trade", {})
+			if trade_value is Dictionary and not String(trade_value.get("trade_id", "")).is_empty():
+				_show_social_window(trade_window)
+			var party_value: Variant = value.get("party", {})
+			var party_invites: Variant = []
+			if party_value is Dictionary:
+				party_invites = party_value.get("pending_invites", [])
+			if party_invites is Array and not party_invites.is_empty():
+				_show_social_window(party_window)
+			var pending_invites: Variant = value.get("pending_invites", [])
+			if pending_invites is Array and not pending_invites.is_empty():
+				if value.get("trade") is Dictionary:
+					_show_social_window(trade_window)
+				elif value.get("friends") is Array:
+					_show_social_window(friends_window)
+	if message_type == "chat_event" and chat_window != null:
+		_show_social_window(chat_window)
+	if message_type == "friend_invite" and friends_window != null:
+		_show_social_window(friends_window)
+	if message_type == "mail_received" and mail_window != null:
+		_show_social_window(mail_window)
+
+
+func _show_social_window(window: Control) -> void:
+	if window == null:
+		return
+	window.visible = true
+	window.move_to_front()
+	window.call("clamp_to_viewport", size)
+
+
+## 在重连或地图同步完成后补偿查询社交状态，避免可靠事件断线期间丢失邀请。
+func request_social_sync(_sync_id: String) -> void:
+	for command: Dictionary in [
+		{"type": "query_party"}, {"type": "query_trade"}, {"type": "query_friends"},
+			{"type": "query_mailbox", "section": "mail"},
+			{"type": "query_mailbox", "section": "leaveword"},
+	]:
+		social_command_requested.emit(command)
+	if chat_window != null:
+		chat_window.refresh_history()
 
 
 ## 将会话消息中的名单、商店、制造和任务日志分发到对应窗口。
 ## [param bundle] 已由玩家会话接收的权威消息；可能只包含某个辅助窗口的数据。
 func _apply_auxiliary_bundle(bundle: Dictionary) -> void:
+	if bundle.get("public_player_profile") is Dictionary:
+		var profile: Dictionary = bundle.public_player_profile
+		var view := String(profile.get("view", ""))
+		if _requested_public_target_by_view.get(view, "") != String(profile.get("target_entity_id", "")):
+			return
+		var snapshot: Dictionary = profile.get("snapshot", {})
+		var window: DraggableGameWindow
+		if view == "character":
+			window = public_character_panel
+			public_character_panel.apply_snapshot(snapshot)
+		elif view == "vehicle":
+			window = public_vehicle_panel
+			public_vehicle_panel.set_viewed_player_name(String(profile.get("display_name", "")))
+			public_vehicle_panel.apply_snapshot(snapshot)
+		if window != null:
+			window.show()
+			window.move_to_front()
+			window.clamp_to_viewport(size)
+		return
 	navigation_windows["vehicle_presets"].apply_bundle(bundle, panel_session.current_player)
 	var warehouse: PersonalWarehousePanel = navigation_windows["personal_warehouse"]
 	if bundle.get("personal_warehouse") is Dictionary:
-		warehouse.apply_snapshot(PersonalWarehouseSnapshot.from_payload(bundle.personal_warehouse, panel_session.current_player.inventory))
-	elif bundle.get("inventory") is Dictionary:
-		warehouse.inventory_changed(int(bundle.inventory.revision))
+		warehouse.apply_snapshot(bundle.personal_warehouse, panel_session.current_player)
 	navigation_windows["equipment_maintenance"].apply_maintenance_bundle(bundle)
 	navigation_windows["equipment_processing"].apply_processing_bundle(bundle)
 	navigation_windows["extra_attributes"].apply_processing_bundle(bundle)
@@ -246,9 +474,11 @@ func _apply_auxiliary_bundle(bundle: Dictionary) -> void:
 	if bundle.get("scene_players") is Dictionary:
 		navigation_windows["scene_players"].apply_snapshot(bundle["scene_players"])
 	if weapon_merchant_window != null and bundle.get("commerce") is Dictionary:
-		weapon_merchant_window.apply_commerce_bundle(bundle)
+		weapon_merchant_window.apply_commerce_bundle(bundle, panel_session.current_player)
 	if manufacturing_window != null and bundle.get("manufacturing") is Dictionary:
 		manufacturing_window.apply_manufacturing_bundle(bundle)
+	if slot_machine_window != null:
+		slot_machine_window.apply_slot_bundle(bundle)
 	if bundle.get("mission_journal") is Array:
 		navigation_windows["missions"].apply_entries(bundle["mission_journal"])
 
@@ -279,18 +509,76 @@ func _open_warehouse() -> void:
 	window.open_board()
 
 
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_DRAG_BEGIN: mouse_filter = Control.MOUSE_FILTER_PASS
+	elif what == NOTIFICATION_DRAG_END: mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+
+func _transfer_warehouse_item(instance_id: String, source: InventoryCanvas, position: Vector2i, deposit: bool) -> void:
+	var warehouse: PersonalWarehousePanel = navigation_windows["personal_warehouse"]
+	if inventory_panel.visible and warehouse.visible \
+		and source == (inventory_panel._item_canvas if deposit else warehouse.item_canvas):
+		warehouse.transfer_item(instance_id, deposit, position)
+
+
 ## 用会话的同事务投影同步人物、战车、背包和技能展示。
 ## [param player] 已完成权威快照还原的当前玩家。
-func _apply_player(player: Player) -> void:
-	var bundle := panel_session.snapshot_bundle()
-	character_panel.apply_snapshot(bundle["character"])
-	inventory_panel.apply_inventory(player.inventory)
-	inventory_panel.apply_food_status(player.food_status)
-	character_panel.set_inventory_revision(int(bundle["inventory"].get("revision", -1)))
-	vehicle_panel.set_inventory_revision(int(bundle["inventory"].get("revision", -1)))
-	vehicle_panel.apply_snapshot(bundle["vehicle"])
-	skill_panel.apply_skills(bundle["character"].get("skills", []))
-	navigation_windows["achievements"].apply_snapshot(player.achievements.snapshot())
+func _apply_panel_state(state: PanelState, change: Variant) -> void:
+	var player := panel_session.current_player
+	if change == null:
+		character_panel.apply_snapshot(state.slice("character"))
+		inventory_panel.apply_inventory(player.inventory)
+		inventory_panel.apply_food_status(player.food_status)
+		character_panel.set_inventory_revision(state.domain_revision("inventory"))
+		vehicle_panel.set_inventory_revision(state.domain_revision("inventory"))
+		weapon_merchant_window.apply_inventory_state(player)
+		party_window.apply_player(player)
+		trade_window.apply_player(player)
+		chat_window.apply_player(player)
+		vehicle_panel.apply_snapshot(state.slice("vehicle"))
+		skill_panel.apply_skills(state.slice("character").get("skills", []))
+		navigation_windows["achievements"].apply_achievements(player.achievements)
+		if manufacturing_window.visible: manufacturing_window.request_refresh()
+		return
+	var player_change := change as PlayerChange
+	if player_change == null: return
+	_apply_panel_delta(state, player, player_change)
+
+
+## 仅按 PlayerChange 涉及的领域刷新窗口，技能经验不重建人物或战车视图。
+func _apply_panel_delta(state: PanelState, player: Player, change: PlayerChange) -> void:
+	if change.inventory_revision >= 0:
+		var item_ids: Array[String] = []
+		for item: Dictionary in change.items: item_ids.append(String(item.instance_id))
+		for identity: String in change.removed_items: item_ids.append(identity)
+		inventory_panel.apply_inventory_change(player.inventory, item_ids)
+		slot_machine_window.set_balance(player.inventory.currency)
+		character_panel.set_inventory_revision(player.inventory.revision)
+		vehicle_panel.set_inventory_revision(player.inventory.revision)
+		weapon_merchant_window.apply_inventory_state(player)
+		party_window.apply_player(player)
+		trade_window.apply_player(player)
+		navigation_windows["vehicle_presets"].refresh_player(player)
+	character_panel.apply_progression(player.level, player.revision)
+	if not change.character.is_empty():
+		character_panel.apply_snapshot(state.slice("character"))
+		skill_panel.apply_skills(state.slice("character").get("skills", []))
+	if not change.vehicle.is_empty():
+		vehicle_panel.apply_snapshot(state.slice("vehicle"))
+		navigation_windows["vehicle_presets"].refresh_player(player)
+	if not change.presets.is_empty():
+		navigation_windows["vehicle_presets"].apply_bundle({"vehicle_presets": change.presets,
+		"preset_server_time": change.preset_server_time}, player)
+	if not change.food.is_empty(): inventory_panel.apply_food_status(player.food_status)
+	if change.character_health >= 0: character_panel.apply_health(player.health, player.max_health)
+	if not change.skills.is_empty(): skill_panel.apply_changes(change.skills)
+	if not change.achievements.is_empty(): navigation_windows["achievements"].apply_changes(player.achievements, change.achievements)
+	if not change.daily.is_empty():
+		for action: String in ["mercenary", "experience"]:
+			navigation_windows[action].apply_activity_bundle({"daily_activities": change.daily,
+				"inventory": {"revision": player.inventory.revision}})
+	if change.attributes_changed: vehicle_panel.apply_stats(player.calculate_vehicle_stats())
+	if not change.vehicle_stats.is_empty(): vehicle_panel.apply_stats(change.vehicle_stats)
 
 
 ## 打开武器商人的购买、出售或任务窗口，并拉取同一事务快照。
@@ -308,6 +596,34 @@ func open_manufacturing(station_id: String) -> void:
 	manufacturing_window.clamp_to_viewport(size)
 
 
+## 打开所选娱乐大厅游戏机。
+## [param machine_id] 地图机器的稳定标识。
+func open_slot_machine(machine_id: String) -> void:
+	slot_machine_window.open_machine(machine_id)
+	slot_machine_window.clamp_to_viewport(size)
+
+
+## 切图时收起当前机器，拒绝沿用旧地点的交互窗口。
+func close_slot_machine() -> void:
+	slot_machine_window.hide()
+
+
+## 把与当前老虎机操作有关的权威拒绝原因交还窗口。
+## [param code] 服务端错误码。[param message] 服务端说明。
+func on_command_rejected(code: StringName, message: String) -> void:
+	slot_machine_window.handle_rejection(code, message); navigation_windows["personal_warehouse"].handle_rejection(code, message)
+	if party_window != null:
+		party_window.handle_rejection(code, message)
+	if trade_window != null:
+		trade_window.handle_rejection(code, message)
+	if chat_window != null:
+		chat_window.handle_rejection(code, message)
+	if friends_window != null:
+		friends_window.handle_rejection(code, message)
+	if mail_window != null:
+		mail_window.handle_rejection(code, message)
+
+
 ## 切换非模态技能等级窗口并保持其处于可见区域。
 ## 设计：技能窗与人物、背包、战车窗口同属窗口管理器，窗外输入继续交给地图。
 func _toggle_skill_panel() -> void:
@@ -315,7 +631,7 @@ func _toggle_skill_panel() -> void:
 	if skill_panel.visible:
 		skill_panel.move_to_front()
 		skill_panel.clamp_to_viewport(size)
-		panel_session.dispatch({"type": "query"})
+		panel_session.request_full_sync()
 
 
 ## 将新窗口加入管理层并建立关闭语义。
@@ -331,8 +647,9 @@ func _clamp_windows() -> void:
 	for window: Control in navigation_windows.values():
 		window.call("clamp_to_viewport", size)
 	for window: Control in [
-		character_panel, inventory_panel, vehicle_panel, skill_panel, weapon_merchant_window,
-		manufacturing_window,
+		character_panel, public_character_panel, inventory_panel, vehicle_panel, public_vehicle_panel,
+		skill_panel, weapon_merchant_window,
+		manufacturing_window, slot_machine_window,
 	]:
 		if window != null:
 			window.call("clamp_to_viewport", size)
@@ -444,3 +761,9 @@ func _open_sama(id: String = "", is_material: bool = false) -> void:
 ## [param id] 物品身份。[param is_material] 通用导航标记。
 func _open_central(id: String = "", is_material: bool = false) -> void:
 	EquipmentWorkshopNavigation.focus(navigation_windows["central_controller"], size, id, is_material)
+
+
+## 单独刷新任务进度，保持其他导航窗口的状态。
+## [param entries] 当前完整任务日志视图。
+func _apply_journal_change(entries: Array) -> void:
+	navigation_windows["missions"].apply_entries(entries)

@@ -1,7 +1,7 @@
 """Compare original drop evidence with initialized runtime catalogs and every mercenary task.
 
 Run export_content_supply_audit.gd first. Reports are deterministic for that snapshot;
-raw Glory archives remain optional local evidence, outside the repository/submodule.
+raw Glory archives remain optional project-local evidence, outside Git.
 """
 from __future__ import annotations
 
@@ -12,6 +12,7 @@ from collections import Counter, defaultdict
 from pathlib import Path
 
 from build_glory_monster_runtime_catalog import recover_class_names
+from recovery.fcc_workspace import RawFccWorkspace
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -24,10 +25,12 @@ def main() -> None:
     runtime = load(".godot/content-audit-runtime.json")
     original = load("data/gameplay/glory/glory_monsters_v1.json")["definitions"]
     tasks = load("data/gameplay/quests/mercenary_tasks_v1.json")["tasks"]
-    task_path = ROOT.parent / "starhome_lz_fr_full_parsed/ftc_resources/expanded/bool/role/mercenaryrole/mercenaryrole.txt.cab"
+    task_source = ROOT / "../starhome_lz_fr_full/raw/bool/role/mercenaryrole.txt"
     task_note = "本地免费版原始任务归档缺失，本次以仓库规范化任务表为基准。"
-    if task_path.exists():
-        text_rows = [line.split("\t") for line in task_path.read_text(encoding="gb18030").splitlines() if line.strip()][1:]
+    if task_source.exists():
+        with RawFccWorkspace(task_source.parents[2], ROOT / "../starhome_lz_ry_full/fkernel.dll") as fcc:
+            task_text = fcc.payload("bool/role/mercenaryrole.txt").decode("gb18030")
+        text_rows = [line.split("\t") for line in task_text.splitlines() if line.strip()][1:]
         original_tasks = [dict(id=row[0], title=row[1], grade=int(row[2]), quality=int(row[3]), description=row[4],
                                condition=row[5].split(","), points=int(row[6])) for row in text_rows]
         assert original_tasks == tasks, "免费版任务原始七列与规范化目录不一致"
@@ -84,7 +87,7 @@ def main() -> None:
     full = sum(covered[name] == species for name, species in source_species.items())
     partial = sum(bool(covered[name]) and covered[name] != species for name, species in source_species.items())
     absent = sum(not value for value in covered.values())
-    raw_path = ROOT.parent / "starhome_lz_ry_full_parsed/catalogs_utf8/npc_catalog.csv"
+    raw_path = ROOT / "data/source_evidence/glory/catalogs_utf8/npc_catalog.csv"
     raw_note = "本地原始归档缺失，本次仅核对仓库已导入的来源候选。"
     if raw_path.exists():
         rows = list(csv.DictReader(raw_path.open(encoding="utf-8-sig")))
@@ -103,8 +106,9 @@ def main() -> None:
     rows = []
     class_species = {row["monster_class"]: row["species_id"] for row in encounters["confirmed_joins"]}
     spawned_names = {runtime["monsters"][sid]["display_name"] for sid in spawned}
-    source_root = ROOT.parent / "starhome_lz_ry_fcc_source"
-    source_names = recover_class_names(source_root) if (source_root / "npcclt1.fcc").exists() else {}
+    with RawFccWorkspace() as fcc:
+        fcc.path("great/code_string.fcc")
+        source_names = recover_class_names(fcc.path("npcclt1.fcc").parent)
     mistakes = []
     for task in tasks:
         task_id, kind, target = str(task["id"]), int(task["condition"][0]), task["condition"][1]
@@ -173,7 +177,7 @@ def main() -> None:
               "## 本次纠正的旧结论", "",
               "`NewJointImpactChip` 就是冲击晶体：荣耀 `ven/stuffclt2_ven.fcc:3772` 明确给出了类名与中文名，NPC 候选也有记录。",
               "已恢复中文名与荣耀图像，沿用占位ID，并完整接入原表对应怪物掉落；商城来源继续保留。",
-              "五种已确认同源的低级材料/能量包通过 ItemDefinitionAliases 统一历史ID；旧存档加载、背包扣料和制造配方均兼容。", "",
+              "六种已确认同源的材料已在玩法配置中直接使用规范物品 ID；原始内容注册表保留上游 ID 供来源审计，运行时不再做 ID 别名转换。", "",
               "## 复核方式", "", "先运行：", "", "```powershell",
               "godot --headless --path . --script res://tools/export_content_supply_audit.gd",
               "python -X utf8 tools/audit_original_drops_and_mercenaries.py", "```", "",

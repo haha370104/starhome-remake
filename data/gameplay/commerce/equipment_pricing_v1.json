@@ -13,7 +13,7 @@
   "source_audit": {
     "evidence_level": "remake_design",
     "decision_date": "2026-09-07",
-    "rule": "用户确认沿用前档翻倍的定价规律；各类最高两档逐档乘二，回收价为售价的一半。所有商人共享。",
+    "rule": "用户确认沿用前档翻倍的定价规律；各类最高两档逐档乘二，出售价为购买价的一半。所有商人共享。",
     "source_release": "starhome_lz_ry",
     "source_file": "cltobj/equipcltclass.fcc",
     "source_original_values": {"purchase_value":2000,"sell_value":1000},

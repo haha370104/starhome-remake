@@ -8,13 +8,14 @@ var ready_at := 0
 var _sets: Array[Dictionary] = [{}, {}, {}, {}]
 
 
-## 严格还原四套实际实例方案，旧存档缺省为空，拒绝重复槽位或重复装备。
+## 严格还原四套实际实例方案，拒绝重复槽位或重复装备。
 ## [param raw] 持久化或网络边界载荷。
 ## 返回独立的方案集合或格式错误。
 static func restore(raw: Variant) -> DomainResult:
-	if not raw is Dictionary: return _invalid()
+	if not raw is Dictionary or raw.size() != 3 or not raw.has("revision") \
+		or not raw.has("ready_at") or not raw.has("sets"):
+		return _invalid()
 	var presets := VehicleLoadoutPresets.new()
-	if raw.is_empty(): return DomainResult.ok(presets)
 	if not valid_integer(raw.get("revision")) or not valid_integer(raw.get("ready_at")): return _invalid()
 	var sets: Variant = raw.get("sets")
 	if not sets is Array or sets.size() != COUNT: return _invalid()

@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "protocol_version": 1,
+  "protocol_version": 5,
   "public_content_version": 1,
   "limits": {
     "sequence_min": 0,

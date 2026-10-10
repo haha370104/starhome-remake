@@ -1,5 +1,7 @@
 extends SceneTree
 
+const CommerceRecordAdapter := preload("res://tests/fixtures/commerce_record_adapter.gd")
+
 var _items := ItemCatalog.new()
 var _fixture := PlayerPanelServiceFixture.new()
 var _service := AuthoritativeCommerceService.new()
@@ -19,7 +21,7 @@ func _initialize() -> void:
 		"inventory_revision": player.inventory.revision, "price": 1, "star_level": 999}
 	var state: PlayerStateRecord = _mapper.to_record(player).value
 	var before := state.to_dictionary()
-	var result := _service.execute(state, command)
+	var result := CommerceRecordAdapter.execute(_service, state, command)
 	_check(result.is_ok and before == state.to_dictionary(), "isolated candidate")
 	if not result.is_ok: push_error(result.error_message); quit(1); return
 	player = _mapper.to_domain(result.value.candidate).value
@@ -32,11 +34,11 @@ func _initialize() -> void:
 	for item: GameItem in player.inventory.items():
 		if item.definition_id == engine.strengthening_profile.alloy_id: total += item.quantity
 	_check(total == 300, "alloy consumed across stacks")
-	_check(not _service.execute(result.value.candidate, command).is_ok, "replay rejected")
+	_check(not CommerceRecordAdapter.execute(_service, result.value.candidate, command).is_ok, "replay rejected")
 	var current := CurrentPlayer.new()
 	_check(current.apply_bundle(result.value.panel_bundle) and current.inventory.find(engine.instance_id).strengthening.level == 10, "client receives stars")
 	_check(not result.value.panel_bundle.equipment_strengthening.preview.can_execute, "ten stars terminal")
-	var bought := _service.execute(result.value.candidate, {"type": "buy_equipment_strengthening_material", "definition_id": engine.strengthening_profile.ordinary_material,
+	var bought := CommerceRecordAdapter.execute(_service, result.value.candidate, {"type": "buy_equipment_strengthening_material", "definition_id": engine.strengthening_profile.ordinary_material,
 		"quantity": 2, "inventory_revision": player.inventory.revision, "unit_price": 0})
 	_check(bought.is_ok and bought.value.candidate.currency == 860000, "catalog purchase price")
 	for level: int in [0, 4, 9]:

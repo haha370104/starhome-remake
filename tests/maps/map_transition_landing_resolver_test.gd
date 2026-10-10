@@ -10,9 +10,9 @@ var assertions := 0
 ## 验证相邻野外地图使用反向出口落点，而不是共享的地图中心默认出生点。
 func _initialize() -> void:
 	var loader = LoaderScript.new()
-	var d04: MapDefinition = loader.load_file("res://data/maps/d04_field_zone.json")
-	var c04: MapDefinition = loader.load_file("res://data/maps/buli_c04_field_zone.json")
-	var c03: MapDefinition = loader.load_file("res://data/maps/buli_c03_field_zone.json")
+	var d04: MapDefinition = loader.load_file("res://data/maps/glory_nft_bl_d04.json")
+	var c04: MapDefinition = loader.load_file("res://data/maps/glory_nft_bl_c04.json")
+	var c03: MapDefinition = loader.load_file("res://data/maps/glory_nft_bl_c03.json")
 	var city: MapDefinition = loader.load_file("res://data/maps/yian_harbor_city.json")
 	_expect(d04 != null and c04 != null and c03 != null and city != null, "测试地图定义必须完整")
 	if d04 == null or c04 == null or c03 == null or city == null:

@@ -92,12 +92,11 @@ def file_hashes(path: Path) -> tuple[str, str, int]:
 
 
 class OfficialAleRecovery:
-    """Persistent same-release resolver for Glory assets omitted by files_dir.dz.
+    """Resolve Glory assets omitted by files_dir.dz into a separate raw archive.
 
-    The cache is deliberately separate from the indexed archive. This keeps the
-    immutable full-package audit truthful while still making lazy HTTP assets a
-    first-class Glory source. One manifest entry is written per exact logical
-    path, including failures, so normal runs never probe the same URL twice.
+    The indexed archive stays immutable; decoded sprites remain a rebuildable
+    cache. One manifest entry is written per exact logical path, including
+    failures, so normal runs never probe the same URL twice.
     """
 
     def __init__(
@@ -108,23 +107,29 @@ class OfficialAleRecovery:
         timeout_seconds: float = 30.0,
         retry_failures: bool = False,
         allow_network: bool = True,
+        raw_root: Path | None = None,
+        manifest_path: Path | None = None,
+        parsed_root: Path | None = None,
     ) -> None:
         """Configure the official URL, persistent cache, and ALE decoder.
 
         Args:
             base_url: Glory update root ending above logical resource paths.
-            cache_root: Directory containing ``raw/``, ``ale_sprites/``, and
-                the recovery manifest.
+            cache_root: Directory for decoded ``ale_sprites/``; also holds raw
+                files and the manifest unless separate paths are supplied.
             decoder_path: Path to the trusted ``ale_sprite.py`` implementation.
             timeout_seconds: Per-request HTTP timeout.
             retry_failures: Whether persisted failed probes may be attempted again.
             allow_network: Whether a cache miss may issue an HTTP request.
+            raw_root: Archive for original ALE files, separate from parsed output.
+            manifest_path: Provenance record; defaults to the cache directory.
+            parsed_root: Shared parsed sprite library; defaults to the cache directory.
         """
         self.base_url = base_url.rstrip("/") + "/"
         self.cache_root = cache_root.resolve()
-        self.raw_root = self.cache_root / "raw"
-        self.parsed_root = self.cache_root / "ale_sprites"
-        self.manifest_path = self.cache_root / "official_recovery_manifest.json"
+        self.raw_root = (raw_root or self.cache_root / "raw").resolve()
+        self.parsed_root = (parsed_root or self.cache_root / "ale_sprites").resolve()
+        self.manifest_path = (manifest_path or self.cache_root / "official_recovery_manifest.json").resolve()
         self.decoder_path = decoder_path.resolve()
         self.timeout_seconds = timeout_seconds
         self.retry_failures = retry_failures
@@ -158,12 +163,14 @@ class OfficialAleRecovery:
         Returns:
             None.
         """
-        self.cache_root.mkdir(parents=True, exist_ok=True)
+        self.manifest_path.parent.mkdir(parents=True, exist_ok=True)
         payload = {
             "format": "starhome_glory_official_ale_cache_v1",
             "source_release": "starhome_lz_ry",
             "base_url": self.base_url,
             "policy": "one exact-path request; no fuzzy or cross-release substitution",
+            "raw_root": os.path.relpath(self.raw_root, self.manifest_path.parent),
+            "parsed_root": os.path.relpath(self.parsed_root, self.manifest_path.parent),
             "assets": dict(sorted(self.assets.items())),
         }
         temporary = self.manifest_path.with_suffix(".json.tmp")
@@ -217,7 +224,7 @@ class OfficialAleRecovery:
         Returns:
             Target folder containing ``frames.json`` and sprite sheets.
         """
-        relative = Path(logical_path)
+        relative = Path(logical_path.lower())
         return self.parsed_root / relative.parent / safe_output_stem(relative.stem)
 
     def _decoder_module(self) -> ModuleType:
@@ -294,19 +301,17 @@ class OfficialAleRecovery:
         logical_path = normalize_logical_ale_path(reference)
         key = logical_path.lower()
         parsed_folder = self._parsed_folder(logical_path)
-        if (parsed_folder / "frames.json").is_file():
+        raw_path = self.raw_root / Path(logical_path)
+        if (parsed_folder / "frames.json").is_file() and raw_path.is_file():
             if key not in self.assets:
-                raw_path = self.raw_root / Path(logical_path)
-                hashes = file_hashes(raw_path) if raw_path.is_file() else (None, None, None)
+                hashes = file_hashes(raw_path)
                 self._record(
                     logical_path,
                     status="recovered",
                     cache_state="preexisting",
                     source_url=self._url_for(logical_path),
-                    raw_file=raw_path.relative_to(self.cache_root).as_posix()
-                    if raw_path.is_file()
-                    else None,
-                    parsed_folder=parsed_folder.relative_to(self.cache_root).as_posix(),
+                    raw_file=raw_path.relative_to(self.raw_root).as_posix(),
+                    parsed_folder=parsed_folder.relative_to(self.parsed_root).as_posix(),
                     md5=hashes[0],
                     sha256=hashes[1],
                     bytes=hashes[2],
@@ -317,7 +322,6 @@ class OfficialAleRecovery:
         if prior and prior.get("status") != "recovered" and not self.retry_failures:
             return None, f"official_cached_{prior.get('status', 'failure')}"
 
-        raw_path = self.raw_root / Path(logical_path)
         source_url = self._url_for(logical_path)
         if not raw_path.is_file():
             if not self.allow_network:
@@ -376,7 +380,7 @@ class OfficialAleRecovery:
                 logical_path,
                 status="invalid_format",
                 source_url=source_url,
-                raw_file=raw_path.relative_to(self.cache_root).as_posix(),
+                raw_file=raw_path.relative_to(self.raw_root).as_posix(),
                 md5=md5,
                 sha256=sha256,
                 bytes=byte_count,
@@ -389,7 +393,7 @@ class OfficialAleRecovery:
                 logical_path,
                 status="parse_error",
                 source_url=source_url,
-                raw_file=raw_path.relative_to(self.cache_root).as_posix(),
+                raw_file=raw_path.relative_to(self.raw_root).as_posix(),
                 md5=md5,
                 sha256=sha256,
                 bytes=byte_count,
@@ -402,8 +406,8 @@ class OfficialAleRecovery:
             cache_state="downloaded_or_raw_cache",
             http_status=200,
             source_url=source_url,
-            raw_file=raw_path.relative_to(self.cache_root).as_posix(),
-            parsed_folder=parsed_folder.relative_to(self.cache_root).as_posix(),
+            raw_file=raw_path.relative_to(self.raw_root).as_posix(),
+            parsed_folder=parsed_folder.relative_to(self.parsed_root).as_posix(),
             md5=md5,
             sha256=sha256,
             bytes=byte_count,

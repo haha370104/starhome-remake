@@ -7,56 +7,460 @@
       "kind": "material",
       "display_name": "低级生物硅",
       "description": "从低级生物体中取得的制造材料。",
-      "max_stack": 99
+      "max_stack": 99,
+      "evidence_roles": [
+        {
+          "role": "manufacturing_material",
+          "source": "expanded/zyf/maceine/abstractlist/abstractlist.txt.cab"
+        },
+        {
+          "role": "manufacturing_material",
+          "source": "expanded/zyf/maceine/alloylistb/alloylistb.txt.cab"
+        },
+        {
+          "role": "monster_drop_candidate",
+          "source": "npc_index:22"
+        },
+        {
+          "role": "monster_drop_candidate",
+          "source": "npc_index:21"
+        },
+        {
+          "role": "monster_drop_candidate",
+          "source": "npc_index:16"
+        },
+        {
+          "role": "monster_drop_candidate",
+          "source": "npc_index:15"
+        },
+        {
+          "role": "monster_drop_candidate",
+          "source": "npc_index:11"
+        },
+        {
+          "role": "monster_drop_candidate",
+          "source": "npc_index:8"
+        },
+        {
+          "role": "monster_drop_candidate",
+          "source": "npc_index:7"
+        },
+        {
+          "role": "monster_drop_candidate",
+          "source": "npc_index:4"
+        },
+        {
+          "role": "monster_drop_candidate",
+          "source": "npc_index:3"
+        }
+      ],
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "status": "name_only",
+        "migration_note": "canonical semantic definition merged from Glory catalog"
+      }
     },
     {
       "id": "low_grade_quadruped_shell",
       "kind": "material",
       "display_name": "低级四足甲的壳",
       "description": "低级四足生物留下的硬质甲壳。",
-      "max_stack": 99
+      "max_stack": 99,
+      "evidence_roles": [
+        {
+          "role": "manufacturing_material",
+          "source": "expanded/zyf/maceine/abstractlist/abstractlist.txt.cab"
+        },
+        {
+          "role": "manufacturing_material",
+          "source": "expanded/zyf/maceine/alloylistb/alloylistb.txt.cab"
+        },
+        {
+          "role": "manufacturing_material",
+          "source": "decoded/zyf/maceine/AssistEquip.txt.decoded"
+        },
+        {
+          "role": "monster_drop_candidate",
+          "source": "npc_index:27"
+        },
+        {
+          "role": "monster_drop_candidate",
+          "source": "npc_index:26"
+        },
+        {
+          "role": "monster_drop_candidate",
+          "source": "npc_index:25"
+        },
+        {
+          "role": "monster_drop_candidate",
+          "source": "npc_index:18"
+        },
+        {
+          "role": "monster_drop_candidate",
+          "source": "npc_index:12"
+        },
+        {
+          "role": "monster_drop_candidate",
+          "source": "npc_index:8"
+        },
+        {
+          "role": "monster_drop_candidate",
+          "source": "npc_index:4"
+        }
+      ],
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "status": "name_only",
+        "migration_note": "canonical semantic definition merged from Glory catalog"
+      }
     },
     {
       "id": "low_grade_energy_pack",
       "kind": "material",
       "display_name": "低级能量包",
-      "description": "储存少量能量的基础制造材料。",
-      "max_stack": 99
+      "description": "储藏有能量的罐状容器。含有1000单位能量。",
+      "max_stack": 99,
+      "evidence_roles": [
+        {
+          "role": "monster_drop_candidate",
+          "source": "npc_index:69"
+        },
+        {
+          "role": "monster_drop_candidate",
+          "source": "npc_index:68"
+        },
+        {
+          "role": "monster_drop_candidate",
+          "source": "npc_index:67"
+        },
+        {
+          "role": "monster_drop_candidate",
+          "source": "npc_index:47"
+        },
+        {
+          "role": "monster_drop_candidate",
+          "source": "npc_index:46"
+        },
+        {
+          "role": "monster_drop_candidate",
+          "source": "npc_index:45"
+        },
+        {
+          "role": "monster_drop_candidate",
+          "source": "npc_index:44"
+        },
+        {
+          "role": "monster_drop_candidate",
+          "source": "npc_index:43"
+        },
+        {
+          "role": "monster_drop_candidate",
+          "source": "npc_index:42"
+        },
+        {
+          "role": "monster_drop_candidate",
+          "source": "npc_index:41"
+        },
+        {
+          "role": "monster_drop_candidate",
+          "source": "npc_index:40"
+        },
+        {
+          "role": "monster_drop_candidate",
+          "source": "npc_index:39"
+        },
+        {
+          "role": "monster_drop_candidate",
+          "source": "npc_index:38"
+        },
+        {
+          "role": "monster_drop_candidate",
+          "source": "npc_index:37"
+        },
+        {
+          "role": "monster_drop_candidate",
+          "source": "npc_index:36"
+        },
+        {
+          "role": "monster_drop_candidate",
+          "source": "npc_index:35"
+        },
+        {
+          "role": "monster_drop_candidate",
+          "source": "npc_index:34"
+        },
+        {
+          "role": "monster_drop_candidate",
+          "source": "npc_index:33"
+        },
+        {
+          "role": "monster_drop_candidate",
+          "source": "npc_index:32"
+        },
+        {
+          "role": "monster_drop_candidate",
+          "source": "npc_index:31"
+        },
+        {
+          "role": "monster_drop_candidate",
+          "source": "npc_index:30"
+        },
+        {
+          "role": "monster_drop_candidate",
+          "source": "npc_index:29"
+        },
+        {
+          "role": "monster_drop_candidate",
+          "source": "npc_index:28"
+        },
+        {
+          "role": "monster_drop_candidate",
+          "source": "npc_index:27"
+        },
+        {
+          "role": "monster_drop_candidate",
+          "source": "npc_index:26"
+        },
+        {
+          "role": "monster_drop_candidate",
+          "source": "npc_index:25"
+        },
+        {
+          "role": "monster_drop_candidate",
+          "source": "npc_index:24"
+        },
+        {
+          "role": "monster_drop_candidate",
+          "source": "npc_index:23"
+        },
+        {
+          "role": "monster_drop_candidate",
+          "source": "npc_index:22"
+        },
+        {
+          "role": "monster_drop_candidate",
+          "source": "npc_index:21"
+        },
+        {
+          "role": "monster_drop_candidate",
+          "source": "npc_index:20"
+        },
+        {
+          "role": "monster_drop_candidate",
+          "source": "npc_index:19"
+        },
+        {
+          "role": "monster_drop_candidate",
+          "source": "npc_index:18"
+        },
+        {
+          "role": "monster_drop_candidate",
+          "source": "npc_index:17"
+        },
+        {
+          "role": "monster_drop_candidate",
+          "source": "npc_index:16"
+        },
+        {
+          "role": "monster_drop_candidate",
+          "source": "npc_index:15"
+        },
+        {
+          "role": "monster_drop_candidate",
+          "source": "npc_index:14"
+        },
+        {
+          "role": "monster_drop_candidate",
+          "source": "npc_index:13"
+        },
+        {
+          "role": "monster_drop_candidate",
+          "source": "npc_index:12"
+        },
+        {
+          "role": "monster_drop_candidate",
+          "source": "npc_index:11"
+        },
+        {
+          "role": "monster_drop_candidate",
+          "source": "npc_index:10"
+        },
+        {
+          "role": "monster_drop_candidate",
+          "source": "npc_index:9"
+        },
+        {
+          "role": "monster_drop_candidate",
+          "source": "npc_index:8"
+        },
+        {
+          "role": "monster_drop_candidate",
+          "source": "npc_index:7"
+        },
+        {
+          "role": "monster_drop_candidate",
+          "source": "npc_index:6"
+        },
+        {
+          "role": "monster_drop_candidate",
+          "source": "npc_index:5"
+        },
+        {
+          "role": "monster_drop_candidate",
+          "source": "npc_index:2"
+        }
+      ],
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "status": "name_only",
+        "migration_note": "canonical semantic definition merged from Glory catalog"
+      }
     },
     {
       "id": "low_grade_energy_catalyst",
       "kind": "material",
       "display_name": "低级能量催化剂",
       "description": "用于低级能量制造流程的催化材料。",
-      "max_stack": 99
+      "max_stack": 99,
+      "evidence_roles": [
+        {
+          "role": "manufacturing_material",
+          "source": "expanded/zyf/maceine/abstractlist/abstractlist.txt.cab"
+        },
+        {
+          "role": "manufacturing_material",
+          "source": "expanded/zyf/maceine/alloylistb/alloylistb.txt.cab"
+        },
+        {
+          "role": "monster_drop_candidate",
+          "source": "npc_index:36"
+        },
+        {
+          "role": "monster_drop_candidate",
+          "source": "npc_index:10"
+        },
+        {
+          "role": "monster_drop_candidate",
+          "source": "npc_index:6"
+        },
+        {
+          "role": "monster_drop_candidate",
+          "source": "npc_index:2"
+        }
+      ],
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "status": "name_only",
+        "migration_note": "canonical semantic definition merged from Glory catalog"
+      }
     },
     {
       "id": "low_grade_gel",
       "kind": "material",
       "display_name": "低级类胶",
       "description": "从毒胶类生物中取得的基础胶质材料。",
-      "max_stack": 99
+      "max_stack": 99,
+      "evidence_roles": [
+        {
+          "role": "manufacturing_material",
+          "source": "expanded/zyf/maceine/abstractlist/abstractlist.txt.cab"
+        },
+        {
+          "role": "manufacturing_material",
+          "source": "expanded/zyf/maceine/alloylistb/alloylistb.txt.cab"
+        },
+        {
+          "role": "monster_drop_candidate",
+          "source": "npc_index:24"
+        },
+        {
+          "role": "monster_drop_candidate",
+          "source": "npc_index:23"
+        },
+        {
+          "role": "monster_drop_candidate",
+          "source": "npc_index:19"
+        },
+        {
+          "role": "monster_drop_candidate",
+          "source": "npc_index:17"
+        },
+        {
+          "role": "monster_drop_candidate",
+          "source": "npc_index:14"
+        },
+        {
+          "role": "monster_drop_candidate",
+          "source": "npc_index:13"
+        },
+        {
+          "role": "monster_drop_candidate",
+          "source": "npc_index:5"
+        },
+        {
+          "role": "monster_drop_candidate",
+          "source": "npc_index:1"
+        }
+      ],
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "status": "name_only",
+        "migration_note": "canonical semantic definition merged from Glory catalog"
+      }
     },
     {
       "id": "iron_ore",
       "kind": "material",
       "display_name": "铁矿",
       "description": "主要成分以金属铁为主，需要提炼才能使用。",
-      "max_stack": 99
+      "max_stack": 99,
+      "evidence_roles": [
+        {
+          "role": "ore",
+          "source": "glory_ore_catalog"
+        }
+      ],
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "status": "name_only",
+        "migration_note": "canonical semantic definition merged from Glory catalog"
+      }
     },
     {
       "id": "silicon_ore",
       "kind": "material",
       "display_name": "硅矿",
       "description": "主要成分以固态硅为主，需要提炼才能使用。",
-      "max_stack": 99
+      "max_stack": 99,
+      "evidence_roles": [
+        {
+          "role": "ore",
+          "source": "glory_ore_catalog"
+        }
+      ],
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "status": "name_only",
+        "migration_note": "canonical semantic definition merged from Glory catalog"
+      }
     },
     {
       "id": "graphite_ore",
       "kind": "material",
       "display_name": "石墨矿",
       "description": "主要成分以固态石墨为主，需要提炼才能使用。",
-      "max_stack": 99
+      "max_stack": 99,
+      "evidence_roles": [
+        {
+          "role": "ore",
+          "source": "glory_ore_catalog"
+        }
+      ],
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "status": "name_only",
+        "migration_note": "canonical semantic definition merged from Glory catalog"
+      }
     }
   ]
 }

@@ -4,7 +4,7 @@ const MapInstanceScript := preload("res://scripts/server/authoritative_map_insta
 const CombatCatalogScript := preload("res://scripts/domain/combat/combat_definition_catalog.gd")
 const MoveIntentContract := preload("res://scripts/network/contracts/move_intent.gd")
 const PLAYER_ID := "player.d04.test"
-const MAP_PATH := "res://data/maps/d04_field_zone.json"
+const MAP_PATH := "res://data/maps/glory_nft_bl_d04.json"
 const CHARACTER_MAP_PATH := "res://data/maps/yian_harbor_hall_floor_1.json"
 
 var failures: Array[String] = []
@@ -98,14 +98,21 @@ func _test_driving_progression_scope(vehicle_instance: AuthoritativeMapInstance,
 ## [param instance] 已加载 D04 并配置战斗的正式地图实例。
 func _test_population_and_routes(instance: AuthoritativeMapInstance) -> void:
 	var module: AuthoritativeCombatModule = instance.combat_module
-	var snapshot := module.snapshot_for_actor(PLAYER_ID)
-	_expect(snapshot.monsters.size() == 200, "D04 应初始化配置上限的二百只怪物")
+	var snapshot := module.world_snapshot_for_map(instance.instance_id)
+	snapshot.merge(module.local_snapshot_for_actor(PLAYER_ID))
+	_expect(snapshot.monsters.size() == 208, "D04 应初始化二百只普通怪与八只变异怪")
 	var species: Dictionary = {}
+	var mutant_species: Dictionary = {}
 	for monster: Dictionary in snapshot.monsters:
-		species[String(monster.species_id)] = int(species.get(String(monster.species_id), 0)) + 1
+		var lifecycle: MonsterLifecycle = module.monster_for(String(monster.entity_id))
+		var counts: Dictionary = species if lifecycle.population_kind == &"ordinary" else mutant_species
+		counts[String(monster.species_id)] = int(counts.get(String(monster.species_id), 0)) + 1
 	_expect(species == {
 		"om_adult": 50, "om_larva": 50, "photosensitive_orb": 50, "toxic_gel": 50,
-	}, "D04 怪物数量应完全由地图配置驱动")
+	}, "D04 普通怪应按配置权重平均分配")
+	_expect(mutant_species == {
+		"glory_monster_070": 2, "glory_monster_071": 2, "glory_monster_072": 2, "glory_monster_073": 2,
+	}, "D04 应为每个普通物种独立生成两只变异怪")
 	_expect(snapshot.local_vehicle.health == 70 and snapshot.local_vehicle.max_health == 70,
 		"新兵底盘应拥有七十点生命")
 	_expect(is_equal_approx(snapshot.local_vehicle.working_energy, 100.0) \
@@ -114,12 +121,15 @@ func _test_population_and_routes(instance: AuthoritativeMapInstance) -> void:
 	var first_id: String = snapshot.monsters[0].entity_id
 	var first_monster: MonsterLifecycle = module.monster_for(first_id)
 	var first_position := first_monster.position
-	module.advance_ticks(99)
+	var first_wander_tick := first_monster.next_wander_tick
+	_expect(first_wander_tick > 0 and first_wander_tick <= first_monster.wander_interval_ticks,
+		"首次游荡应错开分布在配置周期内")
+	module.advance_ticks(first_wander_tick - 1)
 	_expect(first_monster.position.is_equal_approx(first_position),
-		"未交战怪物应先等待配置的五秒间隔")
-	module.advance_ticks(2)
+		"未交战怪物应等待自己的首次游荡时刻")
+	module.advance_ticks(1)
 	_expect(not first_monster.position.is_equal_approx(first_position),
-		"未交战怪物应在五秒后开始一次确定性游荡")
+		"未交战怪物应在自身游荡时刻开始移动")
 	var first_roaming_position := first_monster.position
 	module.advance_ticks(3)
 	_expect(first_monster.action == &"move" \
@@ -146,6 +156,8 @@ func _test_authoritative_player_attack(instance: AuthoritativeMapInstance) -> vo
 	entity.target_position = player_position
 	module.update_actor_position(PLAYER_ID, player_position)
 	var before_health := target.health
+	var vehicle: VehicleCombatState = module.vehicle_state_for(PLAYER_ID)
+	var before_energy := vehicle.working_energy
 	var result: Dictionary = instance.handle_use_ability(PLAYER_ID, {
 		"map_instance_id": instance.instance_id,
 		"ability_id": "energy_cannon.primary",
@@ -156,8 +168,7 @@ func _test_authoritative_player_attack(instance: AuthoritativeMapInstance) -> vo
 	if not bool(result.get("ok", false)):
 		return
 	_expect(target.health == before_health, "炮弹抵达前不得提前扣除怪物生命")
-	var vehicle = module.vehicle_state_for(PLAYER_ID)
-	_expect(is_equal_approx(vehicle.working_energy, 90.0), "成功发射应立即消耗十点工作能量")
+	_expect(is_equal_approx(vehicle.working_energy, before_energy - 10.0), "成功发射应立即消耗十点工作能量")
 	var impact_tick := int(result.value["impact_tick"])
 	module.advance_ticks(impact_tick - module.current_tick)
 	_expect(target.health == before_health - 7, "新兵能量炮命中后应造成目录基础攻击七点")

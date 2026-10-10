@@ -8,17 +8,21 @@ never promoted to runnable content merely because a source row exists.
 
 from __future__ import annotations
 
+import argparse
 import hashlib
 import json
+import os
 import re
 from collections import defaultdict
 from pathlib import Path
 from typing import Any
 
+from material_id_registry import canonical_material_id
+
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 OUTPUTS_ROOT = PROJECT_ROOT.parent
-SOURCE_ROOT = OUTPUTS_ROOT / "starhome_lz_ry_full_parsed"
+SOURCE_ROOT = PROJECT_ROOT / "data" / "source_evidence" / "glory"
 CONTENT_ROOT = PROJECT_ROOT / "data" / "content"
 CONTENT_VERSION = "glory-known-content-v1"
 
@@ -44,17 +48,17 @@ RUNTIME_MAPS = {
     ("roomsvr1", "NFT_SK"): ("yian_harbor_hall_floor_1", "ready"),
     ("city1svr", "NFT_BL"): ("yian_harbor_city", "ready"),
     ("city1svr", "NFT_BT"): ("yian_harbor_city", "ready"),
-    ("c03", "NFT_BL"): ("buli_c03_field_zone", "ready"),
-    ("c04", "NFT_BL"): ("buli_c04_field_zone", "ready"),
-    ("c05", "NFT_BL"): ("buli_c05_field_zone", "ready"),
-    ("d03", "NFT_BL"): ("buli_d03_field_zone", "ready"),
-    ("d04", "NFT_BL"): ("d04_field_zone", "ready"),
-    ("d04", "NFT_BT"): ("d04_field_zone", "ready"),
-    ("d04", "NFT_BTB"): ("d04_field_zone", "ready"),
-    ("d04", "NFT_PL"): ("d04_field_zone", "ready"),
-    ("d05", "NFT_BL"): ("buli_d05_field_zone", "ready"),
-    ("g08", "NFT_BL"): ("g08_field_zone", "partial"),
-    ("g08", "NFT_BT"): ("g08_field_zone", "partial"),
+    ("c03", "NFT_BL"): ("glory_nft_bl_c03", "ready"),
+    ("c04", "NFT_BL"): ("glory_nft_bl_c04", "ready"),
+    ("c05", "NFT_BL"): ("glory_nft_bl_c05", "ready"),
+    ("d03", "NFT_BL"): ("glory_nft_bl_d03", "ready"),
+    ("d04", "NFT_BL"): ("glory_nft_bl_d04", "ready"),
+    ("d04", "NFT_BT"): ("glory_nft_bl_d04", "ready"),
+    ("d04", "NFT_BTB"): ("glory_nft_bl_d04", "ready"),
+    ("d04", "NFT_PL"): ("glory_nft_bl_d04", "ready"),
+    ("d05", "NFT_BL"): ("glory_nft_bl_d05", "ready"),
+    ("g08", "NFT_BL"): ("glory_nft_bl_g08", "partial"),
+    ("g08", "NFT_BT"): ("glory_nft_bl_g08", "partial"),
 }
 
 RUNTIME_ITEM_FILES = [
@@ -373,8 +377,6 @@ def build_items() -> tuple[list[dict[str, Any]], dict[str, Any]]:
         known_registration = definition.get("source_audit", {}).get("known_registry_id", "")
         if known_registration:
             runtime_by_known_registration[str(known_registration)].append(runtime_id)
-        if runtime_id.startswith("item:material:"):
-            runtime_by_known_registration[runtime_id].append(runtime_id)
 
     definitions: list[dict[str, Any]] = []
     attached_runtime_ids: set[str] = set()
@@ -471,7 +473,7 @@ def build_items() -> tuple[list[dict[str, Any]], dict[str, Any]]:
             add_material(candidate["display_name"], "monster_drop_candidate", source)
 
     for name in sorted(material_sources):
-        registration_id = "item:material:" + short_hash(name)
+        registration_id = canonical_material_id(name)
         runtime_ids = list(dict.fromkeys([
             *runtime_by_known_registration.get(registration_id, []),
             *runtime_by_name.get(name, []),
@@ -562,6 +564,19 @@ def ensure_unique(definitions: list[dict[str, Any]], context: str) -> None:
 
 
 def main() -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--source-root", type=Path, required=True, help="temporary decoded Glory catalog workspace")
+    source_root = parser.parse_args().source_root
+    global MAP_SOURCE, MONSTER_SOURCE, MONSTER_MAP_SOURCE, EQUIPMENT_SOURCE
+    global MANUFACTURING_SOURCE, LOCAL_CRAFT_SOURCE, ORE_SOURCE
+    MAP_SOURCE = source_root / "catalogs/maps/glory_map_name_relations.json"
+    MONSTER_SOURCE = source_root / "catalogs/npc_catalog.json"
+    MONSTER_MAP_SOURCE = source_root / "catalogs/monsters/glory_monster_map_relations.json"
+    EQUIPMENT_SOURCE = source_root / "catalogs/equipment_catalog.json"
+    MANUFACTURING_SOURCE = source_root / "catalogs/manufacturing_recipes.json"
+    LOCAL_CRAFT_SOURCE = source_root / "catalogs/local_crafting_recipes.json"
+    ORE_SOURCE = source_root / "catalogs/mines/glory_ore_catalog.json"
+    source_ref = lambda path: os.path.relpath(path, PROJECT_ROOT)
     source_paths = [
         MAP_SOURCE, MONSTER_SOURCE, MONSTER_MAP_SOURCE, EQUIPMENT_SOURCE,
         MANUFACTURING_SOURCE, LOCAL_CRAFT_SOURCE, ORE_SOURCE, *RUNTIME_ITEM_FILES,
@@ -581,27 +596,27 @@ def main() -> int:
 
     compact_document(
         MAP_TARGET, "map", maps, map_summary,
-        {"source": str(MAP_SOURCE.relative_to(OUTPUTS_ROOT)), "sha256": sha256(MAP_SOURCE)},
+        {"source": source_ref(MAP_SOURCE), "sha256": sha256(MAP_SOURCE)},
     )
     compact_document(
         MONSTER_TARGET, "monster", monsters, monster_summary,
         {
-            "npc_source": str(MONSTER_SOURCE.relative_to(OUTPUTS_ROOT)),
+            "npc_source": source_ref(MONSTER_SOURCE),
             "npc_sha256": sha256(MONSTER_SOURCE),
-            "map_relation_source": str(MONSTER_MAP_SOURCE.relative_to(OUTPUTS_ROOT)),
+            "map_relation_source": source_ref(MONSTER_MAP_SOURCE),
             "map_relation_sha256": sha256(MONSTER_MAP_SOURCE),
         },
     )
     compact_document(
         ITEM_TARGET, "item", items, item_summary,
         {
-            "equipment_source": str(EQUIPMENT_SOURCE.relative_to(OUTPUTS_ROOT)),
+            "equipment_source": source_ref(EQUIPMENT_SOURCE),
             "equipment_sha256": sha256(EQUIPMENT_SOURCE),
-            "manufacturing_source": str(MANUFACTURING_SOURCE.relative_to(OUTPUTS_ROOT)),
+            "manufacturing_source": source_ref(MANUFACTURING_SOURCE),
             "manufacturing_sha256": sha256(MANUFACTURING_SOURCE),
-            "local_crafting_source": str(LOCAL_CRAFT_SOURCE.relative_to(OUTPUTS_ROOT)),
+            "local_crafting_source": source_ref(LOCAL_CRAFT_SOURCE),
             "local_crafting_sha256": sha256(LOCAL_CRAFT_SOURCE),
-            "ore_source": str(ORE_SOURCE.relative_to(OUTPUTS_ROOT)),
+            "ore_source": source_ref(ORE_SOURCE),
             "ore_sha256": sha256(ORE_SOURCE),
         },
         one_line=True,

@@ -5,6 +5,7 @@ const EntitySnapshotContract := preload("res://scripts/network/contracts/entity_
 
 var entity_id := ""
 var map_instance_id := ""
+var sex := "male"
 var position := Vector2.ZERO
 var target_position := Vector2.ZERO
 var movement_speed := 203.0
@@ -87,7 +88,9 @@ func snapshot(server_tick: int) -> Dictionary:
 		maxi(0, last_input_sequence),
 		movement_speed,
 	)
-	return contract.to_dictionary()
+	var result: Dictionary = contract.to_dictionary()
+	result["sex"] = sex
+	return result
 
 
 ## 推进并更新 `update_facing_to_next_point` 对应的模块状态。

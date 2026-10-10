@@ -2,8 +2,37 @@
 __pycache__/
 *.py[cod]
 *.tmp
+tests/.tmp_mining_server_state_*.json
 *.log
+tools/recovery/**/*.exe
 
 # Locally generated runtime captures.
 hall_preview_*.png
 hall_runtime_preview.png
+
+# Local runtime materialization and original Glory archive are supplied outside Git.
+/assets/
+/build/
+/starhome_lz_ry_full/*
+!/starhome_lz_ry_full/.gdignore
+/starhome_lz_fr_full/
+/starhome_jznp_full/
+
+/data/source_evidence/**
+!/data/source_evidence/**/
+!/data/source_evidence/glory/README.md
+!/data/source_evidence/glory/map_recovery/about-maps.md
+!/data/source_evidence/glory/map_recovery/maps_missing_addimg.md
+!/data/source_evidence/glory/.gdignore
+
+/docs/verification/d04_snapshot_performance_*.md
+/docs/verification/player_changes_*.md
+/docs/verification/quest_button_performance*
+/docs/verification/refactor_stage*.md
+
+# Local LLM provider configuration and credentials.
+/config.toml
+/auth.json
+/.llm/
+*.llm/
+*.chat/

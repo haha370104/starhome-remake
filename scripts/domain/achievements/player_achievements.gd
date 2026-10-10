@@ -4,6 +4,7 @@ extends RefCounted
 var _catalog: AchievementCatalog
 var _counters: Dictionary = {}
 var _receipts: Dictionary = {}
+var _points := 0
 
 
 ## 还原玩家成就账本；积分和最高称号由进度派生，绝不信任存档中的奖励字段。
@@ -13,10 +14,13 @@ func _init(state: Dictionary = {}, catalog: AchievementCatalog = null) -> void:
 	_catalog = catalog if catalog != null else AchievementCatalog.shared()
 	_counters = (state.get("counters", {}) as Dictionary).duplicate(true)
 	_receipts = (state.get("receipts", {}) as Dictionary).duplicate(true)
+	for key: String in _counters:
+		_counters[key] = int(_counters[key])
+		_points += _catalog.points_for(key, _counters[key])
 
 
-## 校验持久化账本结构，兼容尚无成就字段的旧角色。
-## [param state] 存档中的成就字段。
+## 校验成就计数和幂等收据映射。
+## [param state] 存档或网络状态。
 ## 返回是否为合法非负计数和幂等收据映射。
 static func valid_state(state: Variant) -> bool:
 	if not state is Dictionary or not state.get("counters", {}) is Dictionary \
@@ -34,31 +38,61 @@ static func valid_state(state: Variant) -> bool:
 	return true
 
 
+## 校验完整当前存档字段集。
+## [param state] 玩家存档中的完整成就字段。
+## 返回是否包含且仅包含计数与收据。
+static func valid_persisted_state(state: Variant) -> bool:
+	return state is Dictionary and state.size() == 2 and state.has("counters") \
+		and state.has("receipts") and valid_state(state)
+
+
 ## 消费一次权威事实；按目标累计、跨阶一次结算，并永久拒绝重复收据。
 ## [param event] 击杀、矿物入包或任务成功交付事件。
 ## 返回是否改变了进度；未知目标、重复事件及已满进度均不写账本。
 func record(event: AchievementEvent) -> bool:
-	if event == null or not event.is_valid():
-		return false
+	var change := prepare(event)
+	commit(change)
+	return not change.is_empty()
+
+
+## 校验事实并准备本次计数与收据，不复制累计历史。
+## [param event] 权威事实。
+## 返回本次可提交的变更；重复或无效事实为空。
+func prepare(event: AchievementEvent) -> Dictionary:
+	if event == null or not event.is_valid(): return {}
 	var key := event.counter_key()
 	var receipt := "%s:%s" % [AchievementEvent.KIND_IDS[event.kind], event.event_id]
 	var cap := int(_catalog.caps.get(key, 0))
 	var previous := int(_counters.get(key, 0))
-	if cap <= previous or _receipts.has(receipt):
-		return false
-	_counters[key] = mini(cap, previous + event.quantity)
-	_receipts[receipt] = true
-	return true
+	if cap <= previous or _receipts.has(receipt): return {}
+	return {"key": key, "count": mini(cap, previous + event.quantity), "receipt": receipt}
 
 
-## 根据已完成的阶梯成就汇总积分，每个阶梯只计算一次。
+## 同步提交已准备的计数和收据；调用期间不发布信号。
+## [param change] 紧邻提交前由本对象准备的变更。
+func commit(change: Dictionary) -> void:
+	if change.is_empty(): return
+	_set_counter(change.key, change.count)
+	_receipts[change.receipt] = true
+
+
+## 客户端应用已经校验的最终计数，服务端收据不进入网络。
+## [param counters] 仅包含发生变化的计数。
+func apply_counters(counters: Dictionary) -> void:
+	for key: String in counters: _set_counter(key, int(counters[key]))
+
+
+## 提交目标计数时同步更新派生积分；服务端事实和客户端最终值共用规则。
+## [param key] 目标身份。[param count] 已验证的最终计数。
+func _set_counter(key: String, count: int) -> void:
+	_points += _catalog.points_for(key, count) - _catalog.points_for(key, int(_counters.get(key, 0)))
+	_counters[key] = count
+
+
+## 读取由目标计数派生的积分；仅在载入时汇总，后续按变化目标更新。
 ## 返回总成就点。
 func total_points() -> int:
-	var result := 0
-	for row: AchievementCatalog.Definition in _catalog.definitions:
-		if int(_counters.get("%s:%s" % [row.category, row.target_id], 0)) >= row.required:
-			result += row.points
-	return result
+	return _points
 
 
 ## 获取当前最高称号的独立增益对象。

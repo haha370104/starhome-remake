@@ -80,6 +80,7 @@ func starter_vehicle_assembly(
 		"power_output": chassis_stats["output_power"],
 	}
 	var components: Array[Dictionary] = []
+	var engine_energy_per_movement := 0.0
 	var equipment_hardiness: Dictionary = {chassis_id: int(chassis_stats["max_durability"])}
 	var self_repair_bonus_strength := maxi(0, int(chassis_stats.get("self_repair_bonus", 0)))
 	for raw_id: Variant in _starter_loadout["equipped_item_ids"]:
@@ -93,6 +94,7 @@ func starter_vehicle_assembly(
 		if String(equipment["kind"]) == "vehicle_engine":
 			component["propulsion"] = stats["drive"]
 			component["required_driving_level"] = stats["required_skill_level"]
+			engine_energy_per_movement = float(stats.get("working_energy_per_movement", 0.0))
 		components.append(component)
 		self_repair_bonus_strength += maxi(0, int(stats.get("self_repair_bonus", 0)))
 		equipment_hardiness[equipment_id] = int(stats["max_durability"])
@@ -103,9 +105,11 @@ func starter_vehicle_assembly(
 		return result
 	var assembly: Dictionary = result.value
 	assembly["vehicle_id"] = chassis_id
+	assembly["central_controller"] = PlayerCentralController.new().to_dictionary()
+	assembly["working_energy_per_movement"] = engine_energy_per_movement
 	assembly["self_repair_base_strength"] = int(chassis_stats["repair_strength"])
 	assembly["self_repair_bonus_strength"] = self_repair_bonus_strength
-	assembly["self_repair_energy_cost"] = float(chassis_stats["repair_energy_cost"])
+	assembly["working_energy_per_repair"] = float(chassis_stats["working_energy_per_repair"])
 	assembly["self_repair_required_skill_level"] = int(chassis_stats["repair_skill_level"])
 	assembly["equipment_hardiness"] = equipment_hardiness
 	assembly["unknown_fields"] = ["beginner_engine.server_energy_drain_interval_seconds"]
@@ -132,7 +136,7 @@ func starter_energy_cannon(simulation_hz: int) -> DomainResult:
 		"attack_mode": "line_projectile",
 		"minimum_damage": int(stats["base_attack"]),
 		"maximum_damage": int(stats["base_attack"]),
-		"working_energy_cost": float(stats["working_energy_per_shot"]),
+		"working_energy_per_shot": float(stats["working_energy_per_shot"]),
 		"activation_power": null,
 		"range": float(stats["range"]),
 		"upgrade_range_limit": float(stats["range_limit"]),
@@ -177,7 +181,7 @@ func starter_secondary_weapons(simulation_hz: int) -> DomainResult:
 			"attack_mode": specification["attack_mode"],
 			"minimum_damage": int(stats["base_attack"]),
 			"maximum_damage": int(stats["base_attack"]),
-			"working_energy_cost": float(stats["working_energy_per_shot"]),
+			"working_energy_per_shot": float(stats["working_energy_per_shot"]),
 			"activation_power": null,
 			"range": float(stats[specification["range_field"]]),
 			"minimum_range": float(stats.get("minimum_range", 0.0)),
@@ -196,7 +200,7 @@ func starter_secondary_weapons(simulation_hz: int) -> DomainResult:
 ## [param player] 已由共享持久化映射器还原的 Player 聚合。
 ## [param simulation_hz] 权威服务器每秒模拟刻数。
 ## [param movement_config] 战车重量、推进力到移动速度的服务器规则。
-## 返回 assembly 与 weapons 字典；缺少底盘或主装置时返回领域错误，采掘臂不登记主炮攻击。
+## 返回 assembly 与 weapons 字典；缺少底盘时返回领域错误，空主槽或采掘臂不登记主炮攻击。
 ## 设计：loadout 是唯一装备事实来源；新兵目录仅为待证实的弹道常量提供回退。
 func vehicle_combat_loadout(
 	player: Player,
@@ -214,11 +218,6 @@ func vehicle_combat_loadout(
 			&"equipment.chassis_required_for_field",
 			"a vehicle chassis is required before entering a field map",
 		)
-	if not primary_weapon is VehicleWeapon and not primary_weapon is VehicleMiningArm:
-		return DomainResult.failure(
-			&"equipment.primary_weapon_required_for_field",
-			"a primary weapon is required before entering a field map",
-		)
 	var calculator_chassis := {
 		"weight": chassis.weight,
 		"max_health": chassis.base_max_health + player.vehicle.achievement_bonuses.max_health + player.vehicle.loadout.attachment_bonus("max_health") + player.food_status.bonus(16),
@@ -228,6 +227,7 @@ func vehicle_combat_loadout(
 		"power_output": chassis.output_power,
 	}
 	var components: Array[Dictionary] = []
+	var engine_energy_per_movement := 0.0
 	var equipment_hardiness: Dictionary = {chassis.definition_id: chassis.max_durability}
 	for equipment: VehicleEquipment in player.vehicle.loadout.items():
 		if equipment == chassis:
@@ -246,6 +246,7 @@ func vehicle_combat_loadout(
 		if equipment is VehicleEngine:
 			component["propulsion"] = (equipment as VehicleEngine).drive
 			component["required_driving_level"] = equipment.required_skill_level
+			engine_energy_per_movement = (equipment as VehicleEngine).working_energy_per_movement
 		components.append(component)
 		equipment_hardiness[equipment.definition_id] = equipment.max_durability
 	var driving_level := player.skills.effective_level("driving", player.character_equipment)
@@ -255,6 +256,7 @@ func vehicle_combat_loadout(
 	if not assembly_result.is_ok:
 		return assembly_result
 	var assembly: Dictionary = assembly_result.value
+	assembly["working_energy_per_movement"] = engine_energy_per_movement
 	assembly["movement_speed"] = player.vehicle.movement_speed(driving_level,
 		float(movement_config.get("base_speed_multiplier", 1500)), float(movement_config.get("base_speed_cap", 240)))
 	assembly["max_health"] = stats.max_health
@@ -269,7 +271,7 @@ func vehicle_combat_loadout(
 	assembly["vehicle_id"] = chassis.definition_id
 	assembly["self_repair_base_strength"] = chassis.self_repair_power()
 	assembly["self_repair_bonus_strength"] = int(stats.self_repair_bonus)
-	assembly["self_repair_energy_cost"] = chassis.self_repair_energy_cost
+	assembly["working_energy_per_repair"] = chassis.working_energy_per_repair
 	assembly["self_repair_required_skill_level"] = chassis.required_repair_skill_level
 	assembly["equipment_hardiness"] = equipment_hardiness
 	assembly["unknown_fields"] = []
@@ -297,7 +299,7 @@ func vehicle_combat_loadout(
 			weapons[ability_id]["critical_chance"] = player.vehicle.loadout.socket_bonus("critical_chance")
 			weapons[ability_id]["double_damage_chance"] = float(primary_weapon.stat("double_damage_chance", 0))
 			weapons[ability_id]["critical_multiplier"] = chassis.socket_rules.critical_multiplier if chassis.socket_rules != null else 1.5
-		weapons[ability_id]["working_energy_cost"] *= 1.0 - clothing.trait_value("economy")
+		weapons[ability_id]["working_energy_per_shot"] *= 1.0 - clothing.trait_value("economy")
 		weapons[ability_id]["pursuit_bonus"] = clothing.trait_value("pursuit")
 	assembly["central_controller"] = player.central.to_dictionary()
 	assembly["central_rules"] = player.vehicle.central_rules
@@ -324,9 +326,12 @@ func _equipped_secondary_weapon(equipment: VehicleEquipment, simulation_hz: int)
 	definition["instance_id"] = weapon.instance_id
 	definition["minimum_damage"] = weapon.base_attack
 	definition["maximum_damage"] = weapon.base_attack
-	definition["working_energy_cost"] = weapon.working_energy_per_shot
+	definition["working_energy_per_shot"] = weapon.working_energy_per_shot
 	if weapon.attack_range > 0.0:
 		definition["range"] = weapon.attack_range
+	var area_radius := float(weapon.stat("runtime_area_radius", 0.0))
+	if mode == "rocket_launcher" and area_radius > 0.0:
+		definition["area_radius"] = area_radius
 	definition["minimum_range"] = float(weapon.stat("minimum_range", definition["minimum_range"]))
 	if weapon.attack_interval_seconds > 0.0:
 		definition["cooldown_ticks"] = maxi(1, roundi(weapon.attack_interval_seconds * simulation_hz))
@@ -336,12 +341,10 @@ func _equipped_secondary_weapon(equipment: VehicleEquipment, simulation_hz: int)
 ## 将实际装备的能量炮转换为权威战斗状态机协议。
 ## [param weapon] 玩家 Location 1 的具体武器实例。
 ## [param simulation_hz] 权威服务器每秒模拟刻数。
-## 返回统一武器定义；运行时弹道常量缺失时复用已确认的新兵炮默认值。
+## 返回统一武器定义；攻击间隔必须由装备的现行字段明确提供。
 func _primary_weapon_definition(weapon: VehicleWeapon, simulation_hz: int) -> DomainResult:
-	var fallback: Dictionary = (_equipment_by_id["recruit_energy_cannon"] as Dictionary)["stats"]
+	var starter_stats: Dictionary = (_equipment_by_id["recruit_energy_cannon"] as Dictionary)["stats"]
 	var interval := weapon.attack_interval_seconds
-	if interval <= 0.0:
-		interval = float(fallback["attack_interval_seconds"])
 	var cooldown_ticks := roundi(interval * float(simulation_hz))
 	if weapon.base_attack <= 0 or weapon.attack_range <= 0.0 or cooldown_ticks <= 0:
 		return DomainResult.failure(&"combat.invalid_weapon_definition", "equipped primary weapon stats are invalid")
@@ -353,14 +356,14 @@ func _primary_weapon_definition(weapon: VehicleWeapon, simulation_hz: int) -> Do
 		"attack_mode": "line_projectile",
 		"minimum_damage": weapon.base_attack,
 		"maximum_damage": weapon.base_attack,
-		"working_energy_cost": weapon.working_energy_per_shot,
+		"working_energy_per_shot": weapon.working_energy_per_shot,
 		"activation_power": null,
 		"range": weapon.attack_range,
 		"upgrade_range_limit": float(weapon.stat("range_limit", weapon.attack_range)),
 		"cooldown_ticks": cooldown_ticks,
-		"projectile_speed": float(weapon.stat("runtime_projectile_speed", fallback["runtime_projectile_speed"])),
-		"muzzle_offset": (weapon.stat("runtime_muzzle_offset", fallback["runtime_muzzle_offset"]) as Array).duplicate(),
-		"muzzle_forward_offset": float(weapon.stat("runtime_muzzle_forward_offset", fallback["runtime_muzzle_forward_offset"])),
+		"projectile_speed": float(weapon.stat("runtime_projectile_speed", starter_stats["runtime_projectile_speed"])),
+		"muzzle_offset": (weapon.stat("runtime_muzzle_offset", starter_stats["runtime_muzzle_offset"]) as Array).duplicate(),
+		"muzzle_forward_offset": float(weapon.stat("runtime_muzzle_forward_offset", starter_stats["runtime_muzzle_forward_offset"])),
 		"damage_model": &"confirmed_base_attack_direct",
 		"unknown_fields": ["activation_power", "server_damage_formula", "original_server_projectile_speed"],
 	})
@@ -371,7 +374,7 @@ func _primary_weapon_definition(weapon: VehicleWeapon, simulation_hz: int) -> Do
 ## 返回该函数计算、查询或操作得到的结果。
 ## 设计：该函数保持领域规则确定，并避免依赖具体表现层或传输层。
 func d04_monster_lifecycles(map_instance_id: String) -> DomainResult:
-	return monster_lifecycles_for_map("d04_field_zone", map_instance_id)
+	return monster_lifecycles_for_map("glory_nft_bl_d04", map_instance_id)
 
 
 ## 执行 `monster_lifecycles_for_map` 对应的模块操作。
@@ -723,7 +726,7 @@ func _validate_runtime_links() -> DomainResult:
 	for weapon_id: String in ["starter_rocket_launcher", "starter_missile"]:
 		if not _equipment_by_id.has(weapon_id):
 			return DomainResult.failure(&"combat.invalid_catalog", "starter secondary weapon is unresolved")
-	if String(_d04_encounter.get("map_id", "")) != "d04_field_zone":
+	if String(_d04_encounter.get("map_id", "")) != "glory_nft_bl_d04":
 		return DomainResult.failure(&"combat.invalid_catalog", "D04 encounter identity is invalid")
 	for encounter: Dictionary in _encounters_by_map_id.values():
 		var groups: Variant = encounter.get("spawn_groups")

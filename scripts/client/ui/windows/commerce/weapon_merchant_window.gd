@@ -3,11 +3,12 @@ extends DraggableGameWindow
 
 signal command_requested(command: Dictionary)
 
-const REGULAR_FONT := preload("res://assets/ui/fonts/legacy_panel_font.tres")
-const BOLD_FONT := preload("res://assets/ui/fonts/legacy_panel_bold_font.tres")
+const REGULAR_FONT := preload("res://assets/ui/fonts/NotoSansCJKsc-Regular.otf")
+const BOLD_FONT := preload("res://assets/ui/fonts/NotoSansCJKsc-Bold.otf")
 const TextureResolverScript := preload(
 	"res://scripts/client/presentation/items/item_presentation_texture_resolver.gd"
 )
+const ActionDebounceScript := preload("res://scripts/client/state/action_debounce.gd")
 
 const WINDOW_SIZE := Vector2(530, 450)
 const LEGACY_TEXT := Color("faf0c8")
@@ -17,7 +18,7 @@ const HOVER_COLOR := Color(1.0, 1.0, 0.0, 0.18)
 var _mode := "buy"
 var _merchant_id := "weapon_merchant"
 var _commerce: Dictionary = {}
-var _inventory_revision := -1
+var _current_player: Player
 var _currency := 0
 var _title_label: Label
 var _column_header: Label
@@ -34,6 +35,8 @@ var _task_progress: VBoxContainer
 var _task_primary_button: Button
 var _task_selector: OptionButton
 var _selected_task_id := ""
+var _task_action_debounce := ActionDebounceScript.new()
+var _task_button_held := false
 
 
 ## 创建原版 530×450 买卖窗；任务消息复用相同 MaxForm 外框。
@@ -52,28 +55,41 @@ func open_mode(mode: String, merchant_id := "weapon_merchant") -> void:
 	_merchant_id = merchant_id
 	_commerce = {}
 	_selected_task_id = ""
-	_inventory_revision = -1
 	visible = true
 	move_to_front()
 	_render()
 	command_requested.emit({"type": "query_weapon_merchant", "merchant_id": _merchant_id})
 
 
-## 应用服务器随玩家面板一并返回的交易快照。
-## [param bundle] 含 commerce 与 inventory 投影的权威面板数据。
-func apply_commerce_bundle(bundle: Dictionary) -> void:
+## 应用全量交易快照或任务专用回复，保持当前选择。
+## [param bundle] 权威交易数据。[param current] 已应用增量的客户端玩家。
+func apply_commerce_bundle(bundle: Dictionary, current: Player = null) -> void:
 	var commerce_value: Variant = bundle.get("commerce", {})
 	if not commerce_value is Dictionary:
 		return
 	var response_provider := String(commerce_value.get("merchant", {}).get("id", ""))
 	if not response_provider.is_empty() and response_provider != _merchant_id:
 		return
-	_commerce = (commerce_value as Dictionary).duplicate(true)
-	var inventory_value: Variant = bundle.get("inventory", {})
-	if inventory_value is Dictionary:
-		_inventory_revision = int((inventory_value as Dictionary).get("revision", -1))
-		_currency = int((inventory_value as Dictionary).get("currency", 0))
+	_commerce.merge(commerce_value, true)
+	if current != null:
+		_current_player = current
+		_currency = current.inventory.currency
 	_render()
+
+
+## 让保持打开的商店跟随玩家背包增量版本。
+## [param current] 已应用权威增量的玩家状态。
+func apply_inventory_state(current: Player) -> void:
+	if current == null:
+		return
+	_current_player = current
+	_currency = current.inventory.currency
+	if not is_node_ready():
+		return
+	if _mode == "sell":
+		_render_trade()
+	else:
+		_currency_label.text = "金币：%d" % _currency
 
 
 ## 提供给自动化测试和窗口管理器的当前模式。
@@ -195,16 +211,63 @@ func _render() -> void:
 func _render_trade() -> void:
 	var merchant: Dictionary = _commerce.get("merchant", {})
 	_title_label.text = String(merchant.get("display_name", "武器商人"))
-	_column_header.text = "物品名称                 %s      数量" % ("售价" if _mode == "buy" else "收购")
-	for child in _list.get_children():
-		child.queue_free()
-	_clear_description()
+	_column_header.text = "物品名称                 %s      数量" % ("售价" if _mode == "buy" else "出售价")
 	var source: Array = _commerce.get("offers", []) if _mode == "buy" \
-		else _commerce.get("sell_items", [])
+		else _sell_entries()
+	var existing_rows: Dictionary = {}
+	for child in _list.get_children():
+		existing_rows[String(child.get_meta("trade_key", ""))] = child
+	var row_index := 0
+	var rows_changed := false
 	for value: Variant in source:
-		if value is Dictionary:
-			_list.add_child(_trade_row(value as Dictionary))
+		if not value is Dictionary:
+			continue
+		var entry := value as Dictionary
+		var key := String(entry.get("definition_id", "")) if _mode == "buy" \
+			else String(entry.get("instance_id", ""))
+		if key.is_empty():
+			key = str(row_index)
+		var row: PanelContainer = existing_rows.get(key)
+		if row != null:
+			existing_rows.erase(key)
+			if row.get_meta("trade_entry", {}) != entry:
+				_list.remove_child(row)
+				row.queue_free()
+				row = null
+		if row == null:
+			row = _trade_row(entry)
+			row.set_meta("trade_key", key)
+			row.set_meta("trade_entry", entry)
+			_list.add_child(row)
+			rows_changed = true
+		if _list.get_children().find(row) != row_index:
+			_list.move_child(row, row_index)
+			rows_changed = true
+		row_index += 1
+	for stale_row: PanelContainer in existing_rows.values():
+		_list.remove_child(stale_row)
+		stale_row.queue_free()
+		rows_changed = true
+	if rows_changed:
+		_clear_description()
 	_currency_label.text = "金币：%d" % _currency
+
+
+func _sell_entries() -> Array[Dictionary]:
+	var entries: Array[Dictionary] = []
+	if _current_player == null:
+		return entries
+	var prices: Dictionary = _commerce.get("sell_prices", {})
+	for item: GameItem in _current_player.inventory.items():
+		var unit_price := int(prices.get(item.definition_id, 0))
+		if unit_price <= 0 or item.locked:
+			continue
+		var entry := item.to_view_dictionary()
+		entry["quantity"] = item.quantity
+		entry["unit_price"] = unit_price
+		entry["presentation"] = item.presentation_for("inventory")
+		entries.append(entry)
+	return entries
 
 
 ## 创建一行可悬浮和点击的交易商品。
@@ -220,17 +283,22 @@ func _trade_row(entry: Dictionary) -> PanelContainer:
 	var fields := HBoxContainer.new()
 	fields.add_theme_constant_override("separation", 2)
 	row.add_child(fields)
-	var name_label := _inline_label(String(entry.get("display_name", "未知物品")), 112)
+	var name_label := _inline_label(String(entry.get("display_name", "未知物品")), 86 if _mode == "sell" else 112)
 	name_label.clip_text = true
+	row.tooltip_text = name_label.text
 	fields.add_child(name_label)
 	var price_key := "price" if _mode == "buy" else "unit_price"
-	fields.add_child(_inline_label(str(int(entry.get(price_key, 0))), 52, HORIZONTAL_ALIGNMENT_RIGHT))
+	fields.add_child(_inline_label(str(int(entry.get(price_key, 0))), 44 if _mode == "sell" else 52, HORIZONTAL_ALIGNMENT_RIGHT))
 	var amount := 1 if _mode == "buy" else int(entry.get("quantity", entry.get("amount", 1)))
-	fields.add_child(_inline_label(str(amount), 36, HORIZONTAL_ALIGNMENT_RIGHT))
-	var action := _legacy_button("购买" if _mode == "buy" else "出售", Vector2.ZERO, Vector2(54, 20))
-	action.pressed.connect(_request_trade.bind(entry.duplicate(true)))
+	fields.add_child(_inline_label(str(amount), 30 if _mode == "sell" else 36, HORIZONTAL_ALIGNMENT_RIGHT))
+	var action := _legacy_button("购买" if _mode == "buy" else "出售", Vector2.ZERO, Vector2(54 if _mode == "buy" else 44, 20))
+	action.pressed.connect(_request_trade.bind(entry))
 	fields.add_child(action)
-	row.mouse_entered.connect(_on_row_entered.bind(row, entry.duplicate(true)))
+	if _mode == "sell":
+		var sell_all := _legacy_button("全部出售", Vector2.ZERO, Vector2(60, 20))
+		sell_all.pressed.connect(_request_trade.bind(entry, amount))
+		fields.add_child(sell_all)
+	row.mouse_entered.connect(_on_row_entered.bind(row, entry))
 	row.mouse_exited.connect(_on_row_exited.bind(row))
 	return row
 
@@ -249,14 +317,11 @@ func _on_row_entered(row: PanelContainer, entry: Dictionary) -> void:
 			int(entry.get("required_level", 0)), int(entry.get("price", 0)),
 		]
 	else:
-		description += "\n\n收购价：%d" % int(entry.get("unit_price", 0))
+		description += "\n\n出售价：%d" % int(entry.get("unit_price", 0))
 	_description_body.text = description.strip_edges()
 	_description_scroll.scroll_vertical = 0
 	var presentation: Dictionary = entry.get("presentation", {})
-	var inventory_value: Variant = presentation.get("inventory", presentation)
-	var resolved: Dictionary = TextureResolverScript.resolve(
-		inventory_value as Dictionary if inventory_value is Dictionary else presentation
-	)
+	var resolved: Dictionary = TextureResolverScript.resolve(presentation)
 	_preview.texture = resolved.get("texture") as Texture2D
 
 
@@ -270,23 +335,24 @@ func _on_row_exited(row: PanelContainer) -> void:
 
 ## 把当前商品转换为只含稳定标识和 revision 的交易意图。
 ## [param entry] 被点击的商品投影。
-func _request_trade(entry: Dictionary) -> void:
-	if _inventory_revision < 0:
+## [param quantity] 本次出售数量；购买始终按一件结算。
+func _request_trade(entry: Dictionary, quantity := 1) -> void:
+	if _current_player == null or _current_player.inventory.revision < 0:
 		return
 	if _mode == "buy":
 		command_requested.emit({
 			"type": "buy_from_weapon_merchant",
 			"merchant_id": _merchant_id,
 			"definition_id": String(entry.get("definition_id", "")),
-			"inventory_revision": _inventory_revision,
+			"inventory_revision": _current_player.inventory.revision,
 		})
 	else:
 		command_requested.emit({
 			"type": "sell_to_weapon_merchant",
 			"merchant_id": _merchant_id,
 			"instance_id": String(entry.get("instance_id", "")),
-			"quantity": 1,
-			"inventory_revision": _inventory_revision,
+			"quantity": quantity,
+			"inventory_revision": _current_player.inventory.revision,
 		})
 
 
@@ -358,8 +424,21 @@ func _render_task() -> void:
 	else:
 		_task_progress.add_child(_inline_label("完成次数：%d / %d　报酬：%d 金币" % [
 			completions, maximum, int(task.get("currency_reward", 0))], 390))
-	_task_primary_button.text = "完成任务" if accepted else "接受任务"
-	_task_primary_button.disabled = task.is_empty() or exhausted or (accepted and not can_turn_in)
+	if not _task_button_held:
+		_task_primary_button.text = "完成任务" if accepted else "接受任务"
+	_task_primary_button.disabled = _task_button_held or task.is_empty() or exhausted or (accepted and not can_turn_in)
+
+
+func _process(_delta: float) -> void:
+	var now := Time.get_ticks_msec()
+	if _task_button_held and _task_action_debounce.remaining_msec(now) <= 0:
+		_task_button_held = false
+		_task_primary_button.remove_theme_stylebox_override("disabled")
+		_task_primary_button.remove_theme_color_override("font_disabled_color")
+		var task: Dictionary = _commerce.get("task", {})
+		_task_primary_button.text = "完成任务" if bool(task.get("accepted", false)) else "接受任务"
+		_task_primary_button.disabled = task.is_empty() or bool(task.get("exhausted", false)) \
+			or (bool(task.get("accepted", false)) and not bool(task.get("ready_to_turn_in", false)))
 
 
 ## 五种训练共用原版任务窗，切换只读详情，不自动接取或重抽目标。
@@ -375,13 +454,22 @@ func _select_task(index: int) -> void:
 ## 根据当前任务状态提交接受或交付意图。
 func _request_task_action() -> void:
 	var task: Dictionary = _commerce.get("task", {})
+	if _task_button_held or task.is_empty() or (bool(task.get("accepted", false)) \
+			and (_current_player == null or _current_player.inventory.revision < 0)):
+		return
+	if not _task_action_debounce.try_begin(Time.get_ticks_msec(), 500 if bool(task.get("accepted", false)) else 100):
+		return
+	_task_button_held = true
+	_task_primary_button.disabled = true
+	_task_primary_button.add_theme_stylebox_override("disabled", _task_primary_button.get_theme_stylebox("pressed"))
+	_task_primary_button.add_theme_color_override("font_disabled_color", _task_primary_button.get_theme_color("font_pressed_color"))
 	if bool(task.get("accepted", false)):
-		if _inventory_revision >= 0:
+		if _current_player != null and _current_player.inventory.revision >= 0:
 			command_requested.emit({
 				"type": "turn_in_weapon_merchant_task",
 				"task_id": String(task.get("task_id", "")),
 				"merchant_id": _merchant_id,
-				"inventory_revision": _inventory_revision,
+				"inventory_revision": _current_player.inventory.revision,
 			})
 	else:
 		command_requested.emit({

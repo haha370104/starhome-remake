@@ -4,6 +4,7 @@ extends CanvasLayer
 signal selected_action_changed(slot_id: String)
 signal popup_closed
 signal npc_action_requested(action_id: String)
+signal player_action_requested(action_id: String, target_entity_id: String)
 signal hud_action_requested(action_id: String)
 signal map_navigation_requested(world_position: Vector2, point_id: StringName)
 signal map_points_requested
@@ -14,7 +15,7 @@ const TopMenuScript := preload("res://scripts/ui/free_top_menu.gd")
 const BottomMainBarScript := preload("res://scripts/ui/free_bottom_main_bar.gd")
 const ShortcutBarScript := preload("res://scripts/ui/free_shortcut_bar.gd")
 const MinimapDockScript := preload("res://scripts/ui/free_minimap_dock.gd")
-const LEGACY_PANEL_FONT := preload("res://assets/ui/fonts/legacy_panel_font.tres")
+const LEGACY_PANEL_FONT := preload("res://assets/ui/fonts/NotoSansCJKsc-Regular.otf")
 const CentralSystemMessageFeedScript := preload(
 	"res://scripts/ui/central_system_message_feed.gd"
 )
@@ -22,6 +23,7 @@ const CentralSystemMessageFeedScript := preload(
 var _status_timer: Timer
 var _status_message := ""
 var _status_restore_text := ""
+var _fps_label: Label
 
 var root_control: Control
 var hint_label: Label
@@ -96,6 +98,7 @@ func configure(world_map_size: Vector2, minimap_texture: Texture2D, map_name := 
 
 	_build_popup()
 	_build_hint_label()
+	_build_fps_label()
 	_build_system_message_feed()
 	map_navigation_panel = MapNavigationPanel.new()
 	map_navigation_panel.build()
@@ -192,6 +195,37 @@ func set_vehicle_combat_state(snapshot: Dictionary) -> void:
 ## [param interaction] NPC 名称、正文和原版纵向动作项。
 ## [param screen_position] NPC 当前屏幕坐标；菜单按原版在其左上方约 30 像素弹出。
 func show_npc_popup(interaction: Dictionary, screen_position := Vector2(-1, -1)) -> void:
+	_show_action_popup(interaction, screen_position, Callable(self, "_emit_npc_action"))
+
+
+## 创建原版玩家对象的社交动作菜单。
+func show_player_popup(
+	display_name: String,
+	target_entity_id: String,
+	screen_position := Vector2(-1, -1),
+) -> void:
+	var action_handler: Callable = func(action_id: String) -> void:
+		player_action_requested.emit(action_id, target_entity_id)
+	_show_action_popup({
+		"title": display_name,
+		"body": "玩家",
+		"actions": [
+			{"id": "view_character", "label": "查看"},
+			{"id": "view_equipment", "label": "查看装备"},
+			{"id": "party_invite", "label": "邀请组队"},
+			{"id": "party_apply", "label": "申请入队"},
+			{"id": "trade_invite", "label": "交易"},
+			{"id": "friend", "label": "加为好友"},
+			{"id": "private_chat", "label": "私聊"},
+		],
+	}, screen_position, action_handler)
+
+
+func _show_action_popup(
+	interaction: Dictionary,
+	screen_position: Vector2,
+	action_handler: Callable,
+) -> void:
 	popup_title.text = String(interaction.get("title", "NPC"))
 	popup_body.text = String(interaction.get("body", ""))
 	for child in popup_actions.get_children():
@@ -222,7 +256,7 @@ func show_npc_popup(interaction: Dictionary, screen_position := Vector2(-1, -1))
 		action_button.add_theme_stylebox_override(
 			"pressed", _button_style(Color("03121d"), Color.YELLOW)
 		)
-		action_button.pressed.connect(_emit_npc_action.bind(action_id))
+		action_button.pressed.connect(action_handler.bind(action_id))
 		popup_actions.add_child(action_button)
 		action_count += 1
 	popup.size = Vector2(118, 12 + action_count * 23)
@@ -255,8 +289,6 @@ func _emit_npc_action(action_id: String) -> void:
 ## [param action_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _emit_hud_action(action_id: String) -> void:
 	hud_action_requested.emit(action_id)
-	if hint_label and action_id not in ["character", "inventory", "vehicle_equipment"]:
-		hint_label.text = "%s 功能待接入" % action_id
 
 
 ## 读取并校验免费版 HUD 素材清单。
@@ -285,6 +317,33 @@ func _build_hint_label() -> void:
 	hint_label.add_theme_constant_override("shadow_offset_y", 2)
 	hint_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	root_control.add_child(hint_label)
+
+
+## 在左上角操作提示下显示实时帧率，标签不拦截地图点击。
+func _build_fps_label() -> void:
+	_fps_label = Label.new()
+	_fps_label.name = "FpsLabel"
+	_fps_label.position = Vector2(12, 28)
+	_fps_label.add_theme_font_override("font", LEGACY_PANEL_FONT)
+	_fps_label.add_theme_font_size_override("font_size", 16)
+	_fps_label.add_theme_color_override("font_color", Color("b5f7c7"))
+	_fps_label.add_theme_color_override("font_shadow_color", Color.BLACK)
+	_fps_label.add_theme_constant_override("shadow_offset_x", 1)
+	_fps_label.add_theme_constant_override("shadow_offset_y", 1)
+	_fps_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	root_control.add_child(_fps_label)
+	_update_fps_label()
+	var timer := Timer.new()
+	timer.name = "FpsRefreshTimer"
+	timer.wait_time = 0.5
+	timer.autostart = true
+	timer.timeout.connect(_update_fps_label)
+	add_child(timer)
+
+
+## 每半秒显示引擎测得的每秒渲染帧数，避免逐帧更新文字。
+func _update_fps_label() -> void:
+	_fps_label.text = "FPS: %d" % Engine.get_frames_per_second()
 
 
 ## 创建原版 BasePOPMenu 风格的 NPC 动作菜单；标题和正文仅保留为语义数据。

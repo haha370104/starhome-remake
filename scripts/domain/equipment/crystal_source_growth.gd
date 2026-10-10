@@ -18,7 +18,8 @@ static func restore(raw: Variant) -> DomainResult:
 	var value := CrystalSourceGrowth.new()
 	if not raw is Dictionary: return _invalid()
 	if raw.is_empty(): return DomainResult.ok(value)
-	if raw.get("version") != 1 or not CrystalSourceRules.integer(raw.get("quality"), 0, 15) \
+	if raw.size() != 4 or not raw.has("version") or not raw.has("quality") or not raw.has("growth") \
+		or not raw.has("slots") or raw.version != 1 or not CrystalSourceRules.integer(raw.get("quality"), 0, 15) \
 		or not CrystalSourceRules.integer(raw.get("growth"), 0, 15) \
 		or not raw.get("slots") is Array or raw.slots.size() != 3: return _invalid()
 	value.quality = int(raw.quality)
@@ -97,7 +98,7 @@ func advance(channel: String, success: bool, protected: bool, rules: CrystalSour
 	return DomainResult.ok({"before": before, "after": after, "success": success})
 
 
-## 序列化最小成长事实，未成长且未镶嵌时使用旧档默认空对象。
+## 序列化最小成长事实，空对象表示未成长且未镶嵌。
 ## 返回深层独立字典。
 func to_dictionary() -> Dictionary:
 	var values: Array[Dictionary] = []

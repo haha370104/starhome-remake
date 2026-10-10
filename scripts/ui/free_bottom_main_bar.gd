@@ -12,9 +12,10 @@ const MENU_BUTTONS := {
 	"friends": "好友列表",
 	"scene_players": "当前场景玩家",
 	"missions": "任务日志",
-	"system": "系统设置",
+	"star_map": "星图（暂未开放）",
 	"achievements": "成就系统",
 	"premium_shop": "商城",
+	"system": "系统设置",
 }
 const WEAPON_TOOLTIPS := {
 	"energy_cannon": "能量炮",
@@ -82,14 +83,13 @@ func configure(definition: Dictionary, shortcut_definition: Dictionary, state: H
 	var buttons: Dictionary = definition.get("menu_buttons", {})
 	for action_id in MENU_BUTTONS:
 		var button_definition: Dictionary = buttons.get(action_id, {})
-		if action_id in ["achievements", "premium_shop"]:
-			var slot := TextureRect.new()
-			slot.texture = preload("res://assets/ui/free_hud/bottom_main/menu_buttons/empty_slot.tres")
-			slot.position = _vector_from_array(button_definition.get("position", []), Vector2.ZERO)
-			slot.mouse_filter = Control.MOUSE_FILTER_IGNORE
-			design_surface.add_child(slot)
+		var anchor := _vector_from_array(button_definition.get("position", []), Vector2.ZERO)
+		if action_id != "premium_shop":
+			button_definition = {"states": {"normal": ""}}
+			for state_name in ["hover", "pressed"]:
+				button_definition.states[state_name] = "res://assets/ui/free_hud/bottom_main/menu_buttons/%s/%s.png" % [action_id, state_name]
 		var button := _build_state_button(button_definition, action_id, MENU_BUTTONS[action_id])
-		button.place_at(_vector_from_array(button_definition.get("position", []), Vector2.ZERO))
+		button.place_at(anchor)
 		button.pressed.connect(func() -> void: action_requested.emit(action_id))
 		design_surface.add_child(button)
 
@@ -188,7 +188,7 @@ func _update_tactical_action(action_id: String, count: int) -> void:
 		tactical_count_label = Label.new()
 		tactical_count_label.name = "TacticalCount"
 		tactical_count_label.text = str(count)
-		tactical_count_label.position = _vector_from_array(mode_definition["position"], Vector2.ZERO) + Vector2(2, 10)
+		tactical_count_label.position = _vector_from_array(mode_definition["position"], Vector2.ZERO) + Vector2(2, 4)
 		tactical_count_label.add_theme_font_size_override("font_size", 13)
 		tactical_count_label.add_theme_color_override("font_color", Color.WHITE)
 		tactical_count_label.add_theme_color_override("font_outline_color", Color.BLACK)

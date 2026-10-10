@@ -3,8 +3,6 @@ extends RefCounted
 
 const STAT_NAMES := {
 	"required_skill_level": "需求技能等级",
-	"purchase_value": "购买价",
-	"sell_value": "出售值",
 	"weight": "重量",
 	"max_health": "生命值",
 	"max_health_limit": "极限生命",
@@ -14,7 +12,10 @@ const STAT_NAMES := {
 	"base_attack": "攻击力",
 	"attack_limit": "极限攻击力",
 	"working_energy_per_shot": "功耗",
-	"working_energy_cost": "工作能量消耗",
+	"working_energy_per_movement": "功耗",
+	"working_energy_per_mining_cycle": "功耗",
+	"working_energy_per_trigger": "功耗",
+	"working_energy_per_repair": "功耗",
 	"range": "射程",
 	"range_limit": "极限射程",
 	"output_power": "输出功率",

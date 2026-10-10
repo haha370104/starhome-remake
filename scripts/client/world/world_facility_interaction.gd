@@ -28,7 +28,7 @@ func configure(definition: Dictionary) -> Error:
 		label.size = Vector2(160, 24)
 		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		label.add_theme_font_override("font", preload("res://assets/ui/fonts/legacy_panel_font.tres"))
+		label.add_theme_font_override("font", preload("res://assets/ui/fonts/NotoSansCJKsc-Regular.otf"))
 		label.add_theme_font_size_override("font_size", 12)
 		label.add_theme_color_override("font_color", Color("ffffa0"))
 		label.add_theme_color_override("font_outline_color", Color.BLACK)

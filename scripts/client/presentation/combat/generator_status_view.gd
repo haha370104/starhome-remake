@@ -26,7 +26,7 @@ func configure(repository: RefCounted) -> void:
 	_label.size = Vector2(140, 20)
 	_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_label.add_theme_font_override("font", preload("res://assets/ui/fonts/legacy_panel_font.tres"))
+	_label.add_theme_font_override("font", preload("res://assets/ui/fonts/NotoSansCJKsc-Regular.otf"))
 	_label.add_theme_font_size_override("font_size", 12)
 	_label.add_theme_color_override("font_color", Color("ffd38a"))
 	_label.add_theme_color_override("font_outline_color", Color.BLACK)

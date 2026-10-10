@@ -1,6 +1,17 @@
 class_name VehicleMiningArm
 extends VehicleEquipment
 
+var working_energy_per_mining_cycle := 0.0
+
+
+func _init(definition: Dictionary = {}, state: Dictionary = {}) -> void:
+	super(definition, state)
+	refresh_processed_stats()
+
+
+func refresh_processed_stats() -> void:
+	working_energy_per_mining_cycle = maxf(0.0, float(stat("working_energy_per_mining_cycle", 0.0)))
+
 
 ## 校验采掘臂是否可工作，不把工程臂当作能量炮。
 ## [param mining_level] 权威角色的采矿技能等级。

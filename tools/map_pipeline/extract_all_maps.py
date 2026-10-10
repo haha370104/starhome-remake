@@ -18,6 +18,7 @@ import csv
 import hashlib
 import html
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -29,12 +30,26 @@ from typing import Any
 
 from PIL import Image, ImageChops
 
-from extract_navigation import extract as extract_navigation
-from extract_navigation import run_unpacker
-from official_asset_recovery import OfficialAleRecovery
+try:
+    from .extract_navigation import extract as extract_navigation
+    from .extract_navigation import run_unpacker
+    from .official_asset_recovery import OfficialAleRecovery
+except ImportError:  # Direct script execution.
+    from extract_navigation import extract as extract_navigation
+    from extract_navigation import run_unpacker
+    from official_asset_recovery import OfficialAleRecovery
 
 
 Image.MAX_IMAGE_PIXELS = None
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+
+
+def provenance_path(path: Path | None) -> str:
+    """Return a repository-relative path for generated audit metadata."""
+
+    if path is None:
+        return ""
+    return Path(os.path.relpath(path.resolve(), PROJECT_ROOT)).as_posix()
 
 MAP_NAME_RE = re.compile(rb"\bm_sMapName\s*=\s*\"([^\"]*)\"", re.I)
 CHECK_NAME_RE = re.compile(rb"\bm_sNameForCheck\s*=\s*\"([^\"]*)\"", re.I)
@@ -64,7 +79,13 @@ PROP_RESOURCE_RE = re.compile(
 FIELD_CODE_RE = re.compile(r"^[A-Za-z]\d{2}$")
 SAFE_SLUG_RE = re.compile(r"[^a-z0-9_-]+")
 DEFAULT_GLORY_UPDATE_URL = "http://update.ftxjjy.com/gameser/ry_www/"
-DEFAULT_ALE_DECODER = Path(__file__).resolve().parents[4] / "work" / "ale_sprite.py"
+DEFAULT_ALE_DECODER = (
+    Path(__file__).resolve().parents[2]
+    / "tools"
+    / "recovery"
+    / "sprites"
+    / "ale_sprite.py"
+)
 
 
 def digest(data: bytes) -> str:
@@ -293,10 +314,11 @@ class AleRepository:
         """
         self.root = root
         self.recovery = recovery
-        self.recovery_root_index = 1 if recovery is not None else None
-        self.fallback_start_index = 2 if recovery is not None else 1
+        self.merged_recovery = recovery is not None and root.resolve() == recovery.parsed_root
+        self.recovery_root_index = 1 if recovery is not None and not self.merged_recovery else None
+        self.fallback_start_index = 2 if self.recovery_root_index is not None else 1
         self.roots = [root]
-        if recovery is not None:
+        if recovery is not None and not self.merged_recovery:
             self.roots.append(recovery.parsed_root)
         self.roots.extend(fallback_roots or [])
         self.by_logical_path: dict[str, tuple[Path, int]] = {}
@@ -324,13 +346,15 @@ class AleRepository:
             Parsed folder and a provenance-aware resolution label.
         """
         logical = normalize_ale_reference(source)
+        if self.merged_recovery and self.recovery is not None and self.recovery.audit_for(source):
+            return self.recovery.resolve(source)
         direct = self.by_logical_path.get(logical.lower())
         if direct:
             folder, root_index = direct
             if root_index == 0:
                 resolution = "logical_path"
-            elif root_index == self.recovery_root_index:
-                resolution = "official_lazy_cache"
+            elif self.recovery is not None and root_index == self.recovery_root_index:
+                return self.recovery.resolve(source)
             else:
                 resolution = "fallback_logical_path"
             return folder, resolution
@@ -338,21 +362,22 @@ class AleRepository:
             recovered, resolution = self.recovery.resolve(source)
             if recovered is not None:
                 logical_key = recovered.relative_to(self.recovery.parsed_root).as_posix().lower()
-                root_index = int(self.recovery_root_index)
+                root_index = 0 if self.merged_recovery else int(self.recovery_root_index)
                 self.by_logical_path[logical_key] = (recovered, root_index)
                 self.by_basename[recovered.name.lower()].append(
                     (recovered, logical_key, root_index)
                 )
                 self.folder_metadata[recovered] = (logical_key, root_index)
                 return recovered, resolution
-        basename_matches = self.by_basename.get(Path(logical).name.lower(), [])
+        basename_matches = [
+            match for match in self.by_basename.get(Path(logical).name.lower(), [])
+            if match[2] != self.recovery_root_index
+        ]
         distinct_logical_paths = {match[1] for match in basename_matches}
         if len(distinct_logical_paths) == 1:
             folder, _, root_index = min(basename_matches, key=lambda match: match[2])
             if root_index == 0:
                 resolution = "unique_basename"
-            elif root_index == self.recovery_root_index:
-                resolution = "official_cache_unique_basename"
             else:
                 resolution = "fallback_unique_basename"
             return folder, resolution
@@ -398,6 +423,8 @@ class AleRepository:
             Logical source path with a cache or fallback marker when applicable.
         """
         logical, root_index = self.folder_metadata[folder]
+        if self.merged_recovery and self.recovery is not None and logical + ".ale" in self.recovery.assets:
+            return f"@official_glory_lazy_cache/{logical}"
         if root_index == 0:
             return logical
         if root_index == self.recovery_root_index:
@@ -533,7 +560,7 @@ def build_tile_atlas(
     for kind in record.tile_kinds:
         source_path, resolution = repository.resolve(kind.source, record.branch)
         status["sources"].append(
-            {"reference": kind.source, "resolution": resolution, "file": str(source_path or "")}
+            {"reference": kind.source, "resolution": resolution, "file": provenance_path(source_path)}
         )
         if source_path is None:
             status["error"] = f"tile image not found: {kind.source}"
@@ -557,7 +584,7 @@ def build_tile_atlas(
         status["mask"] = {
             "reference": record.mask_source,
             "resolution": resolution,
-            "file": str(mask_path or ""),
+            "file": provenance_path(mask_path),
         }
         if mask_path is None:
             status["error"] = f"mask image not found: {record.mask_source}"
@@ -822,7 +849,7 @@ def copy_minimap(record: MapRecord, output_dir: Path, repository: MinimapReposit
     destination = output_dir / "minimap.jpg"
     with Image.open(source) as image:
         image.convert("RGB").save(destination, quality=95)
-    return {"status": "ok", "source": str(source), "file": destination.name}
+    return {"status": "ok", "source": provenance_path(source), "file": destination.name}
 
 
 def output_layout(records: list[MapRecord]) -> dict[str, Path]:
@@ -1109,7 +1136,12 @@ def main() -> int:
     parser.add_argument(
         "--official-cache-root",
         type=Path,
-        help="persistent raw/parsed recovery cache; defaults beside the parsed Glory library",
+        help="separate parsed ALE cache; defaults to the primary ALE root",
+    )
+    parser.add_argument(
+        "--official-raw-root",
+        type=Path,
+        help="unindexed original ALE archive; defaults to ../starhome_lz_ry_full/unindexed_raw",
     )
     parser.add_argument(
         "--ale-decoder",
@@ -1126,7 +1158,7 @@ def main() -> int:
     parser.add_argument(
         "--offline",
         action="store_true",
-        help="use the persistent official cache but never issue a network request",
+        help="use the local raw archive and parsed cache without network requests",
     )
     parser.add_argument(
         "--retry-official-failures",
@@ -1184,11 +1216,8 @@ def main() -> int:
         write_catalogs(args.output_root, records, existing_results)
         return 0
 
-    recovery_cache_root = (
-        args.official_cache_root
-        if args.official_cache_root is not None
-        else args.ale_root.parent / "official_lazy_cache"
-    )
+    project_root = Path(__file__).resolve().parents[2]
+    recovery_cache_root = args.official_cache_root or args.ale_root.parent
     official_recovery = OfficialAleRecovery(
         args.official_base_url,
         recovery_cache_root,
@@ -1196,6 +1225,13 @@ def main() -> int:
         timeout_seconds=args.official_timeout,
         retry_failures=args.retry_official_failures,
         allow_network=not args.offline,
+        raw_root=args.official_raw_root or project_root / "../starhome_lz_ry_full/unindexed_raw",
+        parsed_root=args.ale_root if args.official_cache_root is None else None,
+        manifest_path=(
+            project_root / "data/source_evidence/glory/official_recovery_manifest.json"
+            if args.official_cache_root is None
+            else None
+        ),
     )
     ale_repository = AleRepository(
         args.ale_root,
@@ -1289,7 +1325,7 @@ def main() -> int:
                 "rendered": len(unique_results),
                 "complete": sum(row["status"] == "ok" for row in unique_results),
                 "partial_or_error": sum(row["status"] != "ok" for row in unique_results),
-                "output": str(args.output_root.resolve()),
+                "output": provenance_path(args.output_root),
             },
             ensure_ascii=False,
         ),

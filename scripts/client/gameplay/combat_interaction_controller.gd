@@ -4,6 +4,8 @@ extends Node
 signal target_repair_requested(world_position: Vector2)
 
 const CombatActions := preload("res://scripts/client/gameplay/client_combat_actions.gd")
+const ActionDebounceScript := preload("res://scripts/client/state/action_debounce.gd")
+const PerformanceTelemetryScript := preload("res://scripts/core/performance_telemetry.gd")
 
 var vehicle_destroyed := false
 var application_exiting := false
@@ -14,6 +16,7 @@ var hud: HallHud
 var map_travel: MapTravelController
 var multiplayer_presenter: HallMultiplayerPresenter
 var panel_session: PlayerPanelSession
+var _loot_pickup_debounce := ActionDebounceScript.new()
 
 
 ## 绑定战斗表现和本地输入所需的显式依赖。
@@ -199,6 +202,8 @@ func _combat_target_position(target_entity_id: String) -> Vector2:
 ## [param loot_id] 鼠标命中的掉落实例标识。
 ## 设计：客户端只选择目标；距离、背包容量、入账和地面实体删除均由权威规则决定。
 func request_ground_loot_pickup(loot_id: String) -> void:
+	if loot_id.is_empty() or not _loot_pickup_debounce.try_begin(Time.get_ticks_msec(), 350):
+		return
 	if multiplayer_presenter.request_loot_pickup(loot_id).is_empty():
 		hud.show_status("拾取请求发送失败")
 
@@ -234,6 +239,7 @@ func _restore_locomotion_after_attack(was_moving: bool, layer_id: StringName) ->
 ## 把权威战斗快照分发给实体视图、HUD 和战车击毁状态。
 ## [param snapshot] 会话已接收的战斗实体和本地战车快照。
 func on_combat_snapshot_received(snapshot: Dictionary) -> void:
+	var apply_started_at := PerformanceTelemetryScript.begin(&"client_combat_snapshot_apply")
 	world_view.mining_visual_controller.apply_snapshot(snapshot)
 	for event: Dictionary in snapshot.get("recent_events", []):
 		_present_confirmed_attack(event)
@@ -265,6 +271,7 @@ func on_combat_snapshot_received(snapshot: Dictionary) -> void:
 			vehicle_destroyed_dialog.hide_dialog()
 		if world_view.self_repair_visual_controller != null:
 			world_view.self_repair_visual_controller.apply_snapshot(vehicle)
+	PerformanceTelemetryScript.end(&"client_combat_snapshot_apply", apply_started_at)
 
 
 ## 提交主动回城或击毁后的回基地选择；目的地图、三秒等待和回血规则均由服务器决定。
@@ -337,4 +344,3 @@ func on_combat_event_received(event: Dictionary) -> void:
 func is_input_locked() -> bool:
 	return application_exiting or map_travel.is_locked() or vehicle_destroyed or (multiplayer_presenter != null \
 		and multiplayer_presenter.session != null and multiplayer_presenter.session.is_vehicle_recovery_pending())
-

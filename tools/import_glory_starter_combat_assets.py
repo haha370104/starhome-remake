@@ -21,10 +21,10 @@ from PIL import Image
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 OUTPUTS_ROOT = PROJECT_ROOT.parent
-GLORY_RAW = OUTPUTS_ROOT / "starhome_lz_ry_full" / "raw"
-GLORY_PARSED = OUTPUTS_ROOT / "starhome_lz_ry_full_parsed" / "ale_sprites"
+GLORY_RAW = PROJECT_ROOT / "../starhome_lz_ry_full" / "raw"
+GLORY_PARSED = PROJECT_ROOT / "assets" / "glory" / "sprites"
 EQUIPMENT_CATALOG = (
-    OUTPUTS_ROOT / "starhome_lz_ry_full_parsed" / "catalogs_utf8" / "equipment_catalog.csv"
+    PROJECT_ROOT / "data" / "source_evidence" / "glory" / "equipment_catalog.csv"
 )
 TARGET_ROOT = PROJECT_ROOT / "assets" / "equipment_world"
 
@@ -256,7 +256,7 @@ def _export_asset(asset_id: str, spec: dict[str, Any]) -> dict[str, Any]:
     """Normalize the parsed Glory frames for ``asset_id`` and return source audit data."""
     source_logical = str(spec["source_logical_path"])
     source_path = GLORY_RAW / Path(source_logical)
-    parsed_root = GLORY_PARSED / Path(source_logical).with_suffix("")
+    parsed_root = GLORY_PARSED / Path(source_logical.lower()).with_suffix("")
     frames_path = parsed_root / "frames.json"
     parsed_sheet_path = parsed_root / "sheet.png"
     if not source_path.is_file() or not frames_path.is_file() or not parsed_sheet_path.is_file():
@@ -386,7 +386,7 @@ def _runtime_manifest(source_assets: list[dict[str, Any]]) -> dict[str, Any]:
                 },
                 {
                     "id": "primary_weapon",
-                    "z_index": 1,
+                    "z_index": 0,
                     "actions": {
                         "idle": _action(weapon, 1, offset=weapon_offset),
                         "move": _action(weapon, 1, offset=weapon_offset),
@@ -505,8 +505,8 @@ def migrate() -> None:
         {
             "schema_version": 1,
             "source_version": "starhome_lz_ry",
-            "source_root": str(GLORY_RAW.resolve()),
-            "parsed_root": str(GLORY_PARSED.resolve()),
+            "source_root": GLORY_RAW.relative_to(PROJECT_ROOT).as_posix(),
+            "parsed_root": GLORY_PARSED.relative_to(PROJECT_ROOT).as_posix(),
             "evidence": [
                 "荣耀版装备目录确认显示名、类别与世界素材映射",
                 "荣耀版角色合成脚本仅将底盘与武器渲染为战车世界层",
@@ -519,6 +519,41 @@ def migrate() -> None:
     _atomic_json(TARGET_ROOT / "combat_visual_manifest.json", _runtime_manifest(source_assets))
 
 
+def _monster_offset_errors(runtime: dict[str, Any], refresh: bool = False) -> list[str]:
+    """Keep normalized monster atlases anchored to the original ALE entity point."""
+    errors: list[str] = []
+    actors = runtime.get("actors", {})
+    for actor_id in MONSTER_ACTORS:
+        actor = actors.get(actor_id, {})
+        if not actor:
+            errors.append(f"monster actor missing: {actor_id}")
+            continue
+        for layer in actor.get("layers", []):
+            for action_name, action in layer.get("actions", {}).items():
+                resource = str(action.get("resource", ""))
+                metadata_path = (PROJECT_ROOT / resource.removeprefix("res://")).with_name("import_metadata.json")
+                if not metadata_path.is_file():
+                    errors.append(f"monster atlas metadata missing: {resource}")
+                    continue
+                expected = _resource_offset(resource)
+                if action.get("offset") != expected:
+                    if refresh:
+                        action["offset"] = expected
+                    else:
+                        errors.append(f"monster offset mismatch: {actor_id}/{layer['id']}/{action_name}")
+    return errors
+
+
+def refresh_monster_offsets() -> None:
+    """Update monster anchors without rebuilding atlases or replacing other actors."""
+    path = TARGET_ROOT / "combat_visual_manifest.json"
+    runtime = json.loads(path.read_text(encoding="utf-8"))
+    errors = _monster_offset_errors(runtime, refresh=True)
+    if errors:
+        raise RuntimeError("; ".join(errors))
+    _atomic_json(path, runtime)
+
+
 def audit() -> dict[str, Any]:
     """Validate source identity, generated resources, and runtime naming boundaries."""
     errors: list[str] = []
@@ -529,6 +564,7 @@ def audit() -> dict[str, Any]:
         return {"assets": 0, "actors": 0, "errors": errors}
     runtime = json.loads(runtime_path.read_text(encoding="utf-8"))
     source = json.loads(source_path.read_text(encoding="utf-8"))
+    errors.extend(_monster_offset_errors(runtime))
     forbidden = re.compile(r"(?:pic2?|\.ale\b|CHN_\d{4}|\d{4}_\d{2}_\d{2})", re.IGNORECASE)
     runtime_text = json.dumps(runtime, ensure_ascii=False)
     if forbidden.search(runtime_text):
@@ -547,13 +583,24 @@ def audit() -> dict[str, Any]:
         if int(entry["frame_count"]) != int(spec["expected_frames"]):
             errors.append(f"frame count mismatch for {asset_id}")
         raw_path = GLORY_RAW / Path(str(spec["source_logical_path"]))
-        parsed_root = GLORY_PARSED / Path(str(spec["source_logical_path"])).with_suffix("")
+        parsed_root = GLORY_PARSED / Path(str(spec["source_logical_path"]).lower()).with_suffix("")
         frames_path = parsed_root / "frames.json"
         sheet_path = parsed_root / "sheet.png"
         if not raw_path.is_file() or _hash(raw_path) != entry.get("source_sha256"):
             errors.append(f"raw source digest mismatch for {asset_id}")
-        if not frames_path.is_file() or _hash(frames_path) != entry.get("parsed_frames_sha256"):
-            errors.append(f"parsed frame digest mismatch for {asset_id}")
+        if not frames_path.is_file():
+            errors.append(f"materialized frames missing for {asset_id}")
+        else:
+            parsed = json.loads(frames_path.read_text(encoding="utf-8"))
+            visible = [frame for frame in parsed["frames"] if frame["width"] and frame["height"]]
+            bounds = [
+                min(frame["origin_x"] for frame in visible),
+                min(frame["origin_y"] for frame in visible),
+                max(frame["origin_x"] + frame["width"] for frame in visible),
+                max(frame["origin_y"] + frame["height"] for frame in visible),
+            ]
+            if parsed["frame_count"] != entry["frame_count"] or bounds != entry["coordinate_bounds"]:
+                errors.append(f"materialized frame geometry differs for {asset_id}")
         if not sheet_path.is_file() or _hash(sheet_path) != entry.get("parsed_sheet_sha256"):
             errors.append(f"parsed sheet digest mismatch for {asset_id}")
         if "legacy_class" in spec:
@@ -572,9 +619,14 @@ def main() -> int:
     """Run optional migration followed by the read-only audit."""
     parser = argparse.ArgumentParser()
     parser.add_argument("--migrate", action="store_true")
+    parser.add_argument("--refresh-monster-offsets", action="store_true")
     args = parser.parse_args()
+    if args.migrate and args.refresh_monster_offsets:
+        parser.error("choose one mutation mode")
     if args.migrate:
         migrate()
+    elif args.refresh_monster_offsets:
+        refresh_monster_offsets()
     result = audit()
     print(json.dumps(result, ensure_ascii=False, indent=2))
     return 1 if result["errors"] else 0

@@ -49,7 +49,7 @@ func _run() -> void:
 		controller.advance(10.0)
 		controller.clear_effects()
 	_expect(recovered_weapons == 6, "应补齐六个武器绑定")
-	var definition: MapDefinition = MapDefinitionLoader.new().load_file("res://content/glory/map_definitions/glory_nft_bl_traderoom1.json")
+	var definition: MapDefinition = MapDefinitionLoader.new().load_file("res://assets/glory/map_definitions/glory_nft_bl_traderoom1.json")
 	var bundle := {"definition": definition,
 		"map_manifest": JSON.parse_string(FileAccess.get_file_as_string(definition.resource_paths.scene_manifest)),
 		"resources": {"floor": RuntimeTextureLoader.load_texture(definition.resource_paths.floor), "minimap": RuntimeTextureLoader.load_texture(definition.resource_paths.minimap)}}
@@ -85,7 +85,7 @@ func _run() -> void:
 	var previous_ids: Array[int] = []
 	for node: Node2D in recovered:
 		previous_ids.append(node.get_instance_id())
-	var field: Dictionary = hall.active_world_controller.prepare_initial_bundle("res://data/maps/d04_field_zone.json")
+	var field: Dictionary = hall.active_world_controller.prepare_initial_bundle("res://data/maps/glory_nft_bl_d04.json")
 	_expect(hall.active_world_controller.commit_bundle(field, field.definition.spawn_for_entry(1).position), "离开交易中心应成功")
 	await process_frame
 	await process_frame

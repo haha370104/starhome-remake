@@ -1,5 +1,12 @@
 class_name ScenePlayersPanel
-extends NavigationWindow
+extends ModernNavigationWindow
+
+signal party_invite_requested(target_entity_id: String)
+signal party_apply_requested(target_entity_id: String)
+signal trade_invite_requested(target_entity_id: String)
+signal friend_requested(target_entity_id: String, display_name: String)
+signal private_chat_requested(target_entity_id: String, display_name: String)
+signal chat_requested
 
 var listing: Tree
 var heading: Label
@@ -10,7 +17,7 @@ var _players: Array = []
 
 ## 还原用户列表标题、四列、列头排序及用户行交互。
 func _ready() -> void:
-	build_window(Vector2(320, 450), preload("res://assets/ui/windows/navigation/scene_players.png"), "用户列表")
+	build_modern_window(Vector2(320, 450), "用户列表")
 	heading = make_label("当前区域在线用户列表", Rect2(25, 49, 270, 24))
 	heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	listing = Tree.new()
@@ -26,7 +33,12 @@ func _ready() -> void:
 	listing.column_title_clicked.connect(_sort_by_column)
 	listing.item_activated.connect(_activate_user)
 	content_root.add_child(listing)
-	make_button("关闭", Rect2(125, 411, 70, 23), request_close)
+	make_button("组队", Rect2(4, 411, 48, 23), _invite_selected)
+	make_button("申请", Rect2(54, 411, 48, 23), _apply_selected)
+	make_button("交易", Rect2(104, 411, 48, 23), _trade_selected)
+	make_button("好友", Rect2(154, 411, 48, 23), _friend_selected)
+	make_button("私聊", Rect2(204, 411, 48, 23), _private_chat_selected)
+	make_button("聊天", Rect2(254, 411, 48, 23), chat_requested.emit)
 
 
 ## 应用服务端仅含本区域在线会话的公开列表。
@@ -70,7 +82,46 @@ func _render_rows() -> void:
 		item.set_metadata(0, row["entity_id"])
 
 
-## 响应用户行双击，未实现的社交操作不假装发送私聊或好友请求。
+## 响应用户行双击，直接发起组队邀请。
 func _activate_user() -> void:
-	if listing.get_selected() != null:
-		unavailable("与 %s 的社交操作" % listing.get_selected().get_text(0))
+	_invite_selected()
+
+
+func _invite_selected() -> void:
+	var selected := listing.get_selected()
+	if selected == null:
+		unavailable("请先选择一名玩家")
+		return
+	party_invite_requested.emit(String(selected.get_metadata(0)))
+
+
+func _apply_selected() -> void:
+	var selected := listing.get_selected()
+	if selected == null:
+		unavailable("请先选择一名玩家")
+		return
+	party_apply_requested.emit(String(selected.get_metadata(0)))
+
+
+func _trade_selected() -> void:
+	var selected := listing.get_selected()
+	if selected == null:
+		unavailable("请先选择一名玩家")
+		return
+	trade_invite_requested.emit(String(selected.get_metadata(0)))
+
+
+func _friend_selected() -> void:
+	var selected := listing.get_selected()
+	if selected == null:
+		unavailable("请先选择一名玩家")
+		return
+	friend_requested.emit(String(selected.get_metadata(0)), selected.get_text(0))
+
+
+func _private_chat_selected() -> void:
+	var selected := listing.get_selected()
+	if selected == null:
+		unavailable("请先选择一名玩家")
+		return
+	private_chat_requested.emit(String(selected.get_metadata(0)), selected.get_text(0))

@@ -1,18 +1,19 @@
 class_name EquipmentUsage
 extends RefCounted
 
-const EVENTS := ["shot", "movement", "mining", "damage"]
+const EVENTS := ["shot", "movement", "mining", "damage", "vehicle_damage", "vehicle_movement"]
 var progress: Dictionary = {}
 
 
-## 恢复尚不足扣除一点耐久的累计使用量，旧档为空时从零开始。
+## 恢复尚不足扣除一点耐久的完整累计使用状态。
 ## [param raw] 只保存使用余量的原始状态。
 ## 返回有效状态或格式错误。
 static func restore(raw: Variant) -> DomainResult:
-	if not raw is Dictionary or int(raw.get("version", 1)) != 1 or not raw.get("progress", {}) is Dictionary:
+	if not raw is Dictionary or raw.size() != 2 or not raw.has("version") \
+		or not raw.has("progress") or raw.version != 1 or not raw.progress is Dictionary:
 		return DomainResult.failure(&"equipment.invalid_usage", "装备使用记录无效")
 	var usage := EquipmentUsage.new()
-	for event: Variant in raw.get("progress", {}):
+	for event: Variant in raw.progress:
 		var amount: Variant = raw.progress[event]
 		if event not in EVENTS or not (amount is int or amount is float) \
 			or not is_finite(float(amount)) or float(amount) < 0 or float(amount) > 1000000:

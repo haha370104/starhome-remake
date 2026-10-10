@@ -4,14 +4,20 @@ import copy
 import hashlib
 import json
 import shutil
+from recovery.source_workspace import RawSpriteWorkspace
 
 ROOT = Path(__file__).resolve().parents[1]
-OUTPUTS = ROOT.parent
+RAW_ROOT = ROOT/'../starhome_lz_fr_full/raw'
 SPECS = [
     ('tanlang_chassis', 'FinalTank', ['FinalTank', 'FinalTank_Warrior', 'FinalTank_Warrior_1'], ['finaltank'] * 3),
     ('monarch_chassis', 'MonarchFinalTank', ['MonarchFinalTank'], ['monarchtank'] * 3),
     ('christmas_chassis', 'Xmastank', ['Xmastank'], ['xmastank'] * 3),
     ('dragon_recruit_chassis', 'tankDragon', ['tankDragon'], ['btankdragon', 'dtankdragon', 'mtankdragon']),
+]
+EXTRA = [
+    ('nano_front_armor', 'inventory', 'pic2/equip/armor/frontarmor8b.ale'),
+    ('nano_front_armor', 'dialog', 'pic2/equip/armor/frontarmor8.ale'),
+    ('monarch_energy_cannon', 'dialog', 'pic2/equip/dlg/monarchgun.ale'),
 ]
 
 
@@ -19,10 +25,10 @@ def write_json(path, value, compact=False):
     """Write generated metadata deterministically; large frame arrays use compact machine-owned JSON."""
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(value, ensure_ascii=False, indent=None if compact else 2,
-                              separators=(',', ':') if compact else None) + '\n', encoding='utf-8')
+                              separators=(',', ':') if compact else None) + ('' if compact else '\n'), encoding='utf-8')
 
 
-def main():
+def build(workspace):
     """Preserve source frames and pivots, recording each explicit cross-release replacement."""
     items = json.loads((ROOT/'data/gameplay/glory/glory_items_v1.json').read_text(encoding='utf-8'))['definitions']
     by_class = {d.get('source_class'): d for d in items}
@@ -35,10 +41,9 @@ def main():
                     'source_classes': classes, 'assets': []}
         for mode, source_role, target_role, stem in zip(['inventory','dialog','world'], ['bag','dlg','body'], ['inventory','equipment_panel','locomotion'], source_names):
             source_ref = 'pic2/equip/' + source_role + '/' + stem + '.ale'
-            raw = OUTPUTS/'starhome_lz_fr_full/raw'/source_ref
-            decoded = OUTPUTS/'starhome_lz_fr_full_parsed/ale_sprites'/source_ref.removesuffix('.ale')
-            assert raw.is_file() and (decoded/'frames.json').is_file(), source_ref
-            metadata = json.loads((decoded/'frames.json').read_text(encoding='utf-8'))
+            raw = workspace.source(source_ref)
+            decoded, decoded_metadata = workspace.decode(source_ref)
+            metadata = copy.deepcopy(decoded_metadata)
             target = folder/target_role
             target.mkdir(parents=True,exist_ok=True)
             pages=[]
@@ -65,20 +70,15 @@ def main():
                 overrides['definitions'].setdefault(item['id'],{})[mode]=presentation
         write_json(folder/'source_manifest.json',evidence)
     # User explicitly chose the free edition for A310/A311/A370/A371 on 2026-09-17.
-    extra = [
-        ('nano_front_armor', 'inventory', 'pic2/equip/armor/frontarmor8b.ale'),
-        ('nano_front_armor', 'dialog', 'pic2/equip/armor/frontarmor8.ale'),
-        ('monarch_energy_cannon', 'dialog', 'pic2/equip/dlg/monarchgun.ale'),
-    ]
     manifests = {}
-    for slug, mode, source_ref in extra:
+    for slug, mode, source_ref in EXTRA:
         role = 'inventory' if mode == 'inventory' else 'equipment_panel'
         folder = ROOT/'assets/recovered/equipment'/slug
         target = folder/role
         target.mkdir(parents=True, exist_ok=True)
-        raw = OUTPUTS/'starhome_lz_fr_full/raw'/source_ref
-        decoded = OUTPUTS/'starhome_lz_fr_full_parsed/ale_sprites'/source_ref.removesuffix('.ale')
-        metadata = json.loads((decoded/'frames.json').read_text(encoding='utf-8'))
+        raw = workspace.source(source_ref)
+        decoded, decoded_metadata = workspace.decode(source_ref)
+        metadata = copy.deepcopy(decoded_metadata)
         assert metadata['pages'] == ['sheet.png'], source_ref
         shutil.copy2(decoded/'sheet.png', target/'atlas.png')
         metadata.update(pages=['atlas.png'], source='starhome_lz_fr/raw/'+source_ref, source_release='starhome_lz_fr')
@@ -111,6 +111,16 @@ def main():
     write_rows(index_path, {'schema_version':1,'content_version':existing['content_version']}, 'sprites', sorted(merged.values(),key=lambda r:r['logical_id']))
     write_rows(override_path, {'schema_version':1}, 'definitions', dict(sorted(previous.items())))
     print('APPROVED_EQUIPMENT assets=%d definitions=%d' % (len(index['sprites']),len(overrides['definitions'])))
+
+
+def main():
+    required = [f'pic2/equip/{role}/{stem}.ale'
+                for _, _, _, stems in SPECS
+                for role, stem in zip(('bag', 'dlg', 'body'), stems)]
+    required.extend(source_ref for _, _, source_ref in EXTRA)
+    with RawSpriteWorkspace(RAW_ROOT) as workspace:
+        workspace.require(required)
+        build(workspace)
 
 
 if __name__=='__main__':

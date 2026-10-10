@@ -10,10 +10,20 @@ func _initialize() -> void:
 	var fixture := PlayerPanelServiceFixture.new()
 	_check(items.initialize().is_ok and fixture.initialize().is_ok, "initialize")
 	for profile: EquipmentStrengtheningRules.Profile in items.strengthening_rules.profiles.values():
-		var base: Equipment = items.create(profile.definition_id, {}).value
-		var upgraded := items.create(profile.definition_id, {"instance_id": "test", "strengthening": {"level": 10}})
-		_check(upgraded.is_ok and upgraded.value.stat(profile.attribute) == base.stat(profile.attribute) + profile.values[10], "final bonus " + profile.definition_id)
-		var copy: Equipment = items.create(profile.definition_id, upgraded.value.to_view_dictionary()).value
+		var base_result := items.create(profile.definition_id, {})
+		var strengthening := EquipmentStrengthening.new()
+		strengthening.level = 10
+		var upgraded := items.create(profile.definition_id, {"instance_id": "test",
+			"strengthening": strengthening.to_dictionary()})
+		_check(base_result.is_ok and upgraded.is_ok, "factory state " + profile.definition_id)
+		if not base_result.is_ok or not upgraded.is_ok: continue
+		var base: Equipment = base_result.value
+		_check(upgraded.value.stat(profile.attribute) == base.stat(profile.attribute) + profile.values[10], "final bonus " + profile.definition_id)
+		var copy_result := items.create(profile.definition_id, {"instance_id": "test.copy",
+			"strengthening": upgraded.value.strengthening.to_dictionary()})
+		_check(copy_result.is_ok, "restore instance state " + profile.definition_id)
+		if not copy_result.is_ok: continue
+		var copy: Equipment = copy_result.value
 		_check(copy.to_view_dictionary().stats == upgraded.value.to_view_dictionary().stats, "no duplicate bonus")
 		if copy is VehicleChassis: _check(copy.base_max_health == int(copy.stat("max_health")), "chassis cache")
 		if copy is VehicleWeapon: _check(copy.base_attack == int(copy.stat("base_attack")), "weapon cache")

@@ -564,6 +564,62 @@
       }
     },
     "weapons": {
+      "primary_modes": {
+        "mining_arm": {
+          "available": true,
+          "states": {
+            "normal": "res://assets/ui/free_hud/bottom_main/weapon_modes/mining_arm/normal.png",
+            "selected": "res://assets/ui/free_hud/bottom_main/weapon_modes/mining_arm/selected.png"
+          },
+          "state_sizes": {
+            "normal": [
+              29,
+              22
+            ],
+            "selected": [
+              29,
+              22
+            ]
+          },
+          "state_origins": {
+            "normal": [
+              0,
+              0
+            ],
+            "selected": [
+              0,
+              0
+            ]
+          }
+        },
+        "repair_arm": {
+          "available": true,
+          "states": {
+            "normal": "res://assets/ui/free_hud/bottom_main/weapon_modes/repair_arm/normal.png",
+            "selected": "res://assets/ui/free_hud/bottom_main/weapon_modes/repair_arm/selected.png"
+          },
+          "state_sizes": {
+            "normal": [
+              29,
+              22
+            ],
+            "selected": [
+              29,
+              22
+            ]
+          },
+          "state_origins": {
+            "normal": [
+              0,
+              0
+            ],
+            "selected": [
+              0,
+              0
+            ]
+          }
+        }
+      },
       "energy_cannon": {
         "available": true,
         "states": {
@@ -710,100 +766,11 @@
             }
           }
         }
-      },
-      "primary_modes": {
-        "mining_arm": {
-          "available": true,
-          "states": {
-            "normal": "res://assets/ui/free_hud/bottom_main/weapon_modes/mining_arm/normal.png",
-            "selected": "res://assets/ui/free_hud/bottom_main/weapon_modes/mining_arm/selected.png"
-          },
-          "state_sizes": {
-            "normal": [
-              29,
-              22
-            ],
-            "selected": [
-              29,
-              22
-            ]
-          },
-          "state_origins": {
-            "normal": [
-              0,
-              0
-            ],
-            "selected": [
-              0,
-              0
-            ]
-          }
-        },
-        "repair_arm": {
-          "available": true,
-          "states": {
-            "normal": "res://assets/ui/free_hud/bottom_main/weapon_modes/repair_arm/normal.png",
-            "selected": "res://assets/ui/free_hud/bottom_main/weapon_modes/repair_arm/selected.png"
-          },
-          "state_sizes": {
-            "normal": [
-              29,
-              22
-            ],
-            "selected": [
-              29,
-              22
-            ]
-          },
-          "state_origins": {
-            "normal": [
-              0,
-              0
-            ],
-            "selected": [
-              0,
-              0
-            ]
-          }
-        }
       }
     },
     "menu_buttons": {
       "character": {
         "available": true,
-        "states": {
-          "normal": "res://assets/ui/free_hud/bottom_main/menu_buttons/character/normal.png",
-          "hover": "res://assets/ui/free_hud/bottom_main/menu_buttons/character/hover.png",
-          "pressed": "res://assets/ui/free_hud/bottom_main/menu_buttons/character/pressed.png"
-        },
-        "state_sizes": {
-          "normal": [
-            30,
-            29
-          ],
-          "hover": [
-            30,
-            29
-          ],
-          "pressed": [
-            30,
-            29
-          ]
-        },
-        "state_origins": {
-          "normal": [
-            0,
-            0
-          ],
-          "hover": [
-            0,
-            0
-          ],
-          "pressed": [
-            0,
-            0
-          ]
-        },
         "position": [
           519,
           0
@@ -811,39 +778,6 @@
       },
       "inventory": {
         "available": true,
-        "states": {
-          "normal": "res://assets/ui/free_hud/bottom_main/menu_buttons/inventory/normal.png",
-          "hover": "res://assets/ui/free_hud/bottom_main/menu_buttons/inventory/hover.png",
-          "pressed": "res://assets/ui/free_hud/bottom_main/menu_buttons/inventory/pressed.png"
-        },
-        "state_sizes": {
-          "normal": [
-            29,
-            29
-          ],
-          "hover": [
-            29,
-            29
-          ],
-          "pressed": [
-            29,
-            29
-          ]
-        },
-        "state_origins": {
-          "normal": [
-            0,
-            0
-          ],
-          "hover": [
-            0,
-            0
-          ],
-          "pressed": [
-            0,
-            0
-          ]
-        },
         "position": [
           557,
           0
@@ -851,39 +785,6 @@
       },
       "vehicle_equipment": {
         "available": true,
-        "states": {
-          "normal": "res://assets/ui/free_hud/bottom_main/menu_buttons/vehicle_equipment/normal.png",
-          "hover": "res://assets/ui/free_hud/bottom_main/menu_buttons/vehicle_equipment/hover.png",
-          "pressed": "res://assets/ui/free_hud/bottom_main/menu_buttons/vehicle_equipment/pressed.png"
-        },
-        "state_sizes": {
-          "normal": [
-            29,
-            29
-          ],
-          "hover": [
-            29,
-            29
-          ],
-          "pressed": [
-            29,
-            29
-          ]
-        },
-        "state_origins": {
-          "normal": [
-            0,
-            0
-          ],
-          "hover": [
-            0,
-            0
-          ],
-          "pressed": [
-            0,
-            0
-          ]
-        },
         "position": [
           595,
           0
@@ -891,39 +792,6 @@
       },
       "friends": {
         "available": true,
-        "states": {
-          "normal": "res://assets/ui/free_hud/bottom_main/menu_buttons/friends/normal.png",
-          "hover": "res://assets/ui/free_hud/bottom_main/menu_buttons/friends/hover.png",
-          "pressed": "res://assets/ui/free_hud/bottom_main/menu_buttons/friends/pressed.png"
-        },
-        "state_sizes": {
-          "normal": [
-            31,
-            29
-          ],
-          "hover": [
-            31,
-            29
-          ],
-          "pressed": [
-            31,
-            29
-          ]
-        },
-        "state_origins": {
-          "normal": [
-            0,
-            0
-          ],
-          "hover": [
-            0,
-            0
-          ],
-          "pressed": [
-            0,
-            0
-          ]
-        },
         "position": [
           633,
           0
@@ -931,39 +799,6 @@
       },
       "scene_players": {
         "available": true,
-        "states": {
-          "normal": "res://assets/ui/free_hud/bottom_main/menu_buttons/scene_players/normal.png",
-          "hover": "res://assets/ui/free_hud/bottom_main/menu_buttons/scene_players/hover.png",
-          "pressed": "res://assets/ui/free_hud/bottom_main/menu_buttons/scene_players/pressed.png"
-        },
-        "state_sizes": {
-          "normal": [
-            29,
-            29
-          ],
-          "hover": [
-            29,
-            29
-          ],
-          "pressed": [
-            29,
-            29
-          ]
-        },
-        "state_origins": {
-          "normal": [
-            0,
-            0
-          ],
-          "hover": [
-            0,
-            0
-          ],
-          "pressed": [
-            0,
-            0
-          ]
-        },
         "position": [
           671,
           0
@@ -971,81 +806,22 @@
       },
       "missions": {
         "available": true,
-        "states": {
-          "normal": "res://assets/ui/free_hud/bottom_main/menu_buttons/missions/normal.png",
-          "hover": "res://assets/ui/free_hud/bottom_main/menu_buttons/missions/hover.png",
-          "pressed": "res://assets/ui/free_hud/bottom_main/menu_buttons/missions/pressed.png"
-        },
-        "state_sizes": {
-          "normal": [
-            29,
-            29
-          ],
-          "hover": [
-            29,
-            29
-          ],
-          "pressed": [
-            29,
-            29
-          ]
-        },
-        "state_origins": {
-          "normal": [
-            0,
-            0
-          ],
-          "hover": [
-            0,
-            0
-          ],
-          "pressed": [
-            0,
-            0
-          ]
-        },
         "position": [
           709,
           0
         ]
       },
-      "system": {
+      "star_map": {
         "available": true,
-        "states": {
-          "normal": "res://assets/ui/free_hud/bottom_main/menu_buttons/system/normal.png",
-          "hover": "res://assets/ui/free_hud/bottom_main/menu_buttons/system/hover.png",
-          "pressed": "res://assets/ui/free_hud/bottom_main/menu_buttons/system/pressed.png"
-        },
-        "state_sizes": {
-          "normal": [
-            29,
-            29
-          ],
-          "hover": [
-            29,
-            29
-          ],
-          "pressed": [
-            29,
-            29
-          ]
-        },
-        "state_origins": {
-          "normal": [
-            0,
-            0
-          ],
-          "hover": [
-            0,
-            0
-          ],
-          "pressed": [
-            0,
-            0
-          ]
-        },
         "position": [
           747,
+          0
+        ]
+      },
+      "achievements": {
+        "available": true,
+        "position": [
+          785,
           0
         ]
       },
@@ -1089,43 +865,10 @@
           0
         ]
       },
-      "achievements": {
+      "system": {
         "available": true,
-        "states": {
-          "normal": "res://assets/ui/free_hud/bottom_main/menu_buttons/achievement_icon.tres",
-          "hover": "res://assets/ui/free_hud/bottom_main/menu_buttons/achievement_icon.tres",
-          "pressed": "res://assets/ui/free_hud/bottom_main/menu_buttons/achievement_icon.tres"
-        },
-        "state_sizes": {
-          "normal": [
-            31,
-            29
-          ],
-          "hover": [
-            31,
-            29
-          ],
-          "pressed": [
-            31,
-            29
-          ]
-        },
-        "state_origins": {
-          "normal": [
-            0,
-            0
-          ],
-          "hover": [
-            0,
-            0
-          ],
-          "pressed": [
-            0,
-            0
-          ]
-        },
         "position": [
-          785,
+          861,
           0
         ]
       }

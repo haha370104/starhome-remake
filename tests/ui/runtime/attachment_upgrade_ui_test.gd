@@ -2,7 +2,7 @@ extends SceneTree
 
 const Fixture := preload("res://tests/fixtures/player_panel_service_fixture.gd")
 var service := AuthoritativeCommerceService.new()
-var state: PlayerStateRecord
+var state: Player
 var manager: GameWindowManager
 var failures: Array[String] = []
 var sent: Array[Dictionary] = []
@@ -21,9 +21,7 @@ func _run() -> void:
 	service.initialize()
 	var items := ItemCatalog.new()
 	items.initialize()
-	var mapper := PlayerStateMapper.new(items)
-	var player: Player = mapper.to_domain(fixture._state).value
-	player.inventory.restore_items([])
+	var player: Player = fixture.current_player().value
 	var shop := PremiumShopService.new()
 	shop.initialize(items)
 	var id := "glory_equipment_newgunjoint_01c76b26fe"
@@ -32,7 +30,7 @@ func _run() -> void:
 	player.equip_vehicle_item("ui-upgrade", 32, player.inventory.revision, player.vehicle.loadout.revision)
 	for requirement: Dictionary in plan.requirements:
 		player.receive_loot(items.create(requirement.definition_id, {"instance_id": requirement.definition_id, "quantity": requirement.quantity}).value)
-	state = mapper.to_record(player).value
+	state = player
 	manager = GameWindowManager.new()
 	root.add_child(manager)
 	manager.configure(PlayerPanelSession.new(_dispatch))
@@ -53,10 +51,10 @@ func _run() -> void:
 	window.upgrade_button.pressed.emit()
 	_expect(window.confirmation.visible and window.confirmation.dialog_text.contains("+0 → +1")
 		and window.confirmation.dialog_text.contains("冲击晶体 ×6"), "二次确认显示实际单级消耗")
-	var before := state.to_dictionary()
+	var before := service.build_bundle(state)
 	window.confirmation.get_cancel_button().pressed.emit()
 	window.confirmation.hide()
-	_expect(state.to_dictionary() == before and sent.back().type == "query_attachment_upgrades", "取消确认不提交交易")
+	_expect(service.build_bundle(state) == before and sent.back().type == "query_attachment_upgrades", "取消确认不提交交易")
 	window.upgrade_button.pressed.emit()
 	window.confirmation.confirmed.emit()
 	window.confirmation.hide()
@@ -84,7 +82,7 @@ func _dispatch(command: Dictionary) -> void:
 		return
 	if result.value.changed:
 		state = result.value.candidate
-	manager.panel_session.apply_bundle(result.value.panel_bundle)
+	manager.panel_session.apply_bundle(service.build_bundle(state, result.value.operation) if result.value.changed else result.value.panel_bundle)
 
 
 ## 记录交互失败。

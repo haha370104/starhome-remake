@@ -38,9 +38,7 @@ func _init(definition: Dictionary = {}, state: Dictionary = {}) -> void:
 	presentation = (item_presentation as Dictionary).duplicate(true) \
 		if item_presentation is Dictionary else {}
 	var inventory_presentation := presentation_for("inventory")
-	icon_path = String(inventory_presentation.get(
-		"icon", presentation.get("icon", presentation_for("world").get("texture", ""))
-	))
+	icon_path = String(inventory_presentation.get("icon", presentation_for("world").get("texture", "")))
 
 
 ## 判断两个堆叠能否合并，绑定状态不同或被锁定时禁止合并。
@@ -63,22 +61,11 @@ func copy_stack(new_id: String, amount: int) -> GameItem:
 
 ## 按使用场景读取当前物品的表现配置。
 ## [param mode] inventory、world 或 dialog 等业务表现模式。
-## 返回该模式的防御性配置副本；兼容旧平铺配置时隔离背包图与对话框图。
+## 返回该模式的防御性配置副本。
 ## 设计：同一个物品实例持有一份业务定义，各视图只选择表现模式，不再维护独立物品目录。
 func presentation_for(mode: String) -> Dictionary:
 	var mode_value: Variant = presentation.get(mode, {})
-	if mode_value is Dictionary and not (mode_value as Dictionary).is_empty():
-		return (mode_value as Dictionary).duplicate(true)
-	if presentation.has("inventory") or presentation.has("dialog") or presentation.has("world"):
-		return {}
-	var legacy_mode := presentation.duplicate(true)
-	if mode == "dialog":
-		# 平铺配置的 icon/native_size 属于背包，不能遮蔽独立的 dialog_texture。
-		legacy_mode.erase("icon")
-		legacy_mode.erase("native_size")
-	else:
-		legacy_mode.erase("dialog_texture")
-	return legacy_mode
+	return (mode_value as Dictionary).duplicate(true) if mode_value is Dictionary else {}
 
 
 ## 查询指定表现模式在原客户端中的原生像素尺寸。
@@ -94,6 +81,7 @@ func visual_size_for(mode: String) -> Vector2i:
 func to_layout_dictionary() -> Dictionary:
 	return {
 		"instance_id": instance_id,
+		"display_name": display_name,
 		"container_id": container_id,
 		"position_px": [position_px.x, position_px.y],
 		"footprint_px": [footprint_px.x, footprint_px.y],

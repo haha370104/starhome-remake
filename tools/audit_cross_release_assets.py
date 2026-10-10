@@ -6,10 +6,12 @@ import json
 from collections import Counter, defaultdict
 from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
+from recovery.cross_release_paths import CACHE, CROSS_RELEASE_ROOT, REPORTS
+from recovery.sprites.ale_sprite import AleFile
 
 ROOT = Path(__file__).resolve().parents[1]
 OUTPUTS = ROOT.parent
-DEST = OUTPUTS / 'cross_release_asset_review'
+DEST = CROSS_RELEASE_ROOT
 RELEASES = {'free': 'starhome_lz_fr', 'jz': 'starhome_jznp'}
 
 
@@ -55,15 +57,15 @@ def gather():
     for item_id, row in read(weapons)['weapons'].items():
         if row['projectile'].get('source_release', 'starhome_lz_ry') != 'starhome_lz_ry':
             add(row['projectile']['ale_reference'], 'projectile', item_id, weapons)
-    for relative, category in [('starhome_lz_ry_maps_parsed/maps_missing_addimg.json', 'historical_map'), ('starhome_lz_ry_maps_missing_review/missing_scene_review.json', 'map')]:
-        source = OUTPUTS / relative
+    for source, category in [(ROOT / 'data/source_evidence/glory/map_recovery/maps_missing_addimg.json', 'historical_map'), (OUTPUTS / 'starhome_lz_ry_maps_missing_review/missing_scene_review.json', 'map')]:
         for scene in read(source)['maps']:
             for row in scene['missing_resources']:
                 add(row['source_ale'], category, scene['map_name'] + ' / ' + scene['map_code'], source)
-    recovery = OUTPUTS / 'starhome_lz_ry_full_parsed/official_lazy_cache/official_recovery_manifest.json'
-    for row in read(recovery)['assets'].values():
-        if row['status'] != 'recovered':
-            add(row['logical_path'], 'official_recovery_failure', row['status'], recovery)
+    recovery = ROOT / 'data/source_evidence/glory/official_recovery_manifest.json'
+    if recovery.is_file():
+        for row in read(recovery)['assets'].values():
+            if row['status'] != 'recovered':
+                add(row['logical_path'], 'official_recovery_failure', row['status'], recovery)
     maps = ROOT / 'data/content/known_maps_v1.json'
     for row in read(maps)['definitions']:
         if row.get('availability', {}).get('runtime') == 'unimplemented':
@@ -114,19 +116,11 @@ def candidates(key, exact, names):
     return sorted(possible), 'same_name_candidate' if possible else 'missing'
 
 
-def frames_for(release, key):
-    """Load source-decoded RGBA frames plus pivots for a content comparison."""
-    folder = OUTPUTS / (release + '_full_parsed/ale_sprites') / key.removesuffix('.ale')
-    if not (folder / 'frames.json').is_file():
-        name = next(k for k, v in RELEASES.items() if v == release)
-        folder = DEST / 'remote_cache' / name / 'ale_sprites' / key.removesuffix('.ale')
-    metadata = read(folder / 'frames.json')
-    pages = [Image.open(folder / p).convert('RGBA') for p in metadata['pages']]
-    result = []
-    for f in metadata['frames']:
-        x, y, w, h = f['x'], f['y'], f['width'], f['height']
-        result.append((pages[f['page']].crop((x, y, x+w, y+h)), (f['origin_x'], f['origin_y'])))
-    return result
+def frames_for(source):
+    """Decode all raw ALE frames and pivots for a content comparison."""
+    sprite = AleFile(source)
+    return [(frame.image.crop((0, 0, frame.width, frame.height)),
+             (frame.origin_x, frame.origin_y)) for frame in sprite.frames]
 
 
 def signature(frames):
@@ -141,18 +135,17 @@ def signature(frames):
 def main():
     """Generate a machine audit and a review gallery without touching runtime assets."""
     DEST.mkdir(exist_ok=True)
-    (DEST / 'previews').mkdir(exist_ok=True)
+    (REPORTS / 'previews').mkdir(parents=True, exist_ok=True)
     indexes = {}
     for name, release in RELEASES.items():
-        exact, names = raw_index(OUTPUTS / (release + '_full/raw'))
-        remote, _ = raw_index(DEST / 'remote_cache' / name / 'raw')
+        exact, names = raw_index(ROOT / (release + '_full/raw'))
+        remote, _ = raw_index(CACHE / name / 'raw')
         for key, path in remote.items():
             if key not in exact:
                 exact[key] = path
                 names[Path(key).name].append(key)
         indexes[name] = (exact, names)
-    glory, _ = raw_index(OUTPUTS / 'starhome_lz_ry_full/raw')
-    cache, _ = raw_index(OUTPUTS / 'starhome_lz_ry_full_parsed/official_lazy_cache/raw')
+    glory, _ = raw_index(ROOT / '../starhome_lz_ry_full/raw')
     records = gather()
     summaries = Counter()
     cards = []
@@ -160,7 +153,7 @@ def main():
     font = ImageFont.truetype('C:/Windows/Fonts/msyh.ttc', 19)
     for number, (key, row) in enumerate(sorted(records.items()), 1):
         row['id'] = f'A{number:03d}'
-        row['glory_now_available'] = key in glory or key in cache
+        row['glory_now_available'] = key in glory
         row['runtime_recovery'] = recoveries.get(key)
         row['releases'] = {}
         for name, (exact, names) in indexes.items():
@@ -177,7 +170,7 @@ def main():
                 row['comparison'] = 'identical_bytes'
             elif key.endswith('.ale'):
                 try:
-                    images = {name: frames_for(RELEASES[name], row['releases'][name]['candidates'][0]) for name in RELEASES}
+                    images = {name: frames_for(indexes[name][0][row['releases'][name]['candidates'][0]]) for name in RELEASES}
                     row['decoded_sha256'] = [signature(images[name]) for name in RELEASES]
                     row['frame_counts'] = [len(images[name]) for name in RELEASES]
                     row['comparison'] = 'identical_frames' if len(set(row['decoded_sha256'])) == 1 else 'different_frames'
@@ -203,10 +196,10 @@ def main():
                     resized = image.resize((max(1,round(image.width*scale)), max(1,round(image.height*scale))), Image.Resampling.NEAREST)
                     canvas.paste(resized,(side*480+240-resized.width//2,80+sample*170+(140-resized.height)//2),resized)
                     draw.text((side*480+15,222+sample*170),f'帧{index} / {image.width}×{image.height} / 原点{pivot}',font=font,fill='#b6c4d0')
-            relative = 'previews/' + row['id'] + '.png'; canvas.save(DEST / relative); row['preview'] = relative
+            relative = 'previews/' + row['id'] + '.png'; canvas.save(REPORTS / relative); row['preview'] = relative
             cards.append(f'<article><h2>{row["id"]} · {html.escape(key)}</h2><p>{html.escape("；".join(u["label"] for u in row["uses"][:6]))}</p><img src="{relative}"><p>免费：{html.escape(a[0])}<br>激战：{html.escape(b[0])}</p></article>')
     report = {'date':'2026-09-17','scope':'All explicit missing references in item/projectile catalogs, historical/current scene audits, failed exact-path recovery records and known missing map packages. Not-declared references are not invented.', 'comparison':'All RGBA frames, dimensions, frame order and origins. Filename matches without exact paths remain unconfirmed candidates.', 'summary':dict(summaries),'total':len(records),'glory_already_available':sum(r['glory_now_available'] for r in records.values()),'records':list(records.values())}
-    (DEST/'audit.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+    (REPORTS/'audit.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
     page='<!doctype html><meta charset="utf-8"><title>缺失素材版本对照</title><style>body{background:#0e1b27;color:#e9f1f8;font:16px "Microsoft YaHei",sans-serif;max-width:1080px;margin:32px auto}article{padding:18px;background:#172c3d;margin:22px 0;border-radius:12px}img{width:100%;max-width:960px}h2{font-size:20px;overflow-wrap:anywhere}</style><h1>免费版 / 新激战版 差异对照</h1><p>全部帧及原点参与比较。下图保留历史差异，纳米护甲、帝王炮及帝王战车已按用户选择使用免费版。接入状态见下表。</p>'+''.join(cards)
     statuses = {'free_only':'仅免费版有候选','jz_only':'仅激战版有候选','identical_bytes':'两版逐字节相同','identical_frames':'两版全部帧相同','different_frames':'两版图像不同','neither_found':'两版未找到','multiple_candidates':'多重同名候选','decode_unavailable':'解码未完成','different_binary':'二进制不同'}
     current = sorted((r for r in records.values() if not r['glory_now_available']),key=lambda r:r['id'])
@@ -222,7 +215,7 @@ def main():
         table += '<tr class="result">'+''.join('<td>'+html.escape(v)+'</td>' for v in values)+'</tr>'
     table += '</table><script>document.querySelector("#search").oninput=e=>document.querySelectorAll(".result").forEach(r=>r.hidden=!r.textContent.toLowerCase().includes(e.target.value.toLowerCase()))</script>'
     page += '<style>td,th{padding:9px;border:1px solid #395368;vertical-align:top;overflow-wrap:anywhere}table{border-collapse:collapse;table-layout:fixed;width:100%;font-size:13px}th{background:#264256}</style>'+table
-    (DEST/'index.html').write_text(page,encoding='utf-8')
+    (REPORTS/'index.html').write_text(page,encoding='utf-8')
     print(json.dumps({k:v for k,v in report.items() if k!='records'},ensure_ascii=False,indent=2))
     print('difference_previews',len(cards))
 

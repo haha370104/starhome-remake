@@ -12,13 +12,14 @@ var details: RichTextLabel
 var search: LineEdit
 var summary: Label
 var _category := "kill"
+var _achievements: PlayerAchievements
 var _snapshot: Dictionary = {}
 var _tabs: Array[Button] = []
 
 
 ## 构建成就浏览器，只消费权威投影，不提供积分或称号写入口。
 func _ready() -> void:
-	build_modern_window(Vector2(740, 520), "成就系统")
+	build_modern_window(Vector2(740, 480), "成就系统")
 	summary = make_label("正在读取成就…", Rect2(20, 54, 700, 32))
 	summary.add_theme_font_size_override("font_size", 18)
 	summary.add_theme_color_override("font_color", Color("71c6d5"))
@@ -50,8 +51,9 @@ func _ready() -> void:
 	details.add_theme_stylebox_override("normal", _surface_style("152330", "273b4b"))
 	details.add_theme_constant_override("line_separation", 5)
 	content_root.add_child(details)
-	_style_button(make_button("关闭", Rect2(320, 472, 100, 34), request_close))
 	_select_category(_category)
+	visibility_changed.connect(func() -> void:
+		if visible and _achievements != null: apply_snapshot(_achievements.snapshot()))
 
 
 ## 应用同一玩家版本的成就投影，并保留分类、搜索和当前选中项。
@@ -88,8 +90,7 @@ func _rebuild_list() -> void:
 		var name_text := String(row.get("name", row.get("target_name", "")))
 		if not search.text.is_empty() and not name_text.contains(search.text.strip_edges()):
 			continue
-		var text := "%s · %d点%s" % [name_text, int(row.get("required_points", 0)), " · 生效中" if row.get("active", false) else ""] \
-			if _category == "titles" else "%s · %d / %d%s" % [name_text, int(row.get("progress", 0)), int(row.get("required", 0)), " ✓" if row.get("completed", false) else ""]
+		var text := _row_text(row)
 		var index := listing.add_item(text)
 		listing.set_item_metadata(index, row)
 		listing.set_item_tooltip(index, text)
@@ -121,3 +122,47 @@ func _show_detail(index: int) -> void:
 			String(row["target_name"]), ACTION_NAMES[_category], String(row["target_name"]),
 			int(row["progress"]), int(row["required"]), int(row["points"]),
 			"已达成，成就点已自动计入。" if row.get("completed", false) else "达标后自动获得成就点。"]
+
+
+## 保存当前成就引用，隐藏时不生成或重建完整浏览列表。
+## [param achievements] 当前玩家的成就投影。
+func apply_achievements(achievements: PlayerAchievements) -> void:
+	_achievements = achievements
+	if is_visible_in_tree(): apply_snapshot(achievements.snapshot())
+
+
+## 更新已有成就行的计数；普通击杀不重建列表或改变选择与滚动位置。
+## [param achievements] 当前领域投影。[param counters] 本次变化的最终计数。
+func apply_changes(achievements: PlayerAchievements, counters: Dictionary) -> void:
+	_achievements = achievements
+	if not is_visible_in_tree(): return
+	if _snapshot.is_empty():
+		apply_snapshot(achievements.snapshot())
+		return
+	var status := achievements.network_snapshot()
+	_snapshot.merge(status, true)
+	summary.text = "成就点  %d    ·    %s" % [int(status.points), String(status.title_name)]
+	for row: Dictionary in _snapshot.entries:
+		var key := "%s:%s" % [row.category, row.target_id]
+		if not counters.has(key): continue
+		row.progress = mini(int(row.required), int(counters[key]))
+		row.completed = int(row.progress) >= int(row.required)
+	for row: Dictionary in _snapshot.titles:
+		row.unlocked = int(status.points) >= int(row.required_points)
+		row.active = row.id == status.title_id
+	for index in listing.item_count:
+		var row: Dictionary = listing.get_item_metadata(index)
+		if _category != "titles" and not counters.has("%s:%s" % [row.category, row.target_id]): continue
+		var text := _row_text(row)
+		listing.set_item_text(index, text)
+		listing.set_item_tooltip(index, text)
+		if listing.is_selected(index): _show_detail(index)
+
+
+## 全量和增量呈现共用每行文字格式。
+## [param row] 成就或称号条目。
+## 返回当前进度对应的显示文字。
+func _row_text(row: Dictionary) -> String:
+	if _category == "titles":
+		return "%s · %d点%s" % [String(row.name), int(row.required_points), " · 生效中" if row.get("active", false) else ""]
+	return "%s · %d / %d%s" % [String(row.target_name), int(row.progress), int(row.required), " ✓" if row.completed else ""]

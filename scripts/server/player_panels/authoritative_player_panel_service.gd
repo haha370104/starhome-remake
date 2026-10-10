@@ -2,14 +2,11 @@ class_name AuthoritativePlayerPanelService
 extends RefCounted
 
 const ItemCatalogScript := preload("res://scripts/domain/items/item_catalog.gd")
-const SkillProgressionScript := preload("res://scripts/domain/skills/skill_progression.gd")
-const PlayerStateMapperScript := preload("res://scripts/server/persistence/player_state_mapper.gd")
 const PlayerPanelProjectorScript := preload(
 	"res://scripts/shared/player_panel_projector.gd"
 )
 
-var _catalog: ItemCatalog
-var _mapper: PlayerStateMapper
+var catalog: ItemCatalog
 var _projector: PlayerPanelProjector
 var _skill_progression_config: Dictionary = {}
 var _rewards: RewardPipeline
@@ -20,8 +17,8 @@ var _rewards: RewardPipeline
 ## 设计：应用服务只编排用例，不再持有物品类型、换装和属性计算规则。
 ## [param rewards] 同一服务器共享的奖励切面，省略时使用独立默认策略。
 func initialize(rewards: RewardPipeline = null) -> DomainResult:
-	_catalog = ItemCatalogScript.new()
-	var catalog_result := _catalog.initialize()
+	catalog = ItemCatalogScript.new()
+	var catalog_result := catalog.initialize()
 	if not catalog_result.is_ok:
 		return catalog_result
 	var skill_config_result := JsonConfigLoader.load_dictionary(
@@ -33,20 +30,28 @@ func initialize(rewards: RewardPipeline = null) -> DomainResult:
 	var policy: DomainResult = DomainResult.ok(rewards) if rewards != null else RewardPolicyLoader.load_default()
 	if not policy.is_ok: return policy
 	_rewards = policy.value
-	_mapper = PlayerStateMapperScript.new(_catalog, _rewards)
-	_projector = PlayerPanelProjectorScript.new(_catalog, _skill_progression_config)
+	_projector = PlayerPanelProjectorScript.new(catalog, _skill_progression_config)
 	return DomainResult.ok(self)
+
+
+func build_public_view(player: Player, view: String) -> Dictionary:
+	return _projector.build_public_view(player, view)
 
 
 ## 根据已登记角色状态执行查询或领域命令。
 ## [param state] 权威持久化聚合副本。
 ## [param command] 仅含操作意图、实例标识、目标与 revision 的命令。
-## 返回 candidate 与完整 panel_bundle；查询命令的 candidate 与输入等价。
+## 返回候选及组件变化；完整面板仅用于显式查询。
 ## 设计：服务不接触 peer 身份或仓储，调用方负责会话绑定与原子提交。
-func execute(state: PlayerStateRecord, command: Dictionary) -> DomainResult:
-	if state == null or _mapper == null or _projector == null:
+func execute(state: Player, command: Dictionary) -> DomainResult:
+	if state == null or _projector == null:
 		return DomainResult.failure(&"panels.service_unavailable", "player panel service is unavailable")
-	var mapped := _mapper.to_domain(state)
+	var kind := String(command.get("type", ""))
+	var parts: Array = ["inventory"] if kind in ["move_inventory_item", "arrange_inventory", "split_inventory_item", "merge_inventory_item"] else PlayerTransaction.EQUIPMENT
+	if kind == "capture_vehicle_preset": parts = ["presets"]
+	elif kind == "apply_vehicle_preset": parts = ["inventory", "equipment", "presets"]
+	elif kind == "use_inventory_item": parts = ["inventory", "food"]
+	var mapped: DomainResult = DomainResult.ok(state) if kind == "query" else PlayerTransaction.prepare(state, parts, catalog)
 	if not mapped.is_ok:
 		return mapped
 	var player: Player = mapped.value
@@ -55,115 +60,51 @@ func execute(state: PlayerStateRecord, command: Dictionary) -> DomainResult:
 	var operation := _execute_domain_command(player, command_type, command)
 	if not operation.is_ok:
 		return operation
-	var candidate: PlayerStateRecord = state.duplicate_record()
-	if changed:
-		var persisted := _mapper.to_record(player)
-		if not persisted.is_ok:
-			return persisted
-		candidate = persisted.value
+	var candidate := player if changed else state
 	return DomainResult.ok({
 		"candidate": candidate,
 		"changed": changed,
-		"panel_bundle": _projector.build_bundle(player),
+		"operation": operation.value,
+		"panel_bundle": _projector.build_bundle(player) if not changed else {},
+		"change": changes(state, player) if changed else null,
 	})
+
+
+## 比较隔离候选与在线对象，供面板和生产事务共用提交后的增量协议。
+## [param before] 在线对象。[param after] 校验成功的候选。
+## 返回受影响组件的最终值。
+func changes(before: Player, after: Player) -> PlayerChange:
+	return _projector.changes(before, after)
 
 
 ## 从同一持久化记录构建人物、背包和战车一致快照。
 ## [param state] 已通过校验的权威玩家记录。
 ## 返回包含 transaction_revision 的三面板快照；映射失败时返回空字典。
-func build_bundle(state: PlayerStateRecord) -> Dictionary:
-	if state == null or _mapper == null or _projector == null:
+func build_bundle(state: Player) -> Dictionary:
+	if state == null or _projector == null:
 		return {}
-	var mapped := _mapper.to_domain(state)
-	if not mapped.is_ok:
-		push_error("Player panel projection failed: %s" % mapped.error_message)
+	return _projector.build_bundle(state)
+
+
+func build_llm_panels(state: Player) -> Dictionary:
+	if state == null or _projector == null:
 		return {}
-	return _projector.build_bundle(mapped.value)
-
-
-## 推进食品到期及在线回血，并返回可持久化的完整候选状态。
-## [param state] 已合入实时战斗资源的权威状态。
-## [param now] 服务器当前秒数。
-## 返回新状态，或映射错误。
-func advance_food_status(state: PlayerStateRecord, now: int) -> DomainResult:
-	var mapped := _mapper.to_domain(state)
-	if not mapped.is_ok:
-		return mapped
-	var player: Player = mapped.value
-	player.advance_food_status(now)
-	return _mapper.to_record(player)
-
-
-## 将权威持久化记录还原为共享充血 Player 聚合，供同进程其他权威模块复用。
-## [param state] 已通过仓储校验的玩家记录。
-## 返回含完整固定装配对象的 Player，或映射失败原因。
-## 设计：战斗、面板和存档必须共用同一映射边界，禁止再从 DTO 手工拼第二套战车状态。
-func restore_player(state: PlayerStateRecord) -> DomainResult:
-	if state == null or _mapper == null:
-		return DomainResult.failure(&"panels.service_unavailable", "player mapper is unavailable")
-	return _mapper.to_domain(state)
-
-
-## 将战斗模块预检通过的地面掉落加入权威玩家聚合。
-## [param state] 自动存档服务持有的当前玩家记录副本。
-## [param loot] 包含 loot_id、item_definition_id 与 quantity 的可信掉落 DTO。
-## [param achievement_event] 仅采矿结算入口提供的事实，与入包成功共享同一候选事务。
-## 返回待原子提交的 candidate 以及更新后的三面板快照。
-## 设计：目录组装和背包规则在共享领域层完成，本服务不信任客户端提供的物品内容。
-func grant_loot(state: PlayerStateRecord, loot: Dictionary, achievement_event: AchievementEvent = null) -> DomainResult:
-	if state == null or _mapper == null or _catalog == null or _projector == null:
-		return DomainResult.failure(&"loot.service_unavailable", "loot service is unavailable")
-	var mapped := _mapper.to_domain(state)
-	if not mapped.is_ok:
-		return mapped
-	var loot_id := String(loot.get("loot_id", ""))
-	var definition_id := String(loot.get("item_definition_id", ""))
-	var quantity := int(loot.get("quantity", 0))
-	if loot_id.is_empty() or definition_id.is_empty() or quantity <= 0:
-		return DomainResult.failure(&"loot.invalid_payload", "authoritative loot payload is invalid")
-	var created := _catalog.create(definition_id, {
-		"instance_id": loot_id,
-		"quantity": quantity,
-		"container_id": "main",
-		"position_px": [0, 0],
-		"footprint_px": [30, 30],
-	})
-	if not created.is_ok:
-		return created
-	var player: Player = mapped.value
-	var received := player.receive_loot(created.value)
-	if not received.is_ok:
-		return received
-	var before := player.achievements.bonuses().to_dictionary()
-	if achievement_event != null:
-		if not achievement_event.is_valid() or achievement_event.kind != AchievementEvent.Kind.MINERAL_COLLECTED \
-			or achievement_event.target_id != definition_id or achievement_event.quantity != quantity \
-			or achievement_event.event_id != loot_id:
-			return DomainResult.failure(&"achievements.invalid_event", "mining achievement must match the settled reward")
-		player.record_achievement(achievement_event)
-	var persisted := _mapper.to_record(player)
-	if not persisted.is_ok:
-		return persisted
-	return DomainResult.ok({
-		"candidate": persisted.value,
-		"title_changed": before != player.achievements.bonuses().to_dictionary(),
-		"panel_bundle": _projector.build_bundle(player),
-	})
+	return _projector.build_llm_panels(state)
 
 
 ## 消费一个服务器内部玩法事件并向对应技能发放经验。
-## [param state] 自动存档服务持有的当前玩家记录副本。
+## [param state] 在线状态所有者持有的当前玩家。
 ## [param progression_event] 由权威移动或战斗模块生成的可信事件。
 ## 返回候选聚合、成长结果及最新面板快照；无效来源或零收益返回领域错误。
 ## 设计：客户端不能提交此事件；经验换算、升级与综合等级重算全部留在服务端应用边界。
 func grant_skill_progression(
-	state: PlayerStateRecord,
+	state: Player,
 	progression_event: Dictionary,
 ) -> DomainResult:
-	if state == null or _mapper == null or _projector == null \
+	if state == null or _projector == null \
 			or _skill_progression_config.is_empty():
 		return DomainResult.failure(&"progression.service_unavailable", "skill progression service is unavailable")
-	var mapped := _mapper.to_domain(state)
+	var mapped := PlayerTransaction.prepare(state, ["skills"], catalog)
 	if not mapped.is_ok:
 		return mapped
 	var player: Player = mapped.value
@@ -171,10 +112,8 @@ func grant_skill_progression(
 	var granted := grant_progression(candidate, progression_event)
 	if not granted.is_ok: return granted
 	player.level = candidate.level
-	var persisted := _mapper.to_record(player)
-	if not persisted.is_ok: return persisted
 	return DomainResult.ok({
-		"candidate": persisted.value,
+		"candidate": player,
 		"progression": granted.value,
 		"panel_bundle": _projector.build_bundle(player),
 	})
@@ -187,7 +126,7 @@ func grant_skill_progression(
 func grant_progression(candidate: PlayerSkillProgression, progression_event: Dictionary) -> DomainResult:
 	if candidate == null or _rewards == null or _skill_progression_config.is_empty():
 		return DomainResult.failure(&"progression.service_unavailable", "skill progression service is unavailable")
-	var converted := _experience_from_event(progression_event, candidate.skills)
+	var converted := _experience_from_event(progression_event)
 	if not converted.is_ok:
 		return converted
 	var value: Dictionary = converted.value
@@ -213,8 +152,7 @@ func grant_progression(candidate: PlayerSkillProgression, progression_event: Dic
 ## [param progression_event] 移动、有效伤害或未来系统显式发放事件。
 ## 返回 skill_id 与非负经验量；格式非法或不产生经验时返回错误。
 ## 设计：所有倍率和驾驶计重参数均来自服务端配置，事件只携带已确认的客观结果。
-## [param skills] 本次结算的技能事实，矿物经验需要查询实际等级。
-func _experience_from_event(progression_event: Dictionary, skills: SkillBook) -> DomainResult:
+func _experience_from_event(progression_event: Dictionary) -> DomainResult:
 	var source := String(progression_event.get("source", ""))
 	var skill_id := String(progression_event.get("skill_id", ""))
 	var sources: Dictionary = _skill_progression_config.get("experience_sources", {})
@@ -235,19 +173,13 @@ func _experience_from_event(progression_event: Dictionary, skills: SkillBook) ->
 				return DomainResult.failure(&"progression.invalid_event", "driving event or configuration is invalid")
 			amount = distance * minf(weight, weight_cap) / experience_unit
 		"mined_material":
-			if skill_id != "mining" or skills == null:
+			if skill_id != "mining":
 				return DomainResult.failure(&"progression.invalid_event", "mining event targets another skill")
 			var quantity := int(progression_event.get("quantity", 0))
 			var mineral_coefficient := float(progression_event.get("experience_coefficient", 0.0))
-			var equivalents_per_level := float(sources.get("mining_iron_equivalent_per_level", 0.0))
-			var threshold := SkillProgressionScript.get_need_points(
-				&"mining", skills.base_level("mining"), _skill_progression_config
-			)
-			if quantity <= 0 or mineral_coefficient <= 0.0 or equivalents_per_level <= 0.0 \
-					or not threshold.is_ok:
+			if quantity <= 0 or mineral_coefficient <= 0.0:
 				return DomainResult.failure(&"progression.invalid_event", "mining event or configuration is invalid")
-			amount = float(quantity) * mineral_coefficient * float(threshold.value) \
-				/ equivalents_per_level
+			amount = float(quantity) * mineral_coefficient * 1.5
 		"authoritative_action":
 			amount = float(progression_event.get("amount", 0.0))
 		_:
@@ -285,7 +217,8 @@ func _execute_domain_command(
 			return player.arrange_inventory(int(command.get("inventory_revision", -1)))
 		&"split_inventory_item", &"merge_inventory_item":
 			return player.change_stack(String(command_type), String(command.get("instance_id", "")),
-				int(command.get("quantity", 0)), int(command.get("inventory_revision", -1)))
+				int(command.get("quantity", 0)), int(command.get("inventory_revision", -1)),
+				String(command.get("target_instance_id", "")))
 		&"use_inventory_item":
 			return player.use_inventory_item(String(command.get("instance_id", "")),
 				int(command.get("inventory_revision", -1)), int(Time.get_unix_time_from_system()))
@@ -329,3 +262,56 @@ func _position_from_command(command: Dictionary) -> DomainResult:
 	if not value is Array or value.size() != 2:
 		return DomainResult.failure(&"inventory.invalid_position", "inventory position must contain two coordinates")
 	return DomainResult.ok(Vector2i(int(value[0]), int(value[1])))
+
+
+## 直接执行已经预检的拾取；背包领域规则保证失败没有部分合并。
+## [param player] 唯一在线聚合。[param loot] 地面模块确认的掉落事实。
+## 返回受影响的物品实例，成功后调用方必须同步完成地面提交。
+func receive_loot(player: Player, loot: Dictionary) -> DomainResult:
+	if loot.get("item") is GameItem:
+		if player.inventory.find(loot.item.instance_id) != null:
+			return DomainResult.failure(&"inventory.duplicate_item", "物品身份重复")
+		var added := player.inventory.add_from_transfer(loot.item)
+		if added.is_ok: player.inventory.commit_transfer()
+		return DomainResult.ok(loot.item) if added.is_ok else added
+	if String(loot.get("loot_id", "")).is_empty() or String(loot.get("item_definition_id", "")).is_empty() or int(loot.get("quantity", 0)) <= 0:
+		return DomainResult.failure(&"loot.invalid_payload", "authoritative loot payload is invalid")
+	var created := catalog.create(String(loot.item_definition_id), {
+		"instance_id": String(loot.loot_id), "quantity": int(loot.quantity),
+		"container_id": "main", "position_px": [0, 0], "footprint_px": [30, 30]})
+	if not created.is_ok: return created
+	return player.receive_loot(created.value)
+
+
+## 只投影此次拾取涉及的物品与收集任务。
+## [param player] 已完成提交的玩家。[param item] 合堆或新增的最终实例。
+## 返回类型化变更；同步身份及基准版本由发布端补齐。
+func pickup_change(player: Player, item: GameItem) -> PlayerChange:
+	var change := PlayerChange.new()
+	change.revision = player.revision
+	change.inventory_revision = player.inventory.revision
+	change.items.append(item.to_view_dictionary())
+	change.quests = _projector.collection_changes(player, item.definition_id)
+	return change
+
+
+## 仅投影发生可见变化的技能，保留完整精度但不复制装备和背包。
+## [param player] 已提交的玩家。[param skill_id] 发生变化的技能。[param upgraded] 是否刚升级。
+## 返回可与同刻击杀合并的增量。
+func progression_change(player: Player, skill_id: String, upgraded: bool) -> PlayerChange:
+	var change := PlayerChange.new()
+	change.revision = player.revision
+	change.skills.append(player.skills.to_view_row(skill_id, player.character_equipment.skill_modifiers(), _skill_progression_config))
+	if upgraded:
+		change.level = player.level
+		change.attributes_changed = true
+	return change
+
+
+## 为实时装备耐久变化生成最小战车增量，不复制人物和背包。
+## [param player] 已应用模拟耐久的权威玩家。
+## 返回可与采矿或战斗变化合并的增量。
+func vehicle_durability_change(player: Player) -> PlayerChange:
+	var change := _projector.vehicle_durability_change(player)
+	change.revision = player.revision
+	return change

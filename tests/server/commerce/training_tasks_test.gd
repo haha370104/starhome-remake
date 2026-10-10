@@ -1,5 +1,7 @@
 extends SceneTree
 
+const CommerceRecordAdapter := preload("res://tests/fixtures/commerce_record_adapter.gd")
+
 var checks := 0
 var failures: Array[String] = []
 var _now := 1788710400
@@ -54,6 +56,10 @@ func _initialize() -> void:
 			_expect(result.is_ok, "击杀20后领奖")
 			_expect(player.skills.base_level(skill_id) == initial_level + round_number + 1, "每次只升一级")
 			_expect(player.skills.current_experience(skill_id) == 0, "升级经验清零")
+			var next := rule.snapshot(player.quest_states[task_id], service.current_day())
+			_expect(not next.accepted and next.target.is_empty()
+				and next.requirements[0].display_name == "接取后指定目标怪物",
+				"领奖后下一轮不沿用上一轮训练目标")
 			_expect(not service.execute(player, "combat_trainer", {"type": "turn_in_weapon_merchant_task", "task_id": task_id}).is_ok, "重复领奖拒绝")
 		_expect(not service.execute(player, "combat_trainer", {"type": "accept_weapon_merchant_task", "task_id": task_id}).is_ok, "当日第11次拒绝")
 	_now += 86400
@@ -79,7 +85,7 @@ func _test_persistence_and_authority() -> void:
 	_expect(commerce.initialize().is_ok, "服务初始化")
 	var state := fixture._state.duplicate_record()
 	state.map_id = "yian_harbor_hall_floor_1"
-	var accepted := commerce.execute(state, {"type": "accept_weapon_merchant_task", "merchant_id": "combat_trainer", "task_id": "training_energy_cannon"})
+	var accepted := CommerceRecordAdapter.execute(commerce, state, {"type": "accept_weapon_merchant_task", "merchant_id": "combat_trainer", "task_id": "training_energy_cannon"})
 	_expect(accepted.is_ok, "服务端接取：" + accepted.error_message)
 	if not accepted.is_ok:
 		return
@@ -88,13 +94,15 @@ func _test_persistence_and_authority() -> void:
 	_expect(round_trip.is_ok and round_trip.value.quest_states == state.quest_states, "重登目标和日次数保留")
 	state = round_trip.value
 	var target := String(state.quest_states["training_energy_cannon"]["target"]["species_id"])
+	var mapper: PlayerStateMapper = PlayerStateMapper.new(commerce._catalog)
 	for number in range(20):
-		var killed := commerce.record_monster_kill(state, {"killer_id": state.character_id, "species_id": target, "death_id": "persistence.%d" % number})
-		_expect(killed.is_ok and killed.value["changed"], "存档击杀计数")
-		state = killed.value["candidate"]
-	var ready := commerce.execute(state, {"type": "query_weapon_merchant", "merchant_id": "combat_trainer"})
+		var player: Player = mapper.to_domain(state).value
+		var killed: bool = commerce.quests.record_monster_kill(player, {"killer_id": state.character_id, "species_id": target, "death_id": "persistence.%d" % number})
+		_expect(killed, "存档击杀计数")
+		state = mapper.to_record(player).value
+	var ready := CommerceRecordAdapter.execute(commerce, state, {"type": "query_weapon_merchant", "merchant_id": "combat_trainer"})
 	_expect(ready.is_ok and ready.value["panel_bundle"]["commerce"]["tasks"][0]["ready_to_turn_in"], "客户端得到可交付状态")
-	var turn_in := commerce.execute(state, {"type": "turn_in_weapon_merchant_task", "merchant_id": "combat_trainer", "task_id": "training_energy_cannon"})
+	var turn_in := CommerceRecordAdapter.execute(commerce, state, {"type": "turn_in_weapon_merchant_task", "merchant_id": "combat_trainer", "task_id": "training_energy_cannon"})
 	_expect(turn_in.is_ok and turn_in.value["operation"].has("skill_level_up"), "奖励携带系统升级事件")
 	_expect(bool(state.quest_states["training_energy_cannon"]["accepted"]), "结算不原地污染旧存档")
 	var full := Player.new({"map_id": "yian_harbor_hall_floor_1", "skills": {"energy_cannon": 700}})

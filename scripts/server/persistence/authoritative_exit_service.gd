@@ -1,6 +1,8 @@
 class_name AuthoritativeExitService
 extends RefCounted
 
+const PerformanceTelemetryScript := preload("res://scripts/core/performance_telemetry.gd")
+
 const RECEIPT_LIMIT := 128
 var _autosave: AuthoritativeAutosaveService
 var _capture: Callable
@@ -32,16 +34,23 @@ func execute(peer_id: int, session: ServerSession, command: Dictionary) -> Domai
 		return DomainResult.failure(&"exit.session_missing", "当前没有可保存的角色会话")
 	if _autosave == null or not _capture.is_valid() or not _release.is_valid():
 		return DomainResult.failure(&"exit.unavailable", "存档服务尚未就绪")
-	var current := _autosave.state_for(session.entity_id)
+	var current := _autosave.player_for(session.entity_id)
 	if current == null: return DomainResult.failure(&"exit.state_missing", "当前角色状态不可用")
+	var phase_started_at := PerformanceTelemetryScript.begin(&"server_exit_capture")
 	var captured: DomainResult = _capture.call(current)
+	PerformanceTelemetryScript.end(&"server_exit_capture", phase_started_at)
 	if not captured.is_ok: return captured
-	var candidate: PlayerStateRecord = captured.value
+	var prepared := PlayerTransaction.prepare(captured.value, ["production"], null)
+	if not prepared.is_ok: return prepared
+	var candidate: Player = prepared.value
 	candidate.production.pause("退出游戏后生产已暂停")
-	var committed := _autosave.commit_player_state(session.entity_id, candidate, true)
+	phase_started_at = PerformanceTelemetryScript.begin(&"server_exit_durable_commit")
+	var committed := _autosave.commit_player(session.entity_id, candidate, true)
+	PerformanceTelemetryScript.end(&"server_exit_durable_commit", phase_started_at)
 	if not committed.is_ok: return committed
+	var saved_revision := _autosave.saved_revision_for(session.entity_id)
 	_release.call(session, committed.value)
-	var receipt := {"request_id": String(identity), "saved_revision": int(committed.value.revision)}
+	var receipt := {"request_id": String(identity), "saved_revision": saved_revision}
 	_receipts[peer_id] = receipt
 	if _receipts.size() > RECEIPT_LIMIT: _receipts.erase(_receipts.keys()[0])
 	return DomainResult.ok({"exit_receipt": receipt.duplicate(true)})

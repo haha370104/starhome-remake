@@ -1,6 +1,13 @@
 class_name InventoryStackRecord
 extends RefCounted
 
+const CURRENT_FIELDS := [
+	"stack_id", "item_definition_id", "quantity", "slot_index", "container_id", "position_px", "footprint_px",
+	"locked", "bound", "max_durability", "durability", "upgrade_level", "enhancement", "clothing_improvement",
+	"equipment_memory", "vehicle_sockets", "crystal_source", "austin_glens", "central_growth", "sama",
+	"processing", "extra_attributes", "strengthening", "equipment_quality", "forging", "usage", "magazine",
+	"crystal_cracks", "crystal_source_cracks",
+]
 
 var stack_id := ""
 var item_definition_id := ""
@@ -39,16 +46,18 @@ var crystal_source_cracks: int = 0
 static func from_dictionary(raw: Variant) -> DomainResult:
 	if not raw is Dictionary:
 		return DomainResult.failure(&"persistence.invalid_inventory_stack", "inventory stack must be a dictionary")
+	if raw.size() != CURRENT_FIELDS.size():
+		return DomainResult.failure(&"persistence.invalid_inventory_stack", "inventory stack fields do not match the current schema")
+	for field: String in CURRENT_FIELDS:
+		if not raw.has(field):
+			return DomainResult.failure(&"persistence.invalid_inventory_stack", "inventory stack is missing a current-schema field")
 	var stack := InventoryStackRecord.new()
 	stack.stack_id = String(raw.get("stack_id", ""))
 	stack.item_definition_id = String(raw.get("item_definition_id", ""))
 	stack.quantity = int(raw.get("quantity", 0))
 	stack.slot_index = int(raw.get("slot_index", -1))
 	stack.container_id = String(raw.get("container_id", "main"))
-	var position_value: Variant = raw.get("position_px", [
-		(stack.slot_index % 8) * 30,
-		floori(float(stack.slot_index) / 8.0) * 30,
-	])
+	var position_value: Variant = raw.get("position_px")
 	var footprint_value: Variant = raw.get("footprint_px", [30, 30])
 	if not position_value is Array or position_value.size() != 2 \
 			or not footprint_value is Array or footprint_value.size() != 2:
@@ -191,21 +200,21 @@ static func from_item(item: GameItem, stack_index: int) -> DomainResult:
 		"max_durability": saved_max_durability,
 		"durability": saved_durability,
 		"upgrade_level": (item as Equipment).upgrade_level if item is Equipment else 0,
-		"enhancement": (item as Clothing).enhancement.to_dictionary() if item is Clothing else {},
-		"clothing_improvement": (item as Clothing).improvement.to_dictionary() if item is Clothing else {},
+		"enhancement": (item as Clothing).enhancement.to_dictionary() if item is Clothing else ClothingEnhancement.new().to_dictionary(),
+		"clothing_improvement": (item as Clothing).improvement.to_dictionary() if item is Clothing else ClothingImprovement.new().to_dictionary(),
 		"equipment_memory": (item as EquipmentMemoryModule).memory.to_dictionary() if item is EquipmentMemoryModule else {},
 		"vehicle_sockets": (item as VehicleEquipment).sockets.to_dictionary() if item is VehicleEquipment else {},
-		"processing": (item as Equipment).processing.to_dictionary() if item is Equipment else {},
-		"extra_attributes": (item as Equipment).extra_attributes.to_dictionary() if item is Equipment else {},
-		"strengthening": (item as Equipment).strengthening.to_dictionary() if item is Equipment else {},
+		"processing": (item as Equipment).processing.to_dictionary() if item is Equipment else EquipmentProcessing.new().to_dictionary(),
+		"extra_attributes": (item as Equipment).extra_attributes.to_dictionary() if item is Equipment else ExtraAttributes.new().to_dictionary(),
+		"strengthening": (item as Equipment).strengthening.to_dictionary() if item is Equipment else EquipmentStrengthening.new().to_dictionary(),
 		"equipment_quality": (item as Equipment).quality.to_dictionary() if item is Equipment else {},
 		"forging": (item as Equipment).forging.to_dictionary() if item is Equipment else {},
-		"usage": (item as Equipment).usage.to_dictionary() if item is Equipment else {},
-		"magazine": (item as Equipment).magazine.to_dictionary() if item is Equipment else {},
+		"usage": (item as Equipment).usage.to_dictionary() if item is Equipment else EquipmentUsage.new().to_dictionary(),
+		"magazine": (item as Equipment).magazine.to_dictionary() if item is Equipment else WeaponMagazine.new().to_dictionary(),
 		"crystal_cracks": (item as VehicleCrystal).cracks if item is VehicleCrystal else 0,
 		"crystal_source": (item as VehicleEquipment).crystal_source.to_dictionary() if item is VehicleEquipment else {},
 		"austin_glens": (item as VehicleEquipment).austin_glens.to_dictionary() if item is VehicleEquipment else {},
-		"central_growth": (item as VehicleEquipment).central_growth.to_dictionary() if item is VehicleEquipment else {},
+		"central_growth": (item as VehicleEquipment).central_growth.to_dictionary() if item is VehicleEquipment else CentralGrowth.new().to_dictionary(),
 		"sama": (item as VehicleEquipment).sama.to_dictionary() if item is VehicleEquipment else {},
 		"crystal_source_cracks": (item as CrystalSourceCore).cracks if item is CrystalSourceCore else 0,
 	})

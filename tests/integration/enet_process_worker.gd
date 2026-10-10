@@ -236,7 +236,7 @@ func _run_client_b() -> void:
 ## 执行 `new_client` 对应的模块操作。
 func _new_client():
 	var adapter = AdapterScript.new()
-	adapter.authoritative_snapshot_received.connect(
+	adapter.authoritative_world_snapshot_received.connect(
 		func(snapshot: Dictionary) -> void: snapshots.append(snapshot.duplicate(true))
 	)
 	adapter.command_rejected.connect(
@@ -244,7 +244,11 @@ func _new_client():
 			rejections.append({"code": String(code), "message": message})
 	)
 	adapter.session_opened.connect(
-		func(result: Dictionary) -> void: session_results.append(result.duplicate(true))
+		func(result: Dictionary) -> void:
+			session_results.append(result.duplicate(true))
+			var initial_world: Variant = result.get("value", {}).get("world_snapshot")
+			if initial_world is Dictionary:
+				snapshots.append((initial_world as Dictionary).duplicate(true))
 	)
 	return adapter
 

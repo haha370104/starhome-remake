@@ -109,7 +109,7 @@ func _module(piercing: bool, fission: bool = false) -> AuthoritativeCombatModule
 	var assembly := {"max_health":1000, "reserve_energy_capacity":1000, "working_energy_capacity":1000, "power_output":100,
 		"passive_power_load":0, "equipment_condition":condition, "central_controller":{"grades":{"gun":3}}, "central_rules":catalog.central_rules}
 	var weapon := {"weapon_id":"rookie_energy_cannon", "instance_id":"gun", "skill_id":"energy_cannon", "minimum_damage":10, "maximum_damage":10,
-		"working_energy_cost":10, "activation_power":0, "range":400, "cooldown_ticks":20, "projectile_speed":1000.0, "muzzle_offset":[0.0,0.0], "muzzle_forward_offset":0.0}
+		"working_energy_per_shot":10, "activation_power":0, "range":400, "cooldown_ticks":20, "projectile_speed":1000.0, "muzzle_offset":[0.0,0.0], "muzzle_forward_offset":0.0}
 	var module := AuthoritativeCombatModule.new()
 	_check(module.configure(20,371,0).is_ok, "configure")
 	_check(module.register_vehicle("tester", "test", Vector2.ZERO, assembly, {"cannon":weapon}).is_ok, "register")

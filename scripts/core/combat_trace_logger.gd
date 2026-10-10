@@ -31,7 +31,7 @@ static func configure(enabled: bool, path_override: String = "") -> void:
 
 ## 判断当前进程是否启用了战斗诊断。
 ## 返回启用状态。
-## 设计：调试构建默认启用；发布构建可通过 `STARHOME_COMBAT_TRACE=1` 临时开启。
+## 设计：默认关闭；可通过 `STARHOME_COMBAT_TRACE=1` 临时开启。
 static func is_enabled() -> bool:
 	_ensure_initialized()
 	return _enabled
@@ -91,7 +91,7 @@ static func _ensure_initialized() -> void:
 	if _initialized:
 		return
 	_initialized = true
-	_enabled = OS.is_debug_build()
+	_enabled = false
 	if OS.has_environment(ENVIRONMENT_FLAG):
 		var flag := OS.get_environment(ENVIRONMENT_FLAG).strip_edges().to_lower()
 		_enabled = flag not in ["", "0", "false", "off", "no"]

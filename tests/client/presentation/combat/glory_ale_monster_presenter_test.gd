@@ -24,10 +24,10 @@ var assertions := 0
 func _initialize() -> void:
 	var packs = PackCatalogScript.new()
 	_expect(packs.load_file("res://data/content/glory_sprite_content_packs_v1.json"), "精灵包目录应可读")
-	_expect(packs.mount_all(false), "精灵包应可挂载")
+	_expect(packs.mount_all(), "精灵包应可挂载")
 	var palette_packs = PackCatalogScript.new()
 	_expect(palette_packs.load_file("res://data/content/glory_monster_palette_content_pack_v1.json"), "怪物调色板包目录应可读")
-	_expect(palette_packs.mount_all(false), "怪物调色板包应可挂载")
+	_expect(palette_packs.mount_all(), "怪物调色板包应可挂载")
 	var repository = RepositoryScript.new()
 	_expect(repository.load_default(), "ALE 仓储应加载")
 	var catalog = PresentationCatalogScript.new()
@@ -56,8 +56,12 @@ func _initialize() -> void:
 	var death_effects = DeathEffectsScript.new()
 	root.add_child(death_effects)
 	_expect(death_effects.configure({"monster_effects": {}}, presenter) == OK, "死亡特效控制器应配置")
-	death_effects.configure_glory(repository, catalog)
+	death_effects.configure_glory(catalog)
 	_expect(death_effects.present_death("boss.128", "glory_npc_128", Vector2.ZERO, 1), "BOSS 死亡 ALE 应播放")
+	for _frame in 120:
+		if death_effects.active_effect_count() > 0:
+			break
+		await process_frame
 	_expect(death_effects.active_effect_count() == 1, "生成目录死亡特效应进入活动队列")
 	var attack_effects = AttackEffectsScript.new()
 	root.add_child(attack_effects)

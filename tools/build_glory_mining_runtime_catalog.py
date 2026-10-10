@@ -19,12 +19,12 @@ import audit_monster_asset_sources as indexed_decoder
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 OUTPUTS_ROOT = PROJECT_ROOT.parent
-SOURCE_CSV = OUTPUTS_ROOT / "starhome_lz_ry_full_parsed" / "catalogs" / "mines" / "glory_ore_catalog.csv"
-PARSED_SPRITES = OUTPUTS_ROOT / "starhome_lz_ry_full_parsed" / "ale_sprites"
-RAW_ROOT = OUTPUTS_ROOT / "starhome_lz_ry_full" / "raw"
+SOURCE_CSV = PROJECT_ROOT / "data" / "source_evidence" / "glory" / "glory_ore_catalog.csv"
+PARSED_SPRITES = PROJECT_ROOT / "assets" / "glory" / "sprites"
+RAW_ROOT = PROJECT_ROOT / "../starhome_lz_ry_full" / "raw"
 MINING_TARGET = PROJECT_ROOT / "data" / "gameplay" / "mining_v1.json"
 MANIFEST_TARGET = PROJECT_ROOT / "assets" / "minerals" / "mining_asset_manifest.json"
-PACK_TARGET = PROJECT_ROOT / "assets" / "content_packs" / "glory_mine_palettes_v1.zip"
+PACK_TARGET = PROJECT_ROOT / "build" / "content_packs" / "glory_mine_palettes_v1.zip"
 PACK_CATALOG_TARGET = PROJECT_ROOT / "data" / "content" / "glory_mine_palette_content_pack_v1.json"
 INDEX_TARGET = PROJECT_ROOT / "data" / "content" / "glory_mine_palette_runtime_index_v1.json"
 CONTENT_VERSION = "starhome-remake-mining-v2"
@@ -57,6 +57,8 @@ def number(value: str, default: int = 0) -> int:
 
 
 def read_rows() -> list[dict[str, str]]:
+    if not SOURCE_CSV.is_file():
+        return read_rows_from_checked_in_mining_catalog()
     with SOURCE_CSV.open(encoding="utf-8-sig", newline="") as source:
         rows = list(csv.reader(source))
     if len(rows) != 36 or len(rows[0]) < 20:
@@ -68,6 +70,64 @@ def read_rows() -> list[dict[str, str]]:
         "source_definition", "text_sources",
     ]
     return [dict(zip(keys, row, strict=False)) for row in rows[1:]]
+
+
+def read_rows_from_checked_in_mining_catalog() -> list[dict[str, str]]:
+    """Reconstruct the importer input when the external ore workbook is absent."""
+    catalog = read_json(PROJECT_ROOT / "data" / "gameplay" / "mining_v1.json")
+    rows: list[dict[str, str]] = []
+    palette_by_class = {
+        "能量矿源": "chn_2005_06_28_18_52_58_957.act",
+        "铁矿源": "chn_2005_06_28_18_54_07_968.act",
+        "铜矿源": "chn_2005_06_28_18_54_25_971.act",
+        "银矿源": "chn_2005_06_28_18_54_43_974.act",
+        "硅矿源": "chn_2005_06_28_18_51_44_945.act",
+        "石墨矿源": "chn_2005_06_28_18_53_35_963.act",
+        "金矿源": "chn_2005_06_28_18_52_34_953.act",
+        "宝石矿源": "chn_2005_06_28_18_54_07_968.act",
+        "铬矿源": "gek.act",
+        "镭矿源": "leik.act",
+        "镍矿源": "niek.act",
+        "锌矿源": "xink.act",
+    }
+    for mineral in catalog["minerals"]:
+        presentation = mineral.get("presentation", {})
+        if not any("mine_palettes/" in str(value) for value in presentation.values()):
+            continue
+        source_class = str(mineral.get("source_class", ""))
+        if source_class in palette_by_class:
+            source = "pic3/mine/chn_2005_06_28_18_53_17_960" if source_class in {
+                "能量矿源", "铁矿源", "铜矿源", "银矿源", "硅矿源", "石墨矿源", "金矿源", "宝石矿源"
+            } else "pic3/mine/kl_mine"
+            inventory = "pic3/mine/chn_2005_06_28_18_51_50_946" if source_class in {
+                "能量矿源", "铁矿源", "铜矿源", "银矿源", "硅矿源", "石墨矿源", "金矿源", "宝石矿源"
+            } else {"铬矿源": "pic3/mine/ge01", "镭矿源": "pic3/mine/lei01", "镍矿源": "pic3/mine/nie01", "锌矿源": "pic3/mine/xin01"}[source_class]
+        else:
+            source = ""
+            inventory = "pic3/mine/hejin"
+        rows.append({
+            "display_name": str(mineral.get("display_name", "")),
+            "item_class": str(mineral.get("item_definition_id", "")),
+            "source_class": str(mineral.get("source_class", "")),
+            "required_level": str(mineral.get("required_mining_level", 0)),
+            "tooltip": str(mineral.get("tooltip", "")),
+            "description": str(mineral.get("description", "")),
+            "point_count": "",
+            "worlds": "",
+            "maps": "",
+            "source_status": "checked_in_mining_catalog",
+            "level_evidence": str(mineral.get("evidence", {}).get("level", "")),
+            "location_evidence": str(mineral.get("evidence", {}).get("locations", "")),
+            "item_asset": inventory,
+            "source_asset": source,
+            "palette": palette_by_class.get(str(mineral.get("source_class", "")), ""),
+            "worth": str(mineral.get("worth") or ""),
+            "sell": str(mineral.get("sell_price") or ""),
+            "item_source": "data/gameplay/mining_v1.json",
+            "source_definition": str(mineral.get("evidence", {}).get("definition", "")),
+            "text_sources": "checked-in mining catalog",
+        })
+    return rows
 
 
 def runtime_id(row: dict[str, str]) -> str:
@@ -145,6 +205,20 @@ def render_variant(source_row: dict[str, Any], palette: Path, decoder: Any) -> t
     return (json.dumps(clean, ensure_ascii=False, separators=(",", ":")) + "\n").encode("utf-8"), buffer.getvalue()
 
 
+def copy_indexed_variant(source_row: dict[str, Any]) -> tuple[bytes, bytes]:
+    """Package an ALE's embedded palette without inventing an external ACT."""
+    metadata = read_json(PARSED_SPRITES / source_row["logical_id"] / "frames.json")
+    page_path = PARSED_SPRITES / source_row["logical_id"] / metadata["pages"][0]
+    clean = dict(metadata)
+    clean["pages"] = ["sheet.png"]
+    clean["source_release"] = "starhome_lz_ry"
+    clean["source_ale"] = source_row["logical_id"]
+    return (
+        (json.dumps(clean, ensure_ascii=False, separators=(",", ":")) + "\n").encode("utf-8"),
+        page_path.read_bytes(),
+    )
+
+
 def fixed_info(path: str) -> zipfile.ZipInfo:
     info = zipfile.ZipInfo(path, (2026, 1, 1, 0, 0, 0))
     info.compress_type = zipfile.ZIP_STORED
@@ -155,8 +229,8 @@ def fixed_info(path: str) -> zipfile.ZipInfo:
 def runtime_row(logical_id: str, source_row: dict[str, Any], metadata: dict[str, Any]) -> dict[str, Any]:
     return {
         "logical_id": logical_id,
-        "frames_path": f"res://content/glory/{logical_id}/frames.json",
-        "page_paths": [f"res://content/glory/{logical_id}/sheet.png"],
+        "frames_path": f"res://assets/glory/{logical_id}/frames.json",
+        "page_paths": [f"res://assets/glory/{logical_id}/sheet.png"],
         "frame_count": int(metadata["frame_count"]),
         "cell_size": [int(metadata["cell_width"]), int(metadata["cell_height"])],
         "classification": ["mine_palettes"],
@@ -196,14 +270,21 @@ def main() -> int:
                         raise RuntimeError(f"missing mining palette: {row['palette']}")
                     logical_id = f"mine_palettes/{variant_key(row)}/{role}"
                     frames, page = render_variant(source_row, palette, decoder)
-                    root = f"content/glory/{logical_id}"
+                    root = f"assets/glory/{logical_id}"
                     archive.writestr(fixed_info(root + "/frames.json"), frames)
                     archive.writestr(fixed_info(root + "/sheet.png"), page)
                     metadata = read_json(PARSED_SPRITES / source_row["logical_id"] / "frames.json")
                     variant_rows.append(runtime_row(logical_id, source_row, metadata))
                     presentation[role + "_animation"] = logical_id
                 else:
-                    presentation[role + "_animation"] = source_row["logical_id"]
+                    logical_id = f"mine_palettes/{variant_key(row)}/{role}"
+                    frames, page = copy_indexed_variant(source_row)
+                    root = f"assets/glory/{logical_id}"
+                    archive.writestr(fixed_info(root + "/frames.json"), frames)
+                    archive.writestr(fixed_info(root + "/sheet.png"), page)
+                    metadata = read_json(PARSED_SPRITES / source_row["logical_id"] / "frames.json")
+                    variant_rows.append(runtime_row(logical_id, source_row, metadata))
+                    presentation[role + "_animation"] = logical_id
             definitions.append({
                 "id": mineral_id,
                 "display_name": row["display_name"],
@@ -238,26 +319,30 @@ def main() -> int:
                 })
                 policy["mineral_pool"].append({"mineral_id": mineral_id, "weight": 1.0})
     client_evidence_map_count = len(map_pools)
-    map_pools.setdefault("d04_field_zone", {
+    map_pools.setdefault("glory_nft_bl_d04", {
         "enabled": True,
         "mineral_pool": [{"mineral_id": "iron_ore", "weight": 1.0}],
         "evidence": "User-confirmed beginner-map remake fallback; the retired server spawn table was not recovered.",
     })
-    write_json(MINING_TARGET, {
-        "schema_version": 1,
-        "content_version": CONTENT_VERSION,
-        "defaults": existing["defaults"],
-        "minerals": definitions,
-        "maps": dict(sorted(map_pools.items())),
-        "source_audit": {
-            "source_release": "starhome_lz_ry",
-            "catalog": "starhome_lz_ry_full_parsed/catalogs/mines/glory_ore_catalog.csv",
-            "definitions": len(definitions),
-            "maps_with_client_evidence": client_evidence_map_count,
-            "runtime_enabled_maps": len(map_pools),
-            "runtime_authority": "remake server",
-        },
-    }, pretty=True)
+    if SOURCE_CSV.is_file():
+        write_json(MINING_TARGET, {
+            "schema_version": 1,
+            "content_version": CONTENT_VERSION,
+            "defaults": existing["defaults"],
+            "minerals": definitions,
+            "maps": dict(sorted(map_pools.items())),
+            "source_audit": {
+                "source_release": "starhome_lz_ry",
+                "catalog": "starhome_lz_ry_full_parsed/catalogs/mines/glory_ore_catalog.csv",
+                "definitions": len(definitions),
+                "maps_with_client_evidence": client_evidence_map_count,
+                "runtime_enabled_maps": len(map_pools),
+                "runtime_authority": "remake server",
+            },
+        }, pretty=True)
+    if not SOURCE_CSV.is_file():
+        for mineral in existing["minerals"]:
+            manifest_definitions.setdefault(mineral["id"], dict(mineral.get("presentation", {})))
     write_json(MANIFEST_TARGET, {
         "schema_version": 2,
         "source_release": "starhome_lz_ry",
@@ -274,15 +359,16 @@ def main() -> int:
         "content_version": "glory-mine-palettes-v1",
         "packs": [{
             "pack_id": PACK_TARGET.stem,
-            "path": "res://assets/content_packs/" + PACK_TARGET.name,
+            "path": "res://assets/" + PACK_TARGET.name,
             "size_bytes": PACK_TARGET.stat().st_size,
             "sha256": file_sha256(PACK_TARGET),
             "content_groups": ["mineral_palette_variants"],
         }],
         "summary": {"sprites": len(variant_rows)},
     }, pretty=True)
-    from build_upgrade_material_supply import apply_mining
-    apply_mining()
+    if SOURCE_CSV.is_file():
+        from build_upgrade_material_supply import apply_mining
+        apply_mining()
     print(f"GLORY_MINING_CATALOG_BUILT {len(definitions)} minerals, {len(map_pools)} maps, {len(variant_rows)} palette sprites")
     return 0
 

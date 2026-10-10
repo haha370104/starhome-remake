@@ -21,7 +21,10 @@ func _initialize() -> void:
 			_expect(accepted.is_ok, "%s 第%d次接取" % [provider, round_number])
 			_expect(not service.execute(player, provider, {"type": "accept_weapon_merchant_task"}).is_ok, "不能重复接取")
 			for requirement: Dictionary in task["requirements"]:
-				_expect(service._grant_item(player, requirement).is_ok, "加入材料（按堆叠上限拆分）")
+				var supplied := requirement.duplicate()
+				if String(task["id"]) == "ore_npc_supply":
+					supplied["definition_id"] = "iron_ore"
+				_expect(service._grant_item(player, supplied).is_ok, "加入材料（按堆叠上限拆分）")
 			var before := player.inventory.currency
 			var result := service.execute(player, provider, {"type": "turn_in_weapon_merchant_task", "inventory_revision": player.inventory.revision})
 			_expect(result.is_ok, "%s 第%d次交付" % [provider, round_number])

@@ -10,6 +10,8 @@ var _active_projectiles: Array[Dictionary] = []
 var _active_impacts: Array[Dictionary] = []
 var _presented_attack_ids: Dictionary = {}
 var _presented_impact_ids: Dictionary = {}
+var _presentation_cache: Dictionary = {}
+var _resource_cache: Dictionary = {}
 var _ale_repository: RefCounted
 var _glory_presentations: RefCounted
 var _corrosion: CorrosiveEffectController
@@ -42,6 +44,25 @@ func configure(manifest: Dictionary, world_parent: Node2D) -> Error:
 func configure_glory(repository: RefCounted, presentations: RefCounted) -> void:
 	_ale_repository = repository
 	_glory_presentations = presentations
+	_presentation_cache.clear()
+	_resource_cache.clear()
+
+
+## 在怪物表现实体出现时预热其远程攻击与命中特效，避免第一次受击承担解码成本。
+## [param actor_id] 怪物表现身份。
+func prefetch(actor_id: String) -> void:
+	var presentation := _presentation_for_actor(actor_id)
+	if presentation.is_empty():
+		return
+	var prefix := String(presentation.get("preferred_prefix", "pic3/npc"))
+	for key in ["projectile", "hit_effect"]:
+		var reference := String(presentation.get(key, "")).strip_edges()
+		if not reference.is_empty() and _ale_repository != null:
+			_ale_repository.load_animation(reference, prefix)
+	for key in ["projectile", "impact"]:
+		var effect_value: Variant = presentation.get(key, {})
+		if effect_value is Dictionary:
+			_load_sprite_frames(String((effect_value as Dictionary).get("resource", "")))
 
 
 ## 根据权威攻击开始事件创建荣耀版怪物弹体；贴身攻击不创建弹体。
@@ -72,7 +93,7 @@ func present_attack(event: Dictionary) -> bool:
 	var speed := float(event.get("projectile_speed", 0.0))
 	if not origin.is_finite() or not target.is_finite() or speed <= 0.0:
 		return false
-	var frames := ResourceLoader.load(String(projectile["resource"]), "SpriteFrames") as SpriteFrames
+	var frames := _load_sprite_frames(String(projectile["resource"]))
 	if frames == null or not frames.has_animation(RAW_ANIMATION):
 		return false
 	var wrapper := Node2D.new()
@@ -111,7 +132,7 @@ func present_attack(event: Dictionary) -> bool:
 func _present_ale_projectile(event: Dictionary, actor_id: String) -> bool:
 	if _ale_repository == null or _glory_presentations == null:
 		return false
-	var presentation: Dictionary = _glory_presentations.definition_for_actor(actor_id)
+	var presentation := _presentation_for_actor(actor_id)
 	var reference := String(presentation.get("projectile", "")).strip_edges()
 	var origin := _vector_from_event(event.get("origin", []))
 	var target := _vector_from_event(event.get("target_position", []))
@@ -161,13 +182,12 @@ func present_impact(event: Dictionary, target_position: Vector2) -> bool:
 		return false
 	var actor_id := String(event.get("combat_actor_id", ""))
 	var actor_value: Dictionary = _effect_definitions.get(actor_id, {})
-	var presentation: Dictionary = _glory_presentations.definition_for_actor(actor_id) \
-		if _glory_presentations != null else {}
+	var presentation := _presentation_for_actor(actor_id)
 	var impact_value: Variant = presentation.get("impact", actor_value.get("contact_impact", {}))
 	if not _valid_effect(impact_value):
 		return _present_ale_impact(event, target_position)
 	var impact: Dictionary = impact_value
-	var frames := ResourceLoader.load(String(impact["resource"]), "SpriteFrames") as SpriteFrames
+	var frames := _load_sprite_frames(String(impact["resource"]))
 	if frames == null or not frames.has_animation(RAW_ANIMATION):
 		return false
 	var wrapper := Node2D.new()
@@ -202,9 +222,7 @@ func present_impact(event: Dictionary, target_position: Vector2) -> bool:
 func _present_ale_impact(event: Dictionary, target_position: Vector2) -> bool:
 	if _ale_repository == null or _glory_presentations == null:
 		return false
-	var presentation: Dictionary = _glory_presentations.definition_for_actor(
-		String(event.get("combat_actor_id", ""))
-	)
+	var presentation := _presentation_for_actor(String(event.get("combat_actor_id", "")))
 	var reference := String(presentation.get("hit_effect", "")).strip_edges()
 	if reference.is_empty():
 		return false
@@ -363,6 +381,26 @@ func _valid_effect(effect_value: Variant) -> bool:
 		and offset_value is Array
 		and (offset_value as Array).size() == 2
 	)
+
+
+func _presentation_for_actor(actor_id: String) -> Dictionary:
+	if _presentation_cache.has(actor_id):
+		return _presentation_cache[actor_id]
+	var presentation: Dictionary = _glory_presentations.definition_for_actor(actor_id) \
+		if _glory_presentations != null else {}
+	_presentation_cache[actor_id] = presentation
+	return presentation
+
+
+func _load_sprite_frames(path: String) -> SpriteFrames:
+	if path.is_empty():
+		return null
+	if _resource_cache.has(path):
+		return _resource_cache[path] as SpriteFrames
+	var frames := ResourceLoader.load(path, "SpriteFrames") as SpriteFrames
+	if frames != null:
+		_resource_cache[path] = frames
+	return frames
 
 
 ## 将事件二维数组转换为坐标，无效输入返回非有限向量。

@@ -6,7 +6,7 @@ const COLORS := ["fffbff", "18fb0b", "0076db", "ab3aee"]
 var grade := 0
 
 
-## 恢复普通装备品质，旧档保持白色，不接受超范围或小数伪值。
+## 恢复普通装备品质，空对象保持白色，不接受超范围或小数伪值。
 ## [param raw] 存档边界的独立品质字段。
 ## 返回有效实例或格式错误。
 static func restore(raw: Variant) -> DomainResult:
@@ -15,7 +15,8 @@ static func restore(raw: Variant) -> DomainResult:
 	var result := EquipmentQuality.new()
 	if raw.is_empty(): return DomainResult.ok(result)
 	var value: Variant = raw.get("grade", -1)
-	if raw.get("version") != 1 or not (value is int or value is float) or not is_finite(float(value)) \
+	if raw.size() != 2 or not raw.has("version") or not raw.has("grade") \
+		or raw.version != 1 or not (value is int or value is float) or not is_finite(float(value)) \
 		or float(value) != int(value) or int(value) < 0 or int(value) > 3:
 		return DomainResult.failure(&"quality.invalid_state", "装备品质必须为白、绿、蓝、紫之一")
 	result.grade = int(value)
@@ -39,7 +40,7 @@ func bonus(attribute: String, profile: EquipmentQualityRules.Profile) -> int:
 	return int(profile.bonuses[attribute][grade]) if profile != null and profile.bonuses.has(attribute) else 0
 
 
-## 导出最小状态，白色使用旧档默认表示。
+## 导出最小状态，空对象表示白色零态。
 ## 返回独立品质事实。
 func to_dictionary() -> Dictionary:
 	return {"version": 1, "grade": grade} if grade > 0 else {}

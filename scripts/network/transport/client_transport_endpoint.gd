@@ -13,6 +13,10 @@ signal server_disconnected
 signal server_message_received(message: Dictionary)
 @warning_ignore("unused_signal")
 signal world_snapshot_received(snapshot: Dictionary)
+@warning_ignore("unused_signal")
+signal local_snapshot_received(snapshot: Dictionary)
+
+var last_connection_error_message := ""
 
 
 ## 建立客户端到权威服务器的传输连接。
@@ -69,3 +73,9 @@ func send_pickup_loot_intent(intent: Dictionary) -> void:
 ## [param command] 已由客户端会话补全序号和 revision 的协议载荷。
 func send_player_panel_command(command: Dictionary) -> void:
 	push_error("Client transport must implement send_player_panel_command: %s" % command)
+
+
+## 发送组队、聊天和玩家交易共用的可靠社交命令。
+## 各业务服务仍在服务端按命令类型严格分派，不在传输层解释载荷。
+func send_social_command(command: Dictionary) -> void:
+	push_error("Client transport must implement send_social_command: %s" % command)

@@ -15,10 +15,10 @@ def build(check=False):
     profiles = []
     # Original GetNewEquip* formulas; tier break occurs after level ten.
     parts = [
-        ("shan", 28, "max_health", 300, [30, 40], [20, 30], "industrial_material_3f3f3c3d9d8d", "item:material:7df65e194766", "item:material:0465103df5d2"),
-        ("li", 29, "energy_cannon_attack", 20, [4, 5], [3, 4], "industrial_material_cfb4093a1ef4", "item:material:5773d6d74168", "item:material:6ac284bb6c59"),
-        ("huo", 30, "rocket_attack", 25, [5, 6], [4, 5], "industrial_material_08713a2f8c65", "item:material:a55a9a5d270a", "item:material:d6e5deb49f86"),
-        ("ji", 31, "missile_attack", 15, [3, 4], [2, 3], "industrial_material_2830485bb462", "item:material:390575d3e7c8", "item:material:f5ec2ce95368"),
+        ("shan", 28, "max_health", 300, [30, 40], [20, 30], "green_crystal", "green_crystal_source", "high_grade_green_crystal_source"),
+        ("li", 29, "energy_cannon_attack", 20, [4, 5], [3, 4], "purple_crystal", "purple_crystal_source", "high_grade_purple_crystal_source"),
+        ("huo", 30, "rocket_attack", 25, [5, 6], [4, 5], "blue_crystal", "blue_crystal_source", "high_grade_blue_crystal_source"),
+        ("ji", 31, "missile_attack", 15, [3, 4], [2, 3], "red_crystal", "red_crystal_source", "high_grade_red_crystal_source"),
     ]
     source = (SOURCE / "cltobj/equipclt.fcc").read_text(encoding="utf-8-sig")
     offers = []
@@ -36,7 +36,7 @@ def build(check=False):
     manifests = defaultdict(list)
 
     def icon(logical, directory, filename):
-        original = ROOT.parent / "starhome_lz_ry_full/raw" / logical
+        original = ROOT / "../starhome_lz_ry_full/raw" / logical
         ale = decoder.AleFile(original)
         assert len(ale.frames) == 1
         frame = ale.decode_frame(ale.frames[0])
@@ -69,8 +69,8 @@ def build(check=False):
     for item_id, classname, filename, name, price, description in [
         ("crystal_source_core_stabilizer", "JYHStabilizer", "core_stabilizer", "晶源核稳定剂", 2000, "每个增加晶源核合成成功率10个百分点，最高100%。"),
         ("crystal_source_quality_stabilizer", "CrystalStabilizer", "quality_stabilizer", "水晶稳定剂", 5000, "晶源体品质3级起使用，失败防止品质退级；仍消耗本次材料。"),
-        ("item:material:f6487f0e04b8", "ColourfulCrystal", "five_color_crystal", "五彩水晶", 100, ""),
-        ("item:material:920f37756918", "MorColourfulCrystal", "seven_color_crystal", "七彩水晶", 500, ""),
+        ("five_color_crystal", "ColourfulCrystal", "five_color_crystal", "五彩水晶", 100, ""),
+        ("seven_color_crystal", "MorColourfulCrystal", "seven_color_crystal", "七彩水晶", 500, ""),
     ]:
         presentation, audit = icon(f"pic3/stuff/{classname}.ale", "materials", filename)
         if description:
@@ -86,7 +86,7 @@ def build(check=False):
     write("data/gameplay/crystal_source_rules_v1.json", {
         "schema_version": 1, "required_level": 400, "maximum_level": 15, "equipment": profiles, "cores": cores,
         "core_stabilizer_id": "crystal_source_core_stabilizer", "quality_stabilizer_id": "crystal_source_quality_stabilizer",
-        "five_color_id": "item:material:f6487f0e04b8", "seven_color_id": "item:material:920f37756918",
+        "five_color_id": "five_color_crystal", "seven_color_id": "seven_color_crystal",
         "crystal_costs": [200,200,200,300,300,300,400,400,400,500,500,600,600,700,700],
         "five_color_costs": [10,10,10,10,10,20,20,20,20,20,30,30,30,40,40],
         "seven_color_costs": [30,30,30,40,40],

@@ -7,6 +7,8 @@ var _by_instance_id: Dictionary = {}
 var _by_map_id: Dictionary = {}
 var _by_legacy_code_by_world: Dictionary = {}
 var _dormant_by_map_id: Dictionary = {}
+var _ordered_instances: Array[AuthoritativeMapInstance] = []
+var navigation_cache := MapNavigationCache.new()
 
 
 ## 执行 `register_instance` 对应的模块操作。
@@ -32,6 +34,7 @@ func register_instance(instance: AuthoritativeMapInstance) -> Dictionary:
 	_by_instance_id[instance_key] = instance
 	_by_map_id[map_key] = instance
 	_dormant_by_map_id.erase(map_key)
+	_rebuild_ordered_instances()
 	if not _by_legacy_code_by_world.has(instance.definition.world_id):
 		_by_legacy_code_by_world[instance.definition.world_id] = {}
 	for legacy_code: String in instance.definition.legacy_codes:
@@ -81,12 +84,7 @@ func resolve_transition_target(
 ## 执行 `all_instances` 对应的模块操作。
 ## 返回该函数计算、查询或操作得到的结果。
 func all_instances() -> Array[AuthoritativeMapInstance]:
-	var keys := _by_instance_id.keys()
-	keys.sort()
-	var result: Array[AuthoritativeMapInstance] = []
-	for key: String in keys:
-		result.append(_by_instance_id[key])
-	return result
+	return _ordered_instances
 
 
 ## 查询仅保留领域状态、已释放导航的休眠地图。
@@ -99,7 +97,7 @@ func dormant_instance(map_id: String) -> AuthoritativeMapInstance:
 ## 把没有玩家且已结算完在途行为的实例从活跃索引移入休眠索引。
 ## [param server_tick] 当前服务器时钟，用于唤醒时计算补充间隔。
 func suspend_empty_instances(server_tick: int) -> void:
-	for instance: AuthoritativeMapInstance in all_instances():
+	for instance: AuthoritativeMapInstance in _ordered_instances.duplicate():
 		if not instance.suspend_runtime(server_tick):
 			continue
 		var map_id := String(instance.definition.map_id)
@@ -109,6 +107,15 @@ func suspend_empty_instances(server_tick: int) -> void:
 		for code: String in instance.definition.legacy_codes:
 			world_index.erase(code.strip_edges().to_lower())
 		_dormant_by_map_id[map_id] = instance
+	_rebuild_ordered_instances()
+
+
+func _rebuild_ordered_instances() -> void:
+	var keys := _by_instance_id.keys()
+	keys.sort()
+	_ordered_instances.clear()
+	for key: String in keys:
+		_ordered_instances.append(_by_instance_id[key])
 
 
 ## 执行 `success` 对应的模块操作。

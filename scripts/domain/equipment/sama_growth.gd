@@ -6,16 +6,17 @@ var growth := 0
 var quality := 0
 
 
-## 恢复独立成长事实，缺失字段的旧装备使用白色零成长。
+## 恢复独立成长事实，空对象表示白色零成长。
 ## [param raw] 存档边界。
 ## 返回合法实例或状态错误。
 static func restore(raw: Variant) -> DomainResult:
 	var value := SamaGrowth.new()
 	if not raw is Dictionary: return _invalid()
 	if raw.is_empty(): return DomainResult.ok(value)
-	if raw.get("version") != 1: return _invalid()
+	if raw.size() != 4 or not raw.has("version") or raw.version != 1 \
+		or not raw.has("color") or not raw.has("growth") or not raw.has("quality"): return _invalid()
 	for key: String in ["color", "growth", "quality"]:
-		if not SamaRules.integer(raw.get(key), 0, 3 if key == "color" else 10): return _invalid()
+		if not SamaRules.integer(raw[key], 0, 3 if key == "color" else 10): return _invalid()
 		value.set(key, int(raw[key]))
 	if value.growth > [1, 3, 6, 10][value.color] or value.quality > value.growth: return _invalid()
 	return DomainResult.ok(value)

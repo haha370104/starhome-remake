@@ -45,6 +45,8 @@ func _initialize() -> void:
 		if index == chassis_ids.size() - 1:
 			_test_conqueror_resources(loadout)
 			_test_chassis_swap(items, catalog, loadout)
+		if index == 0:
+			_test_engine_activation(loadout)
 	_finish()
 
 
@@ -162,6 +164,44 @@ func _test_chassis_swap(items: ItemCatalog, catalog: CombatDefinitionCatalog, co
 	instance.set_vehicle_combat_loadout(ACTOR_ID, conqueror)
 	_expect(is_equal_approx(instance.vehicle_combat_state_for(ACTOR_ID).working_energy, 225.0),
 		"半能量换车保持半能量，不通过换装补满")
+
+
+## 验证原客户端引擎启动扣能：改道不重复扣费，失败请求不改变路线或能量。
+## [param loadout] 正式目录组装的新兵战车和引擎。
+func _test_engine_activation(loadout: Dictionary) -> void:
+	var instance := _instance(loadout)
+	instance.definition = MapDefinition.new()
+	instance.definition.player_presentation = {"kind": "combat_actor"}
+	var navigation := DiamondNavigation.new()
+	navigation.configure(Vector2i(4, 4), Vector2(48, 12))
+	navigation.data.resize(16)
+	navigation.data.fill(1)
+	navigation.call("_build_graph")
+	instance.navigation = navigation
+	var entity: AuthoritativeEntity = instance.entities[ACTOR_ID]
+	entity.position = navigation.cell_to_world(Vector2i(1, 1))
+	var state := instance.vehicle_combat_state_for(ACTOR_ID)
+	var cost := float(loadout.assembly.get("working_energy_per_movement", 0.0))
+	_expect(is_equal_approx(cost, 2.0), "荣耀新兵引擎按 m_nenergy 消耗 2 点工作能量")
+	var first := instance.handle_move_intent(ACTOR_ID, MoveIntent.new(
+		MAP_ID, navigation.cell_to_world(Vector2i(2, 1)), 1
+	).to_dictionary())
+	_expect(first.ok and entity.action == &"walking", "有效移动启动应被接受")
+	_expect(is_equal_approx(state.working_energy, state.working_energy_capacity - cost),
+		"引擎启动仅扣一次标称能量")
+	var redirected := instance.handle_move_intent(ACTOR_ID, MoveIntent.new(
+		MAP_ID, navigation.cell_to_world(Vector2i(2, 2)), 2
+	).to_dictionary())
+	_expect(redirected.ok and is_equal_approx(state.working_energy, state.working_energy_capacity - cost),
+		"行进中改道不重复启动引擎")
+	entity.simulate(10.0)
+	state.working_energy = cost - 1.0
+	var rejected := instance.handle_move_intent(ACTOR_ID, MoveIntent.new(
+		MAP_ID, navigation.cell_to_world(Vector2i(1, 1)), 3
+	).to_dictionary())
+	_expect(not rejected.ok and rejected.code == &"combat.insufficient_working_energy"
+		and entity.action == &"idle" and is_equal_approx(state.working_energy, cost - 1.0),
+		"工作能量不足时拒绝启动，保持原路线和能量")
 
 
 ## 按网络契约提交一次不携带资源数值的主炮攻击。

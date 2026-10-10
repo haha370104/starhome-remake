@@ -39,10 +39,10 @@ def build():
     profiles.sort(key=lambda row: row["definition_id"])
     assert profiles and all(1 <= p["base_capacity"] <= p["maximum_capacity"] <= 12 for p in profiles)
     assert len({p["definition_id"] for p in profiles}) == len(profiles)
-    flawed = ["a7bccd7c1408", "794588abb6cf", "d690c44b6030", "a095c982b884", "c0cad9b715fb", "7dd51398ea4c"]
+    flawed = ["flawed_firepower_crystal", "flawed_health_crystal", "flawed_defense_crystal", "flawed_guidance_crystal", "flawed_critical_crystal", "flawed_rocket_crystal"]
     kinds = ["firepower", "health", "defense", "guidance", "critical", "rocket"]
     values = [[3, 30, 1, 2, 0.01, 3], [5, 50, 3, 4, 0.025, 6]]
-    crystals = [{"definition_id": "item:material:" + flawed[i] if grade == 0 else "bright_" + kind + "_crystal",
+    crystals = [{"definition_id": flawed[i] if grade == 0 else "bright_" + kind + "_crystal",
                  "effect": kind, "value": values[grade][i], "grade": grade + 1,
                  "source_code": 1000 * (grade + 1) + i + 1}
                 for grade in range(2) for i, kind in enumerate(kinds)]
@@ -58,7 +58,7 @@ def build():
              "hammer_id": "vehicle_precise_hammer",
              "solvents": [
                  {"definition_id": "vehicle_density_solvent_i", "chances": [0.5], "repeat_last": True, "failure": "destroy_equipment"},
-                 {"definition_id": "item:material:78f2a523a761", "chances": [0.5, 0.2, 0.1, 0.01], "repeat_last": False, "failure": "close_last_socket"},
+                 {"definition_id": "density_solvent", "chances": [0.5, 0.2, 0.1, 0.01], "repeat_last": False, "failure": "close_last_socket"},
                  {"definition_id": "high_grade_density_solvent", "chances": [0.8, 0.6, 0.4, 0.2], "repeat_last": False, "failure": "none"}],
              "crystals": crystals, "equipment": profiles}
     # One record per line keeps the source-derived catalog reviewable.

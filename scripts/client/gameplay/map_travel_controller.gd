@@ -12,7 +12,7 @@ var map_preloader: ClientMapPreloader
 var map_route_resolver: RuntimeMapRouteResolver
 var initial_loading_screen: CanvasLayer
 var multiplayer_map_instance_id := ""
-var map_transition_trigger_radius := 64.0
+var map_transition_trigger_radius := 16.0
 var pending_map_transition: Dictionary = {}
 var pending_map_bundle: Dictionary = {}
 var pending_authoritative_join: Dictionary = {}
@@ -42,7 +42,7 @@ func configure(
 ## [param presenter] 发送切图意图并提供会话状态的表现器。
 ## [param preloader] 仅加载受控目录的地图资源。
 ## [param resolver] 将旧地图代码解析为受控业务 ID。
-## [param loading] 首次权威世界就绪前的启动遮罩。
+## [param loading] 启动与切图共用的加载遮罩。
 func bind_session(
 	presenter: HallMultiplayerPresenter,
 	preloader: ClientMapPreloader,
@@ -55,13 +55,27 @@ func bind_session(
 	initial_loading_screen = loading
 
 
-## 在首份权威地图完成原子提交后移除启动遮罩；重复调用不会影响后续地图切换。
+## 在权威地图提交后移除加载遮罩。
 func finish_initial_loading() -> void:
-	if _initial_authoritative_world_ready:
-		return
 	_initial_authoritative_world_ready = true
-	if initial_loading_screen != null:
-		initial_loading_screen.finish_loading()
+	_finish_map_transition_splash()
+
+
+## 显示复用启动标题卡的切图过场。
+## [param message] 当前切图阶段文案。
+func _show_map_transition_splash(message := "正在切换地图") -> void:
+	if initial_loading_screen == null:
+		return
+	initial_loading_screen.show_loading(
+		message, InitialLoadingScreen.MIN_TRANSITION_SPLASH_MSEC
+	)
+
+
+## 隐藏复用启动标题卡的切图过场。
+func _finish_map_transition_splash() -> void:
+	if initial_loading_screen == null:
+		return
+	initial_loading_screen.finish_loading()
 
 
 ## 在初始权威会话失败时保留遮罩并展示可读错误，避免回退到并非玩家存档位置的大厅。
@@ -76,7 +90,9 @@ func on_initial_connection_failed(message: String) -> void:
 ## 在玩家停步后查找触发半径内最近的内部出口，并先预载其目标地图。
 ## 设计：客户端只从受控本地定义取得目标内容；真正的地图和落点仍由服务端裁决。
 func try_begin_nearby_map_transition() -> void:
-	if not pending_map_transition.is_empty() or map_preloader == null:
+	if not pending_map_transition.is_empty() \
+			or (initial_loading_screen != null and initial_loading_screen.visible) \
+			or map_preloader == null:
 		return
 	var selected_transition: MapTransition
 	var selected_destination_map_id: StringName = &""
@@ -117,11 +133,13 @@ func try_begin_nearby_map_transition() -> void:
 		"destination_entry_number": selected_transition.destination_entry_number,
 	}
 	hud.show_status("正在准备前往%s…" % selected_transition.label)
+	_show_map_transition_splash("正在前往%s…" % selected_transition.label)
 	var preload_error: Error = map_preloader.preload_map(
 		selected_destination_map_id
 	)
 	if preload_error != OK and not pending_map_transition.is_empty():
 		pending_map_transition.clear()
+		_finish_map_transition_splash()
 
 
 ## 使用与权威服务器相同的世界内旧代码规则解析预载目标，但仅返回受控内容目录中的地图。
@@ -161,6 +179,7 @@ func on_map_preload_ready(map_id: StringName, bundle: Dictionary) -> void:
 		hud.show_status("当前无法提交地图切换请求")
 		pending_map_transition.clear()
 		pending_map_bundle.clear()
+		_finish_map_transition_splash()
 
 
 ## 区分权威确认前后的加载失败，分别回滚请求或冻结旧场景。
@@ -174,6 +193,8 @@ func on_map_preload_failed(map_id: StringName, message: String) -> void:
 		handle_map_commit_failure(notice)
 		return
 	hud.show_status(notice)
+	if not pending_map_transition.is_empty():
+		_finish_map_transition_splash()
 	pending_map_transition.clear()
 	pending_map_bundle.clear()
 
@@ -223,6 +244,7 @@ func hold_old_map_for_authoritative_join(
 	spawn_position: Vector2,
 ) -> void:
 	var held_player_position: Vector2 = local_player_controller.position()
+	_show_map_transition_splash()
 	local_player_controller.hold_position_for_map_commit()
 	hud.show_status("正在载入权威地图…")
 	pending_authoritative_join = {
@@ -245,6 +267,7 @@ func on_authoritative_map_change_failed(
 	pending_map_transition.clear()
 	pending_map_bundle.clear()
 	pending_authoritative_join.clear()
+	_finish_map_transition_splash()
 
 
 ## 通过活动世界执行原子替换，再更新会话标识、输入闸门与加载遮罩。
@@ -260,6 +283,7 @@ func commit_map_bundle(
 ) -> bool:
 	if not active_world_controller.commit_bundle(bundle, spawn_position):
 		return false
+	map_preloader.activate_map(bundle["definition"].map_id, bundle)
 	map_committed.emit()
 	multiplayer_map_instance_id = map_instance_id
 	local_player_controller.set_character_action(&"stand")
@@ -278,8 +302,7 @@ func handle_map_commit_failure(message: String) -> void:
 	var notice := PlayerErrorMessages.describe(&"map.load_failed", message)
 	map_commit_failure_locked = true
 	stop_moving(notice)
-	if not _initial_authoritative_world_ready and initial_loading_screen != null:
-		initial_loading_screen.set_status(notice)
+	_show_map_transition_splash(notice)
 	pending_map_transition.clear()
 	pending_map_bundle.clear()
 	pending_authoritative_join.clear()
@@ -301,7 +324,8 @@ func stop_moving(message: String) -> void:
 ## 返回切图事务是否禁止新的世界操作。
 ## 设计：闸门只冻结本地世界交互；服务端拒绝会清空 pending 并恢复旧地图输入。
 func is_locked() -> bool:
-	if map_commit_failure_locked:
+	if map_commit_failure_locked \
+			or (initial_loading_screen != null and initial_loading_screen.visible):
 		return true
 	if (
 		not pending_map_transition.is_empty()

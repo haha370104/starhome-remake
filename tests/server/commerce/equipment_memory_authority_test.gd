@@ -1,5 +1,7 @@
 extends SceneTree
 
+const CommerceRecordAdapter := preload("res://tests/fixtures/commerce_record_adapter.gd")
+
 var checks := 0
 var failures := 0
 
@@ -20,33 +22,33 @@ func _initialize() -> void:
 	var command := {"type": "process_equipment_memory", "instance_id": "source", "material_id": "module", "mode": "extract", "use_stabilizer": true, "inventory_revision": state.inventory_revision,
 		"confirm_transfer": true, "payload": {"level": 10}}
 	var before := state.to_dictionary()
-	var result := service.execute(state, command)
+	var result := CommerceRecordAdapter.execute(service, state, command)
 	_check(result.is_ok and state.to_dictionary() == before, "隔离事务")
 	if not result.is_ok: push_error(result.error_message); quit(1); return
 	player = mapper.to_domain(result.value.candidate).value
 	_check(player.inventory.find("source").strengthening.level == 0 and player.inventory.find("module").memory.strengthening.level == 3, "真实载荷而非客户端伪造")
 	_check(player.inventory.find("stabilizer").quantity == 1, "只消耗一个稳压剂")
 	_check(not result.value.panel_bundle.equipment_memory.preview.has("candidate"), "不传输领域候选")
-	_check(not service.execute(result.value.candidate, command).is_ok, "重复请求拒绝")
+	_check(not CommerceRecordAdapter.execute(service, result.value.candidate, command).is_ok, "重复请求拒绝")
 	command.mode = "transfer"
 	command.instance_id = "inventory.spare_engine"
 	command.inventory_revision = player.inventory.revision
 	command.confirm_transfer = false
-	_check(not service.execute(result.value.candidate, command).is_ok, "要求后果确认")
+	_check(not CommerceRecordAdapter.execute(service, result.value.candidate, command).is_ok, "要求后果确认")
 	command.confirm_transfer = true
 	var query := command.duplicate(true)
 	query.type = "query_equipment_memory"
-	var preview := service.execute(result.value.candidate, query)
+	var preview := CommerceRecordAdapter.execute(service, result.value.candidate, query)
 	_check(preview.is_ok and not preview.value.changed, "查询无副作用")
 	_check(preview.value.panel_bundle.equipment_memory.preview.text.contains("3星") and preview.value.panel_bundle.equipment_memory.preview.text.contains("100%"), "可读成长与概率")
 	_check(preview.value.panel_bundle.equipment_memory.offers.size() == 7, "完整供给")
-	var transferred := service.execute(result.value.candidate, command)
+	var transferred := CommerceRecordAdapter.execute(service, result.value.candidate, command)
 	_check(transferred.is_ok, "权威转移")
 	player = mapper.to_domain(transferred.value.candidate).value
 	_check(player.inventory.find("module") == null and player.inventory.find("inventory.spare_engine").strengthening.level == 3 and player.inventory.find("inventory.spare_engine").drive == 26, "实际属性恢复")
-	var bought := service.execute(transferred.value.candidate, {"type": "buy_equipment_memory_item", "definition_id": "equipment_memory_strengthening", "quantity": 1, "inventory_revision": player.inventory.revision, "price": 0})
+	var bought := CommerceRecordAdapter.execute(service, transferred.value.candidate, {"type": "buy_equipment_memory_item", "definition_id": "equipment_memory_strengthening", "quantity": 1, "inventory_revision": player.inventory.revision, "price": 0})
 	_check(bought.is_ok and bought.value.candidate.currency == 99980, "原价购买")
-	var rejected := service.execute(transferred.value.candidate, {"type": "buy_equipment_memory_item", "definition_id": "equipment_memory_strengthening", "quantity": 2, "inventory_revision": player.inventory.revision})
+	var rejected := CommerceRecordAdapter.execute(service, transferred.value.candidate, {"type": "buy_equipment_memory_item", "definition_id": "equipment_memory_strengthening", "quantity": 2, "inventory_revision": player.inventory.revision})
 	_check(not rejected.is_ok, "模块不可堆叠")
 	print("Equipment memory authority: %d checks, %d failures" % [checks, failures])
 	quit(1 if failures else 0)

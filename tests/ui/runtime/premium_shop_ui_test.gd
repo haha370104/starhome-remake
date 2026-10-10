@@ -1,5 +1,7 @@
 extends SceneTree
 
+const CommerceRecordAdapter := preload("res://tests/fixtures/commerce_record_adapter.gd")
+
 const Fixture := preload("res://tests/fixtures/player_panel_service_fixture.gd")
 var failures: Array[String] = []
 var commands: Array[Dictionary] = []
@@ -154,13 +156,13 @@ func _run() -> void:
 ## [param command] 窗口发出的语义命令。
 func _dispatch(command: Dictionary) -> void:
 	commands.append(command.duplicate(true))
-	var result := service.execute(state, command)
+	var result := CommerceRecordAdapter.execute(service, state, command)
 	if not result.is_ok:
 		failures.append("交易失败: " + result.error_message)
 		return
 	if result.value.changed:
 		state = result.value.candidate
-	manager.panel_session.apply_bundle(result.value.panel_bundle)
+	manager.panel_session.apply_bundle(CommerceRecordAdapter.build_bundle(service, state, result.value.operation) if result.value.changed else result.value.panel_bundle)
 
 
 ## 记录真实窗口交互断言。

@@ -4,9 +4,7 @@
   "packs": [
     {
       "pack_id": "test_mount_pack",
-      "path": "res://assets/content_packs/test_mount_pack.zip",
-      "size_bytes": 402,
-      "sha256": "1bd6acb891b06e91018798028cfcfd6bc34afd2202f5f41a98365c55c8612868"
+      "path": "res://assets/"
     }
   ]
 }

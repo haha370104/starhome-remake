@@ -14,14 +14,15 @@ var blessed := false
 var slots: Array[Slot] = [Slot.new(), Slot.new()]
 
 
-## 恢复此系列独立的成长与固定符文事实；旧档缺字段时使用全新装备状态。
+## 恢复此系列完整的成长与固定符文事实；空对象表示新装备状态。
 ## [param raw] 存档边界。
 ## 返回实例或无效状态错误。
 static func restore(raw: Variant) -> DomainResult:
 	var value := AustinGlensGrowth.new()
 	if not raw is Dictionary: return _invalid()
 	if raw.is_empty(): return DomainResult.ok(value)
-	if raw.get("version") != 1 or not raw.get("blessed") is bool or not raw.get("slots") is Array or raw.slots.size() != 2: return _invalid()
+	if raw.size() != 7 or not raw.has("version") or not raw.has("blessed") or not raw.has("slots") \
+		or raw.version != 1 or not raw.blessed is bool or not raw.slots is Array or raw.slots.size() != 2: return _invalid()
 	for key: String in ["color", "stage", "base", "additional"]:
 		if not AustinGlensRules.integer(raw.get(key), 0, 3 if key == "color" else 10): return _invalid()
 		value.set(key, int(raw[key]))
@@ -122,7 +123,7 @@ func change(operation: String, profile: AustinGlensRules.Profile, rules: AustinG
 
 
 ## 序列化原始事实，避免保存重复派生的属性。
-## 返回与内部状态脱离的字典，新装备为空对象。
+## 返回与内部状态脱离的字典，新装备使用空对象零态。
 func to_dictionary() -> Dictionary:
 	var values: Array[Dictionary] = []
 	var changed := color + stage + base + additional > 0 or blessed

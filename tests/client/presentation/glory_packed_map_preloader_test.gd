@@ -30,6 +30,8 @@ func _run() -> void:
 	preloader.map_preload_ready.connect(func(_map_id, bundle): ready_bundle = bundle)
 	preloader.map_preload_failed.connect(func(_map_id, message): failure_message = message)
 	preloader.configure(directory["definitions"])
+	_expect(preloader.preload_map(&"glory_nft_bl_c04") == OK, "取消前应启动真实线程加载")
+	preloader.cancel_preload()
 	_expect(preloader.preload_map(&"glory_nft_bl_2armshop1") == OK, "兵工厂应进入预载")
 	for _frame in range(120):
 		if not ready_bundle.is_empty() or not failure_message.is_empty():
@@ -48,7 +50,7 @@ func _run() -> void:
 		)
 	ready_bundle.clear()
 	failure_message = ""
-	_expect(preloader.preload_map(&"buli_c04_field_zone") == OK, "D04 相邻的 C04 应进入预载")
+	_expect(preloader.preload_map(&"glory_nft_bl_c04") == OK, "D04 相邻的 C04 应进入预载")
 	for _frame in range(120):
 		if not ready_bundle.is_empty() or not failure_message.is_empty():
 			break
@@ -56,8 +58,25 @@ func _run() -> void:
 	_expect(failure_message.is_empty(), "C04 运行资源不应缺失：%s" % failure_message)
 	_expect(not ready_bundle.is_empty(), "C04 应在限定帧内交付完整资源包")
 	if not ready_bundle.is_empty():
-		_expect(ready_bundle["definition"].map_id == &"buli_c04_field_zone", "C04 地图定义不匹配")
+		_expect(ready_bundle["definition"].map_id == &"glory_nft_bl_c04", "C04 地图定义不匹配")
 		_expect(ready_bundle["resources"]["floor"] is Texture2D, "C04 必须交付地图底图")
+		var previous_floor: Texture2D = ready_bundle.resources.floor
+		ready_bundle.clear()
+		_expect(preloader.preload_map(&"glory_nft_bl_c04") == OK, "近期地图应可复用")
+		preloader.cancel_preload()
+		await process_frame
+		_expect(ready_bundle.is_empty(), "取消缓存命中的请求也不能发布旧地图")
+		_expect(preloader.preload_map(&"glory_nft_bl_c04") == OK, "取消后应可重新预载")
+		for _frame in range(120):
+			if not ready_bundle.is_empty(): break
+			await process_frame
+		_expect(not ready_bundle.is_empty() and ready_bundle.resources.floor == previous_floor,
+			"返回地图应复用已加载纹理")
+	var oversized := PlaceholderTexture2D.new()
+	oversized.size = Vector2(8192, 8192)
+	preloader._retain_texture("fixture.oversized", oversized)
+	_expect(preloader._cached_bytes <= preloader.TEXTURE_CACHE_BYTES and preloader._texture_cache.is_empty(),
+		"单张超预算纹理不能使缓存无限增长")
 	preloader.free()
 	_finish()
 

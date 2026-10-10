@@ -1,5 +1,7 @@
 extends SceneTree
 
+const AutosaveRecordAdapter := preload("res://tests/fixtures/autosave_record_adapter.gd")
+
 const PEER := 79
 var checks := 0
 var failures: Array[String] = []
@@ -14,22 +16,22 @@ func _initialize() -> void:
 func _run() -> void:
 	var config := DedicatedServerConfig.new()
 	config.network_enabled = false
-	config.map_config_path = "res://data/maps/d04_field_zone.json"
+	config.map_config_path = "res://data/maps/glory_nft_bl_d04.json"
 	config.player_state_store_path = "res://.godot/generator-persistence-%d.json" % Time.get_ticks_usec()
 	var server := AuthoritativeServer.new()
 	_check(server.initialize(config).ok, "权威服务器")
 	_check(server.open_session(PEER, {"protocol_version": config.protocol_version, "content_version": config.content_version}, 1000).ok, "会话")
 	var session := server.sessions.session_for_peer(PEER)
 	var map := server.map_registry.instance_by_id(session.map_instance_id)
-	var current := server.autosave_service.state_for(session.entity_id)
+	var current: PlayerStateRecord = AutosaveRecordAdapter.current(server.autosave_service, session.entity_id)
 	var catalog := ItemCatalog.new()
 	_check(catalog.initialize().is_ok, "目录")
-	var player: Player = server.player_panel_service.restore_player(current).value
+	var player: Player = PlayerStateMapper.new(catalog).to_domain(current).value
 	var item: VehicleEquipment = catalog.create("glory_equipment_gaoregun_217b753365", {"instance_id": "persist.generator"}).value
 	_check(player.vehicle.loadout.equip(item, 14, player.vehicle.loadout.revision).is_ok, "装配发生器")
 	current = PlayerStateMapper.new(catalog).to_record(player).value
-	_check(server.autosave_service.commit_player_state(session.entity_id, current).is_ok, "提交测试装备")
-	var loadout := server._build_entity_combat_loadout(map, current)
+	_check(server.autosave_service.commit_player(session.entity_id, PlayerStateMapper.new(catalog).to_domain(current).value).is_ok, "提交测试装备")
+	var loadout := server._build_entity_combat_loadout(map, player)
 	var profile: GeneratorRules.Profile = loadout.value.assembly.equipment_condition.generators()[0].generator_profile
 	profile.chance = 1
 	_check(map.refresh_achievement_loadout(session.entity_id, loadout.value).is_ok, "运行期装配")
@@ -45,7 +47,7 @@ func _run() -> void:
 	module.advance_ticks(20, false)
 	var condition: EquipmentConditionLoadout = module.actors[session.entity_id].equipment_condition
 	_check(condition.generators()[0].magazine.remaining == 1199, "命中实际消耗1发")
-	var captured: PlayerStateRecord = server._capture_persistent_player_state(server.autosave_service.state_for(session.entity_id)).value
+	var captured: PlayerStateRecord = server._capture_player_runtime(AutosaveRecordAdapter.current(server.autosave_service, session.entity_id)).value
 	var saved_count := -1
 	for slot: EquipmentSlotRecord in captured.equipment_slots:
 		if slot.item_instance_id == item.instance_id: saved_count = slot.magazine.remaining

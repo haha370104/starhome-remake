@@ -38,7 +38,7 @@
 runtime 映射，不必迁移存档或网络协议中的身份。
 
 早期注册层允许多个荣耀世界分支共用同一业务定义，例如其中 NFT_BL、NFT_BT、NFT_BTB、NFT_PL
-的 D04 来源键映射到 `d04_field_zone`。这是旧注册映射，不能用来合并当前各世界的地图种群。
+的 D04 来源键映射到 `glory_nft_bl_d04`。这是旧注册映射，不能用来合并当前各世界的地图种群。
 查询 runtime 映射返回数组，以保留这种多对一
 关系。旧类名也可能重复，按旧键查询同样返回数组，禁止任意取第一条。
 
@@ -50,10 +50,10 @@ runtime 映射，不必迁移存档或网络协议中的身份。
 来源目录更新后运行：
 
 ```powershell
-python tools/build_known_content_registries.py
+python tools/build_known_content_registries.py --source-root /path/to/temporary/decoded-glory
 ```
 
-生成器固定读取 `starhome_lz_ry_full_parsed`，输出采用“一条注册一行”的 JSON 布局。这样三份
+生成器显式读取临时解码目录，日常运行与常规门禁不依赖该目录。输出采用“一条注册一行”的 JSON 布局。这样三份
 全量目录仍可代码审查，且每个数据模块都能满足单次提交不超过 2000 行的工程约束。生成器会
 拒绝重复注册 ID、怪物引用不存在的地图以及漏掉当前 runtime 道具的结果。
 

@@ -13,9 +13,12 @@ def main():
     target.mkdir(parents=True, exist_ok=True)
     manifest = {}
     for key, stem in SOURCES.items():
-        logical = f"pic3/effect/{stem}.ale"
-        raw = ROOT.parent / "starhome_lz_ry_full/raw" / logical
-        parsed = ROOT.parent / "starhome_lz_ry_full_parsed/ale_sprites/pic3/effect" / stem
+        # The recovery batch normalizes logical paths to lowercase on disk.
+        # Keep the source reference in that canonical form so this importer
+        # works on case-sensitive filesystems and matches the sprite index.
+        logical = f"pic3/effect/{stem.lower()}.ale"
+        raw = ROOT / "../starhome_lz_ry_full/raw" / logical
+        parsed = ROOT / "assets/glory/sprites/pic3/effect" / stem.lower()
         frames = json.loads((parsed / "frames.json").read_text("utf-8"))
         assert len(frames["pages"]) == 1
         shutil.copyfile(parsed / frames["pages"][0], target / f"{key}.png")

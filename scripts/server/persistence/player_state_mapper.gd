@@ -54,6 +54,9 @@ func to_domain(record: PlayerStateRecord) -> DomainResult:
 		"achievements": record.achievements,
 		"daily_activities": record.daily_activities,
 		"food_status": record.food_status,
+		"friend_ids": record.friend_ids,
+		"enemy_ids": record.enemy_ids,
+		"mailbox": record.mailbox,
 		"central": record.central.to_dictionary(),
 		"vehicle": {
 			"vehicle_id": record.vehicle_id,
@@ -121,9 +124,7 @@ func to_domain(record: PlayerStateRecord) -> DomainResult:
 			if not restored_clothing.is_ok:
 				return restored_clothing
 		else:
-			if created.value is VehicleEquipment and created.value.attachment_family == "new_joint" and slot.slot_location in [16, 17]:
-				created.value.equipment_location = 32 if slot.slot_location == 16 else 33
-			elif not created.value is VehicleEquipment \
+			if not created.value is VehicleEquipment \
 				or not (created.value as VehicleEquipment).accepts_location(slot.slot_location):
 				return DomainResult.failure(&"player.invalid_vehicle_equipment", "persisted vehicle location does not match definition")
 			if created.value.central_profile != null and not player.central.evolved:
@@ -162,7 +163,7 @@ func to_record(player: Player) -> DomainResult:
 			equipment.equipment_location,
 			equipment.equip_kind,
 		))
-	var result := PlayerStateRecordScript.from_dictionary({
+	var result := PlayerStateRecordScript._from_dictionary({
 		"schema_version": PlayerStateRecordScript.CURRENT_SCHEMA_VERSION,
 		"account_id": player.account_id,
 		"account_name": player.account_name,
@@ -208,11 +209,125 @@ func to_record(player: Player) -> DomainResult:
 		"position": [player.position.x, player.position.y],
 		"facing_direction": player.facing_direction,
 		"checkpoint_id": player.checkpoint_id,
-	})
+		"friend_ids": player.friend_ids.duplicate(),
+		"enemy_ids": player.enemy_ids.duplicate(),
+		"mailbox": player.mailbox.duplicate(true),
+	}, warehouse_result.value)
 	if not result.is_ok: return result
-	result.value.warehouse = warehouse_result.value
 	var checked: DomainResult = result.value.validate()
 	return result if checked.is_ok else checked
+
+
+## 将在线聚合的指定领域合并到上一次已保存记录。
+## 未列出的领域继续共享上一份只读快照，从而避免移动存档复制整份成就和装备树。
+## 返回自动存档服务独占的记录；发生变化的领域会替换自己的记录对象。
+func merge_domains(base: PlayerStateRecord, player: Player, domains: Array[String]) -> DomainResult:
+	if base == null or player == null:
+		return DomainResult.failure(&"player.mapping_unavailable", "player or base record is missing")
+	var all_domains := domains.is_empty()
+	# 自动存档独占这份已保存记录；按领域原地替换，不触碰在线 Player。
+	var record := base
+	# 身份在建号后不变；版本和容器修订需要随当前聚合同步。
+	record.revision = player.revision
+	record.inventory_revision = player.inventory.revision
+	record.vehicle_loadout_revision = player.vehicle.loadout.revision
+	if all_domains or "character" in domains:
+		record.character_sex = player.sex
+		record.character_level = player.level
+		record.character_profession = player.profession
+		record.character_faction = player.faction
+		record.character_residence = player.residence
+		record.character_description = player.description
+		record.character_max_health = player.max_health
+		record.character_health = player.health
+		record.character_experience = player.experience
+	if all_domains or "skills" in domains:
+		record.character_skills = player.skills.to_dictionary()
+	if all_domains or "quests" in domains:
+		record.quest_states = player.quest_states.duplicate(true)
+	if all_domains or "achievements" in domains:
+		record.achievements = player.achievements.to_dictionary()
+	if all_domains or "daily" in domains:
+		record.daily_activities = player.daily_activities.to_dictionary()
+	if all_domains or "food" in domains:
+		record.food_status = player.food_status.to_dictionary()
+	if all_domains or "inventory" in domains:
+		record.inventory_capacity = player.inventory.capacity
+		record.currency = player.inventory.currency
+		record.amethyst = player.amethyst.balance()
+		var inventory_result := _inventory_records(player)
+		if not inventory_result.is_ok: return inventory_result
+		record.inventory_stacks = inventory_result.value
+	if all_domains or "warehouse" in domains:
+		var warehouse_result := PersonalWarehouseRecord.from_domain(player.warehouse)
+		if not warehouse_result.is_ok: return warehouse_result
+		record.warehouse = warehouse_result.value
+	if all_domains or "character" in domains or "vehicle" in domains:
+		var equipment_result := _equipment_records(player)
+		if not equipment_result.is_ok: return equipment_result
+		record.equipment_slots = equipment_result.value
+	if all_domains or "vehicle" in domains:
+		record.vehicle_id = player.vehicle.vehicle_id
+		record.vehicle_definition_id = player.vehicle.definition_id
+		record.vehicle_max_health = player.vehicle.max_health
+		record.vehicle_health = player.vehicle.health
+		record.reserve_energy_capacity = player.vehicle.reserve_energy_capacity
+		record.reserve_energy = player.vehicle.reserve_energy
+		record.working_energy_capacity = player.vehicle.working_energy_capacity
+		record.working_energy = player.vehicle.working_energy
+		record.output_power = player.vehicle.output_power
+	if all_domains or "production" in domains:
+		var production_result := ProductionQueue.restore(player.production.to_dictionary())
+		if not production_result.is_ok: return production_result
+		record.production = production_result.value
+	if all_domains or "central" in domains:
+		var central_result := PlayerCentralController.restore(player.central.to_dictionary())
+		if not central_result.is_ok: return central_result
+		record.central = central_result.value
+	if all_domains or "presets" in domains:
+		var presets_result := VehicleLoadoutPresets.restore(player.vehicle_presets.to_dictionary())
+		if not presets_result.is_ok: return presets_result
+		record.vehicle_presets = presets_result.value
+	if all_domains or "location" in domains:
+		record.map_id = player.map_id
+		record.map_instance_id = player.map_instance_id
+		record.position = player.position
+		record.facing_direction = player.facing_direction
+		record.checkpoint_id = player.checkpoint_id
+	if all_domains or "social" in domains:
+		record.friend_ids = player.friend_ids.duplicate()
+		record.enemy_ids = player.enemy_ids.duplicate()
+		record.mailbox = player.mailbox.duplicate(true)
+	return DomainResult.ok(record)
+
+
+## 将在线背包转换为记录对象，不经过完整 JSON 往返。
+func _inventory_records(player: Player) -> DomainResult:
+	var stacks: Array[InventoryStackRecord] = []
+	var index := 0
+	for item: GameItem in player.inventory.items():
+		var recorded := InventoryStackRecord.from_item(item, index)
+		if not recorded.is_ok: return recorded
+		stacks.append(recorded.value)
+		index += 1
+	return DomainResult.ok(stacks)
+
+
+## 将人物和战车装备转换为记录对象，不经过完整 JSON 往返。
+func _equipment_records(player: Player) -> DomainResult:
+	var slots: Array[EquipmentSlotRecord] = []
+	for clothing: Clothing in player.character_equipment.items():
+		var character_slot := EquipmentSlotRecord.from_dictionary(_equipment_record(
+			clothing, "character", clothing.character_slot, 0, 10))
+		if not character_slot.is_ok: return character_slot
+		slots.append(character_slot.value)
+	for equipment: VehicleEquipment in player.vehicle.loadout.items():
+		var vehicle_slot := EquipmentSlotRecord.from_dictionary(_equipment_record(
+			equipment, "vehicle", _slot_id(equipment.equipment_location),
+			equipment.equipment_location, equipment.equip_kind))
+		if not vehicle_slot.is_ok: return vehicle_slot
+		slots.append(vehicle_slot.value)
+	return DomainResult.ok(slots)
 
 
 ## 将装备实例转换为持久化槽位记录。
@@ -237,12 +352,12 @@ func _equipment_record(
 		"max_durability": equipment.max_durability,
 		"durability": equipment.durability,
 		"upgrade_level": equipment.upgrade_level,
-		"enhancement": (equipment as Clothing).enhancement.to_dictionary() if equipment is Clothing else {},
-		"clothing_improvement": (equipment as Clothing).improvement.to_dictionary() if equipment is Clothing else {},
+		"enhancement": (equipment as Clothing).enhancement.to_dictionary() if equipment is Clothing else ClothingEnhancement.new().to_dictionary(),
+		"clothing_improvement": (equipment as Clothing).improvement.to_dictionary() if equipment is Clothing else ClothingImprovement.new().to_dictionary(),
 		"vehicle_sockets": (equipment as VehicleEquipment).sockets.to_dictionary() if equipment is VehicleEquipment else {},
 		"crystal_source": (equipment as VehicleEquipment).crystal_source.to_dictionary() if equipment is VehicleEquipment else {},
 		"austin_glens": (equipment as VehicleEquipment).austin_glens.to_dictionary() if equipment is VehicleEquipment else {},
-		"central_growth": (equipment as VehicleEquipment).central_growth.to_dictionary() if equipment is VehicleEquipment else {},
+		"central_growth": (equipment as VehicleEquipment).central_growth.to_dictionary() if equipment is VehicleEquipment else CentralGrowth.new().to_dictionary(),
 		"sama": (equipment as VehicleEquipment).sama.to_dictionary() if equipment is VehicleEquipment else {},
 		"processing": equipment.processing.to_dictionary(),
 		"extra_attributes": equipment.extra_attributes.to_dictionary(),
@@ -260,7 +375,7 @@ func _equipment_record(
 
 ## 将稳定 Location 转为存档业务槽位名。
 ## [param location] 战车装备 Location。
-## 返回兼容现有存档的槽位字符串。
+## 返回当前记录使用的稳定槽位标识。
 func _slot_id(location: int) -> String:
 	return {
 		0: "chassis", 1: "primary_weapon", 2: "defense", 3: "propulsion",

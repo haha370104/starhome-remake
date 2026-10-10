@@ -10,14 +10,13 @@
     "maximum_collection_distance": 70,
     "selection_radius": 68,
     "minimum_spawn_separation": 96,
-    "yield_per_cycle": 1,
-    "iron_equivalent_per_level": 25
+    "yield_per_cycle": 1
   },
   "minerals": [
     {
       "id": "glory_mineral_d10fa75dc4c0",
       "display_name": "能量矿",
-      "item_definition_id": "item:material:078bc4104cd1",
+      "item_definition_id": "energy_ore",
       "world_presentation_id": "glory_mineral_d10fa75dc4c0",
       "collectible": true,
       "required_mining_level": 10,
@@ -63,7 +62,7 @@
     {
       "id": "glory_mineral_82be09b62d86",
       "display_name": "神秘宝藏",
-      "item_definition_id": "item:material:d524bd8652dc",
+      "item_definition_id": "mysterious_treasure",
       "world_presentation_id": "glory_mineral_82be09b62d86",
       "collectible": false,
       "required_mining_level": 50,
@@ -85,7 +84,7 @@
     {
       "id": "glory_mineral_97b5ace0918f",
       "display_name": "铜矿",
-      "item_definition_id": "item:material:1850770283a8",
+      "item_definition_id": "copper_ore",
       "world_presentation_id": "glory_mineral_97b5ace0918f",
       "collectible": true,
       "required_mining_level": 50,
@@ -154,7 +153,7 @@
     {
       "id": "glory_mineral_8cdb4c763103",
       "display_name": "银矿",
-      "item_definition_id": "item:material:dbd4b5c8b82f",
+      "item_definition_id": "silver_ore",
       "world_presentation_id": "glory_mineral_8cdb4c763103",
       "collectible": true,
       "required_mining_level": 200,
@@ -177,7 +176,7 @@
     {
       "id": "glory_mineral_7e5a51823863",
       "display_name": "金矿",
-      "item_definition_id": "item:material:6b764a13c668",
+      "item_definition_id": "gold_ore",
       "world_presentation_id": "glory_mineral_7e5a51823863",
       "collectible": true,
       "required_mining_level": 250,
@@ -200,7 +199,7 @@
     {
       "id": "glory_mineral_adc85c66662c",
       "display_name": "宝石矿",
-      "item_definition_id": "item:material:ba90bdec9217",
+      "item_definition_id": "gem_ore",
       "world_presentation_id": "glory_mineral_adc85c66662c",
       "collectible": true,
       "required_mining_level": 300,
@@ -223,7 +222,7 @@
     {
       "id": "glory_mineral_1ab9ea134717",
       "display_name": "铬矿",
-      "item_definition_id": "item:material:8e82258ba743",
+      "item_definition_id": "chromium_ore",
       "world_presentation_id": "glory_mineral_1ab9ea134717",
       "collectible": true,
       "required_mining_level": 300,
@@ -247,7 +246,7 @@
     {
       "id": "glory_mineral_0f7843d5e272",
       "display_name": "红水晶矿",
-      "item_definition_id": "item:material:a039c10cf145",
+      "item_definition_id": "red_crystal_ore",
       "world_presentation_id": "glory_mineral_0f7843d5e272",
       "collectible": true,
       "required_mining_level": 300,
@@ -270,7 +269,7 @@
     {
       "id": "glory_mineral_f8b0d6ec51a5",
       "display_name": "蓝水晶矿",
-      "item_definition_id": "item:material:f112d2e6b2a1",
+      "item_definition_id": "blue_crystal_ore",
       "world_presentation_id": "glory_mineral_f8b0d6ec51a5",
       "collectible": true,
       "required_mining_level": 300,
@@ -293,7 +292,7 @@
     {
       "id": "glory_mineral_4bc7df36d8ad",
       "display_name": "镭矿",
-      "item_definition_id": "item:material:39aa70e8697d",
+      "item_definition_id": "radium_ore",
       "world_presentation_id": "glory_mineral_4bc7df36d8ad",
       "collectible": true,
       "required_mining_level": 300,
@@ -317,7 +316,7 @@
     {
       "id": "glory_mineral_4f96977fb953",
       "display_name": "绿水晶矿",
-      "item_definition_id": "item:material:32205fa18c6a",
+      "item_definition_id": "green_crystal_ore",
       "world_presentation_id": "glory_mineral_4f96977fb953",
       "collectible": true,
       "required_mining_level": 300,
@@ -340,7 +339,7 @@
     {
       "id": "glory_mineral_d23fa12c2180",
       "display_name": "镍矿",
-      "item_definition_id": "item:material:1342bef47b1c",
+      "item_definition_id": "nickel_ore",
       "world_presentation_id": "glory_mineral_d23fa12c2180",
       "collectible": true,
       "required_mining_level": 300,
@@ -364,7 +363,7 @@
     {
       "id": "glory_mineral_f1f4bf68b431",
       "display_name": "锌矿",
-      "item_definition_id": "item:material:8e983c02db12",
+      "item_definition_id": "zinc_ore",
       "world_presentation_id": "glory_mineral_f1f4bf68b431",
       "collectible": true,
       "required_mining_level": 300,
@@ -388,7 +387,7 @@
     {
       "id": "glory_mineral_9c533145ffbe",
       "display_name": "紫水晶矿",
-      "item_definition_id": "item:material:639ecee21fb7",
+      "item_definition_id": "purple_crystal_ore",
       "world_presentation_id": "glory_mineral_9c533145ffbe",
       "collectible": true,
       "required_mining_level": 300,
@@ -411,7 +410,7 @@
     {
       "id": "glory_mineral_3080b224d6a6",
       "display_name": "镁矿",
-      "item_definition_id": "item:material:185cf7b29406",
+      "item_definition_id": "magnesium_ore",
       "world_presentation_id": "glory_mineral_3080b224d6a6",
       "collectible": true,
       "required_mining_level": 500,
@@ -435,7 +434,7 @@
     {
       "id": "glory_mineral_96bf750337d4",
       "display_name": "钡矿",
-      "item_definition_id": "item:material:6b0269b35f1b",
+      "item_definition_id": "barium_ore",
       "world_presentation_id": "glory_mineral_96bf750337d4",
       "collectible": true,
       "required_mining_level": 550,
@@ -459,7 +458,7 @@
     {
       "id": "glory_mineral_f9c977e517f2",
       "display_name": "钒矿",
-      "item_definition_id": "item:material:4f5c6d64fd5b",
+      "item_definition_id": "vanadium_ore",
       "world_presentation_id": "glory_mineral_f9c977e517f2",
       "collectible": true,
       "required_mining_level": 850,
@@ -482,7 +481,7 @@
     {
       "id": "glory_mineral_bbad441932d7",
       "display_name": "钴矿",
-      "item_definition_id": "item:material:8811cec57497",
+      "item_definition_id": "cobalt_ore",
       "world_presentation_id": "glory_mineral_bbad441932d7",
       "collectible": true,
       "required_mining_level": 900,
@@ -505,7 +504,7 @@
     {
       "id": "glory_mineral_d1eae7a89c0a",
       "display_name": "钼矿",
-      "item_definition_id": "item:material:283227001fe4",
+      "item_definition_id": "molybdenum_ore",
       "world_presentation_id": "glory_mineral_d1eae7a89c0a",
       "collectible": true,
       "required_mining_level": 950,
@@ -528,7 +527,7 @@
     {
       "id": "glory_mineral_51e548c405e5",
       "display_name": "钽矿",
-      "item_definition_id": "item:material:1793569f3af3",
+      "item_definition_id": "tantalum_ore",
       "world_presentation_id": "glory_mineral_51e548c405e5",
       "collectible": true,
       "required_mining_level": 1000,
@@ -551,7 +550,7 @@
     {
       "id": "glory_mineral_8d7632e7294c",
       "display_name": "铂金矿",
-      "item_definition_id": "item:material:8d7632e7294c",
+      "item_definition_id": "platinum_ore",
       "world_presentation_id": "glory_mineral_8d7632e7294c",
       "collectible": true,
       "required_mining_level": 0,
@@ -573,7 +572,7 @@
     {
       "id": "glory_mineral_867a23dd07d9",
       "display_name": "藏宝矿",
-      "item_definition_id": "item:material:6ce6d7cd8016",
+      "item_definition_id": "treasure_ore",
       "world_presentation_id": "glory_mineral_867a23dd07d9",
       "collectible": true,
       "required_mining_level": 0,
@@ -596,7 +595,7 @@
     {
       "id": "glory_mineral_5f3632e66566",
       "display_name": "锆矿",
-      "item_definition_id": "item:material:5f3632e66566",
+      "item_definition_id": "zirconium_ore",
       "world_presentation_id": "glory_mineral_5f3632e66566",
       "collectible": true,
       "required_mining_level": 0,
@@ -618,7 +617,7 @@
     {
       "id": "glory_mineral_7289df5b1ab9",
       "display_name": "合金矿",
-      "item_definition_id": "item:material:7289df5b1ab9",
+      "item_definition_id": "alloy_ore",
       "world_presentation_id": "glory_mineral_7289df5b1ab9",
       "collectible": true,
       "required_mining_level": 0,
@@ -640,7 +639,7 @@
     {
       "id": "glory_mineral_3d9597ddfaa0",
       "display_name": "钾矿",
-      "item_definition_id": "item:material:3d9597ddfaa0",
+      "item_definition_id": "potassium_ore",
       "world_presentation_id": "glory_mineral_3d9597ddfaa0",
       "collectible": true,
       "required_mining_level": 250,
@@ -665,7 +664,7 @@
     {
       "id": "glory_mineral_ba72367493f5",
       "display_name": "钪矿",
-      "item_definition_id": "item:material:ba72367493f5",
+      "item_definition_id": "scandium_ore",
       "world_presentation_id": "glory_mineral_ba72367493f5",
       "collectible": true,
       "required_mining_level": 450,
@@ -690,7 +689,7 @@
     {
       "id": "glory_mineral_b739c1f3c1d8",
       "display_name": "磷矿",
-      "item_definition_id": "item:material:b739c1f3c1d8",
+      "item_definition_id": "phosphorus_ore",
       "world_presentation_id": "glory_mineral_b739c1f3c1d8",
       "collectible": true,
       "required_mining_level": 200,
@@ -715,7 +714,7 @@
     {
       "id": "glory_mineral_5479cbea59ce",
       "display_name": "硫矿",
-      "item_definition_id": "item:material:5479cbea59ce",
+      "item_definition_id": "sulfur_ore",
       "world_presentation_id": "glory_mineral_5479cbea59ce",
       "collectible": true,
       "required_mining_level": 150,
@@ -740,7 +739,7 @@
     {
       "id": "glory_mineral_7c2a619313f6",
       "display_name": "锰矿",
-      "item_definition_id": "item:material:7c2a619313f6",
+      "item_definition_id": "manganese_ore",
       "world_presentation_id": "glory_mineral_7c2a619313f6",
       "collectible": true,
       "required_mining_level": 0,
@@ -762,7 +761,7 @@
     {
       "id": "glory_mineral_f5a20e4fbcd6",
       "display_name": "钛矿",
-      "item_definition_id": "item:material:f5a20e4fbcd6",
+      "item_definition_id": "titanium_ore",
       "world_presentation_id": "glory_mineral_f5a20e4fbcd6",
       "collectible": true,
       "required_mining_level": 350,
@@ -787,7 +786,7 @@
     {
       "id": "glory_mineral_a1d287e71f35",
       "display_name": "钨矿",
-      "item_definition_id": "item:material:a1d287e71f35",
+      "item_definition_id": "tungsten_ore",
       "world_presentation_id": "glory_mineral_a1d287e71f35",
       "collectible": true,
       "required_mining_level": 0,
@@ -809,7 +808,7 @@
     {
       "id": "glory_mineral_aa7b06e40657",
       "display_name": "铱矿",
-      "item_definition_id": "item:material:aa7b06e40657",
+      "item_definition_id": "iridium_ore",
       "world_presentation_id": "glory_mineral_aa7b06e40657",
       "collectible": true,
       "required_mining_level": 0,
@@ -830,7 +829,7 @@
     }
   ],
   "maps": {
-    "d04_field_zone": {
+    "glory_nft_bl_d04": {
       "enabled": true,
       "mineral_pool": [
         {
@@ -840,7 +839,7 @@
       ],
       "evidence": "User-confirmed beginner-map remake fallback; the retired server spawn table was not recovered."
     },
-    "g08_field_zone": {
+    "glory_nft_bl_g08": {
       "enabled": true,
       "mineral_pool": [
         {
@@ -852,7 +851,11 @@
           "weight": 1.0
         }
       ],
-      "evidence": "Glory client map placement relation; remake uses random walkable spawns, not source coordinates."
+      "evidence": "荣耀版地图脚本 NewMinePosition 坐标；复刻服务端固定点位恢复。",
+      "fixed_sources": [
+        {"mineral_id": "silicon_ore", "position": [3312, 2016]},
+        {"mineral_id": "graphite_ore", "position": [912, 4152]}
+      ]
     },
     "glory_nft_bl_c07": {
       "enabled": true,
@@ -870,7 +873,11 @@
           "weight": 1.0
         }
       ],
-      "evidence": "Glory client map placement relation; remake uses random walkable spawns, not source coordinates.",
+      "evidence": "荣耀版地图脚本 NewMinePosition 坐标；复刻服务端固定点位恢复。",
+      "fixed_sources": [
+        {"mineral_id": "silicon_ore", "position": [2256, 2736]},
+        {"mineral_id": "graphite_ore", "position": [3264, 4296]}
+      ],
       "remake_material_supply": "2026-09-15 按采掘等级补充接合器材料矿物；原矿池保留"
     },
     "glory_nft_bl_c08": {
@@ -905,7 +912,12 @@
           "weight": 1.0
         }
       ],
-      "evidence": "Glory client map placement relation; remake uses random walkable spawns, not source coordinates.",
+      "evidence": "荣耀版地图脚本 NewMinePosition 坐标；复刻服务端固定点位恢复。",
+      "fixed_sources": [
+        {"mineral_id": "iron_ore", "position": [1392, 1224]},
+        {"mineral_id": "glory_mineral_97b5ace0918f", "position": [1728, 3768]},
+        {"mineral_id": "glory_mineral_8cdb4c763103", "position": [3528, 3996]}
+      ],
       "remake_material_supply": "2026-09-15 按采掘等级补充接合器材料矿物；原矿池保留",
       "crystal_source_supply": "复刻P5：300级四色水晶矿加入同级既有矿池；原版刷新地点未确认"
     },
@@ -925,7 +937,11 @@
           "weight": 1.0
         }
       ],
-      "evidence": "Glory client map placement relation; remake uses random walkable spawns, not source coordinates.",
+      "evidence": "荣耀版地图脚本 NewMinePosition 坐标；复刻服务端固定点位恢复。",
+      "fixed_sources": [
+        {"mineral_id": "silicon_ore", "position": [3576, 1548]},
+        {"mineral_id": "graphite_ore", "position": [1464, 3636]}
+      ],
       "remake_material_supply": "2026-09-15 按采掘等级补充接合器材料矿物；原矿池保留"
     },
     "glory_nft_bl_d08": {
@@ -960,7 +976,12 @@
           "weight": 1.0
         }
       ],
-      "evidence": "Glory client map placement relation; remake uses random walkable spawns, not source coordinates.",
+      "evidence": "荣耀版地图脚本 NewMinePosition 坐标；复刻服务端固定点位恢复。",
+      "fixed_sources": [
+        {"mineral_id": "glory_mineral_7e5a51823863", "position": [3552, 1632]},
+        {"mineral_id": "glory_mineral_8cdb4c763103", "position": [1224, 2220]},
+        {"mineral_id": "glory_mineral_d10fa75dc4c0", "position": [2808, 4356]}
+      ],
       "remake_material_supply": "2026-09-15 按采掘等级补充接合器材料矿物；原矿池保留",
       "crystal_source_supply": "复刻P5：300级四色水晶矿加入同级既有矿池；原版刷新地点未确认"
     },
@@ -980,7 +1001,11 @@
           "weight": 1.0
         }
       ],
-      "evidence": "Glory client map placement relation; remake uses random walkable spawns, not source coordinates.",
+      "evidence": "荣耀版地图脚本 NewMinePosition 坐标；复刻服务端固定点位恢复。",
+      "fixed_sources": [
+        {"mineral_id": "glory_mineral_97b5ace0918f", "position": [1560, 1380]},
+        {"mineral_id": "glory_mineral_d10fa75dc4c0", "position": [2760, 3612]}
+      ],
       "remake_material_supply": "2026-09-15 按采掘等级补充接合器材料矿物；原矿池保留"
     },
     "glory_nft_bl_e07": {
@@ -995,7 +1020,11 @@
           "weight": 1.0
         }
       ],
-      "evidence": "Glory client map placement relation; remake uses random walkable spawns, not source coordinates.",
+      "evidence": "荣耀版地图脚本 NewMinePosition 坐标；复刻服务端固定点位恢复。",
+      "fixed_sources": [
+        {"mineral_id": "glory_mineral_d10fa75dc4c0", "position": [3456, 2280]},
+        {"mineral_id": "glory_mineral_d10fa75dc4c0", "position": [1416, 3804]}
+      ],
       "remake_material_supply": "2026-09-15 按采掘等级补充接合器材料矿物；原矿池保留"
     },
     "glory_nft_bl_g06": {
@@ -1018,7 +1047,12 @@
           "weight": 1.0
         }
       ],
-      "evidence": "Glory client map placement relation; remake uses random walkable spawns, not source coordinates.",
+      "evidence": "荣耀版地图脚本 NewMinePosition 坐标；复刻服务端固定点位恢复。",
+      "fixed_sources": [
+        {"mineral_id": "graphite_ore", "position": [3216, 1416]},
+        {"mineral_id": "glory_mineral_8cdb4c763103", "position": [2064, 2856]},
+        {"mineral_id": "silicon_ore", "position": [3744, 4320]}
+      ],
       "remake_material_supply": "2026-09-15 按采掘等级补充接合器材料矿物；原矿池保留"
     },
     "glory_nft_bl_h07": {
@@ -1037,7 +1071,11 @@
           "weight": 1.0
         }
       ],
-      "evidence": "Glory client map placement relation; remake uses random walkable spawns, not source coordinates.",
+      "evidence": "荣耀版地图脚本 NewMinePosition 坐标；复刻服务端固定点位恢复。",
+      "fixed_sources": [
+        {"mineral_id": "glory_mineral_7e5a51823863", "position": [4296, 1188]},
+        {"mineral_id": "glory_mineral_8cdb4c763103", "position": [4464, 1392]}
+      ],
       "remake_material_supply": "2026-09-15 按采掘等级补充接合器材料矿物；原矿池保留"
     },
     "glory_nft_bl_h08": {
@@ -1056,7 +1094,11 @@
           "weight": 1.0
         }
       ],
-      "evidence": "Glory client map placement relation; remake uses random walkable spawns, not source coordinates.",
+      "evidence": "荣耀版地图脚本 NewMinePosition 坐标；复刻服务端固定点位恢复。",
+      "fixed_sources": [
+        {"mineral_id": "silicon_ore", "position": [3312, 2016]},
+        {"mineral_id": "graphite_ore", "position": [912, 4152]}
+      ],
       "remake_material_supply": "2026-09-15 按采掘等级补充接合器材料矿物；原矿池保留"
     },
     "glory_nft_bt_a08": {
@@ -1071,7 +1113,11 @@
           "weight": 1.0
         }
       ],
-      "evidence": "Glory client map placement relation; remake uses random walkable spawns, not source coordinates."
+      "evidence": "荣耀版地图脚本 NewMinePosition 坐标；复刻服务端固定点位恢复。",
+      "fixed_sources": [
+        {"mineral_id": "glory_mineral_8cdb4c763103", "position": [648, 1356]},
+        {"mineral_id": "glory_mineral_7e5a51823863", "position": [3360, 2184]}
+      ]
     },
     "glory_nft_bt_a09": {
       "enabled": true,
@@ -1085,7 +1131,11 @@
           "weight": 1.0
         }
       ],
-      "evidence": "Glory client map placement relation; remake uses random walkable spawns, not source coordinates."
+      "evidence": "荣耀版地图脚本 NewMinePosition 坐标；复刻服务端固定点位恢复。",
+      "fixed_sources": [
+        {"mineral_id": "glory_mineral_7e5a51823863", "position": [4296, 1188]},
+        {"mineral_id": "glory_mineral_8cdb4c763103", "position": [4464, 1392]}
+      ]
     },
     "glory_nft_bt_c06": {
       "enabled": true,
@@ -1117,7 +1167,11 @@
           "weight": 1.0
         }
       ],
-      "evidence": "Glory client map placement relation; remake uses random walkable spawns, not source coordinates.",
+      "evidence": "荣耀版地图脚本 NewMinePosition 坐标；复刻服务端固定点位恢复。",
+      "fixed_sources": [
+        {"mineral_id": "silicon_ore", "position": [2256, 2736]},
+        {"mineral_id": "graphite_ore", "position": [3264, 4296]}
+      ],
       "remake_material_supply": "2026-09-15 按采掘等级补充接合器材料矿物；原矿池保留"
     },
     "glory_nft_bt_c08": {
@@ -1152,7 +1206,12 @@
           "weight": 1.0
         }
       ],
-      "evidence": "Glory client map placement relation; remake uses random walkable spawns, not source coordinates.",
+      "evidence": "荣耀版地图脚本 NewMinePosition 坐标；复刻服务端固定点位恢复。",
+      "fixed_sources": [
+        {"mineral_id": "iron_ore", "position": [1392, 1224]},
+        {"mineral_id": "glory_mineral_97b5ace0918f", "position": [1728, 3768]},
+        {"mineral_id": "glory_mineral_8cdb4c763103", "position": [3528, 3996]}
+      ],
       "remake_material_supply": "2026-09-15 按采掘等级补充接合器材料矿物；原矿池保留",
       "crystal_source_supply": "复刻P5：300级四色水晶矿加入同级既有矿池；原版刷新地点未确认"
     },
@@ -1172,7 +1231,11 @@
           "weight": 1.0
         }
       ],
-      "evidence": "Glory client map placement relation; remake uses random walkable spawns, not source coordinates.",
+      "evidence": "荣耀版地图脚本 NewMinePosition 坐标；复刻服务端固定点位恢复。",
+      "fixed_sources": [
+        {"mineral_id": "silicon_ore", "position": [3576, 1548]},
+        {"mineral_id": "graphite_ore", "position": [1464, 3636]}
+      ],
       "remake_material_supply": "2026-09-15 按采掘等级补充接合器材料矿物；原矿池保留"
     },
     "glory_nft_bt_d08": {
@@ -1207,7 +1270,12 @@
           "weight": 1.0
         }
       ],
-      "evidence": "Glory client map placement relation; remake uses random walkable spawns, not source coordinates.",
+      "evidence": "荣耀版地图脚本 NewMinePosition 坐标；复刻服务端固定点位恢复。",
+      "fixed_sources": [
+        {"mineral_id": "glory_mineral_7e5a51823863", "position": [3552, 1632]},
+        {"mineral_id": "glory_mineral_8cdb4c763103", "position": [1224, 2220]},
+        {"mineral_id": "glory_mineral_d10fa75dc4c0", "position": [2808, 4356]}
+      ],
       "remake_material_supply": "2026-09-15 按采掘等级补充接合器材料矿物；原矿池保留",
       "crystal_source_supply": "复刻P5：300级四色水晶矿加入同级既有矿池；原版刷新地点未确认"
     },
@@ -1227,7 +1295,11 @@
           "weight": 1.0
         }
       ],
-      "evidence": "Glory client map placement relation; remake uses random walkable spawns, not source coordinates.",
+      "evidence": "荣耀版地图脚本 NewMinePosition 坐标；复刻服务端固定点位恢复。",
+      "fixed_sources": [
+        {"mineral_id": "glory_mineral_97b5ace0918f", "position": [1560, 1380]},
+        {"mineral_id": "glory_mineral_d10fa75dc4c0", "position": [2760, 3612]}
+      ],
       "remake_material_supply": "2026-09-15 按采掘等级补充接合器材料矿物；原矿池保留"
     },
     "glory_nft_bt_e07": {
@@ -1242,7 +1314,11 @@
           "weight": 1.0
         }
       ],
-      "evidence": "Glory client map placement relation; remake uses random walkable spawns, not source coordinates.",
+      "evidence": "荣耀版地图脚本 NewMinePosition 坐标；复刻服务端固定点位恢复。",
+      "fixed_sources": [
+        {"mineral_id": "glory_mineral_d10fa75dc4c0", "position": [3456, 2280]},
+        {"mineral_id": "glory_mineral_d10fa75dc4c0", "position": [1416, 3804]}
+      ],
       "remake_material_supply": "2026-09-15 按采掘等级补充接合器材料矿物；原矿池保留"
     },
     "glory_nft_bt_e08": {
@@ -1257,7 +1333,12 @@
           "weight": 1.0
         }
       ],
-      "evidence": "Glory client map placement relation; remake uses random walkable spawns, not source coordinates."
+      "evidence": "荣耀版地图脚本 NewMinePosition 坐标；复刻服务端固定点位恢复。",
+      "fixed_sources": [
+        {"mineral_id": "glory_mineral_7e5a51823863", "position": [3696, 1008]},
+        {"mineral_id": "glory_mineral_7e5a51823863", "position": [864, 2832]},
+        {"mineral_id": "glory_mineral_8cdb4c763103", "position": [3984, 3072]}
+      ]
     },
     "glory_nft_bt_g06": {
       "enabled": true,
@@ -1279,7 +1360,12 @@
           "weight": 1.0
         }
       ],
-      "evidence": "Glory client map placement relation; remake uses random walkable spawns, not source coordinates.",
+      "evidence": "荣耀版地图脚本 NewMinePosition 坐标；复刻服务端固定点位恢复。",
+      "fixed_sources": [
+        {"mineral_id": "graphite_ore", "position": [3216, 1416]},
+        {"mineral_id": "glory_mineral_8cdb4c763103", "position": [2064, 2856]},
+        {"mineral_id": "silicon_ore", "position": [3744, 4320]}
+      ],
       "remake_material_supply": "2026-09-15 按采掘等级补充接合器材料矿物；原矿池保留"
     },
     "glory_nft_bt_g08": {
@@ -1294,7 +1380,11 @@
           "weight": 1.0
         }
       ],
-      "evidence": "Glory client map placement relation; remake uses random walkable spawns, not source coordinates."
+      "evidence": "荣耀版地图脚本 NewMinePosition 坐标；复刻服务端固定点位恢复。",
+      "fixed_sources": [
+        {"mineral_id": "silicon_ore", "position": [3312, 2016]},
+        {"mineral_id": "graphite_ore", "position": [912, 4152]}
+      ]
     },
     "glory_nft_bt_h06": {
       "enabled": true,
@@ -1308,7 +1398,11 @@
           "weight": 1.0
         }
       ],
-      "evidence": "Glory client map placement relation; remake uses random walkable spawns, not source coordinates."
+      "evidence": "荣耀版地图脚本 NewMinePosition 坐标；复刻服务端固定点位恢复。",
+      "fixed_sources": [
+        {"mineral_id": "glory_mineral_8cdb4c763103", "position": [648, 1356]},
+        {"mineral_id": "glory_mineral_7e5a51823863", "position": [3360, 2184]}
+      ]
     },
     "glory_nft_bt_h07": {
       "enabled": true,
@@ -1326,7 +1420,11 @@
           "weight": 1.0
         }
       ],
-      "evidence": "Glory client map placement relation; remake uses random walkable spawns, not source coordinates.",
+      "evidence": "荣耀版地图脚本 NewMinePosition 坐标；复刻服务端固定点位恢复。",
+      "fixed_sources": [
+        {"mineral_id": "glory_mineral_7e5a51823863", "position": [4296, 1188]},
+        {"mineral_id": "glory_mineral_8cdb4c763103", "position": [4464, 1392]}
+      ],
       "remake_material_supply": "2026-09-15 按采掘等级补充接合器材料矿物；原矿池保留"
     },
     "glory_nft_bt_h08": {
@@ -1345,7 +1443,11 @@
           "weight": 1.0
         }
       ],
-      "evidence": "Glory client map placement relation; remake uses random walkable spawns, not source coordinates.",
+      "evidence": "荣耀版地图脚本 NewMinePosition 坐标；复刻服务端固定点位恢复。",
+      "fixed_sources": [
+        {"mineral_id": "silicon_ore", "position": [3312, 2016]},
+        {"mineral_id": "graphite_ore", "position": [912, 4152]}
+      ],
       "remake_material_supply": "2026-09-15 按采掘等级补充接合器材料矿物；原矿池保留"
     },
     "glory_nft_bt_j08": {
@@ -1360,7 +1462,11 @@
           "weight": 1.0
         }
       ],
-      "evidence": "Glory client map placement relation; remake uses random walkable spawns, not source coordinates."
+      "evidence": "荣耀版地图脚本 NewMinePosition 坐标；复刻服务端固定点位恢复。",
+      "fixed_sources": [
+        {"mineral_id": "silicon_ore", "position": [1848, 1884]},
+        {"mineral_id": "iron_ore", "position": [3408, 3696]}
+      ]
     },
     "glory_nft_bt_j09": {
       "enabled": true,
@@ -1374,7 +1480,11 @@
           "weight": 1.0
         }
       ],
-      "evidence": "Glory client map placement relation; remake uses random walkable spawns, not source coordinates."
+      "evidence": "荣耀版地图脚本 NewMinePosition 坐标；复刻服务端固定点位恢复。",
+      "fixed_sources": [
+        {"mineral_id": "silicon_ore", "position": [2256, 2736]},
+        {"mineral_id": "graphite_ore", "position": [3264, 4296]}
+      ]
     }
   },
   "source_audit": {

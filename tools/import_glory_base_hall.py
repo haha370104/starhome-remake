@@ -21,14 +21,19 @@ from typing import Any
 
 import numpy as np
 from PIL import Image, ImageChops, ImageDraw
+if __package__:
+    from tools.glory_map_workspace import RawMapWorkspace
+    from tools.glory_paths import RAW_ROOT, resolve_casefold_path
+else:
+    from glory_map_workspace import RawMapWorkspace
+    from glory_paths import RAW_ROOT, resolve_casefold_path
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 OUTPUTS_ROOT = PROJECT_ROOT.parent
-SOURCE_MAP = OUTPUTS_ROOT / "starhome_lz_ry_maps_parsed" / "maps" / "roomsvr1" / "variant_02_nft_bt"
-SOURCE_FCC = OUTPUTS_ROOT / "starhome_lz_ry_full_parsed" / "ftc_resources" / "expanded" / "NFT_BT" / "map" / "RoomSvr1" / "roomsvr1.fcc.cab"
-TRANSPORT_CLASS_SOURCE = OUTPUTS_ROOT / "starhome_lz_ry_full_parsed" / "ftc_resources" / "expanded" / "transport" / "transport.fcc.cab"
-ALE_ROOT = OUTPUTS_ROOT / "starhome_lz_ry_full_parsed" / "ale_sprites"
+SOURCE_FCC = PROJECT_ROOT / "data" / "source_evidence" / "glory" / "roomsvr1.fcc.cab"
+TRANSPORT_CLASS_SOURCE = PROJECT_ROOT / "data" / "source_evidence" / "glory" / "transport.fcc.cab"
+ALE_ROOT = PROJECT_ROOT / "assets" / "glory" / "sprites"
 DESTINATION = PROJECT_ROOT / "assets" / "maps" / "yian_harbor" / "hall_floor_1"
 
 BUSINESS_NAMES = {
@@ -215,7 +220,7 @@ def merge_source_placements(scene: dict, source_path: Path) -> list[dict[str, An
 
 def export_first_frame(logical_path: str, destination: Path) -> dict:
     """Export the first ALE frame and return provenance for a business asset."""
-    source_dir = ALE_ROOT / Path(logical_path)
+    source_dir = ALE_ROOT / Path(logical_path.lower())
     metadata = read_json(source_dir / "frames.json")
     frame = metadata["frames"][0]
     source_sheet = source_dir / metadata["pages"][frame["page"]]
@@ -224,7 +229,7 @@ def export_first_frame(logical_path: str, destination: Path) -> dict:
         crop.save(destination, compress_level=3)
     return {
         "source_logical_path": logical_path + ".ale",
-        "source_frames_metadata": str((source_dir / "frames.json").relative_to(OUTPUTS_ROOT)).replace("\\", "/"),
+        "source_frames_metadata": str((source_dir / "frames.json").relative_to(PROJECT_ROOT)).replace("\\", "/"),
         "source_sheet_sha256": sha256(source_sheet),
         "frame_index": int(frame["index"]),
         "frame_origin": [int(frame["origin_x"]), int(frame["origin_y"])],
@@ -283,7 +288,7 @@ def export_transition_animation(logical_path: str, transition: dict, placement: 
     Returns:
         Business-semantic runtime presentation plus source provenance.
     """
-    source_dir = ALE_ROOT / Path(logical_path)
+    source_dir = ALE_ROOT / Path(logical_path.lower())
     frames_path = source_dir / "frames.json"
     metadata = read_json(frames_path)
     frames = metadata["frames"]
@@ -341,7 +346,9 @@ def export_transition_animation(logical_path: str, transition: dict, placement: 
         "loop": True,
         "activation": "enabled_transition",
     }
-    source_raw = Path(metadata["source"])
+    source_raw = resolve_casefold_path(RAW_ROOT, logical_path + ".ale")
+    if source_raw is None:
+        raise FileNotFoundError(f"missing Glory raw ALE: {logical_path}.ale")
     audit = {
         "schema_version": 1,
         "transition_id": EXIT_TRANSITION_ID,
@@ -820,13 +827,13 @@ def build_semantic_scene_layers(
     )
 
 
-def main() -> int:
+def build(source_map: Path) -> int:
     """Regenerate the Glory hall presentation, navigation audit, and manifest."""
-    if not SOURCE_MAP.is_dir() or not ALE_ROOT.is_dir() or not SOURCE_FCC.is_file() or not TRANSPORT_CLASS_SOURCE.is_file():
+    if not source_map.is_dir() or not ALE_ROOT.is_dir() or not SOURCE_FCC.is_file() or not TRANSPORT_CLASS_SOURCE.is_file():
         raise SystemExit("Glory map, FCC source, transport class, or ALE source root is missing")
-    scene = read_json(SOURCE_MAP / "scene_objects.json")
-    metadata = read_json(SOURCE_MAP / "map_metadata.json")
-    transitions = read_json(SOURCE_MAP / "transitions.json")
+    scene = read_json(source_map / "scene_objects.json")
+    metadata = read_json(source_map / "map_metadata.json")
+    transitions = read_json(source_map / "transitions.json")
     placements = merge_source_placements(scene, SOURCE_FCC)
     resolved_paths = {item["resolved_ale"] for item in placements if item.get("status") == "ok"}
     unmapped = sorted(resolved_paths - BUSINESS_NAMES.keys())
@@ -835,9 +842,9 @@ def main() -> int:
 
     props_dir = DESTINATION / "props"
     props_dir.mkdir(parents=True, exist_ok=True)
-    shutil.copy2(SOURCE_MAP / "background.png", DESTINATION / "floor.png")
-    shutil.copy2(SOURCE_MAP / "minimap.jpg", DESTINATION / "minimap.jpg")
-    shutil.copy2(SOURCE_MAP / "navigation_grid.bin", DESTINATION / "navigation_grid.bin")
+    shutil.copy2(source_map / "background.png", DESTINATION / "floor.png")
+    shutil.copy2(source_map / "minimap.jpg", DESTINATION / "minimap.jpg")
+    shutil.copy2(source_map / "navigation_grid.bin", DESTINATION / "navigation_grid.bin")
     asset_sources = {}
     for logical_path in sorted(resolved_paths):
         business_name = BUSINESS_NAMES[logical_path]
@@ -941,7 +948,7 @@ def main() -> int:
             "depth_profiles": [stairway_profile["profile_id"]],
             "props": props, "source_placements": source_placements, "disabled_placement_count": disabled_count,
         },
-        "navigation": {"grid_size": metadata["engine_grid_size"], "cell_size": [48, 12], "data_path": "res://assets/maps/yian_harbor/hall_floor_1/navigation_grid.bin", "source_sha256": sha256(SOURCE_MAP / "navigation_grid.bin")},
+        "navigation": {"grid_size": metadata["engine_grid_size"], "cell_size": [48, 12], "data_path": "res://assets/maps/yian_harbor/hall_floor_1/navigation_grid.bin", "source_sha256": sha256(source_map / "navigation_grid.bin")},
         "minimap": "res://assets/maps/yian_harbor/hall_floor_1/minimap.jpg", "transitions": runtime_transitions,
         "transition_visuals": {EXIT_TRANSITION_ID: transition_animation},
         "missing_dependencies": missing_dependencies, "asset_sources": asset_sources,
@@ -960,6 +967,12 @@ def main() -> int:
         "missing_enabled_dependencies": len(missing_dependencies), "world_size": metadata["map_pixel_size"],
     }, ensure_ascii=False, indent=2))
     return 0
+
+
+def main() -> int:
+    with RawMapWorkspace() as workspace:
+        with workspace.render("roomsvr1/variant_02_nft_bt") as (source_map, _):
+            return build(source_map)
 
 
 if __name__ == "__main__":

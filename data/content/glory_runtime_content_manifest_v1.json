@@ -8,14 +8,14 @@
   "operational_catalogs": {
     "maps": {
       "source_registrations": 814,
-      "runtime_ready": 810,
-      "unresolved": 4
+      "runtime_ready": 814,
+      "unresolved": 0
     },
     "animations": {
-      "decoded_ale": 13888,
+      "decoded_ale": 13895,
       "monster_act_variants": 81,
       "mineral_act_variants": 25,
-      "runtime_total": 13994
+      "runtime_total": 14001
     },
     "monsters": {
       "runtime_definitions": 119,
@@ -47,17 +47,6 @@
     }
   },
   "explicit_exceptions": [
-    {
-      "kind": "map_package_missing",
-      "count": 4,
-      "identifiers": [
-        "map:nft_bt/blackroom",
-        "map:nft_bt/yzzl",
-        "map:nft_ds/roomsvr3",
-        "map:nft_sk/yzzl"
-      ],
-      "effect": "Registered as known but cannot be entered until a source package is recovered."
-    },
     {
       "kind": "item_asset_missing_from_glory_package",
       "count": 463,

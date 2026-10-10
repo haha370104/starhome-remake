@@ -39,6 +39,15 @@ func _run() -> void:
 		var shadow := view.presenter.get_node_or_null("Shadow") as AnimatedSprite2D
 		var body := view.presenter.get_node("Body") as AnimatedSprite2D
 		_expect((shadow != null) == expects_shadow, "%s 阴影层应符合原始配置" % actor_id)
+		for layer_value: Variant in manifest.actors[actor_id].layers:
+			var layer: Dictionary = layer_value
+			var sprite := view.presenter.get_node_or_null(String(layer.id).to_pascal_case()) as AnimatedSprite2D
+			var action: Dictionary = layer.actions.idle
+			var metadata_path := String(action.resource).get_base_dir().path_join("import_metadata.json")
+			var metadata: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(metadata_path))
+			var bounds: Array = metadata.normalized_cell.coordinate_bounds
+			_expect(sprite != null and sprite.offset == Vector2(bounds[0], bounds[1]),
+				"%s %s 应按 ALE 原点定位" % [actor_id, layer.id])
 		var shadow_refs: Dictionary = catalog.definition_for_actor(actor_id).get("shadow_actions", {})
 		for action: String in ["idle", "move", "attack"]:
 			_expect(not String(shadow_refs.get(action, "")).is_empty() == expects_shadow,
@@ -75,6 +84,20 @@ func _run() -> void:
 		root.get_texture().get_image().save_png("res://.godot/monster_shadows.png")
 	for view: MonsterWorldView in preview_views:
 		view.free()
+	var repository := AleSpriteRepository.new()
+	_expect(repository.load_default(), "荣耀怪物 ALE 索引应可读取")
+	var glory_presentation := catalog.definition_for_actor("glory_npc_006")
+	var glory_view := MonsterWorldView.new()
+	root.add_child(glory_view)
+	_expect(glory_view.configure(manifest, {
+		"entity_id": "glory_npc_006", "combat_actor_id": "glory_npc_006",
+		"display_name": "低温感光质", "position": [500, 145], "alive": true,
+		"health": 60, "max_health": 100, "facing_index": 0, "action": "idle",
+	}, repository, glory_presentation) == OK, "荣耀怪物应能创建")
+	var glory_frame: Dictionary = repository.load_animation(String(glory_presentation.actions.idle)).frames[0]
+	_expect((glory_view.presenter.get_node("Body") as Sprite2D).position == glory_frame.origin,
+		"荣耀怪物身体应逐帧使用 ALE 原点")
+	glory_view.free()
 	for failure: String in failures:
 		push_error(failure)
 	if failures.is_empty():

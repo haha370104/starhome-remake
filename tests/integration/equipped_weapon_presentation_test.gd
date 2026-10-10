@@ -16,7 +16,7 @@ func _run() -> void:
 	hall.multiplayer_connect_automatically = false
 	root.add_child(hall)
 	await process_frame
-	var field: Dictionary = hall.active_world_controller.prepare_initial_bundle("res://data/maps/d04_field_zone.json")
+	var field: Dictionary = hall.active_world_controller.prepare_initial_bundle("res://data/maps/glory_nft_bl_d04.json")
 	_expect(hall.active_world_controller.commit_bundle(field, field.definition.spawn_for_entry(1).position), "真实野外地图可提交")
 	var catalog := ItemCatalog.new()
 	_expect(catalog.initialize().is_ok, "物品目录可用")
@@ -149,7 +149,9 @@ func _test_energy_confirmation(hall: Node2D, player: Player) -> void:
 	state.working_energy = 20.0
 	var rejected := server.handle_weapon_attack(actor_id, UseAbilityIntent.new("equipment.test", "energy_cannon.primary", aim, 1).to_dictionary())
 	_expect(not rejected.is_ok and rejected.error_code == &"combat.insufficient_working_energy", "虎式开炮真实拒绝能量不足")
-	hall.combat.on_combat_snapshot_received(server.snapshot_for_actor(actor_id))
+	var rejected_snapshot := server.local_snapshot_for_actor(actor_id)
+	rejected_snapshot.merge(server.world_snapshot_for_map("equipment.test"))
+	hall.combat.on_combat_snapshot_received(rejected_snapshot)
 	_expect(server.pending_projectiles.is_empty() and controller.active_projectile_count() == 0, "拒绝开火不产生权威或客户端弹体")
 	_expect(is_equal_approx(hall.world_view.player.combat_status_bar._energy_ratio, 0.2), "真实权威快照将蓝条显示为20%")
 	state.working_energy = state.working_energy_capacity
@@ -172,7 +174,9 @@ func _test_energy_confirmation(hall: Node2D, player: Player) -> void:
 			"移动只校准视觉起点，不能平移或重新钳制权威弹道终点")
 		_expect(event == event_before and server.pending_projectiles[0].origin == authority_muzzle,
 			"表现修正不得篡改事件或权威弹体")
-		hall.combat.on_combat_snapshot_received(server.snapshot_for_actor(actor_id))
+		var accepted_snapshot := server.local_snapshot_for_actor(actor_id)
+		accepted_snapshot.merge(server.world_snapshot_for_map("equipment.test"))
+		hall.combat.on_combat_snapshot_received(accepted_snapshot)
 		_expect(controller.active_projectile_count() == 1, "开火事件和重复快照合计只播放一次")
 		_expect(is_equal_approx(hall.world_view.player.combat_status_bar._energy_ratio, 0.5), "虎式每炮扣50能量并投影为半条")
 		_expect(controller._weapon.projectile.ale_reference == "pic3/bullet/bullet8", "真实开火事件仍使用虎式专属弹体")

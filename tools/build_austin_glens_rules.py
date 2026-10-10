@@ -23,7 +23,7 @@ def build(check=False):
     def add_icon(classname, category, name, label, description, price):
         assert "class " + classname + ":" in classes, classname
         logical = f"pic3/stuff/{classname}.ale"
-        original = ROOT.parent / "starhome_lz_ry_full/raw" / logical
+        original = ROOT / "../starhome_lz_ry_full/raw" / logical
         ale = decoder.AleFile(original)
         frame = ale.decode_frame(ale.frames[0])
         buffer = io.BytesIO()

@@ -23,6 +23,7 @@ func _run() -> void:
 	var controller := MonsterWorldController.new()
 	root.add_child(controller)
 	_expect(controller.configure(world, manifest, player) == OK, "实际怪物表现控制器须可配置")
+	controller.apply_snapshot({"monsters": [], "recent_events": []})
 	controller.set_process(false)
 	var effects: MonsterAttackEffectController = controller._attack_effects
 	effects.set_process(false)

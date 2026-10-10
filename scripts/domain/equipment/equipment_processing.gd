@@ -5,14 +5,15 @@ const ATTRIBUTES := ["max_health", "output_power", "range", "drive", "base_attac
 var _increments: Dictionary[String, int] = {}
 
 
-## 恢复独立加工事实；旧存档默认为未加工，不接受负值、分数或未知字段。
+## 恢复完整的独立加工事实，不接受负值、分数或未知字段。
 ## [param raw] 存档边界数据。
 ## 返回加工状态或格式错误。
 static func restore(raw: Variant) -> DomainResult:
-	if not raw is Dictionary or raw.get("version", 1) != 1 or not raw.get("increments", {}) is Dictionary:
+	if not raw is Dictionary or raw.size() != 2 or not raw.has("version") \
+		or not raw.has("increments") or raw.version != 1 or not raw.increments is Dictionary:
 		return DomainResult.failure(&"processing.invalid_state", "装备加工状态格式无效")
 	var result := EquipmentProcessing.new()
-	for key: Variant in raw.get("increments", {}):
+	for key: Variant in raw.increments:
 		var value: Variant = raw.increments[key]
 		if key not in ATTRIBUTES or not (value is float or value is int) \
 			or not is_finite(float(value)) or value < 0 or value > 1000000 or float(value) != floorf(float(value)):

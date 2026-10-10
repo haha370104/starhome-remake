@@ -50,7 +50,7 @@ const recipeInputs = new Set(runtime.recipes.flatMap(r => r.materials.map(m => m
 const upgradeInputs = new Set((await read('data/gameplay/commerce/attachment_upgrade_costs_v1.json')).rules.flatMap(r => [...r.premium_materials, ...r.normal_materials].map(m => m.definition_id)));
 const taskInputs = new Set(Object.values(runtime.tasks).filter(t => t.kind === 2).map(t => t.target_id));
 for (const task of (await read('data/gameplay/quests/repeatable_tasks_v1.json')).tasks) {
-  for (const m of task.requirements ?? []) taskInputs.add(runtime.item_aliases[m.definition_id] ?? m.definition_id);
+  for (const m of task.requirements ?? []) taskInputs.add(m.definition_id);
 }
 const itemRows = bindings.map(b => {
   const item = runtime.items[b.item_definition_id];

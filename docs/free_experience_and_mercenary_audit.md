@@ -4,6 +4,7 @@
 
 上句描述研究阶段；同日后续已按用户要求完成[复刻日常活动](daily_activities_and_smart_assistant.md)，佣兵和历练奖励均改为紫晶。
 本文继续保留原版规则，复刻新增门槛和奖励不作为原服证据。
+下文引用的免费版 FCC、帮助文件和原表来自当时核查；这些源文件现保存在工程外 `../starhome_lz_fr_full/raw/`。
 
 ## 结论与证据边界
 
@@ -16,11 +17,10 @@
 
 ## 人物历练：10 条固定每日目标
 
-定义由 [EmpowerRoleData](../../starhome_lz_fr_fcc_source/yl/marryface.fcc)（10261～10279 行）读取本地
-`bool/ROLE/EmpowerRole.tab`。已解码的[原表](../../starhome_lz_fr_full_parsed/ftc_resources/decoded/bool/role/EmpowerRole.tab.decoded)
-有 10 条记录，字段为 `id/name/maxnum/express/condition/price/tips`。
+`yl/marryface.fcc` 中的 `EmpowerRoleData`（10261～10279 行）读取本地
+`bool/ROLE/EmpowerRole.tab`。已解码的原表有 10 条记录，字段为 `id/name/maxnum/express/condition/price/tips`。
 窗口使用 `price` 显示单次奖励、`maxnum` 显示完成次数上限（同文件 10477～10490 行）。
-[原版帮助](../../starhome_lz_fr_full/raw/djh/help.hlp) 第 155～156 行说明钛晶用途，以及各类历练每天 0 点刷新。
+原版帮助 `djh/help.hlp` 第 155～156 行说明钛晶用途，以及各类历练每天 0 点刷新。
 
 | ID | 目标（按表中文字） | 每日次数上限 | 每次钛晶 |
 | --- | --- | --- | --- |
@@ -44,13 +44,13 @@
 - 历练条件编码与佣兵条件编码不同，不能共用数字到任务类型的映射。
 
 【客户端证据】还保留特殊活动入口：老兵回归、每日登录、蛇福临门、晶体激活器残片。
-[服务响应及请求](../../starhome_lz_fr_fcc_source/ven/mainclient_me_ven.fcc) 3008～3094 行可见相应方法。
+`ven/mainclient_me_ven.fcc` 第 3008～3094 行可见相应方法。
 每日登录客户端有综合等级 600 的判断；窗口现有登录/残片入口受 2013-04-22～2013-06-04 活动日期控制。
 这些属于历史活动分支，不能和常驻 10 条日常目标混算。
 
 ## 佣兵：495 条配置，4 类完成条件
 
-[LoadMercenaryRole](../../starhome_lz_fr_fcc_source/dbutility.fcc) 第 1～100 行加载 `bool/ROLE/MercenaryRole.txt`，按任务 ID 建索引。
+`dbutility.fcc` 的 `LoadMercenaryRole` 第 1～100 行加载 `bool/ROLE/MercenaryRole.txt`，按任务 ID 建索引。
 已解包的文件虽以 `.cab` 结尾，内容实际上是 GB18030 制表符文本；完整读取了 495 条、每条 7 列。
 任务 ID 范围 1～500，有 5 个空号，无重复 ID。
 [495 条完整清单](free_mercenary_task_catalog.md) 保留名称、描述、条件原文、等级、品质和积分。
@@ -72,14 +72,14 @@
 
 ## 每日规则和奖励
 
-【客户端证据】[原版帮助](../../starhome_lz_fr_full/raw/djh/help.hlp) 第 141～154 行：
+【客户端证据】`djh/help.hlp` 第 141～154 行：
 
 - 每天可领取 20 次，同时最多拥有 5 个任务。
 - 领取一个任务后刷新一次；任务栏每天 00:00 刷新，也可手动刷新。
 - 每日完成第 5、10、15、20 次有额外佣兵积分，但客户端表未给出这些额外积分的具体数值。
 - 佣兵积分上限 250000；称号阈值依次为见习 0、F 1100、E 6000、D 16000、C 30000、B 52000、A 85000、S 135000、SS 200000。
 
-【客户端证据】[刷新确认窗口](../../starhome_lz_fr_fcc_source/yl/marryface.fcc) 9459～9463 行：
+【客户端证据】`yl/marryface.fcc` 第 9459～9463 行的刷新确认窗口：
 星际币刷新花费 20000，并消耗一次当日星际币刷新次数；紫晶刷新花费 50 紫晶。
 同文件 9767～9799 行按佣兵称号计算星际币刷新次数：见习/F 为 1 次、E 为 2 次、D 为 3 次、C 为 4 次、B/A/S 为 5 次、SS 为 10 次。
 这里的紫晶是消耗项，不是任务产出。
@@ -89,7 +89,7 @@
 
 ## 服务器下发的内容
 
-【客户端证据】[佣兵协议接收与请求](../../starhome_lz_fr_fcc_source/ven/mainclient_me_ven.fcc) 2780～2913 行：
+【客户端证据】`ven/mainclient_me_ven.fcc` 第 2780～2913 行的佣兵协议接收与请求：
 
 - `OnInitYBRole` 接收星际币刷新已用次数、今日剩余领取次数、今日完成次数、可领任务 ID 列表、已接任务进度。
 - `OnUpdateYBRole` 按类别更新这些状态；UI 用任务 ID 查询本地任务表。
@@ -97,7 +97,7 @@
 - 今日完成次数注释明确包含“昨天接了今天才去完成的”，说明有跨日交付场景；不能推断午夜自动清空所有已接任务。
 
 历练的 `OnInitEmpowerRole`（同文件 2983～3006 行）接收进度和钛晶余额。
-登录初始文本由 [InitCurUserEmpowerRole](../../starhome_lz_fr_fcc_source/gwb/mainclient_me_gwb.fcc) 5001～5023 行解成任务 ID/已完成次数。
+登录初始文本由 `gwb/mainclient_me_gwb.fcc` 的 `InitCurUserEmpowerRole` 第 5001～5023 行解成任务 ID/已完成次数。
 最终完成判定与发奖仍由服务器拥有，本地固定表不能代替权威状态。
 
 ## 对复刻紫晶来源设计的意义

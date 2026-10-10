@@ -18,6 +18,7 @@ signal central_requested(instance_id: String, is_material: bool)
 signal sama_requested(instance_id: String, is_material: bool)
 
 signal command_requested(command: Dictionary)
+signal right_click(point: Vector2, inside_menu: bool)
 
 var menu := PopupMenu.new()
 var split_dialog := ConfirmationDialog.new()
@@ -27,14 +28,17 @@ var amount := SpinBox.new()
 var _item: GameItem
 var _revision := -1
 var _actions: Array[String] = []
+var _extra_fields: Dictionary = {}
+var _pending_action := ""
 
 
 ## 创建独立物品菜单和拆分数量框，交互只发命令不修改玩家投影。
 func _ready() -> void:
 	add_child(menu)
-	menu.add_theme_font_override("font", preload("res://assets/ui/fonts/legacy_panel_font.tres"))
-	menu.add_theme_font_size_override("font_size", 16)
+	menu.add_theme_font_override("font", preload("res://assets/ui/fonts/NotoSansCJKsc-Regular.otf"))
+	menu.add_theme_font_size_override("font_size", 12)
 	menu.id_pressed.connect(_select_action)
+	menu.window_input.connect(_handle_menu_window_input)
 	add_child(split_dialog)
 	split_dialog.title = "拆分物品"
 	split_dialog.ok_button_text = "拆分"
@@ -55,12 +59,22 @@ func _ready() -> void:
 ## [param item] 被命中的自有物品。
 ## [param revision] 打开菜单时的背包版本。
 ## [param point] 视口鼠标坐标。
-func open_for(item: GameItem, revision: int, point: Vector2) -> void:
+func open_for(item: GameItem, revision: int, point: Vector2, warehouse := false, extra_fields := {}) -> void:
 	_item = item
 	_revision = revision
+	_extra_fields = extra_fields.duplicate(true)
 	_actions.clear()
 	menu.clear()
-	menu.add_separator(item.display_name)
+	if warehouse:
+		if item.max_stack > 1:
+			_add_action("拆分", "split_warehouse_item", item.locked or item.quantity < 2)
+		if _actions.is_empty():
+			menu.add_item("暂无可用操作")
+			menu.set_item_disabled(menu.item_count - 1, true)
+		menu.position = Vector2i(point)
+		menu.reset_size()
+		menu.popup()
+		return
 	if item is CrystalSourceCore or (item is VehicleEquipment and item.crystal_source_profile != null):
 		_add_action("晶源体 / 晶源核", "crystal_source", false)
 	if item is CentralMaterial or (item is VehicleEquipment and item.central_profile != null):
@@ -114,6 +128,20 @@ func _add_action(label: String, action: String, disabled: bool) -> void:
 	menu.add_item(label, _actions.size())
 	_actions.append(action)
 	menu.set_item_disabled(menu.item_count - 1, disabled)
+
+
+## PopupMenu 会拦截右键；将位置交还给物品视图判断是否切换菜单。
+func _handle_menu_window_input(event: InputEvent) -> void:
+	if not event is InputEventMouseButton:
+		return
+	var mouse_event := event as InputEventMouseButton
+	if mouse_event.button_index != MOUSE_BUTTON_RIGHT or not mouse_event.pressed:
+		return
+	var point := mouse_event.global_position
+	var popup_rect := Rect2(Vector2(menu.position), Vector2(menu.size))
+	menu.set_input_as_handled()
+	menu.hide()
+	right_click.emit(point, popup_rect.has_point(point))
 
 
 ## 将菜单选择转换为既有装备命令或新的背包操作命令。
@@ -173,7 +201,8 @@ func _select_action(id: int) -> void:
 				replace_dialog.dialog_text = "使用%s将替换已有的同类食品效果。\n%s" % [_item.display_name, (_item as ConsumableItem).use_description()]
 				replace_dialog.popup_centered(Vector2i(480, 190))
 				return
-	if action == "split_inventory_item":
+	if action in ["split_inventory_item", "split_warehouse_item"]:
+		_pending_action = action
 		amount.max_value = _item.quantity - 1
 		amount.value = maxi(1, floori(float(_item.quantity) / 2.0))
 		split_dialog.popup_centered(Vector2i(260, 130))
@@ -202,8 +231,11 @@ func _confirm_use() -> void:
 func _confirm_split() -> void:
 	if _item == null:
 		return
-	command_requested.emit({"type": "split_inventory_item", "instance_id": _item.instance_id,
-		"quantity": int(amount.value), "inventory_revision": _revision})
+	var command := {"type": _pending_action, "instance_id": _item.instance_id,
+		"quantity": int(amount.value), "inventory_revision": _revision}
+	command.merge(_extra_fields, true)
+	command_requested.emit(command)
+	_pending_action = ""
 
 
 ## 随背包关闭收起物品弹窗。

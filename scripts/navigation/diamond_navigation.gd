@@ -4,11 +4,16 @@ extends RefCounted
 const DEFAULT_GRID_SIZE := Vector2i(35, 280)
 const DEFAULT_CELL_SIZE := Vector2(48.0, 12.0)
 const LINE_OF_SIGHT_SAMPLE_STEP := 3.0
+const VISIBILITY_COARSE_SAMPLE_THRESHOLD := 32
+const VISIBILITY_COARSE_SAMPLE_STRIDE := 8
+const CLOSEST_POINT_BUCKET_SIZE := Vector2(192.0, 96.0)
 
 var data := PackedByteArray()
 var graph := AStar2D.new()
 var grid_size := DEFAULT_GRID_SIZE
 var cell_size := DEFAULT_CELL_SIZE
+var _component_ids := PackedInt32Array()
+var _component_point_buckets: Dictionary = {}
 
 
 ## 配置并初始化 `configure` 对应的模块状态。
@@ -54,6 +59,7 @@ func load_from(
 		)
 		return false
 	_build_graph()
+	_build_component_index()
 	return true
 
 
@@ -97,30 +103,60 @@ func closest_reachable_position(from_position: Vector2, requested_position: Vect
 	var from_id := cell_id(world_to_cell(from_position))
 	if not graph.has_point(from_id):
 		return Vector2.INF
-	var closest_id := graph.get_closest_point(requested_position)
-	if closest_id < 0:
+	if from_id >= _component_ids.size() or _component_ids[from_id] < 0:
+		_build_component_index()
+	if from_id >= _component_ids.size() or _component_ids[from_id] < 0:
 		return Vector2.INF
-	# The hall is normally one connected navigation component. Keep a complete
-	# fallback for future maps that contain disconnected walkable islands.
-	if not graph.get_id_path(from_id, closest_id).is_empty():
+	var component_id := _component_ids[from_id]
+	var closest_id := graph.get_closest_point(requested_position)
+	if closest_id >= 0 and closest_id < _component_ids.size() \
+			and _component_ids[closest_id] == component_id:
 		return graph.get_point_position(closest_id)
+	if closest_id >= 0:
+		var closest_position := graph.get_point_position(closest_id)
+		var map_diagonal := Vector2(
+			float(grid_size.x) * cell_size.x,
+			float(grid_size.y) * cell_size.y,
+		).length()
+		if requested_position.distance_squared_to(closest_position) > map_diagonal * map_diagonal:
+			return _closest_component_position(requested_position, component_id)
+	var requested_bucket := _point_bucket(requested_position)
 	var best_position := Vector2.INF
 	var best_distance_squared := INF
-	var pending: Array[int] = [from_id]
-	var visited := {from_id: true}
-	var cursor := 0
-	while cursor < pending.size():
-		var point_id := pending[cursor]
-		cursor += 1
+	var maximum_radius := maxi(grid_size.x, grid_size.y) + 2
+	for radius in range(maximum_radius):
+		for bucket_y in range(requested_bucket.y - radius, requested_bucket.y + radius + 1):
+			for bucket_x in range(requested_bucket.x - radius, requested_bucket.x + radius + 1):
+				if radius > 0 and abs(bucket_x - requested_bucket.x) != radius \
+						and abs(bucket_y - requested_bucket.y) != radius:
+					continue
+				var bucket_components: Dictionary = _component_point_buckets.get(
+					Vector2i(bucket_x, bucket_y), {}
+				)
+				for point_id: int in bucket_components.get(component_id, []):
+					var candidate := graph.get_point_position(point_id)
+					var distance_squared := candidate.distance_squared_to(requested_position)
+					if distance_squared < best_distance_squared:
+						best_position = candidate
+						best_distance_squared = distance_squared
+		if best_position.is_finite() and _bucket_exterior_distance_squared(
+				requested_position, requested_bucket, radius
+			) > best_distance_squared:
+			return best_position
+	return best_position
+
+
+func _closest_component_position(requested_position: Vector2, component_id: int) -> Vector2:
+	var best_position := Vector2.INF
+	var best_distance_squared := INF
+	for point_id: int in graph.get_point_ids():
+		if point_id >= _component_ids.size() or _component_ids[point_id] != component_id:
+			continue
 		var candidate := graph.get_point_position(point_id)
 		var distance_squared := candidate.distance_squared_to(requested_position)
 		if distance_squared < best_distance_squared:
 			best_position = candidate
 			best_distance_squared = distance_squared
-		for connected_id in graph.get_point_connections(point_id):
-			if not visited.has(connected_id):
-				visited[connected_id] = true
-				pending.append(connected_id)
 	return best_position
 
 
@@ -185,6 +221,18 @@ func simplify_path_bounded(raw_path: PackedVector2Array, lookahead_points: int =
 func segment_is_walkable(from_position: Vector2, to_position: Vector2) -> bool:
 	var distance := from_position.distance_to(to_position)
 	var sample_count := maxi(1, ceili(distance / LINE_OF_SIGHT_SAMPLE_STEP))
+	if sample_count >= VISIBILITY_COARSE_SAMPLE_THRESHOLD:
+		# 先检查完整采样序列的子集；发现阻挡时可以安全地跳过剩余采样。
+		# 所有粗采样通过后仍执行下面的完整检查，保持原算法的判定结果不变。
+		var coarse_index := 0
+		while coarse_index <= sample_count:
+			var coarse_weight := float(coarse_index) / float(sample_count)
+			if not is_walkable(from_position.lerp(to_position, coarse_weight)):
+				return false
+			coarse_index += VISIBILITY_COARSE_SAMPLE_STRIDE
+		if coarse_index - VISIBILITY_COARSE_SAMPLE_STRIDE != sample_count \
+				and not is_walkable(from_position.lerp(to_position, 1.0)):
+			return false
 	for sample_index in range(sample_count + 1):
 		var weight := float(sample_index) / float(sample_count)
 		if not is_walkable(from_position.lerp(to_position, weight)):
@@ -251,6 +299,8 @@ func is_walkable(world_position: Vector2) -> bool:
 ## 设计：该函数遵循所在模块的职责边界。
 func _build_graph() -> void:
 	graph = AStar2D.new()
+	_component_ids = PackedInt32Array()
+	_component_point_buckets.clear()
 	for y in range(grid_size.y):
 		for x in range(grid_size.x):
 			var cell := Vector2i(x, y)
@@ -304,3 +354,64 @@ func _connect(from_cell: Vector2i, to_cell: Vector2i) -> void:
 	var to_id := cell_id(to_cell)
 	if graph.has_point(from_id) and graph.has_point(to_id):
 		graph.connect_points(from_id, to_id)
+
+
+func _build_component_index() -> void:
+	var maximum_point_id := -1
+	for point_id: int in graph.get_point_ids():
+		maximum_point_id = maxi(maximum_point_id, point_id)
+	_component_ids.resize(maximum_point_id + 1)
+	_component_point_buckets.clear()
+	for index in range(_component_ids.size()):
+		_component_ids[index] = -1
+	var component_id := 0
+	for point_id: int in graph.get_point_ids():
+		if _component_ids[point_id] >= 0:
+			continue
+		_component_ids[point_id] = component_id
+		var pending: Array[int] = [point_id]
+		var cursor := 0
+		while cursor < pending.size():
+			_add_component_point(component_id, pending[cursor])
+			for connected_id: int in graph.get_point_connections(pending[cursor]):
+				if _component_ids[connected_id] >= 0:
+					continue
+				_component_ids[connected_id] = component_id
+				pending.append(connected_id)
+			cursor += 1
+		component_id += 1
+
+
+func _add_component_point(component_id: int, point_id: int) -> void:
+	var bucket := _point_bucket(graph.get_point_position(point_id))
+	var bucket_components: Dictionary = _component_point_buckets.get(bucket, {})
+	var points: Array = bucket_components.get(component_id, [])
+	points.append(point_id)
+	bucket_components[component_id] = points
+	_component_point_buckets[bucket] = bucket_components
+
+
+func _point_bucket(position: Vector2) -> Vector2i:
+	return Vector2i(
+		floori(position.x / CLOSEST_POINT_BUCKET_SIZE.x),
+		floori(position.y / CLOSEST_POINT_BUCKET_SIZE.y),
+	)
+
+
+func _bucket_exterior_distance_squared(
+	position: Vector2,
+	center: Vector2i,
+	radius: int,
+) -> float:
+	var lower := Vector2(
+		float(center.x - radius) * CLOSEST_POINT_BUCKET_SIZE.x,
+		float(center.y - radius) * CLOSEST_POINT_BUCKET_SIZE.y,
+	)
+	var upper := lower + Vector2(
+		float(radius * 2 + 1) * CLOSEST_POINT_BUCKET_SIZE.x,
+		float(radius * 2 + 1) * CLOSEST_POINT_BUCKET_SIZE.y,
+	)
+	var distance_x := minf(position.x - lower.x, upper.x - position.x)
+	var distance_y := minf(position.y - lower.y, upper.y - position.y)
+	var distance := minf(distance_x, distance_y)
+	return distance * distance

@@ -30,6 +30,8 @@ func _run() -> void:
 	var controller = MonsterWorldControllerScript.new()
 	root.add_child(controller)
 	_expect(controller.configure(world, manifest_value, local_player) == OK, "monster controller should load death effects")
+	var effects := controller.get_node("MonsterDeathEffects")
+	effects.set_process(false)
 	controller.apply_snapshot(_snapshot(true, 60, []))
 	var monster := world.get_node_or_null("Monster_monster_om") as Node2D
 	_expect(monster != null and monster.visible, "living monster should be visible")
@@ -38,7 +40,9 @@ func _run() -> void:
 	var lethal_damage := world.get_node_or_null("DamageFloat_1") as Node2D
 	_expect(lethal_damage != null and lethal_damage.position == Vector2(140.0, 220.0),
 		"最后一击应在怪物节点移除后仍按权威死亡脚点显示扣血")
-	var effects := controller.get_node_or_null("MonsterDeathEffects")
+	var deadline := Time.get_ticks_msec() + 3000
+	while effects.active_effect_count() == 0 and Time.get_ticks_msec() < deadline:
+		await process_frame
 	_expect(effects != null and effects.active_effect_count() == 1, "death should create one independent effect")
 	var effect := world.get_node_or_null("MonsterDeath_monster_om_1") as Node2D
 	_expect(effect != null and effect.position == Vector2(140.0, 220.0), "death effect should use the authoritative foot point")
@@ -63,6 +67,9 @@ func _run() -> void:
 		contact_impact != null and contact_impact.position == local_player.position,
 		"contact overlay should appear at the local vehicle position",
 	)
+	controller.clear()
+	controller.apply_snapshot(_snapshot(false, 0, [_death_hit_event(5, 4)]))
+	_expect(effects.active_effect_count() == 1, "切图后会话发来的首个新死亡不能被局部首帧过滤吞掉")
 	controller.clear()
 	controller.queue_free()
 	world.queue_free()

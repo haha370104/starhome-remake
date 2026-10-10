@@ -4,7 +4,7 @@ extends RefCounted
 var _slots: Array[VehicleSocket] = []
 
 
-## 恢复孔槽结构；旧存档缺字段时保留为空，装备目录再赋予未开启基础孔。
+## 恢复孔槽结构；规范空对象由装备目录赋予未开启基础孔。
 ## [param raw] JSON 边界状态。
 ## 返回校验后的独立状态或错误。
 static func restore(raw: Variant) -> DomainResult:
@@ -13,7 +13,8 @@ static func restore(raw: Variant) -> DomainResult:
 	var result := VehicleSockets.new()
 	if raw.is_empty():
 		return DomainResult.ok(result)
-	if raw.get("version") != 1 or not raw.get("slots") is Array or raw.slots.size() > 12:
+	if raw.size() != 2 or not raw.has("version") or not raw.has("slots") \
+		or raw.version != 1 or not raw.slots is Array or raw.slots.size() > 12:
 		return DomainResult.failure(&"sockets.invalid_state", "战车孔槽版本或数量无效")
 	for entry: Variant in raw.slots:
 		var checked := VehicleSocket.restore(entry)

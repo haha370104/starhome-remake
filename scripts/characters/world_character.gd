@@ -2,6 +2,7 @@ class_name WorldCharacter
 extends Node2D
 
 const PLAYER_NAME_LABEL_POSITION := Vector2(-65, -88)
+const PLAYER_HIT_RECT := Rect2(-90, -70, 180, 120)
 
 var body := AnimatedSprite2D.new()
 var equipment := AnimatedSprite2D.new()
@@ -10,6 +11,8 @@ var name_label := Label.new()
 var body_offsets: Dictionary
 var equipment_offsets: Dictionary
 var shadow_offsets: Dictionary
+var display_name := ""
+var body_sex := "male"
 var current_action := "stand"
 var current_direction := 6
 
@@ -25,6 +28,8 @@ func configure(
 	name_color: Color,
 	name_offset: Vector2,
 ) -> void:
+	self.display_name = display_name
+	body_sex = String(character_set["sex"])
 	body_offsets = character_set["body_offsets"]
 	equipment_offsets = character_set["equipment_offsets"]
 	shadow_offsets = character_set["shadow_offsets"]
@@ -65,6 +70,16 @@ func configure(
 	set_action("stand", 6)
 
 
+## 判断世界坐标是否落在原版玩家对象的可点击范围内。
+func hit_test(world_position: Vector2) -> bool:
+	return PLAYER_HIT_RECT.has_point(to_local(world_position))
+
+
+## 返回玩家对象当前展示的名称。
+func get_display_name() -> String:
+	return display_name
+
+
 ## 设置或恢复 `set_action` 对应的模块状态。
 ## [param action] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## [param direction] 调用方传入的参数；具体约束由函数签名和所在模块定义。
@@ -89,6 +104,18 @@ func set_animation_speed_scale(value: float) -> void:
 	body.speed_scale = value
 	equipment.speed_scale = value
 	shadow.speed_scale = value
+
+
+## 切换裸模与对应阴影，保留服装、动作和朝向。
+func set_body_set(character_set: Dictionary) -> void:
+	body_sex = String(character_set["sex"])
+	body.sprite_frames = character_set["body_frames"]
+	body_offsets = character_set["body_offsets"]
+	shadow.sprite_frames = character_set["shadow_frames"]
+	shadow_offsets = character_set["shadow_offsets"]
+	body.stop()
+	shadow.stop()
+	set_action(current_action, current_direction)
 
 
 ## 替换人物当前上衣的八方向动画资源。

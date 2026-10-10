@@ -15,6 +15,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import re
 import subprocess
 from collections import Counter
@@ -24,6 +25,13 @@ from pathlib import Path
 PKH_RE = re.compile(rb"indexdata\s*=\s*\$PKH\{(\d+):([0-9A-Fa-f\s]+?)\}", re.I)
 MAP_SIZE_RE = re.compile(rb"size\s*=\s*(\d+)\s*\*\s*(\d+)", re.I)
 GRID_SIZE_RE = re.compile(rb"tilesize\s*=\s*(\d+)\s*,\s*(\d+)", re.I)
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+
+
+def provenance_path(path: Path) -> str:
+    """Return a machine-independent path relative to the repository root."""
+
+    return Path(os.path.relpath(path.resolve(), PROJECT_ROOT)).as_posix()
 
 
 def sha256(data: bytes) -> str:
@@ -102,9 +110,9 @@ def extract(script_path: Path, output_dir: Path, unpacker: Path, engine_dll: Pat
     passable_count = sum(navigation)
     metadata = {
         "format": "fancyboxii_bktile_navigation_v1",
-        "source_script": str(script_path.resolve()),
+        "source_script": provenance_path(script_path),
         "source_script_sha256": sha256(content),
-        "engine_dll": str(engine_dll.resolve()),
+        "engine_dll": provenance_path(engine_dll),
         "map_pixel_size": map_size,
         "engine_grid_size": grid_size,
         "cell_record": {
@@ -156,7 +164,7 @@ def main() -> int:
                 "grid": metadata["engine_grid_size"],
                 "passable": metadata["runtime_navigation"]["passable"],
                 "blocked": metadata["runtime_navigation"]["blocked"],
-                "output": str(args.output_dir.resolve()),
+                "output": provenance_path(args.output_dir),
             },
             ensure_ascii=False,
         )

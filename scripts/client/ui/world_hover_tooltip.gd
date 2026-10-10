@@ -1,7 +1,7 @@
 class_name WorldHoverTooltip
 extends Label
 
-const REGULAR_FONT := preload("res://assets/ui/fonts/legacy_panel_font.tres")
+const REGULAR_FONT := preload("res://assets/ui/fonts/NotoSansCJKsc-Regular.otf")
 const CURSOR_OFFSET := Vector2(12.0, 18.0)
 
 

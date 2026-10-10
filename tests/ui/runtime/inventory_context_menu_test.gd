@@ -16,7 +16,7 @@ func _run() -> void:
 	root.size = Vector2i(1100, 740)
 	root.gui_embed_subwindows = true
 	fixture.initialize()
-	fixture.grant_loot({"loot_id": "cheese", "item_definition_id": "item:material:04081d3010ba", "quantity": 10})
+	fixture.grant_loot({"loot_id": "cheese", "item_definition_id": "cheese", "quantity": 10})
 	manager = GameWindowManager.new()
 	root.add_child(manager)
 	manager.configure(PlayerPanelSession.new(_dispatch))

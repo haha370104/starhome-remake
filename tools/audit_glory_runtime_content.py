@@ -34,7 +34,7 @@ def main() -> int:
     known = load("data/content/known_content_registry_v1.json")
 
     require(maps["summary"]["source_rows"] == 814, "map source count drifted")
-    require(maps["summary"]["resolved_runtime_rows"] == 810, "runtime map count drifted")
+    require(maps["summary"]["resolved_runtime_rows"] == 814, "runtime map count drifted")
     require(len(monsters["definitions"]) == 119, "monster count drifted")
     require(len(items["definitions"]) == 1270, "generated item count drifted")
     require(sum(recipes["summary"].values()) == 346, "recipe count drifted")
@@ -56,7 +56,7 @@ def main() -> int:
         "operational_catalogs": {
             "maps": {
                 "source_registrations": 814,
-                "runtime_ready": 810,
+                "runtime_ready": 814,
                 "unresolved": len(maps["unresolved_source_ids"]),
             },
             "animations": {
@@ -90,12 +90,6 @@ def main() -> int:
             },
         },
         "explicit_exceptions": [
-            {
-                "kind": "map_package_missing",
-                "count": len(maps["unresolved_source_ids"]),
-                "identifiers": maps["unresolved_source_ids"],
-                "effect": "Registered as known but cannot be entered until a source package is recovered.",
-            },
             {
                 "kind": "item_asset_missing_from_glory_package",
                 "count": items["summary"]["missing_asset_references"],

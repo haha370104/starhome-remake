@@ -20,7 +20,7 @@ func _initialize() -> void:
 			"content_version": Protocol.PUBLIC_CONTENT_VERSION}, 0).ok, "测试玩家应加入")
 	var hall := server.map_instance
 	_expect(server.map_registry.all_instances().size() == 1, "同图两人应只加载一个实例")
-	var field: AuthoritativeMapInstance = server.ensure_runtime_map("d04_field_zone").value
+	var field: AuthoritativeMapInstance = server.ensure_runtime_map("glory_nft_bl_d04").value
 	_move_player(server, 2, field, Vector2(1500, 1450))
 	_move_player(server, 3, field, Vector2(1600, 1450))
 	server.advance_simulation(0.05, 0)
@@ -48,8 +48,8 @@ func _initialize() -> void:
 	_move_player(server, 3, awakened_hall, config.default_spawn + Vector2(80, 0))
 	server.advance_simulation(0.05, 0)
 	_expect(field.navigation == null, "最后一人离开后应释放导航")
-	_expect(navigation_reference.get_ref() == null, "采矿或回调不能偷偷保留旧导航引用")
-	_expect(server.map_registry.instance_by_map_id("d04_field_zone") == null, "休眠地图不能参与活跃地图遍历")
+	_expect(navigation_reference.get_ref() != null, "近期导航应由服务器有限缓存保留")
+	_expect(server.map_registry.instance_by_map_id("glory_nft_bl_d04") == null, "休眠地图不能参与活跃地图遍历")
 	var paused_tick := field.combat_module.current_tick
 	var remaining_wander_ticks := monster.next_wander_tick - paused_tick
 	var paused_position := monster.position
@@ -60,8 +60,8 @@ func _initialize() -> void:
 	server.advance_simulation(360.0, 0)
 	_expect(field.combat_module.current_tick == paused_tick, "休眠地图不应逐 tick 模拟")
 	_expect(monster.position == paused_position, "无人时不应继续游荡寻路")
-	var resumed: AuthoritativeMapInstance = server.ensure_runtime_map("d04_field_zone").value
-	_expect(resumed == field and resumed.navigation != null, "返回应重建导航并复用领域状态")
+	var resumed: AuthoritativeMapInstance = server.ensure_runtime_map("glory_nft_bl_d04").value
+	_expect(resumed == field and resumed.navigation == navigation_reference.get_ref(), "返回应复用近期导航和领域状态")
 	_expect(monster.health == remaining_health, "切图不能重置怪物生命")
 	_expect(resumed.mining_module.sources[source_id].remaining == remaining_minerals, "切图不能补满未采完矿点")
 	_expect(resumed.combat_module.ground_loot["retained.loot"]["quantity"] == 2, "休眠不能吞掉掉落物")

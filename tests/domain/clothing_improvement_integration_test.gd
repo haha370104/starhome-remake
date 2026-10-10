@@ -40,7 +40,7 @@ func _initialize() -> void:
 		var restored: Player = mapper.to_domain(PlayerStateRecord.from_dictionary(persisted.value.to_dictionary()).value).value
 		_check(restored.calculate_vehicle_stats() == actual, "重启不重复加成")
 		var current := CurrentPlayer.new(items)
-		_check(current.apply_bundle(fixture._service.build_bundle(persisted.value)), "客户端快照恢复")
+		_check(current.apply_bundle(fixture._service.build_bundle(restored)), "客户端快照恢复")
 		_check(current.character_equipment.at("upper_body").improvement.level == 10 and current.calculate_vehicle_stats() == actual, "客户端保留成长和派生属性")
 		var copied := EquipmentConditionLoadout.new(player).duplicate_loadout()
 		var copy: Clothing = copied._items["improved"]

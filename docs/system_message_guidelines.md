@@ -30,7 +30,6 @@
 | `equipment.chassis_change_requires_empty_loadout` | 更换战车前请先卸下其他战车装备 |
 | `equipment.chassis_required` | 请先装备战车，再安装其他装备 |
 | `equipment.chassis_required_for_field` | 未装备战车，无法进入野外地图 |
-| `equipment.primary_weapon_required_for_field` | 未装备主武器，无法进入野外地图 |
 | `inventory.revision_conflict` / `equipment.revision_conflict` | 装备状态已经更新，请重试 |
 
 新增业务拒绝时，应先定义稳定错误码及中文文案，再接入中央提示；英文 `message` 只作尚未登记错误的

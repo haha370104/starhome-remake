@@ -27,6 +27,9 @@ func _run() -> void:
 	var first := GameWindowManager.new()
 	root.add_child(first)
 	first.configure(session)
+	await process_frame
+	first.inventory_panel.show()
+	await process_frame
 	_expect(first.inventory_panel._item_canvas.get_child_count() == 2, "晚创建的窗口读取既有玩家快照")
 	first.free()
 	var second := GameWindowManager.new()
@@ -50,6 +53,8 @@ func _run() -> void:
 	canvas_b.move_requested.connect(func(id: String, _position: Vector2i) -> void: moves_b.append(id))
 	var item_a := canvas_a.get_child(0) as InventoryItemView
 	var previous_position := item_a.item.position_px
+	canvas_a.apply_inventory(original_player.inventory)
+	_expect(canvas_a.get_child(0) == item_a, "未变化的背包物品不重建视图")
 	item_a.move_requested.emit(item_a.item.instance_id, Vector2i(30, 20))
 	_expect(moves_a.size() == 1 and moves_b.is_empty(), "两个背包组件独立发出意图")
 	_expect(item_a.item.position_px == previous_position, "展示控件不修改共享领域物品位置")

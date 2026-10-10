@@ -1,5 +1,7 @@
 extends SceneTree
 
+const CommerceRecordAdapter := preload("res://tests/fixtures/commerce_record_adapter.gd")
+
 var _checks := 0
 var _failures := 0
 
@@ -21,7 +23,7 @@ func _initialize() -> void:
 	var before := state.to_dictionary()
 	var command := {"type": "query_equipment_forging", "instance_id": "target", "material_id": "chip", "material_quantity": 3,
 		"inventory_revision": state.inventory_revision, "confirm_processing_loss": true, "forging": {"extensions": {"2": 50}}, "price": 0, "roll": 0}
-	var queried := service.execute(state, command)
+	var queried := CommerceRecordAdapter.execute(service, state, command)
 	_check(queried.is_ok and not queried.value.changed and state.to_dictionary() == before, "read only")
 	var preview: Dictionary = queried.value.panel_bundle.equipment_forging.preview
 	_check(preview.can_execute and preview.chance == 0.95 and preview.text.contains("清除全部普通加工"), "original probability and risk")
@@ -29,18 +31,18 @@ func _initialize() -> void:
 	_check(queried.value.panel_bundle.equipment_forging.offers.size() == 10, "eight chips two missing alloys")
 	command.type = "forge_equipment"
 	command.confirm_processing_loss = false
-	_check(not service.execute(state, command).is_ok, "explicit confirmation")
+	_check(not CommerceRecordAdapter.execute(service, state, command).is_ok, "explicit confirmation")
 	command.confirm_processing_loss = true
-	var result := service.execute(state, command)
+	var result := CommerceRecordAdapter.execute(service, state, command)
 	_check(result.is_ok and state.to_dictionary() == before, "isolated transaction")
 	player = mapper.to_domain(result.value.candidate).value
 	var engine := player.inventory.find("target") as Equipment
 	_check(engine.processing.bonus("drive") == 0 and engine.forging.extensions.get(2, 0) in [0, 1], "no forged extensions")
 	_check(player.inventory.currency == 900000 and player.inventory.count_definition(requirement.definition_id) == 0, "exact fee and materials")
-	_check(not service.execute(result.value.candidate, command).is_ok, "no replay")
-	var bought := service.execute(result.value.candidate, {"type": "buy_equipment_forging_material", "definition_id": "forging_zirconium_scandium_alloy", "quantity": 100, "inventory_revision": player.inventory.revision, "price": 0})
+	_check(not CommerceRecordAdapter.execute(service, result.value.candidate, command).is_ok, "no replay")
+	var bought := CommerceRecordAdapter.execute(service, result.value.candidate, {"type": "buy_equipment_forging_material", "definition_id": "forging_zirconium_scandium_alloy", "quantity": 100, "inventory_revision": player.inventory.revision, "price": 0})
 	_check(bought.is_ok and bought.value.candidate.currency == 877000, "supply uses original price")
-	_check(not service.execute(result.value.candidate, {"type": "buy_equipment_forging_material", "definition_id": "iron_piece", "quantity": 1, "inventory_revision": player.inventory.revision}).is_ok, "shop whitelist")
+	_check(not CommerceRecordAdapter.execute(service, result.value.candidate, {"type": "buy_equipment_forging_material", "definition_id": "iron_piece", "quantity": 1, "inventory_revision": player.inventory.revision}).is_ok, "shop whitelist")
 	print("Equipment forging authority: %d checks, %d failures" % [_checks, _failures])
 	quit(1 if _failures else 0)
 

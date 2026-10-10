@@ -14,8 +14,8 @@ from typing import Any
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 OUTPUTS_ROOT = PROJECT_ROOT.parent
-SPRITE_ROOT = OUTPUTS_ROOT / "starhome_lz_ry_full_parsed" / "ale_sprites"
-PACK_ROOT = PROJECT_ROOT / "assets" / "content_packs"
+SPRITE_ROOT = PROJECT_ROOT / "assets" / "glory" / "sprites"
+PACK_ROOT = PROJECT_ROOT / "build" / "content_packs"
 CATALOG_PATH = PROJECT_ROOT / "data" / "content" / "glory_sprite_content_packs_v1.json"
 INDEX_PATH = PROJECT_ROOT / "data" / "content" / "glory_sprite_runtime_index_v1.json"
 CONTENT_VERSION = "glory-sprite-runtime-v1"
@@ -87,7 +87,7 @@ def sanitized_metadata(source: SpriteSource) -> dict[str, Any]:
 
 
 def runtime_row(source: SpriteSource) -> dict[str, Any]:
-    root = "res://content/glory/sprites/" + source.logical_id
+    root = "res://assets/glory/sprites/" + source.logical_id
     segments = source.logical_id.split("/")
     return {
         "logical_id": source.logical_id,
@@ -128,7 +128,7 @@ def write_catalog(pack_files: list[Path], summary: dict[str, Any]) -> None:
         "content_version": CONTENT_VERSION,
         "packs": [{
             "pack_id": path.stem,
-            "path": "res://assets/content_packs/" + path.name,
+            "path": "res://assets/" + path.name,
             "size_bytes": path.stat().st_size,
             "sha256": sha256(path),
             "content_groups": ["sprites", "animations", "ui", "audio_references"],
@@ -159,7 +159,7 @@ def build(arguments: argparse.Namespace) -> dict[str, Any]:
         pack_path = PACK_ROOT / ("glory_sprites_%03d_v1.zip" % part_index)
         with zipfile.ZipFile(pack_path, "w", allowZip64=True) as archive:
             for source in part:
-                root = "content/glory/sprites/" + source.logical_id
+                root = "assets/glory/sprites/" + source.logical_id
                 metadata = (
                     json.dumps(sanitized_metadata(source), ensure_ascii=False, separators=(",", ":"))
                     + "\n"

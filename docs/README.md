@@ -138,14 +138,14 @@
 4. 历史记录保留原始范围，在入口添加过时提示；工程规则以 `PROJECT_CONTEXT.md` 为准。
 5. 测试记录写清命令、覆盖及时间；“有测试文件”“加入门禁”“本次实际跑过”分别表述。
 
-## 外部档案索引（不随仓库克隆自动获得）
+## 档案索引（本地资源不随仓库克隆自动获得）
 
 | 入口 | 内容 |
 | --- | --- |
 | [游戏主要玩法](../../游戏主要玩法.md) | 用户整理的玩法规格；后续明确确认可覆盖早期条目 |
 | [荣耀源码](../../starhome_lz_ry_fcc_source/)、[免费源码](../../starhome_lz_fr_fcc_source/) | 可读 FCC 及来源清单 |
-| [荣耀原件](../../starhome_lz_ry_full/)、[荣耀解析成果](../../starhome_lz_ry_full_parsed/) | 下载/FTC/ALE/表、惰性缓存；原目录只用于逆向归档 |
-| [地图解析档案](../../starhome_lz_ry_maps_parsed/) | 地图名称、层、导航、跳转图及缺失清单 |
+| [荣耀原件](../../starhome_lz_ry_full/)、[荣耀精灵](../assets/glory/sprites/)、[来源审计](../data/source_evidence/glory/) | 原档在工程外；物化结果由 Git 忽略；校验记录在项目内 |
+| [地图恢复证据](../data/source_evidence/glory/map_recovery/) | 地图名称、导航、跳转图及缺失清单；大图按需从工程外原档重建 |
 | [缺失构件人工复核](../../starhome_lz_ry_maps_missing_review/index.html) | 当前保存的标记图与逐图 JSON，不是实时官网探测 |
 | [城区缺失资源调查](../../city_map_resource_audit/README.md) | files_dir 不是完整全集的历史证据 |
 
@@ -154,7 +154,7 @@
 
 ## 仓库协作
 
-- [主仓库与素材子模块](./repository_layout.md)：克隆、资源拉取、版本固定、提交顺序和历史拆分。
+- [主仓库布局](./repository_layout.md)：运行资源树、物化清单和恢复源档案边界。
 
 ## 接合器与商城更新（2026-09-15）
 

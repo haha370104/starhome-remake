@@ -5,26 +5,26 @@ signal command_requested(command: Dictionary)
 
 const EquipmentLayer := preload("res://scripts/client/ui/components/equipment_layer_view.gd")
 const BACKGROUND := preload("res://assets/ui/windows/vehicle/background.png")
-const LEGACY_PANEL_FONT := preload("res://assets/ui/fonts/legacy_panel_font.tres")
+const LEGACY_PANEL_FONT := preload("res://assets/ui/fonts/NotoSansCJKsc-Regular.otf")
 const TEXT_COLOR := Color("f6f3e8")
 const SLOT_HOVER_COLOR := Color("ffcc00")
 const TEXT_FONT_SIZE := 12
 const PROPULSION_SLOT_RECT := Rect2(96, 360, 68, 68)
 const DISPLAY_LABELS := [
-	{"id": 0, "text": "装置0", "position": Vector2(30, 122)},
-	{"id": 1, "text": "副武器", "position": Vector2(101, 122), "hover_yellow": true},
-	{"id": 2, "text": "旧接合 I", "position": Vector2(172, 122)},
-	{"id": 3, "text": "旧接合 II", "position": Vector2(243, 122)},
-	{"id": 4, "text": "发生器 I", "position": Vector2(314, 122)},
-	{"id": 10, "text": "新接合 I", "position": Vector2(395, 123)},
-	{"id": 11, "text": "新接合 II", "position": Vector2(395, 222)},
-	{"id": 12, "text": "发生器 II", "position": Vector2(395, 318)},
-	{"id": 13, "text": "", "position": Vector2(395, 343)},
-	{"id": 5, "text": "宏原子", "position": Vector2(30, 342)},
-	{"id": 6, "text": "推进器", "position": Vector2(101, 342)},
-	{"id": 7, "text": "装置7", "position": Vector2(172, 342)},
-	{"id": 8, "text": "装置8", "position": Vector2(243, 342)},
-	{"id": 9, "text": "装置9", "position": Vector2(314, 342)},
+	{"id": 0, "text": "装置0", "position": Vector2(38, 122)},
+	{"id": 1, "text": "副武器", "position": Vector2(108, 122), "hover_yellow": true},
+	{"id": 2, "text": "旧接合 I", "position": Vector2(177, 122)},
+	{"id": 3, "text": "旧接合 II", "position": Vector2(248, 122)},
+	{"id": 4, "text": "发生器 I", "position": Vector2(320, 122)},
+	{"id": 10, "text": "新接合 I", "position": Vector2(394, 122)},
+	{"id": 11, "text": "新接合 II", "position": Vector2(392, 220)},
+	{"id": 12, "text": "发生器 II", "position": Vector2(392, 317)},
+	{"id": 13, "text": "特殊装备", "position": Vector2(390, 340), "hover_yellow": true},
+	{"id": 5, "text": "宏原子", "position": Vector2(37, 340)},
+	{"id": 6, "text": "推进器", "position": Vector2(109, 340)},
+	{"id": 7, "text": "装置7", "position": Vector2(184, 340)},
+	{"id": 8, "text": "装置8", "position": Vector2(254, 340)},
+	{"id": 9, "text": "装置9", "position": Vector2(325, 340)},
 ]
 const STAT_ROWS := [
 	{"id": "max_health", "label": "最大生命", "y": 5},
@@ -46,6 +46,8 @@ const STAT_ROWS := [
 	{"id": "working_energy", "label": "工作能量", "y": 325},
 ]
 
+var read_only := false
+var _viewed_player_label: Label
 var _special_panel: SpecialEquipmentPanel
 var _preview_root: Control
 var _slot_label_root: Control
@@ -58,7 +60,7 @@ var _loadout_revision := -1
 ## 创建荣耀版战车装备面板、像素定位装备层与属性区。
 ## 设计：装备的 dialog 图既是中央整车组合层也是槽位内容，位置直接采用各装备 EquipInDlg 坐标。
 func _ready() -> void:
-	configure(Vector2(604, 460), BACKGROUND, Vector2(570, 40))
+	configure(Vector2(604, 460), BACKGROUND, Vector2(577, 39))
 	_build_slot_labels()
 	_slot_root = Control.new()
 	_slot_root.name = "EquipmentVisuals"
@@ -67,20 +69,25 @@ func _ready() -> void:
 	content_root.add_child(_slot_root)
 	_preview_root = _slot_root
 	_build_stat_labels()
+	if read_only:
+		_viewed_player_label = Label.new()
+		_viewed_player_label.position = Vector2(180, 10)
+		_viewed_player_label.size = Vector2(300, 22)
+		_viewed_player_label.add_theme_font_override("font", LEGACY_PANEL_FONT)
+		_viewed_player_label.add_theme_font_size_override("font_size", TEXT_FONT_SIZE)
+		_viewed_player_label.add_theme_color_override("font_color", TEXT_COLOR)
+		content_root.add_child(_viewed_player_label)
 	_special_panel = SpecialEquipmentPanel.new()
+	_special_panel.read_only = read_only
 	content_root.add_child(_special_panel)
 	_special_panel.hide()
 	_special_panel.unequip_requested.connect(_request_unequip)
-	var special_button := Button.new()
-	special_button.text = "特殊装备"
-	special_button.position = Vector2(386, 352)
-	special_button.size = Vector2(66, 30)
-	special_button.add_theme_font_size_override("font_size", 12)
-	special_button.pressed.connect(func() -> void:
-		_special_panel.move_to_front()
-		_special_panel.show()
-	)
-	content_root.add_child(special_button)
+	close_requested.connect(_special_panel.hide)
+
+
+func set_viewed_player_name(display_name: String) -> void:
+	if _viewed_player_label != null:
+		_viewed_player_label.text = "查看装备：%s" % display_name
 
 
 ## 创建荣耀版十四条固定视觉槽位文字。
@@ -106,6 +113,9 @@ func _build_slot_labels() -> void:
 		var hover_yellow := bool(raw_definition.get("hover_yellow", false))
 		label.mouse_entered.connect(_set_slot_label_hover.bind(label, true, hover_yellow))
 		label.mouse_exited.connect(_set_slot_label_hover.bind(label, false, hover_yellow))
+		if int(raw_definition["id"]) == 13:
+			label.mouse_filter = Control.MOUSE_FILTER_STOP
+			label.gui_input.connect(_on_special_label_input)
 		_slot_label_root.add_child(label)
 
 
@@ -117,6 +127,12 @@ func _set_slot_label_hover(label: Label, hovered: bool, hover_yellow: bool) -> v
 	label.add_theme_color_override(
 		"font_color", SLOT_HOVER_COLOR if hovered and hover_yellow else TEXT_COLOR
 	)
+
+
+func _on_special_label_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
+		_special_panel.move_to_front()
+		_special_panel.show()
 
 
 ## 应用权威 VehicleAssemblySnapshot 并按 z_layer 重建装备表现。
@@ -150,7 +166,7 @@ func _build_stat_labels() -> void:
 	for raw_row: Dictionary in STAT_ROWS:
 		var label := Label.new()
 		label.name = "Stat_%s" % String(raw_row["id"])
-		label.position = Vector2(454, 57 + int(raw_row["y"]))
+		label.position = Vector2(457, 57 + int(raw_row["y"]))
 		label.size = Vector2(134, 18)
 		label.add_theme_font_override("font", LEGACY_PANEL_FONT)
 		label.add_theme_font_size_override("font_size", TEXT_FONT_SIZE)
@@ -160,6 +176,13 @@ func _build_stat_labels() -> void:
 		label.add_theme_constant_override("shadow_offset_y", 1)
 		content_root.add_child(label)
 		_stat_labels[String(raw_row["id"])] = label
+		if String(raw_row["id"]) == "reserve_energy":
+			var value_label := label.duplicate() as Label
+			value_label.position = Vector2(55, 0)
+			value_label.size = Vector2(76, 18)
+			value_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+			value_label.add_theme_font_size_override("font_size", 11)
+			label.add_child(value_label)
 
 
 ## 按旧客户端装备类提供的对话框锚点添加一件已装备物品。
@@ -179,7 +202,7 @@ func _add_equipment_visual(equipment: Dictionary) -> void:
 	}
 	if attachment_rects.has(location):
 		slot_rect = attachment_rects[location]
-	if not visual.configure(equipment, Vector2(170, 200), slot_rect):
+	if not visual.configure(equipment, Vector2(170, 200), slot_rect, "" if read_only else "双击卸下"):
 		visual.free()
 		return
 	visual.name = "Location_%d_%s" % [location, String(equipment.get("definition_id", "equipment"))]
@@ -200,6 +223,8 @@ func _on_equipment_gui_input(event: InputEvent, location: int) -> void:
 ## 从主面板或特殊装备区统一提交卸载命令。
 ## [param location] 实际装配位置。
 func _request_unequip(location: int) -> void:
+	if read_only:
+		return
 	command_requested.emit({
 		"type": "unequip_vehicle_item", "location": location,
 		"inventory_revision": _inventory_revision, "loadout_revision": _loadout_revision,
@@ -229,10 +254,14 @@ func _update_stat_labels(stats: Dictionary) -> void:
 		var value_text := _format_number(stats.get(stat_id, 0), stat_id == "output_power")
 		_set_stat(stat_id, "%s：%s" % [String(row.get("label", stat_id)), value_text],
 			_breakdown_tooltip(stats, stat_id))
-	_set_stat("reserve_energy", "储备能量：%s / %s" % [
-		_format_number(stats.get("reserve_energy", 0)),
-		_format_number(stats.get("reserve_energy_capacity", 0)),
-	])
+	_update_energy_labels(stats)
+
+
+func _update_energy_labels(stats: Dictionary) -> void:
+	_set_stat("reserve_energy", "储备能量：")
+	var value_label := _stat_labels["reserve_energy"].get_child(0) as Label
+	value_label.text = "%d / %d" % [
+		int(float(stats.get("reserve_energy", 0))), int(float(stats.get("reserve_energy_capacity", 0)))]
 	_set_stat("working_energy", "工作能量：%s / %s" % [
 		_format_number(stats.get("working_energy", 0)),
 		_format_number(stats.get("working_energy_capacity", 0)),
@@ -247,8 +276,10 @@ func _set_stat(stat_id: String, text: String, tooltip: String = "") -> void:
 	var label := _stat_labels.get(stat_id) as Label
 	if label == null:
 		return
-	label.text = text
-	label.tooltip_text = tooltip
+	if label.text != text:
+		label.text = text
+	if label.tooltip_text != tooltip:
+		label.tooltip_text = tooltip
 
 
 ## 查询属性行的静态布局定义。
@@ -287,3 +318,17 @@ func _format_number(value: Variant, force_decimal: bool = false) -> String:
 	if is_equal_approx(number, floorf(number)):
 		return str(int(number))
 	return "%.1f" % number
+
+
+## 属性成长只更新数值区，装备视图继续复用。
+## [param stats] 当前派生战车属性。
+func apply_stats(stats: Dictionary) -> void:
+	_update_stat_labels(stats)
+
+
+func apply_combat_snapshot(snapshot: Dictionary) -> void:
+	var vehicle: Variant = snapshot.get("local_vehicle", {})
+	if not vehicle is Dictionary or (vehicle as Dictionary).is_empty():
+		return
+	_set_stat("health", "当前生命：%s" % _format_number(vehicle.health))
+	_update_energy_labels(vehicle)

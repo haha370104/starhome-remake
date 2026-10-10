@@ -16,16 +16,10 @@ CATALOG_PATH = PROJECT_ROOT / "data/presentation/map_transition_marker_catalog.j
 MAP_PATHS = (
     PROJECT_ROOT / "data/maps/yian_harbor_hall_floor_1.json",
     PROJECT_ROOT / "data/maps/yian_harbor_city.json",
-    PROJECT_ROOT / "data/maps/d04_field_zone.json",
-    PROJECT_ROOT / "data/maps/g08_field_zone.json",
+    PROJECT_ROOT / "data/maps/glory_nft_bl_d04.json",
+    PROJECT_ROOT / "data/maps/glory_nft_bl_g08.json",
 )
-FALLBACK_RAW = (
-    OUTPUTS_ROOT
-    / "starhome_lz_ry_full_parsed"
-    / "official_lazy_cache"
-    / "free_version_transition_fallback"
-    / "raw"
-)
+GLORY_RAW = PROJECT_ROOT / "../starhome_lz_ry_full" / "raw"
 STYLE_DIRECTIONS = {
     1: "east",
     2: "north_east",
@@ -74,9 +68,9 @@ def main() -> int:
             / direction
             / "import_metadata.json"
         )
-        fallback_path = FALLBACK_RAW / f"source_style_{style:02d}.ale"
-        if not metadata_path.is_file() or not fallback_path.is_file():
-            errors.append(f"style {style} 缺少导入元数据或 jt 回退证据")
+        glory_path = GLORY_RAW / f"pic3/interface/sportimg/as{style}.ale"
+        if not metadata_path.is_file() or not glory_path.is_file():
+            errors.append(f"style {style} 缺少导入元数据或荣耀版 as 原档")
             continue
         metadata = _read_json(metadata_path)
         equivalence = metadata.get("source_equivalence", {})
@@ -84,10 +78,10 @@ def main() -> int:
             errors.append(f"style {style} 屏幕方向应为 {direction}")
         if metadata.get("source_logical_path") != f"pic3/interface/sportimg/as{style}.ale":
             errors.append(f"style {style} 荣耀 as 溯源错误")
-        fallback_hash = _sha256(fallback_path)
+        source_hash = _sha256(glory_path)
         if (
-            equivalence.get("fallback_sha256") != fallback_hash
-            or metadata.get("source_sha256") != fallback_hash
+            equivalence.get("fallback_sha256") != source_hash
+            or metadata.get("source_sha256") != source_hash
             or equivalence.get("byte_identical_to_glory_directional_marker") is not True
         ):
             errors.append(f"style {style} 的免费版 jt 与荣耀版 as 不再字节等价")
@@ -125,7 +119,7 @@ def main() -> int:
         for error in errors:
             print(error)
         return 1
-    print("Transition marker source audit passed: 39 source-bound markers, 8 jt/as byte matches")
+    print("Transition marker source audit passed: 39 source-bound markers, 8 Glory ALE byte matches")
     return 0
 
 

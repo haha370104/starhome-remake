@@ -69,7 +69,22 @@
         "source_release": "starhome_lz_fr",
         "source_logical_path": "pic/npc/CHN_2005_06_28_19_35_18_81/CHN_2005_06_28_18_49_11_920.ale",
         "source_sha256": "3e6cee417334bb217833c24182ab6ec0e898b31307c6ca443742cd76c27c887f",
-        "source_permission": "2026-09-17 user: 用免费版补吧，另外看看其他受击特效是不是也缺了"
+        "source_permission": "2026-09-17 user: 用免费版补吧，另外看看其他受击特效是不是也缺了",
+        "source_fetch": {
+          "url": "http://update.ftxjjy.com/gameser/fr_www/pic/npc/CHN_2005_06_28_19_35_18_81/CHN_2005_06_28_18_49_11_920.ale",
+          "http_status": 200,
+          "bytes": 57055,
+          "md5": "55339457a952808c1efaa438a4e1387b",
+          "sha256": "3e6cee417334bb217833c24182ab6ec0e898b31307c6ca443742cd76c27c887f",
+          "decode_status": "verified",
+          "decoded_frame_count": 7,
+          "coordinate_bounds": [
+            -47,
+            -46,
+            48,
+            48
+          ]
+        }
       }
     },
     {
@@ -102,7 +117,22 @@
         "source_release": "starhome_lz_fr",
         "source_logical_path": "pic/npc/CHN_2005_06_28_19_34_41_75/CHN_2005_06_28_18_43_41_865.ale",
         "source_sha256": "3e6cee417334bb217833c24182ab6ec0e898b31307c6ca443742cd76c27c887f",
-        "source_permission": "2026-09-17 user: 用免费版补吧，另外看看其他受击特效是不是也缺了"
+        "source_permission": "2026-09-17 user: 用免费版补吧，另外看看其他受击特效是不是也缺了",
+        "source_fetch": {
+          "url": "http://update.ftxjjy.com/gameser/fr_www/pic/npc/CHN_2005_06_28_19_34_41_75/CHN_2005_06_28_18_43_41_865.ale",
+          "http_status": 200,
+          "bytes": 57055,
+          "md5": "55339457a952808c1efaa438a4e1387b",
+          "sha256": "3e6cee417334bb217833c24182ab6ec0e898b31307c6ca443742cd76c27c887f",
+          "decode_status": "verified",
+          "decoded_frame_count": 7,
+          "coordinate_bounds": [
+            -47,
+            -46,
+            48,
+            48
+          ]
+        }
       }
     },
     {
@@ -135,7 +165,22 @@
         "source_release": "starhome_lz_fr",
         "source_logical_path": "pic/npc/CHN_2005_06_28_19_34_34_74/CHN_2005_06_28_18_41_51_848.ale",
         "source_sha256": "3e6cee417334bb217833c24182ab6ec0e898b31307c6ca443742cd76c27c887f",
-        "source_permission": "2026-09-17 user: 用免费版补吧，另外看看其他受击特效是不是也缺了"
+        "source_permission": "2026-09-17 user: 用免费版补吧，另外看看其他受击特效是不是也缺了",
+        "source_fetch": {
+          "url": "http://update.ftxjjy.com/gameser/fr_www/pic/npc/CHN_2005_06_28_19_34_34_74/CHN_2005_06_28_18_41_51_848.ale",
+          "http_status": 200,
+          "bytes": 57055,
+          "md5": "55339457a952808c1efaa438a4e1387b",
+          "sha256": "3e6cee417334bb217833c24182ab6ec0e898b31307c6ca443742cd76c27c887f",
+          "decode_status": "verified",
+          "decoded_frame_count": 7,
+          "coordinate_bounds": [
+            -47,
+            -46,
+            48,
+            48
+          ]
+        }
       }
     },
     {
@@ -164,7 +209,22 @@
         "source_release": "starhome_lz_fr",
         "source_logical_path": "pic/npc/CHN_2005_06_28_19_34_34_74/ch-01BZ.ale",
         "source_sha256": "ff80d25dec5110a6eff0bedb5bd452c3866094b9f933ac8007573d488201a07f",
-        "source_permission": "2026-09-17 user: 用免费版补吧，另外看看其他受击特效是不是也缺了"
+        "source_permission": "2026-09-17 user: 用免费版补吧，另外看看其他受击特效是不是也缺了",
+        "source_fetch": {
+          "url": "http://update.ftxjjy.com/gameser/fr_www/pic/npc/CHN_2005_06_28_19_34_34_74/ch-01BZ.ale",
+          "http_status": 200,
+          "bytes": 100370,
+          "md5": "254b27abe913e9a0f867ca957fdb19c8",
+          "sha256": "ff80d25dec5110a6eff0bedb5bd452c3866094b9f933ac8007573d488201a07f",
+          "decode_status": "verified",
+          "decoded_frame_count": 5,
+          "coordinate_bounds": [
+            -83,
+            -83,
+            84,
+            88
+          ]
+        }
       }
     },
     {
@@ -193,7 +253,22 @@
         "source_release": "starhome_lz_fr",
         "source_logical_path": "pic/npc/CHN_2005_06_28_19_34_34_74/ch-02BZ.ale",
         "source_sha256": "e14d8e79c6c7aca9a9d605ae35fb1fafe57e25d6e9bcff9aa6b3216903b637fb",
-        "source_permission": "2026-09-17 user: 用免费版补吧，另外看看其他受击特效是不是也缺了"
+        "source_permission": "2026-09-17 user: 用免费版补吧，另外看看其他受击特效是不是也缺了",
+        "source_fetch": {
+          "url": "http://update.ftxjjy.com/gameser/fr_www/pic/npc/CHN_2005_06_28_19_34_34_74/ch-02BZ.ale",
+          "http_status": 200,
+          "bytes": 90553,
+          "md5": "b7f9ec4b0775dd21350edac945386687",
+          "sha256": "e14d8e79c6c7aca9a9d605ae35fb1fafe57e25d6e9bcff9aa6b3216903b637fb",
+          "decode_status": "verified",
+          "decoded_frame_count": 5,
+          "coordinate_bounds": [
+            -82,
+            -65,
+            87,
+            95
+          ]
+        }
       }
     },
     {
@@ -222,7 +297,22 @@
         "source_release": "starhome_lz_fr",
         "source_logical_path": "pic/npc/CHN_2005_06_28_19_34_34_74/ch-03BZ.ale",
         "source_sha256": "d1528dc35e880d634dadeedcc3c28dc9b927899aef757cf1440d4925383d58ca",
-        "source_permission": "2026-09-17 user: 用免费版补吧，另外看看其他受击特效是不是也缺了"
+        "source_permission": "2026-09-17 user: 用免费版补吧，另外看看其他受击特效是不是也缺了",
+        "source_fetch": {
+          "url": "http://update.ftxjjy.com/gameser/fr_www/pic/npc/CHN_2005_06_28_19_34_34_74/ch-03BZ.ale",
+          "http_status": 200,
+          "bytes": 62037,
+          "md5": "8b3719136113f8c1d719abbc67bcd0cc",
+          "sha256": "d1528dc35e880d634dadeedcc3c28dc9b927899aef757cf1440d4925383d58ca",
+          "decode_status": "verified",
+          "decoded_frame_count": 5,
+          "coordinate_bounds": [
+            -72,
+            -62,
+            70,
+            79
+          ]
+        }
       }
     },
     {
@@ -251,7 +341,22 @@
         "source_release": "starhome_lz_fr",
         "source_logical_path": "pic/npc/CHN_2005_06_28_19_34_34_74/ch-04BZ.ale",
         "source_sha256": "cd2fb7ce5a7d7269fd468057f523c77b4e287401c3a808436763a64549b12d98",
-        "source_permission": "2026-09-17 user: 用免费版补吧，另外看看其他受击特效是不是也缺了"
+        "source_permission": "2026-09-17 user: 用免费版补吧，另外看看其他受击特效是不是也缺了",
+        "source_fetch": {
+          "url": "http://update.ftxjjy.com/gameser/fr_www/pic/npc/CHN_2005_06_28_19_34_34_74/ch-04BZ.ale",
+          "http_status": 200,
+          "bytes": 45620,
+          "md5": "bf44b33d1f6e84e09229f08b94edd780",
+          "sha256": "cd2fb7ce5a7d7269fd468057f523c77b4e287401c3a808436763a64549b12d98",
+          "decode_status": "verified",
+          "decoded_frame_count": 5,
+          "coordinate_bounds": [
+            -58,
+            -60,
+            67,
+            64
+          ]
+        }
       }
     },
     {
@@ -280,7 +385,22 @@
         "source_release": "starhome_lz_fr",
         "source_logical_path": "pic/npc/CHN_2005_06_28_19_34_34_74/ch-05BZ.ale",
         "source_sha256": "d5920438fc62b88623c5df1aaad5dd03c7fd8c3a56f60f9c8b29f55e0abd5099",
-        "source_permission": "2026-09-17 user: 用免费版补吧，另外看看其他受击特效是不是也缺了"
+        "source_permission": "2026-09-17 user: 用免费版补吧，另外看看其他受击特效是不是也缺了",
+        "source_fetch": {
+          "url": "http://update.ftxjjy.com/gameser/fr_www/pic/npc/CHN_2005_06_28_19_34_34_74/ch-05BZ.ale",
+          "http_status": 200,
+          "bytes": 91550,
+          "md5": "a3761ef5f5df71097eb2bdd6c90cc2d9",
+          "sha256": "d5920438fc62b88623c5df1aaad5dd03c7fd8c3a56f60f9c8b29f55e0abd5099",
+          "decode_status": "verified",
+          "decoded_frame_count": 5,
+          "coordinate_bounds": [
+            -134,
+            -102,
+            134,
+            128
+          ]
+        }
       }
     },
     {
@@ -309,7 +429,22 @@
         "source_release": "starhome_lz_fr",
         "source_logical_path": "pic/npc/CHN_2005_06_28_19_34_34_74/ch-06BZ.ale",
         "source_sha256": "3e6cee417334bb217833c24182ab6ec0e898b31307c6ca443742cd76c27c887f",
-        "source_permission": "2026-09-17 user: 用免费版补吧，另外看看其他受击特效是不是也缺了"
+        "source_permission": "2026-09-17 user: 用免费版补吧，另外看看其他受击特效是不是也缺了",
+        "source_fetch": {
+          "url": "http://update.ftxjjy.com/gameser/fr_www/pic/npc/CHN_2005_06_28_19_34_34_74/ch-06BZ.ale",
+          "http_status": 200,
+          "bytes": 57055,
+          "md5": "55339457a952808c1efaa438a4e1387b",
+          "sha256": "3e6cee417334bb217833c24182ab6ec0e898b31307c6ca443742cd76c27c887f",
+          "decode_status": "verified",
+          "decoded_frame_count": 7,
+          "coordinate_bounds": [
+            -47,
+            -46,
+            48,
+            48
+          ]
+        }
       }
     },
     {
@@ -338,7 +473,22 @@
         "source_release": "starhome_lz_fr",
         "source_logical_path": "pic/npc/CHN_2005_06_28_19_34_34_74/ch-07BZ.ale",
         "source_sha256": "f4cfcecc08b7f83d2d8cb3e004960dfb6b5d6de5f58fa8a9690f98aa6e801cc0",
-        "source_permission": "2026-09-17 user: 用免费版补吧，另外看看其他受击特效是不是也缺了"
+        "source_permission": "2026-09-17 user: 用免费版补吧，另外看看其他受击特效是不是也缺了",
+        "source_fetch": {
+          "url": "http://update.ftxjjy.com/gameser/fr_www/pic/npc/CHN_2005_06_28_19_34_34_74/ch-07BZ.ale",
+          "http_status": 200,
+          "bytes": 57055,
+          "md5": "c44406653adef6ede64205dde8827839",
+          "sha256": "f4cfcecc08b7f83d2d8cb3e004960dfb6b5d6de5f58fa8a9690f98aa6e801cc0",
+          "decode_status": "verified",
+          "decoded_frame_count": 7,
+          "coordinate_bounds": [
+            -47,
+            -46,
+            48,
+            48
+          ]
+        }
       }
     },
     {
@@ -366,7 +516,22 @@
         "source_release": "starhome_lz_fr",
         "source_logical_path": "pic/npc/CHN_2005_06_28_19_34_34_74/ch-08BZ.ale",
         "source_sha256": "adc37c4b35649d51218ede7d549066c8a4f0a04fd2e3290e4b8a2af9997b8391",
-        "source_permission": "2026-09-17 user: 用免费版补吧，另外看看其他受击特效是不是也缺了"
+        "source_permission": "2026-09-17 user: 用免费版补吧，另外看看其他受击特效是不是也缺了",
+        "source_fetch": {
+          "url": "http://update.ftxjjy.com/gameser/fr_www/pic/npc/CHN_2005_06_28_19_34_34_74/ch-08BZ.ale",
+          "http_status": 200,
+          "bytes": 47254,
+          "md5": "2271b244db5ada32c3499fccb5db7f84",
+          "sha256": "adc37c4b35649d51218ede7d549066c8a4f0a04fd2e3290e4b8a2af9997b8391",
+          "decode_status": "verified",
+          "decoded_frame_count": 5,
+          "coordinate_bounds": [
+            -98,
+            -107,
+            121,
+            74
+          ]
+        }
       }
     },
     {
@@ -396,7 +561,22 @@
         "source_release": "starhome_lz_fr",
         "source_logical_path": "pic/npc/CHN_2005_06_28_19_34_34_74/ch-09BZ.ale",
         "source_sha256": "8a05e32fa9a5752e189471461baeb50b507e4e940e8184ff57cf3f43fbc69d0a",
-        "source_permission": "2026-09-17 user: 用免费版补吧，另外看看其他受击特效是不是也缺了"
+        "source_permission": "2026-09-17 user: 用免费版补吧，另外看看其他受击特效是不是也缺了",
+        "source_fetch": {
+          "url": "http://update.ftxjjy.com/gameser/fr_www/pic/npc/CHN_2005_06_28_19_34_34_74/ch-09BZ.ale",
+          "http_status": 200,
+          "bytes": 57055,
+          "md5": "bf961ecd74a3d762c4bd0bfb805e6d1f",
+          "sha256": "8a05e32fa9a5752e189471461baeb50b507e4e940e8184ff57cf3f43fbc69d0a",
+          "decode_status": "verified",
+          "decoded_frame_count": 7,
+          "coordinate_bounds": [
+            -47,
+            -46,
+            48,
+            48
+          ]
+        }
       }
     },
     {
@@ -426,7 +606,22 @@
         "source_release": "starhome_lz_fr",
         "source_logical_path": "pic/npc/CHN_2005_06_28_19_34_34_74/ch-10BZ.ale",
         "source_sha256": "330d4b236d566a1f2878892a496692696a1b531a130905190a42da643916ef86",
-        "source_permission": "2026-09-17 user: 用免费版补吧，另外看看其他受击特效是不是也缺了"
+        "source_permission": "2026-09-17 user: 用免费版补吧，另外看看其他受击特效是不是也缺了",
+        "source_fetch": {
+          "url": "http://update.ftxjjy.com/gameser/fr_www/pic/npc/CHN_2005_06_28_19_34_34_74/ch-10BZ.ale",
+          "http_status": 200,
+          "bytes": 39798,
+          "md5": "56f387169c046ccc0714126c4bd6a2ad",
+          "sha256": "330d4b236d566a1f2878892a496692696a1b531a130905190a42da643916ef86",
+          "decode_status": "verified",
+          "decoded_frame_count": 10,
+          "coordinate_bounds": [
+            -36,
+            -36,
+            42,
+            35
+          ]
+        }
       }
     },
     {
@@ -455,7 +650,22 @@
         "source_release": "starhome_lz_fr",
         "source_logical_path": "pic/npc/CHN_2005_06_28_19_34_54_77/zhuBZ.ale",
         "source_sha256": "b96dd9f47290c59582e63e2a8d6ae391b08454be150509238c17f89435b27346",
-        "source_permission": "2026-09-17 user: 用免费版补吧，另外看看其他受击特效是不是也缺了"
+        "source_permission": "2026-09-17 user: 用免费版补吧，另外看看其他受击特效是不是也缺了",
+        "source_fetch": {
+          "url": "http://update.ftxjjy.com/gameser/fr_www/pic/npc/CHN_2005_06_28_19_34_54_77/zhuBZ.ale",
+          "http_status": 200,
+          "bytes": 76930,
+          "md5": "ffe3cf6269f2f500ba6bd85eccdc5edf",
+          "sha256": "b96dd9f47290c59582e63e2a8d6ae391b08454be150509238c17f89435b27346",
+          "decode_status": "verified",
+          "decoded_frame_count": 5,
+          "coordinate_bounds": [
+            -96,
+            -88,
+            102,
+            123
+          ]
+        }
       }
     },
     {
@@ -484,7 +694,22 @@
         "source_release": "starhome_lz_fr",
         "source_logical_path": "pic/npc/KL/KL_a_BZ.ale",
         "source_sha256": "7626f330e7d23ea8fe47978fb8c2e719577dea16f63ac3abcdaa69ce2ad0ffa4",
-        "source_permission": "2026-09-17 user: 用免费版补吧，另外看看其他受击特效是不是也缺了"
+        "source_permission": "2026-09-17 user: 用免费版补吧，另外看看其他受击特效是不是也缺了",
+        "source_fetch": {
+          "url": "http://update.ftxjjy.com/gameser/fr_www/pic/npc/KL/KL_a_BZ.ale",
+          "http_status": 200,
+          "bytes": 101226,
+          "md5": "c749635583edc1565578c1e6c963d076",
+          "sha256": "7626f330e7d23ea8fe47978fb8c2e719577dea16f63ac3abcdaa69ce2ad0ffa4",
+          "decode_status": "verified",
+          "decoded_frame_count": 5,
+          "coordinate_bounds": [
+            -138,
+            -109,
+            129,
+            128
+          ]
+        }
       }
     },
     {
@@ -512,7 +737,22 @@
         "source_release": "starhome_lz_fr",
         "source_logical_path": "pic/npc/KL/KL_b_BZ.ale",
         "source_sha256": "0cd36d9250e24d608da3ba8485e6b008a2b2f43750f5abaa548e705b7215d087",
-        "source_permission": "2026-09-17 user: 用免费版补吧，另外看看其他受击特效是不是也缺了"
+        "source_permission": "2026-09-17 user: 用免费版补吧，另外看看其他受击特效是不是也缺了",
+        "source_fetch": {
+          "url": "http://update.ftxjjy.com/gameser/fr_www/pic/npc/KL/KL_b_BZ.ale",
+          "http_status": 200,
+          "bytes": 101226,
+          "md5": "983fa1a3feb964bad4cd80b45bbd9d36",
+          "sha256": "0cd36d9250e24d608da3ba8485e6b008a2b2f43750f5abaa548e705b7215d087",
+          "decode_status": "verified",
+          "decoded_frame_count": 5,
+          "coordinate_bounds": [
+            -138,
+            -109,
+            129,
+            128
+          ]
+        }
       }
     },
     {
@@ -540,7 +780,22 @@
         "source_release": "starhome_lz_fr",
         "source_logical_path": "pic/npc/KL/KL_c_BZ.ale",
         "source_sha256": "0960820b9a6bf8f33ac7e7ca8d56339ad5c2d855b62b955f8700d83a1e370619",
-        "source_permission": "2026-09-17 user: 用免费版补吧，另外看看其他受击特效是不是也缺了"
+        "source_permission": "2026-09-17 user: 用免费版补吧，另外看看其他受击特效是不是也缺了",
+        "source_fetch": {
+          "url": "http://update.ftxjjy.com/gameser/fr_www/pic/npc/KL/KL_c_BZ.ale",
+          "http_status": 200,
+          "bytes": 101226,
+          "md5": "328a05c6d232093e8713c33882bc5f75",
+          "sha256": "0960820b9a6bf8f33ac7e7ca8d56339ad5c2d855b62b955f8700d83a1e370619",
+          "decode_status": "verified",
+          "decoded_frame_count": 5,
+          "coordinate_bounds": [
+            -138,
+            -109,
+            129,
+            128
+          ]
+        }
       }
     },
     {
@@ -569,7 +824,22 @@
         "source_release": "starhome_lz_fr",
         "source_logical_path": "pic/npc/KL/KL_d_BZ.ale",
         "source_sha256": "d95b0efb83506ea417613d6cb2687027343a4acf4be3235f0cb95bc214803750",
-        "source_permission": "2026-09-17 user: 用免费版补吧，另外看看其他受击特效是不是也缺了"
+        "source_permission": "2026-09-17 user: 用免费版补吧，另外看看其他受击特效是不是也缺了",
+        "source_fetch": {
+          "url": "http://update.ftxjjy.com/gameser/fr_www/pic/npc/KL/KL_d_BZ.ale",
+          "http_status": 200,
+          "bytes": 101226,
+          "md5": "65f94c4de736ca974251891fe43b4fb4",
+          "sha256": "d95b0efb83506ea417613d6cb2687027343a4acf4be3235f0cb95bc214803750",
+          "decode_status": "verified",
+          "decoded_frame_count": 5,
+          "coordinate_bounds": [
+            -138,
+            -109,
+            129,
+            128
+          ]
+        }
       }
     },
     {
@@ -597,7 +867,22 @@
         "source_release": "starhome_lz_fr",
         "source_logical_path": "pic/npc/KL/KL_e_BZ.ale",
         "source_sha256": "1a36f6062c6fe9eae2787f794fbc08d8f889eacd08c285b0cda337f9ac8e3c92",
-        "source_permission": "2026-09-17 user: 用免费版补吧，另外看看其他受击特效是不是也缺了"
+        "source_permission": "2026-09-17 user: 用免费版补吧，另外看看其他受击特效是不是也缺了",
+        "source_fetch": {
+          "url": "http://update.ftxjjy.com/gameser/fr_www/pic/npc/KL/KL_e_BZ.ale",
+          "http_status": 200,
+          "bytes": 124803,
+          "md5": "7ae90d87606ec61be626d8d2ae4813b5",
+          "sha256": "1a36f6062c6fe9eae2787f794fbc08d8f889eacd08c285b0cda337f9ac8e3c92",
+          "decode_status": "verified",
+          "decoded_frame_count": 8,
+          "coordinate_bounds": [
+            -158,
+            -108,
+            162,
+            131
+          ]
+        }
       }
     },
     {
@@ -625,7 +910,22 @@
         "source_release": "starhome_lz_fr",
         "source_logical_path": "pic/npc/KL/KL_g_BZ.ale",
         "source_sha256": "d5915934e29912deef372545ca5f59779300c24fee4d1157cccbbb160d7b176f",
-        "source_permission": "2026-09-17 user: 用免费版补吧，另外看看其他受击特效是不是也缺了"
+        "source_permission": "2026-09-17 user: 用免费版补吧，另外看看其他受击特效是不是也缺了",
+        "source_fetch": {
+          "url": "http://update.ftxjjy.com/gameser/fr_www/pic/npc/KL/KL_g_BZ.ale",
+          "http_status": 200,
+          "bytes": 124803,
+          "md5": "114dd1cd38da287dfbda6013924914de",
+          "sha256": "d5915934e29912deef372545ca5f59779300c24fee4d1157cccbbb160d7b176f",
+          "decode_status": "verified",
+          "decoded_frame_count": 8,
+          "coordinate_bounds": [
+            -158,
+            -108,
+            162,
+            131
+          ]
+        }
       }
     },
     {
@@ -655,7 +955,22 @@
         "source_release": "starhome_lz_fr",
         "source_logical_path": "pic/npc/YS/YS_a_BZ.ale",
         "source_sha256": "d95b0efb83506ea417613d6cb2687027343a4acf4be3235f0cb95bc214803750",
-        "source_permission": "2026-09-17 user: 用免费版补吧，另外看看其他受击特效是不是也缺了"
+        "source_permission": "2026-09-17 user: 用免费版补吧，另外看看其他受击特效是不是也缺了",
+        "source_fetch": {
+          "url": "http://update.ftxjjy.com/gameser/fr_www/pic/npc/YS/YS_a_BZ.ale",
+          "http_status": 200,
+          "bytes": 101226,
+          "md5": "65f94c4de736ca974251891fe43b4fb4",
+          "sha256": "d95b0efb83506ea417613d6cb2687027343a4acf4be3235f0cb95bc214803750",
+          "decode_status": "verified",
+          "decoded_frame_count": 5,
+          "coordinate_bounds": [
+            -138,
+            -109,
+            129,
+            128
+          ]
+        }
       }
     },
     {
@@ -688,7 +1003,22 @@
         "source_release": "starhome_lz_fr",
         "source_logical_path": "pic/npc/YS/YS_b_BZ.ale",
         "source_sha256": "8bde9e06f4328c3ae82e2614e32c8e7c1c928f5d7ab2eb12f783d451d66db605",
-        "source_permission": "2026-09-17 user: 用免费版补吧，另外看看其他受击特效是不是也缺了"
+        "source_permission": "2026-09-17 user: 用免费版补吧，另外看看其他受击特效是不是也缺了",
+        "source_fetch": {
+          "url": "http://update.ftxjjy.com/gameser/fr_www/pic/npc/YS/YS_b_BZ.ale",
+          "http_status": 200,
+          "bytes": 155358,
+          "md5": "71eb4bae497ac06b216bacefbdc9c375",
+          "sha256": "8bde9e06f4328c3ae82e2614e32c8e7c1c928f5d7ab2eb12f783d451d66db605",
+          "decode_status": "verified",
+          "decoded_frame_count": 6,
+          "coordinate_bounds": [
+            -206,
+            -138,
+            206,
+            162
+          ]
+        }
       }
     },
     {

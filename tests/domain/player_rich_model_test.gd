@@ -61,7 +61,7 @@ func _initialize() -> void:
 	_expect(stats.self_repair_base == 5, "底盘对象应提供 5 点基础自维修力")
 	_expect(stats.self_repair_total == 5, "维修技能等级不应直接放大战车自维修力")
 	_expect(stats.required_repair_skill_level == 10, "底盘应保存 10 级维修技能使用门槛")
-	_expect(is_equal_approx(stats.self_repair_energy_cost, 5.0), "底盘应保存单周期 5 点维修能耗")
+	_expect(is_equal_approx(stats.working_energy_per_repair, 5.0), "底盘应保存单周期 5 点维修能耗")
 	var chassis := player.vehicle.loadout.at(0) as VehicleChassis
 	_expect(chassis.can_activate_self_repair(10), "达到底盘维修门槛时应允许启动自维修")
 	_expect(not chassis.can_activate_self_repair(9), "低于底盘维修门槛时应拒绝启动自维修")
@@ -103,21 +103,9 @@ func _initialize() -> void:
 	_expect(player.receive_loot(second_loot.value).is_ok, "同定义掉落应合并到已有堆叠")
 	_expect(player.inventory.find("loot.first").quantity == 5, "合并后的掉落数量应为权威结算总和")
 	_expect(player.inventory.find("loot.second") == null, "已合并掉落不应额外占用背包格")
-	var legacy_loot := catalog.create("item:material:02ff69f031b5", {
-		"instance_id": "loot.legacy", "quantity": 2, "footprint_px": [30, 30],
-	})
-	_expect(legacy_loot.is_ok and legacy_loot.value.definition_id == "low_grade_gel",
-		"旧存档的同源类胶应迁移为正式物品身份")
-	_expect(player.receive_loot(legacy_loot.value).is_ok, "旧身份掉落应合并进正式堆叠")
-	_expect(player.inventory.count_definition("item:material:02ff69f031b5") == 7,
-		"旧配方查询应识别正式堆叠")
-	_expect(player.inventory.consume_requirements([
-		{"definition_id": "item:material:02ff69f031b5", "quantity": 2},
-	]).is_ok, "旧配方应能消费正式身份掉落")
-	_expect(player.inventory.count_definition("low_grade_gel") == 5, "旧配方只能扣除指定数量")
 	var recipe := ManufacturingRecipe.new({
-		"product_definition_id": "item:material:fc4cebd5d85b",
-		"materials": [{"definition_id": "item:material:02ff69f031b5", "quantity": 1}],
+		"product_definition_id": "low_grade_biosilicon",
+		"materials": [{"definition_id": "low_grade_gel", "quantity": 1}],
 	})
 	_expect(recipe.product_definition_id == "low_grade_biosilicon"
 		and recipe.materials[0].definition_id == "low_grade_gel", "生产配方输入和输出应统一物品身份")

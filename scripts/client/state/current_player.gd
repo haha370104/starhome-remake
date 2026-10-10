@@ -38,7 +38,7 @@ func _init(shared_catalog: ItemCatalog = null) -> void:
 ## 用同事务版本的权威快照重建当前玩家聚合。
 ## [param bundle] 服务端下发的人物、背包和战车快照组。
 ## 返回快照是否完整、合法并已应用。
-func apply_bundle(bundle: Dictionary) -> bool:
+func _restore_bundle(bundle: Dictionary) -> bool:
 	if _catalog == null or _projector == null \
 		or not bundle.get("character") is Dictionary \
 		or not bundle.get("inventory") is Dictionary \
@@ -47,10 +47,12 @@ func apply_bundle(bundle: Dictionary) -> bool:
 	if not FoodStatus.valid_state(bundle.get("food_status", {})):
 		return false
 	var central_result := PlayerCentralController.restore(bundle.get("central", {}))
-	if not central_result.is_ok: return false
+	if not central_result.is_ok:
+		return false
 	central = central_result.value
 	var preset_result := VehicleLoadoutPresets.restore(bundle.get("vehicle_presets", {}))
-	if not preset_result.is_ok: return false
+	if not preset_result.is_ok:
+		return false
 	vehicle_presets = preset_result.value
 	food_status = FoodStatus.new(bundle.get("food_status", {}))
 	amethyst = AmethystWallet.new(int(bundle.get("wallet", {}).get("amethyst", 0)))
@@ -111,7 +113,6 @@ func apply_bundle(bundle: Dictionary) -> bool:
 	vehicle.food_status = food_status
 	refresh_clothing_bonuses()
 	vehicle.reconcile_loadout_state(false)
-	changed.emit(self)
 	return true
 
 
@@ -138,35 +139,7 @@ func _restore_inventory(raw_items: Variant) -> bool:
 	for raw_item: Variant in raw_items:
 		if not raw_item is Dictionary:
 			return false
-		var created := _catalog.create(String(raw_item.get("definition_id", "")), {
-			"instance_id": raw_item.get("instance_id", ""),
-			"quantity": raw_item.get("amount", 1),
-			"container_id": raw_item.get("container_id", "main"),
-			"position_px": raw_item.get("position_px", [0, 0]),
-			"footprint_px": raw_item.get("footprint_px", [30, 30]),
-			"locked": raw_item.get("locked", false),
-			"bound": raw_item.get("bound", false),
-			"max_durability": raw_item.get("max_durability", 0),
-			"durability": raw_item.get("durability", 0),
-			"upgrade_level": raw_item.get("upgrade_level", 0),
-			"enhancement": raw_item.get("enhancement", {}),
-			"clothing_improvement": raw_item.get("clothing_improvement", {}),
-			"equipment_memory": raw_item.get("equipment_memory", {}),
-			"vehicle_sockets": raw_item.get("vehicle_sockets", {}),
-			"crystal_source": raw_item.get("crystal_source", {}),
-			"austin_glens": raw_item.get("austin_glens", {}),
-			"central_growth": raw_item.get("central_growth", {}),
-			"sama": raw_item.get("sama", {}),
-			"processing": raw_item.get("processing", {}),
-			"extra_attributes": raw_item.get("extra_attributes", {}),
-			"strengthening": raw_item.get("strengthening", {}),
-			"equipment_quality": raw_item.get("equipment_quality", {}),
-			"forging": raw_item.get("forging", {}),
-			"usage": raw_item.get("usage", {}),
-			"magazine": raw_item.get("magazine", {}),
-			"crystal_cracks": raw_item.get("crystal_cracks", 0),
-			"crystal_source_cracks": raw_item.get("crystal_source_cracks", 0),
-		})
+		var created := create_inventory_item(raw_item)
 		if not created.is_ok:
 			return false
 		restored.append(created.value)
@@ -197,30 +170,168 @@ func _restore_equipment(worn_items: Variant, vehicle_items: Variant) -> bool:
 func _create_equipment(raw_equipment: Variant) -> Equipment:
 	if not raw_equipment is Dictionary:
 		return null
-	var created := _catalog.create(String(raw_equipment.get("definition_id", "")), {
+	var item_state := {
 		"instance_id": raw_equipment.get("instance_id", ""),
 		"equipped_character_slot": raw_equipment.get("slot_id", ""),
 		"quantity": 1,
 		"max_durability": raw_equipment.get("max_durability", 1),
 		"durability": raw_equipment.get("durability", 1),
 		"upgrade_level": raw_equipment.get("upgrade_level", 0),
-		"enhancement": raw_equipment.get("enhancement", {}),
-		"clothing_improvement": raw_equipment.get("clothing_improvement", {}),
-		"vehicle_sockets": raw_equipment.get("vehicle_sockets", {}),
-		"crystal_source": raw_equipment.get("crystal_source", {}),
-		"austin_glens": raw_equipment.get("austin_glens", {}),
-		"central_growth": raw_equipment.get("central_growth", {}),
-		"sama": raw_equipment.get("sama", {}),
-		"processing": raw_equipment.get("processing", {}),
-		"extra_attributes": raw_equipment.get("extra_attributes", {}),
-		"strengthening": raw_equipment.get("strengthening", {}),
-		"equipment_quality": raw_equipment.get("equipment_quality", {}),
-		"forging": raw_equipment.get("forging", {}),
-		"usage": raw_equipment.get("usage", {}),
-		"magazine": raw_equipment.get("magazine", {}),
 		"locked": raw_equipment.get("locked", false),
 		"bound": raw_equipment.get("bound", false),
 		"equipment_location": raw_equipment.get("location", -1),
 		"footprint_px": [45, 45],
-	})
+	}
+	for field: String in [
+		"enhancement", "clothing_improvement", "vehicle_sockets", "crystal_source",
+		"austin_glens", "central_growth", "sama", "processing", "extra_attributes",
+		"strengthening", "equipment_quality", "forging", "usage", "magazine",
+	]:
+		if raw_equipment.has(field):
+			item_state[field] = raw_equipment[field]
+	var created := _catalog.create(String(raw_equipment.get("definition_id", "")), item_state)
 	return created.value if created.is_ok and created.value is Equipment else null
+
+
+## 在完整快照全部通过校验后一次替换字段，失败不污染当前玩家。
+## [param bundle] 已通过同步版本检查的完整快照。
+## 返回是否成功应用。
+func apply_bundle(bundle: Dictionary) -> bool:
+	var candidate := CurrentPlayer.new(_catalog)
+	if not candidate._restore_bundle(bundle): return false
+	apply_state(candidate)
+	changed.emit(self)
+	return true
+
+
+## 预检全部组件后原位提交；只在装配变化时替换对应装备对象。
+## [param change] 已验证结构和版本的增量。
+## 返回应用结果，拒绝时所有已有对象保持原值。
+func apply_change(change: PlayerChange) -> bool:
+	if change.inventory_revision >= 0 and change.inventory_revision <= inventory.revision: return false
+	var next_clothing := character_equipment
+	var next_vehicle := vehicle
+	if not change.character.is_empty():
+		if change.character.character_id != entity_id or int(change.character.max_health) != max_health: return false
+		next_clothing = CharacterEquipment.new()
+		for row: Variant in change.character.worn_items:
+			var equipment := _create_equipment(row)
+			if not equipment is Clothing or not next_clothing.restore(equipment).is_ok: return false
+	if not change.vehicle.is_empty():
+		if not change.vehicle.get("equipped") is Array or not PlayerChange._count(change.vehicle.get("revision")) \
+			or not _valid_vehicle_stats(change.vehicle.get("stats")): return false
+		next_vehicle = PlayerVehicle.new({"vehicle_id": change.vehicle.get("vehicle_id", ""),
+			"definition_id": change.vehicle.get("vehicle_definition_id", ""), "loadout_revision": change.vehicle.revision})
+		for row: Variant in change.vehicle.equipped:
+			var equipment := _create_equipment(row)
+			if not equipment is VehicleEquipment or not next_vehicle.loadout.restore(equipment).is_ok: return false
+	if not change.vehicle_stats.is_empty() and not _valid_vehicle_stats(change.vehicle_stats): return false
+	if change.character_health > max_health: return false
+	var pending: Array[GameItem] = []
+	var updates: Dictionary[String, Dictionary] = {}
+	var structural := not change.removed_items.is_empty()
+	if change.inventory_revision >= 0:
+		for item: GameItem in inventory.items():
+			if item.instance_id not in change.removed_items: pending.append(item)
+	for row: Dictionary in change.items:
+		var existing := inventory.find(String(row.instance_id))
+		if existing != null:
+			var expected := existing.to_view_dictionary()
+			expected["amount"] = row.amount
+			expected["position_px"] = row.get("position_px")
+			if int(row.amount) > existing.max_stack or existing.definition_id != row.definition_id: return false
+			if expected == row:
+				updates[existing.instance_id] = row
+				continue
+		var created := create_inventory_item(row)
+		if not created.is_ok or created.value.to_view_dictionary() != row: return false
+		if existing != null: pending[pending.find(existing)] = created.value
+		else: pending.append(created.value)
+		structural = true
+	if change.inventory_revision >= 0:
+		if pending.size() > inventory.capacity: return false
+		var layouts: Array = []
+		for item: GameItem in pending: layouts.append(updates.get(item.instance_id, item.to_layout_dictionary()))
+		if not InventoryLayout.validate(layouts).is_ok: return false
+	# 所有组件预检结束后才写入现有对象；订阅者尚未收到任何通知。
+	for identity: String in updates:
+		var item := inventory.find(identity)
+		item.quantity = int(updates[identity].amount)
+		item.position_px = Vector2i(int(updates[identity].position_px[0]), int(updates[identity].position_px[1]))
+	if structural: inventory.restore_items(pending)
+	if change.inventory_revision >= 0: inventory.revision = change.inventory_revision
+	if change.inventory_currency >= 0: inventory.currency = change.inventory_currency
+	character_equipment = next_clothing
+	vehicle = next_vehicle
+	if not change.food.is_empty(): food_status = FoodStatus.new(change.food)
+	vehicle.food_status = food_status
+	vehicle.central = central
+	vehicle.central_rules = _catalog.central_rules
+	if not change.presets.is_empty(): vehicle_presets = VehicleLoadoutPresets.restore(change.presets).value
+	if change.character_health >= 0: health = change.character_health
+	if not change.skills.is_empty():
+		var skill_states := skills.to_dictionary()
+		for row: Dictionary in change.skills:
+			skill_states[String(row.id)] = {"level": int(row.base_level), "current_exp": int(row.experience),
+				"fractional_exp": float(row.fractional_experience)}
+		skills = SkillBook.new(skill_states)
+	if change.level >= 0: level = change.level
+	if not change.achievements.is_empty():
+		achievements.apply_counters(change.achievements)
+	if not change.achievements.is_empty() or not change.vehicle.is_empty(): vehicle.achievement_bonuses = achievements.bonuses()
+	if not change.character.is_empty() or not change.vehicle.is_empty(): refresh_clothing_bonuses()
+	if change.attributes_changed: vehicle.reconcile_loadout_state(false)
+	if not change.vehicle.is_empty(): _apply_vehicle_stats(change.vehicle.stats)
+	if not change.vehicle_stats.is_empty(): _apply_vehicle_stats(change.vehicle_stats)
+	revision = change.revision
+	return true
+
+
+## 校验增量携带的战车资源值，拒绝缺项、非数值或超界输入。
+## [param stats] 服务端战车属性投影。
+## 返回是否可在事务提交阶段直接应用。
+func _valid_vehicle_stats(stats: Variant) -> bool:
+	if not stats is Dictionary: return false
+	for key: String in ["health", "max_health", "reserve_energy", "reserve_energy_capacity", "working_energy", "working_energy_capacity", "output_power"]:
+		if not (stats.get(key) is int or stats.get(key) is float) or not is_finite(float(stats[key])) or stats[key] < 0: return false
+	return stats.max_health > 0 and stats.health <= stats.max_health \
+		and stats.reserve_energy <= stats.reserve_energy_capacity and stats.working_energy <= stats.working_energy_capacity
+
+
+## 同步已经校验的资源数值，不重新建立装备或外观。
+## [param stats] 已提交事务的最终属性。
+func _apply_vehicle_stats(stats: Dictionary) -> void:
+	vehicle.max_health = int(stats.max_health)
+	vehicle.health = int(stats.health)
+	vehicle.reserve_energy_capacity = float(stats.reserve_energy_capacity)
+	vehicle.reserve_energy = float(stats.reserve_energy)
+	vehicle.working_energy_capacity = float(stats.working_energy_capacity)
+	vehicle.working_energy = float(stats.working_energy)
+	vehicle.output_power = float(stats.output_power)
+
+
+## 通过共享目录恢复背包物品，完整快照和增量使用同一字段映射。
+## [param raw_item] 已确认是字典的物品视图。
+## 返回具体领域物品或格式错误。
+func create_inventory_item(raw_item: Dictionary) -> DomainResult:
+	var item_state := {
+		"instance_id": raw_item.get("instance_id", ""),
+		"quantity": raw_item.get("amount", 1),
+		"container_id": raw_item.get("container_id", "main"),
+		"position_px": raw_item.get("position_px", [0, 0]),
+		"footprint_px": raw_item.get("footprint_px", [30, 30]),
+		"locked": raw_item.get("locked", false),
+		"bound": raw_item.get("bound", false),
+		"max_durability": raw_item.get("max_durability", 0),
+		"durability": raw_item.get("durability", 0),
+		"upgrade_level": raw_item.get("upgrade_level", 0),
+	}
+	for field: String in [
+		"enhancement", "clothing_improvement", "equipment_memory", "vehicle_sockets",
+		"crystal_source", "austin_glens", "central_growth", "sama", "processing",
+		"extra_attributes", "strengthening", "equipment_quality", "forging", "usage",
+		"magazine", "crystal_cracks", "crystal_source_cracks",
+	]:
+		if raw_item.has(field):
+			item_state[field] = raw_item[field]
+	return _catalog.create(String(raw_item.get("definition_id", "")), item_state)

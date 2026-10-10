@@ -13,7 +13,7 @@ from PIL import Image
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 OUTPUTS_ROOT = PROJECT_ROOT.parent
-GLORY_RAW = OUTPUTS_ROOT / "starhome_lz_ry_full" / "raw"
+GLORY_RAW = PROJECT_ROOT / "../starhome_lz_ry_full" / "raw"
 sys.path.insert(0, str(PROJECT_ROOT / "tools"))
 
 from audit_monster_asset_sources import (  # noqa: E402
@@ -54,7 +54,8 @@ def render_atlas(decoder, ale_path: Path, palette_path: Path) -> tuple[Image.Ima
     left, top, right, bottom = animation_bounds(ale.frames)
     width = max(1, right - left)
     height = max(1, bottom - top)
-    atlas = Image.new("RGBA", (width * ale.frame_count, height))
+    frame_count = len(ale.frames)
+    atlas = Image.new("RGBA", (width * frame_count, height))
     for frame in ale.frames:
         indexed = decode_index_alpha(ale, frame)
         rendered = apply_palette(indexed, colors)
@@ -65,7 +66,7 @@ def render_atlas(decoder, ale_path: Path, palette_path: Path) -> tuple[Image.Ima
         indexed.close()
         rendered.close()
     return atlas, {
-        "frame_count": ale.frame_count,
+        "frame_count": frame_count,
         "cell_size": [width, height],
         "origin": [left, top],
     }

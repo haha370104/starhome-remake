@@ -3,7 +3,7 @@ extends SceneTree
 var failures := PackedStringArray()
 
 
-## 验证自由坐标、允许重叠、仅手动整理对齐，以及旧存档元数据兼容。
+## 验证自由坐标、允许重叠、仅手动整理对齐及当前布局身份。
 func _initialize() -> void:
 	var items: Array = [
 		{"instance_id": "a", "position_px": [17, 43], "footprint_px": [500, 500]},
@@ -19,7 +19,7 @@ func _initialize() -> void:
 	var arranged := InventoryLayout.arrange(items)
 	_expect(arranged.is_ok and arranged.value[0].position_px == [0, 0] \
 		and arranged.value[1].position_px == [55, 0], "手动整理才按五列网格对齐")
-	_expect(InventoryLayout.first_available_position(arranged.value, Vector2i(500, 500)) \
+	_expect(InventoryLayout.first_available_position(arranged.value) \
 		== Vector2i(110, 0), "新入包落位按统一图标推荐位置，不受旧占位尺寸限制")
 	_expect(not InventoryLayout.move_item(items, "a", Vector2i(276, 0)).is_ok,
 		"坐标不能越出背包边界")
@@ -33,7 +33,7 @@ func _initialize() -> void:
 	_expect(aligned.is_ok and aligned.value[39].position_px == [220, 258],
 		"第四十件整理到第五列第八行")
 	_expect(InventoryLayout.validate(aligned.value).is_ok, "整理后的所有坐标合法")
-	_expect(InventoryLayout.first_available_position(full, Vector2i.ONE) == Vector2i(-1, -1),
+	_expect(InventoryLayout.first_available_position(full) == Vector2i(-1, -1),
 		"四十件容量上限不变")
 	full.append({"instance_id": "overflow", "position_px": [0, 0]})
 	_expect(not InventoryLayout.validate(full).is_ok, "允许重叠不意味着允许超过容量")

@@ -1,5 +1,7 @@
 extends SceneTree
 
+const CommerceRecordAdapter := preload("res://tests/fixtures/commerce_record_adapter.gd")
+
 const Fixture := preload("res://tests/fixtures/player_panel_service_fixture.gd")
 var items := ItemCatalog.new()
 var fixture := Fixture.new()
@@ -32,7 +34,7 @@ func _run() -> void:
 			var command := {"type": "upgrade_attachment", "instance_id": equipment.instance_id,
 				"inventory_revision": state.inventory_revision, "loadout_revision": state.vehicle_loadout_revision,
 				"target_level": 99, "currency": 0, "materials": [], "reward": 999999}
-			var result := service.execute(state, command)
+			var result := CommerceRecordAdapter.execute(service, state, command)
 			_expect(result.is_ok and state.to_dictionary() == before, "强化只生成隔离候选，不修改原存档")
 			if not result.is_ok:
 				continue
@@ -61,8 +63,8 @@ func _run() -> void:
 						== int(values[plan.target_level]) - int(values[plan.current_level]), "强化增加真实权威能量炮伤害")
 			var restored := PlayerStateRecord.from_dictionary(JSON.parse_string(JSON.stringify(next.to_dictionary())))
 			_expect(restored.is_ok and mapper.to_domain(restored.value).value.attachment_item("upgrade-target").upgrade_level == plan.target_level
-				and not service.execute(restored.value, command).is_ok, "JSON重启保留强化且旧请求不可重放")
-			_expect(not service.execute(state, {"type": "upgrade_attachment", "instance_id": "other-player-item",
+				and not CommerceRecordAdapter.execute(service, restored.value, command).is_ok, "JSON重启保留强化且旧请求不可重放")
+			_expect(not CommerceRecordAdapter.execute(service, state, {"type": "upgrade_attachment", "instance_id": "other-player-item",
 				"inventory_revision": state.inventory_revision, "loadout_revision": state.vehicle_loadout_revision}).is_ok, "不能强化不属于自己的实例")
 	var first: Dictionary = rules[0]
 	var first_plan := pricing.upgrade_pricing().plan_for(first.attachment_id, 0)
@@ -78,7 +80,7 @@ func _run() -> void:
 			player.attachment_item("upgrade-target").upgrade_level = 5
 		var state: PlayerStateRecord = mapper.to_record(player).value
 		var before := state.to_dictionary()
-		var result := service.execute(state, {"type": "upgrade_attachment", "instance_id": "upgrade-target",
+		var result := CommerceRecordAdapter.execute(service, state, {"type": "upgrade_attachment", "instance_id": "upgrade-target",
 			"inventory_revision": state.inventory_revision - (1 if failure == "stale_inventory" else 0),
 			"loadout_revision": state.vehicle_loadout_revision - (1 if failure == "stale_loadout" else 0)})
 		_expect(not result.is_ok and state.to_dictionary() == before, "拒绝且完全不修改状态：" + failure)
@@ -86,7 +88,7 @@ func _run() -> void:
 	var locked_player := _funded(first_plan, true)
 	locked_player.attachment_item("upgrade-target").locked = true
 	var locked_state: PlayerStateRecord = mapper.to_record(locked_player).value
-	_expect(not service.execute(locked_state, {"type": "upgrade_attachment", "instance_id": "upgrade-target",
+	_expect(not CommerceRecordAdapter.execute(service, locked_state, {"type": "upgrade_attachment", "instance_id": "upgrade-target",
 		"inventory_revision": locked_state.inventory_revision, "loadout_revision": locked_state.vehicle_loadout_revision}).is_ok
 		and mapper.to_domain(locked_state).value.attachment_item("upgrade-target").locked, "已装配锁定标记保存后仍阻止强化")
 	var old_plan := pricing.upgrade_pricing().plan_for(old.attachment_id, int(old.current_level))

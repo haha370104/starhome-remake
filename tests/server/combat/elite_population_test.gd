@@ -134,7 +134,7 @@ func _test_loot(catalog: CombatDefinitionCatalog) -> void:
 		for drop: Dictionary in entries:
 			var expected: float = float(drop.chance) * (drop.minimum_quantity + drop.maximum_quantity) / 2.0
 			_expect(is_equal_approx(expected, float(base.get(drop.item_definition_id, -1)) * 20), "每条精英掉落数量期望严格为基础20倍")
-			_expect(drop.item_definition_id != "item:material:9713f13ede8d", "精英不越过爬虫碎片例外")
+			_expect(drop.item_definition_id != "joint_upgrade_fragment", "精英不越过爬虫碎片例外")
 		var table := DropTable.new(entries)
 		var totals := {}
 		for _sample in range(5000):

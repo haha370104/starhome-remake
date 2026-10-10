@@ -37,6 +37,105 @@ func build_bundle(player: Player) -> Dictionary:
 	}
 
 
+func build_llm_panels(player: Player) -> Dictionary:
+	var items: Array[Dictionary] = []
+	for item: GameItem in player.inventory.items():
+		items.append({
+			"instance_id": item.instance_id,
+			"display_name": item.display_name,
+			"type": _catalog.definition(item.definition_id).get("kind", "item"),
+			"quantity": item.quantity,
+		})
+	return {
+		"character": _character_snapshot(player),
+		"inventory": {"items": items},
+		"vehicle": _vehicle_snapshot(player),
+	}
+
+
+## 只投影对方可见的人物或战车资料，不附带背包及可用于操作的实例标识。
+func build_public_view(player: Player, view: String) -> Dictionary:
+	var snapshot := _character_snapshot(player) if view == "character" else _vehicle_snapshot(player)
+	snapshot.erase("revision")
+	snapshot.erase("character_id")
+	snapshot.erase("vehicle_id")
+	snapshot.erase("vehicle_definition_id")
+	snapshot.erase("skills")
+	var equipment_key := "worn_items" if view == "character" else "equipped"
+	for item: Dictionary in snapshot[equipment_key]:
+		item.erase("instance_id")
+	return snapshot
+
+
+## 只比较事务隔离过的组件，投影其最终变化；不读取仓库或历史收据。
+## [param before] 提交前在线玩家。[param after] 已完成规则校验的候选。
+## 返回提交后可发布的组件变化，事务版本由提交者填写。
+func changes(before: Player, after: Player, include_quests := true) -> PlayerChange:
+	var change := PlayerChange.new()
+	if before.inventory != after.inventory:
+		var previous := {}
+		var definitions := {}
+		for item: GameItem in before.inventory.items(): previous[item.instance_id] = item.to_view_dictionary()
+		for item: GameItem in after.inventory.items():
+			var row := item.to_view_dictionary()
+			if previous.get(item.instance_id, {}) != row:
+				change.items.append(row)
+				definitions[item.definition_id] = true
+			previous.erase(item.instance_id)
+		for identity: String in previous:
+			change.removed_items.append(identity)
+			definitions[previous[identity].definition_id] = true
+		change.inventory_revision = after.inventory.revision
+		if before.inventory.currency != after.inventory.currency:
+			change.inventory_currency = after.inventory.currency
+		if include_quests:
+			for definition_id: String in definitions:
+				PlayerChange._merge_rows(change.quests, collection_changes(after, definition_id), "task_id")
+	if before.character_equipment != after.character_equipment \
+		and _equipment_rows(before.character_equipment.items()) != _equipment_rows(after.character_equipment.items()):
+		change.character = _character_snapshot(after)
+		change.skills.assign(change.character.skills)
+		change.attributes_changed = true
+	if before.vehicle.loadout.revision != after.vehicle.loadout.revision:
+		change.vehicle = _vehicle_snapshot(after)
+		change.attributes_changed = true
+	if before.skills != after.skills:
+		var modifiers := after.character_equipment.skill_modifiers()
+		for id: String in SkillBook.ORDERED_SKILLS:
+			var row := after.skills.to_view_row(id, modifiers, _skill_progression_config)
+			if row != before.skills.to_view_row(id, modifiers, _skill_progression_config):
+				PlayerChange._merge_rows(change.skills, [row], "id")
+	if before.level != after.level:
+		change.level = after.level
+		change.attributes_changed = true
+	if before.health != after.health: change.character_health = after.health
+	if before.food_status != after.food_status and before.food_status.to_dictionary() != after.food_status.to_dictionary():
+		change.food = after.food_status.to_dictionary()
+		for kind in range(13, 18):
+			if before.food_status.bonus(kind) != after.food_status.bonus(kind): change.attributes_changed = true
+	if change.attributes_changed or before.vehicle.health != after.vehicle.health \
+		or before.vehicle.reserve_energy != after.vehicle.reserve_energy or before.vehicle.working_energy != after.vehicle.working_energy:
+		change.vehicle_stats = change.vehicle.stats if not change.vehicle.is_empty() else after.calculate_vehicle_stats()
+	if before.vehicle_presets != after.vehicle_presets:
+		change.presets = after.vehicle_presets.to_dictionary()
+		change.preset_server_time = int(Time.get_unix_time_from_system())
+	return change
+## 投影只发生装备耐久变化的战车组件，避免为一次采矿重建人物和背包。
+## [param player] 已更新实时耐久的权威玩家。
+## 返回可合并到同一事务增量的战车变化。
+func vehicle_durability_change(player: Player) -> PlayerChange:
+	var change := PlayerChange.new()
+	change.vehicle = _vehicle_snapshot(player)
+	return change
+
+
+## 提取少量已装配物品用于判断穿着是否变化，不投影其他面板。
+## [param equipment] 人物穿着列表。
+## 返回按固定槽位顺序排列的物品事实。
+func _equipment_rows(equipment: Array) -> Array:
+	return equipment.map(func(item: GameItem) -> Dictionary: return item.to_view_dictionary())
+
+
 ## 从持久化任务状态生成日志，材料进度复用收集任务领域规则。
 ## [param player] 权威玩家聚合；只查询，不接取或交付任务。
 ## 返回已接取或曾完成的任务列表，未登记分类保持空白。
@@ -161,3 +260,19 @@ func _int_pair(value: Variant, fallback: Array) -> Array:
 	if value is Array and value.size() == 2:
 		return [int(value[0]), int(value[1])]
 	return fallback.duplicate()
+
+
+## 只重新计算依赖指定材料的已登记任务，避免拾取刷新全部任务和面板。
+## [param player] 已提交的玩家。[param definition_id] 数量变化的规范物品定义。
+## 返回需要替换的任务条目。
+func collection_changes(player: Player, definition_id: String) -> Array[Dictionary]:
+	var entries: Array[Dictionary] = []
+	for task_id: String in player.quest_states:
+		var definition: Dictionary = _quest_catalog.definitions.get(task_id, {})
+		for requirement: Dictionary in definition.get("requirements", []):
+			if String(requirement.definition_id) != definition_id: continue
+			var entry := _quest_catalog.snapshot(player, definition, _quest_catalog.day_key(int(Time.get_unix_time_from_system())))
+			entry["category"] = 0
+			entries.append(entry)
+			break
+	return entries

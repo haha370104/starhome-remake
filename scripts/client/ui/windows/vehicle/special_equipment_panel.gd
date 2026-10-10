@@ -4,6 +4,7 @@ extends Panel
 signal unequip_requested(location: int)
 
 const EquipmentLayer := preload("res://scripts/client/ui/components/equipment_layer_view.gd")
+var read_only := false
 var _items_root: Control
 
 
@@ -57,7 +58,7 @@ func apply_equipment(equipped: Array) -> void:
 			if int(item.get("location", -1)) != location:
 				continue
 			var visual := EquipmentLayer.new()
-			if visual.configure(item, Vector2.ZERO, rect):
+			if visual.configure(item, Vector2.ZERO, rect, "" if read_only else "双击卸下"):
 				visual.name = "SpecialLocation_%d" % location
 				empty.hide()
 				visual.gui_input.connect(_on_item_input.bind(location))
@@ -72,7 +73,9 @@ func apply_equipment(equipped: Array) -> void:
 				fallback.position = rect.position
 				fallback.size = rect.size
 				fallback.add_theme_font_size_override("font_size", 12)
-				fallback.tooltip_text = "双击卸下：" + String(item.get("display_name", "特殊装备"))
+				fallback.tooltip_text = String(item.get("display_name", "特殊装备"))
+				if not read_only:
+					fallback.tooltip_text = "双击卸下：" + fallback.tooltip_text
 				fallback.gui_input.connect(_on_item_input.bind(location))
 				_items_root.add_child(fallback)
 
@@ -81,6 +84,8 @@ func apply_equipment(equipped: Array) -> void:
 ## [param event] GUI 鼠标事件。
 ## [param location] 特殊装备的稳定位置。
 func _on_item_input(event: InputEvent, location: int) -> void:
+	if read_only:
+		return
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT \
 			and event.pressed and event.double_click:
 		unequip_requested.emit(location)

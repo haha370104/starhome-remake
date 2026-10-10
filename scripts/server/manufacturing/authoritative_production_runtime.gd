@@ -1,7 +1,7 @@
 class_name AuthoritativeProductionRuntime
 extends RefCounted
 
-signal failed(peer_id: int, code: StringName, message: String)
+signal failed(entity_id: String, code: StringName, message: String)
 
 class Clock extends RefCounted:
 	var order_id := ""
@@ -14,7 +14,7 @@ class Clock extends RefCounted:
 var _clocks: Dictionary[String, Clock] = {}
 var _errors: Dictionary[String, StringName] = {}
 var _autosave: AuthoritativeAutosaveService
-var _sessions: SessionRegistry
+var _sessions: SessionService
 var _manufacturing: AuthoritativeManufacturingService
 var _capture: Callable
 var _publish: Callable
@@ -26,7 +26,7 @@ var _publish: Callable
 ## [param manufacturing] 已初始化的生产事务服务。
 ## [param capture_state] 捕获最新地图、资源和剩余等待的端口。
 ## [param publish] 发布已提交的生产结果。
-func _init(autosave: AuthoritativeAutosaveService, sessions: SessionRegistry, manufacturing: AuthoritativeManufacturingService,
+func _init(autosave: AuthoritativeAutosaveService, sessions: SessionService, manufacturing: AuthoritativeManufacturingService,
 		capture_state: Callable, publish: Callable) -> void:
 	_autosave = autosave
 	_sessions = sessions
@@ -37,27 +37,32 @@ func _init(autosave: AuthoritativeAutosaveService, sessions: SessionRegistry, ma
 
 ## 只跟踪已提交的运行订单；暂停、取消和完成会立即移除倒计时。
 ## [param state] 当前已提交记录。
-func track(state: PlayerStateRecord) -> void:
+func track(state: Player) -> void:
 	var order := state.production.order
 	if order == null or order.paused:
-		_clocks.erase(state.character_id)
-		_errors.erase(state.character_id)
+		_clocks.erase(state.entity_id)
+		_errors.erase(state.entity_id)
 		return
-	var existing: Clock = _clocks.get(state.character_id)
+	var existing: Clock = _clocks.get(state.entity_id)
 	if existing != null and existing.order_id == order.id and existing.revision == state.production.revision: return
 	var clock := Clock.new()
 	clock.order_id = order.id
 	clock.revision = state.production.revision
 	clock.remaining = order.remaining_milliseconds
-	_clocks[state.character_id] = clock
+	_clocks[state.entity_id] = clock
 
 
 ## 将当前倒计时写入待保存副本，版本或订单不匹配时不覆盖新状态。
 ## [param state] 自动保存或事务准备中的隔离记录。
-func capture(state: PlayerStateRecord) -> void:
-	var clock: Clock = _clocks.get(state.character_id)
+func capture(state: Variant) -> void:
+	var record: PlayerStateRecord = state if state is PlayerStateRecord else null
+	var entity_id: String = record.character_id if record != null else state.entity_id
+	var clock: Clock = _clocks.get(entity_id)
 	if clock != null:
-		state.production.capture_remaining(clock.order_id, clock.revision, ceili(maxf(0, clock.remaining)))
+		if record != null:
+			record.production.capture_remaining(clock.order_id, clock.revision, ceili(maxf(0, clock.remaining)))
+		else:
+			state.production.capture_remaining(clock.order_id, clock.revision, ceili(maxf(0, clock.remaining)))
 
 
 ## 只推进有订单的角色，每次调用每人最多结算一轮，长帧不会补跑全部积压次数。
@@ -74,7 +79,7 @@ func advance(elapsed_seconds: float) -> void:
 		if clock.retry_delay > 0 or (clock.remaining > 0 and clock.check_delay > 0): continue
 		clock.check_delay = 250.0
 		var session := _sessions.session_for_entity(entity_id)
-		var state := _autosave.state_for(entity_id)
+		var state := _autosave.player_for(entity_id)
 		if session == null or state == null:
 			_clocks.erase(entity_id)
 			_errors.erase(entity_id)
@@ -88,8 +93,8 @@ func advance(elapsed_seconds: float) -> void:
 			continue
 		state = captured.value
 		var order := state.production.order
-		if not clock.pending_pause.is_empty() or not session.has_active_peer() or state.map_id != order.map_id or state.vehicle_health <= 0:
-			var reason := "断线后生产已暂停" if not session.has_active_peer() else "离开设施地图或战车被击毁，生产已暂停"
+		if not clock.pending_pause.is_empty() or not session.is_online() or state.map_id != order.map_id or state.vehicle.health <= 0:
+			var reason := "断线后生产已暂停" if not session.is_online() else "离开设施地图或战车被击毁，生产已暂停"
 			if not clock.pending_pause.is_empty(): reason = clock.pending_pause
 			state.production.pause(reason)
 			_commit(state, {"station_id": order.station_id, "action": "pause_production", "message": reason}, session)
@@ -107,7 +112,7 @@ func advance(elapsed_seconds: float) -> void:
 ## [param reason] 生命周期暂停原因。
 ## 返回已提交状态或拒绝；失败由短期时钟退避重试。
 func interrupt(entity_id: String, reason: String) -> DomainResult:
-	var state := _autosave.state_for(entity_id)
+	var state := _autosave.player_for(entity_id)
 	var session := _sessions.session_for_entity(entity_id)
 	if state == null or session == null or state.production.order == null or state.production.order.paused:
 		return DomainResult.ok(false)
@@ -127,14 +132,18 @@ func interrupt(entity_id: String, reason: String) -> DomainResult:
 ## [param operation] 本轮或暂停结果。
 ## [param session] 当前人物会话。
 ## 返回真实存档提交结果。
-func _commit(candidate: PlayerStateRecord, operation: Dictionary, session: ServerSession) -> DomainResult:
-	var saved := _autosave.commit_player_state(session.entity_id, candidate)
+func _commit(candidate: Player, operation: Dictionary, session: ServerSession) -> DomainResult:
+	var change := _manufacturing.changes(_autosave.player_for(session.entity_id), candidate)
+	var saved := _autosave.commit_player(
+		session.entity_id, candidate, false, {},
+		["character", "inventory", "production", "skills"] as Array[String]
+	)
 	if not saved.is_ok:
 		_failed(session, saved)
 		return saved
 	_errors.erase(session.entity_id)
 	track(saved.value)
-	if session.has_active_peer(): _publish.call(session.peer_id, saved.value, operation)
+	if session.is_online(): _publish.call(session.peer_id, saved.value, operation, change)
 	return saved
 
 
@@ -146,4 +155,4 @@ func _failed(session: ServerSession, result: DomainResult) -> void:
 	if clock != null: clock.retry_delay = 1000.0
 	if _errors.get(session.entity_id) == result.error_code: return
 	_errors[session.entity_id] = result.error_code
-	if session.has_active_peer(): failed.emit(session.peer_id, result.error_code, "生产暂未入账：" + result.error_message)
+	if session.is_online(): failed.emit(session.entity_id, result.error_code, "生产暂未入账：" + result.error_message)

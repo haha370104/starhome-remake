@@ -23,7 +23,7 @@
         48,
         12
       ],
-      "data_path": "res://assets/maps/yian_harbor/hall_floor_1/navigation_grid.bin"
+      "data_path": "res://assets/glory/maps/roomsvr1/variant_01_nft_bl/navigation_grid.bin"
     }
   },
   "assets": {
@@ -34,10 +34,10 @@
       "exit_to_city_animation": "maps/yian_harbor/hall_floor_1/transitions/exit_to_city"
     },
     "resources": {
-      "floor": "res://assets/maps/yian_harbor/hall_floor_1/floor.png",
-      "minimap": "res://assets/maps/yian_harbor/hall_floor_1/minimap.jpg",
-      "scene_manifest": "res://assets/maps/yian_harbor/hall_floor_1/map_manifest.json",
-      "exit_to_city_animation": "res://assets/maps/yian_harbor/hall_floor_1/transitions/exit_to_city/animation_frames.tres"
+      "floor": "res://assets/glory/maps/roomsvr1/variant_01_nft_bl/floor.png",
+      "minimap": "res://assets/glory/maps/roomsvr1/variant_01_nft_bl/minimap.jpg",
+      "scene_manifest": "res://assets/glory/maps/roomsvr1/variant_01_nft_bl/scene_manifest.json",
+      "exit_to_city_animation": "res://assets/maps/shared/directional_transitions/north_west/animation_frames.tres"
     }
   },
   "spawn_points": {

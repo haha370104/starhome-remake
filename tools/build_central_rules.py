@@ -7,25 +7,26 @@ import hashlib
 import io
 import re
 
-import audit_monster_asset_sources as indexed
 from build_equipment_processing_rules import ROOT, write
+from glory_paths import resolve_casefold_path
+from recovery.fcc_workspace import RawFccWorkspace
+from recovery.sprites.ale_sprite import AleFile
 
 
 def build(check=False):
-    source = ROOT.parent / "starhome_lz_fr_fcc_source"
-    raw = ROOT.parent / "starhome_lz_fr_full/raw"
-    global_source = (source / "globalfunclt.fcc").read_text(encoding="utf-8")
-    equipment_source = (source / "cltobj/equipcltclass.fcc").read_text(encoding="utf-8")
-    material_source = (source / "cltobj/stuffclt2.fcc").read_text(encoding="utf-8")
-    decoder = indexed.load_decoder()
+    raw = ROOT / "../starhome_lz_fr_full/raw"
+    with RawFccWorkspace(raw, ROOT / "../starhome_lz_ry_full/fkernel.dll") as fcc:
+        sources = ("globalfunclt.fcc", "cltobj/equipcltclass.fcc", "cltobj/stuffclt2.fcc")
+        fcc.require(list(sources))
+        global_source, equipment_source, material_source = (fcc.text(path) for path in sources)
     frames, items, modules, chips, profiles, offers = [], [], [], [], [], []
 
     def icon(logical, name):
-        path = raw / logical
-        assert path.is_file(), logical
-        ale = decoder.AleFile(path)
+        path = resolve_casefold_path(raw, logical)
+        assert path is not None and path.is_file(), logical
+        ale = AleFile(path)
         frame = ale.frames[0]
-        bitmap = ale.decode_frame(frame)
+        bitmap = frame.image
         buffer = io.BytesIO()
         bitmap.save(buffer, format="PNG", optimize=True)
         target = ROOT / "assets/items/central" / (name + ".png")
@@ -34,7 +35,7 @@ def build(check=False):
         else:
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_bytes(buffer.getvalue())
-        frames.append({"file": target.name, "source_release": "free", "source_path": logical,
+        frames.append({"file": target.name, "source_release": "free", "source_path": path.relative_to(raw).as_posix(),
                        "source_frame": 0, "native_size": list(bitmap.size),
                        "offset": [frame.origin_x, frame.origin_y],
                        "sha256": hashlib.sha256(path.read_bytes()).hexdigest()})
