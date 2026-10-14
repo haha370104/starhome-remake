@@ -13,6 +13,7 @@ var combat: CombatInteractionController
 var game_window_manager: GameWindowManager
 var smart_assistant: SmartAssistantController
 var death_journal: PveDeathJournalController
+var garden: BotanicalGardenController
 var hotkeys := ClientHotkeys.new()
 
 
@@ -92,6 +93,11 @@ func _unhandled_input(event: InputEvent) -> void:
 		var loot_id := world_view.ground_loot_world_controller.loot_at(world_position) if world_view.ground_loot_world_controller != null else ""
 		if not loot_id.is_empty():
 			combat.request_ground_loot_pickup(loot_id)
+			get_viewport().set_input_as_handled()
+			return
+		var plant := garden.plant_at(world_position) if garden != null else null
+		if plant != null:
+			show_npc_popup(plant)
 			get_viewport().set_input_as_handled()
 			return
 		var npc := nearest_npc(world_position, 55.0)
@@ -214,6 +220,11 @@ func on_npc_action_requested(action_id: String) -> void:
 			hud.hide_popup()
 			game_window_manager.open_manufacturing(station_id)
 			hud.show_status("正在使用%s" % interaction_title)
+			return
+		if action_id == "harvest_garden" and active_npc is WorldGardenPlant and garden != null:
+			var plant_id: String = active_npc.plant_id
+			hud.hide_popup()
+			garden.harvest(plant_id)
 			return
 		var npc_id := String(active_npc.get("npc_id"))
 		var npc_definition: Variant = active_npc.get("npc_definition")

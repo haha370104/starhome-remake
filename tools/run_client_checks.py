@@ -13,6 +13,9 @@ ROOT = Path(__file__).resolve().parents[1]
 TESTS = (
     "client/gameplay/client_audio_controller_test.gd",
     "server/commerce/quest_abandon_test.gd",
+    "server/commerce/botanical_garden_test.gd",
+    "server/persistence/garden_authority_test.gd",
+    "ui/runtime/botanical_garden_scene_test.gd",
     "server/spatial/deterministic_spatial_grid_test.gd",
     "client/presentation/combat/monster_interpolation_test.gd",
     "client/presentation/combat/monster_spawn_budget_test.gd",

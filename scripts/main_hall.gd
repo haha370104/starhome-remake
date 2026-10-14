@@ -201,6 +201,10 @@ func _build_multiplayer_presentation() -> void:
 	_build_game_windows()
 	combat.bind_session(multiplayer_presenter, panel_session)
 	interactions.bind_player_windows(game_window_manager)
+	interactions.garden = BotanicalGardenController.new()
+	add_child(interactions.garden)
+	interactions.garden.configure(active_world_controller, world_view.sortable_world,
+		world_view.item_catalog, panel_session, map_travel, hud)
 	add_child(exit_controller)
 	exit_controller.configure(multiplayer_presenter, panel_session, combat, game_window_manager.navigation_windows["system"])
 	add_child(settings_controller)
