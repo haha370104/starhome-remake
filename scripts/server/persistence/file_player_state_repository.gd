@@ -259,6 +259,7 @@ func _decode_players(raw_players: Variant) -> DomainResult:
 ## [param players] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## 返回该函数计算、查询或操作得到的结果。
 func _encode_document(players: Dictionary) -> Dictionary:
+	var _timing := PerformanceTelemetry.measure(&"save_snapshot_encode")
 	var serialized: Dictionary = {}
 	for character_id: String in players:
 		serialized[character_id] = (players[character_id] as PlayerStateRecord).to_dictionary()

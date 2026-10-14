@@ -269,6 +269,7 @@ func _physics_process(delta: float) -> void:
 ## [param now_msec] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## 设计：该函数位于权威服务器边界，客户端不得覆盖其计算结果。
 func advance_simulation(elapsed_seconds: float, now_msec := -1) -> void:
+	var _timing := PerformanceTelemetry.measure(&"server_frame")
 	if sessions == null or elapsed_seconds <= 0.0:
 		return
 	_advance_food_status()
@@ -773,6 +774,7 @@ func _recover_destroyed_vehicle_to_base(entity_id: String, pending: Dictionary) 
 ## 返回该函数计算、查询或操作得到的结果。
 ## 设计：该函数位于权威服务器边界，客户端不得覆盖其计算结果。
 func snapshot_for_peer(peer_id: int) -> Dictionary:
+	var _timing := PerformanceTelemetry.measure(&"snapshot_build")
 	var session: ServerSession = sessions.session_for_peer(peer_id)
 	if session == null:
 		return {}
@@ -790,6 +792,7 @@ func snapshot_for_peer(peer_id: int) -> Dictionary:
 ## 返回包含同一事务 revision 的三面板权威快照或拒绝原因。
 ## 设计：角色身份只取自会话；变更由领域服务校验后一次性提交完整玩家聚合。
 func handle_peer_player_panel_command(peer_id: int, command: Dictionary) -> Dictionary:
+	var _timing := PerformanceTelemetry.measure(&"player_command")
 	if command.get("type") == "prepare_exit" and _exit_service != null:
 		var result := _exit_service.execute(peer_id, sessions.session_for_peer(peer_id), command)
 		return _success(result.value) if result.is_ok else _failure(result.error_code, result.error_message)
@@ -926,6 +929,7 @@ func _apply_quest_kill(event: Dictionary) -> void:
 ## [param progression_event] 含玩家实体、技能、来源及客观结算值的内部事件。
 ## 设计：普通进度写入三秒自动存档内存；技能升级立即落盘并同步综合等级。
 func _apply_skill_progression_event(progression_event: Dictionary) -> void:
+	var _timing := PerformanceTelemetry.measure(&"skill_settlement")
 	if autosave_service == null or player_panel_service == null:
 		return
 	var entity_id := String(progression_event.get("entity_id", ""))
@@ -961,6 +965,7 @@ func _apply_skill_progression_event(progression_event: Dictionary) -> void:
 ## 将地图到期的采矿周期原子地写入背包，再扣除矿源储量并发放采矿经验。
 ## [param instance] 调用方传入的 `instance` 参数。
 func _settle_mining_cycles(instance: AuthoritativeMapInstance) -> void:
+	var _timing := PerformanceTelemetry.measure(&"mining_settlement")
 	if instance == null or autosave_service == null or player_panel_service == null:
 		return
 	for cycle: Dictionary in instance.drain_mining_cycles():
@@ -1047,6 +1052,7 @@ func _refresh_achievement_combat(entity_id: String, state: PlayerStateRecord) ->
 ## 仅在装备刚损坏时重算装配，普通使用余量留在模拟对象中，避免逐帧重建聚合。
 ## [param instance] 已推进本刻战斗与采矿的地图。
 func _settle_equipment_conditions(instance: AuthoritativeMapInstance) -> void:
+	var _timing := PerformanceTelemetry.measure(&"equipment_settlement")
 	if autosave_service == null or player_panel_service == null or instance.combat_module == null:
 		return
 	for entity_id: String in instance.combat_module.actors:
@@ -1298,6 +1304,7 @@ func _on_transport_map_transition_intent(peer_id: int, intent: Dictionary) -> vo
 ## 发布 `emit_snapshot` 对应的模块状态。
 ## 设计：该函数位于权威服务器边界，客户端不得覆盖其计算结果。
 func _emit_snapshot() -> void:
+	var _timing := PerformanceTelemetry.measure(&"snapshot_publish")
 	emitted_snapshot_count += 1
 	for registered_instance: AuthoritativeMapInstance in map_registry.all_instances():
 		var snapshot := registered_instance.snapshot(
@@ -1533,6 +1540,7 @@ func _initial_skill_states() -> Dictionary:
 ## 从会话所属地图采集最新位置、朝向和战车资源到候选聚合。
 ## [param state] 自动存档服务持有的隔离聚合副本。
 func _capture_persistent_player_state(state: PlayerStateRecord):
+	var _timing := PerformanceTelemetry.measure(&"save_capture")
 	var session: ServerSession = sessions.session_for_entity(state.character_id)
 	if session == null:
 		return DomainResultScript.failure(

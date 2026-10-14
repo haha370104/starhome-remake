@@ -15,6 +15,7 @@ static func resolve(
 	current_position: Vector2,
 	requested_position: Vector2,
 ) -> Dictionary:
+	var _timing := PerformanceTelemetry.measure(&"monster_pathfinding")
 	if monster_id.is_empty() or navigation == null \
 		or not current_position.is_finite() or not requested_position.is_finite():
 		return {}

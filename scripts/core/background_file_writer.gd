@@ -125,6 +125,7 @@ func _run() -> void:
 ## [param job] 队列拥有的快照或JSONL批次。
 ## 返回实际文件操作结果。
 func _write_job(job: Dictionary) -> DomainResult:
+	var _timing := PerformanceTelemetry.measure(&"background_file_write")
 	if job.kind == "snapshot": return AtomicJsonFile.write_document(job.path, job.document)
 	var path: String = job.path
 	if not _files.has(path):

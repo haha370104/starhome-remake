@@ -6,6 +6,7 @@ extends RefCounted
 ## [param path] 调用方传入的 `path` 参数。
 ## 返回该函数计算、查询或操作得到的结果。
 static func load_texture(path: String) -> Texture2D:
+	var _timing := PerformanceTelemetry.measure(&"resource_texture_load")
 	if path.is_empty() or not FileAccess.file_exists(path):
 		return null
 	if ResourceLoader.exists(path):

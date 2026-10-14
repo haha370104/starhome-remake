@@ -20,6 +20,7 @@ func _init(catalog: ItemCatalog, rewards: RewardPipeline = null) -> void:
 ## 返回完成类型组装的 Player 或目录、槽位、布局错误。
 ## 设计：持久化记录只负责序列化；所有业务行为从此边界进入 Player 及其子对象。
 func to_domain(record: PlayerStateRecord) -> DomainResult:
+	var _timing := PerformanceTelemetry.measure(&"player_to_domain")
 	if record == null or _catalog == null:
 		return DomainResult.failure(&"player.mapping_unavailable", "player mapper is unavailable")
 	if not _reward_policy.is_ok:
@@ -141,6 +142,7 @@ func to_domain(record: PlayerStateRecord) -> DomainResult:
 ## [param player] 已完成领域操作的玩家聚合。
 ## 返回通过 PlayerStateRecord 校验的新记录。
 func to_record(player: Player) -> DomainResult:
+	var _timing := PerformanceTelemetry.measure(&"player_to_record")
 	if player == null:
 		return DomainResult.failure(&"player.mapping_unavailable", "player is missing")
 	var warehouse_result := PersonalWarehouseRecord.from_domain(player.warehouse)

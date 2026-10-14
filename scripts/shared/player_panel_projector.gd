@@ -22,6 +22,7 @@ func _init(catalog: ItemCatalog, skill_progression_config: Dictionary = {}) -> v
 ## 返回包含 transaction_revision 的完整面板 DTO。
 ## 设计：投影器只做格式转换，属性计算仍调用 Player 子对象的方法。
 func build_bundle(player: Player) -> Dictionary:
+	var _timing := PerformanceTelemetry.measure(&"player_projection")
 	return {
 		"transaction_revision": player.revision,
 		"wallet": {"amethyst": player.amethyst.balance()},

@@ -402,6 +402,7 @@ func handle_move_intent(entity_id: String, raw_intent: Variant) -> Dictionary:
 ## [param delta] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## 设计：该函数位于权威服务器边界，客户端不得覆盖其计算结果。
 func simulate(delta: float) -> void:
+	var _timing := PerformanceTelemetry.measure(&"map_simulation")
 	var entity_ids := entities.keys()
 	entity_ids.sort()
 	for entity_id: String in entity_ids:
@@ -467,6 +468,7 @@ func reject_mining_cycle(token: String) -> bool:
 
 ## 每分钟按地图策略补充怪物；死亡实例在补量时统一回收，不再逐只原地复活。
 func _replenish_monster_population_if_due() -> void:
+	var _timing := PerformanceTelemetry.measure(&"population_refresh")
 	if combat_module == null or _next_monster_replenishment_tick < 0 \
 		or combat_module.current_tick < _next_monster_replenishment_tick:
 		return
