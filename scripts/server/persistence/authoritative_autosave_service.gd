@@ -205,3 +205,17 @@ func update_equipment_conditions(character_id: String, conditions: Dictionary) -
 		return false
 	EquipmentConditionCapture.apply(current, conditions)
 	return true
+
+
+## 共同提交背包与地面变更，成功后才替换在线玩家副本。
+## [param candidate] 已校验的玩家候选。[param added] 新生成地面记录。
+## [param removed_id] 拾取的地面编号。
+## 返回共同提交后的玩家或错误；磁盘仍由低优先级检查点处理。
+func commit_ground_transfer(candidate: PlayerStateRecord, added: GroundItemRecord = null, removed_id: String = "") -> DomainResult:
+	var current: PlayerStateRecord = _states.get(candidate.character_id)
+	if current == null: return DomainResult.failure(&"persistence.autosave_character_unknown", "角色不在线")
+	var saved := _repository.save_ground_transfer(candidate, current.revision, added, removed_id)
+	if saved.is_ok:
+		_states[candidate.character_id] = saved.value
+		save_count += 1
+	return saved
