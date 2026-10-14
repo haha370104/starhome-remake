@@ -64,7 +64,6 @@ TRANSITION_RECOVERY_BRANCH = "NFT_BT"
 REQUIRED_SOURCE_FILES = (
     "background.png",
     "composite.png",
-    "minimap.jpg",
     "navigation_grid.bin",
     "map_metadata.json",
     "scene_objects.json",
@@ -167,12 +166,23 @@ def existing_definitions() -> tuple[
     return paths, legacy, presentation_ready
 
 
+def minimap_source(source: Path) -> Path:
+    """Accept the source-derived thumbnail when no separate minimap was supplied."""
+    for name in ("minimap.jpg", "thumbnail.jpg"):
+        candidate = source / name
+        if candidate.is_file():
+            return candidate
+    raise FileNotFoundError(f"map has neither minimap nor thumbnail: {source}")
+
+
 def discover_presentations() -> dict[str, Presentation]:
     """Index every complete parsed presentation by known registry resource ID."""
     result: dict[str, Presentation] = {}
     for metadata_path in sorted(PARSED_MAP_ROOT.rglob("map_metadata.json")):
         source = metadata_path.parent
         if not all((source / filename).is_file() for filename in REQUIRED_SOURCE_FILES):
+            continue
+        if not any((source / name).is_file() for name in ("minimap.jpg", "thumbnail.jpg")):
             continue
         relative = source.relative_to(PARSED_MAP_ROOT).as_posix()
         resource_id = "maps/" + relative
@@ -181,6 +191,7 @@ def discover_presentations() -> dict[str, Presentation]:
             for name in REQUIRED_SOURCE_FILES
             if name != "background.png"
         )
+        size += minimap_source(source).stat().st_size
         result[resource_id.lower()] = Presentation(resource_id, source, relative, size)
     return result
 
@@ -706,6 +717,7 @@ def build(arguments: argparse.Namespace) -> dict[str, Any]:
     pack_files = [index_pack]
     if arguments.index_only:
         pack_files.extend(sorted(PACK_ROOT.glob("glory_maps_[0-9][0-9][0-9]_v1.zip")))
+        pack_files.extend(sorted(PACK_ROOT.glob("glory_maps_recovered_*.zip")))
         if len(pack_files) == 1:
             raise FileNotFoundError("--index-only requires existing Glory presentation packs")
     else:
@@ -721,7 +733,7 @@ def build(arguments: argparse.Namespace) -> dict[str, Any]:
                     metadata = read_object(presentation.source / "map_metadata.json")
                     runtime_floor, runtime_floor_audit = build_runtime_floor(presentation)
                     add_bytes(archive, runtime_floor, root + "/floor.png")
-                    add_file(archive, presentation.source / "minimap.jpg", root + "/minimap.jpg")
+                    add_file(archive, minimap_source(presentation.source), root + "/minimap.jpg")
                     add_file(archive, presentation.source / "navigation_grid.bin", root + "/navigation_grid.bin")
                     add_json(
                         archive,

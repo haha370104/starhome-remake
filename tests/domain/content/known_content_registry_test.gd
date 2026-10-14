@@ -38,8 +38,8 @@ func _run() -> void:
 		"all 1012 recovered equipment rows",
 	)
 	_expect(
-		registry.summary_for(&"map").get("runtime_ready_source_keys") == 810,
-		"all 810 packaged map sources should be runtime-ready",
+		registry.summary_for(&"map").get("runtime_ready_source_keys") == 814,
+		"all 814 packaged map sources should be runtime-ready",
 	)
 	_expect(registry.summary_for(&"monster").get("runtime_ready_npc_rows") == 119, "all NPC rows should be runtime-ready")
 	_expect(

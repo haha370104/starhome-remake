@@ -11,8 +11,8 @@
       "definitions": 814,
       "worlds": 6,
       "resource_groups": 497,
-      "runtime_ready_source_keys": 810,
-      "presentation_ready_source_keys": 808
+      "runtime_ready_source_keys": 814,
+      "presentation_ready_source_keys": 812
     },
     "monster": {
       "definitions": 139,

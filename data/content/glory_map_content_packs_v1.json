@@ -100,16 +100,25 @@
       "content_groups": [
         "maps"
       ]
+    },
+    {
+      "pack_id": "glory_maps_recovered_20261014",
+      "path": "res://assets/content_packs/glory_maps_recovered_20261014.zip",
+      "size_bytes": 9040745,
+      "sha256": "274164ece174ba526899738a61f332ddb5d277202009fd8f5c68a08774342447",
+      "content_groups": [
+        "maps"
+      ]
     }
   ],
   "summary": {
     "schema_version": 1,
     "content_version": "glory-map-runtime-v1",
     "source_rows": 814,
-    "resolved_runtime_rows": 810,
-    "generated_definitions": 802,
+    "resolved_runtime_rows": 814,
+    "generated_definitions": 806,
     "existing_semantic_definitions": 8,
-    "unique_presentations": 486,
-    "unresolved_source_rows": 4
+    "unique_presentations": 489,
+    "unresolved_source_rows": 0
   }
 }
