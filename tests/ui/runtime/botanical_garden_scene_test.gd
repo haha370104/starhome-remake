@@ -48,6 +48,7 @@ func _run() -> void:
 		_fixture._state.position = navigation.closest_walkable_position(_fixture._state.position)
 	_check(active.commit_bundle(bundle, _fixture._state.position), "植物园提交")
 	_hall.map_travel.map_committed.emit()
+	_check(_hall.hud.system_message_feed.displayed_messages().is_empty(), "进入植物园不再弹出地图操作提示")
 	await process_frame
 	var garden: BotanicalGardenController = _hall.interactions.garden
 	_check(garden.plants.size() == 15, "15棵果实属于独立控制器")
@@ -70,8 +71,6 @@ func _run() -> void:
 	_hall.world_view.camera.position_smoothing_enabled = false
 	_hall.world_view.camera.reset_smoothing()
 	_hall.world_view.camera.force_update_scroll()
-	# 只在截图模式等待入图提示自然消退，避免提示文字盖住待检查果实。
-	if "--capture" in OS.get_cmdline_user_args(): await create_timer(2.6).timeout
 	var motion := InputEventMouseMotion.new()
 	motion.position = _hall.world_view.get_canvas_transform() * (fruit.position + fruit._offset)
 	motion.global_position = motion.position
@@ -111,11 +110,21 @@ func _run() -> void:
 	_check(fruit.status_label.text.contains("生长中") and float(fruit._material.get_shader_parameter("hover_amount")) == 0.0,
 		"采摘后名称标明生长中，隐藏果实不留高亮")
 	var old := _service.build_bundle(_fixture._state)
+	# 截图夹具可落在花坛内部的独立通行块；只选该起点确实可达的远处目标。
+	for candidate: BotanicalGardenCatalog.Plant in garden._rules.plants:
+		var current: Vector2 = _hall.local_player_controller.position()
+		var target: Vector2 = active.navigation.closest_reachable_position(current, candidate.position)
+		if current.distance_to(candidate.position) > garden._rules.interaction_radius \
+				and target.distance_to(candidate.position) <= garden._rules.interaction_radius:
+			garden.harvest(candidate.id)
+			break
+	_check(_hall.local_player_controller.has_active_route(), "切图前存在另一株植物的待采摘路线")
 	bundle = active.prepare_initial_bundle("res://data/maps/yian_harbor_hall_floor_1.json")
 	_check(active.commit_bundle(bundle, bundle.definition.spawn_by_id(bundle.definition.default_spawn_id).position), "返回大厅")
 	_hall.map_travel.map_committed.emit()
 	garden.apply_bundle(old)
 	_check(garden.plants.is_empty(), "切图清空并拒绝迟到回复")
+	_check(garden._pending_plant_id.is_empty(), "切图取消旧地图待采摘动作")
 	_check(active.navigation_points().all(func(point: MapNavigationPoint) -> bool: return point.category != "采摘"), "切图释放采摘导航点")
 	_hall.queue_free()
 	await process_frame

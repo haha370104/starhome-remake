@@ -3,6 +3,7 @@ extends SceneTree
 var _hall: Node2D
 var checks := 0
 var failures: Array[String] = []
+var harvest_commands: Array[Dictionary] = []
 
 
 ## 经真实进程内传输检查正常入口与采摘，不替换客户端命令分派器。
@@ -10,7 +11,7 @@ func _initialize() -> void:
 	call_deferred("_run")
 
 
-## 从城市入口进入植物园，通过地图导航靠近后采摘，并检查实际背包与冷却回包。
+## 从城市入口进入植物园，检查远距采摘、路线取消和实际背包与冷却回包。
 func _run() -> void:
 	_hall = load("res://scenes/main_hall.tscn").instantiate()
 	_hall.multiplayer_connect_automatically = false
@@ -38,7 +39,14 @@ func _run() -> void:
 		await _finish()
 		return
 	var garden: BotanicalGardenController = _hall.interactions.garden
+	_hall.panel_session.command_dispatched.connect(func(command: Dictionary) -> void:
+		if command.get("type") == "harvest_garden": harvest_commands.append(command))
 	_check(garden.plants.all(func(plant: WorldGardenPlant) -> bool: return plant._sprite.visible), "真实切图回包显示全部成熟果实")
+	for definition: BotanicalGardenCatalog.Plant in garden._rules.plants:
+		var approach: Vector2 = _hall.active_world_controller.navigation.closest_reachable_position(
+			_hall.local_player_controller.position(), definition.position)
+		_check(approach.is_finite() and approach.distance_to(definition.position) <= garden._rules.interaction_radius,
+			"真实入口可自动接近：" + definition.id)
 	var point: MapNavigationPoint = null
 	var plant: WorldGardenPlant = null
 	var nearest := INF
@@ -53,16 +61,36 @@ func _run() -> void:
 	if point == null:
 		await _finish()
 		return
+	_check(nearest > garden._rules.interaction_radius, "入口离目标超出采摘距离")
+	_hall.interactions.show_npc_popup(plant)
+	_hall.hud.npc_action_requested.emit("harvest_garden")
+	_check(_hall.local_player_controller.has_active_route() and harvest_commands.is_empty(),
+		"远处点击采摘先移动，不发送越界命令")
+	_hall.map_travel.stop_moving("取消采摘")
+	_check(garden._pending_plant_id.is_empty(), "无错误的主动停步也取消待采摘")
+	garden.harvest(plant.plant_id)
 	_hall.hud.map_navigation_requested.emit(point.destination, point.id)
 	if not await _wait_for(func() -> bool: return not _hall.local_player_controller.has_active_route(), 30.0):
 		await _finish()
 		return
 	_check(_hall.world_view.player.position.distance_to(plant.position) <= 150.0, "地图导航走到权威采摘距离内")
+	await create_timer(0.3).timeout
+	_check(harvest_commands.is_empty(), "改用地图导航取消采摘，即便后来抵达同一植物也不发奖")
+	nearest = INF
+	for candidate: WorldGardenPlant in garden.plants:
+		var distance: float = candidate.position.distance_to(_hall.world_view.player.position)
+		if distance > garden._rules.interaction_radius and distance < nearest:
+			nearest = distance
+			plant = candidate
 	var item_id := garden._rules.find(plant.plant_id).item_id
 	var before := _amount(item_id)
 	_hall.interactions.show_npc_popup(plant)
 	_hall.hud.npc_action_requested.emit("harvest_garden")
-	_check(await _wait_for(func() -> bool: return _amount(item_id) == before + 1, 3.0), "实际通信后果实入背包")
+	_check(_hall.local_player_controller.has_active_route(), "另一株远处植物启动自动采摘路线")
+	_check(await _wait_for(func() -> bool: return _amount(item_id) == before + 1, 30.0), "自动走近并经实际通信将果实入背包")
+	_check(harvest_commands.size() == 1, "到达后只发送一次采摘命令")
+	_check(_hall.local_player_controller.confirmed_position().distance_to(plant.position) <= 150.0,
+		"采摘前服务器位置已进入交互范围")
 	_check(not plant._sprite.visible and plant.status_label.text.contains("生长中"), "采摘回复同步隐藏果实和更新成熟状态")
 	garden.harvest(plant.plant_id)
 	await process_frame
