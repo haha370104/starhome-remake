@@ -40,6 +40,8 @@ const MapTransitionLandingResolverScript := preload(
 signal snapshot_generated(snapshot: Dictionary)
 signal command_rejected(peer_id: int, code: StringName)
 signal server_message_generated(peer_id: int, message: Dictionary)
+
+var _player_sync := PlayerSyncPublisher.new()
 signal peer_snapshot_generated(peer_id: int, snapshot: Dictionary)
 
 const TRANSPORT_SESSION_REQUEST := &"session_request"
@@ -334,6 +336,7 @@ func open_session(peer_id: int, request: Dictionary, now_msec := -1) -> Dictiona
 	if not version_result.is_ok:
 		return _failure(version_result.error_code, version_result.error_message)
 	var current_time := now_msec if now_msec >= 0 else Time.get_ticks_msec()
+	_player_sync.connect_peer(peer_id, int(request.get("player_change_version", 0)))
 	var reconnect_token := String(request.get("reconnect_token", ""))
 	if not reconnect_token.is_empty():
 		var reconnect_result := sessions.reconnect(peer_id, reconnect_token, current_time)
@@ -378,6 +381,7 @@ func open_session(peer_id: int, request: Dictionary, now_msec := -1) -> Dictiona
 ## 返回该函数计算、查询或操作得到的结果。
 ## 设计：该函数位于权威服务器边界，客户端不得覆盖其计算结果。
 func disconnect_session(peer_id: int, now_msec := -1) -> Dictionary:
+	_player_sync.disconnect_peer(peer_id)
 	var current_time := now_msec if now_msec >= 0 else Time.get_ticks_msec()
 	var session := sessions.session_for_peer(peer_id)
 	if _production_runtime != null and session != null:
@@ -806,6 +810,7 @@ func handle_peer_player_panel_command(peer_id: int, command: Dictionary) -> Dict
 	if current == null:
 		return _failure(&"panels.state_missing", "authoritative player state is not registered")
 	var command_type := String(command.get("type", ""))
+	if command_type == "query": _player_sync.require_full(peer_id)
 	if command_type == "query_scene_players":
 		return _success({"scene_players": ScenePlayerListProjector.build(
 			session.map_instance_id, sessions, autosave_service
@@ -1324,6 +1329,7 @@ func _emit_snapshot() -> void:
 ## [param message] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## 设计：该函数位于权威服务器边界，客户端不得覆盖其计算结果。
 func _send_reliable(peer_id: int, message: Dictionary) -> void:
+	message = _player_sync.encode(peer_id, message)
 	if peer_id > 0:
 		server_message_generated.emit(peer_id, message.duplicate(true))
 	if _network_started and peer_id > 0:
