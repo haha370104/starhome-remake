@@ -31,6 +31,8 @@ func bind_player_windows(manager: GameWindowManager) -> void:
 ## 将视口落点转换到地图坐标，交由服务器校验距离和所有权。
 ## [param id] 背包实例身份。[param point] 视口内松开位置。
 func _drop_inventory_at(id: String, point: Vector2) -> void:
+	if hud != null and hud.blocks_world_drop(point):
+		return
 	if combat.is_input_locked():
 		return
 	var position := world_view.get_canvas_transform().affine_inverse() * point

@@ -29,6 +29,7 @@ func _run() -> void:
 	await process_frame
 	await process_frame
 	_assert_1280_layout(hud)
+	_assert_world_drop_boundaries(hud)
 	_assert_state_updates(hud)
 	_assert_primary_devices(hud)
 	_assert_npc_popup(hud)
@@ -74,6 +75,19 @@ func _assert_1280_layout(hud: CanvasLayer) -> void:
 	var message_center: Vector2 = (hud.system_message_feed.get_child(0) as Label).get_global_rect().get_center()
 	_expect(message_center.is_equal_approx(Vector2(640, 360)),
 		"系统提示应以 1280×720 游戏画面的正中心为初始锚点")
+
+
+## 验证地面摆放不会穿透可操作 HUD，隐藏快捷栏不留下阻挡区域。
+## [param hud] 已完成布局的真实 HUD。
+func _assert_world_drop_boundaries(hud: CanvasLayer) -> void:
+	_expect(hud.blocks_world_drop(Vector2(1200, 40)), "小地图不能接收地面摆放")
+	_expect(hud.blocks_world_drop(Vector2(1010, 20)), "顶部按钮不能接收地面摆放")
+	_expect(hud.blocks_world_drop(Vector2(640, 700)), "底栏不能接收地面摆放")
+	_expect(hud.blocks_world_drop(Vector2(640, 670)), "展开快捷栏不能接收地面摆放")
+	_expect(not hud.blocks_world_drop(Vector2(800, 400)), "未遮挡世界允许地面摆放")
+	hud.state.set_shortcut_visible(false)
+	_expect(not hud.blocks_world_drop(Vector2(640, 670)), "隐藏快捷栏不拦截地面摆放")
+	hud.state.set_shortcut_visible(true)
 
 
 ## 执行 `assert_state_updates` 对应的模块操作。

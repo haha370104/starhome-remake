@@ -426,3 +426,12 @@ func select_action(action_id: String) -> void:
 ## [param points] 含当前 NPC 坐标和传送点入口的展示数据。
 func set_map_navigation_points(points: Array[MapNavigationPoint]) -> void:
 	map_navigation_panel.set_points(points)
+
+
+## 判断实际可见 HUD 控件是否覆盖放置点，避免把地图按钮和快捷栏视为地面。
+## [param viewport_point] 当前视口坐标。
+## 返回任一可操作 HUD 区域命中时为真；隐藏栏不阻挡。
+func blocks_world_drop(viewport_point: Vector2) -> bool:
+	for control: Control in [top_menu, minimap_dock, map_navigation_panel, shortcut_bar, bottom_main_bar, popup]:
+		if control != null and control.is_visible_in_tree() and control.get_global_rect().has_point(viewport_point): return true
+	return false
