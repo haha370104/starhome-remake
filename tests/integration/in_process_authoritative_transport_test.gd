@@ -6,6 +6,9 @@ const TransportScript := preload(
 const Protocol := preload("res://scripts/network/contracts/network_protocol.gd")
 const ServerConfigScript := preload("res://scripts/server/server_config.gd")
 
+var _sync := PlayerSyncStream.new()
+var _wire_deltas := 0
+
 var failures: PackedStringArray = []
 var assertions := 0
 var messages: Array[Dictionary] = []
@@ -28,7 +31,13 @@ func _run() -> void:
 	config.default_spawn = Vector2(480.0, 370.0)
 	_expect(transport.configure_server(config), "进程内传输应允许测试注入正式服务器配置")
 	transport.server_message_received.connect(
-		func(message: Dictionary) -> void: messages.append(message.duplicate(true))
+		func(message: Dictionary) -> void:
+			var restored := PlayerSyncMessages.transform(message, func(bundle: Dictionary) -> DomainResult:
+				if not bundle.has("player_change"): return DomainResult.ok(bundle)
+				if bundle.player_change.has("patch"): _wire_deltas += 1
+				return _sync.decode(bundle.player_change))
+			_expect(restored.is_ok, "正式可靠链路增量应连续且可还原")
+			if restored.is_ok: messages.append(restored.value.duplicate(true))
 	)
 	transport.world_snapshot_received.connect(
 		func(snapshot: Dictionary) -> void: snapshots.append(snapshot.duplicate(true))
@@ -40,6 +49,7 @@ func _run() -> void:
 	transport.request_session({
 		"protocol_version": Protocol.PROTOCOL_VERSION,
 		"content_version": Protocol.PUBLIC_CONTENT_VERSION,
+		"player_change_version": PlayerChange.VERSION,
 	})
 	await process_frame
 	await process_frame
@@ -92,6 +102,7 @@ func _run() -> void:
 			"正式传输拒绝旧任务版本，不能重复接取")
 
 	await _test_attachment_upgrade(transport, entity_id)
+	_expect(_wire_deltas > 0, "正式业务变更应使用协商的增量消息")
 	var spawn_value: Variant = joined["spawn_position"]
 	var spawn := Vector2(float(spawn_value["x"]), float(spawn_value["y"]))
 	transport.send_move_intent({

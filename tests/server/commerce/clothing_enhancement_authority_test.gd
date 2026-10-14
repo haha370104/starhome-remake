@@ -230,8 +230,8 @@ func _test_live_server() -> void:
 				Callable(server, "_capture_persistent_player_state"))
 			_expect(background.is_ok, "确认等待期间自动保存成功")
 		var before_action := server.autosave_service.state_for(session.entity_id)
-		_expect(before_action.revision == before_save.revision + 2
-			and before_action.inventory_revision == before_save.inventory_revision, "等待两轮自动保存未改变物品版本")
+		_expect(before_action.revision == before_save.revision
+			and before_action.inventory_revision == before_save.inventory_revision, "无变化的两轮检查点不推进仓储或物品版本")
 		result = server.handle_peer_player_panel_command(91, command)
 		_expect(result.ok, "两轮自动保存后无需手工刷新即可执行：" + action)
 		saved = server.autosave_service.state_for(session.entity_id)

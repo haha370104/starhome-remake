@@ -13,6 +13,8 @@ ROOT = Path(__file__).resolve().parents[1]
 TESTS = (
     "client/presentation/combat/presentation_pool_test.gd",
     "server/spatial/world_query_index_test.gd",
+    "server/player_panels/online_player_store_test.gd",
+    "network/contracts/player_change_test.gd",
     "core/resource_reuse_test.gd",
     "integration/recovered_map_additions_test.gd",
     "core/performance_telemetry_test.gd",

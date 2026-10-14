@@ -70,6 +70,8 @@ Assert-NoRuntimeLoadErrors $warningLog
 $testScripts = @(
     "res://tests/client/presentation/combat/presentation_pool_test.gd",
     "res://tests/server/spatial/world_query_index_test.gd",
+    "res://tests/server/player_panels/online_player_store_test.gd",
+    "res://tests/network/contracts/player_change_test.gd",
     "res://tests/core/resource_reuse_test.gd",
     "res://tests/integration/recovered_map_additions_test.gd",
     "res://tests/core/performance_telemetry_test.gd",

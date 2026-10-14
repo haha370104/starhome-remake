@@ -45,7 +45,7 @@ func set_shortcut_visible(value: bool) -> void:
 	changed.emit()
 
 
-## 应用通用文字配色，不处理物品品质等语义颜色。
+## 开关帧率读数并通知展示层，不控制游戏帧率上限。
 ## [param value] 是否显示低频更新的帧率读数。
 func set_show_fps(value: bool) -> void:
 	if show_fps == value: return
