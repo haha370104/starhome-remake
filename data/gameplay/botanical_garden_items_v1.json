@@ -1,0 +1,133 @@
+{
+  "schema_version": 1,
+  "definitions": [
+    {
+      "id": "item:material:c87ab4c9ebec",
+      "kind": "material",
+      "display_name": "小椰子",
+      "description": "原产于热带的一种坚果，果内的椰汁，清甜可口，是极好的清凉解渴饮品。",
+      "max_stack": 99,
+      "evidence_roles": [
+        {
+          "role": "local_crafting_material",
+          "source": "cltobj/stuffclt2.fcc:4844"
+        }
+      ],
+      "presentation": {},
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_file": "dzl/food/foodclient/food_stuffclient.fcc",
+        "source_line": 501,
+        "source_class": "FoodA_9",
+        "source_sha256": "473e30b933863b3ae88a31bda2f53850a5e0eb96c97c634339b6dea9b3b24074",
+        "status": "verified_client_definition",
+        "strings_file": "great/code_string.fcc",
+        "name_key": "String4128",
+        "description_key": "String4129",
+        "strings_sha256": "ee1e45643fcea0677099015b660e88713545dd5d94b5d016fd62ccad6f0a8a57"
+      },
+      "replaces_name_only": true,
+      "source_class": "小椰子"
+    },
+    {
+      "id": "item:material:2990ca709816",
+      "kind": "material",
+      "display_name": "生豆",
+      "description": "生豆,外表奇怪的果实，虽然不能直接食用，但是可以提炼出食用油。",
+      "max_stack": 99,
+      "evidence_roles": [
+        {
+          "role": "manufacturing_material",
+          "source": "expanded/zyf/maceine/abstractlist/abstractlist.txt.cab"
+        }
+      ],
+      "presentation": {},
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_file": "cltobj/stuffclt2.fcc",
+        "source_line": 26419,
+        "source_class": "生豆",
+        "source_sha256": "e15e9ee489043692618d3e8b6fd2b6cd8519de5205d12c7ee248e9aec021c7bb",
+        "status": "verified_client_definition"
+      },
+      "replaces_name_only": true,
+      "source_class": "生豆"
+    },
+    {
+      "id": "item:material:bf7cb63cd4fa",
+      "kind": "material",
+      "display_name": "植物棉",
+      "description": "一种专门提炼纤维纺织线的植物果实。",
+      "max_stack": 99,
+      "evidence_roles": [
+        {
+          "role": "manufacturing_material",
+          "source": "expanded/zyf/maceine/abstractlist/abstractlist.txt.cab"
+        }
+      ],
+      "presentation": {},
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_file": "cltobj/stuffclt2.fcc",
+        "source_line": 5,
+        "source_class": "植物棉",
+        "source_sha256": "e15e9ee489043692618d3e8b6fd2b6cd8519de5205d12c7ee248e9aec021c7bb",
+        "status": "verified_client_definition",
+        "strings_file": "great/code_string.fcc",
+        "name_key": "String4136",
+        "description_key": "String7277",
+        "strings_sha256": "ee1e45643fcea0677099015b660e88713545dd5d94b5d016fd62ccad6f0a8a57"
+      },
+      "replaces_name_only": true,
+      "source_class": "植物棉"
+    },
+    {
+      "id": "item:material:6116d8b965c6",
+      "kind": "material",
+      "display_name": "面瓜",
+      "description": "面瓜,一种新的植物品种，可以磨成面粉，要比普通植物产量高。",
+      "max_stack": 99,
+      "evidence_roles": [
+        {
+          "role": "manufacturing_material",
+          "source": "expanded/zyf/maceine/abstractlist/abstractlist.txt.cab"
+        }
+      ],
+      "presentation": {},
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_file": "cltobj/stuffclt2.fcc",
+        "source_line": 26405,
+        "source_class": "面瓜",
+        "source_sha256": "e15e9ee489043692618d3e8b6fd2b6cd8519de5205d12c7ee248e9aec021c7bb",
+        "status": "verified_client_definition"
+      },
+      "replaces_name_only": true,
+      "source_class": "面瓜"
+    },
+    {
+      "id": "item:material:212589b5bafd",
+      "kind": "material",
+      "display_name": "糖瓜",
+      "description": "从外型看很象香果，果肉能分泌象蜜一样甜的汁液。",
+      "max_stack": 99,
+      "evidence_roles": [
+        {
+          "role": "manufacturing_material",
+          "source": "expanded/zyf/maceine/abstractlist/abstractlist.txt.cab"
+        }
+      ],
+      "presentation": {},
+      "source_audit": {
+        "source_release": "starhome_lz_ry",
+        "source_file": "cltobj/stuffclt2.fcc",
+        "source_line": 26391,
+        "source_class": "糖瓜",
+        "source_sha256": "e15e9ee489043692618d3e8b6fd2b6cd8519de5205d12c7ee248e9aec021c7bb",
+        "status": "verified_client_definition"
+      },
+      "replaces_name_only": true,
+      "source_class": "糖瓜"
+    }
+  ]
+}

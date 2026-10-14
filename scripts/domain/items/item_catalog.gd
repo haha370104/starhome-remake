@@ -13,6 +13,7 @@ const GAMEPLAY_PATHS := [
 	"res://data/gameplay/material_items_v1.json",
 	"res://data/gameplay/official_rocket_items_v1.json",
 	"res://data/gameplay/glory/glory_items_v1.json",
+	"res://data/gameplay/botanical_garden_items_v1.json",
 	"res://data/gameplay/industrial_materials_v1.json",
 	"res://data/gameplay/commerce/attachment_upgrade_materials_v1.json",
 	"res://data/gameplay/original_drop_items_v1.json",

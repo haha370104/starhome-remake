@@ -6,9 +6,16 @@
       "inventory": {
         "native_size": [
           19,
-          19
+          20
         ],
-        "ale_reference": "pic3/stuff/CHN_2005_06_28_18_08_50_508.ale"
+        "ale_reference": "pic3/stuff/CHN_2005_06_28_18_08_50_508.ale",
+        "frame": 0,
+        "source_rect": [
+          9,
+          20,
+          19,
+          20
+        ]
       },
       "world": {
         "native_size": [
@@ -28,9 +35,16 @@
       "inventory": {
         "native_size": [
           18,
-          19
+          20
         ],
-        "ale_reference": "pic3/stuff/CHN_2005_06_28_18_08_04_500.ale"
+        "ale_reference": "pic3/stuff/CHN_2005_06_28_18_08_04_500.ale",
+        "frame": 0,
+        "source_rect": [
+          12,
+          86,
+          18,
+          20
+        ]
       },
       "world": {
         "native_size": [
@@ -50,9 +64,16 @@
       "inventory": {
         "native_size": [
           35,
-          30
+          31
         ],
-        "ale_reference": "pic3/stuff/CHN_2005_06_28_18_08_15_502.ale"
+        "ale_reference": "pic3/stuff/CHN_2005_06_28_18_08_15_502.ale",
+        "frame": 0,
+        "source_rect": [
+          0,
+          29,
+          35,
+          31
+        ]
       },
       "world": {
         "native_size": [
@@ -84,9 +105,16 @@
       "inventory": {
         "native_size": [
           28,
-          17
+          18
         ],
-        "ale_reference": "pic3/stuff/CHN_2005_06_28_18_08_27_504.ale"
+        "ale_reference": "pic3/stuff/CHN_2005_06_28_18_08_27_504.ale",
+        "frame": 0,
+        "source_rect": [
+          31,
+          50,
+          28,
+          18
+        ]
       },
       "world": {
         "native_size": [
@@ -118,9 +146,16 @@
       "inventory": {
         "native_size": [
           25,
-          25
+          26
         ],
-        "ale_reference": "pic3/stuff/CHN_2005_06_28_18_08_39_506.ale"
+        "ale_reference": "pic3/stuff/CHN_2005_06_28_18_08_39_506.ale",
+        "frame": 0,
+        "source_rect": [
+          5,
+          13,
+          25,
+          26
+        ]
       },
       "world": {
         "native_size": [
@@ -135,5 +170,11 @@
         "ale_reference": "map/mapimg/house/coffee01/CHN_2005_06_28_18_08_44_507.ale"
       }
     }
+  },
+  "source_audit": {
+    "source_release": "starhome_lz_ry",
+    "inventory_source": "pic3/stuff, frame 0 of each original ALE; existing glory_sprites_003_v1.zip",
+    "source_rect_basis": "Exact nonzero-alpha bounds within frame 0, measured from the existing runtime atlas; no pixels redrawn. World fruit frames retain their original bounds and offsets.",
+    "display_rule": "Fit cropped inventory image into the existing inventory cell; unchanged item identity, positions, stack limit and world presentation."
   }
 }
