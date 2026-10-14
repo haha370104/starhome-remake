@@ -9,6 +9,8 @@ var last_errors: Dictionary = {}
 var _repository: PlayerStateRepository
 var _elapsed_seconds := 0.0
 var _states: Dictionary = {}
+var _saved_facts: Dictionary = {}
+var _saved_warehouses: Dictionary = {}
 
 
 ## 配置权威服务器使用的仓储与自动存档间隔。
@@ -28,6 +30,8 @@ func configure(
 	save_count = 0
 	last_errors.clear()
 	_states.clear()
+	_saved_facts.clear()
+	_saved_warehouses.clear()
 	return DomainResult.ok(self)
 
 
@@ -39,13 +43,13 @@ func register_player(initial_state: PlayerStateRecord) -> DomainResult:
 		return DomainResult.failure(&"persistence.autosave_not_configured", "autosave service is not configured")
 	var loaded := _repository.load_player(initial_state.character_id)
 	if loaded.is_ok:
-		_states[initial_state.character_id] = loaded.value
+		_adopt_saved(loaded.value)
 		return DomainResult.ok((loaded.value as PlayerStateRecord).duplicate_record())
 	if loaded.error_code != &"persistence.character_not_found":
 		return loaded
 	var created := _repository.create_player(initial_state)
 	if created.is_ok:
-		_states[initial_state.character_id] = created.value
+		_adopt_saved(created.value)
 	return created
 
 
@@ -98,11 +102,15 @@ func save_player(character_id: String, state_collector: Callable) -> DomainResul
 		last_errors[character_id] = collected.error_code
 		return collected
 	var candidate: PlayerStateRecord = collected.value
+	if _states.get(character_id) != current:
+		return DomainResult.failure(&"persistence.revision_conflict", "采集期间角色已变化")
+	if candidate.to_dictionary(false) == _saved_facts.get(character_id) and candidate.warehouse == _saved_warehouses.get(character_id):
+		return DomainResult.ok(candidate)
 	var committed := _repository.save_player(candidate, current.revision)
 	if not committed.is_ok:
 		last_errors[character_id] = committed.error_code
 		return committed
-	_states[character_id] = committed.value
+	_adopt_saved(committed.value)
 	last_errors.erase(character_id)
 	save_count += 1
 	return DomainResult.ok((committed.value as PlayerStateRecord).duplicate_record())
@@ -119,12 +127,14 @@ func commit_player_state(character_id: String, candidate: PlayerStateRecord, dur
 			or candidate.character_id != character_id:
 		return DomainResult.failure(&"persistence.autosave_character_unknown", "autosave character is not registered")
 	var current: PlayerStateRecord = _states[character_id]
+	if candidate.revision != current.revision:
+		return DomainResult.failure(&"persistence.revision_conflict", "候选玩家版本已过期")
 	var committed := _repository.save_player_durable(candidate, current.revision) if durable \
 		else _repository.save_player(candidate, current.revision)
 	if not committed.is_ok:
 		last_errors[character_id] = committed.error_code
 		return committed
-	_states[character_id] = committed.value
+	_adopt_saved(committed.value)
 	last_errors.erase(character_id)
 	save_count += 1
 	return DomainResult.ok((committed.value as PlayerStateRecord).duplicate_record())
@@ -152,6 +162,8 @@ func update_runtime_state(character_id: String, candidate: PlayerStateRecord) ->
 ## [param character_id] 不再参与自动存档的角色标识。
 func unregister_player(character_id: String) -> void:
 	_states.erase(character_id)
+	_saved_facts.erase(character_id)
+	_saved_warehouses.erase(character_id)
 	last_errors.erase(character_id)
 
 
@@ -216,6 +228,14 @@ func commit_ground_transfer(candidate: PlayerStateRecord, added: GroundItemRecor
 	if current == null: return DomainResult.failure(&"persistence.autosave_character_unknown", "角色不在线")
 	var saved := _repository.save_ground_transfer(candidate, current.revision, added, removed_id)
 	if saved.is_ok:
-		_states[candidate.character_id] = saved.value
+		_adopt_saved(saved.value)
 		save_count += 1
 	return saved
+
+
+## 保存成功后记录独立比较基线，未变化角色不再制造新版本或重复入队。
+## [param state] 仓储已经原子接受的记录。
+func _adopt_saved(state: PlayerStateRecord) -> void:
+	_states[state.character_id] = state
+	_saved_facts[state.character_id] = state.to_dictionary(false)
+	_saved_warehouses[state.character_id] = state.warehouse

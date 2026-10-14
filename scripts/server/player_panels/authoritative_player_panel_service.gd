@@ -9,6 +9,7 @@ const PlayerPanelProjectorScript := preload(
 )
 
 var _catalog: ItemCatalog
+var _online: OnlinePlayerStore
 var _mapper: PlayerStateMapper
 var _projector: PlayerPanelProjector
 var _skill_progression_config: Dictionary = {}
@@ -34,6 +35,7 @@ func initialize(rewards: RewardPipeline = null) -> DomainResult:
 	if not policy.is_ok: return policy
 	_rewards = policy.value
 	_mapper = PlayerStateMapperScript.new(_catalog, _rewards)
+	_online = OnlinePlayerStore.new(_mapper)
 	_projector = PlayerPanelProjectorScript.new(_catalog, _skill_progression_config)
 	return DomainResult.ok(self)
 
@@ -46,7 +48,7 @@ func initialize(rewards: RewardPipeline = null) -> DomainResult:
 func execute(state: PlayerStateRecord, command: Dictionary) -> DomainResult:
 	if state == null or _mapper == null or _projector == null:
 		return DomainResult.failure(&"panels.service_unavailable", "player panel service is unavailable")
-	var mapped := _mapper.to_domain(state)
+	var mapped := _command_candidate(state, String(command.get("type", "")), command)
 	if not mapped.is_ok:
 		return mapped
 	var player: Player = mapped.value
@@ -57,7 +59,7 @@ func execute(state: PlayerStateRecord, command: Dictionary) -> DomainResult:
 		return operation
 	var candidate: PlayerStateRecord = state.duplicate_record()
 	if changed:
-		var persisted := _mapper.to_record(player)
+		var persisted := PlayerInventoryRecordWriter.capture(player, state) if String(command_type) in PlayerTransaction.INVENTORY_COMMANDS else _mapper.to_record(player)
 		if not persisted.is_ok:
 			return persisted
 		candidate = persisted.value
@@ -74,7 +76,7 @@ func execute(state: PlayerStateRecord, command: Dictionary) -> DomainResult:
 func build_bundle(state: PlayerStateRecord) -> Dictionary:
 	if state == null or _mapper == null or _projector == null:
 		return {}
-	var mapped := _mapper.to_domain(state)
+	var mapped := _online.observe(state)
 	if not mapped.is_ok:
 		push_error("Player panel projection failed: %s" % mapped.error_message)
 		return {}
@@ -113,7 +115,7 @@ func restore_player(state: PlayerStateRecord) -> DomainResult:
 func grant_loot(state: PlayerStateRecord, loot: Dictionary, achievement_event: AchievementEvent = null) -> DomainResult:
 	if state == null or _mapper == null or _catalog == null or _projector == null:
 		return DomainResult.failure(&"loot.service_unavailable", "loot service is unavailable")
-	var mapped := _mapper.to_domain(state)
+	var mapped := _command_candidate(state, "grant_loot", loot)
 	if not mapped.is_ok:
 		return mapped
 	var loot_id := String(loot.get("loot_id", ""))
@@ -141,7 +143,7 @@ func grant_loot(state: PlayerStateRecord, loot: Dictionary, achievement_event: A
 			or achievement_event.event_id != loot_id:
 			return DomainResult.failure(&"achievements.invalid_event", "mining achievement must match the settled reward")
 		player.record_achievement(achievement_event)
-	var persisted := _mapper.to_record(player)
+	var persisted := PlayerInventoryRecordWriter.capture(player, state)
 	if not persisted.is_ok:
 		return persisted
 	return DomainResult.ok({
@@ -335,3 +337,31 @@ func _position_from_command(command: Dictionary) -> DomainResult:
 ## 返回已初始化目录，调用方不得修改目录定义。
 func item_catalog() -> ItemCatalog:
 	return _catalog
+
+
+## 为明确的背包写集合提供局部隔离，跨组件命令仍保持完整候选事务。
+## [param state] 当前权威记录。[param command_type] 已知领域命令。
+## [param details] 内部用例参数，用于确定物品写集合。
+## 返回隔离写入候选；查询返回只读在线聚合。
+func _command_candidate(state: PlayerStateRecord, command_type: String, details: Dictionary = {}) -> DomainResult:
+	if command_type != "query" and command_type != "grant_loot" and command_type not in PlayerTransaction.INVENTORY_COMMANDS:
+		return _mapper.to_domain(state)
+	var observed := _online.observe(state)
+	if not observed.is_ok or command_type == "query": return observed
+	var write_ids := PackedStringArray()
+	if command_type != "arrange_inventory":
+		var player: Player = observed.value
+		var selected := player.inventory.find(String(details.get("instance_id", "")))
+		var definition := ItemDefinitionAliases.canonical(String(details.get("item_definition_id", "")))
+		if command_type == "merge_inventory_item" and selected != null: definition = selected.definition_id
+		# 无匹配目标时用不可用身份表示空写集合，领域方法仍负责返回正式错误。
+		write_ids.append("__no_matching_item__")
+		for item: GameItem in player.inventory.items():
+			if item == selected or (not definition.is_empty() and item.definition_id == definition): write_ids.append(item.instance_id)
+	return PlayerTransaction.inventory_candidate(observed.value, _catalog, write_ids)
+
+
+## 在会话回收时释放在线领域投影。
+## [param character_id] 已退出或超出重连期限的角色。
+func forget_player(character_id: String) -> void:
+	if _online != null: _online.forget(character_id)

@@ -315,6 +315,7 @@ func advance_simulation(elapsed_seconds: float, now_msec := -1) -> void:
 					Callable(self, "_capture_persistent_player_state"),
 				)
 	for entity_id in sessions.cleanup_expired(cleanup_time):
+		if player_panel_service != null: player_panel_service.forget_player(entity_id)
 		if autosave_service != null:
 			autosave_service.unregister_player(entity_id)
 		_remove_entity_from_registered_map(entity_id)
@@ -1730,6 +1731,8 @@ func _release_exited_player(session: ServerSession, committed: PlayerStateRecord
 	_remove_entity_from_registered_map(session.entity_id)
 	sessions.close(session.peer_id)
 	autosave_service.unregister_player(session.entity_id)
+	if player_panel_service != null: player_panel_service.forget_player(session.entity_id)
+	_player_sync.disconnect_peer(session.peer_id)
 
 
 ## 在服务器节点退出场景树前执行最后一次权威存档。

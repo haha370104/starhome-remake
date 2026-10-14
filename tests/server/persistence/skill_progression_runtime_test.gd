@@ -7,11 +7,11 @@ class CountingMapper extends PlayerStateMapper:
 	func _init(catalog: ItemCatalog, rewards: RewardPipeline) -> void:
 		super(catalog, rewards)
 	## 监测实际映射调用，不改变还原行为。
-	## [param record] 完整记录。
+	## [param record] 完整记录。[param previous] 上次在线聚合。[param facts] 上次字段快照。
 	## 返回实际还原结果。
-	func to_domain(record: PlayerStateRecord) -> DomainResult:
+	func restore_reusing(record: PlayerStateRecord, previous: Player = null, facts: Dictionary = {}) -> DomainResult:
 		calls += 1
-		return super(record)
+		return super(record, previous, facts)
 
 class CountingRecord extends PlayerStateRecord:
 	var serializations := 0
@@ -53,6 +53,7 @@ func _run() -> void:
 	var autosave := server.autosave_service
 	var mapper := CountingMapper.new(service._catalog, server.reward_service.pipeline)
 	service._mapper = mapper
+	service._online = OnlinePlayerStore.new(mapper)
 	server.server_message_generated.connect(func(_peer: int, message: Dictionary) -> void: messages.append(message))
 	var state := autosave.state_for(entity_id)
 	state.character_skills.driving = {"level":1000,"current_exp":0,"fractional_exp":0.0}

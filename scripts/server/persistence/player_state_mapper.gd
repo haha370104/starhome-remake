@@ -15,11 +15,17 @@ func _init(catalog: ItemCatalog, rewards: RewardPipeline = null) -> void:
 	_reward_policy = DomainResult.ok(rewards) if rewards != null else RewardPolicyLoader.load_default()
 
 
-## 将权威持久化记录还原为充血 Player 聚合。
-## [param record] 已通过持久化格式校验的记录。
-## 返回完成类型组装的 Player 或目录、槽位、布局错误。
-## 设计：持久化记录只负责序列化；所有业务行为从此边界进入 Player 及其子对象。
+## 将权威记录恢复为独立可写聚合，保留服务与测试的完整映射契约。
+## [param record] 已校验的持久化记录。
+## 返回充血玩家或恢复错误。
 func to_domain(record: PlayerStateRecord) -> DomainResult:
+	return restore_reusing(record)
+
+
+## 在只读在线投影中复用未变化的物品与装备，写事务必须先隔离写集合。
+## [param record] 当前权威记录。[param previous] 旧在线聚合。[param facts] 旧字段快照。
+## 返回完成组装的候选聚合，不修改旧聚合。
+func restore_reusing(record: PlayerStateRecord, previous: Player = null, facts: Dictionary = {}) -> DomainResult:
 	var _timing := PerformanceTelemetry.measure(&"player_to_domain")
 	if record == null or _catalog == null:
 		return DomainResult.failure(&"player.mapping_unavailable", "player mapper is unavailable")
@@ -72,67 +78,83 @@ func to_domain(record: PlayerStateRecord) -> DomainResult:
 	})
 	player.vehicle.central_rules = _catalog.central_rules
 	player.reward_pipeline = _reward_policy.value
-	var inventory_items: Array[GameItem] = []
-	for stack in record.inventory_stacks:
-		var created := _catalog.create(stack.item_definition_id, stack.item_state())
-		if not created.is_ok:
-			return created
-		inventory_items.append(created.value)
-	var inventory_result := player.inventory.restore_items(inventory_items)
-	if not inventory_result.is_ok:
-		return inventory_result
+	var raw := record.to_dictionary(false) if previous != null else {}
+	if previous != null and raw.get("achievements") == facts.get("achievements"):
+		player.achievements = previous.achievements
+		player.vehicle.achievement_bonuses = previous.vehicle.achievement_bonuses
+	if previous != null and raw.get("character_skills") == facts.get("character_skills"):
+		player.skills = previous.skills
+	if previous != null and raw.get("inventory_stacks") == facts.get("inventory_stacks") \
+			and record.inventory_revision == previous.inventory.revision and record.currency == previous.inventory.currency \
+			and record.inventory_capacity == previous.inventory.capacity:
+		player.inventory = previous.inventory
+	else:
+		var inventory_items: Array[GameItem] = []
+		for stack in record.inventory_stacks:
+			var created := _catalog.create(stack.item_definition_id, stack.item_state())
+			if not created.is_ok:
+				return created
+			inventory_items.append(created.value)
+		var inventory_result := player.inventory.restore_items(inventory_items)
+		if not inventory_result.is_ok:
+			return inventory_result
 	var warehouse_result := record.warehouse.to_domain(_catalog)
 	if not warehouse_result.is_ok: return warehouse_result
 	player.warehouse = warehouse_result.value
 	player.production = record.production.duplicate_queue()
 	player.vehicle_presets = VehicleLoadoutPresets.restore(record.vehicle_presets.to_dictionary()).value
-	for slot in record.equipment_slots:
-		var created := _catalog.create(slot.item_definition_id, {
-			"instance_id": slot.item_instance_id,
-			"equipped_character_slot": slot.slot_id if slot.owner_kind == "character" else "",
-			"quantity": 1,
-			"max_durability": slot.max_durability,
-			"durability": slot.durability,
-			"upgrade_level": slot.upgrade_level,
-			"enhancement": slot.enhancement.to_dictionary(),
-			"clothing_improvement": slot.clothing_improvement.to_dictionary(),
-			"vehicle_sockets": slot.vehicle_sockets.to_dictionary(),
-			"crystal_source": slot.crystal_source.to_dictionary(),
-			"austin_glens": slot.austin_glens.to_dictionary(),
-			"central_growth": slot.central_growth.to_dictionary(),
-			"sama": slot.sama.to_dictionary(),
-			"processing": slot.processing.to_dictionary(),
-			"extra_attributes": slot.extra_attributes.to_dictionary(),
-			"strengthening": slot.strengthening.to_dictionary(),
-			"equipment_quality": slot.equipment_quality.to_dictionary(),
-			"forging": slot.forging.to_dictionary(),
-			"usage": slot.usage.to_dictionary(),
-			"magazine": slot.magazine.to_dictionary(),
-			"locked": slot.locked,
-			"bound": slot.bound,
-			"equipment_location": slot.slot_location,
-			"footprint_px": [45, 45],
-		})
-		if not created.is_ok:
-			return created
-		if slot.owner_kind == "character":
-			if not created.value is Clothing \
-				or (created.value as Clothing).character_slot != slot.slot_id:
-				return DomainResult.failure(&"player.invalid_character_equipment", "persisted clothing slot does not match definition")
-			var restored_clothing := player.character_equipment.restore(created.value)
-			if not restored_clothing.is_ok:
-				return restored_clothing
-		else:
-			if created.value is VehicleEquipment and created.value.attachment_family == "new_joint" and slot.slot_location in [16, 17]:
-				created.value.equipment_location = 32 if slot.slot_location == 16 else 33
-			elif not created.value is VehicleEquipment \
-				or not (created.value as VehicleEquipment).accepts_location(slot.slot_location):
-				return DomainResult.failure(&"player.invalid_vehicle_equipment", "persisted vehicle location does not match definition")
-			if created.value.central_profile != null and not player.central.evolved:
-				return DomainResult.failure(&"central.equipment_locked", "未进化的存档不能装配圣焱装备")
-			var restored_vehicle := player.vehicle.loadout.restore(created.value)
-			if not restored_vehicle.is_ok:
-				return restored_vehicle
+	if previous != null and raw.get("equipment_slots") == facts.get("equipment_slots") \
+			and record.vehicle_loadout_revision == previous.vehicle.loadout.revision:
+		player.character_equipment = previous.character_equipment
+		player.vehicle.loadout = previous.vehicle.loadout
+	else:
+		for slot in record.equipment_slots:
+			var created := _catalog.create(slot.item_definition_id, {
+				"instance_id": slot.item_instance_id,
+				"equipped_character_slot": slot.slot_id if slot.owner_kind == "character" else "",
+				"quantity": 1,
+				"max_durability": slot.max_durability,
+				"durability": slot.durability,
+				"upgrade_level": slot.upgrade_level,
+				"enhancement": slot.enhancement.to_dictionary(),
+				"clothing_improvement": slot.clothing_improvement.to_dictionary(),
+				"vehicle_sockets": slot.vehicle_sockets.to_dictionary(),
+				"crystal_source": slot.crystal_source.to_dictionary(),
+				"austin_glens": slot.austin_glens.to_dictionary(),
+				"central_growth": slot.central_growth.to_dictionary(),
+				"sama": slot.sama.to_dictionary(),
+				"processing": slot.processing.to_dictionary(),
+				"extra_attributes": slot.extra_attributes.to_dictionary(),
+				"strengthening": slot.strengthening.to_dictionary(),
+				"equipment_quality": slot.equipment_quality.to_dictionary(),
+				"forging": slot.forging.to_dictionary(),
+				"usage": slot.usage.to_dictionary(),
+				"magazine": slot.magazine.to_dictionary(),
+				"locked": slot.locked,
+				"bound": slot.bound,
+				"equipment_location": slot.slot_location,
+				"footprint_px": [45, 45],
+			})
+			if not created.is_ok:
+				return created
+			if slot.owner_kind == "character":
+				if not created.value is Clothing \
+					or (created.value as Clothing).character_slot != slot.slot_id:
+					return DomainResult.failure(&"player.invalid_character_equipment", "persisted clothing slot does not match definition")
+				var restored_clothing := player.character_equipment.restore(created.value)
+				if not restored_clothing.is_ok:
+					return restored_clothing
+			else:
+				if created.value is VehicleEquipment and created.value.attachment_family == "new_joint" and slot.slot_location in [16, 17]:
+					created.value.equipment_location = 32 if slot.slot_location == 16 else 33
+				elif not created.value is VehicleEquipment \
+					or not (created.value as VehicleEquipment).accepts_location(slot.slot_location):
+					return DomainResult.failure(&"player.invalid_vehicle_equipment", "persisted vehicle location does not match definition")
+				if created.value.central_profile != null and not player.central.evolved:
+					return DomainResult.failure(&"central.equipment_locked", "未进化的存档不能装配圣焱装备")
+				var restored_vehicle := player.vehicle.loadout.restore(created.value)
+				if not restored_vehicle.is_ok:
+					return restored_vehicle
 	player.refresh_clothing_bonuses()
 	player.vehicle.reconcile_loadout_state(record.food_status.is_empty())
 	return DomainResult.ok(player)

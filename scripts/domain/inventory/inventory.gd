@@ -441,5 +441,5 @@ func _apply_layouts(layouts: Array) -> void:
 	for layout: Dictionary in layouts:
 		by_id[String(layout.get("instance_id", ""))] = layout
 	for item: GameItem in _items:
-		if by_id.has(item.instance_id):
+		if by_id.has(item.instance_id) and item.to_layout_dictionary() != by_id[item.instance_id]:
 			item.apply_layout(by_id[item.instance_id])

@@ -4,6 +4,7 @@ extends RefCounted
 var _catalog: AchievementCatalog
 var _counters: Dictionary = {}
 var _receipts: Dictionary = {}
+var _cached_points := -1
 
 
 ## 还原玩家成就账本；积分和最高称号由进度派生，绝不信任存档中的奖励字段。
@@ -48,16 +49,19 @@ func record(event: AchievementEvent) -> bool:
 		return false
 	_counters[key] = mini(cap, previous + event.quantity)
 	_receipts[receipt] = true
+	_cached_points = -1
 	return true
 
 
 ## 根据已完成的阶梯成就汇总积分，每个阶梯只计算一次。
 ## 返回总成就点。
 func total_points() -> int:
+	if _cached_points >= 0: return _cached_points
 	var result := 0
 	for row: AchievementCatalog.Definition in _catalog.definitions:
 		if int(_counters.get("%s:%s" % [row.category, row.target_id], 0)) >= row.required:
 			result += row.points
+	_cached_points = result
 	return result
 
 

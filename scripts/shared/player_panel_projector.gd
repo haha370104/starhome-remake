@@ -6,6 +6,7 @@ const InventoryLayoutScript := preload("res://scripts/domain/inventory/inventory
 var _catalog: ItemCatalog
 var _skill_progression_config: Dictionary
 var _quest_catalog := RepeatableQuestCatalog.new()
+var _journal_cache: Dictionary = {}
 
 
 ## 初始化领域玩家到网络面板 DTO 的投影器。
@@ -42,6 +43,14 @@ func build_bundle(player: Player) -> Dictionary:
 ## [param player] 权威玩家聚合；只查询，不接取或交付任务。
 ## 返回已接取或曾完成的任务列表，未登记分类保持空白。
 func _journal_snapshot(player: Player) -> Array[Dictionary]:
+	var quantities: Dictionary = {}
+	for item: GameItem in player.inventory.items():
+		quantities[item.definition_id] = int(quantities.get(item.definition_id, 0)) + item.quantity
+	var facts := {"quests": player.quest_states.duplicate(true),
+		"inventory": quantities, "skills": player.skills.to_dictionary(),
+		"level": player.level, "day": _quest_catalog.day_key(int(Time.get_unix_time_from_system()))}
+	var cached: Dictionary = _journal_cache.get(player.entity_id, {})
+	if cached.get("facts") == facts: return cached.entries.duplicate(true)
 	var entries: Array[Dictionary] = []
 	for task_id: String in _quest_catalog.definitions:
 		var state: Dictionary = player.quest_states.get(task_id, {})
@@ -51,6 +60,10 @@ func _journal_snapshot(player: Player) -> Array[Dictionary]:
 			_quest_catalog.day_key(int(Time.get_unix_time_from_system())))
 		entry["category"] = 0
 		entries.append(entry)
+	# 有界缓存避免离线角色无限积累；逐角色事实包含跨日和同版本经验变化。
+	if not _journal_cache.has(player.entity_id) and _journal_cache.size() >= 32:
+		_journal_cache.erase(_journal_cache.keys()[0])
+	_journal_cache[player.entity_id] = {"facts": facts, "entries": entries.duplicate(true)}
 	return entries
 
 
