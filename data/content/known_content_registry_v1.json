@@ -23,12 +23,12 @@
       "npc_rows_with_source_presentation": 119
     },
     "item": {
-      "definitions": 1396,
+      "definitions": 1798,
       "equipment_rows": 1012,
       "material_names": 258,
       "local_crafting_products": 123,
-      "runtime_item_ids": 1284,
-      "runtime_item_ids_covered": 1284
+      "runtime_item_ids": 1686,
+      "runtime_item_ids_covered": 1686
     }
   },
   "semantics": {

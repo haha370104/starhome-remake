@@ -8,6 +8,7 @@ never promoted to runnable content merely because a source row exists.
 
 from __future__ import annotations
 
+import argparse
 import hashlib
 import json
 import re
@@ -57,12 +58,10 @@ RUNTIME_MAPS = {
     ("g08", "NFT_BT"): ("g08_field_zone", "partial"),
 }
 
-RUNTIME_ITEM_FILES = [
-    PROJECT_ROOT / "data" / "gameplay" / "stage3" / "starter_loadout_v1.json",
-    PROJECT_ROOT / "data" / "gameplay" / "character_items_v1.json",
-    PROJECT_ROOT / "data" / "gameplay" / "material_items_v1.json",
-    PROJECT_ROOT / "data" / "gameplay" / "glory" / "glory_items_v1.json",
-]
+# 与运行时权威目录保持同一输入顺序；新增复刻定义不会被漏出审计登记。
+ITEM_CATALOG_SOURCE = PROJECT_ROOT / "scripts/domain/items/item_catalog.gd"
+_GAMEPLAY_PATH_BLOCK = ITEM_CATALOG_SOURCE.read_text(encoding="utf-8").split("const GAMEPLAY_PATHS := [", 1)[1].split("]", 1)[0]
+RUNTIME_ITEM_FILES = [PROJECT_ROOT / path for path in re.findall(r'"res://([^"]+)"', _GAMEPLAY_PATH_BLOCK)]
 
 
 def read_json(path: Path) -> Any:
@@ -562,6 +561,22 @@ def ensure_unique(definitions: list[dict[str, Any]], context: str) -> None:
 
 
 def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--items-only", action="store_true", help="Update item coverage without replacing independently audited map/monster registrations")
+    args = parser.parse_args()
+    if args.items_only:
+        items, summary = build_items()
+        ensure_unique(items, "item")
+        existing = read_json(ITEM_TARGET)
+        # 保留原始来源证据，补充每个运行时输入的哈希供再次生成核对。
+        source = existing.get("source_audit", existing.get("sources", {}))
+        source["runtime_inputs"] = {p.relative_to(PROJECT_ROOT).as_posix(): sha256(p) for p in RUNTIME_ITEM_FILES}
+        compact_document(ITEM_TARGET, "item", items, summary, source, one_line=True)
+        manifest = read_json(MANIFEST_TARGET)
+        manifest["expected_counts"]["item"] = summary
+        MANIFEST_TARGET.write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        print(json.dumps(summary, ensure_ascii=False))
+        return 0
     source_paths = [
         MAP_SOURCE, MONSTER_SOURCE, MONSTER_MAP_SOURCE, EQUIPMENT_SOURCE,
         MANUFACTURING_SOURCE, LOCAL_CRAFT_SOURCE, ORE_SOURCE, *RUNTIME_ITEM_FILES,
