@@ -287,6 +287,7 @@ func _apply_player(player: Player, force := false) -> void:
 	var change: PlayerPanelChange = panel_session.current_player.last_change
 	if force or change.character_changed: character_panel.apply_snapshot(bundle["character"])
 	if force or change.inventory_changed: inventory_panel.apply_inventory(player.inventory)
+	if force or change.inventory_changed: weapon_merchant_window.apply_inventory_state(player.inventory)
 	if force or change.food_changed: inventory_panel.apply_food_status(player.food_status)
 	character_panel.set_inventory_revision(int(bundle["inventory"].get("revision", -1)))
 	vehicle_panel.set_inventory_revision(int(bundle["inventory"].get("revision", -1)))
