@@ -32,6 +32,9 @@ var _sama_effects: SamaEffectController
 var _hovered_entity_id := ""
 var _ale_repository: RefCounted
 var _glory_presentations: RefCounted
+var _resource_queue: SpriteResourceQueue
+var _view_pool := MonsterViewPool.new()
+var _damage_pool: DamageFloatPool
 
 
 ## 执行 `configure` 对应的模块操作。
@@ -42,7 +45,12 @@ var _glory_presentations: RefCounted
 func configure(world_parent: Node2D, manifest: Dictionary, local_player: Node2D) -> Error:
 	if world_parent == null or manifest.is_empty() or local_player == null:
 		return ERR_INVALID_PARAMETER
+	_resource_queue = SpriteResourceQueue.new()
+	add_child(_resource_queue)
 	_world_parent = world_parent
+	_damage_pool = DamageFloatPool.new()
+	add_child(_damage_pool)
+	_damage_pool.configure(world_parent)
 	_manifest = manifest.duplicate(true)
 	_local_player = local_player
 	var mount_result := RuntimeContentBootstrapScript.mount_default()
@@ -124,7 +132,7 @@ func apply_snapshot(combat_snapshot: Dictionary) -> void:
 		if entity_id == _hovered_entity_id:
 			_hovered_entity_id = ""
 		_position_interpolator.remove_entity(StringName(entity_id))
-		stale.queue_free()
+		_view_pool.recycle(stale)
 		_views.erase(entity_id)
 	_materialize_pending_monsters(MONSTER_VIEW_CREATION_BUDGET)
 	_apply_recent_events(combat_snapshot)
@@ -193,6 +201,8 @@ func clear() -> void:
 	_set_hovered_entity("")
 	for view: MonsterWorldView in _views.values():
 		view.queue_free()
+	_view_pool.clear()
+	if _damage_pool != null: _damage_pool.clear()
 	_views.clear()
 	_pending_monsters.clear()
 	_position_interpolator.reset()
@@ -263,10 +273,9 @@ func _present_damage(event: Dictionary, combat_snapshot: Dictionary) -> void:
 	var world_position := _damage_world_position(event, combat_snapshot)
 	if not is_finite(world_position.x) or not is_finite(world_position.y):
 		return
-	var damage_float: Node2D = CombatDamageFloatScript.new()
+	var damage_float := _damage_pool.take()
 	damage_float.name = "DamageFloat_%d" % int(event.get("event_id", 0))
 	damage_float.position = world_position
-	_world_parent.add_child(damage_float)
 	if String(event.get("event_type", "")) == "sama_fission_hit":
 		damage_float.present_status("核变爆炸 -%d" % damage, Color("ffa86c"))
 	elif String(event.get("event_type", "")) == "central_fatal_hit":
@@ -287,9 +296,8 @@ func _present_austin_effects(event: Dictionary, snapshot: Dictionary) -> void:
 	for effect: Variant in effects:
 		if not effect is Dictionary or effect.get("kind") not in ["mitigation", "healing"] or int(effect.get("amount", 0)) <= 0: continue
 		var healing: bool = effect.kind == "healing"
-		var view := CombatDamageFloat.new()
+		var view := _damage_pool.take()
 		view.position = world_position + Vector2(0, -24 * index)
-		_world_parent.add_child(view)
 		view.present_status("进化 +%d" % int(effect.amount) if healing else "光辉 减伤%d" % int(effect.amount), Color(0.4, 1, 0.6) if healing else Color(0.5, 0.9, 1))
 		index += 1
 
@@ -408,20 +416,25 @@ func _materialize_pending_monsters(max_count: int) -> void:
 		if monster.is_empty() or _views.has(entity_id):
 			_pending_monsters.erase(entity_id)
 			continue
-		materialized_count += 1
-		_creation_attempts += 1
-		var view := MonsterWorldViewScript.new()
-		view.name = "Monster_%s" % entity_id.replace(".", "_")
-		_world_parent.add_child(view)
+		var actor := String(monster["combat_actor_id"])
 		var glory_presentation: Dictionary = {}
 		if _glory_presentations != null:
-			glory_presentation = _glory_presentations.definition_for_actor(
-				String(monster["combat_actor_id"])
-			)
-		if view.configure(_manifest, monster, _ale_repository, glory_presentation) != OK:
-			view.queue_free()
-			_pending_monsters.erase(entity_id)
+			glory_presentation = _glory_presentations.definition_for_actor(actor)
+		if not _manifest.get("actors", {}).has(actor) and not _prepare_actor_pages(glory_presentation):
 			continue
+		materialized_count += 1
+		_creation_attempts += 1
+		var view := _view_pool.take(actor)
+		if view != null:
+			view.reuse(monster)
+		else:
+			view = MonsterWorldViewScript.new()
+			_world_parent.add_child(view)
+			if view.configure(_manifest, monster, _ale_repository, glory_presentation) != OK:
+				view.queue_free()
+				_pending_monsters.erase(entity_id)
+				continue
+		view.name = "Monster_%s" % entity_id.replace(".", "_")
 		view.set_process(false)
 		_views[entity_id] = view
 		_pending_monsters.erase(entity_id)
@@ -455,3 +468,18 @@ func _update_monster_culling() -> void:
 	for view: MonsterWorldView in _views.values():
 		var world_position := _world_parent.to_global(view.position)
 		view.set_presentation_culled(not visible_world.has_point(world_position))
+
+
+## 在创建精灵前预读三态与阴影页，等待期间保留权威待创建记录。
+## [param presentation] 已审计的怪物表现配置。
+## 返回是否可在主线程构造。
+func _prepare_actor_pages(presentation: Dictionary) -> bool:
+	if _ale_repository == null: return true
+	var prepared := true
+	var prefix := String(presentation.get("preferred_prefix", "pic3/npc"))
+	for group: String in ["actions", "shadow_actions"]:
+		for value: Variant in presentation.get(group, {}).values():
+			if not value is String or value.is_empty(): continue
+			var error: Error = _ale_repository.prepare_animation(value, prefix, _resource_queue)
+			if error == ERR_BUSY: prepared = false
+	return prepared

@@ -32,6 +32,27 @@ var generator_status: GeneratorStatusView
 var _generator_repository: RefCounted
 
 
+## 清理与上一个实体相关的状态，保留同类型的精灵、血条及字体节点。
+func reset_for_pool() -> void:
+	entity_id = ""
+	alive = false
+	visible = false
+	_presentation_culled = false
+	_last_snapshot = {}
+	_last_action_sequence = -1
+	set_hovered(false)
+	_apply_generator_status([])
+	set_process(false)
+
+
+## 池中同类型节点绑定新实体；强制应用当前动作，清除旧动画相位。
+## [param snapshot] 新实体权威快照。
+func reuse(snapshot: Dictionary) -> void:
+	reset_for_pool()
+	entity_id = String(snapshot["entity_id"])
+	apply_snapshot(snapshot)
+
+
 ## 执行 `configure` 对应的模块操作。
 ## [param manifest] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## [param snapshot] 调用方传入的参数；具体约束由函数签名和所在模块定义。
