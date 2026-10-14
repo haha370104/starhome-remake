@@ -231,9 +231,7 @@ func set_presentation_culled(culled: bool) -> void:
 		health_bar.visible = visible
 
 
-
 ## 查询怪物是否存活且位于展示区域。
 ## 返回是否应参与表现更新。
 func is_presentation_visible() -> bool:
 	return alive and not _presentation_culled
-
