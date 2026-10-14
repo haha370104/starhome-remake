@@ -68,6 +68,7 @@ if ($LASTEXITCODE -ne 0) {
 Assert-NoRuntimeLoadErrors $warningLog
 
 $testScripts = @(
+    "res://tests/core/resource_reuse_test.gd",
     "res://tests/integration/recovered_map_additions_test.gd",
     "res://tests/core/performance_telemetry_test.gd",
     "res://tests/client/gameplay/client_audio_controller_test.gd",

@@ -192,12 +192,12 @@ func _stage_bundle(bundle: Dictionary, spawn_position: Vector2) -> Dictionary:
 	var minimap_texture := resources.get("minimap") as Texture2D
 	if staged_definition == null or staged_manifest.is_empty() or floor_texture == null or minimap_texture == null:
 		return {}
-	var staged_navigation := DiamondNavigationScript.new()
-	if not staged_navigation.load_from(
+	var staged_navigation := MapNavigationCache.for_side(&"client").acquire(
 		staged_definition.navigation_data_path,
 		staged_definition.navigation_grid_size,
 		staged_definition.navigation_cell_size,
-	):
+	)
+	if staged_navigation == null:
 		return {}
 	if not staged_navigation.is_walkable(spawn_position):
 		return {}

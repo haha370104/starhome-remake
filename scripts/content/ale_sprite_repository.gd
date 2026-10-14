@@ -13,6 +13,9 @@ var _by_logical_id: Dictionary = {}
 var _logical_ids_by_basename: Dictionary = {}
 var _metadata_cache: Dictionary = {}
 var _page_cache: Dictionary = {}
+var _warm_pages: Dictionary[String, Texture2D] = {}
+var _waiting_pages: Dictionary[String, bool] = {}
+var _failed_pages: Dictionary[String, bool] = {}
 
 
 ## 加载 ALE 逻辑路径索引；图片和帧描述仍保持按需读取。
@@ -36,6 +39,9 @@ func load_file(path: String) -> bool:
 	_logical_ids_by_basename.clear()
 	_metadata_cache.clear()
 	_page_cache.clear()
+	_warm_pages.clear()
+	_waiting_pages.clear()
+	_failed_pages.clear()
 	return _merge_file(path)
 
 
@@ -154,12 +160,13 @@ func load_animation(asset_reference: String, preferred_prefix := "") -> Dictiona
 	var page_textures: Array[Texture2D] = []
 	for page_path_value: Variant in definition.get("page_paths", []):
 		var page_path := String(page_path_value)
-		var texture: Texture2D = _page_cache.get(page_path)
+		var texture: Texture2D = _cached_page(page_path)
 		if texture == null:
 			texture = TextureLoaderScript.load_texture(page_path)
 			if texture == null:
 				return {}
-			_page_cache[page_path] = texture
+		_page_cache[page_path] = weakref(texture)
+		_warm_pages.erase(page_path)
 		page_textures.append(texture)
 	var frames: Array[Dictionary] = []
 	var bounds := Rect2()
@@ -201,6 +208,53 @@ func load_animation(asset_reference: String, preferred_prefix := "") -> Dictiona
 		"bounds_size": bounds.size,
 		"source_release": definition.get("source_release", "starhome_lz_ry"),
 	}
+
+
+## 请求已登记动画的页纹理；无需改变 ALE 路径或展开现有内容包。
+## [param asset_reference] 原逻辑引用。[param prefix] 原目录提示。[param queue] 场景拥有的资源队列。
+## 返回 OK 表示可立即构造，ERR_BUSY 表示等待上传，其他错误表示资源不可用。
+func prepare_animation(asset_reference: String, prefix: String, queue: SpriteResourceQueue) -> Error:
+	var definition := resolve(asset_reference, prefix)
+	if definition.is_empty(): return ERR_FILE_NOT_FOUND
+	if not queue.texture_ready.is_connected(_on_page_ready):
+		queue.texture_ready.connect(_on_page_ready)
+		queue.texture_failed.connect(_on_page_failed)
+	var ready := true
+	for value: Variant in definition.get("page_paths", []):
+		var path := String(value)
+		if _cached_page(path) != null: continue
+		if _failed_pages.has(path): return ERR_CANT_OPEN
+		ready = false
+		if not _waiting_pages.has(path):
+			var error := queue.request(path)
+			if error != OK and error != ERR_BUSY: return error
+			if error == OK: _waiting_pages[path] = true
+	return OK if ready else ERR_BUSY
+
+
+## 查询待构造页、活动动画持有的弱引用或有界共享缓存。
+## [param path] 精确纹理路径；不存在返回 null。
+func _cached_page(path: String) -> Texture2D:
+	if _warm_pages.has(path): return _warm_pages[path]
+	var weak_texture: WeakRef = _page_cache.get(path)
+	var texture: Texture2D = weak_texture.get_ref() if weak_texture != null else null
+	return texture if texture != null else RuntimeTextureLoader.cache.fetch(path)
+
+
+## 暂存当前仓储请求的已上传页，构造动画后转为弱引用。
+## [param path] 完成路径。[param texture] 主线程纹理。
+func _on_page_ready(path: String, texture: Texture2D) -> void:
+	if not _waiting_pages.has(path): return
+	_waiting_pages.erase(path)
+	_warm_pages[path] = texture
+
+
+## 记录本次场景中无效页，避免每帧重新读取坏文件。
+## [param path] 失败路径。
+func _on_page_failed(path: String) -> void:
+	if not _waiting_pages.has(path): return
+	_waiting_pages.erase(path)
+	_failed_pages[path] = true
 
 
 ## 执行 `add_error` 对应的模块操作。

@@ -71,9 +71,9 @@ func suspend_runtime(server_tick: int) -> bool:
 func resume_runtime(server_tick: int) -> Dictionary:
 	if suspended_at_server_tick < 0:
 		return _success(self)
-	var restored_navigation = DiamondNavigationScript.new()
-	if not restored_navigation.load_from(definition.navigation_data_path,
-			definition.navigation_grid_size, definition.navigation_cell_size):
+	var restored_navigation := MapNavigationCache.for_side(&"server").acquire(
+		definition.navigation_data_path, definition.navigation_grid_size, definition.navigation_cell_size)
+	if restored_navigation == null:
 		return _failure(&"invalid_navigation", "cannot resume map navigation")
 	navigation = restored_navigation
 	var elapsed_ticks := maxi(0, server_tick - suspended_at_server_tick)
@@ -108,12 +108,12 @@ func load_map(map_config_path: String) -> Dictionary:
 	if definition == null:
 		return _failure(&"invalid_map_definition", "; ".join(loader.errors))
 	instance_id = "%s.instance.1" % definition.map_id
-	navigation = DiamondNavigationScript.new()
-	if not navigation.load_from(
+	navigation = MapNavigationCache.for_side(&"server").acquire(
 		definition.navigation_data_path,
 		definition.navigation_grid_size,
 		definition.navigation_cell_size,
-	):
+	)
+	if navigation == null:
 		definition = null
 		return _failure(&"invalid_navigation", "map navigation failed to load")
 	return _success(definition)

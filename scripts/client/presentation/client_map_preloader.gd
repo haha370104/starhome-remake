@@ -12,6 +12,7 @@ var _pending_map_id: StringName = &""
 var _pending_definition
 var _pending_resource_paths: Dictionary = {}
 var _pending_resources: Dictionary = {}
+var _queue: SpriteResourceQueue
 
 
 ## 执行 `configure` 对应的模块操作。
@@ -59,26 +60,18 @@ func preload_map(map_id: StringName) -> Error:
 	_pending_definition = definition
 	_pending_resource_paths.clear()
 	_pending_resources.clear()
+	if _queue == null:
+		_queue = SpriteResourceQueue.new()
+		add_child(_queue)
+		_queue.texture_ready.connect(_on_texture_ready)
+		_queue.texture_failed.connect(_on_texture_failed)
 	for resource_key in [&"floor", &"minimap"]:
-		var resource_path := String(definition.resource_paths.get(String(resource_key), ""))
-		if resource_path.is_empty():
-			continue
-		if not ResourceLoader.exists(resource_path):
-			var packed_texture: Texture2D = RuntimeTextureLoaderScript.load_texture(resource_path)
-			if packed_texture == null:
-				_fail_pending("无法解码内容包贴图 %s：%s" % [resource_key, resource_path])
-				return ERR_FILE_CORRUPT
-			_pending_resources[resource_key] = packed_texture
-			continue
-		var request_error := ResourceLoader.load_threaded_request(resource_path)
-		if request_error != OK:
-			_fail_pending("无法预载 %s：%s" % [resource_key, error_string(request_error)])
-			return request_error
-		_pending_resource_paths[resource_key] = resource_path
-	if _pending_resource_paths.is_empty():
-		call_deferred("_complete_pending")
-	else:
-		set_process(true)
+		var path := String(definition.resource_paths.get(String(resource_key), ""))
+		_pending_resource_paths[resource_key] = path
+		var error := _queue.request(path)
+		if error != OK:
+			_fail_pending("无法排队预载 %s：%s" % [resource_key, error_string(error)])
+			return error
 	return OK
 
 
@@ -93,21 +86,21 @@ func is_preloading() -> bool:
 	return not _pending_map_id.is_empty()
 
 
-## 轮询 Godot 线程加载状态，并在所有贴图完成后提交资源包。
-## [param _delta] 调用方传入的参数；具体约束由函数签名和所在模块定义。
-func _process(_delta: float) -> void:
-	if _pending_map_id.is_empty():
-		set_process(false)
-		return
-	for resource_path_value in _pending_resource_paths.values():
-		var resource_path := String(resource_path_value)
-		var status := ResourceLoader.load_threaded_get_status(resource_path)
-		if status == ResourceLoader.THREAD_LOAD_FAILED or status == ResourceLoader.THREAD_LOAD_INVALID_RESOURCE:
-			_fail_pending("资源异步加载失败：%s" % resource_path)
-			return
-		if status != ResourceLoader.THREAD_LOAD_LOADED:
-			return
-	_complete_pending()
+## 收集当前预载所需的纹理，过时请求只进入共享缓存，不会提交旧地图。
+## [param path] 完成的资源路径。[param texture] 主线程已上传纹理。
+func _on_texture_ready(path: String, texture: Texture2D) -> void:
+	if _pending_map_id.is_empty(): return
+	for key: StringName in _pending_resource_paths.keys():
+		if _pending_resource_paths[key] == path:
+			_pending_resources[key] = texture
+			_pending_resource_paths.erase(key)
+	if _pending_resource_paths.is_empty(): _complete_pending()
+
+
+## 只使当前预载失败；取消后的异步错误不影响活动场景。
+## [param path] 解码失败的资源路径。
+func _on_texture_failed(path: String) -> void:
+	if path in _pending_resource_paths.values(): _fail_pending("无法解码内容包贴图：" + path)
 
 
 ## 读取非贴图清单、收集线程结果并一次性发布当前地图资源包。
@@ -119,13 +112,6 @@ func _complete_pending() -> void:
 		"map_manifest": {},
 		"resources": _pending_resources.duplicate(),
 	}
-	for resource_key in _pending_resource_paths:
-		var resource_path := String(_pending_resource_paths[resource_key])
-		var resource := ResourceLoader.load_threaded_get(resource_path)
-		if resource == null:
-			_fail_pending("资源加载结果为空：%s" % resource_path)
-			return
-		bundle["resources"][String(resource_key)] = resource
 	var manifest_path := String(_pending_definition.resource_paths.get("scene_manifest", ""))
 	if not manifest_path.is_empty():
 		if not FileAccess.file_exists(manifest_path):
