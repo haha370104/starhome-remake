@@ -12,6 +12,7 @@ var _config: Dictionary = {}
 var _merchant_config: Dictionary = {}
 var _offers: Array[Dictionary] = []
 var _item_prices: Dictionary = {}
+var _material_sell_prices: Dictionary = {}
 
 
 ## 读取荣耀装备目录并建立武器商人可售清单。
@@ -88,6 +89,8 @@ func purchase_price(definition_id: String) -> int:
 		return 0
 	if _item_prices.has(definition_id):
 		return int(_item_prices[definition_id]["sell_value"])
+	if _material_sell_prices.has(definition_id):
+		return int(_material_sell_prices[definition_id])
 	var stats: Dictionary = definition.get("stats", {})
 	var original_sell_value := int(stats.get("sell_value", 0))
 	var original_purchase_value := int(stats.get("purchase_value", 0))
@@ -99,6 +102,15 @@ func purchase_price(definition_id: String) -> int:
 ## 设计：原始物品目录保留源码证据；经济调整由权威商店配置统一覆盖买卖投影及结算。
 func _load_item_prices() -> DomainResult:
 	_item_prices.clear()
+	_material_sell_prices.clear()
+	var materials := JsonConfigLoader.load_dictionary("res://data/gameplay/commerce/glory_material_prices_v1.json")
+	if not materials.is_ok: return materials
+	for id: String in materials.value.get("item_prices", {}):
+		var price: Variant = materials.value.item_prices[id].get("sell_value")
+		if _item_catalog.definition(id).is_empty() or not (price is int or price is float) \
+			or not is_finite(float(price)) or float(price) != floorf(float(price)) or price < 0:
+			return DomainResult.failure(&"commerce.invalid_prices", "材料收购价格或身份无效")
+		_material_sell_prices[id] = int(price)
 	var loaded := JsonConfigLoader.load_dictionary(PRICING_CONFIG_PATH)
 	if not loaded.is_ok:
 		return loaded

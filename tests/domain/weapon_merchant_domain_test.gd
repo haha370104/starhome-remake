@@ -21,6 +21,8 @@ func _initialize() -> void:
 		return
 	var offers: Array[Dictionary] = merchant.offers()
 	_expect(not offers.is_empty(), "武器商人应有荣耀装备可售")
+	_expect(merchant.purchase_price("low_grade_gel") == 3, "材料沿用原版收购价")
+	_expect(merchant.purchase_price("austin_blessing_rune") == 0, "零收购材料不会被一金币回退覆盖")
 	_expect(not merchant.offer("glory_equipment_gun1_216568dc50").is_empty(), "新兵能量炮应在售")
 	_expect(not merchant.offer("glory_equipment_gun9_d2426d05e9").is_empty(), "官网280级虎式突袭能量炮应在售")
 	_expect(_all_offers_valid(offers), "在售项必须属于五类官网清单且不超过280级")

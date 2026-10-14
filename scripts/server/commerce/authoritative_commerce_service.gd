@@ -293,6 +293,8 @@ func _sell(player: Player, command: Dictionary, merchant) -> DomainResult:
 	if item == null:
 		return DomainResult.failure(&"inventory.item_not_found", "inventory item does not exist")
 	var unit_price: int = merchant.purchase_price(item.definition_id)
+	if unit_price <= 0:
+		return DomainResult.failure(&"commerce.not_purchasable", "商人不收购此物品")
 	var removed := player.inventory.remove_quantity(instance_id, quantity)
 	if not removed.is_ok:
 		return removed
@@ -355,6 +357,8 @@ func _build_bundle(
 	var tasks: Array[Dictionary] = quests.snapshots(player, merchant_id)
 	var sell_items: Array[Dictionary] = []
 	for item: GameItem in player.inventory.items():
+		if item.locked or merchant.purchase_price(item.definition_id) <= 0:
+			continue
 		var view := item.to_view_dictionary()
 		view["quantity"] = item.quantity
 		view["unit_price"] = merchant.purchase_price(item.definition_id)
