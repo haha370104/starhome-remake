@@ -11,6 +11,12 @@ import time
 
 ROOT = Path(__file__).resolve().parents[1]
 TESTS = (
+    "server/spatial/deterministic_spatial_grid_test.gd",
+    "client/presentation/combat/monster_interpolation_test.gd",
+    "client/presentation/combat/monster_spawn_budget_test.gd",
+    "ui/runtime/player_incremental_projection_test.gd",
+    "server/persistence/ground_item_transaction_test.gd",
+    "server/combat/ground_item_authority_test.gd",
     "core/combat_trace_logger_test.gd",
     "core/background_file_writer_test.gd",
     "server/persistence/background_persistence_test.gd",

@@ -68,6 +68,15 @@ if ($LASTEXITCODE -ne 0) {
 Assert-NoRuntimeLoadErrors $warningLog
 
 $testScripts = @(
+	"res://tests/server/spatial/deterministic_spatial_grid_test.gd",
+	"res://tests/client/presentation/combat/monster_interpolation_test.gd",
+	"res://tests/client/presentation/combat/monster_spawn_budget_test.gd",
+	"res://tests/ui/runtime/player_incremental_projection_test.gd",
+	"res://tests/server/persistence/ground_item_transaction_test.gd",
+	"res://tests/server/combat/ground_item_authority_test.gd",
+	"res://tests/domain/equipment_usage_model_test.gd",
+	"res://tests/server/combat/equipment_usage_authority_test.gd",
+	"res://tests/server/combat/monster_wander_timing_test.gd",
 	"res://tests/ui/runtime/reusable_player_ui_test.gd",
 	"res://tests/core/combat_trace_logger_test.gd",
     "res://tests/domain/run_domain_smoke_tests.gd",
