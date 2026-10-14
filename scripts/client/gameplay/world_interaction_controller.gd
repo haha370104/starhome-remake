@@ -20,10 +20,22 @@ var hotkeys := ClientHotkeys.new()
 ## [param manager] 已配置共享玩家会话的窗口管理器。
 func bind_player_windows(manager: GameWindowManager) -> void:
 	game_window_manager = manager
+	manager.ground_drop_requested.connect(_drop_inventory_at)
 	death_journal = PveDeathJournalController.new()
 	add_child(death_journal)
 	death_journal.configure(combat.multiplayer_presenter, manager.panel_session,
 		active_world_controller, manager.navigation_windows["pve_death_journal"])
+
+
+## 将视口落点转换到地图坐标，交由服务器校验距离和所有权。
+## [param id] 背包实例身份。[param point] 视口内松开位置。
+func _drop_inventory_at(id: String, point: Vector2) -> void:
+	if combat.is_input_locked():
+		return
+	var position := world_view.get_canvas_transform().affine_inverse() * point
+	var player := game_window_manager.panel_session.current_player
+	game_window_manager.panel_session.dispatch({"type": "drop_inventory_item", "instance_id": id,
+		"inventory_revision": player.inventory.revision, "position": [position.x, position.y]})
 
 
 ## 初始化时暂停输入，直到启动依赖全部配置完毕。

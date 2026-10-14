@@ -4,6 +4,7 @@ extends Control
 signal move_requested(instance_id: String, position_px: Vector2i)
 signal equip_requested(instance_id: String, location: int)
 signal character_equip_requested(instance_id: String, slot_id: String)
+signal drag_released(instance_id: String, requested_position: Vector2i, viewport_point: Vector2)
 
 const ItemHoverHighlightScript := preload(
 	"res://scripts/client/ui/windows/item_hover_highlight.gd"
@@ -132,9 +133,13 @@ func _on_gui_input(event: InputEvent) -> void:
 		else:
 			var should_move := _dragging
 			var requested := Vector2i((position + event.position - _drag_offset).round())
+			var viewport_point: Vector2 = get_global_transform_with_canvas() * event.position
 			_cancel_drag()
 			if should_move:
-				move_requested.emit(String(item_snapshot.get("instance_id", "")), requested)
+				if drag_released.get_connections().is_empty():
+					move_requested.emit(item.instance_id, requested)
+				else:
+					drag_released.emit(item.instance_id, requested, viewport_point)
 		accept_event()
 	elif event is InputEventMouseMotion and _pointer_down:
 		_drag_delta += event.relative

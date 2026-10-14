@@ -17,6 +17,7 @@ signal austin_glens_requested(instance_id: String, is_material: bool)
 signal central_requested(instance_id: String, is_material: bool)
 signal sama_requested(instance_id: String, is_material: bool)
 signal warehouse_requested
+signal ground_drop_requested(instance_id: String, viewport_point: Vector2)
 
 signal command_requested(command: Dictionary)
 
@@ -50,6 +51,7 @@ func _ready() -> void:
 	_item_canvas.clip_contents = true
 	_item_canvas.mouse_filter = Control.MOUSE_FILTER_PASS
 	_item_canvas.move_requested.connect(_request_move)
+	_item_canvas.external_drop_requested.connect(ground_drop_requested.emit)
 	_item_canvas.equip_requested.connect(_request_equip)
 	_item_canvas.character_equip_requested.connect(_request_character_equip)
 	content_root.add_child(_item_canvas)

@@ -2,6 +2,7 @@ class_name GameWindowManager
 extends Control
 
 signal notice_requested(message: String)
+signal ground_drop_requested(instance_id: String, viewport_point: Vector2)
 
 const CharacterPanelScript := preload("res://scripts/client/ui/windows/character/character_panel.gd")
 const InventoryPanelScript := preload("res://scripts/client/ui/windows/inventory/inventory_panel.gd")
@@ -48,6 +49,7 @@ func configure(session: PlayerPanelSession) -> bool:
 	inventory_panel.name = "InventoryPanel"
 	inventory_panel.position = Vector2(460, 70)
 	inventory_panel.command_requested.connect(panel_session.dispatch)
+	inventory_panel.ground_drop_requested.connect(_drop_outside_inventory)
 	inventory_panel.enhancement_requested.connect(_open_clothing_enhancement)
 	inventory_panel.vehicle_workshop_requested.connect(_open_vehicle_sockets)
 	inventory_panel.equipment_processing_requested.connect(_open_equipment_processing)
@@ -170,6 +172,14 @@ func _topmost_window_at(viewport_position: Vector2) -> DraggableGameWindow:
 				and child.get_global_rect().has_point(viewport_position):
 			return child as DraggableGameWindow
 	return null
+
+
+## 只将面板之外的拖动交给世界层，覆盖窗口的区域不视作地面。
+## [param id] 发起拖动的背包物品。[param point] 松开位置。
+func _drop_outside_inventory(id: String, point: Vector2) -> void:
+	if _topmost_window_at(point) != null:
+		return
+	ground_drop_requested.emit(id, point)
 
 
 ## 按底栏 action_id 切换对应窗口，并在打开时拉取权威快照。

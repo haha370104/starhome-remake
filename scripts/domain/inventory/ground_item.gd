@@ -1,7 +1,7 @@
 class_name GroundItem
 extends RefCounted
 
-const DROP_RADIUS := 65.0
+const DROP_RADIUS := 125.0
 const PICKUP_RADIUS := 125.0
 var loot_id: String
 var map_instance_id: String

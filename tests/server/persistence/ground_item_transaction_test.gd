@@ -33,7 +33,7 @@ func _initialize() -> void:
 	var original: Dictionary = InventoryStackRecord.from_item(engine, 0).value.to_dictionary()
 	_check(not GroundItem.drop_from(player, "inventory.training_shirt", player.inventory.revision, "map.a", Vector2.ZERO, Vector2.ZERO).is_ok, "bound item rejected")
 	_check(not GroundItem.drop_from(player, engine.instance_id, player.inventory.revision - 1, "map.a", Vector2.ZERO, Vector2.ZERO).is_ok, "stale inventory rejected")
-	_check(not GroundItem.drop_from(player, engine.instance_id, player.inventory.revision, "map.a", Vector2.ZERO, Vector2(66, 0)).is_ok, "far drop rejected")
+	_check(not GroundItem.drop_from(player, engine.instance_id, player.inventory.revision, "map.a", Vector2.ZERO, Vector2(126, 0)).is_ok, "far drop rejected")
 	var dropped := GroundItem.drop_from(player, engine.instance_id, player.inventory.revision, "map.a", Vector2.ZERO, Vector2.ZERO)
 	_check(dropped.is_ok and player.inventory.find(engine.instance_id) == null, "whole item removed from candidate")
 	var record: GroundItemRecord = GroundItemRecord.from_domain(dropped.value).value

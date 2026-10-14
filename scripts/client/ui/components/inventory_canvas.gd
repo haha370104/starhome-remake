@@ -4,6 +4,7 @@ extends Control
 signal move_requested(instance_id: String, requested_position: Vector2i)
 signal equip_requested(instance_id: String, location: int)
 signal character_equip_requested(instance_id: String, slot_id: String)
+signal external_drop_requested(instance_id: String, viewport_point: Vector2)
 
 const ItemView := preload("res://scripts/client/ui/windows/inventory/inventory_item_view.gd")
 const GRID_SIZE := Vector2(276, 295)
@@ -47,6 +48,17 @@ func apply_inventory(inventory: Inventory) -> void:
 		item.configure(domain_item, CELL_SIZE, 5.0)
 		item.position = Vector2(domain_item.position_px)
 		item.move_requested.connect(move_requested.emit)
+		item.drag_released.connect(_route_drag.bind(item))
 		item.equip_requested.connect(equip_requested.emit)
 		item.character_equip_requested.connect(character_equip_requested.emit)
 		add_child(item)
+
+
+## 区分容器内移动与拖出，保留原有左上角坐标语义。
+## [param id] 物品身份。[param requested] 容器内候选左上角。
+## [param point] 松开时视口坐标。[param view] 发起手势的物品视图。
+func _route_drag(id: String, requested: Vector2i, point: Vector2, view: InventoryItemView) -> void:
+	if Rect2(Vector2.ZERO, size).has_point(Vector2(requested)):
+		view.move_requested.emit(id, requested)
+	elif not external_drop_requested.get_connections().is_empty():
+		external_drop_requested.emit(id, point)
