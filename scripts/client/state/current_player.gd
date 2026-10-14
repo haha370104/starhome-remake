@@ -224,3 +224,32 @@ func _create_equipment(raw_equipment: Variant) -> Equipment:
 		"footprint_px": [45, 45],
 	})
 	return created.value if created.is_ok and created.value is Equipment else null
+
+
+## 原位更新现有装备的耐久和使用余量，不重建背包与战车属性。
+## [param owner_id] 权威消息对应的角色身份。
+## [param conditions] 当前装配按实例编号导出的耐久状态。
+## 返回消息是否完整合法并已原子应用；错误消息不改写现有物品。
+func apply_equipment_conditions(owner_id: String, conditions: Dictionary) -> bool:
+	if owner_id != entity_id or not is_ready(): return false
+	var equipment: Array[Equipment] = []
+	equipment.append_array(vehicle.loadout.items())
+	equipment.append_array(character_equipment.items())
+	var updates: Array[Dictionary] = []
+	for item: Equipment in equipment:
+		var raw: Variant = conditions.get(item.instance_id)
+		if not raw is Dictionary or raw.get("definition_id") != item.definition_id: return false
+		var durability_value := int(raw.get("durability", -1))
+		if durability_value < 0 or durability_value > item.max_durability or int(raw.get("max_durability", -1)) != item.max_durability: return false
+		var usage_result := EquipmentUsage.restore(raw.get("usage", {}))
+		var magazine_result := WeaponMagazine.restore(raw.get("magazine", {}))
+		if not usage_result.is_ok or not magazine_result.is_ok: return false
+		updates.append({"item": item, "durability": durability_value, "usage": usage_result.value, "magazine": magazine_result.value})
+	if updates.size() != conditions.size(): return false
+	for update: Dictionary in updates:
+		var item: Equipment = update.item
+		item.durability = update.durability
+		item.usage = update.usage
+		item.magazine = update.magazine
+	changed.emit(self)
+	return true

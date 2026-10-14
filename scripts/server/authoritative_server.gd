@@ -1032,7 +1032,16 @@ func _settle_equipment_conditions(instance: AuthoritativeMapInstance) -> void:
 		return
 	for entity_id: String in instance.combat_module.actors:
 		var condition: EquipmentConditionLoadout = instance.combat_module.actors[entity_id].equipment_condition
-		if not condition.needs_recalculation: continue
+		if not condition.needs_recalculation:
+			if condition.needs_durability_sync:
+				var snapshot := condition.snapshot()
+				if autosave_service.update_equipment_conditions(entity_id, snapshot):
+					condition.clear_durability_sync()
+					var recipient := sessions.session_for_entity(entity_id)
+					if recipient != null and recipient.has_active_peer():
+						_send_reliable(recipient.peer_id, {"type": "player_panels", "result": _wire_result(_success({
+							"equipment_conditions": snapshot, "character_id": entity_id}))})
+			continue
 		var current := autosave_service.state_for(entity_id)
 		if current == null: continue
 		var captured: DomainResult = _capture_persistent_player_state(current)

@@ -70,6 +70,21 @@ func _run() -> void:
 	condition = actor.equipment_condition
 	var engine: Dictionary = condition.snapshot()[engine_id]
 	_check(engine.durability == engine.max_durability - 1, "actual movement wears engine at threshold")
+	var panel := PlayerPanelSession.new(Callable(), catalog)
+	panel.apply_bundle(server.player_panel_service.build_bundle(server.autosave_service.state_for(session.entity_id)))
+	var inventory_before := panel.current_player.inventory
+	var loadout_before := panel.current_player.vehicle.loadout
+	var received: Array[Dictionary] = []
+	server.server_message_generated.connect(func(_peer: int, message: Dictionary) -> void: received.append(message))
+	var saves_before := server.autosave_service.save_count
+	server._settle_equipment_conditions(map)
+	_check(server.autosave_service.save_count == saves_before, "ordinary wear only updates runtime state")
+	_check(actor.equipment_condition == condition and not condition.needs_durability_sync, "ordinary wear retains combat loadout and clears sync flag")
+	_check(received.size() == 1 and received[0].result.value.has("equipment_conditions"), "ordinary wear sends compact conditions")
+	if not received.is_empty(): panel.apply_bundle(received[0].result.value)
+	_check(panel.current_player.inventory == inventory_before and panel.current_player.vehicle.loadout == loadout_before, "durability delta preserves inventory and loadout identity")
+	for item: Equipment in panel.current_player.vehicle.loadout.items():
+		if item.instance_id == engine_id: _check(item.durability == engine.durability, "client sees wear before equipment breaks")
 	var captured: PlayerStateRecord = server._capture_persistent_player_state(server.autosave_service.state_for(session.entity_id)).value
 	for slot: EquipmentSlotRecord in captured.equipment_slots:
 		if slot.item_instance_id == engine_id: _check(slot.durability == engine.durability, "live wear reaches persistent record")

@@ -3,6 +3,7 @@ extends RefCounted
 
 var _items: Dictionary[String, Equipment] = {}
 var needs_recalculation := false
+var needs_durability_sync := false
 
 
 ## 确认飞行中的芯片效果仍由当前完好的同一能量炮支持。
@@ -60,7 +61,92 @@ func duplicate_loadout() -> EquipmentConditionLoadout:
 func record_use(event: String, amount: float = 1.0, instance_id: String = "") -> void:
 	for item: Equipment in _items.values():
 		if instance_id.is_empty() or item.instance_id == instance_id:
-			if item.record_use(event, amount): needs_recalculation = true
+			_record_item_use(item, event, amount)
+
+
+## 按实际移动时间累计战车本体磨损。
+## [param seconds] 本 tick 的实际移动秒数。
+func record_vehicle_movement(seconds: float) -> void:
+	for item: Equipment in _items.values():
+		if item is VehicleChassis:
+			_record_item_use(item, "vehicle_movement", seconds)
+
+
+## 统计当前完好且占据四个固定护甲位的装配。
+## 返回参与本次伤害分摊的护甲数量。
+func vehicle_armor_count() -> int:
+	var count := 0
+	for item: Equipment in _items.values():
+		if item is VehicleEquipment and item.durability > 0 \
+			and (item as VehicleEquipment).equipment_location in [5, 6, 7, 8]:
+			count += 1
+	return count
+
+
+## 按最终扣血折算耐久，每件有效护甲分担总量的两成，护甲间按权重分配。
+## [param damage] 最终扣除的战车生命。
+## [param random_values] 每件护甲一个由独立权威随机流生成的非负权重。
+func record_vehicle_damage(damage: int, random_values: Array[float]) -> void:
+	if damage <= 0:
+		return
+	var chassis: VehicleChassis = null
+	var armors: Array[Equipment] = []
+	for item: Equipment in _items.values():
+		if item is VehicleChassis and chassis == null:
+			chassis = item as VehicleChassis
+		elif item is VehicleEquipment and item.durability > 0 \
+			and (item as VehicleEquipment).equipment_location in [5, 6, 7, 8]:
+			armors.append(item)
+	if chassis == null or chassis.durability <= 0:
+		return
+	var total_wear := 0.5 + float(damage) / 8.0
+	var armor_ratio := float(armors.size()) * 0.2
+	_record_item_use(chassis, "vehicle_damage", total_wear * (1.0 - armor_ratio))
+	if armors.is_empty():
+		return
+	var weights: Array[float] = []
+	var total_weight := 0.0
+	for index in armors.size():
+		var weight := maxf(0.0, random_values[index]) if index < random_values.size() and is_finite(random_values[index]) else 1.0
+		weights.append(weight)
+		total_weight += weight
+	if total_weight <= 0.0:
+		weights.fill(1.0)
+		total_weight = float(weights.size())
+	for index in armors.size():
+		_record_item_use(armors[index], "vehicle_damage", total_wear * armor_ratio * weights[index] / total_weight)
+
+
+## 战车被击毁时，按本体耐久上限追加固定比例损耗。
+func record_vehicle_destroyed() -> void:
+	for item: Equipment in _items.values():
+		if not item is VehicleChassis:
+			continue
+		var chassis := item as VehicleChassis
+		var durability_before := chassis.durability
+		chassis.wear(20 + ceili(float(chassis.max_durability) * 0.025))
+		if chassis.durability != durability_before:
+			needs_durability_sync = true
+			if chassis.durability == 0:
+				needs_recalculation = true
+		return
+
+
+## 在权威状态及面板增量已接纳后清除同步标记。
+func clear_durability_sync() -> void:
+	needs_durability_sync = false
+
+
+## 交给装备结算使用量，分别标记整数耐久变化和首次损坏。
+## [param item] 本次装配中的真实实例。
+## [param event] 已确认的使用事件。
+## [param amount] 次数、秒数或分摊的磨损量。
+func _record_item_use(item: Equipment, event: String, amount: float) -> void:
+	var durability_before := item.durability
+	if item.record_use(event, amount):
+		needs_recalculation = true
+	if item.durability != durability_before:
+		needs_durability_sync = true
 
 
 ## 检查当前装配实例是否仍可开火，不允许损坏后的第二次射击。

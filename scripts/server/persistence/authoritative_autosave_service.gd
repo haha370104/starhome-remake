@@ -193,3 +193,15 @@ func apply_skill_progression(character_id: String, operation: Callable) -> Domai
 func state_for(character_id: String) -> PlayerStateRecord:
 	var state := _states.get(character_id) as PlayerStateRecord
 	return state.duplicate_record() if state != null else null
+
+
+## 将权威模拟已结算的耐久写入在线记录，不复制背包或触发磁盘检查点。
+## [param character_id] 已登记角色。
+## [param conditions] 来自当前战斗装配的只读状态投影。
+## 返回是否找到在线角色并完成同步。
+func update_equipment_conditions(character_id: String, conditions: Dictionary) -> bool:
+	var current: PlayerStateRecord = _states.get(character_id)
+	if current == null:
+		return false
+	EquipmentConditionCapture.apply(current, conditions)
+	return true

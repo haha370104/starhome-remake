@@ -21,7 +21,8 @@ func _init(dispatcher: Callable, catalog: ItemCatalog = null) -> void:
 ## 应用权威消息并通知各展示订阅者；查询专用消息不覆盖玩家状态。
 ## [param bundle] 权威面板、商店、制造或在线玩家消息。
 func apply_bundle(bundle: Dictionary) -> void:
-	var player_updated := current_player.apply_bundle(bundle)
+	var player_updated := current_player.apply_equipment_conditions(String(bundle.get("character_id", "")), bundle.equipment_conditions) \
+		if bundle.get("equipment_conditions") is Dictionary else current_player.apply_bundle(bundle)
 	if player_updated:
 		_bundle = current_player.snapshot_bundle()
 	bundle_received.emit(bundle)

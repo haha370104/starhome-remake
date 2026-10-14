@@ -34,6 +34,7 @@ var _monster_spatial_grid := DeterministicSpatialGrid.new()
 var _monster_collision_query_padding := 0.0
 var _route_plans_this_tick := 0
 var _ai_cursor := 0
+var _wear_random := RandomNumberGenerator.new()
 var _random := RandomNumberGenerator.new()
 var _monster_position_resolver := Callable()
 var _monster_route_resolver := Callable()
@@ -69,6 +70,7 @@ func configure(
 	_quest_event_namespace = Crypto.new().generate_random_bytes(16).hex_encode()
 	working_energy_regen_factor = regen_factor
 	_random.seed = random_seed
+	_wear_random.seed = random_seed ^ 0x6D2B79F5
 	actors.clear()
 	monsters.clear()
 	_monster_spatial_grid.clear()
@@ -959,6 +961,7 @@ func advance_ticks(tick_count: int, simulate_monster_ai := true) -> DomainResult
 			var actor: Dictionary = actors[actor_id]
 			if vehicle_state.health > 0 and not (actor.position as Vector2).is_equal_approx(actor.previous_position):
 				(actor.equipment_condition as EquipmentConditionLoadout).record_use("movement", fixed_delta)
+				(actor.equipment_condition as EquipmentConditionLoadout).record_vehicle_movement(fixed_delta)
 		_settle_due_self_repairs()
 		_advance_generator_effects()
 		_settle_due_projectiles()
@@ -1406,7 +1409,14 @@ func _is_valid_actor_target(monster: MonsterLifecycle, actor_id: String) -> bool
 func _record_combat_event(event: Dictionary) -> Dictionary:
 	var damaged_actor := String(event.get("target_entity_id", ""))
 	if int(event.get("damage", 0)) > 0 and actors.has(damaged_actor):
-		(actors[damaged_actor].equipment_condition as EquipmentConditionLoadout).record_use("damage")
+		var condition: EquipmentConditionLoadout = actors[damaged_actor].equipment_condition
+		condition.record_use("damage")
+		var weights: Array[float] = []
+		for index in condition.vehicle_armor_count():
+			weights.append(_wear_random.randf())
+		condition.record_vehicle_damage(int(event.damage), weights)
+		if bool(event.get("target_destroyed", false)):
+			condition.record_vehicle_destroyed()
 		var effects: ClothingCombatEffects = actors[damaged_actor]["clothing_effects"]
 		effects.damaged(current_tick, simulation_hz)
 		if bool(event.get("target_destroyed", false)):
