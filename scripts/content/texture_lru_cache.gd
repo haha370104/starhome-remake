@@ -15,7 +15,8 @@ func _init(budget: int = 256 * 1024 * 1024) -> void:
 
 
 ## 命中后更新使用顺序，返回原纹理引用。
-## [param path] 保持原样的资源路径；未命中返回 null。
+## [param path] 保持原样的资源路径。
+## 返回缓存纹理，未命中返回 null。
 func fetch(path: String) -> Texture2D:
 	if not _entries.has(path): return null
 	_recent.erase(path)

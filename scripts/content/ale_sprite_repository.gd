@@ -233,7 +233,8 @@ func prepare_animation(asset_reference: String, prefix: String, queue: SpriteRes
 
 
 ## 查询待构造页、活动动画持有的弱引用或有界共享缓存。
-## [param path] 精确纹理路径；不存在返回 null。
+## [param path] 精确纹理路径。
+## 返回纹理，不存在返回 null。
 func _cached_page(path: String) -> Texture2D:
 	if _warm_pages.has(path): return _warm_pages[path]
 	var weak_texture: WeakRef = _page_cache.get(path)

@@ -8,7 +8,8 @@ var _recent: Array[String] = []
 
 
 ## 按运行侧隔离缓存，避免本地客户端与权威端共享可变寻路图。
-## [param side] client 或 server；返回该侧最近两张图的缓存。
+## [param side] client 或 server。
+## 返回该侧最近两张图的缓存。
 static func for_side(side: StringName) -> MapNavigationCache:
 	if not _domains.has(side): _domains[side] = MapNavigationCache.new()
 	return _domains[side]
@@ -41,5 +42,6 @@ func clear() -> void:
 
 
 ## 返回缓存条目数，供资源预算与回归检查。
+## 查询当前模块拥有的只读几何或预算状态。
 func size() -> int:
 	return _entries.size()

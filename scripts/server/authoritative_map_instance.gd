@@ -20,6 +20,7 @@ var definition
 var ground_items_provider := Callable()
 var navigation
 var entities: Dictionary = {}
+var _obstacles := EntityObstacleIndex.new()
 var movement_speed_cap := 240.0
 var dynamic_blocking_enabled := true
 var dynamic_blocking_radius := 18.0
@@ -247,6 +248,7 @@ func admitted_spawn_position(
 	requested_position: Vector2,
 	entity_id: StringName = &"",
 ) -> Vector2:
+	_obstacles.refresh(entities)
 	var spawn_position := requested_position
 	if not navigation.is_walkable(spawn_position):
 		spawn_position = navigation.closest_walkable_position(spawn_position)
@@ -347,6 +349,7 @@ func commit_loot_pickup(entity_id: String, loot_id: String) -> DomainResult:
 ## 返回该函数计算、查询或操作得到的结果。
 ## 设计：该函数位于权威服务器边界，客户端不得覆盖其计算结果。
 func handle_move_intent(entity_id: String, raw_intent: Variant) -> Dictionary:
+	_obstacles.refresh(entities)
 	var entity: AuthoritativeEntity = entities.get(entity_id)
 	if entity == null:
 		return _failure(ErrorCodes.INVALID_IDENTIFIER, "entity is not present in this map instance")
@@ -403,6 +406,7 @@ func handle_move_intent(entity_id: String, raw_intent: Variant) -> Dictionary:
 ## 设计：该函数位于权威服务器边界，客户端不得覆盖其计算结果。
 func simulate(delta: float) -> void:
 	var _timing := PerformanceTelemetry.measure(&"map_simulation")
+	_obstacles.refresh(entities)
 	var entity_ids := entities.keys()
 	entity_ids.sort()
 	for entity_id: String in entity_ids:
@@ -416,6 +420,7 @@ func simulate(delta: float) -> void:
 			entity.path = PackedVector2Array([entity.position])
 			entity.path_index = entity.path.size()
 			entity.action = &"idle"
+			_obstacles.update(entity)
 			continue
 		if not dynamic_blocking_enabled or entities.size() <= 1:
 			entity.simulate(delta)
@@ -429,6 +434,7 @@ func simulate(delta: float) -> void:
 				)
 			):
 				_restore_motion_state(entity, motion_state)
+		_obstacles.update(entity)
 		if mining_module != null and not entity.position.is_equal_approx(previous_position):
 			mining_module.interrupt(entity_id, &"movement")
 		if is_vehicle_combat_active() and not entity.position.is_equal_approx(previous_position):
@@ -660,7 +666,7 @@ func _position_has_dynamic_clearance(
 	include_reserved_targets: bool,
 ) -> bool:
 	var minimum_distance_squared := dynamic_blocking_radius * dynamic_blocking_radius
-	for other_entity_id: String in entities:
+	for other_entity_id: String in _obstacles.nearby(candidate, dynamic_blocking_radius, include_reserved_targets):
 		if StringName(other_entity_id) == excluded_entity_id:
 			continue
 		var other: AuthoritativeEntity = entities[other_entity_id]
@@ -688,21 +694,8 @@ func _find_authoritative_path(
 ) -> PackedVector2Array:
 	if not dynamic_blocking_enabled or entities.size() <= 1:
 		return navigation.find_path(from_position, to_position)
-	var disabled_point_ids: Array[int] = []
-	var minimum_distance_squared := dynamic_blocking_radius * dynamic_blocking_radius
 	var from_point_id: int = navigation.cell_id(navigation.world_to_cell(from_position))
-	for point_id: int in navigation.graph.get_point_ids():
-		if point_id == from_point_id or navigation.graph.is_point_disabled(point_id):
-			continue
-		var point_position: Vector2 = navigation.graph.get_point_position(point_id)
-		for other_entity_id: String in entities:
-			if other_entity_id == entity_id:
-				continue
-			var other: AuthoritativeEntity = entities[other_entity_id]
-			if point_position.distance_squared_to(other.position) < minimum_distance_squared:
-				navigation.graph.set_point_disabled(point_id, true)
-				disabled_point_ids.append(point_id)
-				break
+	var disabled_point_ids := _obstacles.block_navigation(navigation, entities, entity_id, dynamic_blocking_radius, from_point_id)
 	var path: PackedVector2Array = navigation.find_path(from_position, to_position, false)
 	for point_id: int in disabled_point_ids:
 		navigation.graph.set_point_disabled(point_id, false)
@@ -747,7 +740,8 @@ func _movement_intersects_dynamic_blocker(
 	to_position: Vector2,
 ) -> bool:
 	var minimum_distance_squared := dynamic_blocking_radius * dynamic_blocking_radius
-	for other_entity_id: String in entities:
+	var margin := Vector2(dynamic_blocking_radius, dynamic_blocking_radius)
+	for other_entity_id: String in _obstacles.positions.query_aabb(from_position.min(to_position) - margin, from_position.max(to_position) + margin):
 		if other_entity_id == entity_id:
 			continue
 		var other: AuthoritativeEntity = entities[other_entity_id]

@@ -28,7 +28,8 @@ static func load_texture(path: String) -> Texture2D:
 
 
 ## 只读文件并解码独立 Image，可在工作线程执行，不触碰节点或 GPU。
-## [param path] 已挂载内容包或本地 PNG/JPEG/WebP 路径；失败返回 null。
+## [param path] 已挂载内容包或本地 PNG/JPEG/WebP 路径。
+## 返回独立图像，失败返回 null。
 static func decode_image(path: String) -> Image:
 	var _timing := PerformanceTelemetry.measure(&"resource_image_decode")
 	if not FileAccess.file_exists(path): return null

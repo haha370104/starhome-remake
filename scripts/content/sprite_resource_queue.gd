@@ -18,7 +18,8 @@ var _stopping := false
 
 
 ## 去重排队；导入纹理交给 Godot，包内图片在低优先级线程读取解码。
-## [param path] 本地已登记资源路径；返回接收结果，所有回调延迟至调用结束后。
+## [param path] 本地已登记资源路径。
+## 返回接收结果，所有回调延迟至调用结束后。
 func request(path: String) -> Error:
 	if _pending.has(path): return OK
 	var cached := RuntimeTextureLoader.cache.fetch(path)

@@ -136,3 +136,13 @@ func hover_glow_radius() -> float:
 ## 返回以权威脚点为原点的本地矩形。
 func local_hit_rect() -> Rect2:
 	return _local_hit_rect
+
+
+## 返回含名称潜在范围的粗筛矩形，隐藏名称仍由精确命中排除。
+## 返回当前父层变换后的世界坐标范围。
+## 查询当前模块拥有的只读几何或预算状态。
+func broad_phase_bounds() -> Rect2:
+	var bounds := _local_hit_rect
+	if _tooltip != null:
+		bounds = bounds.merge(Rect2(_tooltip.position, _tooltip.size.max(_tooltip.get_combined_minimum_size())))
+	return get_global_transform() * bounds.grow(HOVER_GLOW_RADIUS)
