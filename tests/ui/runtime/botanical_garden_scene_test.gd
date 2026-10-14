@@ -31,6 +31,21 @@ func _run() -> void:
 	preloader.queue_free()
 	_fixture._state.map_id = _service.rules.map_id
 	_fixture._state.position = Vector2(1536, 2280)
+	var inspected_id := "coconut_center"
+	for argument: String in OS.get_cmdline_user_args():
+		if argument.begins_with("--plant="): inspected_id = argument.trim_prefix("--plant=")
+	var inspected := _service.rules.find(inspected_id)
+	_check(inspected != null, "截图目标属于现有采摘点")
+	if inspected == null:
+		quit(1)
+		return
+	if inspected_id != "coconut_center": _fixture._state.position = inspected.position + Vector2(120, 0)
+	if inspected_id == "sugar_south": _fixture._state.position = Vector2(2712, 2484)
+	var definition: MapDefinition = bundle.definition
+	var navigation := MapNavigationCache.for_side(&"client").acquire(definition.navigation_data_path,
+		definition.navigation_grid_size, definition.navigation_cell_size)
+	if not navigation.is_walkable(_fixture._state.position):
+		_fixture._state.position = navigation.closest_walkable_position(_fixture._state.position)
 	_check(active.commit_bundle(bundle, _fixture._state.position), "植物园提交")
 	_hall.map_travel.map_committed.emit()
 	await process_frame
@@ -39,13 +54,24 @@ func _run() -> void:
 	if garden.plants.is_empty():
 		quit(1)
 		return
-	var fruit: WorldGardenPlant = garden.plants[0]
+	var fruit: WorldGardenPlant = null
+	for plant: WorldGardenPlant in garden.plants:
+		if plant.plant_id == inspected_id: fruit = plant
+		var drawn := Rect2(plant._sprite.position, plant._sprite.texture.get_size())
+		_check(drawn.get_center().distance_to(plant._offset) <= 8.0,
+			"果实有效像素紧邻植物挂点：" + plant.plant_id)
+		_check(drawn.size.x <= 40 and drawn.size.y <= 40 and plant._fruit_bounds == drawn.grow(4.0),
+			"悬浮范围只覆盖实际果实与光晕，不包含运动留白：" + plant.plant_id)
+		_check(is_equal_approx(plant.status_label.position.x + plant.status_label.size.x * 0.5, drawn.get_center().x),
+			"名称与实际果实水平对齐：" + plant.plant_id)
 	_check(garden.plant_at(fruit.position + fruit._offset) == fruit, "命中果实图片")
 	_check(fruit._sprite.visible, "查询后成熟图像显示")
 	_check(fruit.status_label.text.contains("可采摘"), "成熟名称明确说明可采摘")
 	_hall.world_view.camera.position_smoothing_enabled = false
 	_hall.world_view.camera.reset_smoothing()
 	_hall.world_view.camera.force_update_scroll()
+	# 只在截图模式等待入图提示自然消退，避免提示文字盖住待检查果实。
+	if "--capture" in OS.get_cmdline_user_args(): await create_timer(2.6).timeout
 	var motion := InputEventMouseMotion.new()
 	motion.position = _hall.world_view.get_canvas_transform() * (fruit.position + fruit._offset)
 	motion.global_position = motion.position
@@ -57,6 +83,7 @@ func _run() -> void:
 	if "--capture" in OS.get_cmdline_user_args():
 		await RenderingServer.frame_post_draw
 		root.get_texture().get_image().save_png("res://.godot/botanical_garden_hover.png")
+		root.get_texture().get_image().save_png("res://.godot/botanical_garden_%s.png" % inspected_id)
 	garden.update_hover(fruit.position + fruit._offset)
 	_check(float(fruit._material.get_shader_parameter("hover_amount")) == 1.0, "悬浮果实立即显示掉落物同款高亮")
 	garden.update_hover(Vector2(-1000, -1000))

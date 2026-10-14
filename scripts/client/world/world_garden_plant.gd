@@ -29,8 +29,11 @@ func configure(plant: BotanicalGardenCatalog.Plant, catalog: ItemCatalog) -> boo
 	var resolved := ItemPresentationTextureResolver.resolve(visual)
 	_sprite.texture = resolved.get("texture")
 	if _sprite.texture == null: return false
-	_sprite.position = _offset
-	_fruit_bounds = Rect2(_offset - _sprite.texture.get_size() * 0.5, _sprite.texture.get_size()).grow(4.0)
+	# fruit_offset 是原植物上的挂点；ALE 原点决定有效像素相对挂点的位置，不能把整帧居中。
+	_sprite.centered = false
+	_sprite.position = _offset + Vector2(resolved.get("origin", Vector2.ZERO))
+	var fruit_rect := Rect2(_sprite.position, _sprite.texture.get_size())
+	_fruit_bounds = fruit_rect.grow(4.0)
 	_sprite.visible = false
 	_material.shader = HOVER_SHADER
 	_material.set_shader_parameter("glow_color", Color("33ff00"))
@@ -46,7 +49,7 @@ func configure(plant: BotanicalGardenCatalog.Plant, catalog: ItemCatalog) -> boo
 	_timer.one_shot = true
 	_timer.timeout.connect(_refresh)
 	add_child(_timer)
-	status_label.position = _offset + Vector2(-100, -44)
+	status_label.position = Vector2(fruit_rect.get_center().x - 100, fruit_rect.position.y - 30)
 	status_label.size = Vector2(200, 26)
 	status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	status_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
