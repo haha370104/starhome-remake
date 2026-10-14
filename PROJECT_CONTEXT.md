@@ -2,7 +2,7 @@
 
 ## 2026-10-14增量
 
-本轮吸收范围、验证与保留边界见 [社区功能迁移](docs/community_integration_2026-10-14.md)。AI仍为后续可选模块设计，未成为启动依赖；规范见 [AI可选边界](docs/optional_ai_players.md)。
+本轮吸收范围、验证与保留边界见 [社区功能迁移](docs/community_integration_2026-10-14.md)。AI已作为默认关闭的可选模块接入，未成为启动依赖；开关、配置、预算与边界见 [AI玩家启用说明](docs/optional_ai_players.md)。
 
 ## 文档入口与维护
 

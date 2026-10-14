@@ -36,7 +36,7 @@
 
 - [2026-10-14社区功能迁移](community_integration_2026-10-14.md)：选定功能、原素材、工程能力和验证结果。
 - [玩家增量同步](player_incremental_sync.md)：在线Player、写集合、增量协议、缺包恢复及旧存档。
-- [AI可选模块边界](optional_ai_players.md)：实际耦合审查及后续设计，尚未移植AI玩法。
+- [AI玩家启用与边界](optional_ai_players.md)：默认关闭的独立模块、演示与Responses配置、调用预算、存档及验证。
 
 - [战车加工实施台账](vehicle_workshop.md)：P0/P1 资格、原版与复刻规则、材料用途、实例状态兼容。
 - [普通装备加工](equipment_processing.md)：P2 属性上限、原版材料、同源变体与加工实例。

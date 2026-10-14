@@ -18,7 +18,8 @@ Godot 4.7.2 纯 2D 联机复刻工程。共享领域规则与权威服务器，�
 数量不等于完整复刻：正式账号、SQLite 适配器、生产级经济幂等与世界持久化等仍未完成，
 详见[运行内容与资源包](./docs/runtime_content.md)及[开发路线图](./docs/development_roadmap.md)。
 
-本轮新增功能、性能验证和AI后续边界见 [2026-10-14社区迁移记录](./docs/community_integration_2026-10-14.md)。
+本轮新增功能与性能验证见 [2026-10-14社区迁移记录](./docs/community_integration_2026-10-14.md)。
+可选AI玩家默认关闭；开启方式、模型配置与隔离边界见 [AI玩家启用说明](./docs/optional_ai_players.md)。
 
 ## 本地启动
 

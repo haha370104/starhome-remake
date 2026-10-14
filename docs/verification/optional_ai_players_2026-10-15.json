@@ -1,0 +1,169 @@
+{
+  "date": "2026-10-15",
+  "scope": "Optional AI integration; default off; incremental focused checks, not a full-suite run",
+  "branch": "work/community-gameplay-integration",
+  "code_commit": "e51a424",
+  "full_suite_run": false,
+  "paid_model_called": false,
+  "new_assertions": 122,
+  "existing_regression_assertions": 1137,
+  "checks": [
+    {
+      "script": "tests/server/persistence/local_actor_session_test.gd",
+      "passed": true,
+      "checks": [
+        "Local actor sessions: 14 checks, 0 failures"
+      ],
+      "seconds": 8.72,
+      "local_log_directory": "work/community_integration/checks-232721"
+    },
+    {
+      "script": "tests/server/optional_ai/ai_contract_test.gd",
+      "passed": true,
+      "checks": [
+        "AI contracts: 21 checks, 0 failures"
+      ],
+      "seconds": 0.41,
+      "local_log_directory": "work/community_integration/checks-233704"
+    },
+    {
+      "script": "tests/server/optional_ai/ai_authority_test.gd",
+      "passed": true,
+      "checks": [
+        "AI authority: 34 checks, 0 failures"
+      ],
+      "seconds": 9.36,
+      "local_log_directory": "work/community_integration/checks-235617"
+    },
+    {
+      "script": "tests/server/optional_ai/ai_opt_in_test.gd",
+      "passed": true,
+      "checks": [
+        "AI opt-in: 20 checks, 0 failures"
+      ],
+      "seconds": 10.48,
+      "local_log_directory": "work/community_integration/checks-235958"
+    },
+    {
+      "script": "tests/server/optional_ai/ai_http_provider_test.gd",
+      "passed": true,
+      "checks": [
+        "AI HTTP: 13 checks, 0 failures"
+      ],
+      "seconds": 1.63,
+      "local_log_directory": "work/community_integration/checks-235617"
+    },
+    {
+      "script": "tests/server/optional_ai/ai_scheduler_test.gd",
+      "passed": true,
+      "checks": [
+        "AI scheduler: 11 checks, 0 failures"
+      ],
+      "seconds": 0.53,
+      "local_log_directory": "work/community_integration/checks-235617"
+    },
+    {
+      "script": "tests/integration/optional_ai_scene_test.gd",
+      "passed": true,
+      "checks": [
+        "AI scene: 9 checks, 0 failures"
+      ],
+      "seconds": 11.4,
+      "local_log_directory": "work/community_integration/checks-235958"
+    },
+    {
+      "script": "tests/server/authoritative_server_smoke_test.gd",
+      "passed": true,
+      "checks": [
+        "AUTHORITATIVE_SERVER_SMOKE_OK (329 assertions)"
+      ],
+      "seconds": 20.28,
+      "local_log_directory": "work/community_integration/checks-235958"
+    },
+    {
+      "script": "tests/integration/in_process_authoritative_transport_test.gd",
+      "passed": true,
+      "checks": [
+        "IN_PROCESS_AUTHORITATIVE_TRANSPORT_OK (46 assertions)"
+      ],
+      "seconds": 8.73,
+      "local_log_directory": "work/community_integration/checks-235958"
+    },
+    {
+      "script": "tests/server/map_residency_test.gd",
+      "passed": true,
+      "checks": [
+        "MAP_RESIDENCY_OK (29 assertions)"
+      ],
+      "seconds": 8.4,
+      "local_log_directory": "work/community_integration/checks-235958"
+    },
+    {
+      "script": "tests/server/persistence/background_persistence_test.gd",
+      "passed": true,
+      "checks": [
+        "BACKGROUND_PERSISTENCE_OK (17 checks)"
+      ],
+      "seconds": 7.5,
+      "local_log_directory": "work/community_integration/checks-235958"
+    },
+    {
+      "script": "tests/server/persistence/graceful_exit_test.gd",
+      "passed": true,
+      "checks": [
+        "GRACEFUL_EXIT_OK (50 checks)"
+      ],
+      "seconds": 12.93,
+      "local_log_directory": "work/community_integration/checks-235958"
+    },
+    {
+      "script": "tests/integration/map_transition_scene_smoke_test.gd",
+      "passed": true,
+      "checks": [
+        "MAP_TRANSITION_SCENE_SMOKE_OK (666 assertions)"
+      ],
+      "seconds": 15.08,
+      "local_log_directory": "work/community_integration/checks-235958"
+    },
+    {
+      "script": "tools/check_gdscript_warnings.gd",
+      "passed": true,
+      "checks": [
+        "GDSCRIPT_WARNINGS_OK warnings=0 errors=0 report=C:/Users/tomato/Documents/Codex/2026-08-25/new-chat/outputs/starhome_remake/.godot/warning-scan-49704/warnings.json"
+      ],
+      "seconds": 3.65,
+      "local_log_directory": "work/community_integration/checks-235617"
+    }
+  ],
+  "gpu": {
+    "renderer": "OpenGL 3.3 Compatibility / NVIDIA RTX 4060",
+    "checks": "AI scene: 9 checks, 0 failures",
+    "log": ".godot/ai-visual/run.log",
+    "screenshot": ".godot/optional_ai_scene.png",
+    "visually_inspected": true
+  },
+  "cli": {
+    "main_scene": true,
+    "enable_flag": true,
+    "provider": "demo",
+    "log": ".godot/ai-cli/run.log",
+    "exit": 0,
+    "memory_file_written": true
+  },
+  "gates": [
+    "GDScript documentation: 677 files",
+    "Client architecture guard passed",
+    "Documentation links passed",
+    "All commits passed <=20 paths / <=2000 changed text lines"
+  ],
+  "issues_resolved": [
+    "Initial threaded HTTPRequest test timed out at 150s when mock server withheld response; switched to nonblocking asynchronous HTTPRequest. Success, HTTP 429, timeout and cancellation all passed."
+  ],
+  "limits": [
+    "No real paid model planning test",
+    "Existing generic remote-player appearance and identity labels retained",
+    "No social tools or daily-task accept/turn-in tools",
+    "User pre-existing project.godot changes preserved; assets unchanged",
+    "Tests used isolated profiles and stores, not the human daily save"
+  ]
+}
