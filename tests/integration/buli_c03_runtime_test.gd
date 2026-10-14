@@ -10,6 +10,7 @@ var failures: Array[String] = []
 
 ## 验证首张批量提升地图的表现、导航和双向图谱已进入真实运行目录。
 func _initialize() -> void:
+	_expect(bool(RuntimeContentBootstrap.mount_default().get("ok", false)), "正式地图内容包应挂载")
 	var catalog := CatalogScript.new()
 	var directory: Dictionary = JSON.parse_string(
 		FileAccess.get_file_as_string("res://data/maps/map_directory.json")

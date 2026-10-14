@@ -99,13 +99,19 @@ func _test_driving_progression_scope(vehicle_instance: AuthoritativeMapInstance,
 func _test_population_and_routes(instance: AuthoritativeMapInstance) -> void:
 	var module: AuthoritativeCombatModule = instance.combat_module
 	var snapshot := module.snapshot_for_actor(PLAYER_ID)
-	_expect(snapshot.monsters.size() == 200, "D04 应初始化配置上限的二百只怪物")
 	var species: Dictionary = {}
 	for monster: Dictionary in snapshot.monsters:
+		if module.monster_for(String(monster.entity_id)).population_kind != &"ordinary":
+			continue
 		species[String(monster.species_id)] = int(species.get(String(monster.species_id), 0)) + 1
 	_expect(species == {
 		"om_adult": 50, "om_larva": 50, "photosensitive_orb": 50, "toxic_gel": 50,
-	}, "D04 怪物数量应完全由地图配置驱动")
+	}, "D04 普通种群应为四种各五十只，额外变异种群独立计数")
+	var catalog = CombatCatalogScript.load_default().value
+	var expected_total := 200
+	for kind: StringName in [&"elite", &"mutant", &"boss"]:
+		expected_total += int(catalog.monster_population_policy_for_map("d04_field_zone", kind).get("maximum_population", 0))
+	_expect(snapshot.monsters.size() == expected_total, "普通与额外种群应分别遵守地图配置上限")
 	_expect(snapshot.local_vehicle.health == 70 and snapshot.local_vehicle.max_health == 70,
 		"新兵底盘应拥有七十点生命")
 	_expect(is_equal_approx(snapshot.local_vehicle.working_energy, 100.0) \
@@ -114,12 +120,16 @@ func _test_population_and_routes(instance: AuthoritativeMapInstance) -> void:
 	var first_id: String = snapshot.monsters[0].entity_id
 	var first_monster: MonsterLifecycle = module.monster_for(first_id)
 	var first_position := first_monster.position
-	module.advance_ticks(99)
+	var first_deadline := first_monster.next_wander_tick
+	_expect(first_deadline >= 1 and first_deadline <= 100, "首次游荡须按个体分散在五秒内")
+	module.advance_ticks(first_deadline - 1)
 	_expect(first_monster.position.is_equal_approx(first_position),
-		"未交战怪物应先等待配置的五秒间隔")
-	module.advance_ticks(2)
+		"怪物不得在自身游荡时刻前移动")
+	for _tick in range(200):
+		module.advance_ticks(1)
+		if not first_monster.position.is_equal_approx(first_position): break
 	_expect(not first_monster.position.is_equal_approx(first_position),
-		"未交战怪物应在五秒后开始一次确定性游荡")
+		"游荡到期后应获得预算并开始正式导航移动")
 	var first_roaming_position := first_monster.position
 	module.advance_ticks(3)
 	_expect(first_monster.action == &"move" \
