@@ -78,6 +78,7 @@ $testScripts = @(
     "res://tests/client/gameplay/client_audio_controller_test.gd",
     "res://tests/server/commerce/quest_abandon_test.gd",
     "res://tests/server/commerce/botanical_garden_test.gd",
+    "res://tests/server/persistence/local_actor_session_test.gd",
     "res://tests/server/persistence/garden_authority_test.gd",
     "res://tests/ui/runtime/botanical_garden_scene_test.gd",
     "res://tests/ui/runtime/garden_item_presentation_test.gd",

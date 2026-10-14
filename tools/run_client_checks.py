@@ -11,6 +11,7 @@ import time
 
 ROOT = Path(__file__).resolve().parents[1]
 TESTS = (
+    "server/persistence/local_actor_session_test.gd",
     "client/presentation/combat/presentation_pool_test.gd",
     "server/spatial/world_query_index_test.gd",
     "server/player_panels/online_player_store_test.gd",

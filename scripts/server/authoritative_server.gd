@@ -64,6 +64,7 @@ var emitted_snapshot_count := 0
 var _simulation_accumulator := 0.0
 var _ticks_per_snapshot := 2
 var _next_entity_number := 1
+var _next_local_peer_id := 0x100000000
 var _network_started := false
 var _transport_endpoint: NetworkTransportEndpoint
 var _combat_catalog
@@ -345,12 +346,36 @@ func open_session(peer_id: int, request: Dictionary, now_msec := -1) -> Dictiona
 			return reconnect_result
 		if _exit_service != null: _exit_service.forget(peer_id)
 		return _session_response(reconnect_result.value, true)
+	var entity_id := "player.%d" % _next_entity_number
+	_next_entity_number += 1
+	return _create_player_session(peer_id, entity_id, current_time)
+
+
+## 为服务端插件创建稳定的独立角色；不从网络握手接受角色身份。
+## [param actor_key] 插件拥有的稳定标识，仅允许ASCII标识符，最长64字符。
+## 返回正式会话和世界快照；不会占用普通玩家的顺序编号。
+func open_local_actor(actor_key: String) -> Dictionary:
+	if sessions == null or RegEx.create_from_string("^[A-Za-z_][A-Za-z0-9_]{0,63}$").search(actor_key) == null:
+		return _failure(&"actor.invalid_identity", "本地角色身份无效")
+	var entity_id := "local.%s" % actor_key
+	if sessions.session_for_entity(entity_id) != null:
+		return _failure(&"actor.already_connected", "本地角色已经在线")
+	var peer_id := _next_local_peer_id
+	_next_local_peer_id += 1
+	return _create_player_session(peer_id, entity_id, Time.get_ticks_msec())
+
+
+## 共用普通玩家的初始化、持久化和恢复链路，身份由服务器入口决定。
+## [param peer_id] 真实连接或进程内插件会话。[param entity_id] 已验证的角色身份。
+## [param current_time] 单调时钟毫秒值。
+## 返回会话创建结果。
+func _create_player_session(peer_id: int, entity_id: String, current_time: int) -> Dictionary:
+	if sessions.session_for_peer(peer_id) != null:
+		return _failure(&"peer_already_connected", "连接已经拥有会话")
 	var primary := ensure_runtime_map(_default_map_id)
 	if not primary.ok:
 		return primary
 	map_instance = primary.value
-	var entity_id := "player.%d" % _next_entity_number
-	_next_entity_number += 1
 	var spawn_result := map_instance.spawn_entity(
 		entity_id, config.default_spawn, config.default_movement_speed
 	)
@@ -1324,7 +1349,7 @@ func _emit_snapshot() -> void:
 		if session_map == null or not shared_by_map.has(session.map_instance_id): continue
 		var session_snapshot := session_map.with_private_snapshot(shared_by_map[session.map_instance_id], session.entity_id)
 		peer_snapshot_generated.emit(session.peer_id, session_snapshot.duplicate(true))
-		if _network_started:
+		if _network_started and session.peer_id < 0x100000000:
 			_transport_endpoint.send_world_snapshot(session.peer_id, session_snapshot)
 
 
@@ -1336,7 +1361,7 @@ func _send_reliable(peer_id: int, message: Dictionary) -> void:
 	message = _player_sync.encode(peer_id, message)
 	if peer_id > 0:
 		server_message_generated.emit(peer_id, message.duplicate(true))
-	if _network_started and peer_id > 0:
+	if _network_started and peer_id > 0 and peer_id < 0x100000000:
 		_transport_endpoint.send_server_message(peer_id, message)
 
 
