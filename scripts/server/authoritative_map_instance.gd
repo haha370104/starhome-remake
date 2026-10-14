@@ -795,19 +795,35 @@ func snapshot(server_tick: int, server_time_seconds: float) -> Dictionary:
 ## [param actor_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## 返回该函数计算、查询或操作得到的结果。
 func snapshot_for_actor(server_tick: int, server_time_seconds: float, actor_id: String) -> Dictionary:
+	return with_private_snapshot(public_snapshot(server_tick, server_time_seconds), actor_id)
+
+
+## 每个发布周期只构造一次公共实体、怪物、矿点与地面物品投影。
+## [param server_tick] 权威帧号。[param server_time_seconds] 权威运行时间。
+## 返回不含本地玩家专有字段的完整世界投影。
+func public_snapshot(server_tick: int, server_time_seconds: float) -> Dictionary:
 	var result := snapshot(server_tick, server_time_seconds)
+	var combat := combat_module.public_snapshot(instance_id) if combat_module != null else {}
 	if combat_module != null:
-		var combat_snapshot: Dictionary = combat_module.snapshot_for_actor(actor_id)
-		combat_snapshot["vehicle_combat_active"] = is_vehicle_combat_active()
-		combat_snapshot["mine_sources"] = mining_module.snapshot() if mining_module != null else []
-		combat_snapshot["local_mining"] = mining_module.action_snapshot(actor_id) \
-			if mining_module != null else {"active": false}
-		result["combat"] = combat_snapshot
+		combat["vehicle_combat_active"] = is_vehicle_combat_active()
+		combat["mine_sources"] = mining_module.snapshot() if mining_module != null else []
 	if ground_items_provider.is_valid():
-		var combat: Dictionary = result.get("combat", {})
 		var items: Array = combat.get("ground_loot", [])
 		items.append_array(ground_items_provider.call(instance_id))
 		combat["ground_loot"] = items
+	if not combat.is_empty(): result["combat"] = combat
+	return result
+
+
+## 在公共投影上附加一个角色的私有状态，沿用现有传输格式。
+## [param shared] 同周期生成的公共快照。[param actor_id] 会话角色。
+## 返回拥有独立字典外壳的玩家快照；不修改公共字典和数组。
+func with_private_snapshot(shared: Dictionary, actor_id: String) -> Dictionary:
+	var result := shared.duplicate(false)
+	if combat_module != null:
+		var combat: Dictionary = shared.get("combat", {}).duplicate(false)
+		combat.merge(combat_module.private_snapshot(actor_id), true)
+		combat["local_mining"] = mining_module.action_snapshot(actor_id) if mining_module != null else {"active": false}
 		result["combat"] = combat
 	return result
 

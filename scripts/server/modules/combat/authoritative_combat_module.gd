@@ -1005,10 +1005,16 @@ func advance_suspended_time(elapsed_ticks: int) -> void:
 ## 返回该函数计算、查询或操作得到的结果。
 ## 设计：该函数位于权威服务器边界，客户端不得覆盖其计算结果。
 func snapshot_for_actor(actor_id: String) -> Dictionary:
-	if not actors.has(actor_id):
-		return {}
-	var actor: Dictionary = actors[actor_id]
-	var map_instance_id := String(actor["map_instance_id"])
+	if not actors.has(actor_id): return {}
+	var result := public_snapshot(String(actors[actor_id]["map_instance_id"]))
+	result.merge(private_snapshot(actor_id), true)
+	return result
+
+
+## 生成同地图玩家共用的世界事实，不包含私人战车、装备能力或采矿动作。
+## [param map_instance_id] 目标地图实例。
+## 返回本逻辑帧可被共享的公共快照。
+func public_snapshot(map_instance_id: String) -> Dictionary:
 	var monster_snapshots: Array[Dictionary] = []
 	var ordered_monster_ids := monsters.keys()
 	ordered_monster_ids.sort()
@@ -1030,6 +1036,18 @@ func snapshot_for_actor(actor_id: String) -> Dictionary:
 			"action_sequence": monster.action_sequence,
 			"facing_index": monster.facing_direction,
 		})
+	return {"server_tick": current_tick, "monsters": monster_snapshots,
+		"ground_loot": _ground_loot_for_map(map_instance_id),
+		"corrosive_clouds": corrosion.snapshots(map_instance_id, actors),
+		"recent_events": _recent_combat_events()}
+
+
+## 仅生成当前连接有权接收的战车资源与武器能力。
+## [param actor_id] 当前会话绑定的角色。
+## 返回私人字段；未知角色为空。
+func private_snapshot(actor_id: String) -> Dictionary:
+	if not actors.has(actor_id): return {}
+	var actor: Dictionary = actors[actor_id]
 	var local_vehicle: Dictionary = (actor["vehicle_state"] as VehicleCombatState).to_dictionary()
 	var repair_state: Dictionary = actor["self_repair"]
 	local_vehicle["self_repair_active"] = bool(repair_state["active"])
@@ -1040,17 +1058,9 @@ func snapshot_for_actor(actor_id: String) -> Dictionary:
 	local_vehicle["self_repair_required_skill_level"] = int(
 		actor["self_repair_required_skill_level"]
 	)
-	return {
-		"server_tick": current_tick,
-		"local_entity_id": actor_id,
-		"local_weapon_flight": _weapon_flight_snapshot(actor),
+	return {"local_entity_id": actor_id, "local_weapon_flight": _weapon_flight_snapshot(actor),
 		"local_sama_effects": sama.snapshot(actor_id, actor.equipment_condition, current_tick, simulation_hz),
-		"local_vehicle": local_vehicle,
-		"monsters": monster_snapshots,
-		"ground_loot": _ground_loot_for_map(map_instance_id),
-		"corrosive_clouds": corrosion.snapshots(map_instance_id, actors),
-		"recent_events": _recent_combat_events(),
-	}
+		"local_vehicle": local_vehicle}
 
 
 ## 导出本玩家各武器的表现弹道参数，不传递服务端伤害公式或资源路径。

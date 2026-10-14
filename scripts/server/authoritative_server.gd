@@ -1311,17 +1311,20 @@ func _on_transport_map_transition_intent(peer_id: int, intent: Dictionary) -> vo
 func _emit_snapshot() -> void:
 	var _timing := PerformanceTelemetry.measure(&"snapshot_publish")
 	emitted_snapshot_count += 1
+	var shared_by_map: Dictionary = {}
 	for registered_instance: AuthoritativeMapInstance in map_registry.all_instances():
-		var snapshot := registered_instance.snapshot(
-			server_tick, float(server_tick) / float(config.simulation_hz)
-		)
-		snapshot_generated.emit(snapshot)
+		var shared := registered_instance.public_snapshot(server_tick, float(server_tick) / float(config.simulation_hz))
+		shared_by_map[registered_instance.instance_id] = shared
+		# 保持旧观察信号的实体快照语义，隔离订阅者对公共基线的修改。
+		snapshot_generated.emit({"server_tick": shared.server_tick,
+			"server_time_seconds": shared.server_time_seconds, "entities": shared.entities.duplicate(true)})
 	for session: ServerSession in sessions.active_sessions():
-		var session_snapshot := snapshot_for_peer(session.peer_id)
-		if not session_snapshot.is_empty():
-			peer_snapshot_generated.emit(session.peer_id, session_snapshot.duplicate(true))
-			if _network_started:
-				_transport_endpoint.send_world_snapshot(session.peer_id, session_snapshot)
+		var session_map := map_registry.instance_by_id(session.map_instance_id)
+		if session_map == null or not shared_by_map.has(session.map_instance_id): continue
+		var session_snapshot := session_map.with_private_snapshot(shared_by_map[session.map_instance_id], session.entity_id)
+		peer_snapshot_generated.emit(session.peer_id, session_snapshot.duplicate(true))
+		if _network_started:
+			_transport_endpoint.send_world_snapshot(session.peer_id, session_snapshot)
 
 
 ## 执行 `send_reliable` 对应的模块操作。
