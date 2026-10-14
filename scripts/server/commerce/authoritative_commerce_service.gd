@@ -14,6 +14,7 @@ const COMMAND_TYPES := [
 	"query_attachment_upgrades", "upgrade_attachment",
 	"query_weapon_merchant", "buy_from_weapon_merchant", "sell_to_weapon_merchant",
 	"accept_weapon_merchant_task", "turn_in_weapon_merchant_task",
+	"abandon_weapon_merchant_task",
 ]
 
 var daily := DailyActivityService.new()
@@ -244,7 +245,7 @@ func _execute_command(
 			return _buy(player, command, merchant)
 		"sell_to_weapon_merchant":
 			return _sell(player, command, merchant)
-		"accept_weapon_merchant_task", "turn_in_weapon_merchant_task":
+		"accept_weapon_merchant_task", "turn_in_weapon_merchant_task", "abandon_weapon_merchant_task":
 			return quests.execute(player, merchant_id, command)
 	return DomainResult.failure(&"commerce.unknown_command", "unknown commerce command")
 

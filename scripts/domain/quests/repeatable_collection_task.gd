@@ -61,6 +61,17 @@ func accept(state: Dictionary) -> DomainResult:
 	return DomainResult.ok({"accepted": true, "completions": completions})
 
 
+## 放弃本轮收集，保留历史轮次以免重复领取里程碑奖励。
+## [param state] 当前权威任务状态。
+## 返回未领取状态或未接取错误；不消耗背包材料。
+func abandon(state: Dictionary) -> DomainResult:
+	if not bool(state.get("accepted", false)):
+		return DomainResult.failure(&"quest.not_accepted", "请先接取任务")
+	var result := state.duplicate(true)
+	result["accepted"] = false
+	return DomainResult.ok(result)
+
+
 ## 消耗任务材料并计算本轮固定和里程碑奖励。
 ## [param inventory] 玩家权威背包。
 ## [param state] 当前持久化任务状态。

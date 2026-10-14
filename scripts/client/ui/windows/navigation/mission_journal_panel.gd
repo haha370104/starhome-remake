@@ -1,8 +1,11 @@
 class_name MissionJournalPanel
 extends ModernNavigationWindow
 
+signal command_requested(command: Dictionary)
+
 var listing: ItemList
 var details: RichTextLabel
+var abandon_action: Button
 var _entries: Array = []
 var _category := 0
 var _category_buttons: Array[Button] = []
@@ -35,7 +38,9 @@ func _ready() -> void:
 	details.add_theme_stylebox_override("normal", _surface_style("152330", "273b4b"))
 	details.add_theme_constant_override("line_separation", 4)
 	content_root.add_child(details)
-	_style_button(make_button("关闭", Rect2(140, 470, 100, 34), request_close))
+	abandon_action = make_button("放弃任务", Rect2(70, 470, 110, 34), _abandon_selected)
+	_style_button(abandon_action)
+	_style_button(make_button("关闭", Rect2(200, 470, 100, 34), request_close))
 	_select_category(_category)
 
 
@@ -49,26 +54,38 @@ func apply_entries(entries: Array) -> void:
 ## 切换日志分类，不伪造尚未导入的任务。
 ## [param category] 免费版四页中的分类序号。
 func _select_category(category: int) -> void:
+	var selected_id := ""
+	var same_category := category == _category
+	var selected := listing.get_selected_items()
+	if same_category and not selected.is_empty():
+		selected_id = String(listing.get_item_metadata(selected[0]).get("task_id", ""))
+	var scroll := listing.get_v_scroll_bar().value if same_category else 0.0
 	_category = category
 	for index in range(_category_buttons.size()):
 		_category_buttons[index].set_pressed_no_signal(index == category)
 	listing.clear()
+	var selected_index := 0
 	for entry: Dictionary in _entries:
 		if int(entry.get("category", 0)) != category:
 			continue
 		var status := "可交付" if entry.get("ready_to_turn_in", false) else "进行中" if entry.get("accepted", false) else "已完成"
 		var index := listing.add_item("%s · %s" % [entry["title"], status])
 		listing.set_item_metadata(index, entry)
+		if String(entry.get("task_id", "")) == selected_id:
+			selected_index = index
 	details.text = "此分类暂无已领取任务。"
+	abandon_action.disabled = true
 	if listing.item_count > 0:
-		listing.select(0)
-		_show_detail(0)
+		listing.select(selected_index)
+		_show_detail(selected_index)
+	listing.get_v_scroll_bar().set_deferred("value", scroll)
 
 
 ## 展示任务交付条件、背包材料进度、完成次数和奖励，不在日志里远程交任务。
 ## [param index] 当前分类内的任务行号。
 func _show_detail(index: int) -> void:
 	var entry: Dictionary = listing.get_item_metadata(index)
+	abandon_action.disabled = not bool(entry.get("accepted", false))
 	var lines := PackedStringArray([String(entry["title"])])
 	var training := String(entry.get("kind", "")) == "kill_training"
 	lines.append("今日接取：%d / %d" % [entry.get("daily_accepted", 0), entry.get("daily_accept_limit", 0)] if training \
@@ -79,3 +96,16 @@ func _show_detail(index: int) -> void:
 		else "报酬：%d 金币" % int(entry.get("currency_reward", 0)))
 	lines.append("请返回任务发布者处交付或领取下一轮。")
 	details.text = "\n".join(lines)
+
+
+## 发布放弃选中任务的意图；客户端不修改额度或累计奖励状态。
+func _abandon_selected() -> void:
+	var selected := listing.get_selected_items()
+	if selected.is_empty():
+		return
+	var entry: Dictionary = listing.get_item_metadata(selected[0])
+	if not bool(entry.get("accepted", false)):
+		return
+	command_requested.emit({"type": "abandon_weapon_merchant_task",
+		"merchant_id": String(entry.get("provider_id", "")),
+		"task_id": String(entry.get("task_id", ""))})

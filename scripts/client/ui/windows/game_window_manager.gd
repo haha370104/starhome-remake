@@ -123,7 +123,7 @@ func configure(session: PlayerPanelSession) -> bool:
 			window.workshop_requested.connect(_open_workshop)
 		if window is CrystalSourcePanel or window is AustinGlensPanel or window is SamaPanel or window is CentralPanel:
 			window.command_requested.connect(panel_session.dispatch)
-		if window is PersonalWarehousePanel or window is VehicleLoadoutPresetsPanel:
+		if window is PersonalWarehousePanel or window is VehicleLoadoutPresetsPanel or window is MissionJournalPanel:
 			window.command_requested.connect(panel_session.dispatch)
 		window.position = Vector2(120, 70)
 		window.notice_requested.connect(notice_requested.emit)
