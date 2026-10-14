@@ -73,6 +73,7 @@ var player_panel_service: AuthoritativePlayerPanelService
 var reward_service := AuthoritativeRewardService.new()
 var commerce_service
 var manufacturing_service
+var garden_service: AuthoritativeGardenService
 var warehouse_service: PersonalWarehouseService
 var _pending_vehicle_recoveries: Dictionary = {}
 var _runtime_definition_paths_by_map_id: Dictionary = {}
@@ -190,6 +191,10 @@ func initialize(
 	var manufacturing_result: DomainResult = manufacturing_service.initialize(reward_service.pipeline)
 	if not manufacturing_result.is_ok:
 		return _failure(manufacturing_result.error_code, manufacturing_result.error_message)
+	garden_service = AuthoritativeGardenService.new()
+	var garden_result := garden_service.initialize(player_panel_service.item_catalog(), reward_service.pipeline)
+	if not garden_result.is_ok:
+		return _failure(garden_result.error_code, garden_result.error_message)
 	warehouse_service = PersonalWarehouseService.new()
 	var warehouse_result := warehouse_service.initialize(reward_service.pipeline)
 	if not warehouse_result.is_ok:
@@ -802,6 +807,9 @@ func handle_peer_player_panel_command(peer_id: int, command: Dictionary) -> Dict
 		return _success({"scene_players": ScenePlayerListProjector.build(
 			session.map_instance_id, sessions, autosave_service
 		)})
+	var is_garden := command_type in AuthoritativeGardenService.COMMANDS
+	if is_garden and garden_service == null:
+		return _failure(&"garden.unavailable", "植物园尚未初始化")
 	var is_warehouse := command_type in PersonalWarehouseService.COMMANDS
 	if is_warehouse and warehouse_service == null:
 		return _failure(&"warehouse.unavailable", "个人仓库尚未初始化")
@@ -823,6 +831,8 @@ func handle_peer_player_panel_command(peer_id: int, command: Dictionary) -> Dict
 		executed = commerce_service.execute(current, trusted_command)
 	elif is_manufacturing:
 		executed = manufacturing_service.execute(current, trusted_command)
+	elif is_garden:
+		executed = garden_service.execute(current, trusted_command)
 	elif is_warehouse:
 		executed = warehouse_service.execute(current, trusted_command)
 	else:
@@ -881,6 +891,8 @@ func handle_peer_player_panel_command(peer_id: int, command: Dictionary) -> Dict
 		return _success(manufacturing_service.build_bundle(
 			committed.value, value.get("operation", {})
 		))
+	if is_garden:
+		return _success(garden_service.build_bundle(committed.value, value.get("operation", {})))
 	if is_warehouse:
 		return _success(warehouse_service.build_bundle(committed.value, value.get("operation", {})))
 	return _success(player_panel_service.build_bundle(committed.value))

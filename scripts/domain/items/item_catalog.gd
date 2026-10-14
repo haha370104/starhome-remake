@@ -30,6 +30,7 @@ const GAMEPLAY_PATHS := [
 	"res://data/gameplay/equipment_forging_items_v1.json",
 ]
 const PRESENTATION_PATHS := [
+	"res://data/presentation/botanical_garden_v1.json",
 	"res://data/presentation/crystal_source_materials_v1.json",
 	"res://data/presentation/player_equipment_v1.json",
 	"res://data/presentation/ground_loot_v1.json",

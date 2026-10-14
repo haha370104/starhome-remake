@@ -1,0 +1,139 @@
+{
+  "schema_version": 1,
+  "definitions": {
+    "item:material:c87ab4c9ebec": {
+      "display_name": "小椰子",
+      "inventory": {
+        "native_size": [
+          19,
+          19
+        ],
+        "ale_reference": "pic3/stuff/CHN_2005_06_28_18_08_50_508.ale"
+      },
+      "world": {
+        "native_size": [
+          19,
+          19
+        ],
+        "origin": [
+          -8,
+          -11
+        ],
+        "variants": {},
+        "ale_reference": "map/mapimg/house/coffee01/CHN_2005_06_28_18_08_50_508.ale"
+      }
+    },
+    "item:material:2990ca709816": {
+      "display_name": "生豆",
+      "inventory": {
+        "native_size": [
+          18,
+          19
+        ],
+        "ale_reference": "pic3/stuff/CHN_2005_06_28_18_08_04_500.ale"
+      },
+      "world": {
+        "native_size": [
+          18,
+          19
+        ],
+        "origin": [
+          -8,
+          -10
+        ],
+        "variants": {},
+        "ale_reference": "map/mapimg/house/coffee01/CHN_2005_06_28_18_08_04_500.ale"
+      }
+    },
+    "item:material:bf7cb63cd4fa": {
+      "display_name": "植物棉",
+      "inventory": {
+        "native_size": [
+          35,
+          30
+        ],
+        "ale_reference": "pic3/stuff/CHN_2005_06_28_18_08_15_502.ale"
+      },
+      "world": {
+        "native_size": [
+          35,
+          30
+        ],
+        "origin": [
+          -22,
+          -16
+        ],
+        "variants": {
+          "alternate": {
+            "native_size": [
+              35,
+              30
+            ],
+            "origin": [
+              -11,
+              -18
+            ],
+            "ale_reference": "map/mapimg/house/coffee01/CHN_2005_06_28_18_08_21_503.ale"
+          }
+        },
+        "ale_reference": "map/mapimg/house/coffee01/CHN_2005_06_28_18_08_15_502.ale"
+      }
+    },
+    "item:material:6116d8b965c6": {
+      "display_name": "面瓜",
+      "inventory": {
+        "native_size": [
+          28,
+          17
+        ],
+        "ale_reference": "pic3/stuff/CHN_2005_06_28_18_08_27_504.ale"
+      },
+      "world": {
+        "native_size": [
+          28,
+          17
+        ],
+        "origin": [
+          -9,
+          -10
+        ],
+        "variants": {
+          "alternate": {
+            "native_size": [
+              28,
+              17
+            ],
+            "origin": [
+              -19,
+              -7
+            ],
+            "ale_reference": "map/mapimg/house/coffee01/CHN_2005_06_28_18_08_33_505.ale"
+          }
+        },
+        "ale_reference": "map/mapimg/house/coffee01/CHN_2005_06_28_18_08_27_504.ale"
+      }
+    },
+    "item:material:212589b5bafd": {
+      "display_name": "糖瓜",
+      "inventory": {
+        "native_size": [
+          25,
+          25
+        ],
+        "ale_reference": "pic3/stuff/CHN_2005_06_28_18_08_39_506.ale"
+      },
+      "world": {
+        "native_size": [
+          25,
+          25
+        ],
+        "origin": [
+          -12,
+          -10
+        ],
+        "variants": {},
+        "ale_reference": "map/mapimg/house/coffee01/CHN_2005_06_28_18_08_44_507.ale"
+      }
+    }
+  }
+}

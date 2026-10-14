@@ -53,6 +53,7 @@ func to_domain(record: PlayerStateRecord) -> DomainResult:
 		"quest_states": record.quest_states,
 		"achievements": record.achievements,
 		"daily_activities": record.daily_activities,
+		"garden": record.garden.to_dictionary(),
 		"food_status": record.food_status,
 		"central": record.central.to_dictionary(),
 		"vehicle": {
@@ -190,6 +191,7 @@ func to_record(player: Player) -> DomainResult:
 		"quest_states": player.quest_states.duplicate(true),
 		"achievements": player.achievements.to_dictionary(),
 		"daily_activities": player.daily_activities.to_dictionary(),
+		"garden": player.garden.to_dictionary(),
 		"food_status": player.food_status.to_dictionary(),
 		"production": player.production.to_dictionary(),
 		"central": player.central.to_dictionary(),
