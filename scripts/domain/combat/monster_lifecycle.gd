@@ -154,13 +154,7 @@ func apply_damage(amount: int, attacker_id: String, current_tick: int, bypass_de
 func advance_to_tick(current_tick: int) -> DomainResult:
 	if current_tick < 0:
 		return DomainResult.failure(&"combat.invalid_tick", "tick cannot be negative")
-	var respawned := false
-	if not population_managed and health == 0 and respawn_at_tick >= 0 and current_tick >= respawn_at_tick:
-		health = max_health
-		respawn_at_tick = -1
-		last_killer_id = ""
-		reset_to_home(current_tick)
-		respawned = true
+	var respawned := advance_lifecycle_if_due(current_tick)
 	return DomainResult.ok({
 		"respawned": respawned,
 		"death_generation": death_generation,
@@ -319,3 +313,17 @@ func to_dictionary() -> Dictionary:
 		"death_generation": death_generation,
 		"last_killer_id": last_killer_id,
 	}
+
+
+## 到期时恢复非种群管理怪物，普通逻辑帧不分配临时结果对象。
+## [param current_tick] 当前权威逻辑帧，必须非负。
+## 返回本次是否完成复活。
+func advance_lifecycle_if_due(current_tick: int) -> bool:
+	if current_tick < 0 or population_managed or health > 0 \
+		or respawn_at_tick < 0 or current_tick < respawn_at_tick:
+		return false
+	health = max_health
+	respawn_at_tick = -1
+	last_killer_id = ""
+	reset_to_home(current_tick)
+	return true

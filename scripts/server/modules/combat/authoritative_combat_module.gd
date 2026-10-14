@@ -30,6 +30,10 @@ var sama := AuthoritativeSamaModule.new()
 var central := AuthoritativeCentralModule.new()
 var ground_loot: Dictionary = {}
 var rewards: AuthoritativeRewardService
+var _monster_spatial_grid := DeterministicSpatialGrid.new()
+var _monster_collision_query_padding := 0.0
+var _route_plans_this_tick := 0
+var _ai_cursor := 0
 var _random := RandomNumberGenerator.new()
 var _monster_position_resolver := Callable()
 var _monster_route_resolver := Callable()
@@ -67,6 +71,10 @@ func configure(
 	_random.seed = random_seed
 	actors.clear()
 	monsters.clear()
+	_monster_spatial_grid.clear()
+	_monster_collision_query_padding = 0.0
+	_route_plans_this_tick = 0
+	_ai_cursor = 0
 	combat_events.clear()
 	death_events.clear()
 	respawn_events.clear()
@@ -219,6 +227,9 @@ func register_monster(definition: Dictionary) -> DomainResult:
 	if monsters.has(lifecycle.monster_id):
 		return DomainResult.failure(&"combat.duplicate_monster", "monster identity is already registered")
 	monsters[lifecycle.monster_id] = lifecycle
+	_monster_spatial_grid.register(lifecycle.monster_id, lifecycle.position)
+	_monster_collision_query_padding = maxf(_monster_collision_query_padding,
+		lifecycle.attack_mode.projectile_hitbox_offset.length() + lifecycle.attack_mode.projectile_hitbox_radius)
 	return DomainResult.ok(lifecycle)
 
 
@@ -233,6 +244,7 @@ func remove_dead_monsters(map_instance_id: String) -> Array[String]:
 		var monster: MonsterLifecycle = monsters[monster_id]
 		if monster.map_instance_id == map_instance_id and not monster.is_alive():
 			monsters.erase(monster_id)
+			_monster_spatial_grid.remove(monster_id)
 			removed.append(monster_id)
 	return removed
 
@@ -441,9 +453,12 @@ func _nearest_target_to_point(
 	selection_radius: float,
 ) -> Dictionary:
 	var best := {"hit": false, "distance_squared": INF}
-	var ordered_monster_ids := monsters.keys()
-	ordered_monster_ids.sort()
-	for monster_id: String in ordered_monster_ids:
+	for monster_id: String in _monster_spatial_grid.query_aabb_candidates(
+		point - Vector2(selection_radius, selection_radius),
+		point + Vector2(selection_radius, selection_radius),
+	):
+		if not monsters.has(monster_id):
+			continue
 		var monster: MonsterLifecycle = monsters[monster_id]
 		if monster.map_instance_id != map_instance_id or not monster.is_alive():
 			continue
@@ -564,9 +579,15 @@ func _first_projectile_collision(
 	excluded := PackedStringArray(),
 ) -> Dictionary:
 	var best := {"hit": false, "t": INF}
-	var ordered_monster_ids := monsters.keys()
-	ordered_monster_ids.sort()
-	for monster_id: String in ordered_monster_ids:
+	var lower := Vector2(minf(origin.x, endpoint.x), minf(origin.y, endpoint.y))
+	var upper := Vector2(maxf(origin.x, endpoint.x), maxf(origin.y, endpoint.y))
+	var padding := _monster_collision_query_padding
+	for monster_id: String in _monster_spatial_grid.query_aabb_candidates(
+		lower - Vector2(padding, padding),
+		upper + Vector2(padding, padding),
+	):
+		if not monsters.has(monster_id):
+			continue
 		var monster: MonsterLifecycle = monsters[monster_id]
 		if monster_id in excluded or monster.map_instance_id != map_instance_id or not monster.is_alive():
 			continue
@@ -734,9 +755,12 @@ func _settle_rocket_projectile(projectile: Dictionary) -> void:
 	var impact_position: Vector2 = projectile["impact_position"]
 	var radius := float(weapon.get("area_radius", ACTOR_PROJECTILE_HITBOX_RADIUS * 2.0))
 	var hit_any := false
-	var ordered_monster_ids := monsters.keys()
-	ordered_monster_ids.sort()
-	for monster_id: String in ordered_monster_ids:
+	for monster_id: String in _monster_spatial_grid.query_aabb_candidates(
+		impact_position - Vector2(radius, radius),
+		impact_position + Vector2(radius, radius),
+	):
+		if not monsters.has(monster_id):
+			continue
 		var monster: MonsterLifecycle = monsters[monster_id]
 		if not monster.is_alive() or monster.map_instance_id != String(actors[projectile["attacker_id"]]["map_instance_id"]):
 			continue
@@ -928,6 +952,7 @@ func advance_ticks(tick_count: int, simulate_monster_ai := true) -> DomainResult
 	var fixed_delta := 1.0 / float(simulation_hz)
 	for unused_tick: int in range(tick_count):
 		current_tick += 1
+		_route_plans_this_tick = 0
 		for actor_id: String in actors:
 			var vehicle_state: VehicleCombatState = actors[actor_id]["vehicle_state"]
 			vehicle_state.regenerate_working_energy(fixed_delta, working_energy_regen_factor)
@@ -941,10 +966,12 @@ func advance_ticks(tick_count: int, simulate_monster_ai := true) -> DomainResult
 		for event: Dictionary in corrosion.advance(current_tick, actors):
 			_record_combat_event(event)
 		_commit_actor_position_samples()
-		for monster_id: String in monsters:
+		# 轮换起点，有限寻路预算不会长期偏向固定编号的怪物。
+		var ids := monsters.keys()
+		for index: int in range(ids.size()):
+			var monster_id: String = ids[(_ai_cursor + index) % ids.size()]
 			var monster: MonsterLifecycle = monsters[monster_id]
-			var lifecycle_result := monster.advance_to_tick(current_tick)
-			if bool(lifecycle_result.value["respawned"]):
+			if monster.advance_lifecycle_if_due(current_tick):
 				var respawn_event := {
 					"event_type": &"monster_respawned",
 					"server_tick": current_tick,
@@ -955,6 +982,8 @@ func advance_ticks(tick_count: int, simulate_monster_ai := true) -> DomainResult
 				emitted_respawns.append(respawn_event)
 			if monster.is_alive() and simulate_monster_ai:
 				_simulate_monster_tick(monster_id, fixed_delta)
+			_monster_spatial_grid.update(monster_id, monster.position)
+		_ai_cursor = (_ai_cursor + 2) % maxi(1, ids.size())
 	return DomainResult.ok(emitted_respawns)
 
 
@@ -1469,6 +1498,8 @@ func _simulate_unengaged_monster(monster_id: String, fixed_delta: float) -> void
 	if current_tick < monster.next_wander_tick:
 		monster.action = &"idle"
 		return
+	if _monster_route_resolver.is_valid() and _route_plans_this_tick >= 2:
+		return
 	if current_tick >= monster.next_wander_tick:
 		var phase_degrees := posmod(hash(monster_id) + current_tick * 47, 360)
 		var radius_factor := 0.35 + float(posmod(hash(monster_id) + current_tick, 60)) / 100.0
@@ -1502,6 +1533,9 @@ func _begin_monster_route(
 		monster.movement_route_goal = requested_target
 		monster.movement_route_kind = route_kind
 		return requested_target.is_finite()
+	if _route_plans_this_tick >= 2:
+		return false
+	_route_plans_this_tick += 1
 	var resolved: Variant = _monster_route_resolver.call(
 		monster.monster_id,
 		monster.position,
