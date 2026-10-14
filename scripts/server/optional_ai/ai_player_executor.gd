@@ -16,6 +16,7 @@ func begin(actor: AiPlayerActor, action: AiPlayerAction, observation: AiPlayerOb
 	actor.action = action
 	actor.action_map = observation.map_id
 	actor.action_deadline = now + 30000
+	actor.action_performed = false
 	actor.next_step = now
 	actor.last_move_target = Vector2.INF
 	actor.memory = action.memory
@@ -28,15 +29,19 @@ func step(actor: AiPlayerActor, view: AiPlayerObservation, now: int) -> DomainRe
 	if actor.action == null or now < actor.next_step: return null
 	actor.next_step = now + 500
 	if view.map_id != actor.action_map: return DomainResult.failure(&"ai.map_changed", "地图已变化，请重新决策")
-	if now >= actor.action_deadline: return DomainResult.failure(&"ai.action_timeout", "行动超时")
+	if now >= actor.action_deadline:
+		return DomainResult.ok() if actor.action_performed else DomainResult.failure(&"ai.action_timeout", "行动超时")
 	var action := actor.action
+	if action.kind == "hunt" and view.health < view.max_health * 0.25:
+		return DomainResult.failure(&"ai.health_low", "生命过低，中断狩猎等待撤退决策")
 	if action.kind == "wait": return DomainResult.ok()
 	if action.kind in ["panel", "self_repair", "return_base"]: return _world.perform(actor, action, null)
 	var target := view.find(action.kind, action.target_id)
 	var position := action.position
 	var radius := 24.0
 	if action.kind != "move":
-		if target == null or not target.available: return DomainResult.failure(&"ai.target_lost", "目标已消失或不可用")
+		if target == null or not target.available:
+			return DomainResult.ok() if action.kind == "hunt" and actor.action_performed else DomainResult.failure(&"ai.target_lost", "目标已消失或不可用")
 		position = target.position
 		radius = {"travel": 48.0, "hunt": 100.0, "mine": 55.0, "harvest": 100.0, "pickup": 90.0}.get(action.kind, 24.0)
 		if action.kind == "hunt":
@@ -56,4 +61,10 @@ func step(actor: AiPlayerActor, view: AiPlayerObservation, now: int) -> DomainRe
 	if view.moving:
 		var stopped := _world.move(actor, view.position)
 		return null if stopped.is_ok else stopped
-	return _world.perform(actor, action, target)
+	var performed := _world.perform(actor, action, target)
+	if action.kind == "hunt":
+		if performed.is_ok:
+			actor.action_performed = true
+			return null
+		if performed.error_code == &"combat.weapon_cooldown": return null
+	return performed

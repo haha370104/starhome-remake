@@ -31,10 +31,15 @@ func decide(request_id: int, observation: Dictionary, context: Dictionary) -> vo
 		_emit_deferred.call_deferred(request_id, DomainResult.failure(&"ai.key_missing", "AI密钥环境变量为空"))
 		return
 	_request_id = request_id
+	var input := JSON.stringify({"observation": observation, "context": context})
+	if input.to_utf8_buffer().size() > 131072:
+		_request_id = 0
+		_emit_deferred.call_deferred(request_id, DomainResult.failure(&"ai.context_limit", "AI观察超出128KiB限制"))
+		return
 	var body := {"model": _settings.model, "store": false, "max_output_tokens": _settings.max_output_tokens,
 		"parallel_tool_calls": false, "tool_choice": {"type": "function", "name": "choose_action"},
 		"tools": [AiPlayerAction.tool_definition()], "instructions": _instructions(),
-		"input": JSON.stringify({"observation": observation, "context": context})}
+		"input": input}
 	var error := _http.request(_settings.endpoint, PackedStringArray(["Content-Type: application/json", "Authorization: Bearer " + key]), HTTPClient.METHOD_POST, JSON.stringify(body))
 	if error != OK:
 		_request_id = 0

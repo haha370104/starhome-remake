@@ -9,6 +9,7 @@ var sequence := 0
 var action: AiPlayerAction
 var action_map := ""
 var action_deadline := 0
+var action_performed := false
 var next_step := 0
 var next_decision := 0
 var last_move_target := Vector2.INF

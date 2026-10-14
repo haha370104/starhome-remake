@@ -13,6 +13,7 @@ ROOT = Path(__file__).resolve().parents[1]
 TESTS = (
     "server/optional_ai/ai_opt_in_test.gd",
     "server/optional_ai/ai_http_provider_test.gd",
+    "server/optional_ai/ai_scheduler_test.gd",
     "server/optional_ai/ai_authority_test.gd",
     "server/optional_ai/ai_contract_test.gd",
     "server/persistence/local_actor_session_test.gd",
@@ -202,6 +203,7 @@ TESTS = (
     "domain/weapon_merchant_domain_test.gd",
     "integration/map_transition_scene_smoke_test.gd",
     "integration/persisted_map_startup_scene_test.gd",
+    "integration/optional_ai_scene_test.gd",
     "integration/in_process_authoritative_transport_test.gd",
 )
 

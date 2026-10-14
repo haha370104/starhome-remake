@@ -1352,6 +1352,8 @@ func _emit_snapshot() -> void:
 		snapshot_generated.emit({"server_tick": shared.server_tick,
 			"server_time_seconds": shared.server_time_seconds, "entities": shared.entities.duplicate(true)})
 	for session: ServerSession in sessions.active_sessions():
+		# 本地受控角色通过窄观察端口读取状态，无需构造或复制网络私有快照。
+		if session.peer_id >= 0x100000000: continue
 		var session_map := map_registry.instance_by_id(session.map_instance_id)
 		if session_map == null or not shared_by_map.has(session.map_instance_id): continue
 		var session_snapshot := session_map.with_private_snapshot(shared_by_map[session.map_instance_id], session.entity_id)

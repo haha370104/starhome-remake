@@ -75,9 +75,55 @@ func _run() -> void:
 	_check(server.sessions.session_for_peer(2) != null, "关闭AI不关闭真人")
 	server._save_all_persistent_players()
 	server.free()
+	_test_combat_port()
 	print("AI authority: %d checks, %d failures" % [checks, failures.size()])
 	for failure: String in failures: push_error(failure)
 	quit(0 if failures.is_empty() else 1)
+
+
+## 在正式野外地图验证开火耗能、拾取归属和采矿装备约束。
+func _test_combat_port() -> void:
+	var config := DedicatedServerConfig.new()
+	config.network_enabled = false
+	config.map_config_path = "res://data/maps/d04_field_zone.json"
+	config.player_state_store_path = "user://ai-combat-%d.json" % Time.get_ticks_usec()
+	var server := AuthoritativeServer.new()
+	_check(server.initialize(config).ok, "正式野外地图初始化")
+	var world := AiAuthorityAdapter.new(server, 1500)
+	var actor: AiPlayerActor = world.open_actor("hunter").value
+	var map := server.map_registry.instance_by_id(server.sessions.session_for_peer(actor.peer_id).map_instance_id)
+	var entity: AuthoritativeEntity = map.entities[actor.entity_id]
+	var monster: MonsterLifecycle = map.combat_module.monsters.values()[0]
+	# 仅布置测试目标；行动仍经正式武器/物品服务，未给角色额外战力。
+	monster.position = entity.position + Vector2(100, 0)
+	var view: AiPlayerObservation = world.observe(actor).value
+	_check(view.combat_active and view.health > 0, "观察使用实时战车生命")
+	var target := view.find("hunt", monster.monster_id)
+	_check(target != null, "观察到真实怪物")
+	var action: AiPlayerAction = AiPlayerAction.parse({"kind": "hunt", "target_id": monster.monster_id}).value
+	var energy := map.vehicle_combat_state_for(actor.entity_id).working_energy
+	var fired := world.perform(actor, action, target)
+	_check(fired.is_ok, "正式开火入口：" + fired.error_message)
+	_check(map.vehicle_combat_state_for(actor.entity_id).working_energy < energy, "AI开火正常消耗工作能量")
+	_check(not world.perform(actor, action, target).is_ok, "同tick连发受正式冷却约束")
+	monster.position = entity.position
+	monster.drop_table.configure([{"item_definition_id": "low_grade_gel", "chance": 1.0, "minimum_quantity": 1, "maximum_quantity": 1}])
+	var own_loot: Dictionary = map.combat_module._spawn_monster_loot(monster, actor.entity_id)[0]
+	var other_loot: Dictionary = map.combat_module._spawn_monster_loot(monster, "player.1")[0]
+	view = world.observe(actor).value
+	_check(view.find("pickup", own_loot.loot_id) != null and view.find("pickup", other_loot.loot_id) == null, "只选择自身战利品")
+	action = AiPlayerAction.parse({"kind": "pickup", "target_id": own_loot.loot_id}).value
+	_check(world.perform(actor, action, view.find("pickup", own_loot.loot_id)).is_ok, "正式拾取入账")
+	_check(_amount(server, actor, "low_grade_gel") == 1, "掉落材料进入自身背包")
+	_check(not world.perform(actor, action, null).is_ok, "重复拾取不重复发奖")
+	var source: MineSource = map.mining_module.sources.values()[0]
+	source.position = entity.position + Vector2(40, 0)
+	view = world.observe(actor).value
+	action = AiPlayerAction.parse({"kind": "mine", "target_id": source.source_id}).value
+	var mined := world.perform(actor, action, view.find("mine", source.source_id))
+	_check(not mined.is_ok and mined.error_code == &"mining.arm_required", "没有挖掘臂不能越权采矿")
+	_check(world.close_actor(actor).is_ok, "战斗角色正常保存退出")
+	server.free()
 
 
 ## 推进真实地图模拟直到自动接近行动完成；不伪造实体位置。

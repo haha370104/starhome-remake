@@ -1,0 +1,14 @@
+{
+  "provider": "responses",
+  "endpoint": "https://api.openai.com/v1/responses",
+  "model": "REPLACE_WITH_YOUR_MODEL",
+  "api_key_env": "STARHOME_AI_API_KEY",
+  "actors": [{"id": "explorer", "goal": "探索地图、购买合适的装备，在低级区域成长；生命过低优先回基地。"}],
+  "decision_interval_seconds": 10,
+  "timeout_seconds": 20,
+  "requests_per_minute": 6,
+  "max_requests_per_session": 120,
+  "max_output_tokens": 1024,
+  "observation_radius": 900,
+  "memory_directory": "user://ai_players/memory"
+}

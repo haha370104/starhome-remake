@@ -1,0 +1,7 @@
+{
+  "provider": "demo",
+  "actors": [{"id": "explorer", "goal": "探索附近，优先保证生存。"}],
+  "decision_interval_seconds": 10,
+  "requests_per_minute": 6,
+  "max_requests_per_session": 120
+}
