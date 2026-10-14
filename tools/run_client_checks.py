@@ -11,6 +11,7 @@ import time
 
 ROOT = Path(__file__).resolve().parents[1]
 TESTS = (
+    "client/gameplay/client_audio_controller_test.gd",
     "server/commerce/quest_abandon_test.gd",
     "server/spatial/deterministic_spatial_grid_test.gd",
     "client/presentation/combat/monster_interpolation_test.gd",

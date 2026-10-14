@@ -136,7 +136,7 @@ func _build_keys() -> void:
 	_page_label("keys", "点击右侧按钮后按下新组合，Esc 取消。\n支持 Ctrl、Alt、Shift，重复绑定会提示冲突。\n输入文字时不触发游戏快捷键。", Vector2(0, 155), 130)
 
 
-## 建立真实音频总线的音量设置，并明确当前没有可播放音源。
+## 建立独立音乐与动作音效总线的音量设置。
 func _build_audio() -> void:
 	for entry: Array in [["master", "总音量"], ["music", "音乐"], ["effects", "音效"]]:
 		var y := volume_sliders.size() * 52
@@ -152,7 +152,7 @@ func _build_audio() -> void:
 	mute_button.text = "全部静音"
 	_place("audio", mute_button, Rect2(0, 174, 300, 36))
 	mute_button.toggled.connect(func(value: bool) -> void: preferences.set_muted(value))
-	_page_label("audio", "当前暂无可播放音源。\n音量偏好会保存，供后续接入的声音使用。", Vector2(0, 238), 65)
+	_page_label("audio", "音乐控制地图配乐；音效控制移动、战斗和界面声音。\n音量偏好保存在本机。", Vector2(0, 238), 65)
 
 
 ## 将音量滑块的百分数转为线性通道值。

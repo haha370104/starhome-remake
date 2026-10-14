@@ -4,6 +4,7 @@ extends Node
 signal position_changed(position: Vector2)
 signal route_finished
 signal route_stopped(message: String)
+signal movement_state_changed(moving: bool)
 
 var path_points := PackedVector2Array()
 var path_index := 0
@@ -283,6 +284,7 @@ func _write_position(new_position: Vector2) -> void:
 ## 执行 `set_character_action` 对应的模块操作。
 ## [param action] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _set_character_action(action: StringName) -> void:
+	movement_state_changed.emit(action == &"move")
 	if _character != null:
 		_character.set_action(String(action), current_direction)
 
