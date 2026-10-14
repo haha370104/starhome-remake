@@ -7,6 +7,7 @@ var _windows: Array[DraggableGameWindow] = []
 var _original_themes: Dictionary = {}
 var _hud: HallHud
 var _path := "user://client-settings.cfg"
+var _frame_rate := preload("res://scripts/client/ui/components/frame_rate_display.gd").new()
 
 
 ## 将独立客户端偏好接入窗口、已有输入与音频总线，不持有人物存档。
@@ -17,6 +18,9 @@ func configure(manager: GameWindowManager, hud: HallHud, interactions: WorldInte
 	_hud = hud
 	_path = path
 	preferences.load_file(path)
+	_hud.add_overlay(_frame_rate)
+	_frame_rate.position = Vector2(12, 88)
+	hud.state.shortcut_visibility_changed.connect(preferences.set_shortcut_visible)
 	interactions.hotkeys = preferences.hotkeys
 	hud.map_navigation_panel.hotkeys = preferences.hotkeys
 	panel = ClientSettingsPanel.new()
@@ -56,8 +60,14 @@ func _changed() -> void:
 	panel.status.text = "设置已保存，立即生效。" if error == OK else "本次设置已生效，但保存失败；下次启动可能恢复旧设置。"
 
 
-## 同步窗口比例、通用文字和音量；世界镜头与语义颜色不受影响。
+## 同步全局与窗口比例、通用文字和音量。
 func _apply() -> void:
+	_frame_rate.set_enabled(preferences.show_fps)
+	_hud.state.set_shortcut_visible(preferences.shortcut_visible)
+	var root_window := get_tree().root
+	var game_scale := preferences.game_scale
+	if not is_equal_approx(root_window.content_scale_factor, game_scale):
+		root_window.content_scale_factor = game_scale
 	var viewport_size := get_viewport().get_visible_rect().size
 	for window in _windows:
 		window.requested_ui_scale = preferences.window_scale
