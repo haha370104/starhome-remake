@@ -9,6 +9,7 @@ class ItemRow extends RefCounted:
 	var locked := false
 	var bound := false
 	var presentation: Dictionary = {}
+	var item: GameItem
 
 	## 将安全物品投影转换为仓库列表行，不用于还原或保存实际物品。
 	## [param view] 权威物品显示字段。
@@ -22,6 +23,10 @@ class ItemRow extends RefCounted:
 		row.locked = bool(view.get("locked", false))
 		row.bound = bool(view.get("bound", false))
 		row.presentation = view.get("presentation", {}).duplicate(true)
+		row.item = GameItem.new({"id": view.get("definition_id", ""), "display_name": row.title,
+			"description": row.description, "presentation": row.presentation, "max_stack": maxi(1, row.quantity)},
+			{"instance_id": row.id, "quantity": row.quantity, "bound": row.bound, "locked": row.locked,
+			"position_px": view.get("position_px", [0, 0]), "footprint_px": view.get("footprint_px", [30, 30])})
 		return row
 
 	## 拼接列表中可直接区分的数量、锁定和绑定信息。

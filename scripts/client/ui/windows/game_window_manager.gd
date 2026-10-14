@@ -177,7 +177,11 @@ func _topmost_window_at(viewport_position: Vector2) -> DraggableGameWindow:
 ## 只将面板之外的拖动交给世界层，覆盖窗口的区域不视作地面。
 ## [param id] 发起拖动的背包物品。[param point] 松开位置。
 func _drop_outside_inventory(id: String, point: Vector2) -> void:
-	if _topmost_window_at(point) != null:
+	var target := _topmost_window_at(point)
+	if target is PersonalWarehousePanel:
+		target.accept_external_item(id, point)
+		return
+	if target != null:
 		return
 	ground_drop_requested.emit(id, point)
 

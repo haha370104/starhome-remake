@@ -12,8 +12,9 @@ class Merge extends RefCounted:
 ## [param id] 来源实例身份。
 ## [param amount] 本次正整数数量，不超过原堆叠。
 ## [param split_id] 只有部分存取才使用的服务端新身份。
+## [param requested_position] 指定左上角则保留独立堆叠；默认自动合并和排位。
 ## 返回实际转移数量；失败不修改任何对象，整件存取保留全部实例状态。
-static func move(source: Inventory, target: Inventory, id: String, amount: int, split_id: String) -> DomainResult:
+static func move(source: Inventory, target: Inventory, id: String, amount: int, split_id: String, requested_position := Vector2i(-1, -1)) -> DomainResult:
 	if source == null or target == null or source == target:
 		return DomainResult.failure(&"warehouse.container", "存取容器无效")
 	var item := source.find(id)
@@ -27,7 +28,11 @@ static func move(source: Inventory, target: Inventory, id: String, amount: int, 
 		return DomainResult.failure(&"warehouse.identity", "存取物品身份重复")
 	var merges: Array[Merge] = []
 	var remaining := amount
+	var exact := requested_position != Vector2i(-1, -1)
+	if exact and not Rect2i(Vector2i.ZERO, InventoryLayout.MAIN_SIZE).has_point(requested_position):
+		return DomainResult.failure(&"warehouse.position", "物品位置超出容器")
 	for existing: GameItem in target.items():
+		if exact: break
 		if not existing.can_stack_with(item): continue
 		var moved := mini(existing.max_stack - existing.quantity, remaining)
 		if moved <= 0: continue
@@ -41,7 +46,7 @@ static func move(source: Inventory, target: Inventory, id: String, amount: int, 
 	if remaining > 0:
 		var space := target.transfer_position(item)
 		if not space.is_ok: return space
-		position = space.value
+		position = requested_position if exact else space.value
 	# 从这里开始没有外部回调和可失败分支；不通过先扣物品再尝试入账来试容量。
 	var incoming: GameItem = item if whole else item.copy_stack(new_id, amount)
 	if whole:

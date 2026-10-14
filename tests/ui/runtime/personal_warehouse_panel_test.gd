@@ -36,7 +36,7 @@ func _run() -> void:
 	entry.pressed.emit()
 	var panel: PersonalWarehousePanel = _manager.navigation_windows.personal_warehouse
 	_check(panel.visible and panel._snapshot.available, "背包入口拉取权威仓库")
-	_check(panel.warehouse_list.item_count == 0 and panel._cabinet_buttons[1].disabled, "初始一柜")
+	_check(panel.warehouse_list.get_child_count() == 0 and panel._cabinet_buttons[1].disabled, "初始一柜")
 	_check(panel.deposit_button.disabled and panel.withdraw_button.disabled, "未选择不可转移")
 	_select(panel, true, "locked")
 	_check(panel.deposit_button.disabled, "锁定不可存入")
@@ -48,7 +48,7 @@ func _run() -> void:
 	_check(panel._snapshot.stored.size() == 1 and panel._snapshot.stored[0].quantity == 3, "实际入库三")
 	var stored_id := panel._snapshot.stored[0].id
 	_check(stored_id != "crystal" and panel._snapshot.stored[0].bound, "部分存入身份及绑定")
-	_check(panel.warehouse_list.get_item_icon(0) != null and panel.warehouse_list.get_item_tooltip(0).contains("裂纹：2"), "原物品图及实例说明")
+	_check(panel.warehouse_list.get_child(0)._icon.texture != null and panel.warehouse_list.get_child(0).item.description.contains("裂纹：2"), "原物品图及实例说明")
 	_select(panel, false, stored_id)
 	panel.withdraw_quantity.get_line_edit().text = "2"
 	panel.withdraw_button.pressed.emit()
@@ -67,9 +67,9 @@ func _run() -> void:
 	var count := _commands.size()
 	panel._confirm_expansion()
 	_check(_commands.size() == count, "确认只发一次")
-	_check(panel.warehouse_list.item_count == 0 and panel.withdraw_button.disabled, "新柜不沿用旧柜选择")
+	_check(panel.warehouse_list.get_child_count() == 0 and panel.withdraw_button.disabled, "新柜不沿用旧柜选择")
 	panel._cabinet_buttons[0].pressed.emit()
-	_check(panel.warehouse_list.item_count == 1 and panel._snapshot.cabinet == 1, "切回第一柜")
+	_check(panel.warehouse_list.get_child_count() == 1 and panel._snapshot.cabinet == 1, "切回第一柜")
 	_select(panel, true, "inventory.spare_engine")
 	_reject_once = true
 	panel.deposit_button.pressed.emit()
@@ -77,7 +77,7 @@ func _run() -> void:
 	panel.deposit_button.pressed.emit()
 	_check(panel._snapshot.stored.size() == 2 and _manager.panel_session.current_player.inventory.find("inventory.spare_engine") == null, "整件存入原身份")
 	var engine_index := _index(panel._snapshot.stored, "inventory.spare_engine")
-	_check(panel.warehouse_list.get_item_icon(engine_index) != null, "装备背包模式贴图")
+	_check(panel.warehouse_list.get_child(engine_index)._icon.texture != null, "装备背包模式贴图")
 	_select(panel, false, "inventory.spare_engine")
 	await process_frame
 	if "--capture" in OS.get_cmdline_user_args():
@@ -85,6 +85,12 @@ func _run() -> void:
 		root.get_texture().get_image().save_png("res://.godot/personal_warehouse_panel.png")
 	panel.withdraw_button.pressed.emit()
 	_check(_manager.panel_session.current_player.inventory.find("inventory.spare_engine") != null, "整件取出")
+	panel._transfer_at("inventory.spare_engine", true, Vector2i(73, 81))
+	_check(panel._snapshot.stored.filter(func(row: PersonalWarehouseSnapshot.ItemRow) -> bool: return row.id == "inventory.spare_engine")[0].item.position_px == Vector2i(73, 81), "拖入保留指定落点")
+	panel._move_item("inventory.spare_engine", Vector2i(113, 151), false)
+	_check(panel._snapshot.stored.filter(func(row: PersonalWarehouseSnapshot.ItemRow) -> bool: return row.id == "inventory.spare_engine")[0].item.position_px == Vector2i(113, 151), "仓库内自由移动")
+	panel._transfer_at("inventory.spare_engine", false, Vector2i(27, 49))
+	_check(_manager.panel_session.current_player.inventory.find("inventory.spare_engine").position_px == Vector2i(27, 49), "拖出保留指定背包落点")
 	_fixture.execute({"type": "arrange_inventory", "inventory_revision": _fixture._state.inventory_revision})
 	_manager.panel_session.apply_bundle(_fixture._service.build_bundle(_fixture._state))
 	_check(panel._snapshot.inventory_revision == _fixture._state.inventory_revision, "其他库存事务主动刷新版本")
@@ -94,7 +100,7 @@ func _run() -> void:
 	_fixture._state.map_id = "outside"
 	entry.pressed.emit()
 	_select(panel, true, "crystal")
-	_check(not panel._snapshot.available and panel.deposit_button.disabled and panel.expand_button.disabled and panel.warehouse_list.item_count == 0, "野外入口只显示地点限制")
+	_check(not panel._snapshot.available and panel.deposit_button.disabled and panel.expand_button.disabled and panel.warehouse_list.get_child_count() == 0, "野外入口只显示地点限制")
 	_manager.queue_free()
 	await process_frame
 	print("Personal warehouse UI: %d checks, %d failures" % [_checks, _failures])
@@ -110,8 +116,7 @@ func _select(panel: PersonalWarehousePanel, deposit: bool, id: String) -> void:
 	_check(index >= 0, "待选实例存在：" + id)
 	if index < 0: return
 	var listing := panel.backpack_list if deposit else panel.warehouse_list
-	listing.select(index)
-	listing.item_selected.emit(index)
+	listing.item_selected.emit(id)
 
 
 ## 定位实例在当前投影中的行号。
