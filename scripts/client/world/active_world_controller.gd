@@ -29,6 +29,7 @@ var scene_nodes: Array[Node2D] = []
 var npc_instances: Array[Node2D] = []
 var facility_instances: Array[Node2D] = []
 var transition_views: Array[Node2D] = []
+var _navigation_sources: Dictionary[StringName, Array] = {}
 
 var _world_root: Node2D
 var _sortable_world: Node2D
@@ -139,6 +140,7 @@ func commit_bundle(bundle: Dictionary, spawn_position: Vector2) -> bool:
 		staged["container"].free()
 		return false
 	active_world_will_replace.emit()
+	_navigation_sources.clear()
 	_clear_active_nodes()
 	definition = staged["definition"]
 	navigation = staged["navigation"]
@@ -425,11 +427,23 @@ func _adopt_staged_nodes(container: Node2D) -> void:
 
 
 ## 查询当前地图的实时目的地快照；巡逻 NPC 使用当前位置。
-## 返回不含场景引用的 NPC、设施及启用传送点数据。
+## 返回不含场景引用的 NPC、设施、模块兴趣点及启用传送点数据。
 func navigation_points() -> Array[MapNavigationPoint]:
 	if definition == null:
 		return []
-	return MapNavigationPoint.collect(npc_instances, facility_instances, definition.enabled_transitions())
+	var points := MapNavigationPoint.collect(npc_instances, facility_instances, definition.enabled_transitions())
+	for extra: Array in _navigation_sources.values(): points.append_array(extra)
+	return points
+
+
+## 接受当前地图模块提供的纯数据兴趣点；切图统一释放，不引用模块或世界节点。
+## [param source] 兴趣点所有者。[param map_id] 数据所属地图，旧地图回调不能写入新地图。
+## [param points] 带稳定身份的导航数据，空数组移除此来源。
+func set_module_navigation_points(source: StringName, map_id: StringName, points: Array[MapNavigationPoint]) -> void:
+	if definition == null or definition.map_id != map_id: return
+	if points.is_empty(): _navigation_sources.erase(source)
+	else: _navigation_sources[source] = points.duplicate()
+	refresh_navigation_points()
 
 
 ## 按面板请求刷新兴趣点，不在 UI 中暴露或保存世界节点。

@@ -23,6 +23,7 @@ TESTS = (
     "server/commerce/botanical_garden_test.gd",
     "server/persistence/garden_authority_test.gd",
     "ui/runtime/botanical_garden_scene_test.gd",
+    "integration/botanical_garden_transport_test.gd",
     "server/spatial/deterministic_spatial_grid_test.gd",
     "client/presentation/combat/monster_interpolation_test.gd",
     "client/presentation/combat/monster_spawn_budget_test.gd",

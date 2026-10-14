@@ -9,6 +9,10 @@ var _sprite := Sprite2D.new()
 var _timer := Timer.new()
 var _known := false
 var _material := ShaderMaterial.new()
+var status_label := Label.new()
+var _hovered := false
+var _selected := false
+var _fruit_bounds := Rect2()
 
 
 ## 为原场景树添加果实层，使用现有 ALE 资源仓储，不重复创建树木素材。
@@ -26,24 +30,43 @@ func configure(plant: BotanicalGardenCatalog.Plant, catalog: ItemCatalog) -> boo
 	_sprite.texture = resolved.get("texture")
 	if _sprite.texture == null: return false
 	_sprite.position = _offset
+	_fruit_bounds = Rect2(_offset - _sprite.texture.get_size() * 0.5, _sprite.texture.get_size()).grow(4.0)
 	_sprite.visible = false
 	_material.shader = HOVER_SHADER
 	_material.set_shader_parameter("glow_color", Color("33ff00"))
 	_material.set_shader_parameter("glow_radius", 4.0)
 	_material.set_shader_parameter("hover_amount", 0.0)
+	if _sprite.texture is AtlasTexture:
+		var atlas := _sprite.texture as AtlasTexture
+		var page_size := atlas.atlas.get_size()
+		_material.set_shader_parameter("source_region", Vector4(atlas.region.position.x / page_size.x,
+			atlas.region.position.y / page_size.y, atlas.region.size.x / page_size.x, atlas.region.size.y / page_size.y))
 	_sprite.material = _material
 	add_child(_sprite)
 	_timer.one_shot = true
 	_timer.timeout.connect(_refresh)
 	add_child(_timer)
+	status_label.position = _offset + Vector2(-100, -44)
+	status_label.size = Vector2(200, 26)
+	status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	status_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	status_label.add_theme_font_override("font", preload("res://assets/ui/fonts/legacy_panel_bold_font.tres"))
+	status_label.add_theme_font_size_override("font_size", 14)
+	status_label.add_theme_color_override("font_outline_color", Color.BLACK)
+	status_label.add_theme_constant_override("outline_size", 3)
+	status_label.z_index = 100
+	add_child(status_label)
+	_refresh()
 	return true
 
 
-## 果实实际图片附近接收点击，树干不会拦截移动。
+## 果实图片与状态名称接收点击，装饰植物不会拦截移动。
 ## [param point] 鼠标世界坐标。
 ## 返回是否命中果实范围。
 func hit_test(point: Vector2) -> bool:
-	return Rect2(global_position + _offset - Vector2(23, 23), Vector2(46, 46)).has_point(point)
+	if not is_visible_in_tree(): return false
+	return (_sprite.visible and _fruit_bounds.has_point(to_local(point))) \
+		or status_label.get_global_rect().has_point(point)
 
 
 ## 按服务端成熟状态提供语义动作，倒计时只控制本地展示。
@@ -57,7 +80,22 @@ func get_interaction_data() -> Dictionary:
 ## 接入共用交互菜单的选中光晕。
 ## [param active] 是否选中当前果实。
 func set_interaction_active(active: bool) -> void:
-	_material.set_shader_parameter("hover_amount", 1.0 if active else 0.0)
+	_selected = active
+	_refresh_highlight()
+
+
+## 鼠标悬浮与菜单选中分别持有高亮状态，关闭菜单不会消除仍在悬浮的提示。
+## [param hovered] 鼠标是否命中当前果实或可见名称。
+func set_hovered(hovered: bool) -> void:
+	_hovered = hovered
+	_refresh_highlight()
+
+
+## 复用地面掉落物的绿色晕染；未成熟时只强调名称，不点亮不存在的果实。
+func _refresh_highlight() -> void:
+	var active := _hovered or _selected
+	_material.set_shader_parameter("hover_amount", 1.0 if active and _sprite.visible else 0.0)
+	status_label.modulate = Color.WHITE if active else Color(0.9, 0.9, 0.9)
 
 
 ## 应用权威再生状态，第一次查询前不显示可采摘果实。
@@ -72,3 +110,7 @@ func apply_regrowth(remaining: int) -> void:
 ## 仅切换果实显示；计时结束不能直接增加物品。
 func _refresh() -> void:
 	_sprite.visible = _known and _timer.is_stopped()
+	var state := "可采摘" if _sprite.visible else ("生长中" if _known else "状态加载中")
+	status_label.text = "%s · %s" % [display_name, state]
+	status_label.add_theme_color_override("font_color", Color("b7ff80") if _sprite.visible else Color("c8c8c8"))
+	_refresh_highlight()

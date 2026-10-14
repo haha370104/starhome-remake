@@ -80,6 +80,7 @@ $testScripts = @(
     "res://tests/server/commerce/botanical_garden_test.gd",
     "res://tests/server/persistence/garden_authority_test.gd",
     "res://tests/ui/runtime/botanical_garden_scene_test.gd",
+    "res://tests/integration/botanical_garden_transport_test.gd",
 	"res://tests/server/spatial/deterministic_spatial_grid_test.gd",
 	"res://tests/client/presentation/combat/monster_interpolation_test.gd",
 	"res://tests/client/presentation/combat/monster_spawn_budget_test.gd",
