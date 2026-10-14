@@ -139,7 +139,7 @@ func configure(session: PlayerPanelSession) -> bool:
 	refresh.start()
 
 	if not panel_session.snapshot_bundle().is_empty():
-		_apply_player(panel_session.current_player)
+		_apply_player(panel_session.current_player, true)
 	return true
 
 
@@ -281,16 +281,18 @@ func _open_warehouse() -> void:
 
 ## 用会话的同事务投影同步人物、战车、背包和技能展示。
 ## [param player] 已完成权威快照还原的当前玩家。
-func _apply_player(player: Player) -> void:
+## [param force] 新建窗口时完整填充，即使玩家最后一次只改变局部状态。
+func _apply_player(player: Player, force := false) -> void:
 	var bundle := panel_session.snapshot_bundle()
-	character_panel.apply_snapshot(bundle["character"])
-	inventory_panel.apply_inventory(player.inventory)
-	inventory_panel.apply_food_status(player.food_status)
+	var change: PlayerPanelChange = panel_session.current_player.last_change
+	if force or change.character_changed: character_panel.apply_snapshot(bundle["character"])
+	if force or change.inventory_changed: inventory_panel.apply_inventory(player.inventory)
+	if force or change.food_changed: inventory_panel.apply_food_status(player.food_status)
 	character_panel.set_inventory_revision(int(bundle["inventory"].get("revision", -1)))
 	vehicle_panel.set_inventory_revision(int(bundle["inventory"].get("revision", -1)))
-	vehicle_panel.apply_snapshot(bundle["vehicle"])
-	skill_panel.apply_skills(bundle["character"].get("skills", []))
-	navigation_windows["achievements"].apply_snapshot(player.achievements.snapshot())
+	if force or change.vehicle_changed: vehicle_panel.apply_snapshot(bundle["vehicle"])
+	if force or change.skills_changed: skill_panel.apply_skills(bundle["character"].get("skills", []))
+	if force or change.achievements_changed: navigation_windows["achievements"].apply_snapshot(player.achievements.snapshot())
 
 
 ## 打开武器商人的购买、出售或任务窗口，并拉取同一事务快照。

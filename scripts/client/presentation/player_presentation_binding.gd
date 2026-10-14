@@ -49,12 +49,13 @@ func on_skill_level_up(event: Dictionary) -> void:
 ## 将客户端唯一 CurrentPlayer 的服装对象同步到世界人物表现。
 ## [param current_player] 刚应用同事务权威快照的当前玩家聚合。
 func on_current_player_changed(current_player: Player) -> void:
-	if world_view.player != null:
+	if world_view.player != null and (not current_player is CurrentPlayer or current_player.last_change.appearance_changed):
 		world_view.player.apply_character_equipment(
 			current_player.character_equipment,
 			character_catalog,
 		)
 		world_view.player.apply_vehicle_equipment(current_player.vehicle)
+	if not current_player is CurrentPlayer or current_player.last_change.vehicle_changed:
 		world_view.apply_weapon_equipment(current_player.vehicle)
 	if hud != null:
 		var primary_device: VehicleEquipment = current_player.vehicle.loadout.at(1)

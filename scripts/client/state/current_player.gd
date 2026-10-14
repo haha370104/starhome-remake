@@ -8,6 +8,9 @@ const PlayerPanelProjectorScript := preload(
 	"res://scripts/shared/player_panel_projector.gd"
 )
 
+var last_change := PlayerPanelChange.new()
+var _accepted_bundle: Dictionary = {}
+var _previous: CurrentPlayer
 var _catalog: ItemCatalog
 var _projector: PlayerPanelProjector
 var _skill_progression_config: Dictionary = {}
@@ -16,9 +19,13 @@ var _skill_progression_config: Dictionary = {}
 ## 初始化客户端唯一的“自己”玩家聚合和本地配置目录。
 ## [param shared_catalog] 可由场景注入、供地面和背包共同组装物品的已初始化目录。
 ## 设计：网络 DTO 只在 apply_bundle 边界出现；面板与场景随后共享这个 Player 实例。
-func _init(shared_catalog: ItemCatalog = null) -> void:
+## [param shared_projector] 候选投影复用的无状态投影器，常规调用无需传入。
+func _init(shared_catalog: ItemCatalog = null, shared_projector: PlayerPanelProjector = null) -> void:
 	super({})
 	_catalog = shared_catalog
+	if shared_projector != null:
+		_projector = shared_projector
+		return
 	if _catalog == null:
 		_catalog = ItemCatalogScript.new()
 		var initialized := _catalog.initialize()
@@ -39,6 +46,28 @@ func _init(shared_catalog: ItemCatalog = null) -> void:
 ## [param bundle] 服务端下发的人物、背包和战车快照组。
 ## 返回快照是否完整、合法并已应用。
 func apply_bundle(bundle: Dictionary) -> bool:
+	if not bundle.get("character") is Dictionary or not bundle.get("inventory") is Dictionary or not bundle.get("vehicle") is Dictionary:
+		return false
+	var candidate := CurrentPlayer.new(_catalog, _projector)
+	candidate._previous = self
+	if not candidate._decode_bundle(bundle):
+		candidate._previous = null
+		return false
+	candidate._previous = null
+	last_change = PlayerPanelChange.between(_accepted_bundle, bundle)
+	for field: String in ["entity_id", "display_name", "sex", "level", "profession", "faction", "residence", "description",
+		"max_health", "health", "experience", "revision", "skills", "achievements", "character_equipment", "inventory",
+		"vehicle", "central", "vehicle_presets", "food_status", "amethyst"]:
+		set(field, candidate.get(field))
+	_accepted_bundle = bundle.duplicate(true)
+	changed.emit(self)
+	return true
+
+
+## 在隔离候选中恢复变化部分，复用上一投影中未改变的物品和聚合。
+## [param bundle] 完整权威快照。
+## 返回所有领域组件是否恢复成功；调用者成功后一次替换公开状态。
+func _decode_bundle(bundle: Dictionary) -> bool:
 	if _catalog == null or _projector == null \
 		or not bundle.get("character") is Dictionary \
 		or not bundle.get("inventory") is Dictionary \
@@ -77,40 +106,53 @@ func apply_bundle(bundle: Dictionary) -> bool:
 	health = clampi(int(character.get("health", max_health)), 0, max_health)
 	experience = maxi(0, int(character.get("experience", 0)))
 	revision = maxi(0, int(bundle.get("transaction_revision", 0)))
-	skills = SkillBook.new(skill_states)
+	skills = _previous.skills if _previous != null and _previous._accepted_bundle.get("character", {}).get("skills") == character.get("skills") else SkillBook.new(skill_states)
 	var achievement_snapshot: Dictionary = bundle.get("achievements", {})
 	if not PlayerAchievements.valid_state({"counters": achievement_snapshot.get("counters", {})}):
 		return false
 	achievements = PlayerAchievements.new({"counters": achievement_snapshot.get("counters", {})})
-	character_equipment = CharacterEquipment.new()
-	inventory = Inventory.new(
-		int(inventory_snapshot.get("capacity", 40)),
-		int(inventory_snapshot.get("revision", 0)),
-		int(inventory_snapshot.get("currency", 0)),
-	)
-	var inventory_result := _restore_inventory(inventory_snapshot.get("items", []))
-	if not inventory_result:
-		return false
-	vehicle = PlayerVehicle.new({
-		"vehicle_id": vehicle_snapshot.get("vehicle_id", ""),
-		"definition_id": vehicle_snapshot.get("vehicle_definition_id", ""),
-		"loadout_revision": vehicle_snapshot.get("revision", 0),
-		"max_health": vehicle_snapshot.get("stats", {}).get("max_health", 1),
-		"health": vehicle_snapshot.get("stats", {}).get("health", 1),
-		"reserve_energy_capacity": vehicle_snapshot.get("stats", {}).get("reserve_energy_capacity", 0.0),
-		"reserve_energy": vehicle_snapshot.get("stats", {}).get("reserve_energy", 0.0),
-		"working_energy_capacity": vehicle_snapshot.get("stats", {}).get("working_energy_capacity", 0.0),
-		"working_energy": vehicle_snapshot.get("stats", {}).get("working_energy", 0.0),
-		"output_power": vehicle_snapshot.get("stats", {}).get("output_power", 0.0),
-	})
-	if not _restore_equipment(character.get("worn_items", []), vehicle_snapshot.get("equipped", [])):
-		return false
-	vehicle.central = central
-	vehicle.central_rules = _catalog.central_rules
-	vehicle.achievement_bonuses = achievements.bonuses()
-	vehicle.food_status = food_status
-	refresh_clothing_bonuses()
-	vehicle.reconcile_loadout_state(false)
+	if _previous != null and _previous._accepted_bundle.get("inventory") == inventory_snapshot:
+		inventory = _previous.inventory
+	else:
+		inventory = Inventory.new(
+			int(inventory_snapshot.get("capacity", 40)),
+			int(inventory_snapshot.get("revision", 0)),
+			int(inventory_snapshot.get("currency", 0)),
+		)
+		var inventory_result := _restore_inventory(inventory_snapshot.get("items", []))
+		if not inventory_result:
+			return false
+	var same_loadout := _previous != null and _previous.is_ready()
+	for key: String in ["vehicle", "food_status", "achievements", "central"]:
+		same_loadout = same_loadout and _previous._accepted_bundle.get(key) == bundle.get(key)
+	same_loadout = same_loadout and _previous._accepted_bundle.get("character", {}).get("worn_items") == character.get("worn_items")
+	for skill_id: String in SkillBook.ORDERED_SKILLS:
+		same_loadout = same_loadout and skills.base_level(skill_id) == _previous.skills.base_level(skill_id)
+	if same_loadout:
+		vehicle = _previous.vehicle
+		character_equipment = _previous.character_equipment
+	else:
+		character_equipment = CharacterEquipment.new()
+		vehicle = PlayerVehicle.new({
+			"vehicle_id": vehicle_snapshot.get("vehicle_id", ""),
+			"definition_id": vehicle_snapshot.get("vehicle_definition_id", ""),
+			"loadout_revision": vehicle_snapshot.get("revision", 0),
+			"max_health": vehicle_snapshot.get("stats", {}).get("max_health", 1),
+			"health": vehicle_snapshot.get("stats", {}).get("health", 1),
+			"reserve_energy_capacity": vehicle_snapshot.get("stats", {}).get("reserve_energy_capacity", 0.0),
+			"reserve_energy": vehicle_snapshot.get("stats", {}).get("reserve_energy", 0.0),
+			"working_energy_capacity": vehicle_snapshot.get("stats", {}).get("working_energy_capacity", 0.0),
+			"working_energy": vehicle_snapshot.get("stats", {}).get("working_energy", 0.0),
+			"output_power": vehicle_snapshot.get("stats", {}).get("output_power", 0.0),
+		})
+		if not _restore_equipment(character.get("worn_items", []), vehicle_snapshot.get("equipped", [])):
+			return false
+		vehicle.central = central
+		vehicle.central_rules = _catalog.central_rules
+		vehicle.achievement_bonuses = achievements.bonuses()
+		vehicle.food_status = food_status
+		refresh_clothing_bonuses()
+		vehicle.reconcile_loadout_state(false)
 	changed.emit(self)
 	return true
 
@@ -138,6 +180,14 @@ func _restore_inventory(raw_items: Variant) -> bool:
 	for raw_item: Variant in raw_items:
 		if not raw_item is Dictionary:
 			return false
+		if _previous != null:
+			var existing := _previous.inventory.find(String(raw_item.get("instance_id", "")))
+			if existing != null:
+				for old: Dictionary in _previous._accepted_bundle.get("inventory", {}).get("items", []):
+					if old.get("instance_id") == existing.instance_id and old == raw_item:
+						restored.append(existing)
+						break
+				if not restored.is_empty() and restored.back() == existing: continue
 		var created := _catalog.create(String(raw_item.get("definition_id", "")), {
 			"instance_id": raw_item.get("instance_id", ""),
 			"quantity": raw_item.get("amount", 1),
@@ -251,5 +301,9 @@ func apply_equipment_conditions(owner_id: String, conditions: Dictionary) -> boo
 		item.durability = update.durability
 		item.usage = update.usage
 		item.magazine = update.magazine
+	last_change = PlayerPanelChange.new()
+	last_change.character_changed = true
+	last_change.vehicle_changed = true
+	_accepted_bundle = snapshot_bundle()
 	changed.emit(self)
 	return true
