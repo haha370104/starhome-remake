@@ -208,6 +208,13 @@ func initialize(
 		_production_runtime.failed.connect(_publish_production_failure)
 	_exit_service = AuthoritativeExitService.new(autosave_service, _capture_persistent_player_state, _release_exited_player)
 	_ticks_per_snapshot = floori(float(config.simulation_hz) / float(config.snapshot_hz))
+	if config.ai_players_enabled:
+		var installer = load("res://scripts/server/optional_ai/ai_module_installer.gd")
+		if installer != null:
+			var installed: DomainResult = installer.install(self, config.ai_players_config_path)
+			if not installed.is_ok: push_warning("可选AI未启用：" + installed.error_message)
+		else:
+			push_warning("可选AI模块不可用，普通游戏继续运行")
 	return _success(_default_map_id)
 
 

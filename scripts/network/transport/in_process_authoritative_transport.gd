@@ -35,7 +35,7 @@ func configure_server(
 func initialize() -> Error:
 	if authoritative_server != null:
 		return OK if _initialization_error.is_empty() else ERR_CANT_CREATE
-	var config := _server_config if _server_config != null else ServerConfigScript.new()
+	var config := _server_config if _server_config != null else ServerConfigScript.from_command_line(OS.get_cmdline_user_args())
 	config.network_enabled = false
 	authoritative_server = AuthoritativeServerScript.new()
 	var initialized := authoritative_server.initialize(config, [], _repository)

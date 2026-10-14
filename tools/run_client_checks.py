@@ -11,6 +11,8 @@ import time
 
 ROOT = Path(__file__).resolve().parents[1]
 TESTS = (
+    "server/optional_ai/ai_opt_in_test.gd",
+    "server/optional_ai/ai_http_provider_test.gd",
     "server/optional_ai/ai_authority_test.gd",
     "server/optional_ai/ai_contract_test.gd",
     "server/persistence/local_actor_session_test.gd",

@@ -11,7 +11,8 @@ var _request_id := 0
 func configure(settings: AiPlayerSettings) -> void:
 	_settings = settings
 	_http = HTTPRequest.new()
-	_http.use_threads = true
+	# 保持HTTPClient非阻塞轮询；线程模式在本机无响应测试中会阻塞取消/超时。
+	_http.use_threads = false
 	_http.timeout = settings.timeout_seconds
 	_http.body_size_limit = 262144
 	_http.max_redirects = 0
