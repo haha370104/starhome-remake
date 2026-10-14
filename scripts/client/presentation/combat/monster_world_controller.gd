@@ -17,6 +17,12 @@ const GloryMonsterPresentationCatalogScript := preload(
 
 var _world_parent: Node2D
 var _manifest: Dictionary = {}
+const MONSTER_VIEW_CREATION_BUDGET := 10
+const PRESENTATION_CULL_MARGIN := 128.0
+var _position_interpolator := RemoteEntityInterpolator.new()
+var _pending_monsters: Dictionary = {}
+var _creation_frame := -1
+var _creation_attempts := 0
 var _views: Dictionary = {}
 var _local_player: Node2D
 var _last_event_id := 0
@@ -68,6 +74,8 @@ func configure(world_parent: Node2D, manifest: Dictionary, local_player: Node2D)
 	_sama_effects = SamaEffectController.new()
 	add_child(_sama_effects)
 	_sama_effects.configure(_world_parent, _local_player)
+	_position_interpolator.configure(0.1)
+	_position_interpolator.presentation_state_changed.connect(_on_interpolated_state)
 	return OK
 
 
@@ -77,48 +85,52 @@ func _process(_delta: float) -> void:
 	if _world_parent == null or not is_instance_valid(_world_parent):
 		_set_hovered_entity("")
 		return
+	_materialize_pending_monsters(MONSTER_VIEW_CREATION_BUDGET)
+	_position_interpolator.advance(_delta)
+	_update_monster_culling()
+	for view: MonsterWorldView in _views.values():
+		view.advance_presentation(_delta)
 	update_hover_at(_world_parent.get_global_mouse_position())
 
 
 ## 执行 `apply_snapshot` 对应的模块操作。
 ## [param combat_snapshot] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func apply_snapshot(combat_snapshot: Dictionary) -> void:
+	var server_tick := int(combat_snapshot.get("server_tick", -1))
+	var has_timing := server_tick >= 0
+	if has_timing:
+		var server_time := float(combat_snapshot.get("server_time_seconds", server_tick / 20.0))
+		_position_interpolator.push_snapshot(server_tick, server_time, combat_snapshot.get("monsters", []))
 	var observed: Dictionary = {}
 	for raw_monster: Variant in combat_snapshot.get("monsters", []):
+		if not raw_monster is Dictionary:
+			continue
 		var monster: Dictionary = raw_monster
 		var entity_id := String(monster["entity_id"])
 		observed[entity_id] = true
 		var view: MonsterWorldView = _views.get(entity_id)
 		if view == null:
-			view = MonsterWorldViewScript.new()
-			view.name = "Monster_%s" % entity_id.replace(".", "_")
-			_world_parent.add_child(view)
-			var glory_presentation: Dictionary = {}
-			if _glory_presentations != null:
-				glory_presentation = _glory_presentations.definition_for_actor(
-					String(monster["combat_actor_id"])
-				)
-			if view.configure(
-				_manifest, monster, _ale_repository, glory_presentation
-			) != OK:
-				view.queue_free()
-				continue
-			_views[entity_id] = view
+			_pending_monsters[entity_id] = monster.duplicate(true)
 		else:
-			view.apply_snapshot(monster)
+			_pending_monsters.erase(entity_id)
+			view.apply_snapshot(monster, not has_timing)
+	for entity_id: String in _pending_monsters.keys():
+		if not observed.has(entity_id):
+			_pending_monsters.erase(entity_id)
 	for entity_id: String in _views.keys():
 		if observed.has(entity_id):
 			continue
 		var stale: MonsterWorldView = _views[entity_id]
 		if entity_id == _hovered_entity_id:
 			_hovered_entity_id = ""
+		_position_interpolator.remove_entity(StringName(entity_id))
 		stale.queue_free()
 		_views.erase(entity_id)
+	_materialize_pending_monsters(MONSTER_VIEW_CREATION_BUDGET)
 	_apply_recent_events(combat_snapshot)
 	if _sama_effects != null: _sama_effects.apply_snapshot(combat_snapshot)
 	if _attack_effects != null:
 		_attack_effects.apply_corrosion_snapshot(combat_snapshot, _local_player)
-
 
 ## 执行 `nearest_target` 对应的模块操作。
 ## [param world_position] 调用方传入的参数；具体约束由函数签名和所在模块定义。
@@ -182,6 +194,8 @@ func clear() -> void:
 	for view: MonsterWorldView in _views.values():
 		view.queue_free()
 	_views.clear()
+	_pending_monsters.clear()
+	_position_interpolator.reset()
 	_last_event_id = 0
 	if _death_effects != null:
 		_death_effects.clear()
@@ -358,3 +372,86 @@ func _present_nested_death(event: Dictionary) -> void:
 		Vector2(float(raw_position[0]), float(raw_position[1])),
 		int(death.get("death_generation", 0)),
 	)
+
+
+## 按距离优先分批创建怪物，同时预热已出现类型的攻击和死亡效果。
+## [param max_count] 本渲染帧最多尝试创建的数量。
+func _materialize_pending_monsters(max_count: int) -> void:
+	if max_count <= 0 or _world_parent == null or not is_instance_valid(_world_parent):
+		return
+	if _pending_monsters.is_empty():
+		return
+	var frame := Engine.get_process_frames()
+	if frame != _creation_frame:
+		_creation_frame = frame
+		_creation_attempts = 0
+	max_count = mini(max_count, MONSTER_VIEW_CREATION_BUDGET - _creation_attempts)
+	if max_count <= 0:
+		return
+	var pending_ids: Array[String] = []
+	for entity_id: String in _pending_monsters:
+		pending_ids.append(entity_id)
+	var player_position := _local_player.position
+	pending_ids.sort_custom(func(left_id: String, right_id: String) -> bool:
+		var left_point: Array = _pending_monsters[left_id]["position"]
+		var right_point: Array = _pending_monsters[right_id]["position"]
+		var left_position := Vector2(float(left_point[0]), float(left_point[1]))
+		var right_position := Vector2(float(right_point[0]), float(right_point[1]))
+		return left_position.distance_squared_to(player_position) \
+				< right_position.distance_squared_to(player_position)
+	)
+	var materialized_count := 0
+	for entity_id: String in pending_ids:
+		if materialized_count >= max_count:
+			break
+		var monster: Dictionary = _pending_monsters.get(entity_id, {})
+		if monster.is_empty() or _views.has(entity_id):
+			_pending_monsters.erase(entity_id)
+			continue
+		materialized_count += 1
+		_creation_attempts += 1
+		var view := MonsterWorldViewScript.new()
+		view.name = "Monster_%s" % entity_id.replace(".", "_")
+		_world_parent.add_child(view)
+		var glory_presentation: Dictionary = {}
+		if _glory_presentations != null:
+			glory_presentation = _glory_presentations.definition_for_actor(
+				String(monster["combat_actor_id"])
+			)
+		if view.configure(_manifest, monster, _ale_repository, glory_presentation) != OK:
+			view.queue_free()
+			_pending_monsters.erase(entity_id)
+			continue
+		view.set_process(false)
+		_views[entity_id] = view
+		_pending_monsters.erase(entity_id)
+		_death_effects.prefetch(String(monster["combat_actor_id"]))
+		_attack_effects.prefetch(String(monster["combat_actor_id"]))
+
+
+## 接收插值位置，避免逻辑帧频率直接成为怪物移动帧率。
+## [param entity_id] 怪物身份。
+## [param state] 插值器输出的展示状态。
+func _on_interpolated_state(entity_id: StringName, state: Dictionary) -> void:
+	var view: MonsterWorldView = _views.get(String(entity_id))
+	if view == null or not state.has("position"):
+		return
+	view.apply_interpolated_position(Vector2(state["position"]))
+
+
+
+## 按当前相机视口及预留边缘裁剪怪物表现。
+func _update_monster_culling() -> void:
+	if _world_parent == null or not is_instance_valid(_world_parent):
+		return
+	var viewport := _world_parent.get_viewport()
+	if viewport == null:
+		return
+	var visible_screen := viewport.get_visible_rect()
+	var canvas_to_world := viewport.get_canvas_transform().affine_inverse()
+	var top_left := canvas_to_world * visible_screen.position
+	var bottom_right := canvas_to_world * (visible_screen.position + visible_screen.size)
+	var visible_world := Rect2(top_left, bottom_right - top_left).grow(PRESENTATION_CULL_MARGIN)
+	for view: MonsterWorldView in _views.values():
+		var world_position := _world_parent.to_global(view.position)
+		view.set_presentation_culled(not visible_world.has_point(world_position))

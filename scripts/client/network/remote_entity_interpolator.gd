@@ -160,6 +160,8 @@ func _presentation_from_sample(sample: Dictionary) -> Dictionary:
 func _to_vector2(value: Variant) -> Vector2:
 	if value is Vector2:
 		return value
+	if value is Array and value.size() == 2:
+		return Vector2(float(value[0]), float(value[1]))
 	if value is Dictionary:
 		return Vector2(float(value.get("x", 0.0)), float(value.get("y", 0.0)))
 	return Vector2.ZERO
