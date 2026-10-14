@@ -68,6 +68,7 @@ var _combat_catalog
 var _mining_catalog
 var player_state_repository: PlayerStateRepository
 var autosave_service: AuthoritativeAutosaveService
+var _ground_item_service: GroundItemService
 var player_panel_service: AuthoritativePlayerPanelService
 var reward_service := AuthoritativeRewardService.new()
 var commerce_service
@@ -175,7 +176,10 @@ func initialize(
 	var panel_result = player_panel_service.initialize(reward_service.pipeline)
 	if not panel_result.is_ok:
 		return _failure(panel_result.error_code, panel_result.error_message)
+	if autosave_service != null:
+		_ground_item_service = GroundItemService.new(autosave_service, player_state_repository, player_panel_service, player_panel_service.item_catalog())
 	for instance: AuthoritativeMapInstance in map_registry.all_instances():
+		if _ground_item_service != null: instance.ground_items_provider = _ground_item_service.snapshots
 		if instance.combat_module != null:
 			instance.combat_module.rewards = reward_service
 	commerce_service = CommerceServiceScript.new()
@@ -808,6 +812,9 @@ func handle_peer_player_panel_command(peer_id: int, command: Dictionary) -> Dict
 	if not captured.is_ok:
 		return _failure(captured.error_code, captured.error_message)
 	current = captured.value
+	if command_type == "drop_inventory_item" and _ground_item_service != null:
+		var dropped := _ground_item_service.drop(current, current_map, command)
+		return _success(dropped.value) if dropped.is_ok else _failure(dropped.error_code, dropped.error_message)
 	var trusted_command := command.duplicate(true)
 	trusted_command["_authoritative_vehicle_combat_active"] = current_map != null \
 		and current_map.is_vehicle_combat_active()
@@ -1108,6 +1115,13 @@ func handle_peer_loot_pickup(peer_id: int, intent: Dictionary) -> Dictionary:
 	var current_instance := map_registry.instance_by_id(session.map_instance_id)
 	if current_instance == null:
 		return _failure(&"loot.map_unavailable", "session map instance is unavailable")
+	if _ground_item_service != null and _ground_item_service.has_item(loot_id):
+		var state := autosave_service.state_for(session.entity_id)
+		if state == null: return _failure(&"loot.state_missing", "角色不在线")
+		var captured: DomainResult = _capture_persistent_player_state(state)
+		if not captured.is_ok: return _failure(captured.error_code, captured.error_message)
+		var received := _ground_item_service.pickup(captured.value, current_instance, loot_id)
+		return _success(received.value) if received.is_ok else _failure(received.error_code, received.error_message)
 	var prepared := current_instance.prepare_loot_pickup(session.entity_id, loot_id)
 	if not prepared.is_ok:
 		return _failure(prepared.error_code, prepared.error_message)
@@ -1879,6 +1893,7 @@ func _load_configured_map_instances() -> Dictionary:
 ## [param instance] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## 设计：该函数位于权威服务器边界，客户端不得覆盖其计算结果。
 func _configure_map_instance(instance: AuthoritativeMapInstance) -> void:
+	if _ground_item_service != null: instance.ground_items_provider = _ground_item_service.snapshots
 	instance.dynamic_blocking_enabled = config.dynamic_blocking_enabled
 	instance.dynamic_blocking_radius = config.dynamic_blocking_radius
 

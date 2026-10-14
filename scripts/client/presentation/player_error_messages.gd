@@ -2,6 +2,10 @@ class_name PlayerErrorMessages
 extends RefCounted
 
 const MESSAGES := {
+	"loot.drop_forbidden": "锁定或绑定物品不能丢弃",
+	"loot.drop_too_far": "只能丢在身边的可行走位置",
+	"loot.drop_blocked": "不能把物品丢到障碍物上或墙后",
+	"loot.instance_conflict": "物品状态冲突，请刷新背包后重试",
 	"mining.arm_required": "请先在战车主装置槽装备采掘臂，能量炮不能采矿",
 	"mining.arm_broken": "采掘臂已损坏，请先修理",
 	"mining.arm_skill_too_low": "采矿技能等级不足，无法使用这件采掘臂",

@@ -77,6 +77,11 @@ func _unhandled_input(event: InputEvent) -> void:
 		handle_world_right_click(world_position)
 		get_viewport().set_input_as_handled()
 	elif mouse_event.button_index == MOUSE_BUTTON_LEFT:
+		var loot_id := world_view.ground_loot_world_controller.loot_at(world_position) if world_view.ground_loot_world_controller != null else ""
+		if not loot_id.is_empty():
+			combat.request_ground_loot_pickup(loot_id)
+			get_viewport().set_input_as_handled()
+			return
 		var npc := nearest_npc(world_position, 55.0)
 		if npc:
 			show_npc_popup(npc)

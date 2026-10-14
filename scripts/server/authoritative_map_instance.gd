@@ -17,6 +17,7 @@ const MiningModuleScript := preload(
 const UseAbilityIntentContract := preload("res://scripts/network/contracts/use_ability_intent.gd")
 
 var definition
+var ground_items_provider := Callable()
 var navigation
 var entities: Dictionary = {}
 var movement_speed_cap := 240.0
@@ -806,6 +807,12 @@ func snapshot_for_actor(server_tick: int, server_time_seconds: float, actor_id: 
 		combat_snapshot["local_mining"] = mining_module.action_snapshot(actor_id) \
 			if mining_module != null else {"active": false}
 		result["combat"] = combat_snapshot
+	if ground_items_provider.is_valid():
+		var combat: Dictionary = result.get("combat", {})
+		var items: Array = combat.get("ground_loot", [])
+		items.append_array(ground_items_provider.call(instance_id))
+		combat["ground_loot"] = items
+		result["combat"] = combat
 	return result
 
 

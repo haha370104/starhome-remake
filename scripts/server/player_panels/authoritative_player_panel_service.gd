@@ -329,3 +329,9 @@ func _position_from_command(command: Dictionary) -> DomainResult:
 	if not value is Array or value.size() != 2:
 		return DomainResult.failure(&"inventory.invalid_position", "inventory position must contain two coordinates")
 	return DomainResult.ok(Vector2i(int(value[0]), int(value[1])))
+
+
+## 为服务端关联用例共享只读物品目录，避免重复加载素材映射与成长规则。
+## 返回已初始化目录，调用方不得修改目录定义。
+func item_catalog() -> ItemCatalog:
+	return _catalog

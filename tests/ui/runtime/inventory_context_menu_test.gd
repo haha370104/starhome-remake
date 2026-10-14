@@ -28,6 +28,7 @@ func _run() -> void:
 	await _right_click_item("inventory.spare_engine")
 	_expect(panel.visible and menu.menu.visible and _labels(menu.menu).has("装备"), "真实右键装备打开菜单并保留背包")
 	_expect(not _labels(menu.menu).has("使用"), "装备不会显示使用")
+	_expect(_labels(menu.menu).has("丢弃到脚下（整件）"), "整件丢弃入口应可见")
 	menu.menu.hide()
 	menu.menu.id_pressed.emit(0)
 	_expect(commands.back().type == "equip_vehicle_item" and commands.back().has("loadout_revision"), "装备接入既有权威版本命令")
