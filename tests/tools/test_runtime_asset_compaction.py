@@ -8,7 +8,7 @@ import zipfile
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'tools'))
 from asset_pipeline.runtime_usage import CATALOGS, INDEXES, RuntimeUsage
-from asset_pipeline.compact import compact
+from asset_pipeline.compact import compact, json_bytes
 
 
 class RuntimeCompactionTest(unittest.TestCase):
@@ -78,6 +78,13 @@ class RuntimeCompactionTest(unittest.TestCase):
     def test_refuse_archive_inside_game(self):
         with self.assertRaisesRegex(ValueError, 'outside'):
             compact(self.root, self.root/'backup', apply=True)
+
+    def test_compact_generated_index_keeps_one_record_per_line(self):
+        original = b'{"sprites":[\n{"logical_id":"a"},\n{"logical_id":"b"}\n]}\n'
+        value = json.loads(original)
+        encoded = json_bytes(value, original)
+        self.assertEqual(json.loads(encoded), value)
+        self.assertLess(len(encoded.splitlines()), 8)
 
     def test_missing_runtime_file_stops_before_any_deletion(self):
         self.write('data/world.json', '{"texture":"res://assets/missing.png"}')

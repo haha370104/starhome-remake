@@ -31,7 +31,7 @@ def rewrite(value, aliases):
 
 def json_bytes(value, original=b''):
     """Preserve readable versus compact generated JSON conventions."""
-    if isinstance(value, dict) and 'sprites' in value and re.search(rb'\n +\{"logical_id"', original):
+    if isinstance(value, dict) and 'sprites' in value and re.search(rb'\n *\{"logical_id"', original):
         lines = ['{']
         for key, child in value.items():
             if key == 'sprites':
