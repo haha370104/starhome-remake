@@ -1,0 +1,195 @@
+{
+  "date": "2026-10-18",
+  "scope": "runtime-only asset submodule, external development archive",
+  "source_asset_commit": "d8a35f774382694dd110c8fcd2a8205486de5a76",
+  "asset_commit": "6c3fdacfe49dfb0aa7e66b77a45203ab2ed3c8fb",
+  "before_bytes": 11365876352,
+  "after_bytes": 7103561160,
+  "archived_loose_files": 406,
+  "removed_or_shared_pack_members": 26048,
+  "runtime_sprites": 2339,
+  "shared_binary_references": 884,
+  "external_archive": "C:\\Users\\tomato\\Documents\\Codex\\local-archives\\starhome-assets\\20261018-runtime-cleanup",
+  "byte_validation": {
+    "binary_files": 3504,
+    "json_files": 3754,
+    "aliases": 884,
+    "failures": 0
+  },
+  "python_tests": {
+    "compaction": 5,
+    "original_recovered_bytes": 3,
+    "free_hud_sources": 40
+  },
+  "godot_regressions": {
+    "tests/content/runtime_content_pack_catalog_test.gd": {
+      "exit": 0,
+      "substantive_errors": [],
+      "checks": [
+        "RUNTIME_CONTENT_PACK_CATALOG_OK (11 assertions)"
+      ]
+    },
+    "tests/content/glory_ale_sprite_repository_test.gd": {
+      "exit": 0,
+      "substantive_errors": [],
+      "checks": [
+        "GLORY_ALE_SPRITE_REPOSITORY_OK (375 assertions)"
+      ]
+    },
+    "tests/world/semantic_scene_depth_smoke_test.gd": {
+      "exit": 0,
+      "substantive_errors": [],
+      "checks": [
+        "SEMANTIC_SCENE_DEPTH_SMOKE_OK (1814 assertions)"
+      ]
+    },
+    "tests/integration/recovered_map_additions_test.gd": {
+      "exit": 0,
+      "substantive_errors": [],
+      "checks": [
+        "Recovered maps: 25 checks, 0 failures"
+      ]
+    },
+    "tests/ui/runtime/garden_item_presentation_test.gd": {
+      "exit": 0,
+      "substantive_errors": [],
+      "checks": [
+        "Garden item presentation: 43 checks, 0 failures"
+      ]
+    },
+    "tests/integration/map_transition_scene_smoke_test.gd": {
+      "exit": 0,
+      "substantive_errors": [],
+      "checks": [
+        "MAP_TRANSITION_SCENE_SMOKE_OK (666 assertions)"
+      ]
+    },
+    "tests/domain/content/runtime_content_completeness_test.gd": {
+      "exit": 0,
+      "substantive_errors": [],
+      "checks": [
+        "RUNTIME_CONTENT_COMPLETENESS_OK (14 assertions)"
+      ]
+    },
+    "tests/integration/equipped_weapon_presentation_test.gd": {
+      "exit": 0,
+      "substantive_errors": [],
+      "checks": [
+        "EQUIPPED_WEAPON_PRESENTATION checks=19283 failures=0"
+      ]
+    },
+    "tests/integration/combat_click_routing_test.gd": {
+      "exit": 0,
+      "substantive_errors": [],
+      "checks": [
+        "COMBAT_CLICK_ROUTING checks=89 failures=0"
+      ]
+    },
+    "tests/integration/d04_player_vehicle_presentation_test.gd": {
+      "exit": 0,
+      "substantive_errors": [],
+      "checks": [
+        "D04_PLAYER_VEHICLE_PRESENTATION_OK (444 assertions)"
+      ]
+    },
+    "tests/client/presentation/combat/glory_ale_monster_presenter_test.gd": {
+      "exit": 0,
+      "substantive_errors": [],
+      "checks": [
+        "GLORY_ALE_MONSTER_PRESENTER_OK (1675 assertions)"
+      ]
+    },
+    "tests/client/presentation/combat/monster_attack_effect_controller_test.gd": {
+      "exit": 0,
+      "substantive_errors": [],
+      "checks": [
+        "MONSTER_ATTACK_EFFECTS_OK (66 assertions)"
+      ]
+    },
+    "tests/client/presentation/combat/monster_death_effect_controller_test.gd": {
+      "exit": 0,
+      "substantive_errors": [],
+      "checks": [
+        "MONSTER_DEATH_EFFECTS_OK (12 assertions)"
+      ]
+    },
+    "tests/client/presentation/combat/monster_hit_presentation_test.gd": {
+      "exit": 0,
+      "substantive_errors": [],
+      "checks": [
+        "MONSTER_HIT_PRESENTATION checks=1174 failures=0"
+      ]
+    },
+    "tests/client/presentation/combat/weapon_attack_visual_controller_test.gd": {
+      "exit": 0,
+      "substantive_errors": [],
+      "checks": [
+        "WEAPON ATTACK VISUAL TESTS PASSED: 44 assertions"
+      ]
+    },
+    "tests/integration/map_navigation_scene_test.gd": {
+      "exit": 0,
+      "substantive_errors": [],
+      "checks": [
+        "MAP_NAVIGATION_SCENE checks=22 failures=0"
+      ]
+    },
+    "tests/ui/runtime/botanical_garden_scene_test.gd": {
+      "exit": 0,
+      "substantive_errors": [],
+      "checks": [
+        "Garden scene: 71 checks, 0 failures"
+      ]
+    },
+    "tests/integration/recovered_assets_runtime_test.gd": {
+      "exit": 0,
+      "substantive_errors": [],
+      "checks": [
+        "RECOVERED_ASSETS_RUNTIME_OK (714 assertions)"
+      ]
+    },
+    "tests/core/resource_reuse_test.gd": {
+      "exit": 0,
+      "substantive_errors": [],
+      "checks": [
+        "Resource reuse: 14 checks, 0 failures"
+      ]
+    },
+    "tests/server/optional_ai/ai_opt_in_test.gd": {
+      "exit": 0,
+      "substantive_errors": [],
+      "checks": [
+        "AI opt-in: 20 checks, 0 failures"
+      ]
+    },
+    "tools/check_gdscript_warnings.gd": {
+      "exit": 0,
+      "substantive_errors": [],
+      "checks": [
+        "GDSCRIPT_WARNINGS_OK warnings=0 errors=0 report=C:/Users/tomato/Documents/Codex/2026-08-25/new-chat/outputs/starhome_remake/.godot/warning-scan-97500/warnings.json"
+      ]
+    }
+  },
+  "editor_import": {
+    "exit": 0,
+    "asset_or_script_errors": 0,
+    "environment_diagnostic": "sandbox root certificate store read unavailable"
+  },
+  "gates": [
+    "runtime reference closure",
+    "asset size and LFS",
+    "GDScript documentation",
+    "client architecture",
+    "documentation links",
+    "GDScript zero warnings"
+  ],
+  "isolated_generated_deletion_exception": {
+    "path": "assets/maps/yian_harbor/hall_floor_1/navigation_grid.json",
+    "removed_lines": 8725,
+    "reason": "Unused generated navigation JSON archived intact; binary navigation retained. Single-file deletion, not handwritten changes."
+  },
+  "push_attempt": {
+    "assets": "rejected: repository exceeded its LFS budget",
+    "uploaded_bytes": 0
+  }
+}

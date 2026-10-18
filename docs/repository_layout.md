@@ -78,6 +78,11 @@ LFS 的 pre-push hook 会上传提交引用的实体；不可用 `--no-verify` �
 再推送素材 `main`，最后推送主仓库 `main`。这会上传历史版本对象，传输量高于当前素材目录体积。
 若 LFS 上传失败，先处理错误再发布主仓库指针，避免其他开发者拿到不可用版本。
 
+2026-10-18 的运行素材裁剪及外部归档方式见[素材管理](asset_management.md)。
+减少当前文件不等于释放 GitHub 已保存的历史 LFS 对象；若仍提示 `exceeded its LFS budget`，
+保留本地提交，按[GitHub LFS 清理说明](https://docs.github.com/en/repositories/working-with-files/managing-large-files/removing-files-from-git-large-file-storage)
+处理远端旧对象后，再先推素材、后用 `--recurse-submodules=check` 推主仓库。
+
 ## 2026-09-14 拆分记录
 
 拆分前主仓库有 405 个提交。对独立副本筛选历史：主仓库移除 `assets/`，

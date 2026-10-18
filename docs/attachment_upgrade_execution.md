@@ -39,8 +39,8 @@
 用户本轮授权少于3项时参考现有素材补绘，因此用内置 image_gen 生成透明底加工石，导出64×64运行图标，
 标记为复刻自制而非原版素材；没有跨版本替代。
 
-最终图标：[icon.png](../assets/items/materials/processing_stone/icon.png)。
-提示词及来源：[manifest.json](../assets/items/materials/processing_stone/manifest.json)。
+历史补绘图和提示词原位于 `assets/items/materials/processing_stone/`，现已被恢复的原版加工石替代。
+2026-10-18 随未用素材移入仓库外归档；当前使用和恢复边界见[素材管理](asset_management.md)。
 提示词核心：参考原图灰绿金属、青色高光和等距视角，绘制钢制固定环内的浅青色加工晶石，透明底，无文字和场景。
 
 ## 验证

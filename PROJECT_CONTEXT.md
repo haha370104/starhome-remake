@@ -6,6 +6,11 @@
 
 ## 文档入口与维护
 
+2026-10-18 用户要求 assets 只保存游戏使用的运行素材；开发预览、中间图、未启用的解码素材、
+测试包与离线对照图均归档到仓库外。使用 `tools/compact_runtime_assets.py` 裁剪并同步资源引用，
+`tools/check_runtime_assets.py` 是新增门禁；完整流程见 [素材管理](docs/asset_management.md)。
+禁止为满足旧测试的全量数量断言重新导入未使用素材；测试应覆盖当前实际表现。
+
 - 客户端重构与后续开发遵循 [工程规范](./docs/engineering_standards.md)，按状态所有权拆分，禁止用大型上下文对象或入口转发层替代模块边界。
 
 - 新对话从 [项目交接](./docs/project_handoff.md) 开始，再读
