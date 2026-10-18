@@ -5,8 +5,8 @@
     {
       "pack_id": "glory_maps_index_v1",
       "path": "res://assets/content_packs/glory_maps_index_v1.zip",
-      "size_bytes": 2203443,
-      "sha256": "87650e10b2aeca7284acca0ba568ac6991cd7b96fef26102e2af69836e9e160c",
+      "size_bytes": 873775,
+      "sha256": "7fc77ec8148444db42ab240a73bef86175351617a4b2ad0a2795301b15bfef61",
       "content_groups": [
         "maps"
       ]
@@ -14,8 +14,8 @@
     {
       "pack_id": "glory_maps_001_v1",
       "path": "res://assets/content_packs/glory_maps_001_v1.zip",
-      "size_bytes": 1073425806,
-      "sha256": "79ce48d1c16271218451b9aef59786562b71d13b2cd15867d8fbe9bc4092aff7",
+      "size_bytes": 818514110,
+      "sha256": "caf7c2568723a80f77bfadf226e8fff6b6bf158dad2739aa3b5a78d2e828ca2e",
       "content_groups": [
         "maps"
       ]
@@ -23,8 +23,8 @@
     {
       "pack_id": "glory_maps_002_v1",
       "path": "res://assets/content_packs/glory_maps_002_v1.zip",
-      "size_bytes": 1069549185,
-      "sha256": "42fe1e3a88ec8332c042b0d13d6d9b10571f0723d0e68bb62a9ea099e845df97",
+      "size_bytes": 891621862,
+      "sha256": "51b56d7f4c09856268a0fb6a0d3c09a2f09b7541824cde1f6c314574553abdbc",
       "content_groups": [
         "maps"
       ]
@@ -32,8 +32,8 @@
     {
       "pack_id": "glory_maps_003_v1",
       "path": "res://assets/content_packs/glory_maps_003_v1.zip",
-      "size_bytes": 1050644671,
-      "sha256": "02036f9f747190a5a4cac04a8ace5e4df20a027516cab93035d0d28d008fb392",
+      "size_bytes": 916572675,
+      "sha256": "ad7cc71da9301ad64faa3a41a1a320fde8abeb66ced5f6ecdbff722aea96702b",
       "content_groups": [
         "maps"
       ]
@@ -41,8 +41,8 @@
     {
       "pack_id": "glory_maps_004_v1",
       "path": "res://assets/content_packs/glory_maps_004_v1.zip",
-      "size_bytes": 1067297071,
-      "sha256": "03052b938cb4e0b5d1e48fc3e138cdc295ca9f23944bd3842c1002c22273e256",
+      "size_bytes": 910473390,
+      "sha256": "28c959c7122a63527f85ddc0c9fb0ae9f148e72e31b8a4128ea1c546e211696d",
       "content_groups": [
         "maps"
       ]
@@ -50,8 +50,8 @@
     {
       "pack_id": "glory_maps_005_v1",
       "path": "res://assets/content_packs/glory_maps_005_v1.zip",
-      "size_bytes": 1063808885,
-      "sha256": "667f349d4be2e58613a471df7dace95dbc267ba96d5a7c83bf63b217374bce91",
+      "size_bytes": 939007536,
+      "sha256": "dd0b04945b3ea66d342f63b721b7957c3c5f8ea64b529f24c07bb082609f9b4b",
       "content_groups": [
         "maps"
       ]
@@ -59,8 +59,8 @@
     {
       "pack_id": "glory_maps_006_v1",
       "path": "res://assets/content_packs/glory_maps_006_v1.zip",
-      "size_bytes": 1070818465,
-      "sha256": "7173f92ce6286f619f0eea663849ab301fa670902f4b36c8686988265ab50c37",
+      "size_bytes": 753035925,
+      "sha256": "3733b8684a70e12ccc643bc24cac5f11e0f9600bb207040ac6acd4f04aeaed9e",
       "content_groups": [
         "maps"
       ]
@@ -68,8 +68,8 @@
     {
       "pack_id": "glory_maps_007_v1",
       "path": "res://assets/content_packs/glory_maps_007_v1.zip",
-      "size_bytes": 1072543952,
-      "sha256": "58c79d7839e75f741cbec672c418a41e7a4a95fa18e752326d49d3053538f9fa",
+      "size_bytes": 716021131,
+      "sha256": "ed12683e462a36e77d6efe42916f752fa26c6e759919a17c2fc2a34ddedbe464",
       "content_groups": [
         "maps"
       ]
@@ -77,8 +77,8 @@
     {
       "pack_id": "glory_maps_008_v1",
       "path": "res://assets/content_packs/glory_maps_008_v1.zip",
-      "size_bytes": 1052247015,
-      "sha256": "672f034b433875cff3dcf0eea8c4dcf071dbf85f0f898d36b81af5c83815d283",
+      "size_bytes": 145035400,
+      "sha256": "3c315479ed7375197dde04a37565dcbc903a951aec70a6cef4ea4b65dc0844de",
       "content_groups": [
         "maps"
       ]
@@ -86,8 +86,8 @@
     {
       "pack_id": "glory_maps_009_v1",
       "path": "res://assets/content_packs/glory_maps_009_v1.zip",
-      "size_bytes": 1042457315,
-      "sha256": "6412672d8baebeb7c3671da036aa19d65f0f95be8d7afce5c994f42b9deab4a4",
+      "size_bytes": 645675733,
+      "sha256": "74d8819dc556a380c38cfd714144776fc6d9b752a61604a38762f045d0039ba1",
       "content_groups": [
         "maps"
       ]
@@ -95,8 +95,8 @@
     {
       "pack_id": "glory_maps_010_v1",
       "path": "res://assets/content_packs/glory_maps_010_v1.zip",
-      "size_bytes": 141591724,
-      "sha256": "86f61db96fd3952f8d0d3e6f046a19e11efca090c8c095f40698e5b6b079d6d6",
+      "size_bytes": 22393674,
+      "sha256": "4d0e41aeb0bb1781a41187f1b67736e2fdb287335bfdbe6784352a24bc926b3a",
       "content_groups": [
         "maps"
       ]
@@ -104,8 +104,8 @@
     {
       "pack_id": "glory_maps_recovered_20261014",
       "path": "res://assets/content_packs/glory_maps_recovered_20261014.zip",
-      "size_bytes": 9040745,
-      "sha256": "274164ece174ba526899738a61f332ddb5d277202009fd8f5c68a08774342447",
+      "size_bytes": 4828825,
+      "sha256": "79e9a30539ed0708471d2e81021bdace20f7dbe6eec9a4c5884db7cddf49c22b",
       "content_groups": [
         "maps"
       ]

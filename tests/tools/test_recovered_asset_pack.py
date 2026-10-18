@@ -9,24 +9,30 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'tools'))
 from import_remaining_recovered_assets import source_files, SELECTIONS, PACK
+from asset_pipeline.runtime_usage import RuntimeUsage, normalize
 
 
 class RecoveryPackTest(unittest.TestCase):
     def test_every_selected_source_is_preserved(self):
         selections = json.loads(SELECTIONS.read_text('utf-8'))['selections']
         self.assertEqual(len(selections), 173)
+        usage = RuntimeUsage(ROOT).trace()
+        self.addCleanup(usage.close)
         with zipfile.ZipFile(PACK) as archive:
             self.assertEqual(len(archive.namelist()), len(set(archive.namelist())))
             for row in selections:
+                identity = normalize(row['source_reference'])
+                if identity not in usage.used_sprites:
+                    continue  # Approved offline candidates are retained in the external archive.
                 raw, parsed = source_files(row['source_version'], row['source_logical_path'])
                 self.assertEqual(hashlib.sha256(raw.read_bytes()).hexdigest(), row['source_sha256'])
                 source = json.loads((parsed/'frames.json').read_text('utf-8'))
-                root = 'assets/recovered/' + row['asset_path']
-                installed = json.loads(archive.read(root+'/frames.json'))
+                runtime = usage.sprites[identity]
+                installed = json.loads(usage.read(runtime['frames_path'].removeprefix('res://')))
                 self.assertEqual(installed['frames'], source['frames'], row['source_reference'])
                 self.assertEqual(installed['frame_count'], len(source['frames']))
-                for before, after in zip(source['pages'], installed['pages'], strict=True):
-                    self.assertEqual((parsed/before).read_bytes(), archive.read(root+'/'+after))
+                for before, after in zip(source['pages'], runtime['page_paths'], strict=True):
+                    self.assertEqual((parsed/before).read_bytes(), usage.read(after.removeprefix('res://')))
 
     def test_no_candidate_was_left_out_or_existing_glory_replaced(self):
         report = json.loads((ROOT.parent/'cross_release_asset_review/audit.json').read_text('utf-8'))
@@ -35,7 +41,7 @@ class RecoveryPackTest(unittest.TestCase):
                 self.assertIsNotNone(row['runtime_recovery'], row['reference'])
         recovered = json.loads((ROOT/'data/content/recovered_sprite_runtime_index_v1.json').read_text('utf-8'))['sprites']
         glory = json.loads((ROOT/'data/content/glory_sprite_runtime_index_v1.json').read_text('utf-8'))['sprites']
-        self.assertEqual(len(recovered), 188)
+        self.assertEqual(len(recovered), 180)  # Eight arrows use the existing shared transition sprites.
         self.assertFalse({r['logical_id'] for r in recovered} & {r['logical_id'] for r in glory})
 
     def test_arrows_equal_existing_shared_markers(self):

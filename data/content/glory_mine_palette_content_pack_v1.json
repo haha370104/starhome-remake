@@ -5,8 +5,8 @@
     {
       "pack_id": "glory_mine_palettes_v1",
       "path": "res://assets/content_packs/glory_mine_palettes_v1.zip",
-      "size_bytes": 523257,
-      "sha256": "c00569eb4701483526cc7eb83a3ba8c5adf72ee0fb88d8f35d2e5196a3449404",
+      "size_bytes": 464874,
+      "sha256": "8d970a6974bf0bab889ecbc28e7ddac24c0b5ca0f5f78ea1a089b9e813000521",
       "content_groups": [
         "mineral_palette_variants"
       ]
