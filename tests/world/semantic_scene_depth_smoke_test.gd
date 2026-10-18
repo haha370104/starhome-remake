@@ -66,9 +66,9 @@ func _test_manifest_uses_semantic_owners() -> void:
 	_expect(int(composition["profile_override_pixel_count"]) == 1846, "两组扶手 profile 应只接管 1846 个重叠 owner 像素")
 	_expect(int(composition["profile_changed_pixel_count"]) == 1828, "扶手 profile 的实际颜色变化像素应保持可审计")
 	_expect(int(composition["non_profile_changed_pixel_count"]) == 0, "profile 修复不得改动遮挡交集外的 FCC 静态像素")
-	_expect(FileAccess.file_exists(String(composition["source_order_reference"])), "必须保留修复前 FCC source-order 像素基准")
-	_expect(FileAccess.file_exists(String(composition["profile_override_mask"])), "必须保留 profile 修复像素范围")
-	_expect(FileAccess.file_exists(String(composition["static_composite"])), "必须保留离线静态重建图")
+	_expect(not composition.has("source_order_reference"), "离线对照图应归档到仓库外")
+	_expect(not composition.has("profile_override_mask"), "离线修复范围图不应成为运行依赖")
+	_expect(not composition.has("static_composite"), "应保留像素哈希而不是重复的离线重建图")
 	_expect(int(composition["disabled_placement_count"]) == 16, "应识别 16 条被注释禁用的 FCC 摆放")
 
 	var disabled_indices: Dictionary = {}

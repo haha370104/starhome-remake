@@ -9,8 +9,8 @@ var assertions := 0
 
 ## 执行本测试脚本的全部验证并汇总结果。
 func _initialize() -> void:
-	var catalog = CatalogScript.new()
-	_expect(catalog.load_file("res://tests/content/fixtures/content_pack_catalog.json"), "; ".join(catalog.errors))
+	var catalog = CatalogScript.new("user://content_pack_test/")
+	_expect(catalog.load_file(_create_fixture()), "; ".join(catalog.errors))
 	_expect(catalog.content_version == "test-content-v1", "应保留内容版本")
 	_expect(catalog.pack_ids() == [&"test_mount_pack"], "应读取唯一测试内容包")
 	_expect(catalog.mount_all(true), "; ".join(catalog.errors))
@@ -33,6 +33,33 @@ func _initialize() -> void:
 	for failure in failures:
 		push_error(failure)
 	quit(1)
+
+
+## 在隔离测试存档目录生成最小内容包，无需将测试图和 ZIP 保存进素材仓库。
+## 返回生成的目录 JSON 路径。
+func _create_fixture() -> String:
+	var folder := "user://content_pack_test/"
+	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(folder))
+	var path := folder + "fixture.zip"
+	var pack := ZIPPacker.new()
+	_expect(pack.open(path) == OK, "应创建隔离测试包")
+	pack.start_file("content/test/mounted_payload.txt")
+	pack.write_file("荣耀版内容包挂载测试".to_utf8_buffer())
+	pack.close_file()
+	var fixture_image := Image.create(2, 2, false, Image.FORMAT_RGBA8)
+	fixture_image.fill(Color.CYAN)
+	pack.start_file("content/test/raw_texture.png")
+	pack.write_file(fixture_image.save_png_to_buffer())
+	pack.close_file()
+	pack.close()
+	var entry := {"pack_id": "test_mount_pack", "path": path,
+		"size_bytes": FileAccess.get_file_as_bytes(path).size(),
+		"sha256": FileAccess.get_sha256(path)}
+	var file := FileAccess.open(folder + "catalog.json", FileAccess.WRITE)
+	file.store_string(JSON.stringify({"schema_version": 1,
+		"content_version": "test-content-v1", "packs": [entry]}))
+	file.close()
+	return folder + "catalog.json"
 
 
 ## 记录一项测试断言及其失败信息。

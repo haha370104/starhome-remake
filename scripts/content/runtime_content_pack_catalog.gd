@@ -5,6 +5,13 @@ var content_version := ""
 var errors: PackedStringArray = []
 var _packs: Dictionary = {}
 var _mounted: Dictionary = {}
+var _pack_root := "res://assets/content_packs/"
+
+
+## 指定受控内容包根目录；正式运行默认只允许 assets，测试可使用隔离的 user 目录。
+## [param pack_root] 调用方明确提供的受控根目录，必须以斜杠结束。
+func _init(pack_root := "res://assets/content_packs/") -> void:
+	_pack_root = pack_root if pack_root.ends_with("/") else pack_root + "/"
 
 
 ## 读取受控内容包目录。包路径只能位于工程的 assets/content_packs 下。
@@ -117,8 +124,8 @@ func _load_pack_entry(value: Variant, index: int) -> void:
 		_add_error(prefix + ".pack_id", "内容包 ID 重复：%s" % pack_id)
 		return
 	var pack_path := String(entry.get("path", "")).strip_edges()
-	if not pack_path.begins_with("res://assets/content_packs/"):
-		_add_error(prefix + ".path", "内容包必须位于 res://assets/content_packs/")
+	if not pack_path.begins_with(_pack_root) or pack_path.contains(".."):
+		_add_error(prefix + ".path", "内容包必须位于受控目录：%s" % _pack_root)
 		return
 	if not pack_path.ends_with(".zip") and not pack_path.ends_with(".pck"):
 		_add_error(prefix + ".path", "内容包只支持 zip 或 pck")
