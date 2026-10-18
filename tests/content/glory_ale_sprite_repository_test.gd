@@ -15,8 +15,8 @@ func _initialize() -> void:
 		packs.load_file("res://data/content/glory_sprite_content_packs_v1.json"),
 		"精灵内容包目录应有效：%s" % "; ".join(packs.errors),
 	)
-	_expect(packs.pack_ids().size() == 3, "裁剪应保留现有精灵包入口")
-	_expect(packs.mount_all(false), "精灵包应可挂载：%s" % "; ".join(packs.errors))
+	_expect(not packs.pack_ids().is_empty(), "精灵目录必须包含可挂载的内容包")
+	_expect(packs.mount_all(true), "精灵包应可挂载且通过完整性校验：%s" % "; ".join(packs.errors))
 	var repository = RepositoryScript.new()
 	_expect(repository.load_default(), "ALE 索引应有效：%s" % "; ".join(repository.errors))
 	_expect(repository.size() == 2339, "仓储应只登记当前运行配置引用的动画")

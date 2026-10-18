@@ -1,5 +1,29 @@
 # 素材目录与版本管理
 
+## 当前存储策略：临时使用普通 Git
+
+2026-10-18 用户明确要求暂时停用 Git LFS。当前模式由
+`data/content/asset_storage_policy_v1.json` 声明，覆盖本文下方的历史 LFS 规则。
+所有素材使用普通 Git，单文件最多 48 MiB；门禁同时拒绝 LFS 过滤器和未下载的指针文件。
+新基线从实际素材字节建立，旧 LFS 历史及原包均保存在仓库外，不合并回新分支。
+
+地图包确实由启动流程挂载；大包拆成完整、独立的 ZIP，而非需要玩家手动拼接的分卷。
+现有 `RuntimeContentPackCatalog` 按更新后的目录挂载，各素材成员的名称、顺序和字节不变。
+克隆对应代码分支及子模块即可取得完整素材，无需执行 `git lfs pull`。
+
+重新生成素材后先按下节清理运行依赖，再使用新归档目录执行：
+
+```powershell
+python -X utf8 tools/prepare_regular_git_assets.py --archive C:/outside-repository/regular-git-archive --apply
+python -X utf8 tools/check_asset_size_policy.py
+python -X utf8 tools/check_runtime_assets.py
+```
+
+[拆包工具](../tools/prepare_regular_git_assets.py) 在仓库外备份原包和目录后准备全部输出，
+逐项校验 SHA-256，最后替换工作树文件。单个成员超限时直接报错，不截断图片或偷偷更改运行加载协议。
+上传按小于 2 GiB 的提交批次进行。此模式只解决当前 LFS 配额阻塞；以后恢复 LFS 时须重新迁移历史，
+仅修改 attributes 不会清掉普通 Git 中已保存的大对象。默认不自动恢复或提高付费预算。
+
 ## 2026-10-18：只发布运行依赖
 
 用户明确要求：游戏未使用、仅开发阶段可能使用的素材保存到仓库外，不占用 Git LFS。

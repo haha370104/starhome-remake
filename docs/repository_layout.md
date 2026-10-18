@@ -18,13 +18,12 @@
 
 ## 首次克隆
 
-需要 Git、Git LFS、可访问两个仓库的 GitHub SSH 身份，以及 Godot 4.7.2。
+需要 Git、可访问两个仓库的 GitHub SSH 身份，以及 Godot 4.7.2。
+2026-10-18 起按用户要求临时使用普通 Git，不需要安装 Git LFS。
 
 ```powershell
-git lfs install
-git clone --recurse-submodules git@github.com:haha370104/starhome-remake.git
+git clone --branch work/community-gameplay-integration --recurse-submodules git@github.com:haha370104/starhome-remake.git
 cd starhome-remake
-git -C assets lfs pull
 python -X utf8 tools/check_asset_size_policy.py
 ```
 
@@ -33,12 +32,10 @@ python -X utf8 tools/check_asset_size_policy.py
 ```powershell
 git submodule sync --recursive
 git submodule update --init --recursive
-git -C assets lfs pull
 ```
 
-在主仓库执行 `git lfs pull` 不会代替子模块下载。
-缺少子模块时，素材门禁必须失败；看到文件存在也不能据此确认 LFS 实体已下载。
-可以用 `git -C assets lfs fsck` 检查当前版本对象是否完整。
+当前 ZIP 都是普通 Git 中的真实文件，独立挂载，无需手工拼接。
+缺少子模块、残留 LFS 指针或超出 48 MiB 的文件时，素材门禁必须失败。
 
 ## 日常更新与提交
 
@@ -54,7 +51,6 @@ git -C assets status --short
 ```powershell
 git pull --ff-only
 git submodule update --init --recursive
-git -C assets lfs pull
 ```
 
 修改素材前，在子模块内切到开发分支；普通子模块检出可能处于 detached HEAD。
@@ -73,44 +69,29 @@ git commit -m "chore(assets): update runtime asset revision"
 git push --recurse-submodules=check origin main
 ```
 
-LFS 的 pre-push hook 会上传提交引用的实体；不可用 `--no-verify` 绕过。
-素材仓库已于 2026-10-18 重建为只含运行素材的新基线；先推素材当前分支，
-再推主仓库对应分支。禁止从旧克隆或备份执行 `git push --all`、`git push --mirror` 或
-`git lfs push --all`，否则会把已归档的历史大文件重新上传，抵消本次清理。
-若 LFS 上传失败，先处理错误再发布主仓库指针，避免其他开发者拿到不可用版本。
+当前使用普通 Git：正常推送，不跳过任何钩子。首次上传采用不超过 500 MiB 的增量分批提交、推送，
+低于 GitHub 单次 2 GiB 的上传限制；每次提交最多 20 个文件、文本增删合计最多 2000 行。
+所有中间提交用于建立完整素材基线，运行游戏必须使用主仓库锁定的最终完整提交。
+禁止从旧克隆或备份执行 `git push --all`、`git push --mirror` 或 `git lfs push --all`，
+避免把已归档历史重新上传。重建后旧克隆需先保存本地改动，再重新初始化或克隆素材子模块。
 
-2026-10-18 的运行素材裁剪及外部归档方式见[素材管理](asset_management.md)。
-减少当前文件不等于释放 GitHub 已保存的历史 LFS 对象；若仍提示 `exceeded its LFS budget`，
-保留本地提交，按[GitHub LFS 清理说明](https://docs.github.com/en/repositories/working-with-files/managing-large-files/removing-files-from-git-large-file-storage)
-处理远端旧对象后，再先推素材、后用 `--recurse-submodules=check` 推主仓库。
+## 2026-10-18 普通 Git 基线
 
-## 2026-10-18 素材历史重建与发布状态
+用户授权删除并同名重建私有素材库，主仓库已发布的历史保留；`karei03` 的协作邀请已重发。
+重建后 LFS 仍因本月累计额度拒绝上传，用户随即明确要求暂时改为普通 Git。
+当前存储策略为 `data/content/asset_storage_policy_v1.json`，素材 `.gitattributes` 显式禁用 LFS filter。
+超过 48 MiB 的运行 ZIP 已拆为独立包；包内文件的路径、顺序、内容逐项验证不变，加载器仍使用原挂载协议。
+普通 Git 基线不引用旧 LFS 历史，克隆当前分支即可获得真实素材。
 
-用户授权删除并同名重建私有素材库，主仓库历史保留；原协作者 `karei03` 的邀请已重新发送。
-新素材基线为 `55bf6a5ffbc7147dc9bdfd698cb37c82657c8f92`，目录树与清理后的
-`6c3fdacfe49dfb0aa7e66b77a45203ab2ed3c8fb` 完全一致，仅有一个无父提交。
-33 个 LFS 对象合计 7,069,416,729 字节（约 6.58 GiB）。这是历史替换快照，运行文件未再次改动。
-
-截至本轮交付，GitHub 仍以 `exceeded its LFS budget` 拒绝上传，实际上传 0 字节。
-**新素材远端暂为空仓库，新基线和主仓库对应提交仍仅保存在本地，不能视为已发布。**
-GitHub 按月累计存储用量；月中删除对象不回退本月累计量。维持零付费预算时，
-需等下一个月（2026-11-01）的额度重置，或联系 GitHub 支持核查；不自动提高付费预算。
-依据：[Git LFS 计费说明](https://docs.github.com/en/billing/concepts/product-billing/git-lfs)。
-
-本地完整 Git 历史、73 个 LFS 实体（全部历史指针均已覆盖）及用户未提交设置补丁位于
+完整旧 Git 历史、73 个 LFS 实体及用户设置补丁位于
 `C:/Users/tomato/Documents/Codex/local-archives/starhome-assets/20261018-lfs-rebuild/`；
-具体校验与恢复步骤见该目录 `prepared-rebuild.json`、`READ-ME.txt`。
-原始未裁剪素材另保留在相邻 `20261018-runtime-cleanup/`，不重新进入日常素材分支。
+未裁剪开发素材在相邻 `20261018-runtime-cleanup/`；拆包前原件、普通 Git 导入及推送记录在
+`20261018-regular-git/`。这些目录均在仓库外，不上传。
 
 旧代码提交、旧标签及未合并清理分支的默认 `main` 仍锁定旧素材 SHA，不能从新素材远端还原。
-回看旧版本需从外部 bundle 恢复素材历史并复制对应 LFS 实体；普通开发应使用匹配新基线的代码。
-恢复发布时先确认 `assets/main` 为上述新基线，正常推送素材成功后，再执行：
-
-```powershell
-git push --recurse-submodules=check origin work/community-gameplay-integration
-```
-
-本次不自动将工作分支合并至默认 `main`；默认分支需在评审并合并后才能匹配新素材基线。
+回看旧版本需从上述 bundle 恢复素材历史并复制 LFS 实体；默认 `main` 需评审合并清理分支后才适配新基线。
+本次仅推送 `work/community-gameplay-integration`，不自动合并或改动默认分支。
+以后恢复 LFS 必须同时处理普通 Git 大对象历史，不能仅修改 attributes；不会自动恢复或提高付费预算。
 
 ## 2026-09-14 拆分记录
 

@@ -2,45 +2,10 @@
   "schema_version": 1,
   "content_version": "glory-sprite-runtime-v1",
   "packs": [
-    {
-      "pack_id": "glory_sprites_001_v1",
-      "path": "res://assets/content_packs/glory_sprites_001_v1.zip",
-      "size_bytes": 18616616,
-      "sha256": "0a4692fa76147966c15a528db07a8ce2dc00ab41160fc9c64a602d41b776f742",
-      "content_groups": [
-        "sprites",
-        "animations",
-        "ui",
-        "audio_references"
-      ]
-    },
-    {
-      "pack_id": "glory_sprites_002_v1",
-      "path": "res://assets/content_packs/glory_sprites_002_v1.zip",
-      "size_bytes": 62164286,
-      "sha256": "00b896c6872467856c9040b98057b0f3e61d8950e0db8a523a068ed88e1d1c67",
-      "content_groups": [
-        "sprites",
-        "animations",
-        "ui",
-        "audio_references"
-      ]
-    },
-    {
-      "pack_id": "glory_sprites_003_v1",
-      "path": "res://assets/content_packs/glory_sprites_003_v1.zip",
-      "size_bytes": 15993574,
-      "sha256": "f3fc5fb47ba0d2369f16b74de3a59e3aaca4c85fc5f0fadff0063738ff7f67ab",
-      "content_groups": [
-        "sprites",
-        "animations",
-        "ui",
-        "audio_references"
-      ]
-    }
+    {"pack_id":"glory_sprites_001_v1","path":"res://assets/content_packs/glory_sprites_001_v1.zip","size_bytes":18616616,"sha256":"0a4692fa76147966c15a528db07a8ce2dc00ab41160fc9c64a602d41b776f742","content_groups":["sprites","animations","ui","audio_references"]},
+    {"pack_id":"glory_sprites_002_v1_part_001","path":"res://assets/content_packs/glory_sprites_002_v1_part_001.zip","size_bytes":48004161,"sha256":"cec060f003d01c7cb19e7794bfc90dcf11842e6b2ef7da8201f0989a2f775445","content_groups":["sprites","animations","ui","audio_references"]},
+    {"pack_id":"glory_sprites_002_v1_part_002","path":"res://assets/content_packs/glory_sprites_002_v1_part_002.zip","size_bytes":14160147,"sha256":"74a72ffc0b7673038b8c27601d426fc96acda55f520fcefaf2509f1ced989a7c","content_groups":["sprites","animations","ui","audio_references"]},
+    {"pack_id":"glory_sprites_003_v1","path":"res://assets/content_packs/glory_sprites_003_v1.zip","size_bytes":15993574,"sha256":"f3fc5fb47ba0d2369f16b74de3a59e3aaca4c85fc5f0fadff0063738ff7f67ab","content_groups":["sprites","animations","ui","audio_references"]}
   ],
-  "summary": {
-    "sprites": 2053,
-    "packs": 3
-  }
+  "summary": {"sprites": 2053, "packs": 4}
 }
