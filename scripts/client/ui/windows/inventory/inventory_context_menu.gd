@@ -98,6 +98,7 @@ func open_for(item: GameItem, revision: int, point: Vector2) -> void:
 	if item.max_stack > 1:
 		_add_action("拆分", "split_inventory_item", item.locked or item.quantity < 2)
 		_add_action("合并", "merge_inventory_item", item.locked)
+	_add_action("丢弃到脚下（整件）", "drop_inventory_item", item.locked or item.bound)
 	if _actions.is_empty():
 		menu.add_item("暂无可用操作")
 		menu.set_item_disabled(menu.item_count - 1, true)

@@ -2,6 +2,7 @@ class_name GameWindowManager
 extends Control
 
 signal notice_requested(message: String)
+signal ground_drop_requested(instance_id: String, viewport_point: Vector2)
 
 const CharacterPanelScript := preload("res://scripts/client/ui/windows/character/character_panel.gd")
 const InventoryPanelScript := preload("res://scripts/client/ui/windows/inventory/inventory_panel.gd")
@@ -48,6 +49,7 @@ func configure(session: PlayerPanelSession) -> bool:
 	inventory_panel.name = "InventoryPanel"
 	inventory_panel.position = Vector2(460, 70)
 	inventory_panel.command_requested.connect(panel_session.dispatch)
+	inventory_panel.ground_drop_requested.connect(_drop_outside_inventory)
 	inventory_panel.enhancement_requested.connect(_open_clothing_enhancement)
 	inventory_panel.vehicle_workshop_requested.connect(_open_vehicle_sockets)
 	inventory_panel.equipment_processing_requested.connect(_open_equipment_processing)
@@ -123,7 +125,7 @@ func configure(session: PlayerPanelSession) -> bool:
 			window.workshop_requested.connect(_open_workshop)
 		if window is CrystalSourcePanel or window is AustinGlensPanel or window is SamaPanel or window is CentralPanel:
 			window.command_requested.connect(panel_session.dispatch)
-		if window is PersonalWarehousePanel or window is VehicleLoadoutPresetsPanel:
+		if window is PersonalWarehousePanel or window is VehicleLoadoutPresetsPanel or window is MissionJournalPanel:
 			window.command_requested.connect(panel_session.dispatch)
 		window.position = Vector2(120, 70)
 		window.notice_requested.connect(notice_requested.emit)
@@ -139,7 +141,7 @@ func configure(session: PlayerPanelSession) -> bool:
 	refresh.start()
 
 	if not panel_session.snapshot_bundle().is_empty():
-		_apply_player(panel_session.current_player)
+		_apply_player(panel_session.current_player, true)
 	return true
 
 
@@ -170,6 +172,18 @@ func _topmost_window_at(viewport_position: Vector2) -> DraggableGameWindow:
 				and child.get_global_rect().has_point(viewport_position):
 			return child as DraggableGameWindow
 	return null
+
+
+## 只将面板之外的拖动交给世界层，覆盖窗口的区域不视作地面。
+## [param id] 发起拖动的背包物品。[param point] 松开位置。
+func _drop_outside_inventory(id: String, point: Vector2) -> void:
+	var target := _topmost_window_at(point)
+	if target is PersonalWarehousePanel:
+		target.accept_external_item(id, point)
+		return
+	if target != null:
+		return
+	ground_drop_requested.emit(id, point)
 
 
 ## 按底栏 action_id 切换对应窗口，并在打开时拉取权威快照。
@@ -281,16 +295,19 @@ func _open_warehouse() -> void:
 
 ## 用会话的同事务投影同步人物、战车、背包和技能展示。
 ## [param player] 已完成权威快照还原的当前玩家。
-func _apply_player(player: Player) -> void:
+## [param force] 新建窗口时完整填充，即使玩家最后一次只改变局部状态。
+func _apply_player(player: Player, force := false) -> void:
 	var bundle := panel_session.snapshot_bundle()
-	character_panel.apply_snapshot(bundle["character"])
-	inventory_panel.apply_inventory(player.inventory)
-	inventory_panel.apply_food_status(player.food_status)
+	var change: PlayerPanelChange = panel_session.current_player.last_change
+	if force or change.character_changed: character_panel.apply_snapshot(bundle["character"])
+	if force or change.inventory_changed: inventory_panel.apply_inventory(player.inventory)
+	if force or change.inventory_changed: weapon_merchant_window.apply_inventory_state(player.inventory)
+	if force or change.food_changed: inventory_panel.apply_food_status(player.food_status)
 	character_panel.set_inventory_revision(int(bundle["inventory"].get("revision", -1)))
 	vehicle_panel.set_inventory_revision(int(bundle["inventory"].get("revision", -1)))
-	vehicle_panel.apply_snapshot(bundle["vehicle"])
-	skill_panel.apply_skills(bundle["character"].get("skills", []))
-	navigation_windows["achievements"].apply_snapshot(player.achievements.snapshot())
+	if force or change.vehicle_changed: vehicle_panel.apply_snapshot(bundle["vehicle"])
+	if force or change.skills_changed: skill_panel.apply_skills(bundle["character"].get("skills", []))
+	if force or change.achievements_changed: navigation_windows["achievements"].apply_snapshot(player.achievements.snapshot())
 
 
 ## 打开武器商人的购买、出售或任务窗口，并拉取同一事务快照。

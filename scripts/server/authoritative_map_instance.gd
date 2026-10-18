@@ -17,8 +17,10 @@ const MiningModuleScript := preload(
 const UseAbilityIntentContract := preload("res://scripts/network/contracts/use_ability_intent.gd")
 
 var definition
+var ground_items_provider := Callable()
 var navigation
 var entities: Dictionary = {}
+var _obstacles := EntityObstacleIndex.new()
 var movement_speed_cap := 240.0
 var dynamic_blocking_enabled := true
 var dynamic_blocking_radius := 18.0
@@ -70,9 +72,9 @@ func suspend_runtime(server_tick: int) -> bool:
 func resume_runtime(server_tick: int) -> Dictionary:
 	if suspended_at_server_tick < 0:
 		return _success(self)
-	var restored_navigation = DiamondNavigationScript.new()
-	if not restored_navigation.load_from(definition.navigation_data_path,
-			definition.navigation_grid_size, definition.navigation_cell_size):
+	var restored_navigation := MapNavigationCache.for_side(&"server").acquire(
+		definition.navigation_data_path, definition.navigation_grid_size, definition.navigation_cell_size)
+	if restored_navigation == null:
 		return _failure(&"invalid_navigation", "cannot resume map navigation")
 	navigation = restored_navigation
 	var elapsed_ticks := maxi(0, server_tick - suspended_at_server_tick)
@@ -107,12 +109,12 @@ func load_map(map_config_path: String) -> Dictionary:
 	if definition == null:
 		return _failure(&"invalid_map_definition", "; ".join(loader.errors))
 	instance_id = "%s.instance.1" % definition.map_id
-	navigation = DiamondNavigationScript.new()
-	if not navigation.load_from(
+	navigation = MapNavigationCache.for_side(&"server").acquire(
 		definition.navigation_data_path,
 		definition.navigation_grid_size,
 		definition.navigation_cell_size,
-	):
+	)
+	if navigation == null:
 		definition = null
 		return _failure(&"invalid_navigation", "map navigation failed to load")
 	return _success(definition)
@@ -246,6 +248,7 @@ func admitted_spawn_position(
 	requested_position: Vector2,
 	entity_id: StringName = &"",
 ) -> Vector2:
+	_obstacles.refresh(entities)
 	var spawn_position := requested_position
 	if not navigation.is_walkable(spawn_position):
 		spawn_position = navigation.closest_walkable_position(spawn_position)
@@ -346,6 +349,7 @@ func commit_loot_pickup(entity_id: String, loot_id: String) -> DomainResult:
 ## 返回该函数计算、查询或操作得到的结果。
 ## 设计：该函数位于权威服务器边界，客户端不得覆盖其计算结果。
 func handle_move_intent(entity_id: String, raw_intent: Variant) -> Dictionary:
+	_obstacles.refresh(entities)
 	var entity: AuthoritativeEntity = entities.get(entity_id)
 	if entity == null:
 		return _failure(ErrorCodes.INVALID_IDENTIFIER, "entity is not present in this map instance")
@@ -401,6 +405,8 @@ func handle_move_intent(entity_id: String, raw_intent: Variant) -> Dictionary:
 ## [param delta] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## 设计：该函数位于权威服务器边界，客户端不得覆盖其计算结果。
 func simulate(delta: float) -> void:
+	var _timing := PerformanceTelemetry.measure(&"map_simulation")
+	_obstacles.refresh(entities)
 	var entity_ids := entities.keys()
 	entity_ids.sort()
 	for entity_id: String in entity_ids:
@@ -414,6 +420,7 @@ func simulate(delta: float) -> void:
 			entity.path = PackedVector2Array([entity.position])
 			entity.path_index = entity.path.size()
 			entity.action = &"idle"
+			_obstacles.update(entity)
 			continue
 		if not dynamic_blocking_enabled or entities.size() <= 1:
 			entity.simulate(delta)
@@ -427,6 +434,7 @@ func simulate(delta: float) -> void:
 				)
 			):
 				_restore_motion_state(entity, motion_state)
+		_obstacles.update(entity)
 		if mining_module != null and not entity.position.is_equal_approx(previous_position):
 			mining_module.interrupt(entity_id, &"movement")
 		if is_vehicle_combat_active() and not entity.position.is_equal_approx(previous_position):
@@ -466,6 +474,7 @@ func reject_mining_cycle(token: String) -> bool:
 
 ## 每分钟按地图策略补充怪物；死亡实例在补量时统一回收，不再逐只原地复活。
 func _replenish_monster_population_if_due() -> void:
+	var _timing := PerformanceTelemetry.measure(&"population_refresh")
 	if combat_module == null or _next_monster_replenishment_tick < 0 \
 		or combat_module.current_tick < _next_monster_replenishment_tick:
 		return
@@ -657,7 +666,7 @@ func _position_has_dynamic_clearance(
 	include_reserved_targets: bool,
 ) -> bool:
 	var minimum_distance_squared := dynamic_blocking_radius * dynamic_blocking_radius
-	for other_entity_id: String in entities:
+	for other_entity_id: String in _obstacles.nearby(candidate, dynamic_blocking_radius, include_reserved_targets):
 		if StringName(other_entity_id) == excluded_entity_id:
 			continue
 		var other: AuthoritativeEntity = entities[other_entity_id]
@@ -685,21 +694,8 @@ func _find_authoritative_path(
 ) -> PackedVector2Array:
 	if not dynamic_blocking_enabled or entities.size() <= 1:
 		return navigation.find_path(from_position, to_position)
-	var disabled_point_ids: Array[int] = []
-	var minimum_distance_squared := dynamic_blocking_radius * dynamic_blocking_radius
 	var from_point_id: int = navigation.cell_id(navigation.world_to_cell(from_position))
-	for point_id: int in navigation.graph.get_point_ids():
-		if point_id == from_point_id or navigation.graph.is_point_disabled(point_id):
-			continue
-		var point_position: Vector2 = navigation.graph.get_point_position(point_id)
-		for other_entity_id: String in entities:
-			if other_entity_id == entity_id:
-				continue
-			var other: AuthoritativeEntity = entities[other_entity_id]
-			if point_position.distance_squared_to(other.position) < minimum_distance_squared:
-				navigation.graph.set_point_disabled(point_id, true)
-				disabled_point_ids.append(point_id)
-				break
+	var disabled_point_ids := _obstacles.block_navigation(navigation, entities, entity_id, dynamic_blocking_radius, from_point_id)
 	var path: PackedVector2Array = navigation.find_path(from_position, to_position, false)
 	for point_id: int in disabled_point_ids:
 		navigation.graph.set_point_disabled(point_id, false)
@@ -744,7 +740,8 @@ func _movement_intersects_dynamic_blocker(
 	to_position: Vector2,
 ) -> bool:
 	var minimum_distance_squared := dynamic_blocking_radius * dynamic_blocking_radius
-	for other_entity_id: String in entities:
+	var margin := Vector2(dynamic_blocking_radius, dynamic_blocking_radius)
+	for other_entity_id: String in _obstacles.positions.query_aabb(from_position.min(to_position) - margin, from_position.max(to_position) + margin):
 		if other_entity_id == entity_id:
 			continue
 		var other: AuthoritativeEntity = entities[other_entity_id]
@@ -798,14 +795,36 @@ func snapshot(server_tick: int, server_time_seconds: float) -> Dictionary:
 ## [param actor_id] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## 返回该函数计算、查询或操作得到的结果。
 func snapshot_for_actor(server_tick: int, server_time_seconds: float, actor_id: String) -> Dictionary:
+	return with_private_snapshot(public_snapshot(server_tick, server_time_seconds), actor_id)
+
+
+## 每个发布周期只构造一次公共实体、怪物、矿点与地面物品投影。
+## [param server_tick] 权威帧号。[param server_time_seconds] 权威运行时间。
+## 返回不含本地玩家专有字段的完整世界投影。
+func public_snapshot(server_tick: int, server_time_seconds: float) -> Dictionary:
 	var result := snapshot(server_tick, server_time_seconds)
+	var combat := combat_module.public_snapshot(instance_id) if combat_module != null else {}
 	if combat_module != null:
-		var combat_snapshot: Dictionary = combat_module.snapshot_for_actor(actor_id)
-		combat_snapshot["vehicle_combat_active"] = is_vehicle_combat_active()
-		combat_snapshot["mine_sources"] = mining_module.snapshot() if mining_module != null else []
-		combat_snapshot["local_mining"] = mining_module.action_snapshot(actor_id) \
-			if mining_module != null else {"active": false}
-		result["combat"] = combat_snapshot
+		combat["vehicle_combat_active"] = is_vehicle_combat_active()
+		combat["mine_sources"] = mining_module.snapshot() if mining_module != null else []
+	if ground_items_provider.is_valid():
+		var items: Array = combat.get("ground_loot", [])
+		items.append_array(ground_items_provider.call(instance_id))
+		combat["ground_loot"] = items
+	if not combat.is_empty(): result["combat"] = combat
+	return result
+
+
+## 在公共投影上附加一个角色的私有状态，沿用现有传输格式。
+## [param shared] 同周期生成的公共快照。[param actor_id] 会话角色。
+## 返回拥有独立字典外壳的玩家快照；不修改公共字典和数组。
+func with_private_snapshot(shared: Dictionary, actor_id: String) -> Dictionary:
+	var result := shared.duplicate(false)
+	if combat_module != null:
+		var combat: Dictionary = shared.get("combat", {}).duplicate(false)
+		combat.merge(combat_module.private_snapshot(actor_id), true)
+		combat["local_mining"] = mining_module.action_snapshot(actor_id) if mining_module != null else {"active": false}
+		result["combat"] = combat
 	return result
 
 

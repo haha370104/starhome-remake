@@ -14,7 +14,10 @@ static func write_document(path: String, document: Dictionary) -> DomainResult:
 	var backup_path := path + ".bak"
 	var file := FileAccess.open(temporary_path, FileAccess.WRITE)
 	if file == null: return DomainResult.failure(&"persistence.storage_error", "cannot open temporary database file")
-	file.store_string(JSON.stringify(document, "  "))
+	var started := Time.get_ticks_usec() if PerformanceTelemetry.is_enabled() else 0
+	var encoded := JSON.stringify(document, "  ")
+	if started > 0: PerformanceTelemetry.record_duration(&"file_json_encode", Time.get_ticks_usec() - started)
+	file.store_string(encoded)
 	file.flush()
 	var write_error := file.get_error()
 	file.close()

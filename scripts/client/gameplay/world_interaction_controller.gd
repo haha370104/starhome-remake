@@ -13,6 +13,7 @@ var combat: CombatInteractionController
 var game_window_manager: GameWindowManager
 var smart_assistant: SmartAssistantController
 var death_journal: PveDeathJournalController
+var garden: BotanicalGardenController
 var hotkeys := ClientHotkeys.new()
 
 
@@ -20,10 +21,24 @@ var hotkeys := ClientHotkeys.new()
 ## [param manager] 已配置共享玩家会话的窗口管理器。
 func bind_player_windows(manager: GameWindowManager) -> void:
 	game_window_manager = manager
+	manager.ground_drop_requested.connect(_drop_inventory_at)
 	death_journal = PveDeathJournalController.new()
 	add_child(death_journal)
 	death_journal.configure(combat.multiplayer_presenter, manager.panel_session,
 		active_world_controller, manager.navigation_windows["pve_death_journal"])
+
+
+## 将视口落点转换到地图坐标，交由服务器校验距离和所有权。
+## [param id] 背包实例身份。[param point] 视口内松开位置。
+func _drop_inventory_at(id: String, point: Vector2) -> void:
+	if hud != null and hud.blocks_world_drop(point):
+		return
+	if combat.is_input_locked():
+		return
+	var position := world_view.get_canvas_transform().affine_inverse() * point
+	var player := game_window_manager.panel_session.current_player
+	game_window_manager.panel_session.dispatch({"type": "drop_inventory_item", "instance_id": id,
+		"inventory_revision": player.inventory.revision, "position": [position.x, position.y]})
 
 
 ## 初始化时暂停输入，直到启动依赖全部配置完毕。
@@ -77,6 +92,16 @@ func _unhandled_input(event: InputEvent) -> void:
 		handle_world_right_click(world_position)
 		get_viewport().set_input_as_handled()
 	elif mouse_event.button_index == MOUSE_BUTTON_LEFT:
+		var loot_id := world_view.ground_loot_world_controller.loot_at(world_position) if world_view.ground_loot_world_controller != null else ""
+		if not loot_id.is_empty():
+			combat.request_ground_loot_pickup(loot_id)
+			get_viewport().set_input_as_handled()
+			return
+		var plant := garden.plant_at(world_position) if garden != null else null
+		if plant != null:
+			show_npc_popup(plant)
+			get_viewport().set_input_as_handled()
+			return
 		var npc := nearest_npc(world_position, 55.0)
 		if npc:
 			show_npc_popup(npc)
@@ -197,6 +222,11 @@ func on_npc_action_requested(action_id: String) -> void:
 			hud.hide_popup()
 			game_window_manager.open_manufacturing(station_id)
 			hud.show_status("正在使用%s" % interaction_title)
+			return
+		if action_id == "harvest_garden" and active_npc is WorldGardenPlant and garden != null:
+			var plant_id: String = active_npc.plant_id
+			hud.hide_popup()
+			garden.harvest(plant_id)
 			return
 		var npc_id := String(active_npc.get("npc_id"))
 		var npc_definition: Variant = active_npc.get("npc_definition")

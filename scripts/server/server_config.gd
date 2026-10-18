@@ -26,6 +26,8 @@ var smoke_test := false
 var persistence_enabled := true
 var player_state_store_path := DEFAULT_PLAYER_STATE_STORE
 var autosave_interval_seconds := 60.0
+var ai_players_enabled := false
+var ai_players_config_path := "user://ai_players/config.json"
 
 
 ## 加载并校验 `from_command_line` 对应的模块状态。
@@ -35,7 +37,11 @@ var autosave_interval_seconds := 60.0
 static func from_command_line(arguments: PackedStringArray) -> DedicatedServerConfig:
 	var config := DedicatedServerConfig.new()
 	for argument in arguments:
-		if argument == "--no-network":
+		if argument == "--enable-ai-players":
+			config.ai_players_enabled = true
+		elif argument.begins_with("--ai-config="):
+			config.ai_players_config_path = argument.trim_prefix("--ai-config=")
+		elif argument == "--no-network":
 			config.network_enabled = false
 		elif argument == "--smoke-test":
 			config.smoke_test = true
@@ -73,6 +79,8 @@ static func from_command_line(arguments: PackedStringArray) -> DedicatedServerCo
 			config.map_config_path = argument.trim_prefix("--map-config=")
 		elif argument.begins_with("--map-catalog="):
 			config.map_catalog_path = argument.trim_prefix("--map-catalog=")
+	# 显式关闭优先，覆盖启动脚本中较早或较晚的启用参数。
+	if "--disable-ai-players" in arguments: config.ai_players_enabled = false
 	return config
 
 

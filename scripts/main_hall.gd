@@ -22,6 +22,7 @@ var interactions := WorldInteractionController.new()
 var player_binding := PlayerPresentationBinding.new()
 var combat := CombatInteractionController.new()
 var settings_controller := ClientSettingsController.new()
+var audio_binding := preload("res://scripts/client/gameplay/client_audio_binding.gd").new()
 var map_travel := MapTravelController.new()
 var world_view: ClientWorldView
 var character_catalog: Dictionary
@@ -200,10 +201,17 @@ func _build_multiplayer_presentation() -> void:
 	_build_game_windows()
 	combat.bind_session(multiplayer_presenter, panel_session)
 	interactions.bind_player_windows(game_window_manager)
+	interactions.garden = BotanicalGardenController.new()
+	add_child(interactions.garden)
+	interactions.garden.configure(active_world_controller, world_view.sortable_world,
+		world_view.item_catalog, panel_session, map_travel, hud, local_player_controller)
 	add_child(exit_controller)
 	exit_controller.configure(multiplayer_presenter, panel_session, combat, game_window_manager.navigation_windows["system"])
 	add_child(settings_controller)
 	settings_controller.configure(game_window_manager, hud, interactions)
+	add_child(audio_binding)
+	audio_binding.configure(active_world_controller, local_player_controller, multiplayer_presenter,
+		panel_session, world_view.player, map_travel)
 	local_player_controller.set_multiplayer_presenter(multiplayer_presenter)
 	var start_error: Error = multiplayer_presenter.start({
 		"offline_debug_enabled": multiplayer_offline_debug_enabled,

@@ -1,7 +1,7 @@
 class_name PersonalWarehouseService
 extends RefCounted
 
-const COMMANDS := ["query_personal_warehouse", "deposit_warehouse_item", "withdraw_warehouse_item", "expand_personal_warehouse"]
+const COMMANDS := ["query_personal_warehouse", "deposit_warehouse_item", "withdraw_warehouse_item", "expand_personal_warehouse", "move_warehouse_item", "arrange_warehouse", "split_warehouse_item"]
 
 var _catalog: ItemCatalog
 var _rules: WarehouseRules
@@ -84,11 +84,28 @@ func _change(player: Player, command: Dictionary, kind: String, cabinet: int) ->
 		return DomainResult.ok({"cabinet": checked.value.cabinet_count, "message": "已开通第%d个储物柜，消耗%d紫晶" % [checked.value.cabinet_count, checked.value.cost]})
 	var id: Variant = command.get("instance_id")
 	var quantity: Variant = command.get("quantity")
+	var position := Vector2i(-1, -1)
+	if command.has("position_px"):
+		var point: Variant = command.position_px
+		if not point is Array or point.size() != 2 or not _integer(point[0], 0, InventoryLayout.MAIN_SIZE.x - 1) \
+			or not _integer(point[1], 0, InventoryLayout.MAIN_SIZE.y - 1):
+			return DomainResult.failure(&"warehouse.position", "物品位置无效")
+		position = Vector2i(int(point[0]), int(point[1]))
+	if kind in ["arrange_warehouse", "move_warehouse_item", "split_warehouse_item"]:
+		if kind != "arrange_warehouse" and (not id is String or id.is_empty()):
+			return DomainResult.failure(&"warehouse.item", "请选择物品")
+		if kind == "move_warehouse_item" and position == Vector2i(-1, -1):
+			return DomainResult.failure(&"warehouse.position", "请指定物品位置")
+		if kind == "split_warehouse_item" and not _integer(quantity, 1, 1000000):
+			return DomainResult.failure(&"warehouse.quantity", "拆分数量无效")
+		checked = player.warehouse.edit(cabinet, warehouse_revision, kind,
+			String(id) if id is String else "", position, int(quantity) if kind == "split_warehouse_item" else 0)
+		return DomainResult.ok({"cabinet": cabinet, "message": ""}) if checked.is_ok else checked
 	if not id is String or id.is_empty() or not _integer(quantity, 1, 1000000):
 		return DomainResult.failure(&"warehouse.quantity", "请选择物品并输入有效的存取数量")
 	var identity := "warehouse." + Crypto.new().generate_random_bytes(16).hex_encode()
 	var deposit := kind == "deposit_warehouse_item"
-	checked = player.warehouse.transfer(player.inventory, cabinet, deposit, id, int(quantity), inventory_revision, warehouse_revision, identity)
+	checked = player.warehouse.transfer(player.inventory, cabinet, deposit, id, int(quantity), inventory_revision, warehouse_revision, identity, position)
 	if not checked.is_ok: return checked
 	return DomainResult.ok({"cabinet": cabinet, "message": "%s%d个物品" % ["已存入" if deposit else "已取出", int(quantity)]})
 

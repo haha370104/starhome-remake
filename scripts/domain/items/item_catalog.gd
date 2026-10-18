@@ -13,6 +13,7 @@ const GAMEPLAY_PATHS := [
 	"res://data/gameplay/material_items_v1.json",
 	"res://data/gameplay/official_rocket_items_v1.json",
 	"res://data/gameplay/glory/glory_items_v1.json",
+	"res://data/gameplay/botanical_garden_items_v1.json",
 	"res://data/gameplay/industrial_materials_v1.json",
 	"res://data/gameplay/commerce/attachment_upgrade_materials_v1.json",
 	"res://data/gameplay/original_drop_items_v1.json",
@@ -30,6 +31,7 @@ const GAMEPLAY_PATHS := [
 	"res://data/gameplay/equipment_forging_items_v1.json",
 ]
 const PRESENTATION_PATHS := [
+	"res://data/presentation/botanical_garden_v1.json",
 	"res://data/presentation/crystal_source_materials_v1.json",
 	"res://data/presentation/player_equipment_v1.json",
 	"res://data/presentation/ground_loot_v1.json",

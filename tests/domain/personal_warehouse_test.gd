@@ -14,6 +14,7 @@ func _initialize() -> void:
 	_test_full_states()
 	_test_partial_and_capacity()
 	_test_expansion_and_invalid_state()
+	_test_layout_edits()
 	print("Personal warehouse: %d checks, %d failures" % [checks, failures.size()])
 	for failure: String in failures: push_error(failure)
 	quit(0 if failures.is_empty() else 1)
@@ -127,6 +128,27 @@ func _test_expansion_and_invalid_state() -> void:
 	for count: Variant in [0, -1, 1.5, true]:
 		duplicate["quantity"] = count
 		_check(not PersonalWarehouseRecord.from_dictionary({"version": 1, "revision": 0, "cabinets": [[duplicate]]}).is_ok, "数量不得截断或接受布尔值")
+
+
+## 提供有真实装配但空背包的隔离玩家。
+## 验证精确落点独立堆叠、仓内编辑和保存还原。
+func _test_layout_edits() -> void:
+	var player := _player()
+	for id: String in ["layout.a", "layout.b"]:
+		player.inventory.add_reward(catalog.create("low_grade_gel", {"instance_id": id, "quantity": 5}).value)
+		var result := player.warehouse.transfer(player.inventory, 1, true, id, 5,
+			player.inventory.revision, player.warehouse.revision, "unused", Vector2i(73, 81))
+		_check(result.is_ok, "精确落点可存入")
+	_check(player.warehouse.items(1).size() == 2, "指定落点不合并已有同类堆叠")
+	var before := _player_state(player)
+	_check(not player.warehouse.edit(1, player.warehouse.revision - 1, "move_warehouse_item", "layout.a", Vector2i(100, 100)).is_ok, "旧仓库版本拒绝")
+	_check(_player_state(player) == before, "拒绝不会改变位置和数量")
+	_check(player.warehouse.edit(1, player.warehouse.revision, "move_warehouse_item", "layout.a", Vector2i(123, 64)).is_ok, "仓内自由移动")
+	_check(player.warehouse.edit(1, player.warehouse.revision, "split_warehouse_item", "layout.a", Vector2i.ZERO, 2).is_ok, "仓内拆分")
+	_check(player.warehouse.find("layout.a").quantity == 3 and player.warehouse.items(1).size() == 3, "拆分数量守恒")
+	var restored: Player = mapper.to_domain(mapper.to_record(player).value).value
+	_check(restored.warehouse.find("layout.a").position_px == Vector2i(123, 64), "落点保存还原不偏移")
+	_check(player.warehouse.edit(1, player.warehouse.revision, "arrange_warehouse").is_ok, "主动整理")
 
 
 ## 提供有真实装配但空背包的隔离玩家。

@@ -27,6 +27,7 @@ func _initialize() -> void:
 	_test_destroyed_vehicle_recovery()
 	_test_live_return_to_base()
 	_test_fixed_tick_and_snapshot_rate()
+	_test_public_private_snapshot()
 	if failures.is_empty():
 		print("AUTHORITATIVE_SERVER_SMOKE_OK (%d assertions)" % assertions)
 		quit(0)
@@ -481,3 +482,21 @@ func _expect(condition: bool, message: String) -> void:
 	assertions += 1
 	if not condition:
 		failures.append(message)
+
+
+## 验证公共世界投影可复用，私有角色字段不互相泄漏。
+func _test_public_private_snapshot() -> void:
+	var server = _new_server()
+	var first: Dictionary = server.open_session(71, _handshake(), 1000)
+	var second: Dictionary = server.open_session(72, _handshake(), 1000)
+	var world: AuthoritativeMapInstance = server.map_instance
+	var shared := world.public_snapshot(4, 0.2)
+	var saved := shared.duplicate(true)
+	var a := world.with_private_snapshot(shared, first.value.session.entity_id)
+	var b := world.with_private_snapshot(shared, second.value.session.entity_id)
+	_expect(shared == saved, "私人合并不得改写公共快照")
+	_expect(not shared.get("combat", {}).has("local_entity_id"), "公共投影不含私人身份")
+	_expect(a == world.snapshot_for_actor(4, 0.2, first.value.session.entity_id), "公共加私有与原快照接口等价")
+	if a.get("combat", {}).has("local_entity_id"):
+		_expect(a.combat.local_entity_id != b.combat.local_entity_id, "不同连接拥有各自私人状态")
+	server.free()

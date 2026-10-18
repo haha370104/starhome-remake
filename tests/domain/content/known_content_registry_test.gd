@@ -38,15 +38,15 @@ func _run() -> void:
 		"all 1012 recovered equipment rows",
 	)
 	_expect(
-		registry.summary_for(&"map").get("runtime_ready_source_keys") == 810,
-		"all 810 packaged map sources should be runtime-ready",
+		registry.summary_for(&"map").get("runtime_ready_source_keys") == 814,
+		"all 814 packaged map sources should be runtime-ready",
 	)
 	_expect(registry.summary_for(&"monster").get("runtime_ready_npc_rows") == 119, "all NPC rows should be runtime-ready")
 	_expect(
-		registry.summary_for(&"item").get("runtime_item_ids") == 1284,
+		registry.summary_for(&"item").get("runtime_item_ids") == 1686,
 		"all generated and curated runtime item IDs should be represented",
 	)
-	_expect(registry.size() == 2349, "source catalogs plus three explicit remake definitions should total 2349")
+	_expect(registry.size() == 2751, "source catalogs and explicitly sourced runtime definitions should total 2751")
 	_expect(
 		registry.registrations_for_runtime(&"map", "buli_c03_field_zone").size() == 1,
 		"promoted Buli C03 should be represented by its NFT_BL source registration",
@@ -98,7 +98,7 @@ func _run() -> void:
 	var item_catalog: ItemCatalog = ItemCatalogScript.new()
 	var item_loaded := item_catalog.initialize()
 	_expect(item_loaded.is_ok, "current runtime item catalog should still initialize")
-	_expect(item_catalog.definition_ids().size() == 1284, "runtime item catalog should expose 1284 definitions")
+	_expect(item_catalog.definition_ids().size() == 1686, "runtime item catalog should expose 1686 definitions")
 	for runtime_id: String in item_catalog.definition_ids():
 		_expect(
 			not registry.registrations_for_runtime(&"item", runtime_id).is_empty(),

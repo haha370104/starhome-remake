@@ -31,7 +31,7 @@ func _initialize() -> void:
 	_check(not clothing.maintenance_preview(tool).is_ok, "vehicle box cannot repair clothing")
 	clothing.maintain()
 	_check(clothing.durability == 64 and clothing.max_durability == 64, "tailoring preserves original maximum")
-	_check(items.maintenance_rules.profile("recruit_tank").no_wear, "chassis remains nonwearing")
+	_check(not items.maintenance_rules.profile("recruit_tank").no_wear and items.maintenance_rules.profile("recruit_tank").wear_enabled, "chassis participates in confirmed wear rules")
 	var forbidden := 0
 	for id: String in items.definition_ids():
 		var profile := items.maintenance_rules.profile(id)

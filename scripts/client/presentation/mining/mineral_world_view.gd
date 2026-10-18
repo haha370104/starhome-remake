@@ -154,6 +154,12 @@ func contains_world_point(world_position: Vector2) -> bool:
 	return visible and _local_hit_rect.has_point(to_local(world_position))
 
 
+## 返回矿物原图世界矩形，用于空间粗筛且不改变原点击范围。
+## 查询当前模块拥有的只读几何或预算状态。
+func broad_phase_bounds() -> Rect2:
+	return get_global_transform() * _local_hit_rect
+
+
 ## 切换荣耀版地面资源通用的绿色悬浮描边与说明文字。
 ## [param hovered] 调用方传入的 `hovered` 参数。
 func set_hovered(hovered: bool) -> void:

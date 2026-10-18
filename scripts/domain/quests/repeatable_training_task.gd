@@ -105,7 +105,27 @@ func turn_in(state: Dictionary) -> DomainResult:
 	var result := state.duplicate(true)
 	result["accepted"] = false
 	result["completions"] = int(state.get("completions", 0)) + 1
+	_clear_round(result)
 	return DomainResult.ok(result)
+
+
+## 放弃当前训练，保留业务日期、领取额度和历史完成次数。
+## [param state] 当前权威进度。
+## 返回清除本轮目标后的状态，未领取时拒绝。
+func abandon(state: Dictionary) -> DomainResult:
+	if not bool(state.get("accepted", false)):
+		return DomainResult.failure(&"quest.not_accepted", "请先接取训练任务")
+	var result := state.duplicate(true)
+	result["accepted"] = false
+	_clear_round(result)
+	return DomainResult.ok(result)
+
+
+## 清除仅对当前轮有效的目标与去重记录，不触碰历史计数。
+## [param state] 已隔离、可修改的任务状态。
+func _clear_round(state: Dictionary) -> void:
+	for key in ["target", "kills", "seen_deaths", "accepted_skill_level"]:
+		state.erase(key)
 
 
 ## 统一为收集任务兼容的只读进度 DTO，额外携带每日接取次数与技能奖励。
@@ -117,7 +137,7 @@ func snapshot(state: Dictionary, day: String) -> Dictionary:
 	var count := daily_accepted(state, day)
 	var required := int(_definition["kill_count"])
 	var killed := mini(required, int(state.get("kills", 0)))
-	var target: Dictionary = state.get("target", {})
+	var target: Dictionary = state.get("target", {}) if accepted else {}
 	return {
 		"task_id": _definition["id"], "title": _definition["title"], "kind": "kill_training",
 		"provider_id": _definition["provider_id"], "accepted": accepted,

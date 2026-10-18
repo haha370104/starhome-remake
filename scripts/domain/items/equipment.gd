@@ -70,14 +70,16 @@ func _init(definition: Dictionary = {}, state: Dictionary = {}) -> void:
 
 
 ## 记录与自身类型匹配的实际使用，维护链不完整或免磨损装备保持原状。
-## [param event] shot、movement、mining 或 damage。
-## [param amount] 实际次数或移动秒数。
+## [param event] 射击、移动、采掘、受击以及战车移动与受损事件。
+## [param amount] 实际次数、移动秒数或分摊的耐久量。
 ## 返回是否刚刚损坏，用于一次性重算战斗属性。
 func record_use(event: String, amount: float = 1.0) -> bool:
 	if durability <= 0 or maintenance_profile == null or maintenance_profile.no_wear or not maintenance_profile.wear_enabled:
 		return false
 	var matches := (event == "shot" and self is VehicleWeapon) or (event == "movement" and self is VehicleEngine) \
-		or (event == "mining" and self is VehicleMiningArm) or (event == "damage" and (self is Clothing or (self is VehicleEquipment and (self as VehicleEquipment).sama_profile != null)))
+		or (event == "mining" and self is VehicleMiningArm) or (event == "damage" and (self is Clothing or (self is VehicleEquipment and (self as VehicleEquipment).sama_profile != null))) \
+		or (event == "vehicle_movement" and self is VehicleChassis) \
+		or (event == "vehicle_damage" and (self is VehicleChassis or (self is VehicleEquipment and (self as VehicleEquipment).equipment_location in [5, 6, 7, 8])))
 	if not matches:
 		return false
 	wear(usage.consume(event, amount, float(maintenance_profile.wear_thresholds.get(event, 0))))

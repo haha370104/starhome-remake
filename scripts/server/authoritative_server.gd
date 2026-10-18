@@ -40,6 +40,8 @@ const MapTransitionLandingResolverScript := preload(
 signal snapshot_generated(snapshot: Dictionary)
 signal command_rejected(peer_id: int, code: StringName)
 signal server_message_generated(peer_id: int, message: Dictionary)
+
+var _player_sync := PlayerSyncPublisher.new()
 signal peer_snapshot_generated(peer_id: int, snapshot: Dictionary)
 
 const TRANSPORT_SESSION_REQUEST := &"session_request"
@@ -62,16 +64,19 @@ var emitted_snapshot_count := 0
 var _simulation_accumulator := 0.0
 var _ticks_per_snapshot := 2
 var _next_entity_number := 1
+var _next_local_peer_id := 0x100000000
 var _network_started := false
 var _transport_endpoint: NetworkTransportEndpoint
 var _combat_catalog
 var _mining_catalog
 var player_state_repository: PlayerStateRepository
 var autosave_service: AuthoritativeAutosaveService
+var _ground_item_service: GroundItemService
 var player_panel_service: AuthoritativePlayerPanelService
 var reward_service := AuthoritativeRewardService.new()
 var commerce_service
 var manufacturing_service
+var garden_service: AuthoritativeGardenService
 var warehouse_service: PersonalWarehouseService
 var _pending_vehicle_recoveries: Dictionary = {}
 var _runtime_definition_paths_by_map_id: Dictionary = {}
@@ -175,7 +180,10 @@ func initialize(
 	var panel_result = player_panel_service.initialize(reward_service.pipeline)
 	if not panel_result.is_ok:
 		return _failure(panel_result.error_code, panel_result.error_message)
+	if autosave_service != null:
+		_ground_item_service = GroundItemService.new(autosave_service, player_state_repository, player_panel_service, player_panel_service.item_catalog())
 	for instance: AuthoritativeMapInstance in map_registry.all_instances():
+		if _ground_item_service != null: instance.ground_items_provider = _ground_item_service.snapshots
 		if instance.combat_module != null:
 			instance.combat_module.rewards = reward_service
 	commerce_service = CommerceServiceScript.new()
@@ -186,6 +194,10 @@ func initialize(
 	var manufacturing_result: DomainResult = manufacturing_service.initialize(reward_service.pipeline)
 	if not manufacturing_result.is_ok:
 		return _failure(manufacturing_result.error_code, manufacturing_result.error_message)
+	garden_service = AuthoritativeGardenService.new()
+	var garden_result := garden_service.initialize(player_panel_service.item_catalog(), reward_service.pipeline)
+	if not garden_result.is_ok:
+		return _failure(garden_result.error_code, garden_result.error_message)
 	warehouse_service = PersonalWarehouseService.new()
 	var warehouse_result := warehouse_service.initialize(reward_service.pipeline)
 	if not warehouse_result.is_ok:
@@ -196,6 +208,13 @@ func initialize(
 		_production_runtime.failed.connect(_publish_production_failure)
 	_exit_service = AuthoritativeExitService.new(autosave_service, _capture_persistent_player_state, _release_exited_player)
 	_ticks_per_snapshot = floori(float(config.simulation_hz) / float(config.snapshot_hz))
+	if config.ai_players_enabled:
+		var installer = load("res://scripts/server/optional_ai/ai_module_installer.gd")
+		if installer != null:
+			var installed: DomainResult = installer.install(self, config.ai_players_config_path)
+			if not installed.is_ok: push_warning("可选AI未启用：" + installed.error_message)
+		else:
+			push_warning("可选AI模块不可用，普通游戏继续运行")
 	return _success(_default_map_id)
 
 
@@ -260,6 +279,7 @@ func _physics_process(delta: float) -> void:
 ## [param now_msec] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## 设计：该函数位于权威服务器边界，客户端不得覆盖其计算结果。
 func advance_simulation(elapsed_seconds: float, now_msec := -1) -> void:
+	var _timing := PerformanceTelemetry.measure(&"server_frame")
 	if sessions == null or elapsed_seconds <= 0.0:
 		return
 	_advance_food_status()
@@ -303,6 +323,7 @@ func advance_simulation(elapsed_seconds: float, now_msec := -1) -> void:
 					Callable(self, "_capture_persistent_player_state"),
 				)
 	for entity_id in sessions.cleanup_expired(cleanup_time):
+		if player_panel_service != null: player_panel_service.forget_player(entity_id)
 		if autosave_service != null:
 			autosave_service.unregister_player(entity_id)
 		_remove_entity_from_registered_map(entity_id)
@@ -324,6 +345,7 @@ func open_session(peer_id: int, request: Dictionary, now_msec := -1) -> Dictiona
 	if not version_result.is_ok:
 		return _failure(version_result.error_code, version_result.error_message)
 	var current_time := now_msec if now_msec >= 0 else Time.get_ticks_msec()
+	_player_sync.connect_peer(peer_id, int(request.get("player_change_version", 0)))
 	var reconnect_token := String(request.get("reconnect_token", ""))
 	if not reconnect_token.is_empty():
 		var reconnect_result := sessions.reconnect(peer_id, reconnect_token, current_time)
@@ -331,12 +353,36 @@ func open_session(peer_id: int, request: Dictionary, now_msec := -1) -> Dictiona
 			return reconnect_result
 		if _exit_service != null: _exit_service.forget(peer_id)
 		return _session_response(reconnect_result.value, true)
+	var entity_id := "player.%d" % _next_entity_number
+	_next_entity_number += 1
+	return _create_player_session(peer_id, entity_id, current_time)
+
+
+## 为服务端插件创建稳定的独立角色；不从网络握手接受角色身份。
+## [param actor_key] 插件拥有的稳定标识，仅允许ASCII标识符，最长64字符。
+## 返回正式会话和世界快照；不会占用普通玩家的顺序编号。
+func open_local_actor(actor_key: String) -> Dictionary:
+	if sessions == null or RegEx.create_from_string("^[A-Za-z_][A-Za-z0-9_]{0,63}$").search(actor_key) == null:
+		return _failure(&"actor.invalid_identity", "本地角色身份无效")
+	var entity_id := "local.%s" % actor_key
+	if sessions.session_for_entity(entity_id) != null:
+		return _failure(&"actor.already_connected", "本地角色已经在线")
+	var peer_id := _next_local_peer_id
+	_next_local_peer_id += 1
+	return _create_player_session(peer_id, entity_id, Time.get_ticks_msec())
+
+
+## 共用普通玩家的初始化、持久化和恢复链路，身份由服务器入口决定。
+## [param peer_id] 真实连接或进程内插件会话。[param entity_id] 已验证的角色身份。
+## [param current_time] 单调时钟毫秒值。
+## 返回会话创建结果。
+func _create_player_session(peer_id: int, entity_id: String, current_time: int) -> Dictionary:
+	if sessions.session_for_peer(peer_id) != null:
+		return _failure(&"peer_already_connected", "连接已经拥有会话")
 	var primary := ensure_runtime_map(_default_map_id)
 	if not primary.ok:
 		return primary
 	map_instance = primary.value
-	var entity_id := "player.%d" % _next_entity_number
-	_next_entity_number += 1
 	var spawn_result := map_instance.spawn_entity(
 		entity_id, config.default_spawn, config.default_movement_speed
 	)
@@ -368,6 +414,7 @@ func open_session(peer_id: int, request: Dictionary, now_msec := -1) -> Dictiona
 ## 返回该函数计算、查询或操作得到的结果。
 ## 设计：该函数位于权威服务器边界，客户端不得覆盖其计算结果。
 func disconnect_session(peer_id: int, now_msec := -1) -> Dictionary:
+	_player_sync.disconnect_peer(peer_id)
 	var current_time := now_msec if now_msec >= 0 else Time.get_ticks_msec()
 	var session := sessions.session_for_peer(peer_id)
 	if _production_runtime != null and session != null:
@@ -764,6 +811,7 @@ func _recover_destroyed_vehicle_to_base(entity_id: String, pending: Dictionary) 
 ## 返回该函数计算、查询或操作得到的结果。
 ## 设计：该函数位于权威服务器边界，客户端不得覆盖其计算结果。
 func snapshot_for_peer(peer_id: int) -> Dictionary:
+	var _timing := PerformanceTelemetry.measure(&"snapshot_build")
 	var session: ServerSession = sessions.session_for_peer(peer_id)
 	if session == null:
 		return {}
@@ -781,6 +829,7 @@ func snapshot_for_peer(peer_id: int) -> Dictionary:
 ## 返回包含同一事务 revision 的三面板权威快照或拒绝原因。
 ## 设计：角色身份只取自会话；变更由领域服务校验后一次性提交完整玩家聚合。
 func handle_peer_player_panel_command(peer_id: int, command: Dictionary) -> Dictionary:
+	var _timing := PerformanceTelemetry.measure(&"player_command")
 	if command.get("type") == "prepare_exit" and _exit_service != null:
 		var result := _exit_service.execute(peer_id, sessions.session_for_peer(peer_id), command)
 		return _success(result.value) if result.is_ok else _failure(result.error_code, result.error_message)
@@ -794,10 +843,14 @@ func handle_peer_player_panel_command(peer_id: int, command: Dictionary) -> Dict
 	if current == null:
 		return _failure(&"panels.state_missing", "authoritative player state is not registered")
 	var command_type := String(command.get("type", ""))
+	if command_type == "query": _player_sync.require_full(peer_id)
 	if command_type == "query_scene_players":
 		return _success({"scene_players": ScenePlayerListProjector.build(
 			session.map_instance_id, sessions, autosave_service
 		)})
+	var is_garden := command_type in AuthoritativeGardenService.COMMANDS
+	if is_garden and garden_service == null:
+		return _failure(&"garden.unavailable", "植物园尚未初始化")
 	var is_warehouse := command_type in PersonalWarehouseService.COMMANDS
 	if is_warehouse and warehouse_service == null:
 		return _failure(&"warehouse.unavailable", "个人仓库尚未初始化")
@@ -808,6 +861,9 @@ func handle_peer_player_panel_command(peer_id: int, command: Dictionary) -> Dict
 	if not captured.is_ok:
 		return _failure(captured.error_code, captured.error_message)
 	current = captured.value
+	if command_type == "drop_inventory_item" and _ground_item_service != null:
+		var dropped := _ground_item_service.drop(current, current_map, command)
+		return _success(dropped.value) if dropped.is_ok else _failure(dropped.error_code, dropped.error_message)
 	var trusted_command := command.duplicate(true)
 	trusted_command["_authoritative_vehicle_combat_active"] = current_map != null \
 		and current_map.is_vehicle_combat_active()
@@ -816,6 +872,8 @@ func handle_peer_player_panel_command(peer_id: int, command: Dictionary) -> Dict
 		executed = commerce_service.execute(current, trusted_command)
 	elif is_manufacturing:
 		executed = manufacturing_service.execute(current, trusted_command)
+	elif is_garden:
+		executed = garden_service.execute(current, trusted_command)
 	elif is_warehouse:
 		executed = warehouse_service.execute(current, trusted_command)
 	else:
@@ -874,6 +932,8 @@ func handle_peer_player_panel_command(peer_id: int, command: Dictionary) -> Dict
 		return _success(manufacturing_service.build_bundle(
 			committed.value, value.get("operation", {})
 		))
+	if is_garden:
+		return _success(garden_service.build_bundle(committed.value, value.get("operation", {})))
 	if is_warehouse:
 		return _success(warehouse_service.build_bundle(committed.value, value.get("operation", {})))
 	return _success(player_panel_service.build_bundle(committed.value))
@@ -907,6 +967,7 @@ func _apply_quest_kill(event: Dictionary) -> void:
 ## [param progression_event] 含玩家实体、技能、来源及客观结算值的内部事件。
 ## 设计：普通进度写入三秒自动存档内存；技能升级立即落盘并同步综合等级。
 func _apply_skill_progression_event(progression_event: Dictionary) -> void:
+	var _timing := PerformanceTelemetry.measure(&"skill_settlement")
 	if autosave_service == null or player_panel_service == null:
 		return
 	var entity_id := String(progression_event.get("entity_id", ""))
@@ -942,6 +1003,7 @@ func _apply_skill_progression_event(progression_event: Dictionary) -> void:
 ## 将地图到期的采矿周期原子地写入背包，再扣除矿源储量并发放采矿经验。
 ## [param instance] 调用方传入的 `instance` 参数。
 func _settle_mining_cycles(instance: AuthoritativeMapInstance) -> void:
+	var _timing := PerformanceTelemetry.measure(&"mining_settlement")
 	if instance == null or autosave_service == null or player_panel_service == null:
 		return
 	for cycle: Dictionary in instance.drain_mining_cycles():
@@ -1028,11 +1090,21 @@ func _refresh_achievement_combat(entity_id: String, state: PlayerStateRecord) ->
 ## 仅在装备刚损坏时重算装配，普通使用余量留在模拟对象中，避免逐帧重建聚合。
 ## [param instance] 已推进本刻战斗与采矿的地图。
 func _settle_equipment_conditions(instance: AuthoritativeMapInstance) -> void:
+	var _timing := PerformanceTelemetry.measure(&"equipment_settlement")
 	if autosave_service == null or player_panel_service == null or instance.combat_module == null:
 		return
 	for entity_id: String in instance.combat_module.actors:
 		var condition: EquipmentConditionLoadout = instance.combat_module.actors[entity_id].equipment_condition
-		if not condition.needs_recalculation: continue
+		if not condition.needs_recalculation:
+			if condition.needs_durability_sync:
+				var snapshot := condition.snapshot()
+				if autosave_service.update_equipment_conditions(entity_id, snapshot):
+					condition.clear_durability_sync()
+					var recipient := sessions.session_for_entity(entity_id)
+					if recipient != null and recipient.has_active_peer():
+						_send_reliable(recipient.peer_id, {"type": "player_panels", "result": _wire_result(_success({
+							"equipment_conditions": snapshot, "character_id": entity_id}))})
+			continue
 		var current := autosave_service.state_for(entity_id)
 		if current == null: continue
 		var captured: DomainResult = _capture_persistent_player_state(current)
@@ -1099,6 +1171,13 @@ func handle_peer_loot_pickup(peer_id: int, intent: Dictionary) -> Dictionary:
 	var current_instance := map_registry.instance_by_id(session.map_instance_id)
 	if current_instance == null:
 		return _failure(&"loot.map_unavailable", "session map instance is unavailable")
+	if _ground_item_service != null and _ground_item_service.has_item(loot_id):
+		var state := autosave_service.state_for(session.entity_id)
+		if state == null: return _failure(&"loot.state_missing", "角色不在线")
+		var captured: DomainResult = _capture_persistent_player_state(state)
+		if not captured.is_ok: return _failure(captured.error_code, captured.error_message)
+		var received := _ground_item_service.pickup(captured.value, current_instance, loot_id)
+		return _success(received.value) if received.is_ok else _failure(received.error_code, received.error_message)
 	var prepared := current_instance.prepare_loot_pickup(session.entity_id, loot_id)
 	if not prepared.is_ok:
 		return _failure(prepared.error_code, prepared.error_message)
@@ -1263,18 +1342,24 @@ func _on_transport_map_transition_intent(peer_id: int, intent: Dictionary) -> vo
 ## 发布 `emit_snapshot` 对应的模块状态。
 ## 设计：该函数位于权威服务器边界，客户端不得覆盖其计算结果。
 func _emit_snapshot() -> void:
+	var _timing := PerformanceTelemetry.measure(&"snapshot_publish")
 	emitted_snapshot_count += 1
+	var shared_by_map: Dictionary = {}
 	for registered_instance: AuthoritativeMapInstance in map_registry.all_instances():
-		var snapshot := registered_instance.snapshot(
-			server_tick, float(server_tick) / float(config.simulation_hz)
-		)
-		snapshot_generated.emit(snapshot)
+		var shared := registered_instance.public_snapshot(server_tick, float(server_tick) / float(config.simulation_hz))
+		shared_by_map[registered_instance.instance_id] = shared
+		# 保持旧观察信号的实体快照语义，隔离订阅者对公共基线的修改。
+		snapshot_generated.emit({"server_tick": shared.server_tick,
+			"server_time_seconds": shared.server_time_seconds, "entities": shared.entities.duplicate(true)})
 	for session: ServerSession in sessions.active_sessions():
-		var session_snapshot := snapshot_for_peer(session.peer_id)
-		if not session_snapshot.is_empty():
-			peer_snapshot_generated.emit(session.peer_id, session_snapshot.duplicate(true))
-			if _network_started:
-				_transport_endpoint.send_world_snapshot(session.peer_id, session_snapshot)
+		# 本地受控角色通过窄观察端口读取状态，无需构造或复制网络私有快照。
+		if session.peer_id >= 0x100000000: continue
+		var session_map := map_registry.instance_by_id(session.map_instance_id)
+		if session_map == null or not shared_by_map.has(session.map_instance_id): continue
+		var session_snapshot := session_map.with_private_snapshot(shared_by_map[session.map_instance_id], session.entity_id)
+		peer_snapshot_generated.emit(session.peer_id, session_snapshot.duplicate(true))
+		if _network_started and session.peer_id < 0x100000000:
+			_transport_endpoint.send_world_snapshot(session.peer_id, session_snapshot)
 
 
 ## 执行 `send_reliable` 对应的模块操作。
@@ -1282,9 +1367,10 @@ func _emit_snapshot() -> void:
 ## [param message] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## 设计：该函数位于权威服务器边界，客户端不得覆盖其计算结果。
 func _send_reliable(peer_id: int, message: Dictionary) -> void:
+	message = _player_sync.encode(peer_id, message)
 	if peer_id > 0:
 		server_message_generated.emit(peer_id, message.duplicate(true))
-	if _network_started and peer_id > 0:
+	if _network_started and peer_id > 0 and peer_id < 0x100000000:
 		_transport_endpoint.send_server_message(peer_id, message)
 
 
@@ -1498,6 +1584,7 @@ func _initial_skill_states() -> Dictionary:
 ## 从会话所属地图采集最新位置、朝向和战车资源到候选聚合。
 ## [param state] 自动存档服务持有的隔离聚合副本。
 func _capture_persistent_player_state(state: PlayerStateRecord):
+	var _timing := PerformanceTelemetry.measure(&"save_capture")
 	var session: ServerSession = sessions.session_for_entity(state.character_id)
 	if session == null:
 		return DomainResultScript.failure(
@@ -1678,6 +1765,8 @@ func _release_exited_player(session: ServerSession, committed: PlayerStateRecord
 	_remove_entity_from_registered_map(session.entity_id)
 	sessions.close(session.peer_id)
 	autosave_service.unregister_player(session.entity_id)
+	if player_panel_service != null: player_panel_service.forget_player(session.entity_id)
+	_player_sync.disconnect_peer(session.peer_id)
 
 
 ## 在服务器节点退出场景树前执行最后一次权威存档。
@@ -1870,6 +1959,7 @@ func _load_configured_map_instances() -> Dictionary:
 ## [param instance] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## 设计：该函数位于权威服务器边界，客户端不得覆盖其计算结果。
 func _configure_map_instance(instance: AuthoritativeMapInstance) -> void:
+	if _ground_item_service != null: instance.ground_items_provider = _ground_item_service.snapshots
 	instance.dynamic_blocking_enabled = config.dynamic_blocking_enabled
 	instance.dynamic_blocking_radius = config.dynamic_blocking_radius
 

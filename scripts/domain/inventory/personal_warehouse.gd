@@ -47,8 +47,9 @@ func find(id: String) -> GameItem:
 ## [param inventory_revision] 客户端观察到的背包版本。
 ## [param warehouse_revision] 客户端观察到的仓库版本。
 ## [param split_id] 由服务端生成、部分转移时使用的新身份。
+## [param position] 可选的目标左上角；指定时不自动合并堆叠。
 ## 返回实际转移结果；成功同时推进背包和仓库版本。
-func transfer(backpack: Inventory, cabinet: int, deposit: bool, id: String, amount: int, inventory_revision: int, warehouse_revision: int, split_id: String) -> DomainResult:
+func transfer(backpack: Inventory, cabinet: int, deposit: bool, id: String, amount: int, inventory_revision: int, warehouse_revision: int, split_id: String, position := Vector2i(-1, -1)) -> DomainResult:
 	var checked := backpack.require_revision(inventory_revision)
 	if not checked.is_ok: return checked
 	if warehouse_revision != revision:
@@ -63,7 +64,29 @@ func transfer(backpack: Inventory, cabinet: int, deposit: bool, id: String, amou
 		return DomainResult.failure(&"warehouse.identity", "存取物品身份重复")
 	var source: Inventory = backpack if deposit else _cabinets[cabinet - 1]
 	var target: Inventory = _cabinets[cabinet - 1] if deposit else backpack
-	var result := InventoryTransfer.move(source, target, id, amount, split_id)
+	var result := InventoryTransfer.move(source, target, id, amount, split_id, position)
+	if result.is_ok: revision += 1
+	return result
+
+
+## 由仓库聚合统一验证柜号和版本，再修改指定柜内的物品布局或堆叠。
+## [param cabinet] 已开通柜号。[param expected_revision] 权威仓库版本。
+## [param action] 整理、移动或拆分。[param id] 目标身份。
+## [param position] 移动左上角。[param amount] 拆出数量。
+## 返回处理结果，失败不推进仓库版本。
+func edit(cabinet: int, expected_revision: int, action: String, id := "", position := Vector2i.ZERO, amount := 0) -> DomainResult:
+	if revision != expected_revision:
+		return DomainResult.failure(&"warehouse.revision", "仓库状态已更新，请重试")
+	var loaded := materialize()
+	if not loaded.is_ok: return loaded
+	if cabinet < 1 or cabinet > cabinet_count():
+		return DomainResult.failure(&"warehouse.cabinet", "请先开通储物柜")
+	var inventory := _cabinets[cabinet - 1]
+	var result: DomainResult = DomainResult.failure(&"warehouse.command", "未知仓库操作")
+	match action:
+		"arrange_warehouse": result = inventory.arrange(inventory.revision)
+		"move_warehouse_item": result = inventory.move_item(id, position, inventory.revision)
+		"split_warehouse_item": result = InventoryStackActions.split(inventory, id, amount, inventory.revision)
 	if result.is_ok: revision += 1
 	return result
 

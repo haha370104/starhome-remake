@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "source_release": "starhome_lz_ry",
+  "maps": {
+    "map:nft_bt/blackroom": {
+      "runtime_id": "glory_nft_bt_blackroom",
+      "presentation": "blackroom",
+      "source_scripts": [
+        "NFT_BT/map/blackroom/blackroom.fcc.cab"
+      ],
+      "script_sha256": "6663430ff783014e72a7588697cdb421db7545de2978a7fb01fba344e859b642",
+      "minimap_source": "thumbnail.jpg",
+      "minimap_sha256": "4b9c4c661f5a45e56769ba49caf82f9cab08764bf31ac3d9f64b019add779ff6",
+      "navigation_sha256": "31b4acd0264060264375b9f9321ff998a51259e7de2dc31cd2930dd9ba83bce4",
+      "exit_count": 0
+    },
+    "map:nft_bt/yzzl": {
+      "runtime_id": "glory_nft_bt_yzzl",
+      "presentation": "yzzl/variant_01_nft_bt",
+      "source_scripts": [
+        "NFT_BT/map/yzzl_1/yzzl_1.fcc.cab",
+        "NFT_SK/map/yzzl_1/yzzl_1.fcc.cab"
+      ],
+      "script_sha256": "01d3a2baae8610d1e5d627f88c1094c7375514a1efe476d0728bd59c9c6b8f42",
+      "minimap_source": "thumbnail.jpg",
+      "minimap_sha256": "1b746846c1efabfa079161e944f6ae106a65667738c01f452d6f0e0b7e305674",
+      "navigation_sha256": "a3bf0b94878f83f07acb8dc04c6efbf5f35dbde8082f1e405a23adf80a68e464",
+      "exit_count": 0
+    },
+    "map:nft_ds/roomsvr3": {
+      "runtime_id": "glory_nft_ds_roomsvr3",
+      "presentation": "roomsvr3/variant_02_nft_ds",
+      "source_scripts": [
+        "NFT_DS/map/RoomSvr3/roomsvr3.fcc.cab"
+      ],
+      "script_sha256": "8ff279c6f8cb38c84946a42c82df9d02dfb1423b8c4b601b98d569617b18cd22",
+      "minimap_source": "thumbnail.jpg",
+      "minimap_sha256": "481d28cf0bf015ab00d52c1acd9dba20dbb56a476e2908d13389f9c25f2a8e13",
+      "navigation_sha256": "d68ad7bc872fb1d907ca6ecb2410cc782e631f846d03a9b4b3b0dacc5b45a327",
+      "exit_count": 1
+    },
+    "map:nft_sk/yzzl": {
+      "runtime_id": "glory_nft_sk_yzzl",
+      "presentation": "yzzl/variant_01_nft_bt",
+      "source_scripts": [
+        "NFT_BT/map/yzzl_1/yzzl_1.fcc.cab",
+        "NFT_SK/map/yzzl_1/yzzl_1.fcc.cab"
+      ],
+      "script_sha256": "01d3a2baae8610d1e5d627f88c1094c7375514a1efe476d0728bd59c9c6b8f42",
+      "minimap_source": "thumbnail.jpg",
+      "minimap_sha256": "1b746846c1efabfa079161e944f6ae106a65667738c01f452d6f0e0b7e305674",
+      "navigation_sha256": "a3bf0b94878f83f07acb8dc04c6efbf5f35dbde8082f1e405a23adf80a68e464",
+      "exit_count": 0
+    }
+  },
+  "pack_sha256": "274164ece174ba526899738a61f332ddb5d277202009fd8f5c68a08774342447",
+  "notes": [
+    "Original parsed sources were skipped for missing minimap.jpg; thumbnails are source-derived.",
+    "Both yzzl records use identical yzzl_1 FCC content whose logical map code is yzzl.",
+    "No incoming transports to these four records were found in the current runtime index.",
+    "No entrances or return transport for blackroom were invented; this restores loadable content."
+  ]
+}

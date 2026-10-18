@@ -6,12 +6,14 @@ class Effect extends RefCounted:
 	var frames: Array = []
 	var elapsed := 0.0
 	var fps := 12.5
+	var frame_index := -1
 
 static var _definitions: Dictionary = {}
 static var _animations: Dictionary = {}
 var _repository: RefCounted
 var _active: Dictionary[String, Effect] = {}
 var _label: Label
+var _last_ids := PackedStringArray()
 
 
 ## 复用怪物原版技能动画和共享帧缓存；状态节点跟随所属怪物，不另存世界位置。
@@ -43,6 +45,8 @@ func apply_statuses(raw_ids: Variant) -> void:
 	if raw_ids is Array or raw_ids is PackedStringArray:
 		for value: Variant in raw_ids:
 			if value is String and _definitions.has(value) and value not in ids: ids.append(value)
+	if ids == _last_ids: return
+	_last_ids = ids
 	for id: String in _active.keys():
 		if id not in ids:
 			_active[id].sprite.free()
@@ -90,6 +94,9 @@ func advance(elapsed: float) -> void:
 ## 保留原版每帧原点，避免动画尺寸变化令命中特效漂移。
 ## [param effect] 当前循环动画状态。
 func _apply_frame(effect: Effect) -> void:
-	var frame: Dictionary = effect.frames[posmod(floori(effect.elapsed * effect.fps), effect.frames.size())]
+	var index := posmod(floori(effect.elapsed * effect.fps), effect.frames.size())
+	if index == effect.frame_index: return
+	effect.frame_index = index
+	var frame: Dictionary = effect.frames[index]
 	effect.sprite.texture = frame.texture
 	effect.sprite.offset = frame.origin

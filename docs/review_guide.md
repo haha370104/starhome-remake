@@ -1,5 +1,27 @@
 # 代码评审导读
 
+## 2026-10-14增量
+
+当前新增审查入口：[社区功能迁移](community_integration_2026-10-14.md)、[玩家增量同步](player_incremental_sync.md)、[AI可选模块边界](optional_ai_players.md)。下方早期“完整回包”“丢弃到脚下”等表述保留为阶段记录。
+
+2026-10-14 社区功能择取：从原主线 `a5cbb79` 独立实现，来源参考社区 PR #1 的 `1f46553`。
+保留 `assets` 子模块、既有资源名、物品身份及数值目录；没有合并对方的资源重命名和整仓替换。
+本轮边界与回归入口如下，后文旧日期的验证范围属于历史记录：
+
+| 功能 | 实现与检查 |
+| --- | --- |
+| 战斗候选查询、寻路限额 | [客户端架构](client_architecture.md)；`deterministic_spatial_grid_test`、`monster_wander_timing_test` |
+| 怪物展示分帧、插值、视口裁剪与特效缓存 | `monster_spawn_budget_test`、`monster_interpolation_test`；既有攻击、受击、死亡和全怪物表现回归 |
+| 底盘受伤、移动、击毁损耗 | [存储边界与规则](persistence_architecture.md)；`equipment_usage_model_test`、`equipment_usage_authority_test` |
+| 人物局部投影与同帧通知合并 | `player_incremental_projection_test`；完整回包先验证后替换，耐久有独立增量协议，其他数据仍沿用完整回包 |
+| 物品丢弃、原实例拾取、共同存储 | `GroundItem` / `GroundItemService`；`ground_item_transaction_test`、`ground_item_authority_test`，界面为背包右键“丢弃到脚下（整件）” |
+
+新增专项已纳入 `run_client_checks.py` 和 `run_project_checks.ps1`。
+手动丢弃保留完整装备成长及耐久；锁定、绑定物品禁止丢弃，满包或失败不移除地面所有权。
+本轮使用隔离副本验证现有第二版根存档迁移、角色重建和 C07 完整启动；未清空或改写日常存档。
+界面经图形模式截图检查。未以本轮专项回归代替完整多人 ENet、全量素材审计或真实长期帧率测量。
+
+
 核对日期：2026-09-14。文档整理前基线 HEAD：`fa2e54b`；同时核对当前工作树的源码与配置。
 随后已完成客户端职责拆分；当前入口与本轮实测范围见 [客户端架构](client_architecture.md)。
 此处其他模块的评审清单仍不代表逐行审计或全量游戏回归已经完成。

@@ -30,6 +30,18 @@ func execute(player: Player, provider_id: String, command: Dictionary) -> Domain
 	var definition: Dictionary = catalog.definitions.get(task_id, {})
 	if definition.is_empty() or String(definition["provider_id"]) != provider_id:
 		return DomainResult.failure(&"quest.unavailable", "此NPC不提供该任务")
+	var command_type := String(command.get("type", ""))
+	if command_type not in ["accept_weapon_merchant_task", "turn_in_weapon_merchant_task", "abandon_weapon_merchant_task"]:
+		return DomainResult.failure(&"quest.unknown_command", "未知任务操作")
+	if command_type == "abandon_weapon_merchant_task":
+		var active_state: Dictionary = player.quest_states.get(task_id, {})
+		var abandoned := catalog.training_rule(definition).abandon(active_state) \
+			if String(definition.get("kind", "")) == "kill_training" \
+			else RepeatableCollectionTask.new(definition).abandon(active_state)
+		if not abandoned.is_ok:
+			return abandoned
+		player.quest_states[task_id] = abandoned.value
+		return DomainResult.ok({"action": "abandon_task", "task_id": task_id})
 	if player.map_id not in catalog.providers[provider_id].get("map_ids", []):
 		return DomainResult.failure(&"quest.wrong_map", "请前往任务发布者所在地图")
 	if String(definition.get("kind", "")) == "kill_training":

@@ -8,6 +8,7 @@ const BOLD_FONT := preload("res://assets/ui/fonts/legacy_panel_bold_font.tres")
 const TextureResolverScript := preload(
 	"res://scripts/client/presentation/items/item_presentation_texture_resolver.gd"
 )
+const TradeRows := preload("res://scripts/client/ui/components/trade_row_reconciler.gd")
 
 const WINDOW_SIZE := Vector2(530, 450)
 const LEGACY_TEXT := Color("faf0c8")
@@ -80,6 +81,18 @@ func apply_commerce_bundle(bundle: Dictionary) -> void:
 ## 返回 buy、sell 或 task。
 func current_mode() -> String:
 	return _mode
+
+
+## 背包另行变化时重新查询当前商店，避免旧数量配合新版本误卖物品。
+## [param inventory] 会话刚应用的同事务背包投影。
+func apply_inventory_state(inventory: Inventory) -> void:
+	if inventory.revision == _inventory_revision and inventory.currency == _currency:
+		return
+	_currency = inventory.currency
+	_currency_label.text = "金币：%d" % _currency
+	_inventory_revision = -1
+	if visible:
+		command_requested.emit({"type": "query_weapon_merchant", "merchant_id": _merchant_id})
 
 
 ## 创建免费版商店窗口的外框与标题区域。
@@ -196,14 +209,10 @@ func _render_trade() -> void:
 	var merchant: Dictionary = _commerce.get("merchant", {})
 	_title_label.text = String(merchant.get("display_name", "武器商人"))
 	_column_header.text = "物品名称                 %s      数量" % ("售价" if _mode == "buy" else "收购")
-	for child in _list.get_children():
-		child.queue_free()
-	_clear_description()
 	var source: Array = _commerce.get("offers", []) if _mode == "buy" \
 		else _commerce.get("sell_items", [])
-	for value: Variant in source:
-		if value is Dictionary:
-			_list.add_child(_trade_row(value as Dictionary))
+	if TradeRows.reconcile(_list, source, _mode, _trade_row):
+		_clear_description()
 	_currency_label.text = "金币：%d" % _currency
 
 
@@ -220,16 +229,21 @@ func _trade_row(entry: Dictionary) -> PanelContainer:
 	var fields := HBoxContainer.new()
 	fields.add_theme_constant_override("separation", 2)
 	row.add_child(fields)
-	var name_label := _inline_label(String(entry.get("display_name", "未知物品")), 112)
+	var name_label := _inline_label(String(entry.get("display_name", "未知物品")), 80 if _mode == "sell" else 112)
 	name_label.clip_text = true
 	fields.add_child(name_label)
 	var price_key := "price" if _mode == "buy" else "unit_price"
-	fields.add_child(_inline_label(str(int(entry.get(price_key, 0))), 52, HORIZONTAL_ALIGNMENT_RIGHT))
+	fields.add_child(_inline_label(str(int(entry.get(price_key, 0))), 42 if _mode == "sell" else 52, HORIZONTAL_ALIGNMENT_RIGHT))
 	var amount := 1 if _mode == "buy" else int(entry.get("quantity", entry.get("amount", 1)))
-	fields.add_child(_inline_label(str(amount), 36, HORIZONTAL_ALIGNMENT_RIGHT))
-	var action := _legacy_button("购买" if _mode == "buy" else "出售", Vector2.ZERO, Vector2(54, 20))
+	fields.add_child(_inline_label(str(amount), 28 if _mode == "sell" else 36, HORIZONTAL_ALIGNMENT_RIGHT))
+	var action := _legacy_button("购买" if _mode == "buy" else "出售", Vector2.ZERO, Vector2(46, 20))
 	action.pressed.connect(_request_trade.bind(entry.duplicate(true)))
 	fields.add_child(action)
+	if _mode == "sell":
+		var sell_all := _legacy_button("整组", Vector2.ZERO, Vector2(46, 20))
+		sell_all.tooltip_text = "出售这一组的全部 %d 个物品" % amount
+		sell_all.pressed.connect(_request_trade.bind(entry.duplicate(true), amount))
+		fields.add_child(sell_all)
 	row.mouse_entered.connect(_on_row_entered.bind(row, entry.duplicate(true)))
 	row.mouse_exited.connect(_on_row_exited.bind(row))
 	return row
@@ -270,7 +284,8 @@ func _on_row_exited(row: PanelContainer) -> void:
 
 ## 把当前商品转换为只含稳定标识和 revision 的交易意图。
 ## [param entry] 被点击的商品投影。
-func _request_trade(entry: Dictionary) -> void:
+## [param quantity] 当前堆叠出售数量，购买始终一件。
+func _request_trade(entry: Dictionary, quantity := 1) -> void:
 	if _inventory_revision < 0:
 		return
 	if _mode == "buy":
@@ -285,7 +300,7 @@ func _request_trade(entry: Dictionary) -> void:
 			"type": "sell_to_weapon_merchant",
 			"merchant_id": _merchant_id,
 			"instance_id": String(entry.get("instance_id", "")),
-			"quantity": 1,
+			"quantity": quantity,
 			"inventory_revision": _inventory_revision,
 		})
 

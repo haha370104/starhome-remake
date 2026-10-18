@@ -16,6 +16,8 @@ config/features=PackedStringArray("4.7")
 
 [autoload]
 
+PerformanceDiagnostics="*res://scripts/core/performance_telemetry_lifecycle.gd"
+
 CombatDiagnostics="*res://scripts/core/combat_diagnostics_lifecycle.gd"
 
 [display]

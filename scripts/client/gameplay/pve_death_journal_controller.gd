@@ -14,7 +14,8 @@ var _map_names: Dictionary[String, String] = {}
 func configure(presenter: HallMultiplayerPresenter, panels: PlayerPanelSession, world: ActiveWorldController, window: PveDeathJournalPanel) -> void:
 	_world = world
 	_window = window
-	panels.player_changed.connect(_player_changed)
+	# 身份必须在紧随面板的战斗事件前生效；窗口刷新可以合帧，日志归属不能延迟。
+	panels.current_player.changed.connect(_player_changed)
 	presenter.combat_event_received.connect(_record)
 	presenter.combat_snapshot_received.connect(_snapshot)
 	presenter.map_joined.connect(_map_joined)

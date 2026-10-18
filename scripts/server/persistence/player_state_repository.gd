@@ -69,3 +69,17 @@ func flush() -> DomainResult:
 ## 返回收尾状态。
 func close() -> DomainResult:
 	return DomainResult.ok()
+
+
+## 原子提交玩家和地面所有权变更；不支持地面存储的仓储显式拒绝。
+## [param _state] 玩家候选。[param _expected_revision] 乐观版本。
+## [param _added] 新增地面实例，拾取时为空。[param _removed_id] 拾取的地面编号，丢弃时为空。
+## 返回已提交玩家或存储错误。
+func save_ground_transfer(_state: PlayerStateRecord, _expected_revision: int, _added: GroundItemRecord, _removed_id: String) -> DomainResult:
+	return DomainResult.failure(&"persistence.ground_unsupported", "当前仓储不支持地面物品")
+
+
+## 查询持久化的地面实例，由实现返回隔离记录。
+## 返回全部地面记录；无地面存储的仓储为空。
+func ground_items() -> Array[GroundItemRecord]:
+	return []

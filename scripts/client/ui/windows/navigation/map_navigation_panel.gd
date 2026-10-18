@@ -24,7 +24,7 @@ func build() -> void:
 	canvas.size = Vector2(540, 350)
 	canvas.destination_requested.connect(_on_map_destination)
 	content_root.add_child(canvas)
-	make_label("NPC / 设施 / 传送点", Rect2(580, 54, 300, 26))
+	make_label("NPC / 设施 / 采摘 / 传送点", Rect2(580, 54, 300, 26))
 	listing = MapDestinationList.new()
 	listing.name = "Destinations"
 	listing.position = Vector2(580, 90)
@@ -34,7 +34,7 @@ func build() -> void:
 	content_root.add_child(listing)
 	status = make_label("左键选择目的地 · Tab 关闭", Rect2(20, 478, 860, 24))
 	status.add_theme_color_override("font_color", Color("a7bacb"))
-	for item: Array in [["● 你的位置", "71f3a0"], ["● NPC / 设施", "e9c77b"], ["● 传送点", "78d9f4"]]:
+	for item: Array in [["● 你的位置", "71f3a0"], ["● NPC / 采摘等", "e9c77b"], ["● 传送点", "78d9f4"]]:
 		var legend := make_label(item[0], Rect2(20 + ["71f3a0", "e9c77b", "78d9f4"].find(item[1]) * 150, 447, 150, 26))
 		legend.add_theme_color_override("font_color", Color(item[1]))
 	_refresh_timer = Timer.new()

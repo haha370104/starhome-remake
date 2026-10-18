@@ -9,6 +9,7 @@ var _active_effects: Array[Dictionary] = []
 var _presented_generations: Dictionary = {}
 var _ale_repository: RefCounted
 var _glory_presentations: RefCounted
+var _resource_cache: Dictionary = {}
 
 
 ## 配置怪物死亡特效控制器，并校验业务清单中的 SpriteFrames。
@@ -61,7 +62,7 @@ func present_death(
 	var effect: Dictionary = (actor_value as Dictionary).get("death", {})
 	if not _valid_effect(effect):
 		return false
-	var frames := ResourceLoader.load(String(effect["resource"]), "SpriteFrames") as SpriteFrames
+	var frames := _load_frames(String(effect["resource"]))
 	if frames == null or not frames.has_animation(RAW_ANIMATION):
 		return false
 	var wrapper := Node2D.new()
@@ -207,3 +208,25 @@ func _free_effect(state: Dictionary) -> void:
 func _apply_ale_frame(sprite: Sprite2D, frame: Dictionary) -> void:
 	sprite.texture = frame["texture"] as Texture2D
 	sprite.position = frame["origin"] as Vector2
+
+
+## 预热当前地图已出现怪物的死亡资源，缓存沿用原 ALE 仓储。
+## [param actor_id] 怪物表现身份。
+func prefetch(actor_id: String) -> void:
+	var effect: Dictionary = _effect_definitions.get(actor_id, {}).get("death", {})
+	if _valid_effect(effect):
+		_load_frames(String(effect.resource))
+	elif _ale_repository != null and _glory_presentations != null:
+		var presentation: Dictionary = _glory_presentations.definition_for_actor(actor_id)
+		var reference := String(presentation.get("death_effect", ""))
+		if not reference.is_empty():
+			_ale_repository.load_animation(reference, String(presentation.get("preferred_prefix", "pic3/npc")))
+
+
+## 持有死亡动画帧，防止击杀时反复读取同一资源。
+## [param path] 原有动画资源路径。
+## 返回共享帧资源或空值。
+func _load_frames(path: String) -> SpriteFrames:
+	if not _resource_cache.has(path):
+		_resource_cache[path] = ResourceLoader.load(path, "SpriteFrames")
+	return _resource_cache[path] as SpriteFrames

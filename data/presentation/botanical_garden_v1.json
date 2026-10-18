@@ -1,0 +1,230 @@
+{
+  "schema_version": 1,
+  "definitions": {
+    "item:material:c87ab4c9ebec": {
+      "display_name": "小椰子",
+      "inventory": {
+        "native_size": [
+          19,
+          20
+        ],
+        "ale_reference": "pic3/stuff/CHN_2005_06_28_18_08_50_508.ale",
+        "frame": 0,
+        "source_rect": [
+          9,
+          20,
+          19,
+          20
+        ]
+      },
+      "world": {
+        "native_size": [
+          19,
+          20
+        ],
+        "origin": [
+          -8,
+          -12
+        ],
+        "variants": {},
+        "ale_reference": "map/mapimg/house/coffee01/CHN_2005_06_28_18_08_50_508.ale",
+        "frame": 0,
+        "source_rect": [
+          9,
+          20,
+          19,
+          20
+        ]
+      }
+    },
+    "item:material:2990ca709816": {
+      "display_name": "生豆",
+      "inventory": {
+        "native_size": [
+          18,
+          20
+        ],
+        "ale_reference": "pic3/stuff/CHN_2005_06_28_18_08_04_500.ale",
+        "frame": 0,
+        "source_rect": [
+          12,
+          86,
+          18,
+          20
+        ]
+      },
+      "world": {
+        "native_size": [
+          18,
+          20
+        ],
+        "origin": [
+          -8,
+          -11
+        ],
+        "variants": {},
+        "ale_reference": "map/mapimg/house/coffee01/CHN_2005_06_28_18_08_04_500.ale",
+        "frame": 0,
+        "source_rect": [
+          12,
+          86,
+          18,
+          20
+        ]
+      }
+    },
+    "item:material:bf7cb63cd4fa": {
+      "display_name": "植物棉",
+      "inventory": {
+        "native_size": [
+          35,
+          31
+        ],
+        "ale_reference": "pic3/stuff/CHN_2005_06_28_18_08_15_502.ale",
+        "frame": 0,
+        "source_rect": [
+          0,
+          29,
+          35,
+          31
+        ]
+      },
+      "world": {
+        "native_size": [
+          35,
+          31
+        ],
+        "origin": [
+          -22,
+          -17
+        ],
+        "variants": {
+          "alternate": {
+            "native_size": [
+              35,
+              31
+            ],
+            "origin": [
+              -11,
+              -19
+            ],
+            "ale_reference": "map/mapimg/house/coffee01/CHN_2005_06_28_18_08_21_503.ale",
+            "frame": 0,
+            "source_rect": [
+              135,
+              29,
+              35,
+              31
+            ]
+          }
+        },
+        "ale_reference": "map/mapimg/house/coffee01/CHN_2005_06_28_18_08_15_502.ale",
+        "frame": 0,
+        "source_rect": [
+          0,
+          29,
+          35,
+          31
+        ]
+      }
+    },
+    "item:material:6116d8b965c6": {
+      "display_name": "面瓜",
+      "inventory": {
+        "native_size": [
+          28,
+          18
+        ],
+        "ale_reference": "pic3/stuff/CHN_2005_06_28_18_08_27_504.ale",
+        "frame": 0,
+        "source_rect": [
+          31,
+          50,
+          28,
+          18
+        ]
+      },
+      "world": {
+        "native_size": [
+          28,
+          18
+        ],
+        "origin": [
+          -9,
+          -11
+        ],
+        "variants": {
+          "alternate": {
+            "native_size": [
+              28,
+              18
+            ],
+            "origin": [
+              -19,
+              -8
+            ],
+            "ale_reference": "map/mapimg/house/coffee01/CHN_2005_06_28_18_08_33_505.ale",
+            "frame": 0,
+            "source_rect": [
+              111,
+              50,
+              28,
+              18
+            ]
+          }
+        },
+        "ale_reference": "map/mapimg/house/coffee01/CHN_2005_06_28_18_08_27_504.ale",
+        "frame": 0,
+        "source_rect": [
+          31,
+          50,
+          28,
+          18
+        ]
+      }
+    },
+    "item:material:212589b5bafd": {
+      "display_name": "糖瓜",
+      "inventory": {
+        "native_size": [
+          25,
+          26
+        ],
+        "ale_reference": "pic3/stuff/CHN_2005_06_28_18_08_39_506.ale",
+        "frame": 0,
+        "source_rect": [
+          5,
+          13,
+          25,
+          26
+        ]
+      },
+      "world": {
+        "native_size": [
+          25,
+          26
+        ],
+        "origin": [
+          -12,
+          -11
+        ],
+        "variants": {},
+        "ale_reference": "map/mapimg/house/coffee01/CHN_2005_06_28_18_08_44_507.ale",
+        "frame": 0,
+        "source_rect": [
+          140,
+          13,
+          25,
+          26
+        ]
+      }
+    }
+  },
+  "source_audit": {
+    "source_release": "starhome_lz_ry",
+    "inventory_source": "pic3/stuff, frame 0 of each original ALE; existing glory_sprites_003_v1.zip",
+    "source_rect_basis": "Exact nonzero-alpha bounds within frame 0 of inventory and world fruit ALEs, measured from existing runtime atlases; no pixels redrawn.",
+    "display_rule": "Fit cropped inventory image into the existing inventory cell; unchanged item identity, inventory positions and stack limit. World fruit uses the original ALE drawing origin at each configured hanging point.",
+    "world_placement": "Retain configured tree anchor and fruit_offset. Render cropped pixels at original ALE origin + source_rect position, without centering the padded animation canvas. Labels and hit bounds follow the rendered fruit. Original fruit positions were server-supplied; current hanging points remain remake configuration."
+  }
+}

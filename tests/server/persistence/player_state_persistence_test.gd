@@ -80,11 +80,11 @@ func _test_schema_zero_migration() -> void:
 	var repository: FilePlayerStateRepository = FileRepositoryScript.new(migration_path)
 	var initialized := repository.initialize()
 	_expect(initialized.is_ok, "schema-zero file should migrate during initialization")
-	_expect(repository.current_schema_version() == 2, "repository should expose migrated schema two")
+	_expect(repository.current_schema_version() == 3, "repository should expose migrated schema three")
 	var loaded := repository.load_player(state.character_id)
 	_expect(loaded.is_ok and loaded.value.display_name == state.display_name, "migrated player aggregate should remain loadable")
 	var migrated_root: Variant = JSON.parse_string(FileAccess.get_file_as_string(migration_path))
-	_expect(migrated_root is Dictionary and int(migrated_root["schema_version"]) == 2, "migration should be materialized to disk")
+	_expect(migrated_root is Dictionary and int(migrated_root["schema_version"]) == 3, "migration should be materialized to disk")
 	_expect(migrated_root.has("players") and not migrated_root.has("characters"), "migration should replace the legacy aggregate key")
 
 

@@ -1,7 +1,7 @@
 class_name EquipmentUsage
 extends RefCounted
 
-const EVENTS := ["shot", "movement", "mining", "damage"]
+const EVENTS := ["shot", "movement", "mining", "damage", "vehicle_damage", "vehicle_movement"]
 var progress: Dictionary = {}
 
 

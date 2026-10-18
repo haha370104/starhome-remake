@@ -59,6 +59,15 @@ func _run() -> void:
 	journal._show_detail(0)
 	_expect("今日接取" in journal.details.text and "等级 +1" in journal.details.text, "日志显示每日额度和技能奖励")
 	_expect("武器商人" not in journal.details.text, "训练日志不误导到武器商人")
+	journal.listing.select(1)
+	journal._show_detail(1)
+	var selected_id := String(journal.listing.get_item_metadata(1)["task_id"])
+	journal.apply_entries(bundle["mission_journal"])
+	_expect(String(journal.listing.get_item_metadata(journal.listing.get_selected_items()[0])["task_id"]) == selected_id, "刷新保持选中任务")
+	var intents: Array[Dictionary] = []
+	journal.command_requested.connect(func(command: Dictionary) -> void: intents.append(command))
+	journal._abandon_selected()
+	_expect(intents.size() == 1 and String(intents[0]["task_id"]) == selected_id, "日志发布选中任务的放弃意图")
 	_window.open_mode("task", "ore_merchant")
 	await process_frame
 	_expect(not _window._task_selector.visible, "单个材料任务不显示训练选择器")

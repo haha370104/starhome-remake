@@ -48,7 +48,9 @@ func _initialize() -> void:
 	_move_player(server, 3, awakened_hall, config.default_spawn + Vector2(80, 0))
 	server.advance_simulation(0.05, 0)
 	_expect(field.navigation == null, "最后一人离开后应释放导航")
-	_expect(navigation_reference.get_ref() == null, "采矿或回调不能偷偷保留旧导航引用")
+	_expect(MapNavigationCache.for_side(&"server").size() <= 2, "休眠导航只允许由两图缓存持有")
+	MapNavigationCache.for_side(&"server").clear()
+	_expect(navigation_reference.get_ref() == null, "缓存清空后采矿或回调不能保留旧导航引用")
 	_expect(server.map_registry.instance_by_map_id("d04_field_zone") == null, "休眠地图不能参与活跃地图遍历")
 	var paused_tick := field.combat_module.current_tick
 	var remaining_wander_ticks := monster.next_wander_tick - paused_tick

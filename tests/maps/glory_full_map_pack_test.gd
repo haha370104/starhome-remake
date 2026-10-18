@@ -14,7 +14,7 @@ var assertions := 0
 func _initialize() -> void:
 	var packs = PackCatalogScript.new()
 	_expect(packs.load_file(PACK_CATALOG_PATH), "; ".join(packs.errors))
-	_expect(packs.pack_ids().size() == 11, "全量地图应拆为一个索引包和十个表现包")
+	_expect(packs.pack_ids().size() == 12, "地图包含一个索引包、十个既有表现包及一个补充包")
 	_expect(packs.mount_all(false), "; ".join(packs.errors))
 	var directory: Variant = JSON.parse_string(FileAccess.get_file_as_string(MAP_DIRECTORY_PATH))
 	_expect(directory is Dictionary, "全量地图目录必须是 JSON object")
@@ -22,7 +22,7 @@ func _initialize() -> void:
 		_finish()
 		return
 	var definitions: Dictionary = directory.get("definitions", {})
-	_expect(definitions.size() == 812, "应注册 810 个荣耀版实物地图键及两个明确标记的提炼厂临时楼层")
+	_expect(definitions.size() == 816, "应注册 814 个荣耀版实物地图键及两个明确标记的提炼厂临时楼层")
 	var definition_paths := PackedStringArray()
 	for map_id: String in definitions:
 		var definition_path := String(definitions[map_id])
@@ -30,7 +30,7 @@ func _initialize() -> void:
 		definition_paths.append(definition_path)
 	var maps = MapCatalogScript.new()
 	_expect(maps.add_files(definition_paths), "地图定义校验失败：%s" % "; ".join(maps.errors))
-	_expect(maps.size() == 812, "领域地图目录数量不匹配")
+	_expect(maps.size() == 816, "领域地图目录数量不匹配")
 	_expect(maps.validate_links(), "地图内部出口关系无法闭合：%s" % "; ".join(maps.errors))
 	_test_buli_recovered_field_transitions(maps)
 	var generated = maps.map_by_id(&"glory_nft_bl_2armshop1")

@@ -36,6 +36,13 @@ static func bind(
 	material.shader = HOVER_SHADER
 	material.set_shader_parameter("glow_color", GLOW_COLOR)
 	material.set_shader_parameter("hover_amount", 0.0)
+	if visual is TextureRect and visual.texture is AtlasTexture:
+		var atlas := visual.texture as AtlasTexture
+		var page_size := atlas.atlas.get_size()
+		material.set_shader_parameter("source_region", Vector4(atlas.region.position.x / page_size.x,
+			atlas.region.position.y / page_size.y, atlas.region.size.x / page_size.x, atlas.region.size.y / page_size.y))
+		# 小图放大后四个源像素会覆盖整件物品，限制晕染宽度以保持原图可辨认。
+		material.set_shader_parameter("glow_radius", clampf(minf(atlas.region.size.x, atlas.region.size.y) * 0.08, 1.0, 4.0))
 	visual.material = material
 	hit_target.mouse_entered.connect(func() -> void:
 		set_hovered(material, true)

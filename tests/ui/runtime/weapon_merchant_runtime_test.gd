@@ -31,6 +31,12 @@ func _run() -> void:
 	_state = fixture._state
 	_state.map_id = "glory_nft_bl_weaponshop1"
 	_state.currency = 100000
+	var stack := InventoryStackRecord.new()
+	stack.stack_id = "test.merchant.stack"
+	stack.item_definition_id = "low_grade_gel"
+	stack.quantity = 7
+	stack.slot_index = _state.inventory_stacks.size()
+	_state.inventory_stacks.append(stack)
 	_test_equipment_purchase_scope()
 	var manager = ManagerScript.new()
 	root.add_child(manager)
@@ -58,6 +64,22 @@ func _run() -> void:
 	window._request_trade(sell_items[0])
 	await process_frame
 	_expect(_state.currency > sell_currency_before, "出售应由权威服务增加金币")
+	var preserved_row := window._list.get_child(0)
+	window.apply_commerce_bundle(_service.build_bundle(_state))
+	_expect(window._list.get_child(0) == preserved_row, "未变化的商品行应复用")
+	for entry: Dictionary in window._commerce.get("sell_items", []):
+		var amount := int(entry.get("quantity", 1))
+		if amount <= 1:
+			continue
+		var before_all := _state.currency
+		window._request_trade(entry, amount)
+		await process_frame
+		_expect(_state.currency - before_all == amount * int(entry["unit_price"]), "整组出售按全部数量结算")
+		var remains := false
+		for remaining_stack: InventoryStackRecord in _state.inventory_stacks:
+			remains = remains or remaining_stack.stack_id == String(entry["instance_id"])
+		_expect(not remains, "整组出售移除完整堆叠")
+		break
 
 	manager.open_weapon_merchant("task")
 	await process_frame

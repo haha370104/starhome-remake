@@ -12,6 +12,7 @@ var _definitions: Dictionary = {}
 var _views: Dictionary = {}
 var _hovered_source_id := ""
 var _repository: RefCounted
+var _hit_index := SpatialBoundsIndex.new()
 
 
 ## 绑定活动地图的共享 Y 排序层和已解析的矿物表现清单。
@@ -69,12 +70,14 @@ func apply_snapshot(combat_snapshot: Dictionary) -> void:
 			_views[source_id] = view
 		else:
 			view.apply_snapshot(source)
+		_hit_index.update(source_id, view.broad_phase_bounds())
 	for existing_id: String in _views.keys():
 		if observed.has(existing_id):
 			continue
 		var stale: MineralWorldView = _views[existing_id]
 		stale.queue_free()
 		_views.erase(existing_id)
+		_hit_index.remove(existing_id)
 		if _hovered_source_id == existing_id:
 			_hovered_source_id = ""
 
@@ -85,7 +88,7 @@ func apply_snapshot(combat_snapshot: Dictionary) -> void:
 func source_at(world_position: Vector2) -> String:
 	var selected := ""
 	var selected_y := -INF
-	for source_id: String in _views:
+	for source_id: String in _hit_index.at_point(world_position):
 		var view: MineralWorldView = _views[source_id]
 		if view.contains_world_point(world_position) and view.position.y >= selected_y:
 			selected = source_id
@@ -106,6 +109,7 @@ func clear() -> void:
 	for view: MineralWorldView in _views.values():
 		view.queue_free()
 	_views.clear()
+	_hit_index.clear()
 	_hovered_source_id = ""
 
 

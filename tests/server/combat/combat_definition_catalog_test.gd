@@ -91,7 +91,7 @@ func _test_formal_starter_definitions() -> void:
 	_expect(float(rocket["area_radius"]) == 36.0, "rocket area radius should be the provisional two vehicle hitbox radii")
 	var missile: Dictionary = secondary["missile.primary"]
 	_expect(int(missile["minimum_damage"]) == 17 and int(missile["cooldown_ticks"]) == 40, "Glory starter missile should preserve attack and two-second cadence")
-	_expect(float(missile["projectile_speed"]) == 600.0 and float(missile["range"]) == 400.0, "Glory missile should preserve client flight speed and lock range")
+	_expect(float(missile["projectile_speed"]) == 250.0 and float(missile["range"]) == 400.0, "Glory missile should preserve recovered nMFly flight speed and lock range")
 
 
 ## 验证未知掉落和空掉落表仍有区别，且复制后的条目不反向修改定义。
@@ -130,7 +130,7 @@ func _test_d04_lifecycle_definitions() -> void:
 		_expect(String(definition["map_instance_id"]) == MAP_INSTANCE_ID, "each lifecycle should bind the requested map instance")
 		_expect(not Vector2(definition["position"]).is_finite(), "catalog should delegate spawn coordinates to map navigation")
 		_expect(definition["spawn_distribution"] == "full_walkable_map", "each monster should request full-map random placement")
-		_expect(not definition.has("defense") and not definition.has("move_speed"), "runtime definition must not invent defense or speed")
+		_expect(int(definition["defense"]) == 0 and not definition.has("move_speed"), "ordinary monsters retain zero runtime defense without inventing original source stats")
 		_expect(definition["unknown_fields"].has("defense") and definition["unknown_fields"].has("move_speed"), "unknown monster stats should remain explicit")
 		_expect(definition["projectile_hitbox"] is Dictionary, "each runtime monster should expose authoritative projectile geometry")
 		_expect(is_equal_approx(float(definition["wander_interval_seconds"]), 5.0), "each D04 monster should use the configured five-second idle interval")

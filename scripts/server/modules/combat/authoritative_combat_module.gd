@@ -30,6 +30,11 @@ var sama := AuthoritativeSamaModule.new()
 var central := AuthoritativeCentralModule.new()
 var ground_loot: Dictionary = {}
 var rewards: AuthoritativeRewardService
+var _monster_spatial_grid := DeterministicSpatialGrid.new()
+var _monster_collision_query_padding := 0.0
+var _route_plans_this_tick := 0
+var _ai_cursor := 0
+var _wear_random := RandomNumberGenerator.new()
 var _random := RandomNumberGenerator.new()
 var _monster_position_resolver := Callable()
 var _monster_route_resolver := Callable()
@@ -65,8 +70,13 @@ func configure(
 	_quest_event_namespace = Crypto.new().generate_random_bytes(16).hex_encode()
 	working_energy_regen_factor = regen_factor
 	_random.seed = random_seed
+	_wear_random.seed = random_seed ^ 0x6D2B79F5
 	actors.clear()
 	monsters.clear()
+	_monster_spatial_grid.clear()
+	_monster_collision_query_padding = 0.0
+	_route_plans_this_tick = 0
+	_ai_cursor = 0
 	combat_events.clear()
 	death_events.clear()
 	respawn_events.clear()
@@ -219,6 +229,9 @@ func register_monster(definition: Dictionary) -> DomainResult:
 	if monsters.has(lifecycle.monster_id):
 		return DomainResult.failure(&"combat.duplicate_monster", "monster identity is already registered")
 	monsters[lifecycle.monster_id] = lifecycle
+	_monster_spatial_grid.register(lifecycle.monster_id, lifecycle.position)
+	_monster_collision_query_padding = maxf(_monster_collision_query_padding,
+		lifecycle.attack_mode.projectile_hitbox_offset.length() + lifecycle.attack_mode.projectile_hitbox_radius)
 	return DomainResult.ok(lifecycle)
 
 
@@ -233,6 +246,7 @@ func remove_dead_monsters(map_instance_id: String) -> Array[String]:
 		var monster: MonsterLifecycle = monsters[monster_id]
 		if monster.map_instance_id == map_instance_id and not monster.is_alive():
 			monsters.erase(monster_id)
+			_monster_spatial_grid.remove(monster_id)
 			removed.append(monster_id)
 	return removed
 
@@ -441,9 +455,12 @@ func _nearest_target_to_point(
 	selection_radius: float,
 ) -> Dictionary:
 	var best := {"hit": false, "distance_squared": INF}
-	var ordered_monster_ids := monsters.keys()
-	ordered_monster_ids.sort()
-	for monster_id: String in ordered_monster_ids:
+	for monster_id: String in _monster_spatial_grid.query_aabb_candidates(
+		point - Vector2(selection_radius, selection_radius),
+		point + Vector2(selection_radius, selection_radius),
+	):
+		if not monsters.has(monster_id):
+			continue
 		var monster: MonsterLifecycle = monsters[monster_id]
 		if monster.map_instance_id != map_instance_id or not monster.is_alive():
 			continue
@@ -564,9 +581,15 @@ func _first_projectile_collision(
 	excluded := PackedStringArray(),
 ) -> Dictionary:
 	var best := {"hit": false, "t": INF}
-	var ordered_monster_ids := monsters.keys()
-	ordered_monster_ids.sort()
-	for monster_id: String in ordered_monster_ids:
+	var lower := Vector2(minf(origin.x, endpoint.x), minf(origin.y, endpoint.y))
+	var upper := Vector2(maxf(origin.x, endpoint.x), maxf(origin.y, endpoint.y))
+	var padding := _monster_collision_query_padding
+	for monster_id: String in _monster_spatial_grid.query_aabb_candidates(
+		lower - Vector2(padding, padding),
+		upper + Vector2(padding, padding),
+	):
+		if not monsters.has(monster_id):
+			continue
 		var monster: MonsterLifecycle = monsters[monster_id]
 		if monster_id in excluded or monster.map_instance_id != map_instance_id or not monster.is_alive():
 			continue
@@ -734,9 +757,12 @@ func _settle_rocket_projectile(projectile: Dictionary) -> void:
 	var impact_position: Vector2 = projectile["impact_position"]
 	var radius := float(weapon.get("area_radius", ACTOR_PROJECTILE_HITBOX_RADIUS * 2.0))
 	var hit_any := false
-	var ordered_monster_ids := monsters.keys()
-	ordered_monster_ids.sort()
-	for monster_id: String in ordered_monster_ids:
+	for monster_id: String in _monster_spatial_grid.query_aabb_candidates(
+		impact_position - Vector2(radius, radius),
+		impact_position + Vector2(radius, radius),
+	):
+		if not monsters.has(monster_id):
+			continue
 		var monster: MonsterLifecycle = monsters[monster_id]
 		if not monster.is_alive() or monster.map_instance_id != String(actors[projectile["attacker_id"]]["map_instance_id"]):
 			continue
@@ -928,12 +954,14 @@ func advance_ticks(tick_count: int, simulate_monster_ai := true) -> DomainResult
 	var fixed_delta := 1.0 / float(simulation_hz)
 	for unused_tick: int in range(tick_count):
 		current_tick += 1
+		_route_plans_this_tick = 0
 		for actor_id: String in actors:
 			var vehicle_state: VehicleCombatState = actors[actor_id]["vehicle_state"]
 			vehicle_state.regenerate_working_energy(fixed_delta, working_energy_regen_factor)
 			var actor: Dictionary = actors[actor_id]
 			if vehicle_state.health > 0 and not (actor.position as Vector2).is_equal_approx(actor.previous_position):
 				(actor.equipment_condition as EquipmentConditionLoadout).record_use("movement", fixed_delta)
+				(actor.equipment_condition as EquipmentConditionLoadout).record_vehicle_movement(fixed_delta)
 		_settle_due_self_repairs()
 		_advance_generator_effects()
 		_settle_due_projectiles()
@@ -941,10 +969,12 @@ func advance_ticks(tick_count: int, simulate_monster_ai := true) -> DomainResult
 		for event: Dictionary in corrosion.advance(current_tick, actors):
 			_record_combat_event(event)
 		_commit_actor_position_samples()
-		for monster_id: String in monsters:
+		# 轮换起点，有限寻路预算不会长期偏向固定编号的怪物。
+		var ids := monsters.keys()
+		for index: int in range(ids.size()):
+			var monster_id: String = ids[(_ai_cursor + index) % ids.size()]
 			var monster: MonsterLifecycle = monsters[monster_id]
-			var lifecycle_result := monster.advance_to_tick(current_tick)
-			if bool(lifecycle_result.value["respawned"]):
+			if monster.advance_lifecycle_if_due(current_tick):
 				var respawn_event := {
 					"event_type": &"monster_respawned",
 					"server_tick": current_tick,
@@ -955,6 +985,8 @@ func advance_ticks(tick_count: int, simulate_monster_ai := true) -> DomainResult
 				emitted_respawns.append(respawn_event)
 			if monster.is_alive() and simulate_monster_ai:
 				_simulate_monster_tick(monster_id, fixed_delta)
+			_monster_spatial_grid.update(monster_id, monster.position)
+		_ai_cursor = (_ai_cursor + 2) % maxi(1, ids.size())
 	return DomainResult.ok(emitted_respawns)
 
 
@@ -973,10 +1005,16 @@ func advance_suspended_time(elapsed_ticks: int) -> void:
 ## 返回该函数计算、查询或操作得到的结果。
 ## 设计：该函数位于权威服务器边界，客户端不得覆盖其计算结果。
 func snapshot_for_actor(actor_id: String) -> Dictionary:
-	if not actors.has(actor_id):
-		return {}
-	var actor: Dictionary = actors[actor_id]
-	var map_instance_id := String(actor["map_instance_id"])
+	if not actors.has(actor_id): return {}
+	var result := public_snapshot(String(actors[actor_id]["map_instance_id"]))
+	result.merge(private_snapshot(actor_id), true)
+	return result
+
+
+## 生成同地图玩家共用的世界事实，不包含私人战车、装备能力或采矿动作。
+## [param map_instance_id] 目标地图实例。
+## 返回本逻辑帧可被共享的公共快照。
+func public_snapshot(map_instance_id: String) -> Dictionary:
 	var monster_snapshots: Array[Dictionary] = []
 	var ordered_monster_ids := monsters.keys()
 	ordered_monster_ids.sort()
@@ -998,6 +1036,18 @@ func snapshot_for_actor(actor_id: String) -> Dictionary:
 			"action_sequence": monster.action_sequence,
 			"facing_index": monster.facing_direction,
 		})
+	return {"server_tick": current_tick, "monsters": monster_snapshots,
+		"ground_loot": _ground_loot_for_map(map_instance_id),
+		"corrosive_clouds": corrosion.snapshots(map_instance_id, actors),
+		"recent_events": _recent_combat_events()}
+
+
+## 仅生成当前连接有权接收的战车资源与武器能力。
+## [param actor_id] 当前会话绑定的角色。
+## 返回私人字段；未知角色为空。
+func private_snapshot(actor_id: String) -> Dictionary:
+	if not actors.has(actor_id): return {}
+	var actor: Dictionary = actors[actor_id]
 	var local_vehicle: Dictionary = (actor["vehicle_state"] as VehicleCombatState).to_dictionary()
 	var repair_state: Dictionary = actor["self_repair"]
 	local_vehicle["self_repair_active"] = bool(repair_state["active"])
@@ -1008,17 +1058,9 @@ func snapshot_for_actor(actor_id: String) -> Dictionary:
 	local_vehicle["self_repair_required_skill_level"] = int(
 		actor["self_repair_required_skill_level"]
 	)
-	return {
-		"server_tick": current_tick,
-		"local_entity_id": actor_id,
-		"local_weapon_flight": _weapon_flight_snapshot(actor),
+	return {"local_entity_id": actor_id, "local_weapon_flight": _weapon_flight_snapshot(actor),
 		"local_sama_effects": sama.snapshot(actor_id, actor.equipment_condition, current_tick, simulation_hz),
-		"local_vehicle": local_vehicle,
-		"monsters": monster_snapshots,
-		"ground_loot": _ground_loot_for_map(map_instance_id),
-		"corrosive_clouds": corrosion.snapshots(map_instance_id, actors),
-		"recent_events": _recent_combat_events(),
-	}
+		"local_vehicle": local_vehicle}
 
 
 ## 导出本玩家各武器的表现弹道参数，不传递服务端伤害公式或资源路径。
@@ -1377,7 +1419,14 @@ func _is_valid_actor_target(monster: MonsterLifecycle, actor_id: String) -> bool
 func _record_combat_event(event: Dictionary) -> Dictionary:
 	var damaged_actor := String(event.get("target_entity_id", ""))
 	if int(event.get("damage", 0)) > 0 and actors.has(damaged_actor):
-		(actors[damaged_actor].equipment_condition as EquipmentConditionLoadout).record_use("damage")
+		var condition: EquipmentConditionLoadout = actors[damaged_actor].equipment_condition
+		condition.record_use("damage")
+		var weights: Array[float] = []
+		for index in condition.vehicle_armor_count():
+			weights.append(_wear_random.randf())
+		condition.record_vehicle_damage(int(event.damage), weights)
+		if bool(event.get("target_destroyed", false)):
+			condition.record_vehicle_destroyed()
 		var effects: ClothingCombatEffects = actors[damaged_actor]["clothing_effects"]
 		effects.damaged(current_tick, simulation_hz)
 		if bool(event.get("target_destroyed", false)):
@@ -1469,6 +1518,8 @@ func _simulate_unengaged_monster(monster_id: String, fixed_delta: float) -> void
 	if current_tick < monster.next_wander_tick:
 		monster.action = &"idle"
 		return
+	if _monster_route_resolver.is_valid() and _route_plans_this_tick >= 2:
+		return
 	if current_tick >= monster.next_wander_tick:
 		var phase_degrees := posmod(hash(monster_id) + current_tick * 47, 360)
 		var radius_factor := 0.35 + float(posmod(hash(monster_id) + current_tick, 60)) / 100.0
@@ -1502,6 +1553,9 @@ func _begin_monster_route(
 		monster.movement_route_goal = requested_target
 		monster.movement_route_kind = route_kind
 		return requested_target.is_finite()
+	if _route_plans_this_tick >= 2:
+		return false
+	_route_plans_this_tick += 1
 	var resolved: Variant = _monster_route_resolver.call(
 		monster.monster_id,
 		monster.position,

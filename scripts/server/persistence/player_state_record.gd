@@ -15,6 +15,7 @@ var inventory_revision := 0
 var vehicle_loadout_revision := 0
 var inventory_capacity := 40
 var inventory_stacks: Array[InventoryStackRecord] = []
+var garden := GardenProgress.new()
 var warehouse := PersonalWarehouseRecord.new()
 var production := ProductionQueue.new()
 var central := PlayerCentralController.new()
@@ -129,6 +130,9 @@ static func from_dictionary(raw: Variant) -> DomainResult:
 	var equipment_result := record._load_equipment(raw.get("equipment_slots"))
 	if not equipment_result.is_ok:
 		return equipment_result
+	var garden_result := GardenProgress.restore(raw.get("garden", {}))
+	if not garden_result.is_ok: return garden_result
+	record.garden = garden_result.value
 	var warehouse_result := PersonalWarehouseRecord.from_dictionary(raw.get("warehouse", {}))
 	if not warehouse_result.is_ok: return warehouse_result
 	record.warehouse = warehouse_result.value
@@ -148,6 +152,8 @@ static func from_dictionary(raw: Variant) -> DomainResult:
 ## 校验 `validate` 对应的模块状态。
 ## 返回该函数计算、查询或操作得到的结果。
 func validate() -> DomainResult:
+	if garden == null or not GardenProgress.restore(garden.to_dictionary()).is_ok:
+		return DomainResult.failure(&"garden.state", "采摘记录无效")
 	if central == null or not PlayerCentralController.restore(central.to_dictionary()).is_ok:
 		return DomainResult.failure(&"central.state", "中枢角色存档无效")
 	if vehicle_presets == null or not VehicleLoadoutPresets.restore(vehicle_presets.to_dictionary()).is_ok:
@@ -253,6 +259,7 @@ func to_dictionary(include_warehouse: bool = true) -> Dictionary:
 		"quest_states": quest_states.duplicate(true),
 		"achievements": achievements.duplicate(true),
 		"daily_activities": daily_activities.duplicate(true),
+		"garden": garden.to_dictionary(),
 		"food_status": food_status.duplicate(true),
 		"production": production.to_dictionary(),
 		"central": central.to_dictionary(),

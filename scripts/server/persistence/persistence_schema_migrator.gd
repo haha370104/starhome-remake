@@ -1,7 +1,7 @@
 class_name PersistenceSchemaMigrator
 extends RefCounted
 
-const CURRENT_SCHEMA_VERSION := 2
+const CURRENT_SCHEMA_VERSION := 3
 
 
 ## 执行 `migrate_document` 对应的模块操作。
@@ -27,6 +27,11 @@ static func migrate_document(document: Dictionary) -> DomainResult:
 					return migrated
 				working = migrated.value
 				version = 2
+			2:
+				working["ground_items"] = {}
+				working["schema_version"] = 3
+				working["migration_history"] = [1, 2, 3]
+				version = 3
 			_:
 				return DomainResult.failure(&"persistence.migration_missing", "no migration is registered for schema version")
 	if not working.get("players") is Dictionary:

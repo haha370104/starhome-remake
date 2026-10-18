@@ -23,9 +23,34 @@ var name_label: Label
 var health_bar: WorldCombatStatusBar
 var visual_collision_offset := Vector2.ZERO
 var visual_collision_radius := 24.0
+var alive := false
+var _presentation_culled := false
+var _hovered := false
+var _last_snapshot: Dictionary = {}
 var _last_action_sequence := -1
 var generator_status: GeneratorStatusView
 var _generator_repository: RefCounted
+
+
+## 清理与上一个实体相关的状态，保留同类型的精灵、血条及字体节点。
+func reset_for_pool() -> void:
+	entity_id = ""
+	alive = false
+	visible = false
+	_presentation_culled = false
+	_last_snapshot = {}
+	_last_action_sequence = -1
+	set_hovered(false)
+	_apply_generator_status([])
+	set_process(false)
+
+
+## 池中同类型节点绑定新实体；强制应用当前动作，清除旧动画相位。
+## [param snapshot] 新实体权威快照。
+func reuse(snapshot: Dictionary) -> void:
+	reset_for_pool()
+	entity_id = String(snapshot["entity_id"])
+	apply_snapshot(snapshot)
 
 
 ## 执行 `configure` 对应的模块操作。
@@ -109,12 +134,22 @@ static func _shared_name_font() -> SystemFont:
 
 ## 执行 `apply_snapshot` 对应的模块操作。
 ## [param snapshot] 调用方传入的参数；具体约束由函数签名和所在模块定义。
-func apply_snapshot(snapshot: Dictionary) -> void:
+## [param update_position] 无权威时钟时直接采用坐标，否则由插值器推进。
+func apply_snapshot(snapshot: Dictionary, update_position := true) -> void:
 	var point: Array = snapshot["position"]
-	position = Vector2(float(point[0]), float(point[1]))
-	visible = bool(snapshot["alive"])
+	if update_position:
+		position = Vector2(float(point[0]), float(point[1]))
+	if snapshot == _last_snapshot:
+		visible = bool(snapshot["alive"]) and not _presentation_culled
+		_apply_generator_status(snapshot.get("generator_statuses", []) if visible else [])
+		return
+	_last_snapshot = snapshot
+	alive = bool(snapshot["alive"])
+	visible = alive and not _presentation_culled
 	_apply_generator_status(snapshot.get("generator_statuses", []) if visible else [])
-	name_label.text = String(snapshot["display_name"])
+	var display_name := String(snapshot["display_name"])
+	if name_label.text != display_name:
+		name_label.text = display_name
 	health_bar.set_health(float(snapshot["health"]), float(snapshot["max_health"]))
 	presenter.set_direction(int(snapshot["facing_index"]))
 	var action := StringName(snapshot["action"])
@@ -127,10 +162,7 @@ func apply_snapshot(snapshot: Dictionary) -> void:
 ## 按渲染帧推进当前节点的表现状态。
 ## [param delta] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _process(delta: float) -> void:
-	if presenter != null and visible:
-		presenter.advance(delta)
-		if generator_status != null: generator_status.advance(delta)
-
+	advance_presentation(delta)
 
 ## 只有首次中招才创建状态表现，未受影响的大量怪物不增加额外精灵或文本节点。
 ## [param statuses] 当前有效状态列表，死亡时为空。
@@ -148,7 +180,7 @@ func _apply_generator_status(statuses: Variant) -> void:
 ## [param radius] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## 返回该函数计算、查询或操作得到的结果。
 func is_selectable_at(world_position: Vector2, radius: float) -> bool:
-	return visible and position.distance_to(world_position) <= radius
+	return is_presentation_visible() and position.distance_to(world_position) <= radius
 
 
 ## 判断世界坐标是否落在怪物本体的悬浮命中区域内。
@@ -156,7 +188,7 @@ func is_selectable_at(world_position: Vector2, radius: float) -> bool:
 ## 返回坐标是否命中由表现清单定义的怪物本体圆形区域。
 ## 设计：悬浮与弹体预碰撞共用同一份表现几何，避免为每种怪物另写热点补丁。
 func is_hovered_at(world_position: Vector2) -> bool:
-	if not visible:
+	if not is_presentation_visible():
 		return false
 	var collision_center := position + visual_collision_offset
 	return collision_center.distance_squared_to(world_position) <= visual_collision_radius ** 2
@@ -165,6 +197,7 @@ func is_hovered_at(world_position: Vector2) -> bool:
 ## 切换原客户端式怪物悬浮名称显示状态。
 ## [param hovered] 当前怪物是否是唯一的鼠标悬浮目标。
 func set_hovered(hovered: bool) -> void:
+	_hovered = hovered
 	if name_label != null:
 		name_label.visible = hovered and visible
 
@@ -175,7 +208,7 @@ func set_hovered(hovered: bool) -> void:
 ## 返回该函数计算、查询或操作得到的结果。
 ## 设计：该几何只用于提前结束客户端弹体，不参与伤害、命中或服务端状态预测。
 func visual_segment_collision(segment_start: Vector2, segment_end: Vector2) -> Dictionary:
-	if not visible:
+	if not is_presentation_visible():
 		return {"hit": false}
 	var center := position + visual_collision_offset
 	var result := ProjectileSweep.segment_circle_intersection(
@@ -187,3 +220,39 @@ func visual_segment_collision(segment_start: Vector2, segment_end: Vector2) -> D
 		result["collision_center"] = center
 		result["collision_radius"] = visual_collision_radius
 	return result
+
+
+## 集中推进可见怪物动画，独立使用视图时仍由自身进程调用。
+## [param delta] 本帧秒数。
+func advance_presentation(delta: float) -> void:
+	if presenter != null and is_presentation_visible():
+		presenter.advance(delta)
+		if generator_status != null: generator_status.advance(delta)
+
+
+
+## 应用插值器输出的有限脚点坐标。
+## [param next_position] 渲染位置。
+func apply_interpolated_position(next_position: Vector2) -> void:
+	if next_position.is_finite():
+		position = next_position
+
+
+
+## 隐藏视口外怪物的动画、名称和血条。
+## [param culled] 是否处于视口外。
+func set_presentation_culled(culled: bool) -> void:
+	if _presentation_culled == culled:
+		return
+	_presentation_culled = culled
+	visible = alive and not culled
+	if name_label != null:
+		name_label.visible = _hovered and visible
+	if health_bar != null:
+		health_bar.visible = visible
+
+
+## 查询怪物是否存活且位于展示区域。
+## 返回是否应参与表现更新。
+func is_presentation_visible() -> bool:
+	return alive and not _presentation_culled

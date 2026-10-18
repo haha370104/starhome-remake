@@ -20,6 +20,7 @@ var map_id: String
 var map_instance_id: String
 var checkpoint_id: String
 var inventory: Inventory
+var garden := GardenProgress.new()
 var warehouse := PersonalWarehouse.new()
 var production := ProductionQueue.new()
 var central := PlayerCentralController.new()
@@ -153,6 +154,7 @@ func _init(state: Dictionary = {}) -> void:
 	if central_result.is_ok: central = central_result.value
 	vehicle.central = central
 	skills = SkillBook.new(state.get("skills", {}))
+	garden = GardenProgress.restore(state.get("garden", {})).value
 	food_status = FoodStatus.new(state.get("food_status", {}))
 	vehicle.food_status = food_status
 	var quest_value: Variant = state.get("quest_states", {})

@@ -60,6 +60,20 @@ func _run() -> void:
 	await process_frame
 	_expect(panel._item_canvas.get_child(0).position == Vector2.ZERO \
 		and panel._item_canvas.get_child(1).position == Vector2(55, 0), "整理后才对齐虚拟格子")
+	var dropped: Array[Vector2] = []
+	panel.ground_drop_requested.connect(func(_id: String, point: Vector2) -> void: dropped.append(point))
+	view = panel._item_canvas.get_child(0)
+	view._on_gui_input(_button(true))
+	motion.relative = Vector2(400, 70)
+	view._on_gui_input(motion)
+	var before := commands.size()
+	view._on_gui_input(_button(false))
+	_expect(dropped.size() == 1 and commands.size() == before, "拖出画布只发布地面意图，不混入背包移动")
+	_expect(view.position == Vector2.ZERO, "拖出仍等待权威回包，失败不会丢失图标")
+	var policy := SmartAssistantPolicy.new()
+	var chosen := policy.nearest([{"loot_id": "placed", "position": [0, 0], "dropped_by_player": true},
+		{"loot_id": "monster", "position": [20, 0]}], Vector2.ZERO, 120, false)
+	_expect(chosen.get("loot_id") == "monster", "自动拾取跳过主动摆放物，仍可取怪物掉落")
 	panel.free()
 	for failure: String in failures:
 		push_error(failure)

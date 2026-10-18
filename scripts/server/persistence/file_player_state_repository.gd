@@ -7,6 +7,7 @@ const Migrator := preload("res://scripts/server/persistence/persistence_schema_m
 var database_path := ""
 var _schema_version := 0
 var _players: Dictionary = {}
+var _ground_items: Dictionary[String, GroundItemRecord] = {}
 var _initialized := false
 var _writer: BackgroundFileWriter
 var _durable_commit := false
@@ -42,11 +43,22 @@ func initialize() -> DomainResult:
 	var loaded_players_result := _decode_players(migrated.value["players"])
 	if not loaded_players_result.is_ok:
 		return loaded_players_result
+	var raw_ground: Variant = migrated.value.get("ground_items", {})
+	if not raw_ground is Dictionary:
+		return DomainResult.failure(&"persistence.invalid_ground_item", "地面索引格式无效")
+	var restored_ground: Dictionary[String, GroundItemRecord] = {}
+	for id: String in raw_ground:
+		var ground_result := GroundItemRecord.from_dictionary(raw_ground[id])
+		if not ground_result.is_ok: return ground_result
+		if ground_result.value.loot_id != id:
+			return DomainResult.failure(&"persistence.invalid_ground_item", "地面物品身份不匹配")
+		restored_ground[id] = ground_result.value
 	var persist_result := _persist_document(migrated.value)
 	if not persist_result.is_ok:
 		return persist_result
 	_schema_version = int(migrated.value["schema_version"])
 	_players = loaded_players_result.value
+	_ground_items = restored_ground
 	_initialized = true
 	return DomainResult.ok(self)
 
@@ -247,13 +259,15 @@ func _decode_players(raw_players: Variant) -> DomainResult:
 ## [param players] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## 返回该函数计算、查询或操作得到的结果。
 func _encode_document(players: Dictionary) -> Dictionary:
+	var _timing := PerformanceTelemetry.measure(&"save_snapshot_encode")
 	var serialized: Dictionary = {}
 	for character_id: String in players:
 		serialized[character_id] = (players[character_id] as PlayerStateRecord).to_dictionary()
 	return {
 		"schema_version": Migrator.CURRENT_SCHEMA_VERSION,
 		"players": serialized,
-		"migration_history": [1, 2],
+		"migration_history": [1, 2, 3],
+		"ground_items": _encode_ground_items(),
 	}
 
 
@@ -273,3 +287,47 @@ func _require_initialized() -> DomainResult:
 	return DomainResult.ok() if _initialized else DomainResult.failure(
 		&"persistence.repository_not_initialized", "repository must be initialized first"
 	)
+
+
+## 在一次玩家事务中迁移地面所有权，写盘失败时两边同时保持原状。
+## [param state] 候选玩家。[param expected_revision] 原玩家版本。
+## [param added] 丢弃产生的地面记录。[param removed_id] 拾取要移除的地面编号。
+## 返回共同提交的玩家记录或错误。
+func save_ground_transfer(state: PlayerStateRecord, expected_revision: int, added: GroundItemRecord, removed_id: String) -> DomainResult:
+	if (added == null) == removed_id.is_empty():
+		return DomainResult.failure(&"persistence.invalid_ground_transfer", "必须且只能提交一个地面变更")
+	if added != null and _ground_items.has(added.loot_id):
+		return DomainResult.failure(&"loot.instance_conflict", "地面物品编号重复")
+	if not removed_id.is_empty() and not _ground_items.has(removed_id):
+		return DomainResult.failure(&"loot.not_found", "物品已经被拾取")
+	var before := _ground_items
+	_ground_items = before.duplicate()
+	if added != null:
+		var checked := GroundItemRecord.from_dictionary(added.to_dictionary())
+		if not checked.is_ok:
+			_ground_items = before
+			return checked
+		_ground_items[added.loot_id] = checked.value
+	else:
+		_ground_items.erase(removed_id)
+	var saved := save_player(state, expected_revision)
+	if not saved.is_ok: _ground_items = before
+	return saved
+
+
+## 为应用服务提供独立的地面记录，禁止改写仓储内存。
+## 返回完整地面实例列表。
+func ground_items() -> Array[GroundItemRecord]:
+	var result: Array[GroundItemRecord] = []
+	for record: GroundItemRecord in _ground_items.values():
+		result.append(GroundItemRecord.from_dictionary(record.to_dictionary()).value)
+	return result
+
+
+## 将地面实例编码到与玩家共享的检查点文档中。
+## 返回地面编号到完整实例记录的映射。
+func _encode_ground_items() -> Dictionary:
+	var result := {}
+	for id: String in _ground_items:
+		result[id] = _ground_items[id].to_dictionary()
+	return result

@@ -10,6 +10,7 @@ var _catalog: ItemCatalog
 var _items: Dictionary = {}
 var _views: Dictionary = {}
 var _hovered_loot_id := ""
+var _hit_index := SpatialBoundsIndex.new()
 
 
 ## 绑定世界父节点并载入地面物品业务表现目录。
@@ -63,12 +64,14 @@ func apply_snapshot(combat_snapshot: Dictionary) -> void:
 			if item != null:
 				item.quantity = maxi(1, int(loot.get("quantity", item.quantity)))
 				view.apply_snapshot(item, loot)
+		_hit_index.update(loot_id, view.broad_phase_bounds())
 	for existing_id: String in _views.keys():
 		if observed.has(existing_id):
 			continue
 		var stale: GroundLootWorldView = _views[existing_id]
 		stale.queue_free()
 		_views.erase(existing_id)
+		_hit_index.remove(existing_id)
 		_items.erase(existing_id)
 		if _hovered_loot_id == existing_id:
 			_hovered_loot_id = ""
@@ -80,7 +83,7 @@ func apply_snapshot(combat_snapshot: Dictionary) -> void:
 func loot_at(world_position: Vector2) -> String:
 	var selected := ""
 	var selected_y := -INF
-	for loot_id: String in _views:
+	for loot_id: String in _hit_index.at_point(world_position):
 		var view: GroundLootWorldView = _views[loot_id]
 		if view.contains_pickup_point(world_position) and view.position.y >= selected_y:
 			selected = loot_id
@@ -96,6 +99,7 @@ func remove_loot(loot_id: String) -> void:
 		return
 	view.queue_free()
 	_views.erase(loot_id)
+	_hit_index.remove(loot_id)
 	_items.erase(loot_id)
 	if _hovered_loot_id == loot_id:
 		_hovered_loot_id = ""
@@ -106,6 +110,7 @@ func clear() -> void:
 	for view: GroundLootWorldView in _views.values():
 		view.queue_free()
 	_views.clear()
+	_hit_index.clear()
 	_items.clear()
 	_hovered_loot_id = ""
 

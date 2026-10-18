@@ -14,6 +14,7 @@ const COMMAND_TYPES := [
 	"query_attachment_upgrades", "upgrade_attachment",
 	"query_weapon_merchant", "buy_from_weapon_merchant", "sell_to_weapon_merchant",
 	"accept_weapon_merchant_task", "turn_in_weapon_merchant_task",
+	"abandon_weapon_merchant_task",
 ]
 
 var daily := DailyActivityService.new()
@@ -244,7 +245,7 @@ func _execute_command(
 			return _buy(player, command, merchant)
 		"sell_to_weapon_merchant":
 			return _sell(player, command, merchant)
-		"accept_weapon_merchant_task", "turn_in_weapon_merchant_task":
+		"accept_weapon_merchant_task", "turn_in_weapon_merchant_task", "abandon_weapon_merchant_task":
 			return quests.execute(player, merchant_id, command)
 	return DomainResult.failure(&"commerce.unknown_command", "unknown commerce command")
 
@@ -292,6 +293,8 @@ func _sell(player: Player, command: Dictionary, merchant) -> DomainResult:
 	if item == null:
 		return DomainResult.failure(&"inventory.item_not_found", "inventory item does not exist")
 	var unit_price: int = merchant.purchase_price(item.definition_id)
+	if unit_price <= 0:
+		return DomainResult.failure(&"commerce.not_purchasable", "商人不收购此物品")
 	var removed := player.inventory.remove_quantity(instance_id, quantity)
 	if not removed.is_ok:
 		return removed
@@ -354,6 +357,8 @@ func _build_bundle(
 	var tasks: Array[Dictionary] = quests.snapshots(player, merchant_id)
 	var sell_items: Array[Dictionary] = []
 	for item: GameItem in player.inventory.items():
+		if item.locked or merchant.purchase_price(item.definition_id) <= 0:
+			continue
 		var view := item.to_view_dictionary()
 		view["quantity"] = item.quantity
 		view["unit_price"] = merchant.purchase_price(item.definition_id)

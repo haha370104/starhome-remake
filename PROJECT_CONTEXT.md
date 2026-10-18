@@ -1,5 +1,9 @@
 # starhome_remake 项目全局约定
 
+## 2026-10-14增量
+
+本轮吸收范围、验证与保留边界见 [社区功能迁移](docs/community_integration_2026-10-14.md)。AI已作为默认关闭的可选模块接入，未成为启动依赖；开关、配置、预算与边界见 [AI玩家启用说明](docs/optional_ai_players.md)。
+
 ## 文档入口与维护
 
 - 客户端重构与后续开发遵循 [工程规范](./docs/engineering_standards.md)，按状态所有权拆分，禁止用大型上下文对象或入口转发层替代模块边界。

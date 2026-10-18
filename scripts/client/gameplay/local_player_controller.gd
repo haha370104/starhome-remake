@@ -4,6 +4,9 @@ extends Node
 signal position_changed(position: Vector2)
 signal route_finished
 signal route_stopped(message: String)
+## 新移动意图或取消使原路线的后续动作失效；正常抵达不触发。
+signal route_invalidated
+signal movement_state_changed(moving: bool)
 
 var path_points := PackedVector2Array()
 var path_index := 0
@@ -19,6 +22,7 @@ var _target_position := Vector2.ZERO
 var _has_target := false
 var _authority_position_held := false
 var _held_position := Vector2.ZERO
+var _confirmed_position := Vector2.ZERO
 
 
 ## 执行 `configure` 对应的模块操作。
@@ -39,6 +43,7 @@ func configure(
 	_character = character
 	_navigation = navigation
 	_movement_speed = movement_speed
+	_confirmed_position = initial_position
 	_write_position(initial_position)
 	cancel_route()
 	return OK
@@ -71,6 +76,12 @@ func position() -> Vector2:
 	return _character.position if _character != null else Vector2.ZERO
 
 
+## 查询最近一次权威确认的位置，供到达后交互避免提前于服务器执行。
+## 返回当前地图中的权威脚点；初始化和切图提交时使用确认的出生点。
+func confirmed_position() -> Vector2:
+	return _confirmed_position
+
+
 ## 报告玩家是否仍有尚未完成的移动目标与路线段。
 ## 返回该函数计算、查询或操作得到的结果。
 func has_active_route() -> bool:
@@ -81,6 +92,7 @@ func has_active_route() -> bool:
 ## [param requested_position] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## 返回该函数计算、查询或操作得到的结果。
 func request_move(requested_position: Vector2) -> Dictionary:
+	route_invalidated.emit()
 	if _character == null or _navigation == null:
 		return {"ok": false, "code": &"unconfigured", "message": "本地移动尚未初始化"}
 	if not _movement_enabled:
@@ -165,6 +177,7 @@ func apply_authoritative_presentation(state: Dictionary) -> void:
 		return
 	if not state.has("position"):
 		return
+	_confirmed_position = Vector2(state.get("authoritative_position", state["position"]))
 	_write_position(Vector2(state["position"]))
 	var correction_mode := StringName(state.get("correction_mode", &"none"))
 	if correction_mode == &"forced":
@@ -187,6 +200,7 @@ func hold_position_for_map_commit() -> void:
 func commit_map_position(navigation: RefCounted, spawn_position: Vector2) -> void:
 	_navigation = navigation
 	_authority_position_held = false
+	_confirmed_position = spawn_position
 	cancel_route()
 	_write_position(spawn_position)
 
@@ -196,6 +210,7 @@ func commit_map_position(navigation: RefCounted, spawn_position: Vector2) -> voi
 ## [param cancel_active_route] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func set_position(new_position: Vector2, cancel_active_route: bool = true) -> void:
 	_authority_position_held = false
+	_confirmed_position = new_position
 	if cancel_active_route:
 		cancel_route()
 	_write_position(new_position)
@@ -204,6 +219,7 @@ func set_position(new_position: Vector2, cancel_active_route: bool = true) -> vo
 ## 执行 `cancel_route` 对应的模块操作。
 ## [param message] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func cancel_route(message: String = "") -> void:
+	route_invalidated.emit()
 	path_points = PackedVector2Array()
 	path_index = 0
 	active_movement_input_sequence = 0
@@ -283,6 +299,7 @@ func _write_position(new_position: Vector2) -> void:
 ## 执行 `set_character_action` 对应的模块操作。
 ## [param action] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 func _set_character_action(action: StringName) -> void:
+	movement_state_changed.emit(action == &"move")
 	if _character != null:
 		_character.set_action(String(action), current_direction)
 

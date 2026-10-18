@@ -1,0 +1,213 @@
+{
+  "schema_version": 1,
+  "map_id": "glory_nft_bl_treeroom1",
+  "interaction_radius": 150,
+  "regrowth_seconds": 30,
+  "plants": [
+    {
+      "id": "coconut_center",
+      "scene_object_index": 391,
+      "position": [
+        1536,
+        2184
+      ],
+      "fruit_offset": [
+        14,
+        -203
+      ],
+      "item_definition_id": "item:material:c87ab4c9ebec"
+    },
+    {
+      "id": "coconut_north",
+      "scene_object_index": 79,
+      "position": [
+        2304,
+        456
+      ],
+      "fruit_offset": [
+        8,
+        -140
+      ],
+      "item_definition_id": "item:material:c87ab4c9ebec"
+    },
+    {
+      "id": "coconut_west",
+      "scene_object_index": 205,
+      "position": [
+        552,
+        1020
+      ],
+      "fruit_offset": [
+        8,
+        -140
+      ],
+      "item_definition_id": "item:material:c87ab4c9ebec"
+    },
+    {
+      "id": "bean_center",
+      "scene_object_index": 319,
+      "position": [
+        1488,
+        1632
+      ],
+      "fruit_offset": [
+        -1,
+        -28
+      ],
+      "item_definition_id": "item:material:2990ca709816"
+    },
+    {
+      "id": "bean_north",
+      "scene_object_index": 148,
+      "position": [
+        2904,
+        804
+      ],
+      "fruit_offset": [
+        -1,
+        -28
+      ],
+      "item_definition_id": "item:material:2990ca709816"
+    },
+    {
+      "id": "bean_south",
+      "scene_object_index": 472,
+      "position": [
+        2640,
+        2592
+      ],
+      "fruit_offset": [
+        -1,
+        -28
+      ],
+      "item_definition_id": "item:material:2990ca709816"
+    },
+    {
+      "id": "cotton_center",
+      "scene_object_index": 333,
+      "position": [
+        1776,
+        1728
+      ],
+      "fruit_offset": [
+        -8,
+        -32
+      ],
+      "item_definition_id": "item:material:bf7cb63cd4fa"
+    },
+    {
+      "id": "cotton_west",
+      "scene_object_index": 250,
+      "position": [
+        456,
+        1284
+      ],
+      "fruit_offset": [
+        22,
+        -75
+      ],
+      "fruit_variant": "alternate",
+      "item_definition_id": "item:material:bf7cb63cd4fa"
+    },
+    {
+      "id": "cotton_south",
+      "scene_object_index": 556,
+      "position": [
+        936,
+        2796
+      ],
+      "fruit_offset": [
+        -8,
+        -32
+      ],
+      "item_definition_id": "item:material:bf7cb63cd4fa"
+    },
+    {
+      "id": "melon_center",
+      "scene_object_index": 328,
+      "position": [
+        1728,
+        1704
+      ],
+      "fruit_offset": [
+        2,
+        -36
+      ],
+      "item_definition_id": "item:material:6116d8b965c6"
+    },
+    {
+      "id": "melon_north",
+      "scene_object_index": 160,
+      "position": [
+        2976,
+        840
+      ],
+      "fruit_offset": [
+        3,
+        -49
+      ],
+      "fruit_variant": "alternate",
+      "item_definition_id": "item:material:6116d8b965c6"
+    },
+    {
+      "id": "melon_south",
+      "scene_object_index": 553,
+      "position": [
+        816,
+        2760
+      ],
+      "fruit_offset": [
+        2,
+        -36
+      ],
+      "item_definition_id": "item:material:6116d8b965c6"
+    },
+    {
+      "id": "sugar_west",
+      "scene_object_index": 345,
+      "position": [
+        480,
+        1824
+      ],
+      "fruit_offset": [
+        14,
+        -34
+      ],
+      "item_definition_id": "item:material:212589b5bafd"
+    },
+    {
+      "id": "sugar_north",
+      "scene_object_index": 129,
+      "position": [
+        2784,
+        720
+      ],
+      "fruit_offset": [
+        -6,
+        -2
+      ],
+      "item_definition_id": "item:material:212589b5bafd"
+    },
+    {
+      "id": "sugar_south",
+      "scene_object_index": 445,
+      "position": [
+        2592,
+        2496
+      ],
+      "fruit_offset": [
+        2,
+        -10
+      ],
+      "item_definition_id": "item:material:212589b5bafd"
+    }
+  ],
+  "source_audit": {
+    "source_release": "starhome_lz_ry",
+    "tree_and_fruit_mapping": "dzl/food/foodclient/food_treeclient.fcc:7-104; great/code_string.fcc:2411-2428",
+    "item_sources": "cltobj/stuffclt2.fcc:5-23,26391-26432; dzl/food/foodclient/food_stuffclient.fcc:501-516",
+    "positions": "Original TreeRoom1 scene object anchors; existing runtime maps/treeroom1, with source object indices. Community-selected subset.",
+    "remake_defaults": "Selection of 15 trees, 150-pixel interaction radius and 30-second per-player regrowth; original server rules were not recovered.",
+    "accessibility_correction": "sugar_west uses source object 345 [480,1824], same tree ALE as 398 [1248,2256]; object 398 is outside 150px of the reachable navigation component."
+  }
+}

@@ -29,6 +29,9 @@ const InProcessTransportScript := preload(
 	"res://scripts/network/transport/in_process_authoritative_transport.gd"
 )
 
+var _player_sync := PlayerSyncStream.new()
+var _player_resync_pending := false
+
 var offline_debug_enabled := false
 var connection_state: ConnectionState = ConnectionState.DISCONNECTED
 var session_ready := false
@@ -191,7 +194,13 @@ func inject_remote_snapshot(snapshot: Dictionary) -> void:
 ## [param message] 调用方传入的参数；具体约束由函数签名和所在模块定义。
 ## 设计：该函数位于客户端交互或表现边界，最终状态以服务器权威结果为准。
 func receive_server_message(message: Dictionary) -> void:
-	var safe_message := message.duplicate(true)
+	var decoded := PlayerSyncMessages.transform(message, _decode_player_sync)
+	if not decoded.is_ok:
+		if decoded.error_code != &"player_sync.duplicate" and not _player_resync_pending:
+			_player_resync_pending = true
+			send_player_panel_command({"type": "query"})
+		return
+	var safe_message: Dictionary = decoded.value.duplicate(true)
 	var message_type := StringName(safe_message.get("type", ""))
 	var result: Dictionary = safe_message.get("result", {})
 	if message_type == &"session_opened" and bool(result.get("ok", false)):
@@ -221,10 +230,13 @@ func receive_world_snapshot(snapshot: Dictionary) -> void:
 ## 处理 `_on_connected_to_server` 对应的信号回调。
 ## 设计：该函数位于客户端交互或表现边界，最终状态以服务器权威结果为准。
 func _on_connected_to_server() -> void:
+	_player_sync.reset()
+	_player_resync_pending = false
 	_set_connection_state(ConnectionState.CONNECTED)
 	var request := {
 		"protocol_version": Protocol.PROTOCOL_VERSION,
 		"content_version": Protocol.PUBLIC_CONTENT_VERSION,
+		"player_change_version": PlayerChange.VERSION,
 	}
 	if not reconnect_token.is_empty():
 		request["reconnect_token"] = reconnect_token
@@ -316,3 +328,13 @@ func _apply_session_opened(result: Dictionary) -> void:
 		return
 	if value.get("snapshot") is Dictionary:
 		receive_world_snapshot(value["snapshot"])
+
+
+## 还原可靠玩家增量，成功接收全量后解除重复请求抑制。
+## [param bundle] 增量信封或旧协议完整投影。
+## 返回供现有领域投影校验器使用的完整消息。
+func _decode_player_sync(bundle: Dictionary) -> DomainResult:
+	if not bundle.get("player_change") is Dictionary: return DomainResult.ok(bundle)
+	var result := _player_sync.decode(bundle.player_change)
+	if result.is_ok and bundle.player_change.has("full"): _player_resync_pending = false
+	return result

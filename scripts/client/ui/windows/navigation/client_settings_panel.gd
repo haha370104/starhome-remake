@@ -3,6 +3,9 @@ extends ModernNavigationWindow
 
 var preferences: ClientPreferences
 var scale_choice: OptionButton
+var game_scale_choice: OptionButton
+var shortcut_choice: CheckButton
+var fps_choice: CheckButton
 var palette_choice: OptionButton
 var mute_button: CheckButton
 var status: Label
@@ -59,6 +62,9 @@ func open_section(section: String) -> void:
 func refresh() -> void:
 	if preferences == null: return
 	scale_choice.select(ClientPreferences.SCALES.find(preferences.window_scale))
+	game_scale_choice.select(ClientPreferences.GAME_SCALES.find(preferences.game_scale))
+	shortcut_choice.set_pressed_no_signal(preferences.shortcut_visible)
+	fps_choice.set_pressed_no_signal(preferences.show_fps)
 	palette_choice.select(ClientPreferences.PALETTES.find(preferences.palette))
 	mute_button.set_pressed_no_signal(preferences.muted)
 	for action: String in key_buttons:
@@ -90,7 +96,21 @@ func _build_display() -> void:
 	for value in ["100% · 原始大小", "115% · 稍大", "130% · 大", "150% · 更大"]: scale_choice.add_item(value)
 	_place("display", scale_choice, Rect2(250, 0, 300, 36))
 	scale_choice.item_selected.connect(func(index: int) -> void: preferences.set_window_scale(ClientPreferences.SCALES[index]))
-	_page_label("display", "字体：统一无衬线\n文字、图标与面板一起缩放，立即生效。\n窗口超出屏幕时自动缩小到可见范围。\n地图、战车和怪物的大小保持不变。", Vector2(0, 66), 220)
+	_page_label("display", "整个游戏比例", Vector2(0, 54))
+	game_scale_choice = OptionButton.new()
+	for value: float in ClientPreferences.GAME_SCALES:
+		game_scale_choice.add_item("%d%%" % roundi(value * 100))
+	_place("display", game_scale_choice, Rect2(250, 54, 300, 36))
+	game_scale_choice.item_selected.connect(func(index: int) -> void: preferences.set_game_scale(ClientPreferences.GAME_SCALES[index]))
+	shortcut_choice = CheckButton.new()
+	shortcut_choice.text = "显示快捷栏"
+	_place("display", shortcut_choice, Rect2(0, 108, 280, 36))
+	shortcut_choice.toggled.connect(func(value: bool) -> void: preferences.set_shortcut_visible(value))
+	fps_choice = CheckButton.new()
+	fps_choice.text = "显示帧率"
+	_place("display", fps_choice, Rect2(300, 108, 250, 36))
+	fps_choice.toggled.connect(func(value: bool) -> void: preferences.set_show_fps(value))
+	_page_label("display", "窗口比例只放大面板；整个游戏比例同时放大地图、角色与界面。\n窗口会自动适配可见区域，字体沿用当前微软雅黑设置。", Vector2(0, 175), 120)
 
 
 ## 建立通用文字配色选项，保留物品品质和地图图例的含义。
@@ -116,7 +136,7 @@ func _build_keys() -> void:
 	_page_label("keys", "点击右侧按钮后按下新组合，Esc 取消。\n支持 Ctrl、Alt、Shift，重复绑定会提示冲突。\n输入文字时不触发游戏快捷键。", Vector2(0, 155), 130)
 
 
-## 建立真实音频总线的音量设置，并明确当前没有可播放音源。
+## 建立独立音乐与动作音效总线的音量设置。
 func _build_audio() -> void:
 	for entry: Array in [["master", "总音量"], ["music", "音乐"], ["effects", "音效"]]:
 		var y := volume_sliders.size() * 52
@@ -132,7 +152,7 @@ func _build_audio() -> void:
 	mute_button.text = "全部静音"
 	_place("audio", mute_button, Rect2(0, 174, 300, 36))
 	mute_button.toggled.connect(func(value: bool) -> void: preferences.set_muted(value))
-	_page_label("audio", "当前暂无可播放音源。\n音量偏好会保存，供后续接入的声音使用。", Vector2(0, 238), 65)
+	_page_label("audio", "音乐控制地图配乐；音效控制移动、战斗和界面声音。\n音量偏好保存在本机。", Vector2(0, 238), 65)
 
 
 ## 将音量滑块的百分数转为线性通道值。

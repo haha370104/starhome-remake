@@ -3,8 +3,8 @@ extends ModernNavigationWindow
 
 signal command_requested(command: Dictionary)
 
-var backpack_list: ItemList
-var warehouse_list: ItemList
+var backpack_list: InventoryCanvas
+var warehouse_list: InventoryCanvas
 var deposit_quantity: SpinBox
 var withdraw_quantity: SpinBox
 var deposit_button: Button
@@ -26,7 +26,7 @@ var _pending: Dictionary = {}
 
 ## 组合共享窗口壳、原物品图、双侧清单与独立数量输入，不在客户端结算存取。
 func _ready() -> void:
-	build_modern_window(Vector2(860, 610), "个人仓库")
+	build_modern_window(Vector2(860, 650), "个人仓库")
 	make_label("仅在龙之城或基地大厅使用", Rect2(24, 60, 370, 28))
 	for index in range(6):
 		var button := make_button("柜%d" % (index + 1), Rect2(454 + index * 64, 58, 58, 32), _select_cabinet.bind(index + 1))
@@ -35,23 +35,25 @@ func _ready() -> void:
 		_cabinet_buttons.append(button)
 	_backpack_title = make_label("背包", Rect2(24, 105, 330, 24))
 	_warehouse_title = make_label("储物柜", Rect2(454, 105, 380, 24))
-	backpack_list = _make_list(Rect2(24, 138, 382, 266), _select_item.bind(true))
-	warehouse_list = _make_list(Rect2(454, 138, 382, 266), _select_item.bind(false))
+	backpack_list = _make_list(Rect2(70, 132, 276, 295), true)
+	warehouse_list = _make_list(Rect2(504, 132, 276, 295), false)
 	details = RichTextLabel.new()
-	details.position = Vector2(24, 414)
-	details.size = Vector2(812, 58)
-	details.text = "选择物品后输入数量；锁定物品须先在背包解锁。"
+	details.position = Vector2(24, 438)
+	details.size = Vector2(812, 50)
+	details.text = "拖动物品在两侧存取或自由摆放；也可选择数量后存取。"
 	content_root.add_child(details)
-	make_label("数量", Rect2(24, 484, 54, 28))
-	deposit_quantity = _quantity(Vector2(78, 480))
-	deposit_button = make_button("存入 →", Rect2(196, 480, 210, 36), _transfer.bind(true))
-	make_label("数量", Rect2(454, 484, 54, 28))
-	withdraw_quantity = _quantity(Vector2(508, 480))
-	withdraw_button = make_button("← 取出", Rect2(626, 480, 210, 36), _transfer.bind(false))
-	_status = make_label("正在读取仓库…", Rect2(24, 530, 810, 26))
+	make_label("数量", Rect2(24, 510, 54, 28))
+	deposit_quantity = _quantity(Vector2(78, 506))
+	deposit_button = make_button("存入 →", Rect2(196, 506, 210, 36), _transfer.bind(true))
+	make_label("数量", Rect2(454, 510, 54, 28))
+	withdraw_quantity = _quantity(Vector2(508, 506))
+	withdraw_button = make_button("← 取出", Rect2(626, 506, 210, 36), _transfer.bind(false))
+	_status = make_label("正在读取仓库…", Rect2(24, 554, 810, 26))
 	_status.clip_text = true
-	_style_button(make_button("刷新", Rect2(24, 568, 92, 30), open_board))
-	expand_button = make_button("开通新柜", Rect2(526, 568, 310, 30), _ask_expansion)
+	_style_button(make_button("整理仓库", Rect2(126, 606, 120, 30), _submit_edit.bind({"type": "arrange_warehouse"})))
+	_style_button(make_button("拆分选中物", Rect2(260, 606, 150, 30), _split_selected))
+	_style_button(make_button("刷新", Rect2(24, 606, 92, 30), open_board))
+	expand_button = make_button("开通新柜", Rect2(526, 606, 310, 30), _ask_expansion)
 	for button: Button in [deposit_button, withdraw_button, expand_button]:
 		_style_button(button)
 		button.disabled = true
@@ -65,21 +67,34 @@ func _ready() -> void:
 	visibility_changed.connect(_dismiss_confirmation)
 
 
-## 建立统一字号、原版物品图及溢出省略的可滚动清单。
-## [param rect] 清单区域。
-## [param callback] 当前一侧的选择动作。
-## 返回已挂接的列表。
-func _make_list(rect: Rect2, callback: Callable) -> ItemList:
-	var listing := ItemList.new()
-	listing.position = rect.position
-	listing.size = rect.size
-	listing.fixed_icon_size = Vector2i(32, 32)
-	listing.add_theme_constant_override("v_separation", 8)
-	listing.add_theme_stylebox_override("panel", _surface_style("0b1620", "304b5e"))
-	listing.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	listing.item_selected.connect(callback)
-	content_root.add_child(listing)
-	return listing
+## 创建与背包共用的图标画布，坐标保持现有存档的左上角语义。
+## [param rect] 画布区域。[param deposit] 是否为背包一侧。
+## 返回接好语义信号的只读库存画布。
+func _make_list(rect: Rect2, deposit: bool) -> InventoryCanvas:
+	var frame := Panel.new()
+	frame.position = rect.position - Vector2(4, 4)
+	frame.size = rect.size + Vector2(8, 8)
+	frame.add_theme_stylebox_override("panel", _surface_style("0b1620", "304b5e"))
+	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	content_root.add_child(frame)
+	var canvas := InventoryCanvas.new()
+	canvas.position = rect.position
+	canvas.item_selected.connect(_select_identity.bind(deposit))
+	canvas.move_requested.connect(_move_item.bind(deposit))
+	canvas.external_drop_requested.connect(_cross_drop.bind(deposit))
+	content_root.add_child(canvas)
+	return canvas
+
+
+## 按画布实例身份恢复选中项，图片层不持有独立库存。
+## [param id] 点击实例。[param deposit] 所属容器。
+func _select_identity(id: String, deposit: bool) -> void:
+	if _snapshot == null: return
+	var rows := _snapshot.carried if deposit else _snapshot.stored
+	for index in rows.size():
+		if rows[index].id == id:
+			_select_item(index, deposit)
+			return
 
 
 ## 创建仅允许整件数量的输入框，选择后上限跟随权威堆叠。
@@ -136,14 +151,14 @@ func inventory_changed(revision: int) -> void:
 ## 填充物品图、数量和状态说明，恢复仍然存在的实例选择。
 ## [param listing] 目标列表。
 ## [param rows] 类型化显示行。
-## [param selected_id] 上一次实例身份。
-func _fill(listing: ItemList, rows: Array[PersonalWarehouseSnapshot.ItemRow], selected_id: String) -> void:
-	listing.clear()
+## [param _selected_id] 选中身份由面板统一保留。
+func _fill(listing: InventoryCanvas, rows: Array[PersonalWarehouseSnapshot.ItemRow], _selected_id: String) -> void:
+	var inventory := Inventory.new()
+	var items: Array[GameItem] = []
 	for row: PersonalWarehouseSnapshot.ItemRow in rows:
-		listing.add_item(row.label(), ItemPresentationTextureResolver.resolve(row.presentation).get("texture"))
-		listing.set_item_tooltip(listing.item_count - 1, row.label() + "\n" + row.description)
-		if row.locked: listing.set_item_custom_fg_color(listing.item_count - 1, Color("8998a6"))
-		if row.id == selected_id: listing.select(listing.item_count - 1)
+		items.append(row.item)
+	inventory.restore_items(items)
+	listing.apply_inventory(inventory)
 
 
 ## 切换已开通柜时清除旧柜选择，背包选择仍然保留。
@@ -236,3 +251,57 @@ func _dismiss_confirmation() -> void:
 	if not visible:
 		_pending.clear()
 		confirmation.hide()
+
+
+## 在当前柜内拆分所选数量，服务端决定新身份与容量许可。
+func _split_selected() -> void:
+	var row := _selected(false)
+	if row == null: return
+	withdraw_quantity.apply()
+	_submit_edit({"type": "split_warehouse_item", "instance_id": row.id, "quantity": int(withdraw_quantity.value)})
+
+
+## 把画布内拖动路由到正确容器，保留各自版本与状态所有权。
+## [param id] 被拖动的实例。[param point] 容器左上角坐标。[param deposit] 是否背包侧。
+func _move_item(id: String, point: Vector2i, deposit: bool) -> void:
+	_submit_edit({"type": "move_inventory_item" if deposit else "move_warehouse_item",
+		"instance_id": id, "position_px": [point.x, point.y]})
+
+
+## 跨画布拖动仅在目标画布内落下时发出存取，不将仓库物品直接丢弃。
+## [param id] 来源实例。[param point] 视口落点。[param deposit] 存入方向。
+func _cross_drop(id: String, point: Vector2, deposit: bool) -> void:
+	var target := warehouse_list if deposit else backpack_list
+	if not target.get_global_rect().has_point(point): return
+	_transfer_at(id, deposit, Vector2i((target.get_global_transform_with_canvas().affine_inverse() * point).round()))
+
+
+## 接收独立背包窗口拖来的物品，仍使用同一仓库事务。
+## [param id] 背包实例。[param point] 视口落点。
+func accept_external_item(id: String, point: Vector2) -> void:
+	_cross_drop(id, point, true)
+
+
+## 将整组放在指定位置，不自动合并或排列目标中的其他物品。
+## [param id] 来源实例。[param deposit] 存入方向。[param point] 目标左上角。
+func _transfer_at(id: String, deposit: bool, point: Vector2i) -> void:
+	if _snapshot == null: return
+	var rows := _snapshot.carried if deposit else _snapshot.stored
+	for row: PersonalWarehouseSnapshot.ItemRow in rows:
+		if row.id == id:
+			_submit_edit({"type": "deposit_warehouse_item" if deposit else "withdraw_warehouse_item",
+				"instance_id": id, "quantity": row.quantity, "position_px": [point.x, point.y]})
+			return
+
+
+## 为仓内编辑补齐快照版本，提交后沿用现有失败刷新流程。
+## [param command] 不含库存版本的操作意图。
+func _submit_edit(command: Dictionary) -> void:
+	if _snapshot == null or _waiting or not _snapshot.available: return
+	command = command.duplicate(true)
+	command.merge({"cabinet": _cabinet, "warehouse_revision": _snapshot.revision,
+		"inventory_revision": _snapshot.inventory_revision})
+	_waiting = true
+	_update_actions()
+	command_requested.emit(command)
+	if _waiting: open_board()
