@@ -41,6 +41,12 @@ function Assert-NoRuntimeLoadErrors([string]$LogFile) {
     }
 }
 
+Write-Output "Checking runtime-only asset dependencies"
+& python (Join-Path $PSScriptRoot "check_runtime_assets.py")
+if ($LASTEXITCODE -ne 0) { throw "Runtime asset dependency check failed" }
+& python -m unittest discover -s (Join-Path $projectRoot "tests/tools") -p test_runtime_asset_compaction.py
+if ($LASTEXITCODE -ne 0) { throw "Runtime asset compaction tests failed" }
+
 Write-Output "Checking GDScript function documentation"
 & python (Join-Path $PSScriptRoot "tests/test_check_client_architecture.py")
 if ($LASTEXITCODE -ne 0) { throw "Client architecture guard tests failed" }
