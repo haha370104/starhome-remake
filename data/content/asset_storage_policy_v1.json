@@ -1,0 +1,6 @@
+{
+  "schema_version": 1,
+  "mode": "regular_git",
+  "max_file_bytes": 50331648,
+  "reason": "2026-10-18: user requested temporary regular Git storage while LFS quota is unavailable"
+}

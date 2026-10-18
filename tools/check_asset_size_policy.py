@@ -1,17 +1,21 @@
 #!/usr/bin/env python3
-"""Reject large project assets that bypass the repository's Git LFS policy."""
+"""Enforce the explicit LFS or temporary regular-Git asset storage contract."""
 
 from __future__ import annotations
 
 import subprocess
 import sys
+import json
 from pathlib import Path
 
 
 MAX_REGULAR_GIT_BYTES = 5 * 1024 * 1024
+REGULAR_GIT_LIMIT = 48 * 1024 * 1024
+POLICY_PATH = 'data/content/asset_storage_policy_v1.json'
+LFS_POINTER = b'version https://git-lfs.github.com/spec/v1'
 
 
-def run_git(repository: Path, arguments: list[str]) -> str:
+def run_git(repository: Path, arguments: list[str], input_text=None) -> str:
     """Run a read-only Git command in *repository* and return decoded stdout."""
     process = subprocess.run(
         ["git", *arguments],
@@ -19,6 +23,7 @@ def run_git(repository: Path, arguments: list[str]) -> str:
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         check=False,
+        input=None if input_text is None else input_text.encode('utf-8'),
     )
     if process.returncode != 0:
         detail = process.stderr.decode("utf-8", errors="replace").strip()
@@ -57,10 +62,33 @@ def uses_lfs(repository: Path, path: Path) -> bool:
 
 
 def find_violations(repository: Path) -> list[str]:
-    """Return oversized existing assets that are not protected by Git LFS."""
+    """Reject oversize assets, residual LFS filters and unhydrated LFS pointers."""
     failures: list[str] = []
     assets = asset_repository(repository)
-    for path in project_asset_paths(assets):
+    policy_path = repository / POLICY_PATH
+    settings = json.loads(policy_path.read_text(encoding='utf-8-sig')) if policy_path.exists() else {}
+    mode = settings.get('mode', 'lfs')
+    if mode not in {'lfs', 'regular_git'}:
+        raise RuntimeError(f'Unknown asset storage mode: {mode}')
+    paths = [p for p in project_asset_paths(assets) if p.is_file()]
+    if mode == 'regular_git':
+        limit = settings.get('max_file_bytes', REGULAR_GIT_LIMIT)
+        if not isinstance(limit, int) or not 0 < limit <= REGULAR_GIT_LIMIT:
+            raise RuntimeError('Regular Git asset limit must be at most 48 MiB')
+        attributes = run_git(assets, ['check-attr', '-z', '--stdin', 'filter'],
+                             ''.join(p.relative_to(assets).as_posix() + '\0' for p in paths)).split('\0')
+        for name, _, value in zip(attributes[0::3], attributes[1::3], attributes[2::3]):
+            if value == 'lfs':
+                failures.append(f'assets/{name}: LFS filter remains in regular Git mode')
+        for path in paths:
+            relative = path.relative_to(repository).as_posix()
+            if path.stat().st_size > limit:
+                failures.append(f'{relative}: exceeds regular Git limit of {limit} bytes')
+            with path.open('rb') as stream:
+                if stream.read(len(LFS_POINTER)) == LFS_POINTER:
+                    failures.append(f'{relative}: unresolved LFS pointer instead of asset bytes')
+        return failures
+    for path in paths:
         if not path.is_file() or path.stat().st_size < MAX_REGULAR_GIT_BYTES:
             continue
         if uses_lfs(assets, path):
@@ -84,7 +112,7 @@ def main() -> int:
         for failure in failures:
             print(f"- {failure}", file=sys.stderr)
         return 1
-    print("Asset size policy passed: every asset >= 5 MiB is covered by Git LFS")
+    print("Asset size policy passed for the configured storage mode")
     return 0
 
 

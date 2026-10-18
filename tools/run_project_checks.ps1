@@ -24,14 +24,14 @@ if ($LASTEXITCODE -ne 0) {
     throw "Staged change size check failed"
 }
 
-Write-Output "Checking large-asset Git LFS policy"
+Write-Output "Checking configured asset storage policy"
 & python (Join-Path $PSScriptRoot "tests/test_check_asset_size_policy.py")
 if ($LASTEXITCODE -ne 0) {
-    throw "Large-asset Git LFS policy tests failed"
+    throw "Asset storage policy tests failed"
 }
 & python (Join-Path $PSScriptRoot "check_asset_size_policy.py")
 if ($LASTEXITCODE -ne 0) {
-    throw "Large-asset Git LFS policy failed"
+    throw "Asset storage policy failed"
 }
 
 function Assert-NoRuntimeLoadErrors([string]$LogFile) {
@@ -46,6 +46,8 @@ Write-Output "Checking runtime-only asset dependencies"
 if ($LASTEXITCODE -ne 0) { throw "Runtime asset dependency check failed" }
 & python -m unittest discover -s (Join-Path $projectRoot "tests/tools") -p test_runtime_asset_compaction.py
 if ($LASTEXITCODE -ne 0) { throw "Runtime asset compaction tests failed" }
+& python -m unittest discover -s (Join-Path $projectRoot "tests/tools") -p test_regular_git_packs.py
+if ($LASTEXITCODE -ne 0) { throw "Regular Git pack splitting tests failed" }
 
 Write-Output "Checking GDScript function documentation"
 & python (Join-Path $PSScriptRoot "tests/test_check_client_architecture.py")
