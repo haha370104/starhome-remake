@@ -17,7 +17,7 @@ func _initialize() -> void:
 		return
 	var catalog = loaded.value
 	_expect(catalog.catalog_summary("maps").get("runtime_ready") == 814, "应挂载 814 个地图来源")
-	_expect(catalog.catalog_summary("animations").get("runtime_total") == 13994, "应索引基础及调色板动画")
+	_expect(catalog.catalog_summary("animations").get("runtime_total") == 2339, "应只登记运行使用的基础、调色板及恢复动画")
 	_expect(catalog.catalog_summary("monsters").get("runtime_definitions") == 119, "应激活 119 个怪物定义")
 	_expect(catalog.catalog_summary("monsters").get("runtime_field_maps") == 460, "应覆盖全部460张野外图")
 	_expect(catalog.catalog_summary("monsters").get("maps_with_reliable_encounters") == 27, "仅27张有历史分布证据，不得把默认配置冒充逆向结果")

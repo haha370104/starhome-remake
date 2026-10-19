@@ -1,10 +1,24 @@
 # starhome_remake 项目全局约定
 
+## 2026-10-18 普通 Git 临时存储
+
+用户在清理素材及重建远端后明确要求暂时停用 Git LFS，改为普通 Git。
+本条覆盖下方原有的 5 MiB/LFS 存储规则：当前策略以
+`data/content/asset_storage_policy_v1.json` 为准，所有素材不得超过 48 MiB，不得残留 LFS 过滤器或指针。
+大内容包按完整 ZIP 成员拆为独立包，由现有挂载器加载；素材成员路径、字节及加载顺序保留。
+工具、重新导入后的处理与发布顺序见[素材管理](docs/asset_management.md)和[仓库组织](docs/repository_layout.md)。
+该临时模式不授权把开发档案放回素材库，也不自动恢复旧历史或开启付费额度。
+
 ## 2026-10-14增量
 
 本轮吸收范围、验证与保留边界见 [社区功能迁移](docs/community_integration_2026-10-14.md)。AI已作为默认关闭的可选模块接入，未成为启动依赖；开关、配置、预算与边界见 [AI玩家启用说明](docs/optional_ai_players.md)。
 
 ## 文档入口与维护
+
+2026-10-18 用户要求 assets 只保存游戏使用的运行素材；开发预览、中间图、未启用的解码素材、
+测试包与离线对照图均归档到仓库外。使用 `tools/compact_runtime_assets.py` 裁剪并同步资源引用，
+`tools/check_runtime_assets.py` 是新增门禁；完整流程见 [素材管理](docs/asset_management.md)。
+禁止为满足旧测试的全量数量断言重新导入未使用素材；测试应覆盖当前实际表现。
 
 - 客户端重构与后续开发遵循 [工程规范](./docs/engineering_standards.md)，按状态所有权拆分，禁止用大型上下文对象或入口转发层替代模块边界。
 

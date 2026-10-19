@@ -5,8 +5,8 @@
     {
       "pack_id": "recovered_equipment_and_scenery",
       "path": "res://assets/content_packs/recovered_equipment_and_scenery.zip",
-      "size_bytes": 3334309,
-      "sha256": "1c6c2c10c0292ae66dfc6c7360be91116b9ab305086173d193de99588f4e8c23",
+      "size_bytes": 3047892,
+      "sha256": "8ecc2c38d4fbc0963018486a7834880c29433c5376cc6e303c72e73b1481b37b",
       "content_groups": [
         "recovered_equipment",
         "recovered_scenery"

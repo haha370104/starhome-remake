@@ -12,10 +12,11 @@
       "unresolved": 0
     },
     "animations": {
-      "decoded_ale": 13888,
+      "decoded_ale": 2053,
       "monster_act_variants": 81,
       "mineral_act_variants": 25,
-      "runtime_total": 13994
+      "runtime_total": 2339,
+      "recovered_animations": 180
     },
     "monsters": {
       "runtime_definitions": 119,

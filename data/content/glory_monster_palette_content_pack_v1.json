@@ -5,8 +5,8 @@
     {
       "pack_id": "glory_monster_palettes_v1",
       "path": "res://assets/content_packs/glory_monster_palettes_v1.zip",
-      "size_bytes": 8240277,
-      "sha256": "b818a8a7584b1d481eb2bac7be5bdf2b39a812a02357d81ad195645d31a94985",
+      "size_bytes": 7180395,
+      "sha256": "7c376bf3957f6201de00bcf957d1dbfe8f1a9729e90af94bda8f344435adcb6f",
       "content_groups": [
         "monster_palette_variants"
       ]

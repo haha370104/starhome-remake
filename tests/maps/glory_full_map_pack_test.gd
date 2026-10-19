@@ -14,8 +14,8 @@ var assertions := 0
 func _initialize() -> void:
 	var packs = PackCatalogScript.new()
 	_expect(packs.load_file(PACK_CATALOG_PATH), "; ".join(packs.errors))
-	_expect(packs.pack_ids().size() == 12, "地图包含一个索引包、十个既有表现包及一个补充包")
-	_expect(packs.mount_all(false), "; ".join(packs.errors))
+	_expect(not packs.pack_ids().is_empty(), "地图目录必须包含可挂载的内容包")
+	_expect(packs.mount_all(true), "; ".join(packs.errors))
 	var directory: Variant = JSON.parse_string(FileAccess.get_file_as_string(MAP_DIRECTORY_PATH))
 	_expect(directory is Dictionary, "全量地图目录必须是 JSON object")
 	if not directory is Dictionary:

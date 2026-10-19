@@ -23,8 +23,8 @@ Godot 4.7.2 纯 2D 联机复刻工程。共享领域规则与权威服务器，�
 
 ## 本地启动
 
-1. 安装 Git LFS，使用 `git clone --recurse-submodules git@github.com:haha370104/starhome-remake.git`，
-   进入目录后执行 `git -C assets lfs pull`。已有克隆先执行 `git submodule update --init --recursive`。
+1. 当前临时使用普通 Git。使用 `git clone --branch work/community-gameplay-integration --recurse-submodules git@github.com:haha370104/starhome-remake.git`，
+   无需安装或拉取 Git LFS。已有克隆先切换到对应代码分支，再执行 `git submodule update --init --recursive`。
 2. 使用 Godot 4.7.2 打开 `project.godot`，等待首次素材导入完成。
 3. 运行默认场景 `scenes/main_hall.tscn`；默认连接进程内权威服。
 
@@ -65,6 +65,6 @@ $godotExe = 'C:/Users/tomato/Downloads/Godot_v4.7.2-stable_win64_console.exe'
 ## 素材与仓库边界
 
 正式素材以荣耀版为准；只有免费版 HUD 外观在明确白名单内豁免。
-主仓库保存代码、数据定义、工具和文档；`assets` 是独立素材子模块，保存运行素材、素材清单与 LFS 内容包。
+主仓库保存代码、数据定义、工具和文档；`assets` 是独立素材子模块，保存运行素材、素材清单与普通 Git 内容包。
 原始解密档案留在仓库外，`.godot/` 为本机缓存。克隆、更新和推送顺序见[仓库组织](./docs/repository_layout.md)。
 细则见[素材管理](./docs/asset_management.md)。原游戏素材的使用/再分发权利需另行确认，勿直接公开发布。

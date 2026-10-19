@@ -4,6 +4,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+import json
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import check_asset_size_policy as policy
@@ -58,6 +59,33 @@ class AssetSizePolicyTest(unittest.TestCase):
         self.git(self.root, "update-index", "--force-remove", "assets")
         with self.assertRaisesRegex(RuntimeError, "mode 160000"):
             policy.find_violations(self.root)
+
+    def regular_mode(self):
+        target = self.root / policy.POLICY_PATH
+        target.parent.mkdir(parents=True)
+        target.write_text(json.dumps({'mode': 'regular_git', 'max_file_bytes': policy.REGULAR_GIT_LIMIT}))
+
+    def test_regular_mode_allows_hydrated_large_asset(self):
+        self.regular_mode()
+        self.large_asset()
+        self.assertEqual(policy.find_violations(self.root), [])
+
+    def test_regular_mode_rejects_lfs_filter(self):
+        self.regular_mode()
+        self.large_asset()
+        (self.assets / '.gitattributes').write_text('*.png filter=lfs\n')
+        self.assertIn('LFS filter remains', policy.find_violations(self.root)[0])
+
+    def test_regular_mode_rejects_small_pointer_file(self):
+        self.regular_mode()
+        (self.assets / 'missing.png').write_bytes(policy.LFS_POINTER + b'\noid sha256:test\nsize 123\n')
+        self.assertIn('unresolved LFS pointer', policy.find_violations(self.root)[0])
+
+    def test_regular_mode_rejects_file_over_limit(self):
+        self.regular_mode()
+        with self.large_asset().open('wb') as stream:
+            stream.truncate(policy.REGULAR_GIT_LIMIT + 1)
+        self.assertIn('exceeds regular Git limit', policy.find_violations(self.root)[0])
 
 
 if __name__ == "__main__":

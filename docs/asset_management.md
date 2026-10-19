@@ -1,5 +1,58 @@
 # 素材目录与版本管理
 
+## 当前存储策略：临时使用普通 Git
+
+2026-10-18 用户明确要求暂时停用 Git LFS。当前模式由
+`data/content/asset_storage_policy_v1.json` 声明，覆盖本文下方的历史 LFS 规则。
+所有素材使用普通 Git，单文件最多 48 MiB；门禁同时拒绝 LFS 过滤器和未下载的指针文件。
+新基线从实际素材字节建立，旧 LFS 历史及原包均保存在仓库外，不合并回新分支。
+
+地图包确实由启动流程挂载；大包拆成完整、独立的 ZIP，而非需要玩家手动拼接的分卷。
+现有 `RuntimeContentPackCatalog` 按更新后的目录挂载，各素材成员的名称、顺序和字节不变。
+克隆对应代码分支及子模块即可取得完整素材，无需执行 `git lfs pull`。
+
+重新生成素材后先按下节清理运行依赖，再使用新归档目录执行：
+
+```powershell
+python -X utf8 tools/prepare_regular_git_assets.py --archive C:/outside-repository/regular-git-archive --apply
+python -X utf8 tools/check_asset_size_policy.py
+python -X utf8 tools/check_runtime_assets.py
+```
+
+[拆包工具](../tools/prepare_regular_git_assets.py) 在仓库外备份原包和目录后准备全部输出，
+逐项校验 SHA-256，最后替换工作树文件。单个成员超限时直接报错，不截断图片或偷偷更改运行加载协议。
+上传按小于 2 GiB 的提交批次进行。此模式只解决当前 LFS 配额阻塞；以后恢复 LFS 时须重新迁移历史，
+仅修改 attributes 不会清掉普通 Git 中已保存的大对象。默认不自动恢复或提高付费预算。
+
+## 2026-10-18：只发布运行依赖
+
+用户明确要求：游戏未使用、仅开发阶段可能使用的素材保存到仓库外，不占用 Git LFS。
+当前运行代码、场景及其递归配置是根；所有注册地图、物品、怪物以及可选功能的实际表现均保留。
+已解码索引本身不代表运行用途，`source_audit`、旧动作记录和离线画面对照也不作为保留理由。
+仍被运行资源使用的 `.import` 与紧凑溯源元数据保留。
+
+执行工具为 [compact_runtime_assets.py](../tools/compact_runtime_assets.py)。它先验证引用完整性，
+要求显式指定仓库外归档目录，再归档所有将改动的文件；按 SHA-256 合并包内相同的图片和导航数据，
+同步地图定义和精灵页索引，不改动画帧、原点、逻辑身份及来源版本。已有实体路径尽量保留。
+原始包、删去的松散文件和 `cleanup-report.json` 一起留在归档中，原包内的开发素材可直接解压使用。
+
+```powershell
+python -X utf8 tools/compact_runtime_assets.py --archive C:/outside-repository/asset-archive
+python -X utf8 tools/compact_runtime_assets.py --archive C:/outside-repository/asset-archive --apply
+python -X utf8 tools/check_runtime_assets.py --archive C:/outside-repository/asset-archive
+```
+
+同一次执行不能覆盖不同内容的旧归档。重新导入原图后必须再次裁剪并通过
+[运行依赖检查](../tools/check_runtime_assets.py)，不可直接提交原始全量解码产物。
+该检查已接入项目门禁；另检查大文件 LFS、地图切换、装备、怪物动画和受击效果。
+测试 ZIP 改为在隔离的 `user://` 目录生成；离线 HUD 溯源检查通过
+`STARHOME_ASSET_ARCHIVE` 指定上述归档根目录，普通运行检查不依赖这个目录。
+
+本轮从 14,182 条索引裁剪到 2,339 条运行动画；原件保存在外部归档，绝不当作丢失源素材重新下载。
+当前素材约 6.62 GiB，原来约 10.59 GiB。历史 LFS 对象不因当前树删除而从 GitHub 自动回收；
+远端清理按 GitHub 的 LFS 支持流程处理，不能通过跳过上传钩子发布缺实体的指针。
+字节一致性、21 项 Godot 回归脚本及提交范围见[本轮验证记录](verification/runtime_asset_cleanup_2026-10-18.json)。
+
 文档校准：2026-09-14。运行素材已拆为 `assets` Git 子模块。规则以[项目全局约定](../PROJECT_CONTEXT.md)为准；
 当前全量资源装载范围见[运行内容](../docs/runtime_content.md)。
 
@@ -36,7 +89,7 @@
 | 数据 | 策略 |
 | --- | --- |
 | 源码、JSON 定义/索引、清单、导入设置、小图片、导航 | 普通 Git |
-| 大地图 `floor.png`、`semantic_layer_atlas.png`、`scene_color.png`、`static_composite.png`、`source_order_reference.png` | 按 `.gitattributes` 进入 LFS |
+| 大地图 `floor.png`、`semantic_layer_atlas.png` | 按 `.gitattributes` 进入 LFS |
 | `assets/content_packs/glory_*.zip` | LFS；克隆后拉取实际包 |
 | `.godot/`、日志、临时文件 | 忽略，可重新生成 |
 | 原始客户端全集、解密档案和恢复中间产物 | 仓库外保存；不直接纳入运行素材树 |
